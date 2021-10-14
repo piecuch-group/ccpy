@@ -1,6 +1,10 @@
 module ccp_loops
 
+      USE OMP_LIB
+!      USE MKL_SERVICE
+
       implicit none
+
 
       contains
 
@@ -48,10 +52,15 @@ module ccp_loops
                                 temp3(nua), temp4(nua)
 
 
-                real(kind=8), parameter :: MINUSONE=-1.0d+0, HALF=0.5d+0, ZERO=0.0d+0
+                real(kind=8), parameter :: MINUSONE=-1.0d+0, HALF=0.5d+0, ZERO=0.0d+0, ONE=1.0d+0
+    
+                real(kind=8), external :: ddot
 
                 !integer :: m, n, e ,f
                 !real(kind=8) :: error(8), refval
+                
+                call mkl_set_num_threads_local(1)
+                call omp_set_num_threads(16)
 
                 noa2 = noa**2
                 nua2 = nua**2
@@ -73,8 +82,12 @@ module ccp_loops
                 !    error(i) = ZERO
                 !end do
 
+                t3a_new = 0.0d0
+
+                !$OMP PARALLEL SHARED(t3a_new)
+                !$OMP DO
                 do ct = 1 , num_triples
-            
+           
                    ! Shift indices up by since the triples list is coming from
                    ! Python, where indices start from 0       
                    a = triples_list(ct,1)+1
@@ -85,133 +98,289 @@ module ccp_loops
                    k = triples_list(ct,6)+1
                     
                    ! Calculate devectorized residual for triple |ijkabc>
-                   call dgemv(noanua2,noa,vA_oovv_r1,t3a(a,:,:,i,j,:),temp1)
-                   call dgemv(nuanobnub,noa,vB_oovv_r1,t3b(a,:,:,i,j,:),temp2)
-                   vt3_oa = HALF*temp1 + temp2
-                   m1 = MINUSONE*ddot(noa,H2A_vooo(a,:,i,j)+vt3_oa,t2a(b,c,:,k))
+                   call dgemv('t',noanua2,noa,HALF,vA_oovv_r1,noanua2,t3a(a,:,:,i,j,:),1,ZERO,temp1,1)
+                   call dgemv('t',nuanobnub,noa,ONE,vB_oovv_r1,nuanobnub,t3b(a,:,:,i,j,:),1,ZERO,temp2,1)
+                   vt3_oa = temp1 + temp2
+                   m1 = MINUSONE*ddot(noa,H2A_vooo(a,:,i,j)+vt3_oa,1,t2a(b,c,:,k),1)
+
+                   call dgemv('t',noanua2,noa,HALF,vA_oovv_r1,noanua2,t3a(a,:,:,i,k,:),1,ZERO,temp1,1)
+                   call dgemv('t',nuanobnub,noa,ONE,vB_oovv_r1,nuanobnub,t3b(a,:,:,i,k,:),1,ZERO,temp2,1)
+                   vt3_oa = temp1 + temp2
+                   m1 = m1 + ddot(noa,H2A_vooo(a,:,i,k)+vt3_oa,1,t2a(b,c,:,j),1)
+
+                   call dgemv('t',noanua2,noa,HALF,vA_oovv_r1,noanua2,t3a(a,:,:,k,j,:),1,ZERO,temp1,1)
+                   call dgemv('t',nuanobnub,noa,ONE,vB_oovv_r1,nuanobnub,t3b(a,:,:,k,j,:),1,ZERO,temp2,1)
+                   vt3_oa = temp1 + temp2
+                   m1 = m1 + ddot(noa,H2A_vooo(a,:,k,j)+vt3_oa,1,t2a(b,c,:,i),1)
+
+                   call dgemv('t',noanua2,noa,HALF,vA_oovv_r1,noanua2,t3a(b,:,:,i,j,:),1,ZERO,temp1,1)
+                   call dgemv('t',nuanobnub,noa,ONE,vB_oovv_r1,nuanobnub,t3b(b,:,:,i,j,:),1,ZERO,temp2,1)
+                   vt3_oa = temp1 + temp2
+                   m1 = m1 + ddot(noa,H2A_vooo(b,:,i,j)+vt3_oa,1,t2a(a,c,:,k),1)
+
+                   call dgemv('t',noanua2,noa,HALF,vA_oovv_r1,noanua2,t3a(b,:,:,i,k,:),1,ZERO,temp1,1)
+                   call dgemv('t',nuanobnub,noa,ONE,vB_oovv_r1,nuanobnub,t3b(b,:,:,i,k,:),1,ZERO,temp2,1)
+                   vt3_oa = temp1 + temp2
+                   m1 = m1 - ddot(noa,H2A_vooo(b,:,i,k)+vt3_oa,1,t2a(a,c,:,j),1)
+
+                   call dgemv('t',noanua2,noa,HALF,vA_oovv_r1,noanua2,t3a(b,:,:,k,j,:),1,ZERO,temp1,1)
+                   call dgemv('t',nuanobnub,noa,ONE,vB_oovv_r1,nuanobnub,t3b(b,:,:,k,j,:),1,ZERO,temp2,1)
+                   vt3_oa = temp1 + temp2
+                   m1 = m1 - ddot(noa,H2A_vooo(b,:,k,j)+vt3_oa,1,t2a(a,c,:,i),1)
+
+                   call dgemv('t',noanua2,noa,HALF,vA_oovv_r1,noanua2,t3a(c,:,:,i,j,:),1,ZERO,temp1,1)
+                   call dgemv('t',nuanobnub,noa,ONE,vB_oovv_r1,nuanobnub,t3b(c,:,:,i,j,:),1,ZERO,temp2,1)
+                   vt3_oa = temp1 + temp2
+                   m1 = m1 + ddot(noa,H2A_vooo(c,:,i,j)+vt3_oa,1,t2a(b,a,:,k),1)
+
+                   call dgemv('t',noanua2,noa,HALF,vA_oovv_r1,noanua2,t3a(c,:,:,i,k,:),1,ZERO,temp1,1)
+                   call dgemv('t',nuanobnub,noa,ONE,vB_oovv_r1,nuanobnub,t3b(c,:,:,i,k,:),1,ZERO,temp2,1)
+                   vt3_oa = temp1 + temp2
+                   m1 = m1 - ddot(noa,H2A_vooo(c,:,i,k)+vt3_oa,1,t2a(b,a,:,j),1)
+
+                   call dgemv('t',noanua2,noa,HALF,vA_oovv_r1,noanua2,t3a(c,:,:,k,j,:),1,ZERO,temp1,1)
+                   call dgemv('t',nuanobnub,noa,ONE,vB_oovv_r1,nuanobnub,t3b(c,:,:,k,j,:),1,ZERO,temp2,1)
+                   vt3_oa = temp1 + temp2
+                   m1 = m1 - ddot(noa,H2A_vooo(c,:,k,j)+vt3_oa,1,t2a(b,a,:,i),1)
+
+                   !refval = ZERO
+                   !do m = 1,noa
+                   !   do e = 1,nua
+                   !      do f = e+1,nua
+                   !         do n = 1,noa
+                   !            refval = refval&
+                   !            -vA_oovv(m,n,e,f)*t3a(a,e,f,i,j,n)*t2a(b,c,m,k)&
+                   !            +vA_oovv(m,n,e,f)*t3a(a,e,f,i,k,n)*t2a(b,c,m,j)&
+                   !            +vA_oovv(m,n,e,f)*t3a(a,e,f,k,j,n)*t2a(b,c,m,i)&
+                   !            +vA_oovv(m,n,e,f)*t3a(b,e,f,i,j,n)*t2a(a,c,m,k)&
+                   !            -vA_oovv(m,n,e,f)*t3a(b,e,f,i,k,n)*t2a(a,c,m,j)&
+                   !            -vA_oovv(m,n,e,f)*t3a(b,e,f,k,j,n)*t2a(a,c,m,i)&
+                   !            +vA_oovv(m,n,e,f)*t3a(c,e,f,i,j,n)*t2a(b,a,m,k)&
+                   !            -vA_oovv(m,n,e,f)*t3a(c,e,f,i,k,n)*t2a(b,a,m,j)&
+                   !            -vA_oovv(m,n,e,f)*t3a(c,e,f,k,j,n)*t2a(b,a,m,i)
+                   !         end do
+                   !      end do
+                   !   end do
+                   !   do e = 1,nua
+                   !      do f = 1,nub
+                   !         do n = 1,nob
+                   !            refval = refval&
+                   !            -vB_oovv(m,n,e,f)*t3b(a,e,f,i,j,n)*t2a(b,c,m,k)&
+                   !            +vB_oovv(m,n,e,f)*t3b(a,e,f,i,k,n)*t2a(b,c,m,j)&
+                   !            +vB_oovv(m,n,e,f)*t3b(a,e,f,k,j,n)*t2a(b,c,m,i)&
+                   !            +vB_oovv(m,n,e,f)*t3b(b,e,f,i,j,n)*t2a(a,c,m,k)&
+                   !            -vB_oovv(m,n,e,f)*t3b(b,e,f,i,k,n)*t2a(a,c,m,j)&
+                   !            -vB_oovv(m,n,e,f)*t3b(b,e,f,k,j,n)*t2a(a,c,m,i)&
+                   !            +vB_oovv(m,n,e,f)*t3b(c,e,f,i,j,n)*t2a(b,a,m,k)&
+                   !            -vB_oovv(m,n,e,f)*t3b(c,e,f,i,k,n)*t2a(b,a,m,j)&
+                   !            -vB_oovv(m,n,e,f)*t3b(c,e,f,k,j,n)*t2a(b,a,m,i)
+                   !         end do
+                   !      end do
+                   !   end do
+                   !   refval = refval&
+                   !           -H2A_vooo(a,m,i,j)*t2a(b,c,m,k)&
+                   !           +H2A_vooo(a,m,i,k)*t2a(b,c,m,j)&
+                   !           +H2A_vooo(a,m,k,j)*t2a(b,c,m,i)&
+                   !           +H2A_vooo(b,m,i,j)*t2a(a,c,m,k)&
+                   !           -H2A_vooo(b,m,i,k)*t2a(a,c,m,j)&
+                   !           -H2A_vooo(b,m,k,j)*t2a(a,c,m,i)&
+                   !           +H2A_vooo(c,m,i,j)*t2a(b,a,m,k)&
+                   !           -H2A_vooo(c,m,i,k)*t2a(b,a,m,j)&
+                   !           -H2A_vooo(c,m,k,j)*t2a(b,a,m,i)
+                   !end do
+                   !error(1) = error(1) + (m1-refval)
                 
-                   call dgemv(noanua2,noa,vA_oovv_r1,t3a(c,:,:,i,j,:),temp1)
-                   call dgemv(nuanobnub,noa,vB_oovv_r1,t3b(c,:,:,i,j,:),temp2)
-                   vt3_oa = HALF*temp1 + temp2
-                   m1 = m1 + ddot(noa,H2A_vooo(c,:,i,j)+vt3_oa,t2a(b,a,:,k))
+                   call dgemv('t',noa2nua,nua,HALF,vA_oovv_r2,noa2nua,t3a(a,b,:,i,:,:),1,ZERO,temp3,1)
+                   call dgemv('t',noanobnub,nua,ONE,vB_oovv_r2,noanobnub,t3b(a,b,:,i,:,:),1,ZERO,temp4,1)
+                   vt3_ua = temp3 + temp4
+                   m2 = ddot(nua,I2A_vvov(a,b,i,:)-vt3_ua,1,t2a(:,c,j,k),1)
+
+                   call dgemv('t',noa2nua,nua,HALF,vA_oovv_r2,noa2nua,t3a(a,b,:,j,:,:),1,ZERO,temp3,1)
+                   call dgemv('t',noanobnub,nua,ONE,vB_oovv_r2,noanobnub,t3b(a,b,:,j,:,:),1,ZERO,temp4,1)
+                   vt3_ua = temp3 + temp4
+                   m2 = m2 - ddot(nua,I2A_vvov(a,b,j,:)-vt3_ua,1,t2a(:,c,i,k),1)
+
+                   call dgemv('t',noa2nua,nua,HALF,vA_oovv_r2,noa2nua,t3a(a,b,:,k,:,:),1,ZERO,temp3,1)
+                   call dgemv('t',noanobnub,nua,ONE,vB_oovv_r2,noanobnub,t3b(a,b,:,k,:,:),1,ZERO,temp4,1)
+                   vt3_ua = temp3 + temp4
+                   m2 = m2 - ddot(nua,I2A_vvov(a,b,k,:)-vt3_ua,1,t2a(:,c,j,i),1)
+
+                   call dgemv('t',noa2nua,nua,HALF,vA_oovv_r2,noa2nua,t3a(c,b,:,i,:,:),1,ZERO,temp3,1)
+                   call dgemv('t',noanobnub,nua,ONE,vB_oovv_r2,noanobnub,t3b(c,b,:,i,:,:),1,ZERO,temp4,1)
+                   vt3_ua = temp3 + temp4
+                   m2 = m2 - ddot(nua,I2A_vvov(c,b,i,:)-vt3_ua,1,t2a(:,a,j,k),1)
                     
-                   call dgemv(noanua2,noa,vA_oovv_r1,t3a(b,:,:,i,j,:),temp1)
-                   call dgemv(nuanobnub,noa,vB_oovv_r1,t3b(b,:,:,i,j,:),temp2)
-                   vt3_oa = HALF*temp1 + temp2
-                   m1 = m1 + ddot(noa,H2A_vooo(b,:,i,j)+vt3_oa,t2a(a,c,:,k))
+                   call dgemv('t',noa2nua,nua,HALF,vA_oovv_r2,noa2nua,t3a(c,b,:,j,:,:),1,ZERO,temp3,1)
+                   call dgemv('t',noanobnub,nua,ONE,vB_oovv_r2,noanobnub,t3b(c,b,:,j,:,:),1,ZERO,temp4,1)
+                   vt3_ua = temp3 + temp4
+                   m2 = m2 + ddot(nua,I2A_vvov(c,b,j,:)-vt3_ua,1,t2a(:,a,i,k),1)
 
-                   call dgemv(noanua2,noa,vA_oovv_r1,t3a(a,:,:,k,j,:),temp1)
-                   call dgemv(nuanobnub,noa,vB_oovv_r1,t3b(a,:,:,k,j,:),temp2)
-                   vt3_oa = HALF*temp1 + temp2
-                   m1 = m1 + ddot(noa,H2A_vooo(a,:,k,j)+vt3_oa,t2a(b,c,:,i))
+                   call dgemv('t',noa2nua,nua,HALF,vA_oovv_r2,noa2nua,t3a(c,b,:,k,:,:),1,ZERO,temp3,1)
+                   call dgemv('t',noanobnub,nua,ONE,vB_oovv_r2,noanobnub,t3b(c,b,:,k,:,:),1,ZERO,temp4,1)
+                   vt3_ua = temp3 + temp4
+                   m2 = m2 + ddot(nua,I2A_vvov(c,b,k,:)-vt3_ua,1,t2a(:,a,j,i),1)
 
-                   call dgemv(noanua2,noa,vA_oovv_r1,t3a(c,:,:,k,j,:),temp1)
-                   call dgemv(nuanobnub,noa,vB_oovv_r1,t3b(c,:,:,k,j,:),temp2)
-                   vt3_oa = HALF*temp1 + temp2
-                   m1 = m1 - ddot(noa,H2A_vooo(c,:,k,j)+vt3_oa,t2a(b,a,:,i))
+                   call dgemv('t',noa2nua,nua,HALF,vA_oovv_r2,noa2nua,t3a(a,c,:,i,:,:),1,ZERO,temp3,1)
+                   call dgemv('t',noanobnub,nua,ONE,vB_oovv_r2,noanobnub,t3b(a,c,:,i,:,:),1,ZERO,temp4,1)
+                   vt3_ua = temp3 + temp4
+                   m2 = m2 - ddot(nua,I2A_vvov(a,c,i,:)-vt3_ua,1,t2a(:,b,j,k),1)
 
-                   call dgemv(noanua2,noa,vA_oovv_r1,t3a(b,:,:,k,j,:),temp1)
-                   call dgemv(nuanobnub,noa,vB_oovv_r1,t3b(b,:,:,k,j,:),temp2)
-                   vt3_oa = HALF*temp1 + temp2
-                   m1 = m1 - ddot(noa,H2A_vooo(b,:,k,j)+vt3_oa,t2a(a,c,:,i))
+                   call dgemv('t',noa2nua,nua,HALF,vA_oovv_r2,noa2nua,t3a(a,c,:,j,:,:),1,ZERO,temp3,1)
+                   call dgemv('t',noanobnub,nua,ONE,vB_oovv_r2,noanobnub,t3b(a,c,:,j,:,:),1,ZERO,temp4,1)
+                   vt3_ua = temp3 + temp4
+                   m2 = m2 + ddot(nua,I2A_vvov(a,c,j,:)-vt3_ua,1,t2a(:,b,i,k),1)
 
-                   call dgemv(noanua2,noa,vA_oovv_r1,t3a(a,:,:,i,k,:),temp1)
-                   call dgemv(nuanobnub,noa,vB_oovv_r1,t3b(a,:,:,i,k,:),temp2)
-                   vt3_oa = HALF*temp1 + temp2
-                   m1 = m1 + ddot(noa,H2A_vooo(a,:,i,k)+vt3_oa,t2a(b,c,:,j))
+                   call dgemv('t',noa2nua,nua,HALF,vA_oovv_r2,noa2nua,t3a(a,c,:,k,:,:),1,ZERO,temp3,1)
+                   call dgemv('t',noanobnub,nua,ONE,vB_oovv_r2,noanobnub,t3b(a,c,:,k,:,:),1,ZERO,temp4,1)
+                   vt3_ua = temp3 + temp4
+                   m2 = m2 + ddot(nua,I2A_vvov(a,c,k,:)-vt3_ua,1,t2a(:,b,j,i),1)
 
-                   call dgemv(noanua2,noa,vA_oovv_r1,t3a(c,:,:,i,k,:),temp1)
-                   call dgemv(nuanobnub,noa,vB_oovv_r1,t3b(c,:,:,i,k,:),temp2)
-                   vt3_oa = HALF*temp1 + temp2
-                   m1 = m1 - ddot(noa,H2A_vooo(c,:,i,k)+vt3_oa,t2a(b,a,:,j))
-
-                   call dgemv(noanua2,noa,vA_oovv_r1,t3a(b,:,:,i,k,:),temp1)
-                   call dgemv(nuanobnub,noa,vB_oovv_r1,t3b(b,:,:,i,k,:),temp2)
-                   vt3_oa = HALF*temp1 + temp2
-                   m1 = m1 - ddot(noa,H2A_vooo(b,:,i,k)+vt3_oa,t2a(a,c,:,j))
-
-                   call dgemv(noa2nua,nua,vA_oovv_r2,t3a(a,b,:,i,:,:),temp3)
-                   call dgemv(noanobnub,nua,vB_oovv_r2,t3b(a,b,:,i,:,:),temp4)
-                   vt3_ua = HALF*temp3 + temp4
-                   m2 = ddot(nua,I2A_vvov(a,b,i,:)-vt3_ua,t2a(:,c,j,k))
-
-                   call dgemv(noa2nua,nua,vA_oovv_r2,t3a(a,b,:,j,:,:),temp3)
-                   call dgemv(noanobnub,nua,vB_oovv_r2,t3b(a,b,:,j,:,:),temp4)
-                   vt3_ua = HALF*temp3 + temp4
-                   m2 = m2 - ddot(nua,I2A_vvov(a,b,j,:)-vt3_ua,t2a(:,c,i,k))
-
-                   call dgemv(noa2nua,nua,vA_oovv_r2,t3a(a,b,:,k,:,:),temp3)
-                   call dgemv(noanobnub,nua,vB_oovv_r2,t3b(a,b,:,k,:,:),temp4)
-                   vt3_ua = HALF*temp3 + temp4
-                   m2 = m2 - ddot(nua,I2A_vvov(a,b,k,:)-vt3_ua,t2a(:,c,j,i))
-
-                   call dgemv(noa2nua,nua,vA_oovv_r2,t3a(c,b,:,i,:,:),temp3)
-                   call dgemv(noanobnub,nua,vB_oovv_r2,t3b(c,b,:,i,:,:),temp4)
-                   vt3_ua = HALF*temp3 + temp4
-                   m2 = m2 - ddot(nua,I2A_vvov(c,b,i,:)-vt3_ua,t2a(:,a,j,k))
+                   !refval = ZERO
+                   !do e = 1,nua
+                   !   do m = 1,noa
+                   !      do n = m+1,noa
+                   !         do f = 1,nua
+                   !            refval = refval&
+                   !            -vA_oovv(m,n,e,f)*t3a(a,b,f,i,m,n)*t2a(e,c,j,k)&
+                   !            +vA_oovv(m,n,e,f)*t3a(a,c,f,i,m,n)*t2a(e,b,j,k)&
+                   !            +vA_oovv(m,n,e,f)*t3a(c,b,f,i,m,n)*t2a(e,a,j,k)&
+                   !            +vA_oovv(m,n,e,f)*t3a(a,b,f,j,m,n)*t2a(e,c,i,k)&
+                   !            -vA_oovv(m,n,e,f)*t3a(a,c,f,j,m,n)*t2a(e,b,i,k)&
+                   !            -vA_oovv(m,n,e,f)*t3a(c,b,f,j,m,n)*t2a(e,a,i,k)&
+                   !            +vA_oovv(m,n,e,f)*t3a(a,b,f,k,m,n)*t2a(e,c,j,i)&
+                   !            -vA_oovv(m,n,e,f)*t3a(a,c,f,k,m,n)*t2a(e,b,j,i)&
+                   !            -vA_oovv(m,n,e,f)*t3a(c,b,f,k,m,n)*t2a(e,a,j,i)
+                   !         end do
+                   !      end do
+                   !   end do
+                   !   do m = 1,noa
+                   !      do n = 1,nob
+                   !         do f = 1,nub
+                   !            refval = refval&
+                   !            -vB_oovv(m,n,e,f)*t3b(a,b,f,i,m,n)*t2a(e,c,j,k)&
+                   !            +vB_oovv(m,n,e,f)*t3b(a,c,f,i,m,n)*t2a(e,b,j,k)&
+                   !            +vB_oovv(m,n,e,f)*t3b(c,b,f,i,m,n)*t2a(e,a,j,k)&
+                   !            +vB_oovv(m,n,e,f)*t3b(a,b,f,j,m,n)*t2a(e,c,i,k)&
+                   !            -vB_oovv(m,n,e,f)*t3b(a,c,f,j,m,n)*t2a(e,b,i,k)&
+                   !            -vB_oovv(m,n,e,f)*t3b(c,b,f,j,m,n)*t2a(e,a,i,k)&
+                   !            +vB_oovv(m,n,e,f)*t3b(a,b,f,k,m,n)*t2a(e,c,j,i)&
+                   !            -vB_oovv(m,n,e,f)*t3b(a,c,f,k,m,n)*t2a(e,b,j,i)&
+                   !            -vB_oovv(m,n,e,f)*t3b(c,b,f,k,m,n)*t2a(e,a,j,i)
+                   !         end do
+                   !      end do
+                   !   end do
+                   !   refval = refval&
+                   !           +I2A_vvov(a,b,i,e)*t2a(e,c,j,k)&
+                   !           -I2A_vvov(a,c,i,e)*t2a(e,b,j,k)&
+                   !           -I2A_vvov(c,b,i,e)*t2a(e,a,j,k)&
+                   !           -I2A_vvov(a,b,j,e)*t2a(e,c,i,k)&
+                   !           +I2A_vvov(a,c,j,e)*t2a(e,b,i,k)&
+                   !           +I2A_vvov(c,b,j,e)*t2a(e,a,i,k)&
+                   !           -I2A_vvov(a,b,k,e)*t2a(e,c,j,i)&
+                   !           +I2A_vvov(a,c,k,e)*t2a(e,b,j,i)&
+                   !           +I2A_vvov(c,b,k,e)*t2a(e,a,j,i)
+                   !end do
+                   !error(2) = error(2) + (m2-refval)
                     
-                   call dgemv(noa2nua,nua,vA_oovv_r2,t3a(c,b,:,j,:,:),temp3)
-                   call dgemv(noanobnub,nua,vB_oovv_r2,t3b(c,b,:,j,:,:),temp4)
-                   vt3_ua = HALF*temp3 + temp4
-                   m2 = m2 + ddot(nua,I2A_vvov(c,b,j,:)-vt3_ua,t2a(:,a,i,k))
+                   d1 = MINUSONE*ddot(noa,H1A_oo(:,k),1,t3a(a,b,c,i,j,:),1)
+                   d1 = d1 + ddot(noa,H1A_oo(:,j),1,t3a(a,b,c,i,k,:),1)
+                   d1 = d1 + ddot(noa,H1A_oo(:,i),1,t3a(a,b,c,k,j,:),1)
+                   !refval = ZERO
+                   !do m = 1,noa
+                   !   refval = refval - H1A_oo(m,k)*t3a(a,b,c,i,j,m)&
+                   !                   + H1A_oo(m,j)*t3a(a,b,c,i,k,m)&
+                   !                   + H1A_oo(m,i)*t3a(a,b,c,k,j,m)
+                   !end do
+                   !error(3) = error(3) + (d1-refval)
 
-                   call dgemv(noa2nua,nua,vA_oovv_r2,t3a(c,b,:,k,:,:),temp3)
-                   call dgemv(noanobnub,nua,vB_oovv_r2,t3b(c,b,:,k,:,:),temp4)
-                   vt3_ua = HALF*temp3 + temp4
-                   m2 = m2 + ddot(nua,I2A_vvov(c,b,k,:)-vt3_ua,t2a(:,a,j,i))
+                   d2 = ddot(nua,H1A_vv(c,:),1,t3a(a,b,:,i,j,k),1)
+                   d2 = d2 - ddot(nua,H1A_vv(b,:),1,t3a(a,c,:,i,j,k),1)
+                   d2 = d2 - ddot(nua,H1A_vv(a,:),1,t3a(c,b,:,i,j,k),1)
+                   !refval = ZERO
+                   !do e = 1,nua
+                   !   refval = refval + H1A_vv(c,e)*t3a(a,b,e,i,j,k)&
+                   !                   - H1A_vv(b,e)*t3a(a,c,e,i,j,k)&
+                   !                   - H1A_vv(a,e)*t3a(c,b,e,i,j,k)
+                   !end do
+                   !error(4) = error(4) + (d2-refval)
 
-                   call dgemv(noa2nua,nua,vA_oovv_r2,t3a(a,c,:,i,:,:),temp3)
-                   call dgemv(noanobnub,nua,vB_oovv_r2,t3b(a,c,:,i,:,:),temp4)
-                   vt3_ua = HALF*temp3 + temp4
-                   m2 = m2 - ddot(nua,I2A_vvov(a,c,i,:)-vt3_ua,t2a(:,b,j,k))
-
-                   call dgemv(noa2nua,nua,vA_oovv_r2,t3a(a,c,:,j,:,:),temp3)
-                   call dgemv(noanobnub,nua,vB_oovv_r2,t3b(a,c,:,j,:,:),temp4)
-                   vt3_ua = HALF*temp3 + temp4
-                   m2 = m2 + ddot(nua,I2A_vvov(a,c,j,:)-vt3_ua,t2a(:,b,i,k))
-
-                   call dgemv(noa2nua,nua,vA_oovv_r2,t3a(a,c,:,k,:,:),temp3)
-                   call dgemv(noanobnub,nua,vB_oovv_r2,t3b(a,c,:,k,:,:),temp4)
-                   vt3_ua = HALF*temp3 + temp4
-                   m2 = m2 + ddot(nua,I2A_vvov(a,c,k,:)-vt3_ua,t2a(:,b,j,i))
-                    
-                   d1 = MINUSONE*ddot(noa,H1A_oo(:,k),t3a(a,b,c,i,j,:))
-                   d1 = d1 + ddot(noa,H1A_oo(:,j),t3a(a,b,c,i,k,:))
-                   d1 = d1 + ddot(noa,H1A_oo(:,i),t3a(a,b,c,k,j,:))
-
-                   d2 = ddot(nua,H1A_vv(c,:),t3a(a,b,:,i,j,k))
-                   d2 = d2 - ddot(nua,H1A_vv(b,:),t3a(a,c,:,i,j,k))
-                   d2 = d2 - ddot(nua,H1A_vv(a,:),t3a(c,b,:,i,j,k))
-
-                   d3 = ddot(noa2,H2A_oooo(:,:,i,j),t3a(a,b,c,:,:,k))
-                   d3 = d3 - ddot(noa2,H2A_oooo(:,:,k,j),t3a(a,b,c,:,:,i))
-                   d3 = d3 - ddot(noa2,H2A_oooo(:,:,i,k),t3a(a,b,c,:,:,j))
+                   d3 = ddot(noa2,H2A_oooo(:,:,i,j),1,t3a(a,b,c,:,:,k),1)
+                   d3 = d3 - ddot(noa2,H2A_oooo(:,:,k,j),1,t3a(a,b,c,:,:,i),1)
+                   d3 = d3 - ddot(noa2,H2A_oooo(:,:,i,k),1,t3a(a,b,c,:,:,j),1)
                    d3 = HALF*d3
+                   !refval = ZERO
+                   !do m = 1,noa
+                   !   do n = m+1,noa
+                   !      refval = refval + H2A_oooo(m,n,i,j)*t3a(a,b,c,m,n,k)&
+                   !                      - H2A_oooo(m,n,i,k)*t3a(a,b,c,m,n,j)&
+                   !                      - H2A_oooo(m,n,k,j)*t3a(a,b,c,m,n,i)
+                   !   end do
+                   !end do
+                   !error(5) = error(5) + (d3-refval)
         
-                   d4 = ddot(nua2,H2A_vvvv(a,b,:,:),t3a(:,:,c,i,j,k))
-                   d4 = d4 - ddot(nua2,H2A_vvvv(c,b,:,:),t3a(:,:,a,i,j,k))
-                   d4 = d4 - ddot(nua2,H2A_vvvv(a,c,:,:),t3a(:,:,b,i,j,k))
+                   d4 = ddot(nua2,H2A_vvvv(a,b,:,:),1,t3a(:,:,c,i,j,k),1)
+                   d4 = d4 - ddot(nua2,H2A_vvvv(c,b,:,:),1,t3a(:,:,a,i,j,k),1)
+                   d4 = d4 - ddot(nua2,H2A_vvvv(a,c,:,:),1,t3a(:,:,b,i,j,k),1)
                    d4 = HALF*d4
+                   !refval = ZERO
+                   !do e = 1,nua
+                   !   do f = e+1,nua
+                   !      refval = refval + H2A_vvvv(a,b,e,f)*t3a(e,f,c,i,j,k)&
+                   !                      - H2A_vvvv(a,c,e,f)*t3a(e,f,b,i,j,k)&
+                   !                      - H2A_vvvv(c,b,e,f)*t3a(e,f,a,i,j,k)
+                   !   end do
+                   !end do
+                   !error(6) = error(6) + (d4-refval)
 
-                   d5 = ddot(noaua,h2a_voov_r(c,:,k,:),t3a(a,b,:,i,j,:))
-                   d5 = d5 - ddot(noaua,h2a_voov_r(c,:,i,:),t3a(a,b,:,k,j,:))
-                   d5 = d5 - ddot(noaua,h2a_voov_r(c,:,j,:),t3a(a,b,:,i,k,:))
-                   d5 = d5 - ddot(noaua,h2a_voov_r(a,:,k,:),t3a(c,b,:,i,j,:))
-                   d5 = d5 + ddot(noaua,h2a_voov_r(a,:,i,:),t3a(c,b,:,k,j,:))
-                   d5 = d5 + ddot(noaua,h2a_voov_r(a,:,j,:),t3a(c,b,:,i,k,:))
-                   d5 = d5 - ddot(noaua,h2a_voov_r(b,:,k,:),t3a(a,c,:,i,j,:))
-                   d5 = d5 + ddot(noaua,h2a_voov_r(b,:,i,:),t3a(a,c,:,k,j,:))
-                   d5 = d5 + ddot(noaua,h2a_voov_r(b,:,j,:),t3a(a,c,:,i,k,:))
+                   d5 = ddot(noaua,h2a_voov_r(c,:,k,:),1,t3a(a,b,:,i,j,:),1)
+                   d5 = d5 - ddot(noaua,h2a_voov_r(c,:,i,:),1,t3a(a,b,:,k,j,:),1)
+                   d5 = d5 - ddot(noaua,h2a_voov_r(c,:,j,:),1,t3a(a,b,:,i,k,:),1)
+                   d5 = d5 - ddot(noaua,h2a_voov_r(a,:,k,:),1,t3a(c,b,:,i,j,:),1)
+                   d5 = d5 + ddot(noaua,h2a_voov_r(a,:,i,:),1,t3a(c,b,:,k,j,:),1)
+                   d5 = d5 + ddot(noaua,h2a_voov_r(a,:,j,:),1,t3a(c,b,:,i,k,:),1)
+                   d5 = d5 - ddot(noaua,h2a_voov_r(b,:,k,:),1,t3a(a,c,:,i,j,:),1)
+                   d5 = d5 + ddot(noaua,h2a_voov_r(b,:,i,:),1,t3a(a,c,:,k,j,:),1)
+                   d5 = d5 + ddot(noaua,h2a_voov_r(b,:,j,:),1,t3a(a,c,:,i,k,:),1)
+                   !refval = ZERO
+                   !do e = 1,nua
+                   !   do m = 1,noa
+                   !      refval = refval + H2A_voov(c,m,k,e)*t3a(a,b,e,i,j,m)&
+                   !                      - H2A_voov(c,m,j,e)*t3a(a,b,e,i,k,m)&
+                   !                      - H2A_voov(c,m,i,e)*t3a(a,b,e,k,j,m)&
+                   !                      - H2A_voov(b,m,k,e)*t3a(a,c,e,i,j,m)&
+                   !                      + H2A_voov(b,m,j,e)*t3a(a,c,e,i,k,m)&
+                   !                      + H2A_voov(b,m,i,e)*t3a(a,c,e,k,j,m)&
+                   !                      - H2A_voov(a,m,k,e)*t3a(c,b,e,i,j,m)&
+                   !                      + H2A_voov(a,m,j,e)*t3a(c,b,e,i,k,m)&
+                   !                      + H2A_voov(a,m,i,e)*t3a(c,b,e,k,j,m)
+                   !   end do
+                   !end do
+                   !error(7) = error(7) + (d5-refval)
 
-                   d6 = ddot(nobub,h2b_voov_r(c,:,k,:),t3b(a,b,:,i,j,:))
-                   d6 = d6 - ddot(nobub,h2b_voov_r(c,:,i,:),t3b(a,b,:,k,j,:))
-                   d6 = d6 - ddot(nobub,h2b_voov_r(c,:,j,:),t3b(a,b,:,i,k,:))
-                   d6 = d6 - ddot(nobub,h2b_voov_r(a,:,k,:),t3b(c,b,:,i,j,:))
-                   d6 = d6 + ddot(nobub,h2b_voov_r(a,:,i,:),t3b(c,b,:,k,j,:))
-                   d6 = d6 + ddot(nobub,h2b_voov_r(a,:,j,:),t3b(c,b,:,i,k,:))
-                   d6 = d6 - ddot(nobub,h2b_voov_r(b,:,k,:),t3b(a,c,:,i,j,:))
-                   d6 = d6 + ddot(nobub,h2b_voov_r(b,:,i,:),t3b(a,c,:,k,j,:))
-                   d6 = d6 + ddot(nobub,h2b_voov_r(b,:,j,:),t3b(a,c,:,i,k,:))
+                   d6 = ddot(nobub,h2b_voov_r(c,:,k,:),1,t3b(a,b,:,i,j,:),1)
+                   d6 = d6 - ddot(nobub,h2b_voov_r(c,:,i,:),1,t3b(a,b,:,k,j,:),1)
+                   d6 = d6 - ddot(nobub,h2b_voov_r(c,:,j,:),1,t3b(a,b,:,i,k,:),1)
+                   d6 = d6 - ddot(nobub,h2b_voov_r(a,:,k,:),1,t3b(c,b,:,i,j,:),1)
+                   d6 = d6 + ddot(nobub,h2b_voov_r(a,:,i,:),1,t3b(c,b,:,k,j,:),1)
+                   d6 = d6 + ddot(nobub,h2b_voov_r(a,:,j,:),1,t3b(c,b,:,i,k,:),1)
+                   d6 = d6 - ddot(nobub,h2b_voov_r(b,:,k,:),1,t3b(a,c,:,i,j,:),1)
+                   d6 = d6 + ddot(nobub,h2b_voov_r(b,:,i,:),1,t3b(a,c,:,k,j,:),1)
+                   d6 = d6 + ddot(nobub,h2b_voov_r(b,:,j,:),1,t3b(a,c,:,i,k,:),1)
+                   !refval = ZERO
+                   !do e = 1,nub
+                   !   do m = 1,nob
+                   !      refval = refval + H2B_voov(c,m,k,e)*t3b(a,b,e,i,j,m)&
+                   !                      - H2B_voov(c,m,j,e)*t3b(a,b,e,i,k,m)&
+                   !                      - H2B_voov(c,m,i,e)*t3b(a,b,e,k,j,m)&
+                   !                      - H2B_voov(b,m,k,e)*t3b(a,c,e,i,j,m)&
+                   !                      + H2B_voov(b,m,j,e)*t3b(a,c,e,i,k,m)&
+                   !                      + H2B_voov(b,m,i,e)*t3b(a,c,e,k,j,m)&
+                   !                      - H2B_voov(a,m,k,e)*t3b(c,b,e,i,j,m)&
+                   !                      + H2B_voov(a,m,j,e)*t3b(c,b,e,i,k,m)&
+                   !                      + H2B_voov(a,m,i,e)*t3b(c,b,e,k,j,m)
+                   !   end do
+                   !end do
+                   !error(8) = error(8) + (d6-refval)
                 
                    residual = m1 + m2 + d1 + d2 + d3 + d4 + d5 + d6
                    denom = fA_oo(i,i)+fA_oo(j,j)+fA_oo(k,k)&
@@ -262,12 +431,15 @@ module ccp_loops
                    t3a_new(C,A,B,K,J,I) = mval
 
                 end do
+                !$OMP END DO
+                !$OMP END PARALLEL
 
                 !do i = 1,8
                 !   print*,'Error in term',i,'=',error(i)
                 !end do
 
             end subroutine update_t3a
+
 
             subroutine update_t3b(t2a,t2b,&
                          t3a,t3b,t3c,&
@@ -347,10 +519,15 @@ module ccp_loops
 
 
                 real(kind=8), parameter :: MINUSONE=-1.0d+0, HALF=0.5d+0, ZERO=0.0d+0,&
-                                           MINUSHALF=-0.5d+0
+                                           MINUSHALF=-0.5d+0, ONE=1.0d+0
+
+                real(kind=8), external :: ddot
 
                 !integer :: m, n, e, f
                 !real(kind=8) :: error(20), refval
+
+                call mkl_set_num_threads_local(1)
+                call omp_set_num_threads(16)
 
                 Noo_aa = noa*noa
                 Noo_ab = noa*nob
@@ -388,6 +565,10 @@ module ccp_loops
                 !   error(i) = ZERO
                 !end do
 
+                t3b_new = 0.0d0
+
+                !$OMP PARALLEL SHARED(t3b_new)
+                !$OMP DO
                 do ct = 1 , num_triples
             
                    ! Shift indices up by since the triples list is coming from
@@ -400,16 +581,15 @@ module ccp_loops
                    k = triples_list(ct,6)+1
                     
                    ! Calculate devectorized residual for triple |ijk~abc~>
-
-                   call dgemv(Noov_aaa,nua,vA_oovv_r1,t3b(b,:,c,:,:,k),temp1a)
-                   call dgemv(Noov_abb,nua,vB_oovv_r1,t3c(b,:,c,:,:,k),temp1b)
-                   vt3_ua = HALF*temp1a + temp1b
-                   m1 = ddot(nua,H2B_vvvo(b,c,:,k)-vt3_ua,t2a(a,:,i,j))
+                   call dgemv('t',Noov_aaa,nua,HALF,vA_oovv_r1,Noov_aaa,t3b(b,:,c,:,:,k),1,ZERO,temp1a,1)
+                   call dgemv('t',Noov_abb,nua,ONE,vB_oovv_r1,Noov_abb,t3c(b,:,c,:,:,k),1,ZERO,temp1b,1)
+                   vt3_ua = temp1a + temp1b
+                   m1 = ddot(nua,H2B_vvvo(b,c,:,k)-vt3_ua,1,t2a(a,:,i,j),1)
                     
-                   call dgemv(Noov_aaa,nua,vA_oovv_r1,t3b(a,:,c,:,:,k),temp1a)
-                   call dgemv(Noov_abb,nua,vB_oovv_r1,t3c(a,:,c,:,:,k),temp1b)
-                   vt3_ua = HALF*temp1a + temp1b
-                   m1 = m1 - ddot(nua,H2B_vvvo(a,c,:,k)-vt3_ua,t2a(b,:,i,j))
+                   call dgemv('t',Noov_aaa,nua,HALF,vA_oovv_r1,Noov_aaa,t3b(a,:,c,:,:,k),1,ZERO,temp1a,1)
+                   call dgemv('t',Noov_abb,nua,ONE,vB_oovv_r1,Noov_abb,t3c(a,:,c,:,:,k),1,ZERO,temp1b,1)
+                   vt3_ua = temp1a + temp1b
+                   m1 = m1 - ddot(nua,H2B_vvvo(a,c,:,k)-vt3_ua,1,t2a(b,:,i,j),1)
 
                    !refval = ZERO
                    !do e = 1,nua                    
@@ -436,15 +616,15 @@ module ccp_loops
                    !end do
                    !error(1) = error(1) + (m1 - refval)
 
-                  call dgemv(Novv_aaa,noa,vA_oovv_r2,t3b(:,:,c,i,:,k),temp2a)
-                  call dgemv(Novv_bba,noa,vB_oovv_r2,t3c(:,:,c,i,:,k),temp2b)
-                  vt3_oa = HALF*temp2a + temp2b
-                  m2 = MINUSONE*ddot(noa,I2B_ovoo(:,c,i,k)+vt3_oa,t2a(a,b,:,j))
+                  call dgemv('t',Novv_aaa,noa,HALF,vA_oovv_r2,Novv_aaa,t3b(:,:,c,i,:,k),1,ZERO,temp2a,1)
+                  call dgemv('t',Novv_bba,noa,ONE,vB_oovv_r2,Novv_bba,t3c(:,:,c,i,:,k),1,ZERO,temp2b,1)
+                  vt3_oa = temp2a + temp2b
+                  m2 = MINUSONE*ddot(noa,I2B_ovoo(:,c,i,k)+vt3_oa,1,t2a(a,b,:,j),1)
 
-                  call dgemv(Novv_aaa,noa,vA_oovv_r2,t3b(:,:,c,j,:,k),temp2a)
-                  call dgemv(Novv_bba,noa,vB_oovv_r2,t3c(:,:,c,j,:,k),temp2b)
-                  vt3_oa = HALF*temp2a + temp2b
-                  m2 = m2 + ddot(noa,I2B_ovoo(:,c,j,k)+vt3_oa,t2a(a,b,:,i))
+                  call dgemv('t',Novv_aaa,noa,HALF,vA_oovv_r2,Novv_aaa,t3b(:,:,c,j,:,k),1,ZERO,temp2a,1)
+                  call dgemv('t',Novv_bba,noa,ONE,vB_oovv_r2,Novv_bba,t3c(:,:,c,j,:,k),1,ZERO,temp2b,1)
+                  vt3_oa = temp2a + temp2b
+                  m2 = m2 + ddot(noa,I2B_ovoo(:,c,j,k)+vt3_oa,1,t2a(a,b,:,i),1)
 
                   !refval = ZERO
                   !do m = 1,noa
@@ -471,25 +651,25 @@ module ccp_loops
                   !end do
                   !error(2) = error(2) + (m2-refval)
 
-                  call dgemv(Noov_baa,nub,vB_oovv_r3,t3b(a,:,c,i,:,:),temp3a)
-                  call dgemv(Noov_bbb,nub,vC_oovv_r1,t3c(a,:,c,i,:,:),temp3b)
-                  vt3_ub = temp3a + HALF*temp3b
-                  m3 = ddot(nub,H2B_vvov(a,c,i,:)-vt3_ub,t2b(b,:,j,k))
+                  call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r3,Noov_baa,t3b(a,:,c,i,:,:),1,ZERO,temp3a,1)
+                  call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r1,Noov_bbb,t3c(a,:,c,i,:,:),1,ZERO,temp3b,1)
+                  vt3_ub = temp3a + temp3b
+                  m3 = ddot(nub,H2B_vvov(a,c,i,:)-vt3_ub,1,t2b(b,:,j,k),1)
                   
-                  call dgemv(Noov_baa,nub,vB_oovv_r3,t3b(b,:,c,i,:,:),temp3a)
-                  call dgemv(Noov_bbb,nub,vC_oovv_r1,t3c(b,:,c,i,:,:),temp3b)
-                  vt3_ub = temp3a + HALF*temp3b
-                  m3 = m3 - ddot(nub,H2B_vvov(b,c,i,:)-vt3_ub,t2b(a,:,j,k))
+                  call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r3,Noov_baa,t3b(b,:,c,i,:,:),1,ZERO,temp3a,1)
+                  call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r1,Noov_bbb,t3c(b,:,c,i,:,:),1,ZERO,temp3b,1)
+                  vt3_ub = temp3a + temp3b
+                  m3 = m3 - ddot(nub,H2B_vvov(b,c,i,:)-vt3_ub,1,t2b(a,:,j,k),1)
 
-                  call dgemv(Noov_baa,nub,vB_oovv_r3,t3b(a,:,c,j,:,:),temp3a)
-                  call dgemv(Noov_bbb,nub,vC_oovv_r1,t3c(a,:,c,j,:,:),temp3b)
-                  vt3_ub = temp3a + HALF*temp3b
-                  m3 = m3 - ddot(nub,H2B_vvov(a,c,j,:)-vt3_ub,t2b(b,:,i,k))
+                  call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r3,Noov_baa,t3b(a,:,c,j,:,:),1,ZERO,temp3a,1)
+                  call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r1,Noov_bbb,t3c(a,:,c,j,:,:),1,ZERO,temp3b,1)
+                  vt3_ub = temp3a + temp3b
+                  m3 = m3 - ddot(nub,H2B_vvov(a,c,j,:)-vt3_ub,1,t2b(b,:,i,k),1)
 
-                  call dgemv(Noov_baa,nub,vB_oovv_r3,t3b(b,:,c,j,:,:),temp3a)
-                  call dgemv(Noov_bbb,nub,vC_oovv_r1,t3c(b,:,c,j,:,:),temp3b)
-                  vt3_ub = temp3a + HALF*temp3b
-                  m3 = m3 + ddot(nub,H2B_vvov(b,c,j,:)-vt3_ub,t2b(a,:,i,k))
+                  call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r3,Noov_baa,t3b(b,:,c,j,:,:),1,ZERO,temp3a,1)
+                  call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r1,Noov_bbb,t3c(b,:,c,j,:,:),1,ZERO,temp3b,1)
+                  vt3_ub = temp3a + temp3b
+                  m3 = m3 + ddot(nub,H2B_vvov(b,c,j,:)-vt3_ub,1,t2b(a,:,i,k),1)
 
                   !refval = ZERO
                   !do e = 1,nub
@@ -522,25 +702,25 @@ module ccp_loops
                   !end do
                   !error(3) = error(3) + (m3-refval)
 
-                   call dgemv(Novv_aab,nob,vB_oovv_r4,t3b(b,:,:,j,:,k),temp4a)
-                   call dgemv(Novv_bbb,nob,vC_oovv_r2,t3c(b,:,:,j,:,k),temp4b)
-                   vt3_ob = temp4a + HALF*temp4b
-                   m4 = MINUSONE*ddot(nob,I2B_vooo(b,:,j,k)+vt3_ob,t2b(a,c,i,:))
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r4,Novv_aab,t3b(b,:,:,j,:,k),1,ZERO,temp4a,1)
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r2,Novv_bbb,t3c(b,:,:,j,:,k),1,ZERO,temp4b,1)
+                   vt3_ob = temp4a + temp4b
+                   m4 = MINUSONE*ddot(nob,I2B_vooo(b,:,j,k)+vt3_ob,1,t2b(a,c,i,:),1)
 
-                   call dgemv(Novv_aab,nob,vB_oovv_r4,t3b(a,:,:,j,:,k),temp4a)
-                   call dgemv(Novv_bbb,nob,vC_oovv_r2,t3c(a,:,:,j,:,k),temp4b)
-                   vt3_ob = temp4a + HALF*temp4b
-                   m4 = m4 + ddot(nob,I2B_vooo(a,:,j,k)+vt3_ob,t2b(b,c,i,:))
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r4,Novv_aab,t3b(a,:,:,j,:,k),1,ZERO,temp4a,1)
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r2,Novv_bbb,t3c(a,:,:,j,:,k),1,ZERO,temp4b,1)
+                   vt3_ob = temp4a + temp4b
+                   m4 = m4 + ddot(nob,I2B_vooo(a,:,j,k)+vt3_ob,1,t2b(b,c,i,:),1)
 
-                   call dgemv(Novv_aab,nob,vB_oovv_r4,t3b(b,:,:,i,:,k),temp4a)
-                   call dgemv(Novv_bbb,nob,vC_oovv_r2,t3c(b,:,:,i,:,k),temp4b)
-                   vt3_ob = temp4a + HALF*temp4b
-                   m4 = m4 + ddot(nob,I2B_vooo(b,:,i,k)+vt3_ob,t2b(a,c,j,:))
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r4,Novv_aab,t3b(b,:,:,i,:,k),1,ZERO,temp4a,1)
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r2,Novv_bbb,t3c(b,:,:,i,:,k),1,ZERO,temp4b,1)
+                   vt3_ob = temp4a + temp4b
+                   m4 = m4 + ddot(nob,I2B_vooo(b,:,i,k)+vt3_ob,1,t2b(a,c,j,:),1)
 
-                   call dgemv(Novv_aab,nob,vB_oovv_r4,t3b(a,:,:,i,:,k),temp4a)
-                   call dgemv(Novv_bbb,nob,vC_oovv_r2,t3c(a,:,:,i,:,k),temp4b)
-                   vt3_ob = temp4a + HALF*temp4b
-                   m4 = m4 - ddot(nob,I2B_vooo(a,:,i,k)+vt3_ob,t2b(b,c,j,:))
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r4,Novv_aab,t3b(a,:,:,i,:,k),1,ZERO,temp4a,1)
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r2,Novv_bbb,t3c(a,:,:,i,:,k),1,ZERO,temp4b,1)
+                   vt3_ob = temp4a + temp4b
+                   m4 = m4 - ddot(nob,I2B_vooo(a,:,i,k)+vt3_ob,1,t2b(b,c,j,:),1)
 
                    !refval = ZERO
                    !do m = 1,nob
@@ -564,7 +744,7 @@ module ccp_loops
                    !            vC_oovv(m,n,e,f)*t3c(b,f,e,i,n,k)*t2b(a,c,j,m)-&
                    !            vC_oovv(m,n,e,f)*t3c(a,f,e,i,n,k)*t2b(b,c,j,m)
                    !         end do
-                   !      end do
+                   !       end do
                    !   end do
                    !   refval = refval - I2B_vooo(b,m,j,k)*t2b(a,c,i,m)&
                    !                   + I2B_vooo(a,m,j,k)*t2b(b,c,i,m)&
@@ -573,15 +753,15 @@ module ccp_loops
                    !end do
                    !error(4) = error(4) + (m4-refval)
 
-                   call dgemv(Noov_aaa,nua,vA_oovv_r1,t3a(a,b,:,i,:,:),temp1a)
-                   call dgemv(Noov_abb,nua,vB_oovv_r1,t3b(a,b,:,i,:,:),temp1b)
-                   vt3_ua = HALF*temp1a + temp1b
-                   m5 = ddot(nua,H2A_vvov(a,b,i,:)-vt3_ua,t2b(:,c,j,k))
+                   call dgemv('t',Noov_aaa,nua,HALF,vA_oovv_r1,Noov_aaa,t3a(a,b,:,i,:,:),1,ZERO,temp1a,1)
+                   call dgemv('t',Noov_abb,nua,ONE,vB_oovv_r1,Noov_abb,t3b(a,b,:,i,:,:),1,ZERO,temp1b,1)
+                   vt3_ua = temp1a + temp1b
+                   m5 = ddot(nua,H2A_vvov(a,b,i,:)-vt3_ua,1,t2b(:,c,j,k),1)
 
-                   call dgemv(Noov_aaa,nua,vA_oovv_r1,t3a(a,b,:,j,:,:),temp1a)
-                   call dgemv(Noov_abb,nua,vB_oovv_r1,t3b(a,b,:,j,:,:),temp1b)
-                   vt3_ua = HALF*temp1a + temp1b
-                   m5 = m5 - ddot(nua,H2A_vvov(a,b,j,:)-vt3_ua,t2b(:,c,i,k))
+                   call dgemv('t',Noov_aaa,nua,HALF,vA_oovv_r1,Noov_aaa,t3a(a,b,:,j,:,:),1,ZERO,temp1a,1)
+                   call dgemv('t',Noov_abb,nua,ONE,vB_oovv_r1,Noov_abb,t3b(a,b,:,j,:,:),1,ZERO,temp1b,1)
+                   vt3_ua = temp1a + temp1b
+                   m5 = m5 - ddot(nua,H2A_vvov(a,b,j,:)-vt3_ua,1,t2b(:,c,i,k),1)
 
                    !refval = ZERO
                    !do e = 1,nua
@@ -608,15 +788,15 @@ module ccp_loops
                    ! end do
                    ! error(5) = error(5) + (m5-refval)
 
-                   call dgemv(Novv_aaa,noa,vA_oovv_r2,t3a(a,:,:,i,j,:),temp2a)
-                   call dgemv(Novv_bba,noa,vB_oovv_r2,t3b(a,:,:,i,j,:),temp2b)
-                   vt3_oa = HALF*temp2a + temp2b
-                   m6 = MINUSONE*ddot(noa,I2A_vooo(a,:,i,j)+vt3_oa,t2b(b,c,:,k))
+                   call dgemv('t',Novv_aaa,noa,HALF,vA_oovv_r2,Novv_aaa,t3a(a,:,:,i,j,:),1,ZERO,temp2a,1)
+                   call dgemv('t',Novv_bba,noa,ONE,vB_oovv_r2,Novv_bba,t3b(a,:,:,i,j,:),1,ZERO,temp2b,1)
+                   vt3_oa = temp2a + temp2b
+                   m6 = MINUSONE*ddot(noa,I2A_vooo(a,:,i,j)+vt3_oa,1,t2b(b,c,:,k),1)
 
-                   call dgemv(Novv_aaa,noa,vA_oovv_r2,t3a(b,:,:,i,j,:),temp2a)
-                   call dgemv(Novv_bba,noa,vB_oovv_r2,t3b(b,:,:,i,j,:),temp2b)
-                   vt3_oa = HALF*temp2a + temp2b
-                   m6 = m6 + ddot(noa,I2A_vooo(b,:,i,j)+vt3_oa,t2b(a,c,:,k))
+                   call dgemv('t',Novv_aaa,noa,HALF,vA_oovv_r2,Novv_aaa,t3a(b,:,:,i,j,:),1,ZERO,temp2a,1)
+                   call dgemv('t',Novv_bba,noa,ONE,vB_oovv_r2,Novv_bba,t3b(b,:,:,i,j,:),1,ZERO,temp2b,1)
+                   vt3_oa = temp2a + temp2b
+                   m6 = m6 + ddot(noa,I2A_vooo(b,:,i,j)+vt3_oa,1,t2b(a,c,:,k),1)
 
                    !refval = ZERO
                    !do m = 1,noa
@@ -642,9 +822,9 @@ module ccp_loops
                    !                   + I2A_vooo(b,m,i,j)*t2b(a,c,m,k)
                    ! end do
                    ! error(6) = error(6) + (m6-refval)
-                   
-                   d1 = MINUSONE*ddot(noa,H1A_oo(:,i),t3b(a,b,c,:,j,k))
-                   d1 = d1 + ddot(noa,H1A_oo(:,j),t3b(a,b,c,:,i,k))
+
+                   d1 = MINUSONE*ddot(noa,H1A_oo(:,i),1,t3b(a,b,c,:,j,k),1)
+                   d1 = d1 + ddot(noa,H1A_oo(:,j),1,t3b(a,b,c,:,i,k),1)
                    !refval = ZERO
                    !do m = 1,noa
                    !   refval = refval - H1A_oo(m,i)*t3b(a,b,c,m,j,k)&
@@ -652,15 +832,15 @@ module ccp_loops
                    !end do
                    !error(7) = error(7) + (d1-refval)
     
-                   d2 = MINUSONE*ddot(nob,H1B_oo(:,k),t3b(a,b,c,i,j,:))
+                   d2 = MINUSONE*ddot(nob,H1B_oo(:,k),1,t3b(a,b,c,i,j,:),1)
                    !refval = ZERO
                    !do m = 1,nob
                    !   refval = refval - H1B_oo(m,k)*t3b(a,b,c,i,j,m)
                    !end do
                    !error(8) = error(8) + (d2-refval)
 
-                   d3 = ddot(nua,H1A_vv(a,:),t3b(:,b,c,i,j,k))
-                   d3 = d3 - ddot(nua,H1A_vv(b,:),t3b(:,a,c,i,j,k))
+                   d3 = ddot(nua,H1A_vv(a,:),1,t3b(:,b,c,i,j,k),1)
+                   d3 = d3 - ddot(nua,H1A_vv(b,:),1,t3b(:,a,c,i,j,k),1)
                    !refval = ZERO
                    !do e = 1,nua
                    !   refval = refval + H1A_vv(a,e)*t3b(e,b,c,i,j,k)&
@@ -668,14 +848,14 @@ module ccp_loops
                    !end do
                    !error(9) = error(9) + (d3-refval)
 
-                   d4 = ddot(nub,H1B_vv(c,:),t3b(a,b,:,i,j,k))
+                   d4 = ddot(nub,H1B_vv(c,:),1,t3b(a,b,:,i,j,k),1)
                    !refval = ZERO
                    !do e = 1,nub
                    !   refval = refval + H1B_vv(c,e)*t3b(a,b,e,i,j,k)
                    !end do
                    !error(10) = error(10) + (d4-refval)
-    
-                   d5 = HALF*ddot(Noo_aa,H2A_oooo(:,:,i,j),t3b(a,b,c,:,:,k))
+
+                   d5 = HALF*ddot(Noo_aa,H2A_oooo(:,:,i,j),1,t3b(a,b,c,:,:,k),1)
                    !refval = ZERO
                    !do m = 1,noa
                    !   do n = m+1,noa
@@ -684,8 +864,8 @@ module ccp_loops
                    !end do
                    !error(11) = error(11) + (d5-refval)
 
-                   d6 = ddot(Noo_ab,H2B_oooo(:,:,j,k),t3b(a,b,c,i,:,:))
-                   d6 = d6 - ddot(Noo_ab,H2B_oooo(:,:,i,k),t3b(a,b,c,j,:,:))
+                   d6 = ddot(Noo_ab,H2B_oooo(:,:,j,k),1,t3b(a,b,c,i,:,:),1)
+                   d6 = d6 - ddot(Noo_ab,H2B_oooo(:,:,i,k),1,t3b(a,b,c,j,:,:),1)
                    !refval = ZERO
                    !do m = 1,noa
                    !   do n = 1,nob 
@@ -695,7 +875,7 @@ module ccp_loops
                    !end do
                    !error(12) = error(12) + (d6-refval)
 
-                   d7 = HALF*ddot(Nvv_aa,H2A_vvvv(a,b,:,:),t3b(:,:,c,i,j,k))
+                   d7 = HALF*ddot(Nvv_aa,H2A_vvvv(a,b,:,:),1,t3b(:,:,c,i,j,k),1)
                    !refval = ZERO
                    !do e = 1,nua
                    !   do f = e+1,nua
@@ -704,8 +884,8 @@ module ccp_loops
                    !end do
                    !error(13) = error(13) + (d7-refval)
 
-                   d8 = ddot(Nvv_ab,H2B_vvvv(b,c,:,:),t3b(a,:,:,i,j,k))
-                   d8 = d8 - ddot(Nvv_ab,H2B_vvvv(a,c,:,:),t3b(b,:,:,i,j,k))
+                   d8 = ddot(Nvv_ab,H2B_vvvv(b,c,:,:),1,t3b(a,:,:,i,j,k),1)
+                   d8 = d8 - ddot(Nvv_ab,H2B_vvvv(a,c,:,:),1,t3b(b,:,:,i,j,k),1)
                    !refval = ZERO
                    !do e = 1,nua
                    !   do f = 1,nub
@@ -715,10 +895,10 @@ module ccp_loops
                    !end do
                    !error(14) = error(14) + (d8-refval)
 
-                   d9 = ddot(Nov_aa,H2A_voov_r(a,:,i,:),t3b(:,b,c,:,j,k))
-                   d9 = d9 - ddot(Nov_aa,H2A_voov_r(b,:,i,:),t3b(:,a,c,:,j,k))
-                   d9 = d9 - ddot(Nov_aa,H2A_voov_r(a,:,j,:),t3b(:,b,c,:,i,k))
-                   d9 = d9 + ddot(Nov_aa,H2A_voov_r(b,:,j,:),t3b(:,a,c,:,i,k))
+                   d9 = ddot(Nov_aa,H2A_voov_r(a,:,i,:),1,t3b(:,b,c,:,j,k),1)
+                   d9 = d9 - ddot(Nov_aa,H2A_voov_r(b,:,i,:),1,t3b(:,a,c,:,j,k),1)
+                   d9 = d9 - ddot(Nov_aa,H2A_voov_r(a,:,j,:),1,t3b(:,b,c,:,i,k),1)
+                   d9 = d9 + ddot(Nov_aa,H2A_voov_r(b,:,j,:),1,t3b(:,a,c,:,i,k),1)
                    !refval = ZERO
                    !do m = 1,noa
                    !   do e = 1,nua
@@ -730,10 +910,10 @@ module ccp_loops
                    !end do
                    !error(15) = error(15) + (d9-refval)
     
-                   d10 = ddot(Nov_bb,H2B_voov_r(a,:,i,:),t3c(b,:,c,j,:,k))
-                   d10 = d10 - ddot(Nov_bb,H2B_voov_r(b,:,i,:),t3c(a,:,c,j,:,k))
-                   d10 = d10 - ddot(Nov_bb,H2B_voov_r(a,:,j,:),t3c(b,:,c,i,:,k))
-                   d10 = d10 + ddot(Nov_bb,H2B_voov_r(b,:,j,:),t3c(a,:,c,i,:,k))
+                   d10 = ddot(Nov_bb,H2B_voov_r(a,:,i,:),1,t3c(b,:,c,j,:,k),1)
+                   d10 = d10 - ddot(Nov_bb,H2B_voov_r(b,:,i,:),1,t3c(a,:,c,j,:,k),1)
+                   d10 = d10 - ddot(Nov_bb,H2B_voov_r(a,:,j,:),1,t3c(b,:,c,i,:,k),1)
+                   d10 = d10 + ddot(Nov_bb,H2B_voov_r(b,:,j,:),1,t3c(a,:,c,i,:,k),1)
                    !refval = ZERO
                    !do m = 1,nob
                    !   do e = 1,nub
@@ -745,7 +925,7 @@ module ccp_loops
                    !end do
                    !error(16) = error(16) + (d10-refval)
 
-                   d11 = ddot(Nov_aa,H2B_ovvo_r(:,c,:,k),t3a(a,b,:,i,j,:))
+                   d11 = ddot(Nov_aa,H2B_ovvo_r(:,c,:,k),1,t3a(a,b,:,i,j,:),1)
                    !refval = ZERO
                    !do m = 1,noa
                    !   do e = 1,nua
@@ -754,7 +934,7 @@ module ccp_loops
                    !end do
                    !error(17) = error(17) + (d11-refval)
 
-                   d12 = ddot(Nov_bb,H2C_voov_r(c,:,k,:),t3b(a,b,:,i,j,:))
+                   d12 = ddot(Nov_bb,H2C_voov_r(c,:,k,:),1,t3b(a,b,:,i,j,:),1)
                    !refval = ZERO
                    !do m = 1,nob
                    !   do e = 1,nub
@@ -763,8 +943,8 @@ module ccp_loops
                    !end do
                    !error(18) = error(18) + (d12-refval)
 
-                   d13 = MINUSONE*ddot(Nov_ba,H2B_vovo_r(a,:,:,k),t3b(:,b,c,i,j,:))
-                   d13 = d13 + ddot(Nov_ba,H2B_vovo_r(b,:,:,k),t3b(:,a,c,i,j,:))
+                   d13 = MINUSONE*ddot(Nov_ba,H2B_vovo_r(a,:,:,k),1,t3b(:,b,c,i,j,:),1)
+                   d13 = d13 + ddot(Nov_ba,H2B_vovo_r(b,:,:,k),1,t3b(:,a,c,i,j,:),1)
                    !refval = ZERO
                    !do m = 1,nob
                    !   do e = 1,nua
@@ -774,8 +954,8 @@ module ccp_loops
                    !end do
                    !error(19) = error(19) + (d13-refval)
                    
-                   d14 = MINUSONE*ddot(Nov_ab,H2B_ovov_r(:,c,i,:),t3b(a,b,:,:,j,k))
-                   d14 = d14 + ddot(Nov_ab,H2B_ovov_r(:,c,j,:),t3b(a,b,:,:,i,k))
+                   d14 = MINUSONE*ddot(Nov_ab,H2B_ovov_r(:,c,i,:),1,t3b(a,b,:,:,j,k),1)
+                   d14 = d14 + ddot(Nov_ab,H2B_ovov_r(:,c,j,:),1,t3b(a,b,:,:,i,k),1)
                    !refval = ZERO
                    !do m = 1,noa
                    !   do e = 1,nub
@@ -798,12 +978,15 @@ module ccp_loops
                    t3b_new(b,a,c,j,i,k) = val
 
                end do
+               !$OMP END DO
+               !$OMP END PARALLEL
 
                !do i = 1,20
                !   print*,'Error in term',i,'=',error(i)
                !end do
 
             end subroutine update_t3b
+
 
             subroutine update_t3c(t2b,t2c,&
                          t3b,t3c,t3d,&
@@ -889,10 +1072,15 @@ module ccp_loops
 
 
                 real(kind=8), parameter :: MINUSONE=-1.0d+0, HALF=0.5d+0, ZERO=0.0d+0,&
-                                           MINUSHALF=-0.5d+0
+                                           MINUSHALF=-0.5d+0, ONE=1.0d+0
+
+                real(kind=8), external :: ddot
 
                 !integer :: m, n, e, f
                 !real(kind=8) :: error(20), refval
+
+                call mkl_set_num_threads_local(1)
+                call omp_set_num_threads(16)
 
                 Noo_aa = noa*noa
                 Noo_ab = noa*nob
@@ -934,6 +1122,10 @@ module ccp_loops
                 !   error(i) = ZERO
                 !end do
 
+                t3c_new = 0.0d0
+
+                !$OMP PARALLEL SHARED(t3c_new)
+                !$OMP DO
                 do ct = 1 , num_triples
                    
                    ! Shift indices up by 1 since the triples list is coming from
@@ -946,16 +1138,15 @@ module ccp_loops
                    k = triples_list(ct,6)+1
 
                    ! calculate devectorized residual for triple |ij~k~ab~c~>
-                   
-                   call dgemv(Noov_baa,nub,vB_oovv_r1,t3b(a,:,b,i,:,:),temp3a)
-                   call dgemv(Noov_bbb,nub,vC_oovv_r1,t3c(a,:,b,i,:,:),temp3b)
-                   vt3_ub = temp3a + HALF*temp3b
-                   m1 = ddot(nub,H2B_vvov(a,b,i,:)-vt3_ub,t2c(:,c,j,k))
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r1,Noov_baa,t3b(a,:,b,i,:,:),1,ZERO,temp3a,1)
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r1,Noov_bbb,t3c(a,:,b,i,:,:),1,ZERO,temp3b,1)
+                   vt3_ub = temp3a + temp3b
+                   m1 = ddot(nub,H2B_vvov(a,b,i,:)-vt3_ub,1,t2c(:,c,j,k),1)
 
-                   call dgemv(Noov_baa,nub,vB_oovv_r1,t3b(a,:,c,i,:,:),temp3a)
-                   call dgemv(Noov_bbb,nub,vC_oovv_r1,t3c(a,:,c,i,:,:),temp3b)
-                   vt3_ub = temp3a + HALF*temp3b
-                   m1 = m1 - ddot(nub,H2B_vvov(a,c,i,:)-vt3_ub,t2c(:,b,j,k))
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r1,Noov_baa,t3b(a,:,c,i,:,:),1,ZERO,temp3a,1)
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r1,Noov_bbb,t3c(a,:,c,i,:,:),1,ZERO,temp3b,1)
+                   vt3_ub = temp3a + temp3b
+                   m1 = m1 - ddot(nub,H2B_vvov(a,c,i,:)-vt3_ub,1,t2c(:,b,j,k),1)
 
                     !refval = ZERO
                     !do e = 1,nub
@@ -982,51 +1173,51 @@ module ccp_loops
                     !end do
                     !error(1) = error(1) + (m1-refval)
 
-                   call dgemv(Novv_aab,nob,vB_oovv_r2,t3b(a,:,:,i,:,j),temp4a)
-                   call dgemv(Novv_bbb,nob,vC_oovv_r2,t3c(a,:,:,i,:,j),temp4b)
-                   vt3_ob = temp4a + HALF*temp4b
-                   m2 = MINUSONE*ddot(nob,I2B_vooo(a,:,i,j)+vt3_ob,t2c(b,c,:,k))
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r2,Novv_aab,t3b(a,:,:,i,:,j),1,ZERO,temp4a,1)
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r2,Novv_bbb,t3c(a,:,:,i,:,j),1,ZERO,temp4b,1)
+                   vt3_ob = temp4a + temp4b
+                   m2 = MINUSONE*ddot(nob,I2B_vooo(a,:,i,j)+vt3_ob,1,t2c(b,c,:,k),1)
 
-                   call dgemv(Novv_aab,nob,vB_oovv_r2,t3b(a,:,:,i,:,k),temp4a)
-                   call dgemv(Novv_bbb,nob,vC_oovv_r2,t3c(a,:,:,i,:,k),temp4b)
-                   vt3_ob = temp4a + HALF*temp4b
-                   m2 = m2 + ddot(nob,I2B_vooo(a,:,i,k)+vt3_ob,t2c(b,c,:,j))
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r2,Novv_aab,t3b(a,:,:,i,:,k),1,ZERO,temp4a,1)
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r2,Novv_bbb,t3c(a,:,:,i,:,k),1,ZERO,temp4b,1)
+                   vt3_ob = temp4a + temp4b
+                   m2 = m2 + ddot(nob,I2B_vooo(a,:,i,k)+vt3_ob,1,t2c(b,c,:,j),1)
 
-                   !refval = ZERO
-                   !do m = 1,nob
-                   !   do f = 1,nua
-                   !      do e = 1,nub
-                   !         do n = 1,noa
-                   !            refval = refval -&
-                   !            vB_oovv(n,m,f,e)*t3b(a,f,e,i,n,j)*t2c(b,c,m,k)+&
-                   !            vB_oovv(n,m,f,e)*t3b(a,f,e,i,n,k)*t2c(b,c,m,j)
-                   !         end do
-                   !       end do
-                   !    end do
-                   !    do f = 1,nub
-                   !       do e = f+1,nub
-                   !          do n = 1,nob
-                   !             refval = refval -&
-                   !             vC_oovv(n,m,f,e)*t3c(a,f,e,i,n,j)*t2c(b,c,m,k)+&
-                   !             vC_oovv(n,m,f,e)*t3c(a,f,e,i,n,k)*t2c(b,c,m,j)
-                   !          end do
-                   !       end do
-                   !    end do
-                   !    refval = refval - I2B_vooo(a,m,i,j)*t2c(b,c,m,k)&
-                   !                    + I2B_vooo(a,m,i,k)*t2c(b,c,m,j)
-                   ! end do
-                   ! error(2) = error(2) + (m2-refval)
+                  ! refval = ZERO
+                  ! do m = 1,nob
+                  !    do f = 1,nua
+                  !       do e = 1,nub
+                  !          do n = 1,noa
+                  !             refval = refval -&
+                  !             vB_oovv(n,m,f,e)*t3b(a,f,e,i,n,j)*t2c(b,c,m,k)+&
+                  !             vB_oovv(n,m,f,e)*t3b(a,f,e,i,n,k)*t2c(b,c,m,j)
+                  !          end do
+                  !        end do
+                  !     end do
+                  !     do f = 1,nub
+                  !        do e = f+1,nub
+                  !           do n = 1,nob
+                  !              refval = refval -&
+                  !              vC_oovv(n,m,f,e)*t3c(a,f,e,i,n,j)*t2c(b,c,m,k)+&
+                  !              vC_oovv(n,m,f,e)*t3c(a,f,e,i,n,k)*t2c(b,c,m,j)
+                  !           end do
+                  !        end do
+                  !     end do
+                  !     refval = refval - I2B_vooo(a,m,i,j)*t2c(b,c,m,k)&
+                  !                     + I2B_vooo(a,m,i,k)*t2c(b,c,m,j)
+                  !  end do
+                  !  error(2) = error(2) + (m2-refval)
 
 
-                   call dgemv(Noov_bbb,nub,vC_oovv_r3,t3d(c,b,:,k,:,:),temp3a)
-                   call dgemv(Noov_baa,nub,vB_oovv_r1,t3c(:,c,b,:,k,:),temp3b)
-                   vt3_ub = HALF*temp3a + temp3b
-                   m3 = ddot(nub,H2C_vvov(c,b,k,:)-vt3_ub,t2b(a,:,i,j))
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r3,Noov_bbb,t3d(c,b,:,k,:,:),1,ZERO,temp3a,1)
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r1,Noov_baa,t3c(:,c,b,:,k,:),1,ZERO,temp3b,1)
+                   vt3_ub = temp3a + temp3b
+                   m3 = ddot(nub,H2C_vvov(c,b,k,:)-vt3_ub,1,t2b(a,:,i,j),1)
 
-                   call dgemv(Noov_bbb,nub,vC_oovv_r3,t3d(c,b,:,j,:,:),temp3a)
-                   call dgemv(Noov_baa,nub,vB_oovv_r1,t3c(:,c,b,:,j,:),temp3b)
-                   vt3_ub = HALF*temp3a + temp3b
-                   m3 = m3 - ddot(nub,H2C_vvov(c,b,j,:)-vt3_ub,t2b(a,:,i,k))
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r3,Noov_bbb,t3d(c,b,:,j,:,:),1,ZERO,temp3a,1)
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r1,Noov_baa,t3c(:,c,b,:,j,:),1,ZERO,temp3b,1)
+                   vt3_ub = temp3a + temp3b
+                   m3 = m3 - ddot(nub,H2C_vvov(c,b,j,:)-vt3_ub,1,t2b(a,:,i,k),1)
 
                    !refval = ZERO
                    !do e = 1,nub
@@ -1050,18 +1241,18 @@ module ccp_loops
                    !     end do
                    !     refval = refval + H2C_vvov(c,b,k,e)*t2b(a,e,i,j)&
                    !                     - H2C_vvov(c,b,j,e)*t2b(a,e,i,k)
-                   !  end do
+                   !    end do
                    !  error(3) = error(3) + (m3-refval)
 
-                   call dgemv(Novv_aab,nob,vB_oovv_r2,t3c(:,c,:,:,k,j),temp4a)
-                   call dgemv(Novv_bbb,nob,vC_oovv_r4,t3d(c,:,:,k,j,:),temp4b)
-                   vt3_ob = temp4a + HALF*temp4b
-                   m4 = MINUSONE*ddot(nob,I2C_vooo(c,:,k,j)+vt3_ob,t2b(a,b,i,:))
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r2,Novv_aab,t3c(:,c,:,:,k,j),1,ZERO,temp4a,1)
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r4,Novv_bbb,t3d(c,:,:,k,j,:),1,ZERO,temp4b,1)
+                   vt3_ob = temp4a + temp4b
+                   m4 = MINUSONE*ddot(nob,I2C_vooo(c,:,k,j)+vt3_ob,1,t2b(a,b,i,:),1)
 
-                   call dgemv(Novv_aab,nob,vB_oovv_r2,t3c(:,b,:,:,k,j),temp4a)
-                   call dgemv(Novv_bbb,nob,vC_oovv_r4,t3d(b,:,:,k,j,:),temp4b)
-                   vt3_ob = temp4a + HALF*temp4b
-                   m4 = m4 + ddot(nob,I2C_vooo(b,:,k,j)+vt3_ob,t2b(a,c,i,:))
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r2,Novv_aab,t3c(:,b,:,:,k,j),1,ZERO,temp4a,1)
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r4,Novv_bbb,t3d(b,:,:,k,j,:),1,ZERO,temp4b,1)
+                   vt3_ob = temp4a + temp4b
+                   m4 = m4 + ddot(nob,I2C_vooo(b,:,k,j)+vt3_ob,1,t2b(a,c,i,:),1)
 
                    !refval = ZERO
                    !do m = 1,nob
@@ -1088,25 +1279,25 @@ module ccp_loops
                    ! end do
                    ! error(4) = error(4) + (m4-refval)
 
-                   call dgemv(Noov_aaa,nua,vA_oovv_r1,t3b(a,:,b,:,:,j),temp1a)
-                   call dgemv(Noov_abb,nua,vB_oovv_r3,t3c(a,:,b,:,:,j),temp1b)
-                   vt3_ua = HALF*temp1a + temp1b
-                   m5 = ddot(nua,H2B_vvvo(a,b,:,j)-vt3_ua,t2b(:,c,i,k))
+                   call dgemv('t',Noov_aaa,nua,HALF,vA_oovv_r1,Noov_aaa,t3b(a,:,b,:,:,j),1,ZERO,temp1a,1)
+                   call dgemv('t',Noov_abb,nua,ONE,vB_oovv_r3,Noov_abb,t3c(a,:,b,:,:,j),1,ZERO,temp1b,1)
+                   vt3_ua = temp1a + temp1b
+                   m5 = ddot(nua,H2B_vvvo(a,b,:,j)-vt3_ua,1,t2b(:,c,i,k),1)
 
-                   call dgemv(Noov_aaa,nua,vA_oovv_r1,t3b(a,:,c,:,:,j),temp1a)
-                   call dgemv(Noov_abb,nua,vB_oovv_r3,t3c(a,:,c,:,:,j),temp1b)
-                   vt3_ua = HALF*temp1a + temp1b
-                   m5 = m5 - ddot(nua,H2B_vvvo(a,c,:,j)-vt3_ua,t2b(:,b,i,k))
+                   call dgemv('t',Noov_aaa,nua,HALF,vA_oovv_r1,Noov_aaa,t3b(a,:,c,:,:,j),1,ZERO,temp1a,1)
+                   call dgemv('t',Noov_abb,nua,ONE,vB_oovv_r3,Noov_abb,t3c(a,:,c,:,:,j),1,ZERO,temp1b,1)
+                   vt3_ua = temp1a + temp1b
+                   m5 = m5 - ddot(nua,H2B_vvvo(a,c,:,j)-vt3_ua,1,t2b(:,b,i,k),1)
 
-                   call dgemv(Noov_aaa,nua,vA_oovv_r1,t3b(a,:,b,:,:,k),temp1a)
-                   call dgemv(Noov_abb,nua,vB_oovv_r3,t3c(a,:,b,:,:,k),temp1b)
-                   vt3_ua = HALF*temp1a + temp1b
-                   m5 = m5 - ddot(nua,H2B_vvvo(a,b,:,k)-vt3_ua,t2b(:,c,i,j))
+                   call dgemv('t',Noov_aaa,nua,HALF,vA_oovv_r1,Noov_aaa,t3b(a,:,b,:,:,k),1,ZERO,temp1a,1)
+                   call dgemv('t',Noov_abb,nua,ONE,vB_oovv_r3,Noov_abb,t3c(a,:,b,:,:,k),1,ZERO,temp1b,1)
+                   vt3_ua = temp1a + temp1b
+                   m5 = m5 - ddot(nua,H2B_vvvo(a,b,:,k)-vt3_ua,1,t2b(:,c,i,j),1)
 
-                   call dgemv(Noov_aaa,nua,vA_oovv_r1,t3b(a,:,c,:,:,k),temp1a)
-                   call dgemv(Noov_abb,nua,vB_oovv_r3,t3c(a,:,c,:,:,k),temp1b)
-                   vt3_ua = HALF*temp1a + temp1b
-                   m5 = m5 + ddot(nua,H2B_vvvo(a,c,:,k)-vt3_ua,t2b(:,b,i,j))
+                   call dgemv('t',Noov_aaa,nua,HALF,vA_oovv_r1,Noov_aaa,t3b(a,:,c,:,:,k),1,ZERO,temp1a,1)
+                   call dgemv('t',Noov_abb,nua,ONE,vB_oovv_r3,Noov_abb,t3c(a,:,c,:,:,k),1,ZERO,temp1b,1)
+                   vt3_ua = temp1a + temp1b
+                   m5 = m5 + ddot(nua,H2B_vvvo(a,c,:,k)-vt3_ua,1,t2b(:,b,i,j),1)
 
                    !refval = ZERO
                    !do e = 1,nua
@@ -1139,25 +1330,25 @@ module ccp_loops
                    ! end do
                    ! error(5) = error(5) + (m5-refval)
 
-                   call dgemv(Novv_aaa,noa,vA_oovv_r2,t3b(:,:,b,i,:,j),temp2a)
-                   call dgemv(Novv_bba,noa,vB_oovv_r4,t3c(:,:,b,i,:,j),temp2b)
-                   vt3_oa = HALF*temp2a + temp2b
-                   m6 = MINUSONE*ddot(noa,I2B_ovoo(:,b,i,j)+vt3_oa,t2b(a,c,:,k))
+                   call dgemv('t',Novv_aaa,noa,HALF,vA_oovv_r2,Novv_aaa,t3b(:,:,b,i,:,j),1,ZERO,temp2a,1)
+                   call dgemv('t',Novv_bba,noa,ONE,vB_oovv_r4,Novv_bba,t3c(:,:,b,i,:,j),1,ZERO,temp2b,1)
+                   vt3_oa = temp2a + temp2b
+                   m6 = MINUSONE*ddot(noa,I2B_ovoo(:,b,i,j)+vt3_oa,1,t2b(a,c,:,k),1)
 
-                   call dgemv(Novv_aaa,noa,vA_oovv_r2,t3b(:,:,c,i,:,j),temp2a)
-                   call dgemv(Novv_bba,noa,vB_oovv_r4,t3c(:,:,c,i,:,j),temp2b)
-                   vt3_oa = HALF*temp2a + temp2b
-                   m6 = m6 + ddot(noa,I2B_ovoo(:,c,i,j)+vt3_oa,t2b(a,b,:,k))
+                   call dgemv('t',Novv_aaa,noa,HALF,vA_oovv_r2,Novv_aaa,t3b(:,:,c,i,:,j),1,ZERO,temp2a,1)
+                   call dgemv('t',Novv_bba,noa,ONE,vB_oovv_r4,Novv_bba,t3c(:,:,c,i,:,j),1,ZERO,temp2b,1)
+                   vt3_oa = temp2a + temp2b
+                   m6 = m6 + ddot(noa,I2B_ovoo(:,c,i,j)+vt3_oa,1,t2b(a,b,:,k),1)
 
-                   call dgemv(Novv_aaa,noa,vA_oovv_r2,t3b(:,:,b,i,:,k),temp2a)
-                   call dgemv(Novv_bba,noa,vB_oovv_r4,t3c(:,:,b,i,:,k),temp2b)
-                   vt3_oa = HALF*temp2a + temp2b
-                   m6 = m6 + ddot(noa,I2B_ovoo(:,b,i,k)+vt3_oa,t2b(a,c,:,j))
+                   call dgemv('t',Novv_aaa,noa,HALF,vA_oovv_r2,Novv_aaa,t3b(:,:,b,i,:,k),1,ZERO,temp2a,1)
+                   call dgemv('t',Novv_bba,noa,ONE,vB_oovv_r4,Novv_bba,t3c(:,:,b,i,:,k),1,ZERO,temp2b,1)
+                   vt3_oa = temp2a + temp2b
+                   m6 = m6 + ddot(noa,I2B_ovoo(:,b,i,k)+vt3_oa,1,t2b(a,c,:,j),1)
 
-                   call dgemv(Novv_aaa,noa,vA_oovv_r2,t3b(:,:,c,i,:,k),temp2a)
-                   call dgemv(Novv_bba,noa,vB_oovv_r4,t3c(:,:,c,i,:,k),temp2b)
-                   vt3_oa = HALF*temp2a + temp2b
-                   m6 = m6 - ddot(noa,I2B_ovoo(:,c,i,k)+vt3_oa,t2b(a,b,:,j))
+                   call dgemv('t',Novv_aaa,noa,HALF,vA_oovv_r2,Novv_aaa,t3b(:,:,c,i,:,k),1,ZERO,temp2a,1)
+                   call dgemv('t',Novv_bba,noa,ONE,vB_oovv_r4,Novv_bba,t3c(:,:,c,i,:,k),1,ZERO,temp2b,1)
+                   vt3_oa = temp2a + temp2b
+                   m6 = m6 - ddot(noa,I2B_ovoo(:,c,i,k)+vt3_oa,1,t2b(a,b,:,j),1)
 
                    !refval = ZERO
                    !do m = 1,noa
@@ -1189,17 +1380,18 @@ module ccp_loops
                    !                   - I2B_ovoo(m,c,i,k)*t2b(a,b,m,j)
                    ! end do
                    ! error(6) = error(6) + (m6-refval)
+                   
 
                    ! (HBar T3)_C
-                   d1 = MINUSONE*ddot(noa,H1A_oo(:,i),t3c(a,b,c,:,j,k))
+                   d1 = MINUSONE*ddot(noa,H1A_oo(:,i),1,t3c(a,b,c,:,j,k),1)
                    !refval = ZERO
                    !do m = 1,noa
                    !   refval = refval - H1A_oo(m,i)*t3c(a,b,c,m,j,k)
                    !end do
                    !error(7) = error(7) + (d1-refval)
 
-                   d2 = MINUSONE*ddot(nob,H1B_oo(:,j),t3c(a,b,c,i,:,k))
-                   d2 = d2 + ddot(nob,H1B_oo(:,k),t3c(a,b,c,i,:,j))
+                   d2 = MINUSONE*ddot(nob,H1B_oo(:,j),1,t3c(a,b,c,i,:,k),1)
+                   d2 = d2 + ddot(nob,H1B_oo(:,k),1,t3c(a,b,c,i,:,j),1)
                    !refval = ZERO
                    !do m = 1,nob
                    !   refval = refval - H1B_oo(m,j)*t3c(a,b,c,i,m,k)&
@@ -1207,15 +1399,15 @@ module ccp_loops
                    !end do
                    !error(8) = error(8) + (d2-refval)
 
-                   d3 = ddot(nua,H1A_vv(a,:),t3c(:,b,c,i,j,k))
+                   d3 = ddot(nua,H1A_vv(a,:),1,t3c(:,b,c,i,j,k),1)
                    !refval = ZERO
                    !do e = 1,nua
                    !   refval = refval + H1A_vv(a,e)*t3c(e,b,c,i,j,k)
                    !end do
                    !error(9) = error(9) + (d3-refval)
 
-                   d4 = ddot(nub,H1B_vv(b,:),t3c(a,:,c,i,j,k))
-                   d4 = d4 - ddot(nub,H1B_vv(c,:),t3c(a,:,b,i,j,k))
+                   d4 = ddot(nub,H1B_vv(b,:),1,t3c(a,:,c,i,j,k),1)
+                   d4 = d4 - ddot(nub,H1B_vv(c,:),1,t3c(a,:,b,i,j,k),1)
                    !refval = ZERO
                    !do e = 1,nub
                    !   refval = refval + H1B_vv(b,e)*t3c(a,e,c,i,j,k)&
@@ -1223,7 +1415,7 @@ module ccp_loops
                    !end do
                    !error(10) = error(10) + (d4-refval)
 
-                   d5 = HALF*ddot(Noo_bb,H2C_oooo(:,:,j,k),t3c(a,b,c,i,:,:))
+                   d5 = HALF*ddot(Noo_bb,H2C_oooo(:,:,j,k),1,t3c(a,b,c,i,:,:),1)
                    !refval = ZERO
                    !do m = 1,nob
                    !   do n = m+1,nob
@@ -1232,8 +1424,8 @@ module ccp_loops
                    !end do
                    !error(11) = error(11) + (d5-refval)
 
-                   d6 = ddot(Noo_ab,H2B_oooo(:,:,i,k),t3c(a,b,c,:,j,:))
-                   d6 = d6 - ddot(Noo_ab,H2B_oooo(:,:,i,j),t3c(a,b,c,:,k,:))
+                   d6 = ddot(Noo_ab,H2B_oooo(:,:,i,k),1,t3c(a,b,c,:,j,:),1)
+                   d6 = d6 - ddot(Noo_ab,H2B_oooo(:,:,i,j),1,t3c(a,b,c,:,k,:),1)
                    !refval = ZERO
                    !do m = 1,noa
                    !   do n = 1,nob
@@ -1243,7 +1435,7 @@ module ccp_loops
                    !end do
                    !error(12) = error(12) + (d6-refval)
 
-                   d7 = HALF*ddot(Nvv_bb,H2C_vvvv(b,c,:,:),t3c(a,:,:,i,j,k))
+                   d7 = HALF*ddot(Nvv_bb,H2C_vvvv(b,c,:,:),1,t3c(a,:,:,i,j,k),1)
                    !refval = ZERO
                    !do e = 1,nub
                    !   do f = e+1,nub
@@ -1252,8 +1444,8 @@ module ccp_loops
                    !end do
                    !error(13) = error(13) + (d7-refval)
 
-                   d8 = ddot(Nvv_ab,H2B_vvvv(a,b,:,:),t3c(:,:,c,i,j,k))
-                   d8 = d8 - ddot(Nvv_ab,H2B_vvvv(a,c,:,:),t3c(:,:,b,i,j,k))
+                   d8 = ddot(Nvv_ab,H2B_vvvv(a,b,:,:),1,t3c(:,:,c,i,j,k),1)
+                   d8 = d8 - ddot(Nvv_ab,H2B_vvvv(a,c,:,:),1,t3c(:,:,b,i,j,k),1)
                    !refval = ZERO
                    !do e = 1,nua
                    !   do f = 1,nub
@@ -1263,7 +1455,7 @@ module ccp_loops
                    !end do
                    !error(14) = error(14) + (d8-refval)
 
-                   d9 = ddot(Nov_aa,H2A_voov_r1(a,:,i,:),t3c(:,b,c,:,j,k))
+                   d9 = ddot(Nov_aa,H2A_voov_r1(a,:,i,:),1,t3c(:,b,c,:,j,k),1)
                    !refval = ZERO
                    !do e = 1,nua
                    !   do m = 1,noa
@@ -1272,7 +1464,7 @@ module ccp_loops
                    !end do
                    !error(15) = error(15) + (d9-refval)
 
-                   d10 = ddot(Nov_bb,H2B_voov_r1(a,:,i,:),t3d(:,b,c,:,j,k))
+                   d10 = ddot(Nov_bb,H2B_voov_r1(a,:,i,:),1,t3d(:,b,c,:,j,k),1)
                    !refval = ZERO
                    !do e = 1,nub
                    !   do m = 1,nob
@@ -1281,10 +1473,10 @@ module ccp_loops
                    !end do
                    !error(16) = error(16) + (d10-refval)
 
-                   d11 = ddot(Nov_aa,H2B_ovvo_r1(:,b,:,j),t3b(a,:,c,i,:,k))
-                   d11 = d11 - ddot(Nov_aa,H2B_ovvo_r1(:,c,:,j),t3b(a,:,b,i,:,k))
-                   d11 = d11 - ddot(Nov_aa,H2B_ovvo_r1(:,b,:,k),t3b(a,:,c,i,:,j))
-                   d11 = d11 + ddot(Nov_aa,H2B_ovvo_r1(:,c,:,k),t3b(a,:,b,i,:,j))
+                   d11 = ddot(Nov_aa,H2B_ovvo_r1(:,b,:,j),1,t3b(a,:,c,i,:,k),1)
+                   d11 = d11 - ddot(Nov_aa,H2B_ovvo_r1(:,c,:,j),1,t3b(a,:,b,i,:,k),1)
+                   d11 = d11 - ddot(Nov_aa,H2B_ovvo_r1(:,b,:,k),1,t3b(a,:,c,i,:,j),1)
+                   d11 = d11 + ddot(Nov_aa,H2B_ovvo_r1(:,c,:,k),1,t3b(a,:,b,i,:,j),1)
                    !refval = ZERO
                    !do m = 1,noa
                    !   do e = 1,nua
@@ -1296,10 +1488,10 @@ module ccp_loops
                    !end do
                    !error(17) = error(17) + (d11-refval)
 
-                   d12 = ddot(Nov_bb,H2C_voov_r1(b,:,j,:),t3c(a,:,c,i,:,k))
-                   d12 = d12 - ddot(Nov_bb,H2C_voov_r1(c,:,j,:),t3c(a,:,b,i,:,k))
-                   d12 = d12 - ddot(Nov_bb,H2C_voov_r1(b,:,k,:),t3c(a,:,c,i,:,j))
-                   d12 = d12 + ddot(Nov_bb,H2C_voov_r1(c,:,k,:),t3c(a,:,b,i,:,j))
+                   d12 = ddot(Nov_bb,H2C_voov_r1(b,:,j,:),1,t3c(a,:,c,i,:,k),1)
+                   d12 = d12 - ddot(Nov_bb,H2C_voov_r1(c,:,j,:),1,t3c(a,:,b,i,:,k),1)
+                   d12 = d12 - ddot(Nov_bb,H2C_voov_r1(b,:,k,:),1,t3c(a,:,c,i,:,j),1)
+                   d12 = d12 + ddot(Nov_bb,H2C_voov_r1(c,:,k,:),1,t3c(a,:,b,i,:,j),1)
                    !refval = ZERO
                    !do m = 1,nob
                    !   do e = 1,nub
@@ -1311,8 +1503,8 @@ module ccp_loops
                    !end do
                    !error(18) = error(18) + (d12-refval)
 
-                   d13 = MINUSONE*ddot(Nov_ab,H2B_ovov_r1(:,b,i,:),t3c(a,:,c,:,j,k))
-                   d13 = d13 + ddot(Nov_ab,H2B_ovov_r1(:,c,i,:),t3c(a,:,b,:,j,k))
+                   d13 = MINUSONE*ddot(Nov_ab,H2B_ovov_r1(:,b,i,:),1,t3c(a,:,c,:,j,k),1)
+                   d13 = d13 + ddot(Nov_ab,H2B_ovov_r1(:,c,i,:),1,t3c(a,:,b,:,j,k),1)
                    !refval = ZERO
                    !do m = 1,noa
                    !   do e = 1,nub
@@ -1322,8 +1514,8 @@ module ccp_loops
                    !end do
                    !error(19) = error(19) + (d13-refval)
 
-                   d14 = MINUSONE*ddot(Nov_ba,H2B_vovo_r1(a,:,:,j),t3c(:,b,c,i,:,k))
-                   d14 = d14 + ddot(Nov_ba,H2B_vovo_r1(a,:,:,k),t3c(:,b,c,i,:,j))
+                   d14 = MINUSONE*ddot(Nov_ba,H2B_vovo_r1(a,:,:,j),1,t3c(:,b,c,i,:,k),1)
+                   d14 = d14 + ddot(Nov_ba,H2B_vovo_r1(a,:,:,k),1,t3c(:,b,c,i,:,j),1)
                    !refval = ZERO
                    !do m = 1,nob
                    !   do e = 1,nua
@@ -1347,6 +1539,8 @@ module ccp_loops
                    t3c_new(a,c,b,i,k,j) = val
 
                 end do
+                !$OMP END DO
+                !$OMP END PARALLEL
 
                 !do i = 1,20
                 !   print*,'Error in term',i,'=',error(i)
@@ -1397,10 +1591,16 @@ module ccp_loops
                                 temp1a(nob), temp1b(nob),&
                                 temp2a(nub), temp2b(nub)
 
-                real(kind=8), parameter :: MINUSONE=-1.0d+0, HALF=0.5d+0, ZERO=0.0d+0
+                real(kind=8), parameter :: MINUSONE=-1.0d+0, HALF=0.5d+0, ZERO=0.0d+0,&
+                                           ONE=1.0d+0
+
+                real(kind=8), external :: ddot
 
                 !integer :: m, n, e, f
                 !real(kind=8) :: refval ,error(8)
+
+                call mkl_set_num_threads_local(1)
+                call omp_set_num_threads(16)
 
                 Nov_aa = noa*nua
                 Noo_bb = nob*nob
@@ -1422,6 +1622,10 @@ module ccp_loops
                 !   error(i) = ZERO
                 !end do
 
+                t3d_new = 0.0d0
+
+                !$OMP PARALLEL SHARED(t3d_new)
+                !$OMP DO
                 do ct = 1 , num_triples
             
                    ! Shift indices up by since the triples list is coming from
@@ -1434,51 +1638,50 @@ module ccp_loops
                    k = triples_list(ct,6)+1
                     
                    ! Calculate devectorized residual for triple |ijkabc>
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r1,Novv_bbb,t3d(a,:,:,i,j,:),1,ZERO,temp1a,1)
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r1,Novv_aab,t3c(:,a,:,:,i,j),1,ZERO,temp1b,1)
+                   vt3_ob = temp1a + temp1b
+                   m1 = MINUSONE*ddot(nob,H2C_vooo(a,:,i,j)+vt3_ob,1,t2c(b,c,:,k),1)
 
-                   call dgemv(Novv_bbb,nob,vC_oovv_r1,t3d(a,:,:,i,j,:),temp1a)
-                   call dgemv(Novv_aab,nob,vB_oovv_r1,t3c(:,a,:,:,i,j),temp1b)
-                   vt3_ob = HALF*temp1a + temp1b
-                   m1 = MINUSONE*ddot(nob,H2C_vooo(a,:,i,j)+vt3_ob,t2c(b,c,:,k))
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r1,Novv_bbb,t3d(a,:,:,k,j,:),1,ZERO,temp1a,1)
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r1,Novv_aab,t3c(:,a,:,:,k,j),1,ZERO,temp1b,1)
+                   vt3_ob = temp1a + temp1b
+                   m1 = m1 + ddot(nob,H2C_vooo(a,:,k,j)+vt3_ob,1,t2c(b,c,:,i),1)
 
-                   call dgemv(Novv_bbb,nob,vC_oovv_r1,t3d(a,:,:,k,j,:),temp1a)
-                   call dgemv(Novv_aab,nob,vB_oovv_r1,t3c(:,a,:,:,k,j),temp1b)
-                   vt3_ob = HALF*temp1a + temp1b
-                   m1 = m1 + ddot(nob,H2C_vooo(a,:,k,j)+vt3_ob,t2c(b,c,:,i))
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r1,Novv_bbb,t3d(a,:,:,i,k,:),1,ZERO,temp1a,1)
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r1,Novv_aab,t3c(:,a,:,:,i,k),1,ZERO,temp1b,1)
+                   vt3_ob = temp1a + temp1b
+                   m1 = m1 + ddot(nob,H2C_vooo(a,:,i,k)+vt3_ob,1,t2c(b,c,:,j),1)
 
-                   call dgemv(Novv_bbb,nob,vC_oovv_r1,t3d(a,:,:,i,k,:),temp1a)
-                   call dgemv(Novv_aab,nob,vB_oovv_r1,t3c(:,a,:,:,i,k),temp1b)
-                   vt3_ob = HALF*temp1a + temp1b
-                   m1 = m1 + ddot(nob,H2C_vooo(a,:,i,k)+vt3_ob,t2c(b,c,:,j))
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r1,Novv_bbb,t3d(b,:,:,i,j,:),1,ZERO,temp1a,1)
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r1,Novv_aab,t3c(:,b,:,:,i,j),1,ZERO,temp1b,1)
+                   vt3_ob = temp1a + temp1b
+                   m1 = m1 + ddot(nob,H2C_vooo(b,:,i,j)+vt3_ob,1,t2c(a,c,:,k),1)
 
-                   call dgemv(Novv_bbb,nob,vC_oovv_r1,t3d(b,:,:,i,j,:),temp1a)
-                   call dgemv(Novv_aab,nob,vB_oovv_r1,t3c(:,b,:,:,i,j),temp1b)
-                   vt3_ob = HALF*temp1a + temp1b
-                   m1 = m1 + ddot(nob,H2C_vooo(b,:,i,j)+vt3_ob,t2c(a,c,:,k))
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r1,Novv_bbb,t3d(b,:,:,k,j,:),1,ZERO,temp1a,1)
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r1,Novv_aab,t3c(:,b,:,:,k,j),1,ZERO,temp1b,1)
+                   vt3_ob = temp1a + temp1b
+                   m1 = m1 - ddot(nob,H2C_vooo(b,:,k,j)+vt3_ob,1,t2c(a,c,:,i),1)
 
-                   call dgemv(Novv_bbb,nob,vC_oovv_r1,t3d(b,:,:,k,j,:),temp1a)
-                   call dgemv(Novv_aab,nob,vB_oovv_r1,t3c(:,b,:,:,k,j),temp1b)
-                   vt3_ob = HALF*temp1a + temp1b
-                   m1 = m1 - ddot(nob,H2C_vooo(b,:,k,j)+vt3_ob,t2c(a,c,:,i))
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r1,Novv_bbb,t3d(b,:,:,i,k,:),1,ZERO,temp1a,1)
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r1,Novv_aab,t3c(:,b,:,:,i,k),1,ZERO,temp1b,1)
+                   vt3_ob = temp1a + temp1b
+                   m1 = m1 - ddot(nob,H2C_vooo(b,:,i,k)+vt3_ob,1,t2c(a,c,:,j),1)
 
-                   call dgemv(Novv_bbb,nob,vC_oovv_r1,t3d(b,:,:,i,k,:),temp1a)
-                   call dgemv(Novv_aab,nob,vB_oovv_r1,t3c(:,b,:,:,i,k),temp1b)
-                   vt3_ob = HALF*temp1a + temp1b
-                   m1 = m1 - ddot(nob,H2C_vooo(b,:,i,k)+vt3_ob,t2c(a,c,:,j))
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r1,Novv_bbb,t3d(c,:,:,i,j,:),1,ZERO,temp1a,1)
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r1,Novv_aab,t3c(:,c,:,:,i,j),1,ZERO,temp1b,1)
+                   vt3_ob = temp1a + temp1b
+                   m1 = m1 + ddot(nob,H2C_vooo(c,:,i,j)+vt3_ob,1,t2c(b,a,:,k),1)
 
-                   call dgemv(Novv_bbb,nob,vC_oovv_r1,t3d(c,:,:,i,j,:),temp1a)
-                   call dgemv(Novv_aab,nob,vB_oovv_r1,t3c(:,c,:,:,i,j),temp1b)
-                   vt3_ob = HALF*temp1a + temp1b
-                   m1 = m1 + ddot(nob,H2C_vooo(c,:,i,j)+vt3_ob,t2c(b,a,:,k))
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r1,Novv_bbb,t3d(c,:,:,k,j,:),1,ZERO,temp1a,1)
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r1,Novv_aab,t3c(:,c,:,:,k,j),1,ZERO,temp1b,1)
+                   vt3_ob = temp1a + temp1b
+                   m1 = m1 - ddot(nob,H2C_vooo(c,:,k,j)+vt3_ob,1,t2c(b,a,:,i),1)
 
-                   call dgemv(Novv_bbb,nob,vC_oovv_r1,t3d(c,:,:,k,j,:),temp1a)
-                   call dgemv(Novv_aab,nob,vB_oovv_r1,t3c(:,c,:,:,k,j),temp1b)
-                   vt3_ob = HALF*temp1a + temp1b
-                   m1 = m1 - ddot(nob,H2C_vooo(c,:,k,j)+vt3_ob,t2c(b,a,:,i))
-
-                   call dgemv(Novv_bbb,nob,vC_oovv_r1,t3d(c,:,:,i,k,:),temp1a)
-                   call dgemv(Novv_aab,nob,vB_oovv_r1,t3c(:,c,:,:,i,k),temp1b)
-                   vt3_ob = HALF*temp1a + temp1b
-                   m1 = m1 - ddot(nob,H2C_vooo(c,:,i,k)+vt3_ob,t2c(b,a,:,j))
+                   call dgemv('t',Novv_bbb,nob,HALF,vC_oovv_r1,Novv_bbb,t3d(c,:,:,i,k,:),1,ZERO,temp1a,1)
+                   call dgemv('t',Novv_aab,nob,ONE,vB_oovv_r1,Novv_aab,t3c(:,c,:,:,i,k),1,ZERO,temp1b,1)
+                   vt3_ob = temp1a + temp1b
+                   m1 = m1 - ddot(nob,H2C_vooo(c,:,i,k)+vt3_ob,1,t2c(b,a,:,j),1)
 
                     !refval = ZERO
                     !do m = 1,nob
@@ -1526,50 +1729,50 @@ module ccp_loops
                     !end do
                     !error(1) = error(1) + (m1-refval)
 
-                   call dgemv(Noov_bbb,nub,vC_oovv_r2,t3d(a,b,:,i,:,:),temp2a)
-                   call dgemv(Noov_baa,nub,vB_oovv_r2,t3c(:,a,b,:,i,:),temp2b)
-                   vt3_ub = HALF*temp2a + temp2b
-                   m2 = ddot(nub,I2C_vvov(a,b,i,:)-vt3_ub,t2c(:,c,j,k))
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r2,Noov_bbb,t3d(a,b,:,i,:,:),1,ZERO,temp2a,1)
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r2,Noov_baa,t3c(:,a,b,:,i,:),1,ZERO,temp2b,1)
+                   vt3_ub = temp2a + temp2b
+                   m2 = ddot(nub,I2C_vvov(a,b,i,:)-vt3_ub,1,t2c(:,c,j,k),1)
 
-                   call dgemv(Noov_bbb,nub,vC_oovv_r2,t3d(a,c,:,i,:,:),temp2a)
-                   call dgemv(Noov_baa,nub,vB_oovv_r2,t3c(:,a,c,:,i,:),temp2b)
-                   vt3_ub = HALF*temp2a + temp2b
-                   m2 = m2 - ddot(nub,I2C_vvov(a,c,i,:)-vt3_ub,t2c(:,b,j,k))
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r2,Noov_bbb,t3d(a,c,:,i,:,:),1,ZERO,temp2a,1)
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r2,Noov_baa,t3c(:,a,c,:,i,:),1,ZERO,temp2b,1)
+                   vt3_ub = temp2a + temp2b
+                   m2 = m2 - ddot(nub,I2C_vvov(a,c,i,:)-vt3_ub,1,t2c(:,b,j,k),1)
 
-                   call dgemv(Noov_bbb,nub,vC_oovv_r2,t3d(c,b,:,i,:,:),temp2a)
-                   call dgemv(Noov_baa,nub,vB_oovv_r2,t3c(:,c,b,:,i,:),temp2b)
-                   vt3_ub = HALF*temp2a + temp2b
-                   m2 = m2 - ddot(nub,I2C_vvov(c,b,i,:)-vt3_ub,t2c(:,a,j,k))
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r2,Noov_bbb,t3d(c,b,:,i,:,:),1,ZERO,temp2a,1)
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r2,Noov_baa,t3c(:,c,b,:,i,:),1,ZERO,temp2b,1)
+                   vt3_ub = temp2a + temp2b
+                   m2 = m2 - ddot(nub,I2C_vvov(c,b,i,:)-vt3_ub,1,t2c(:,a,j,k),1)
 
-                   call dgemv(Noov_bbb,nub,vC_oovv_r2,t3d(a,b,:,j,:,:),temp2a)
-                   call dgemv(Noov_baa,nub,vB_oovv_r2,t3c(:,a,b,:,j,:),temp2b)
-                   vt3_ub = HALF*temp2a + temp2b
-                   m2 = m2 - ddot(nub,I2C_vvov(a,b,j,:)-vt3_ub,t2c(:,c,i,k))
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r2,Noov_bbb,t3d(a,b,:,j,:,:),1,ZERO,temp2a,1)
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r2,Noov_baa,t3c(:,a,b,:,j,:),1,ZERO,temp2b,1)
+                   vt3_ub = temp2a + temp2b
+                   m2 = m2 - ddot(nub,I2C_vvov(a,b,j,:)-vt3_ub,1,t2c(:,c,i,k),1)
 
-                   call dgemv(Noov_bbb,nub,vC_oovv_r2,t3d(a,c,:,j,:,:),temp2a)
-                   call dgemv(Noov_baa,nub,vB_oovv_r2,t3c(:,a,c,:,j,:),temp2b)
-                   vt3_ub = HALF*temp2a + temp2b
-                   m2 = m2 + ddot(nub,I2C_vvov(a,c,j,:)-vt3_ub,t2c(:,b,i,k))
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r2,Noov_bbb,t3d(a,c,:,j,:,:),1,ZERO,temp2a,1)
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r2,Noov_baa,t3c(:,a,c,:,j,:),1,ZERO,temp2b,1)
+                   vt3_ub = temp2a + temp2b
+                   m2 = m2 + ddot(nub,I2C_vvov(a,c,j,:)-vt3_ub,1,t2c(:,b,i,k),1)
 
-                   call dgemv(Noov_bbb,nub,vC_oovv_r2,t3d(c,b,:,j,:,:),temp2a)
-                   call dgemv(Noov_baa,nub,vB_oovv_r2,t3c(:,c,b,:,j,:),temp2b)
-                   vt3_ub = HALF*temp2a + temp2b
-                   m2 = m2 + ddot(nub,I2C_vvov(c,b,j,:)-vt3_ub,t2c(:,a,i,k))
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r2,Noov_bbb,t3d(c,b,:,j,:,:),1,ZERO,temp2a,1)
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r2,Noov_baa,t3c(:,c,b,:,j,:),1,ZERO,temp2b,1)
+                   vt3_ub = temp2a + temp2b
+                   m2 = m2 + ddot(nub,I2C_vvov(c,b,j,:)-vt3_ub,1,t2c(:,a,i,k),1)
 
-                   call dgemv(Noov_bbb,nub,vC_oovv_r2,t3d(a,b,:,k,:,:),temp2a)
-                   call dgemv(Noov_baa,nub,vB_oovv_r2,t3c(:,a,b,:,k,:),temp2b)
-                   vt3_ub = HALF*temp2a + temp2b
-                   m2 = m2 - ddot(nub,I2C_vvov(a,b,k,:)-vt3_ub,t2c(:,c,j,i))
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r2,Noov_bbb,t3d(a,b,:,k,:,:),1,ZERO,temp2a,1)
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r2,Noov_baa,t3c(:,a,b,:,k,:),1,ZERO,temp2b,1)
+                   vt3_ub = temp2a + temp2b
+                   m2 = m2 - ddot(nub,I2C_vvov(a,b,k,:)-vt3_ub,1,t2c(:,c,j,i),1)
                    
-                   call dgemv(Noov_bbb,nub,vC_oovv_r2,t3d(a,c,:,k,:,:),temp2a)
-                   call dgemv(Noov_baa,nub,vB_oovv_r2,t3c(:,a,c,:,k,:),temp2b)
-                   vt3_ub = HALF*temp2a + temp2b
-                   m2 = m2 + ddot(nub,I2C_vvov(a,c,k,:)-vt3_ub,t2c(:,b,j,i))
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r2,Noov_bbb,t3d(a,c,:,k,:,:),1,ZERO,temp2a,1)
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r2,Noov_baa,t3c(:,a,c,:,k,:),1,ZERO,temp2b,1)
+                   vt3_ub = temp2a + temp2b
+                   m2 = m2 + ddot(nub,I2C_vvov(a,c,k,:)-vt3_ub,1,t2c(:,b,j,i),1)
                    
-                   call dgemv(Noov_bbb,nub,vC_oovv_r2,t3d(c,b,:,k,:,:),temp2a)
-                   call dgemv(Noov_baa,nub,vB_oovv_r2,t3c(:,c,b,:,k,:),temp2b)
-                   vt3_ub = HALF*temp2a + temp2b
-                   m2 = m2 + ddot(nub,I2C_vvov(c,b,k,:)-vt3_ub,t2c(:,a,j,i))
+                   call dgemv('t',Noov_bbb,nub,HALF,vC_oovv_r2,Noov_bbb,t3d(c,b,:,k,:,:),1,ZERO,temp2a,1)
+                   call dgemv('t',Noov_baa,nub,ONE,vB_oovv_r2,Noov_baa,t3c(:,c,b,:,k,:),1,ZERO,temp2b,1)
+                   vt3_ub = temp2a + temp2b
+                   m2 = m2 + ddot(nub,I2C_vvov(c,b,k,:)-vt3_ub,1,t2c(:,a,j,i),1)
 
                    !refval = ZERO
                    !do e = 1,nub
@@ -1616,10 +1819,11 @@ module ccp_loops
                    !                   + I2C_vvov(a,c,k,e)*t2c(e,b,j,i)
                    ! end do
                    ! error(2) = error(2) + (m2-refval)
+
                     
-                   d1 = MINUSONE*ddot(nob,H1B_oo(:,k),t3d(a,b,c,i,j,:))
-                   d1 = d1 + ddot(nob,H1B_oo(:,j),t3d(a,b,c,i,k,:))
-                   d1 = d1 + ddot(nob,H1B_oo(:,i),t3d(a,b,c,k,j,:))
+                   d1 = MINUSONE*ddot(nob,H1B_oo(:,k),1,t3d(a,b,c,i,j,:),1)
+                   d1 = d1 + ddot(nob,H1B_oo(:,j),1,t3d(a,b,c,i,k,:),1)
+                   d1 = d1 + ddot(nob,H1B_oo(:,i),1,t3d(a,b,c,k,j,:),1)
                    !refval = ZERO
                    !do m = 1,nob
                    !   refval = refval - H1B_oo(m,k)*t3d(a,b,c,i,j,m)&
@@ -1628,9 +1832,9 @@ module ccp_loops
                    !end do
                    !error(3) = error(3) + (d1-refval)
 
-                   d2 = ddot(nub,H1B_vv(c,:),t3d(a,b,:,i,j,k))
-                   d2 = d2 - ddot(nub,H1B_vv(b,:),t3d(a,c,:,i,j,k))
-                   d2 = d2 - ddot(nub,H1B_vv(a,:),t3d(c,b,:,i,j,k))
+                   d2 = ddot(nub,H1B_vv(c,:),1,t3d(a,b,:,i,j,k),1)
+                   d2 = d2 - ddot(nub,H1B_vv(b,:),1,t3d(a,c,:,i,j,k),1)
+                   d2 = d2 - ddot(nub,H1B_vv(a,:),1,t3d(c,b,:,i,j,k),1)
                    !refval = ZERO
                    !do e = 1,nub
                    !   refval = refval + H1B_vv(c,e)*t3d(a,b,e,i,j,k)&
@@ -1639,9 +1843,9 @@ module ccp_loops
                    !end do
                    !error(4) = error(4) + (d2-refval)
 
-                   d3 = ddot(Noo_bb,H2C_oooo(:,:,i,j),t3d(a,b,c,:,:,k))
-                   d3 = d3 - ddot(Noo_bb,H2C_oooo(:,:,k,j),t3d(a,b,c,:,:,i))
-                   d3 = d3 - ddot(Noo_bb,H2C_oooo(:,:,i,k),t3d(a,b,c,:,:,j))
+                   d3 = ddot(Noo_bb,H2C_oooo(:,:,i,j),1,t3d(a,b,c,:,:,k),1)
+                   d3 = d3 - ddot(Noo_bb,H2C_oooo(:,:,k,j),1,t3d(a,b,c,:,:,i),1)
+                   d3 = d3 - ddot(Noo_bb,H2C_oooo(:,:,i,k),1,t3d(a,b,c,:,:,j),1)
                    d3 = HALF*d3
                    !refval = ZERO
                    !do m = 1,nob
@@ -1653,9 +1857,9 @@ module ccp_loops
                    !end do
                    !error(5) = error(5) + (d3-refval)
         
-                   d4 = ddot(Nvv_bb,H2C_vvvv(a,b,:,:),t3d(:,:,c,i,j,k))
-                   d4 = d4 - ddot(Nvv_bb,H2C_vvvv(c,b,:,:),t3d(:,:,a,i,j,k))
-                   d4 = d4 - ddot(Nvv_bb,H2C_vvvv(a,c,:,:),t3d(:,:,b,i,j,k))
+                   d4 = ddot(Nvv_bb,H2C_vvvv(a,b,:,:),1,t3d(:,:,c,i,j,k),1)
+                   d4 = d4 - ddot(Nvv_bb,H2C_vvvv(c,b,:,:),1,t3d(:,:,a,i,j,k),1)
+                   d4 = d4 - ddot(Nvv_bb,H2C_vvvv(a,c,:,:),1,t3d(:,:,b,i,j,k),1)
                    d4 = HALF*d4
                    !refval = ZERO
                    !do e = 1,nub
@@ -1667,15 +1871,15 @@ module ccp_loops
                    !end do
                    !error(6) = error(6) + (d4-refval)
 
-                   d5 = ddot(Nov_aa,H2B_ovvo_r(:,a,:,i),t3c(:,b,c,:,j,k))
-                   d5 = d5 - ddot(Nov_aa,H2B_ovvo_r(:,a,:,j),t3c(:,b,c,:,i,k))
-                   d5 = d5 - ddot(Nov_aa,H2B_ovvo_r(:,a,:,k),t3c(:,b,c,:,j,i))
-                   d5 = d5 - ddot(Nov_aa,H2B_ovvo_r(:,b,:,i),t3c(:,a,c,:,j,k))
-                   d5 = d5 + ddot(Nov_aa,H2B_ovvo_r(:,b,:,j),t3c(:,a,c,:,i,k))
-                   d5 = d5 + ddot(Nov_aa,H2B_ovvo_r(:,b,:,k),t3c(:,a,c,:,j,i))
-                   d5 = d5 - ddot(Nov_aa,H2B_ovvo_r(:,c,:,i),t3c(:,b,a,:,j,k))
-                   d5 = d5 + ddot(Nov_aa,H2B_ovvo_r(:,c,:,j),t3c(:,b,a,:,i,k))
-                   d5 = d5 + ddot(Nov_aa,H2B_ovvo_r(:,c,:,k),t3c(:,b,a,:,j,i))
+                   d5 = ddot(Nov_aa,H2B_ovvo_r(:,a,:,i),1,t3c(:,b,c,:,j,k),1)
+                   d5 = d5 - ddot(Nov_aa,H2B_ovvo_r(:,a,:,j),1,t3c(:,b,c,:,i,k),1)
+                   d5 = d5 - ddot(Nov_aa,H2B_ovvo_r(:,a,:,k),1,t3c(:,b,c,:,j,i),1)
+                   d5 = d5 - ddot(Nov_aa,H2B_ovvo_r(:,b,:,i),1,t3c(:,a,c,:,j,k),1)
+                   d5 = d5 + ddot(Nov_aa,H2B_ovvo_r(:,b,:,j),1,t3c(:,a,c,:,i,k),1)
+                   d5 = d5 + ddot(Nov_aa,H2B_ovvo_r(:,b,:,k),1,t3c(:,a,c,:,j,i),1)
+                   d5 = d5 - ddot(Nov_aa,H2B_ovvo_r(:,c,:,i),1,t3c(:,b,a,:,j,k),1)
+                   d5 = d5 + ddot(Nov_aa,H2B_ovvo_r(:,c,:,j),1,t3c(:,b,a,:,i,k),1)
+                   d5 = d5 + ddot(Nov_aa,H2B_ovvo_r(:,c,:,k),1,t3c(:,b,a,:,j,i),1)
                    !refval = ZERO
                    !do m = 1,noa
                    !   do e = 1,nua
@@ -1693,15 +1897,15 @@ module ccp_loops
                    !end do
                    !error(7) = error(7) + (d5-refval)
 
-                   d6 = ddot(Nov_bb,H2C_voov_r(c,:,k,:),t3d(a,b,:,i,j,:))
-                   d6 = d6 - ddot(Nov_bb,H2C_voov_r(c,:,i,:),t3d(a,b,:,k,j,:))
-                   d6 = d6 - ddot(Nov_bb,H2C_voov_r(c,:,j,:),t3d(a,b,:,i,k,:))
-                   d6 = d6 - ddot(Nov_bb,H2C_voov_r(a,:,k,:),t3d(c,b,:,i,j,:))
-                   d6 = d6 + ddot(Nov_bb,H2C_voov_r(a,:,i,:),t3d(c,b,:,k,j,:))
-                   d6 = d6 + ddot(Nov_bb,H2C_voov_r(a,:,j,:),t3d(c,b,:,i,k,:))
-                   d6 = d6 - ddot(Nov_bb,H2C_voov_r(b,:,k,:),t3d(a,c,:,i,j,:))
-                   d6 = d6 + ddot(Nov_bb,H2C_voov_r(b,:,i,:),t3d(a,c,:,k,j,:))
-                   d6 = d6 + ddot(Nov_bb,H2C_voov_r(b,:,j,:),t3d(a,c,:,i,k,:))
+                   d6 = ddot(Nov_bb,H2C_voov_r(c,:,k,:),1,t3d(a,b,:,i,j,:),1)
+                   d6 = d6 - ddot(Nov_bb,H2C_voov_r(c,:,i,:),1,t3d(a,b,:,k,j,:),1)
+                   d6 = d6 - ddot(Nov_bb,H2C_voov_r(c,:,j,:),1,t3d(a,b,:,i,k,:),1)
+                   d6 = d6 - ddot(Nov_bb,H2C_voov_r(a,:,k,:),1,t3d(c,b,:,i,j,:),1)
+                   d6 = d6 + ddot(Nov_bb,H2C_voov_r(a,:,i,:),1,t3d(c,b,:,k,j,:),1)
+                   d6 = d6 + ddot(Nov_bb,H2C_voov_r(a,:,j,:),1,t3d(c,b,:,i,k,:),1)
+                   d6 = d6 - ddot(Nov_bb,H2C_voov_r(b,:,k,:),1,t3d(a,c,:,i,j,:),1)
+                   d6 = d6 + ddot(Nov_bb,H2C_voov_r(b,:,i,:),1,t3d(a,c,:,k,j,:),1)
+                   d6 = d6 + ddot(Nov_bb,H2C_voov_r(b,:,j,:),1,t3d(a,c,:,i,k,:),1)
                    !refval = ZERO
                    !do m = 1,nob
                    !   do e = 1,nub
@@ -1768,14 +1972,14 @@ module ccp_loops
                    t3d_new(C,A,B,K,J,I) = mval
 
                 end do
+                !$OMP END DO
+                !$OMP END PARALLEL
 
                 !do i = 1,8
                 !   print*,'Error in term',i,'=',error(i)
                 !end do
 
             end subroutine update_t3d
-
-
 
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             !!!!!!!!!!!!!!!!!!!!!! UTILITY ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!
@@ -2006,74 +2210,73 @@ module ccp_loops
 
             end subroutine reorder1432
 
+            !subroutine dgemv(K,N,A,x,y)
+            !        ! Assuming:
+            !        ! trans='t'
+            !        ! K = M = LDA = LDB (on Netlib), contraction dim
+            !        ! INCX = INCY = 1
+            !        ! ALPHA = 1.0
+            !        ! BETA = 0.0
+            !
+            !        integer :: K, N
+            !        double precision :: A(K,*), X(*), Y(*)
+            !        double precision :: zero
+            !        parameter(zero=0.0d+0)
+            !        double precision :: temp
+            !        integer :: i, j, jy
+            !        
+            !        jy = 1
+            !        do j = 1,n
+            !           temp = zero
+            !           do i = 1,k
+            !              temp = temp + a(i,j)*x(i)
+            !           end do
+            !           y(jy) = temp
+            !           jy = jy + 1
+            !        end do
+            !
+            !end subroutine dgemv
 
-            subroutine dgemv(K,N,A,x,y)
-                    ! Assuming:
-                    ! trans='t'
-                    ! K = M = LDA = LDB (on Netlib), contraction dim
-                    ! INCX = INCY = 1
-                    ! ALPHA = 1.0
-                    ! BETA = 0.0
-
-                    integer :: K, N
-                    double precision :: A(K,*), X(*), Y(*)
-                    double precision :: zero
-                    parameter(zero=0.0d+0)
-                    double precision :: temp
-                    integer :: i, j, jy
-                    
-                    jy = 1
-                    do j = 1,n
-                       temp = zero
-                       do i = 1,k
-                          temp = temp + a(i,j)*x(i)
-                       end do
-                       y(jy) = temp
-                       jy = jy + 1
-                    end do
-
-            end subroutine dgemv
-
-            double precision function ddot(N,dx,dy)
-
-                    integer :: N
-                    real(8) :: dx(*), dy(*)
-                    real(8) :: dtemp
-                    integer :: i, ix, iy, m, mp1
-
-                    intrinsic mod
-
-                    ddot = 0.0d0
-                    dtemp = 0.0d0
-
-                    ! perform the dot product using batches of 5
-                    m = mod(n,5)
-
-                    !
-                    if (m .ne. 0) then
-                       do i = 1,m
-                          dtemp = dtemp + dx(i)*dy(i)
-                       end do
-                       if (n .lt. 5) then
-                          ddot = dtemp
-                          return
-                       end if
-                    end if
-
-                    ! 
-                    mp1 = m + 1
-                    do i = mp1,N,5
-                       dtemp = dtemp + dx(i)*dy(i)&
-                                     + dx(i+1)*dy(i+1)&
-                                     + dx(i+2)*dy(i+2)&
-                                     + dx(i+3)*dy(i+3)&
-                                     + dx(i+4)*dy(i+4)
-                    end do
-
-                    ! return the final dot product
-                    ddot = dtemp
-
-            end function ddot
+            !double precision function ddot(N,dx,dy)
+            !
+            !        integer :: N
+            !        real(8) :: dx(*), dy(*)
+            !        real(8) :: dtemp
+            !        integer :: i, ix, iy, m, mp1
+            !
+            !        intrinsic mod
+            !
+            !        ddot = 0.0d0
+            !        dtemp = 0.0d0
+            !
+            !        ! perform the dot product using batches of 5
+            !        m = mod(n,5)
+            !
+            !        !
+            !        if (m .ne. 0) then
+            !           do i = 1,m
+            !              dtemp = dtemp + dx(i)*dy(i)
+            !           end do
+            !           if (n .lt. 5) then
+            !              ddot = dtemp
+            !              return
+            !           end if
+            !        end if
+            !
+            !        ! 
+            !        mp1 = m + 1
+            !        do i = mp1,N,5
+            !           dtemp = dtemp + dx(i)*dy(i)&
+            !                         + dx(i+1)*dy(i+1)&
+            !                         + dx(i+2)*dy(i+2)&
+            !                         + dx(i+3)*dy(i+3)&
+            !                         + dx(i+4)*dy(i+4)
+            !        end do
+            !
+            !        ! return the final dot product
+            !        ddot = dtemp
+            !
+            !end function ddot
 
 
 

@@ -16,7 +16,7 @@ TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 #		-std=f2018
 FFLAGS := -std=f2018
 
-SRC := cc_loops.f90
+#SRC := cc_loops.f90
 LDFLAGS :=
 LIBS := -L/home2/gururang/.conda/envs/ccpy_dev/lib -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
 
