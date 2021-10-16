@@ -2,7 +2,24 @@ import numpy as np
 import time
 
 def HBar_CCSD(cc_t,ints,sys):
+    """Calculate the CCSD similarity-transformed HBar integrals (H_N e^(T1+T2))_C.
 
+    Parameters
+    ----------
+    cc_t : dict
+        Cluster amplitudes T1, T2
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+
+    Returns
+    -------
+    H1* : dict
+        One-body HBar similarity-transformed intermediates. Sorted by occ/unocc blocks.
+    H2* : dict
+        Two-body HBar similarity-transformed intermediates. Sorted by occ/unocc blocks.
+    """
     print('\nCCSD HBar construction...',end='')
 
     t_start = time.time()
@@ -296,7 +313,20 @@ def HBar_CCSD(cc_t,ints,sys):
     return H1A,H1B,H2A,H2B,H2C
 
 def calc_cc_energy(cc_t,ints):
-
+    """Calculate the CC correlation energy <0|(H_N e^T)_C|0>.
+    
+    Parameters
+    ----------
+    cc_t : dict
+        Cluster amplitudes T1, T2
+    ints : dict
+        Sliced integrals F_N and V_N that define the bare Hamiltonian H_N
+        
+    Returns
+    -------
+    Ecorr : float
+        CC correlation energy
+    """
     vA = ints['vA']
     vB = ints['vB']
     vC = ints['vC']
@@ -320,85 +350,25 @@ def calc_cc_energy(cc_t,ints):
 
     return Ecorr
 
-def HBar_CCSD_debug(cc_t,ints,sys):
-
-    print('\nCCSD HBar construction (debug version)...',end='')
-
-    t_start = time.time()
-
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-    fA = ints['fA']
-    fB = ints['fB']
-    t1a = cc_t['t1a']
-    t1b = cc_t['t1b']
-    t2a = cc_t['t2a']
-    t2b = cc_t['t2b']
-    t2c = cc_t['t2c']
-
-    h1A_ov = 0.0
-    h1A_ov += fA['ov']
-    h1A_ov += np.einsum('imae,em->ia',vA['oovv'],t1a,optimize=True)
-    h1A_ov += np.einsum('imae,em->ia',vB['oovv'],t1b,optimize=True)
-       
-    h1A_oo = 0.0
-    h1A_oo += fA['oo']
-    h1A_oo += np.einsum('je,ei->ji',h1A_ov,t1a,optimize=True)
-    h1A_oo += np.einsum('jmie,em->ji',vA['ooov'],t1a,optimize=True)
-    h1A_oo += np.einsum('jmie,em->ji',vB['ooov'],t1b,optimize=True)
-    h1A_oo += 0.5*np.einsum('jnef,efin->ji',vA['oovv'],t2a,optimize=True)
-    h1A_oo += np.einsum('jnef,efin->ji',vB['oovv'],t2b,optimize=True)
-
-    h1A_vv = 0.0
-    h1A_vv += fA['vv']
-    h1A_vv -= np.einsum('mb,am->ab',h1A_ov,t1a,optimize=True)
-    h1A_vv += np.einsum('ambe,em->ab',vA['vovv'],t1a,optimize=True)
-    h1A_vv += np.einsum('ambe,em->ab',vB['vovv'],t1b,optimize=True)
-    h1A_vv -= 0.5*np.einsum('mnbf,afmn->ab',vA['oovv'],t2a,optimize=True)
-    h1A_vv -= np.einsum('mnbf,afmn->ab',vB['oovv'],t2b,optimize=True)
-
-    h1B_ov = 0.0
-    h1B_ov += fB['ov']
-    h1B_ov += np.einsum('imae,em->ia',vC['oovv'],t1b,optimize=True)
-    h1B_ov += np.einsum('miea,em->ia',vB['oovv'],t1a,optimize=True)
-
-    h1B_oo = 0.0
-    h1B_oo += fB['oo']
-    h1B_oo += np.einsum('je,ei->ji',h1B_ov,t1b,optimize=True)
-    h1B_oo += np.einsum('jmie,em->ji',vC['ooov'],t1b,optimize=True)
-    h1B_oo += np.einsum('mjei,em->ji',vB['oovo'],t1a,optimize=True)
-    h1B_oo += 0.5*np.einsum('jnef,efin->ji',vC['oovv'],t2c,optimize=True)
-    h1B_oo += np.einsum('njfe,feni->ji',vB['oovv'],t2b,optimize=True)
-
-    h1B_vv = 0.0
-    h1B_vv += fB['vv']
-    h1B_vv -= np.einsum('mb,am->ab',h1B_ov,t1b,optimize=True)
-    h1B_vv += np.einsum('ambe,em->ab',vC['vovv'],t1b,optimize=True)
-    h1B_vv += np.einsum('maeb,em->ab',vB['ovvv'],t1a,optimize=True)
-    h1B_vv -= 0.5*np.einsum('mnbf,afmn->ab',vC['oovv'],t2c,optimize=True)
-    h1B_vv -= np.einsum('nmfb,fanm->ab',vB['oovv'],t2b,optimize=True)
-
-
-    t_end = time.time()
-    minutes, seconds = divmod(t_end-t_start, 60)
-    print(' completed in {:0.2f}m  {:0.2f}s'.format(minutes,seconds))
-
-    H1A = {'ov' : h1A_ov, 'oo' : h1A_oo, 'vv' : h1A_vv}
-
-    H1B = {'ov' : h1B_ov, 'oo' : h1B_oo, 'vv' : h1B_vv}
-
-    H2A = {'vovv' : h2A_vovv, 'ooov' : h2A_ooov, 'vvvv' : h2A_vvvv, 'oooo' : h2A_oooo, 'voov' : h2A_voov, 'vooo' : h2A_vooo, 'vvov' : h2A_vvov}
-
-    H2B = {'vovv' : h2B_vovv, 'ooov' : h2B_ooov, 'ovvv' : h2B_ovvv, 'oovo' : h2B_oovo, 'vvvv' : h2B_vvvv, 'oooo' : h2B_oooo, 'voov' : h2B_voov,
-    'ovvo' : h2B_ovvo, 'ovov' : h2B_ovov, 'vovo' : h2B_vovo, 'vooo' : h2B_vooo, 'ovoo' : h2B_ovoo, 'vvov' : h2B_vvov, 'vvvo' : h2B_vvvo}
-
-    H2C = {'vovv' : h2C_vovv, 'ooov' : h2C_ooov, 'vvvv' : h2C_vvvv, 'oooo' : h2C_oooo, 'voov' : h2C_voov, 'vooo' : h2C_vooo, 'vvov' : h2C_vvov}
-
-    return H1A,H1B,H2A,H2B,H2C
-
 def HBar_CCSDT(cc_t,ints,sys):
+    """Calculate the CCSDT similarity-transformed HBar integrals (H_N e^(T1+T2+T3))_C.
 
+    Parameters
+    ----------
+    cc_t : dict
+        Cluster amplitudes T1, T2, and T3
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+
+    Returns
+    -------
+    H1* : dict
+        One-body HBar similarity-transformed intermediates. Sorted by occ/unocc blocks.
+    H2* : dict
+        Two-body HBar similarity-transformed intermediates. Sorted by occ/unocc blocks.
+    """
     print('\nCCSDT HBar construction...',end='')
 
     t_start = time.time()
@@ -715,7 +685,21 @@ def HBar_CCSDT(cc_t,ints,sys):
 
 
 def test_HBar(matfile,ints,sys):
+    """Test the HBar integrals using known results from Matlab code.
 
+    Parameters
+    ----------
+    matfile : str
+        Path to .mat file containing T1, T2 amplitudes from Matlab
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+
+    Returns
+    -------
+    None
+    """
     from scipy.io import loadmat
 
     data_dict = loadmat(matfile)

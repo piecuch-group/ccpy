@@ -1,16 +1,46 @@
+"""Module containing functions to calculate the vertical excitation
+energies and linear excitation amplitudes for excited states using
+the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD)."""
 import numpy as np
-from HBar_module import HBar_CCSD
 import cc_loops
 
 def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0e-06,maxit=80):
+    """Perform the EOMCCSD excited-state calculation.
 
+    Parameters
+    ----------
+    nroot : int
+        Number of excited-states to solve for in the EOMCCSD procedure
+    H1*, H2* : dict
+        Sliced CCSD similarity-transformed HBar integrals
+    cc_t : dict
+        Cluster amplitudes T1, T2 of the ground-state
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+    initial_guess : str, optional
+        String that specifies the form of the initial guess, including options for
+        'cis' and 'eomccsd'. Default is 'cis'.
+    tol : float, optional
+        Convergence tolerance for the EOMCC calculation. Default is 1.0e-06.
+    maxit : int, optional
+        Maximum number of Davidson iterations in the EOMCC procedure.
+
+    Returns
+    -------
+    cc_t : dict
+        Updated dictionary of cluster amplitudes with r0, R1, R2 amplitudes for each excited state.
+    omega : ndarray(dtype=float, shape=(nroot))
+        Vector of vertical excitation energies (in hartree) for each root
+    """
     print('\n==================================++Entering EOM-CCSD Routine++=================================\n')
 
     if initial_guess == 'cis':
         n1a = sys['Nocc_a'] * sys['Nunocc_a']
         n1b = sys['Nocc_b'] * sys['Nunocc_b']
 
-        Cvec, omega_cis = cis(nroot,ints,sys)
+        Cvec, omega_cis = cis(ints,sys)
         C1A = Cvec[:n1a,:]
         C1B = Cvec[n1a:,:]
 
@@ -71,7 +101,39 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0e
     return cc_t, omega
 
 def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
+    """Diagonalize the CCSD similarity-transformed Hamiltonian HBar using the
+    non-Hermitian Davidson algorithm.
 
+    Parameters
+    ----------
+    H1*, H2* : dict
+        Sliced CCSD similarity-transformed HBar integrals
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    cc_t : dict
+        Cluster amplitudes T1, T2 of the ground-state
+    nroot : int
+        Number of excited-states to solve for
+    B0 : ndarray(dtype=float, shape=(ndim_ccsd,nroot))
+        Matrix containing the initial guess vectors for the Davidson procedure
+    E0 : ndarray(dtype=float, shape=(nroot))
+        Vector containing the energies corresponding to the initial guess vectors
+    sys : dict
+        System information dictionary
+    maxit : int, optional
+        Maximum number of Davidson iterations in the EOMCC procedure.
+    tol : float, optional
+        Convergence tolerance for the EOMCC calculation. Default is 1.0e-06.
+
+    Returns
+    -------
+    Rvec : ndarray(dtype=float, shape=(ndim_ccsd,nroot))
+        Matrix containing the final converged R vectors corresponding to the EOMCCSD linear excitation amplitudes
+    omega : ndarray(dtype=float, shape=(nroot))
+        Vector of vertical excitation energies (in hartree) for each root
+    is_converged : list
+        List of boolean indicating whether each root converged to within the specified tolerance
+    """
     noa = H1A['ov'].shape[0]
     nob = H1B['ov'].shape[0]
     nua = H1A['ov'].shape[1]
@@ -145,7 +207,32 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
     return Rvec, omega, is_converged
 
 def calc_r0(r1a,r1b,r2a,r2b,r2c,H1A,H1B,ints,omega):
+    """Calculate the EOMCC overlap <0|[ (H_N e^T)_C * (R1+R2) ]_C|0>.
+    
+    Parameters
+    ----------
+    r1a : ndarray(dtype=float, shape=(nua,noa))
+        Linear EOMCC excitation amplitudes R1(aa)
+    r1b : ndarray(dtype=float, shape=(nub,nob))
+        Linear EOMCC excitation amplitudes R1(bb)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa,noa))
+        Linear EOMCC excitation amplitudes R2(aa)
+    r2b : ndarray(dtype=float, shape=(nua,nub,noa,nob))
+        Linear EOMCC excitation amplitudes R2(ab)
+    r2c : ndarray(dtype=float, shape=(nub,nub,nob,nob))
+        Linear EOMCC excitation amplitudes R2(bb)
+    H1*, H2* : dict
+        Sliced CCSD similarity-transformed HBar integrals
+    ints : dict
+        Sliced integrals F_N and V_N that define the bare Hamiltonian H_N
+    omega : float
+        Vertical excitation energy (in hartree) for the given root
 
+    Returns
+    -------
+    r0 : float
+        Overlap of excited state with ground state
+    """
     r0 = 0.0
     r0 += np.einsum('me,em->',H1A['ov'],r1a,optimize=True)
     r0 += np.einsum('me,em->',H1B['ov'],r1b,optimize=True)
@@ -156,17 +243,75 @@ def calc_r0(r1a,r1b,r2a,r2b,r2c,H1A,H1B,ints,omega):
     return r0/omega
 
 def orthogonalize(q,B):
-    
+    """Orthogonalize the correction vector to the vectors comprising
+    the current subspace.
+
+    Parameters
+    ----------
+    q : ndarray(dtype=float, shape=(ndim_ccsd))
+        Preconditioned residual vector from Davidson procedure
+    B : ndarray(dtype=float, shape=(ndim_ccsd,curr_size))
+        Matrix of subspace vectors in Davidson procedure
+
+    Returns
+    -------
+    q : ndarray(dtype=float, shape=(ndim_ccsd))
+        Orthogonalized residual vector
+    """
     for i in range(B.shape[1]):
         b = B[:,i]/np.linalg.norm(B[:,i])
         q -= np.dot(b.T,q)*b
     return q
 
 def flatten_R(r1a,r1b,r2a,r2b,r2c):
+    """Flatten the R vector.
+
+    Parameters
+    ----------
+    r1a : ndarray(dtype=float, shape=(nua,noa))
+        Linear EOMCC excitation amplitudes R1(aa)
+    r1b : ndarray(dtype=float, shape=(nub,nob))
+        Linear EOMCC excitation amplitudes R1(bb)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa,noa))
+        Linear EOMCC excitation amplitudes R2(aa)
+    r2b : ndarray(dtype=float, shape=(nua,nub,noa,nob))
+        Linear EOMCC excitation amplitudes R2(ab)
+    r2c : ndarray(dtype=float, shape=(nub,nub,nob,nob))
+        Linear EOMCC excitation amplitudes R2(bb)
+
+    Returns
+    -------
+    R : ndarray(dtype=float, shape=(ndim_ccsd))
+        Flattened array of R vector for the given root
+    """
     return np.concatenate((r1a.flatten(),r1b.flatten(),r2a.flatten(),r2b.flatten(),r2c.flatten()),axis=0)
 
 def unflatten_R(R,sys,order='C'):
+    """Unflatten the R vector into many-body tensor components.
 
+    Parameters
+    ----------
+    R : ndarray(dtype=float, shape=(ndim_ccsd))
+        Flattened array of R vector for the given root
+    sys : dict
+        System information dictionary
+    order : str, optional
+        String of value 'C' or 'F' indicating whether row-major or column-major
+        flattening should be used. Default is 'C'.
+
+    Returns
+    -------
+    r1a : ndarray(dtype=float, shape=(nua,noa))
+        Linear EOMCC excitation amplitudes R1(aa)
+    r1b : ndarray(dtype=float, shape=(nub,nob))
+        Linear EOMCC excitation amplitudes R1(bb)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa,noa))
+        Linear EOMCC excitation amplitudes R2(aa)
+    r2b : ndarray(dtype=float, shape=(nua,nub,noa,nob))
+        Linear EOMCC excitation amplitudes R2(ab)
+    r2c : ndarray(dtype=float, shape=(nub,nub,nob,nob))
+        Linear EOMCC excitation amplitudes R2(bb)
+    """
     n1a = sys['Nocc_a'] * sys['Nunocc_a']
     n1b = sys['Nocc_b'] * sys['Nunocc_b']
     n2a = sys['Nocc_a'] ** 2 * sys['Nunocc_a'] ** 2
@@ -188,7 +333,26 @@ def unflatten_R(R,sys,order='C'):
 
 
 def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
+    """Calculate the matrix-vector product H(CCSD)*R.
 
+    Parameters
+    ----------
+    R : ndarray(dtype=float, shape=(ndim_ccsd))
+        Flattened vector of R amplitudes
+    cc_t : dict
+        Cluster amplitudes T1, T2
+    H1*, H2* : dict
+        Sliced CCSD similarity-transformed HBar integrals
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+
+    Returns
+    -------
+    HR : ndarray(dtype=float, shape=(ndim_ccsd))
+        Vector containing the matrix-vector product H(CCSD)*R
+    """
     r1a, r1b, r2a, r2b, r2c = unflatten_R(R,sys)
 
     X1A = build_HR_1A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
@@ -200,7 +364,34 @@ def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     return flatten_R(X1A, X1B, X2A, X2B, X2C)
 
 def build_HR_1A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
+    """Calculate the projection <ia|[ (H_N e^(T1+T2))_C*(R1+R2) ]_C|0>.
 
+    Parameters
+    ----------
+    r1a : ndarray(dtype=float, shape=(nua,noa))
+        Linear EOMCC excitation amplitudes R1(aa)
+    r1b : ndarray(dtype=float, shape=(nub,nob))
+        Linear EOMCC excitation amplitudes R1(bb)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa,noa))
+        Linear EOMCC excitation amplitudes R2(aa)
+    r2b : ndarray(dtype=float, shape=(nua,nub,noa,nob))
+        Linear EOMCC excitation amplitudes R2(ab)
+    r2c : ndarray(dtype=float, shape=(nub,nub,nob,nob))
+        Linear EOMCC excitation amplitudes R2(bb)
+    cc_t : dict
+        Current cluster amplitudes T1, T2
+    H1*, H2* : dict
+        Sliced CCSD similarity-transformed HBar integrals
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+
+    Returns
+    --------
+    X1A : ndarray(dtype=float, shape=(nua,noa))
+        Calculated HR Projection
+    """
     X1A = 0.0
     X1A -= np.einsum('mi,am->ai',H1A['oo'],r1a,optimize=True)
     X1A += np.einsum('ae,ei->ai',H1A['vv'],r1a,optimize=True)
@@ -216,7 +407,34 @@ def build_HR_1A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     return X1A
 
 def build_HR_1B(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
+    """Calculate the projection <i~a~|[ (H_N e^(T1+T2))_C*(R1+R2) ]_C|0>.
 
+    Parameters
+    ----------
+    r1a : ndarray(dtype=float, shape=(nua,noa))
+        Linear EOMCC excitation amplitudes R1(aa)
+    r1b : ndarray(dtype=float, shape=(nub,nob))
+        Linear EOMCC excitation amplitudes R1(bb)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa,noa))
+        Linear EOMCC excitation amplitudes R2(aa)
+    r2b : ndarray(dtype=float, shape=(nua,nub,noa,nob))
+        Linear EOMCC excitation amplitudes R2(ab)
+    r2c : ndarray(dtype=float, shape=(nub,nub,nob,nob))
+        Linear EOMCC excitation amplitudes R2(bb)
+    cc_t : dict
+        Current cluster amplitudes T1, T2
+    H1*, H2* : dict
+        Sliced CCSD similarity-transformed HBar integrals
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+
+    Returns
+    --------
+    X1B : ndarray(dtype=float, shape=(nub,nob))
+        Calculated HR Projection
+    """
     X1B = 0.0
     X1B -= np.einsum('mi,am->ai',H1B['oo'],r1b,optimize=True)
     X1B += np.einsum('ae,ei->ai',H1B['vv'],r1b,optimize=True)
@@ -232,7 +450,34 @@ def build_HR_1B(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     return X1B
 
 def build_HR_2A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
+    """Calculate the projection <ijab|[ (H_N e^(T1+T2))_C*(R1+R2) ]_C|0>.
 
+    Parameters
+    ----------
+    r1a : ndarray(dtype=float, shape=(nua,noa))
+        Linear EOMCC excitation amplitudes R1(aa)
+    r1b : ndarray(dtype=float, shape=(nub,nob))
+        Linear EOMCC excitation amplitudes R1(bb)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa,noa))
+        Linear EOMCC excitation amplitudes R2(aa)
+    r2b : ndarray(dtype=float, shape=(nua,nub,noa,nob))
+        Linear EOMCC excitation amplitudes R2(ab)
+    r2c : ndarray(dtype=float, shape=(nub,nub,nob,nob))
+        Linear EOMCC excitation amplitudes R2(bb)
+    cc_t : dict
+        Current cluster amplitudes T1, T2
+    H1*, H2* : dict
+        Sliced CCSD similarity-transformed HBar integrals
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+
+    Returns
+    --------
+    X2A : ndarray(dtype=float, shape=(nua,nua,noa,noa))
+        Calculated HR Projection
+    """
     t2a = cc_t['t2a']
     vA = ints['vA']
     vB = ints['vB']
@@ -282,7 +527,34 @@ def build_HR_2A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     return X2A
 
 def build_HR_2B(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
+    """Calculate the projection <ij~ab~|[ (H_N e^(T1+T2))_C*(R1+R2) ]_C|0>.
 
+    Parameters
+    ----------
+    r1a : ndarray(dtype=float, shape=(nua,noa))
+        Linear EOMCC excitation amplitudes R1(aa)
+    r1b : ndarray(dtype=float, shape=(nub,nob))
+        Linear EOMCC excitation amplitudes R1(bb)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa,noa))
+        Linear EOMCC excitation amplitudes R2(aa)
+    r2b : ndarray(dtype=float, shape=(nua,nub,noa,nob))
+        Linear EOMCC excitation amplitudes R2(ab)
+    r2c : ndarray(dtype=float, shape=(nub,nub,nob,nob))
+        Linear EOMCC excitation amplitudes R2(bb)
+    cc_t : dict
+        Current cluster amplitudes T1, T2
+    H1*, H2* : dict
+        Sliced CCSD similarity-transformed HBar integrals
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+
+    Returns
+    --------
+    X2B : ndarray(dtype=float, shape=(nua,nub,noa,nob))
+        Calculated HR Projection
+    """
     t2b = cc_t['t2b']
     vA = ints['vA']
     vB = ints['vB']
@@ -347,7 +619,34 @@ def build_HR_2B(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     return X2B
 
 def build_HR_2C(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
+    """Calculate the projection <i~j~a~b~|[ (H_N e^(T1+T2))_C*(R1+R2) ]_C|0>.
 
+    Parameters
+    ----------
+    r1a : ndarray(dtype=float, shape=(nua,noa))
+        Linear EOMCC excitation amplitudes R1(aa)
+    r1b : ndarray(dtype=float, shape=(nub,nob))
+        Linear EOMCC excitation amplitudes R1(bb)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa,noa))
+        Linear EOMCC excitation amplitudes R2(aa)
+    r2b : ndarray(dtype=float, shape=(nua,nub,noa,nob))
+        Linear EOMCC excitation amplitudes R2(ab)
+    r2c : ndarray(dtype=float, shape=(nub,nub,nob,nob))
+        Linear EOMCC excitation amplitudes R2(bb)
+    cc_t : dict
+        Current cluster amplitudes T1, T2
+    H1*, H2* : dict
+        Sliced CCSD similarity-transformed HBar integrals
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+
+    Returns
+    --------
+    X2C : ndarray(dtype=float, shape=(nub,nub,nob,nob))
+        Calculated HR Projection
+    """
     t2c = cc_t['t2c']
     vC = ints['vC']
     vB = ints['vB']
@@ -396,8 +695,23 @@ def build_HR_2C(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     return X2C
 
-def cis(nroot,ints,sys):
+def cis(ints,sys):
+    """Build and diagonalize the CIS Hamiltonian.
 
+    Parameters
+    ----------
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+
+    Returns
+    -------
+    C : ndarray(dtype=float, shape=(ndim_cis,ndim_cis))
+        Matrix of CIS eigenvectors
+    E_cis : ndarray(dtype=float, shape=(ndim_cis))
+        Vector of CIS eigenvalues
+    """
     fA = ints['fA']
     fB = ints['fB']
     vA = ints['vA']
@@ -463,7 +777,20 @@ def cis(nroot,ints,sys):
     return C, E_cis
 
 def calc_cc_energy(cc_t,ints):
-
+    """Calculate the CC correlation energy <0|(H_N e^T)_C|0>.
+    
+    Parameters
+    ----------
+    cc_t : dict
+        Cluster amplitudes T1, T2
+    ints : dict
+        Sliced integrals F_N and V_N that define the bare Hamiltonian H_N
+        
+    Returns
+    -------
+    Ecorr : float
+        CC correlation energy
+    """
     vA = ints['vA']
     vB = ints['vB']
     vC = ints['vC']
@@ -488,7 +815,23 @@ def calc_cc_energy(cc_t,ints):
     return Ecorr
 
 def test_updates(matfile,cc_t,ints,sys):
+    """Test the EOMCCSD updates using known results from Matlab code.
 
+    Parameters
+    ----------
+    matfile : str
+        Path to .mat file containing R vector amplitudes from Matlab
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    cc_t : dict
+        Cluster amplitudes T1, T2
+    sys : dict
+        System information dictionary
+
+    Returns
+    -------
+    None
+    """
     from scipy.io import loadmat
     from HBar_module import HBar_CCSD
     #from fortran_cis import cis_hamiltonian

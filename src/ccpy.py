@@ -1,5 +1,8 @@
+"""Driver module for the CCpy program suite.
+Call this script with a supplied input file as
+    python ccpy.py <input>
+"""
 import os
-os.environ["OPENBLAS_NUM_THREADS"] = '10'
 import argparse
 from parser_module import parse_input_file
 from system import build_system

@@ -1,3 +1,8 @@
+"""Module containing the main driver functions for the adaptive-CC(P;Q)
+approach aimed at converging the CCSDT energetics. Contains functions to
+perform the relaxed and unrelaxed variants and may use either the 
+CR-CC(2,3)-like corrections under the two-body approximation or the
+perturbative CCSD(T)-like corrections to grow the P spaces."""
 import numpy as np
 from adaptive_ccp_module import ccsdt_p     # This is the full CCSDT version
 #from adaptive_ccp_module_v2 import ccsdt_p # this is the devectorized version in Python
@@ -10,8 +15,47 @@ from ccsd_module import ccsd
 import os
 
 def calc_adaptive_ccpq_norelax(sys,ints,tot_triples,workdir,triples_percentages,ccshift=0.0,lccshift=0.0,isRHF=False,\
-                ccmaxit=100,tol=1.0e-08,diis_size=6,flag_save=False):
+                ccmaxit=100,tol=1.0e-08,diis_size=6,flag_pert_triples=False,flag_save=False):
+    """Perform the unrelaxed adaptive-CC(P:Q) calculation aimed at converging the CCSDT energetics.
+    
+    Parameters
+    ----------
+    sys : dict
+        System information dictionary
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    tot_triples : int
+        Total number of triples belonging to symmetry of the ground state
+    workdir : str
+        Path to working directory where output files will be stored
+    triples_percentages : list
+        List of the integer percentages of triples that will be included in the P space for the CC(P;Q) calculations
+    ccshift : float, optional
+        Energy denominator shift value (in hartree) used to help converge the CC(P) calculations. Default value is 0.0.
+    lccshift : float, optional
+        Energy denominator shift value (in hartree) used to help converge the left-CC(P) calculations. Default value is 0.0.
+    isRHF : bool, optional
+        Flag to indicate whether closed-shell RHF symmetry should be used. Default is False.
+    ccmaxit : int, optional
+        Maximum number of iterations allowed for the CC(P) and left-CC(P) calculations. Default is 100.
+    tol : float, optional
+        Convergence tolerance for the CC(P) and left-CC(P) calculations. Default is 1.0e-08.
+    diis_size : int, optional
+        Size of inversion subspace used in DIIS acceleration for CC(P) and left-CC(P) calculations. Default is 6.
+    flag_pert_T : bool, optional
+        Flag to indicate whether the perturbative CCSD(T)-like correction should be used in the adaptive-CC(P;Q) procedure. If False,
+        the more robust CR-CC(2,3)-like corrections are used. Default is False.
+    flag_save : bool, optional
+        Flag to indicate whether outputs of T vectors, L vectors, and P spaces should be saved for each percentage. 
+        Quantities are stored as .npy file (they are large!) and will be placed in workdir. Default is False.
 
+    Returns
+    -------
+    Eccp : ndarray(dtype=float, shape=(len(triples_percentages))
+        Array of total CC(P) energies for each requested triples percentage
+    Eccpq : ndarray(dtype=float, shape=(len(triples_percentages))
+        Array of total CC(P;Q) energies for each requested triples percentage
+    """
     print('\n==================================++Entering Adaptive CC(P;Q) Routine++=================================\n')
     print('     UNRELAXED ADAPTIVE CC(P;Q) ALGORITHM')
     print('     TOTAL NUMBER OF TRIPLES: {}'.format(tot_triples))
@@ -24,8 +68,7 @@ def calc_adaptive_ccpq_norelax(sys,ints,tot_triples,workdir,triples_percentages,
     nua = sys['Nunocc_a']
     nub = sys['Nunocc_b']
 
-    flag_USE_PERT_T = True
-    if flag_USE_PERT_T:
+    if flag_pert_triples:
         print('>>>USING CCSD(T) CORRECTION<<<')
 
     num_calcs = len(triples_percentages)
@@ -40,7 +83,7 @@ def calc_adaptive_ccpq_norelax(sys,ints,tot_triples,workdir,triples_percentages,
 
     # Initial CCSD/CR-CC(2,3) calculation
     cc_t_ccsd, Eccsd = ccsd(sys,ints,shift=ccshift,maxit=ccmaxit,tol=tol,diis_size=diis_size)
-    if flag_USE_PERT_T:
+    if flag_pert_triples:
         _, mcA_ccsd, mcB_ccsd, mcC_ccsd, mcD_ccsd  = ccp3_pertT(cc_t_ccsd,p_spaces_ccsd,ints,sys,flag_RHF=isRHF)
     else:
         H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t_ccsd,ints,sys)
@@ -85,7 +128,7 @@ def calc_adaptive_ccpq_norelax(sys,ints,tot_triples,workdir,triples_percentages,
                 np.save(iterdir+'/'+key,value)
 
         # Left CC and HBar
-        if flag_USE_PERT_T:
+        if flag_pert_triples:
             Eccpq[ncnt], _, _, _, _  = ccp3_pertT(cc_t,p_spaces,ints,sys,flag_RHF=isRHF)
         else:
             H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
@@ -101,10 +144,55 @@ def calc_adaptive_ccpq_norelax(sys,ints,tot_triples,workdir,triples_percentages,
     return Eccp, Eccpq
 
 def calc_adaptive_ccpq(sys,ints,tot_triples,workdir,ccshift=0.0,lccshift=0.0,maxit=10,growth_percentage=1.0,\
-                restart_dir=None,niter0=0,isRHF=False,ccmaxit=100,tol=1.0e-08,diis_size=6,flag_save=False):
+                restart_dir=None,niter0=0,isRHF=False,ccmaxit=100,tol=1.0e-08,diis_size=6,flag_pert_triples=False,flag_save=False):
+    """Perform the relaxed adaptive-CC(P:Q) calculation aimed at converging the CCSDT energetics.
+    
+    Parameters
+    ----------
+    sys : dict
+        System information dictionary
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    tot_triples : int
+        Total number of triples belonging to symmetry of the ground state
+    workdir : str
+        Path to working directory where output files will be stored
+    ccshift : float, optional
+        Energy denominator shift value (in hartree) used to help converge the CC(P) calculations. Default value is 0.0.
+    lccshift : float, optional
+        Energy denominator shift value (in hartree) used to help converge the left-CC(P) calculations. Default value is 0.0.
+    maxit : int, optional
+        Number of adaptive-CC(P;Q) growth iterations. Default is 10.
+    growth_percentage : float, optional
+        Percentage of triples to add into the P space at each adaptive-CC(P;Q) growth step. Default is 1.
+    restart_dir : str, optional
+        Directory containing the T1 and P space files stored in .npy format used to restart the relaxed adaptive-CC(P;Q)
+        calculation. If provided, these files will be looked for. Default is None (no restarting).
+    isRHF : bool, optional
+        Flag to indicate whether closed-shell RHF symmetry should be used. Default is False.
+    ccmaxit : int, optional
+        Maximum number of iterations allowed for the CC(P) and left-CC(P) calculations. Default is 100.
+    tol : float, optional
+        Convergence tolerance for the CC(P) and left-CC(P) calculations. Default is 1.0e-08.
+    diis_size : int, optional
+        Size of inversion subspace used in DIIS acceleration for CC(P) and left-CC(P) calculations. Default is 6.
+    flag_pert_triples : bool, optional
+        Flag to indicate whether the perturbative CCSD(T)-like correction should be used in the adaptive-CC(P;Q) procedure. If False,
+        the more robust CR-CC(2,3)-like corrections are used. Default is False.
+    flag_save : bool, optional
+        Flag to indicate whether outputs of T vectors, L vectors, and P spaces should be saved for each percentage. 
+        Quantities are stored as .npy file (they are large!) and will be placed in workdir. Default is False.
+
+    Returns
+    -------
+    Eccp : ndarray(dtype=float, shape=(maxit))
+        Array of total CC(P) energies for each relaxed adaptive-CC(P;Q) iteration.
+    Eccpq : ndarray(dtype=float, shape=(maxit))
+        Array of total CC(P;Q) energies for each relaxed adaptive-CC(P;Q) iteration.
+    """
 
     print('\n==================================++Entering Adaptive CC(P;Q) Routine++=================================\n')
-    print('     REXALED ADAPTIVE CC(P;Q) ALGORITHM')
+    print('     RELAXED ADAPTIVE CC(P;Q) ALGORITHM')
     print('     TOTAL NUMBER OF TRIPLES: {}'.format(tot_triples))
     print('     REQUESTED %T GROWTH PER ITERATION = {}'.format(growth_percentage))
     print('     NUMBER OF ADAPTIVE CC(P;Q) ITERATIONS = {}'.format(maxit))
@@ -119,8 +207,7 @@ def calc_adaptive_ccpq(sys,ints,tot_triples,workdir,ccshift=0.0,lccshift=0.0,max
     Eccp = np.zeros(maxit)
     Eccpq = np.zeros(maxit)
 
-    flag_USE_PERT_T = True
-    if flag_USE_PERT_T:
+    if flag_pert_triples:
         print('>>>USING CCSD(T) CORRECTION<<<')
 
     if restart_dir is not None:
@@ -164,7 +251,7 @@ def calc_adaptive_ccpq(sys,ints,tot_triples,workdir,ccshift=0.0,lccshift=0.0,max
         print('    CC(P) ENERGY = {} HARTREE'.format(Eccp_rest))
 
         # Calculate CC(P;Q) moment correction using 2BA
-        if flag_USE_PERT_T:
+        if flag_pert_triples:
             Eccpq_rest, mcA, mcB, mcC, mcD  = ccp3_pertT(cc_t,p_spaces,ints,sys,flag_RHF=isRHF)
         else:
             # Calculate HBar using 2BA
@@ -192,7 +279,7 @@ def calc_adaptive_ccpq(sys,ints,tot_triples,workdir,ccshift=0.0,lccshift=0.0,max
 
         # Initial CCSD/CR-CC(2,3) calculation
         cc_t, Eccsd = ccsd(sys,ints,shift=ccshift,maxit=ccmaxit,tol=tol,diis_size=diis_size)
-        if flag_USE_PERT_T:
+        if flag_pert_triples:
             _, mcA, mcB, mcC, mcD  = ccp3_pertT(cc_t,p_spaces,ints,sys,flag_RHF=isRHF)
         else:
             H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
@@ -244,7 +331,7 @@ def calc_adaptive_ccpq(sys,ints,tot_triples,workdir,ccshift=0.0,lccshift=0.0,max
             for key, value in cc_t.items():
                 np.save(iterdir+'/'+key,value)
 
-        if flag_USE_PERT_T:
+        if flag_pert_triples:
             Eccpq[niter-niter0], mcA, mcB, mcC, mcD  = ccp3_pertT(cc_t,p_spaces,ints,sys,flag_RHF=isRHF)
         else:
             # Calculate HBar using 2BA
@@ -263,7 +350,7 @@ def calc_adaptive_ccpq(sys,ints,tot_triples,workdir,ccshift=0.0,lccshift=0.0,max
 
 def calc_adaptive_ccpq_depreciated(sys,ints,tot_triples,workdir,ccshift=0.0,lccshift=0.0,maxit=10,growth_percentage=1.0,\
                 restart_dir=None,niter0=0,isRHF=False,ccmaxit=100,tol=1.0e-08,diis_size=6,flag_save=False):
-
+    """DEPRECIATED VERSION OF THE RELAXED ADAPTIVE-CC(P;Q) ALGORITHM. IT IS CORRECT, BUT DO NOT USE!"""
     print('\n==================================++Entering Adaptive CC(P;Q) Routine++=================================\n')
     print('     REXALED ADAPTIVE CC(P;Q) ALGORITHM')
     print('     TOTAL NUMBER OF TRIPLES: {}'.format(tot_triples))
@@ -379,7 +466,29 @@ def calc_adaptive_ccpq_depreciated(sys,ints,tot_triples,workdir,ccshift=0.0,lccs
     return Eccp, Eccpq
 
 def selection_function(sys,mcA,mcB,mcC,mcD,p_spaces,num_add,flag_RHF=False):
-
+    """Select the specified number of triples from the Q space to be included 
+    in the P space by choosing those with the largest magntiude of 
+    moment-based corrections.
+       
+    Parameters
+    ----------
+    sys : dict
+        System information dictionary
+    mcA : ndarray(dtype=float, shape=(nua,nua,nua,noa,noa,noa))
+        Individual CC(P;Q)_D corrections for each triple |ijkabc> in both P and Q spaces
+    mcB : ndarray(dtype=float, shape=(nua,nua,nub,noa,noa,nob))
+        Individual CC(P;Q)_D corrections for each triple |ijk~abc~> in both P and Q spaces
+    mcC : ndarray(dtype=float, shape=(nua,nub,nub,noa,nob,nob))
+        Individual CC(P;Q)_D corrections for each triple |ij~k~ab~c~> in both P and Q spaces
+    mcD : ndarray(dtype=float, shape=(nub,nub,nub,nob,nob,nob))
+        Individual CC(P;Q)_D corrections for each triple |i~j~k~a~b~c~> in both P and Q spaces
+    p_spaces : dict
+        Triples included in the P spaces for each spin case (A - D)
+    num_add : int
+        Number of triples from the Q space to add into the P space
+    flag_RHF : bool, optional
+        Flag to indicate whether closed-shell RHF symmetry should be used. Default is False.
+    """
     print('SELECTION STEP USING CR-CC(2,3)_D CORRECTIONS')
     n3a = sys['Nunocc_a']**3 * sys['Nocc_a']**3
     n3b = sys['Nunocc_a']**2 * sys['Nunocc_b'] * sys['Nocc_a']**2 * sys['Nocc_b']
@@ -647,7 +756,18 @@ def selection_function(sys,mcA,mcB,mcC,mcD,p_spaces,num_add,flag_RHF=False):
     return p_spaces_out, ct
 
 def count_triples_in_P(p_spaces):
+    """Count the triples in the P space.
 
+    Parameters
+    ----------
+    p_spaces : dict
+        Triples included in the P spaces for each spin case (A - D)
+
+    Returns
+    -------
+    num_triples : int
+        Number of triples contained in the P space
+    """
     num_triples = 0
 
     pA = p_spaces['A']
