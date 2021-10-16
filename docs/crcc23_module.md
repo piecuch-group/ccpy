@@ -166,7 +166,7 @@ Functions
 
     
 `build_MM23A(cc_t, H1A, H2A, sys)`
-:   Calculate the projection <ijkabc|(H_N e^(T1+T2))_C|0>.
+:   Calculate the projection $\langle ijkabc | (H_N e^{T1+T2})_C | 0\rangle$.
     
     Parameters
     ----------
