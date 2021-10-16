@@ -195,7 +195,7 @@ def crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,nroot=0,omega=0.0):
     return Ecrcc23, delta23
 
 def build_MM23A(cc_t,H1A,H2A,sys):
-    r"""Calculate the projection $\langle ijkabc | (H_N e^{T1+T2})_C | 0\rangle$.
+    """Calculate the projection <ijkabc|(H_N e^(T1+T2))_C|0>.
     
     Parameters
     ----------
