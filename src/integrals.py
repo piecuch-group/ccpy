@@ -373,6 +373,7 @@ def get_integrals(onebody_file,twobody_file,sys,**kwargs):
 
 
     ints = {'fA' : fA, 'fB' : fB, 'vA' : vA, 'vB' : vB, 'vC' : vC, 'Vnuc' : e_nn, 'Escf' : Escf}
+    #ints = {'fA' : fA, 'fB' : fB, 'vA' : vA, 'vB' : vB, 'vC' : vC, 'Vnuc' : e_nn, 'Escf' : Escf, v : 'Vmat', f : 'Fmat'}
     if is_mux:
         ints['muxA'] = muxA
         ints['muxB'] = muxB

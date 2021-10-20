@@ -1,7 +1,8 @@
 import numpy as np
 from solvers import diis
 import time
-
+import ccp_loops
+import cc_loops
 
 def ccsdt_p(sys,ints,p_spaces,maxit=100,tol=1e-08,diis_size=6,shift=0.0,initial_guess=None,flag_RHF=False):
 
@@ -111,7 +112,7 @@ def ccsdt_p(sys,ints,p_spaces,maxit=100,tol=1e-08,diis_size=6,shift=0.0,initial_
         if num_triples_A > 0:
             list_A = np.asarray(list_of_triples['A'])
             I2A_vvov = H2A['vvov'] + np.einsum('me,abim->abie',H1A['ov'],cc_t['t2a'],optimize=True)
-            cc_t['t3a'] = f90_ccp_updates_mkl_omp.ccp_loops.update_t3a(cc_t['t2a'],cc_t['t3a'],cc_t['t3b'],list_A,\
+            cc_t['t3a'] = ccp_loops.ccp_loops.update_t3a(cc_t['t2a'],cc_t['t3a'],cc_t['t3b'],list_A,\
                         ints['vA']['oovv'],ints['vB']['oovv'],H1A['oo'],H1A['vv'],H2A['oooo'],\
                         H2A['vvvv'],H2A['voov'],H2B['voov'],H2A['vooo'],I2A_vvov,\
                         ints['fA']['oo'],ints['fA']['vv'],shift,sys['Nocc_a'],sys['Nunocc_a'],\
@@ -122,7 +123,7 @@ def ccsdt_p(sys,ints,p_spaces,maxit=100,tol=1e-08,diis_size=6,shift=0.0,initial_
             I2A_vooo = H2A['vooo'] - np.einsum('me,aeij->amij',H1A['ov'],cc_t['t2a'],optimize=True)
             I2B_ovoo = H2B['ovoo'] - np.einsum('me,ecjk->mcjk',H1A['ov'],cc_t['t2b'],optimize=True)
             I2B_vooo = H2B['vooo'] - np.einsum('me,aeik->amik',H1B['ov'],cc_t['t2b'],optimize=True) 
-            cc_t['t3b'] = f90_ccp_updates_mkl_omp.ccp_loops.update_t3b(cc_t['t2a'],cc_t['t2b'],cc_t['t3a'],cc_t['t3b'],cc_t['t3c'],\
+            cc_t['t3b'] = ccp_loops.ccp_loops.update_t3b(cc_t['t2a'],cc_t['t2b'],cc_t['t3a'],cc_t['t3b'],cc_t['t3c'],\
                         list_B,ints['vA']['oovv'],ints['vB']['oovv'],ints['vC']['oovv'],\
                         H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],H2A['oooo'],H2A['vvvv'],\
                         H2A['voov'],H2B['oooo'],H2B['vvvv'],H2B['voov'],H2B['ovov'],\
@@ -137,7 +138,7 @@ def ccsdt_p(sys,ints,p_spaces,maxit=100,tol=1e-08,diis_size=6,shift=0.0,initial_
             I2B_ovoo = H2B['ovoo'] - np.einsum('me,ebij->mbij',H1A['ov'],cc_t['t2b'],optimize=True)
             I2B_vooo = H2B['vooo'] - np.einsum('me,aeij->amij',H1B['ov'],cc_t['t2b'],optimize=True)
             I2C_vooo = H2C['vooo'] - np.einsum('me,cekj->cmkj',H1B['ov'],cc_t['t2c'],optimize=True)
-            cc_t['t3c'] = f90_ccp_updates_mkl_omp.ccp_loops.update_t3c(cc_t['t2b'],cc_t['t2c'],cc_t['t3b'],cc_t['t3c'],cc_t['t3d'],\
+            cc_t['t3c'] = ccp_loops.ccp_loops.update_t3c(cc_t['t2b'],cc_t['t2c'],cc_t['t3b'],cc_t['t3c'],cc_t['t3d'],\
                         list_C,ints['vA']['oovv'],ints['vB']['oovv'],ints['vC']['oovv'],\
                         H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],\
                         H2A['voov'],\
@@ -152,7 +153,7 @@ def ccsdt_p(sys,ints,p_spaces,maxit=100,tol=1e-08,diis_size=6,shift=0.0,initial_
         if num_triples_D > 0:
             list_D = np.asarray(list_of_triples['D'])
             I2C_vvov = H2C['vvov'] + np.einsum('me,abim->abie',H1B['ov'],cc_t['t2c'],optimize=True)
-            cc_t['t3d'] = f90_ccp_updates_mkl_omp.ccp_loops.update_t3d(cc_t['t2c'],cc_t['t3c'],cc_t['t3d'],list_D,\
+            cc_t['t3d'] = ccp_loops.ccp_loops.update_t3d(cc_t['t2c'],cc_t['t3c'],cc_t['t3d'],list_D,\
                         ints['vB']['oovv'],ints['vC']['oovv'],H1B['oo'],H1B['vv'],H2C['oooo'],\
                         H2C['vvvv'],H2C['voov'],H2B['ovvo'],H2C['vooo'],I2C_vvov,\
                         ints['fB']['oo'],ints['fB']['vv'],shift,sys['Nocc_a'],sys['Nunocc_a'],\
