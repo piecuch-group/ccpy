@@ -3,7 +3,7 @@ from solvers import diis
 import time
 import cc_loops
 
-def ccsdt3(sys,ints,nact_o_alpha,nact_o_beta,nact_u_alpha,nact_u_beta,maxit=100,tol=1e-08,diis_size=6,shift=0.0):
+def ccsdt3(sys,ints,nact_o_alpha,nact_u_alpha,nact_o_beta,nact_u_beta,maxit=100,tol=1e-08,diis_size=6,shift=0.0):
 
     print('\n==================================++Entering CCSDt(III) Routine++=================================\n')
 
