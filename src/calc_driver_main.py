@@ -29,9 +29,9 @@ def calc_driver_main(inputs,sys,ints):
         from mp2_module import mp2
         Emp2 = mp2(sys,ints)
 
-    if calc_type == 'gf2' or calc_type == 'GF2':
-        from gf2_module import gf2
-        omega_gf2 = gf2(inputs['nroot'],ints,sys,maxit=inputs['maxit'],tol=inputs['tol'])
+    if calc_type == 'ip-gf2' or calc_type == 'IP-GF2':
+        from gf2_module import gf2_ip
+        ip_omega_gf2 = gf2_ip(inputs['nroot'],ints,sys,maxit=inputs['maxit'],tol=inputs['tol'])
 
     if calc_type == 'ccs' or calc_type == 'CCS':
         from ccs_module import ccs

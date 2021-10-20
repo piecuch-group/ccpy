@@ -15,8 +15,8 @@ def calc_mp2_selfenergy(omega,ints,sys):
 
     Returns
     -------
-    sigma_mp2 : ndarray(dtype=np.float64, shape=(norb,norb))
-        MBPT(2) estimate of self-energy matrix
+    sigma_* : ndarray(dtype=np.float64, shape=(norb,norb))
+        MBPT(2) estimates of self-energy matrix for the alpha and beta spincases
     """
     fA = ints['fA']; fB = ints['fB'];
     vA = ints['vA']; vB = ints['vB']; vC = ints['vC'];
@@ -89,14 +89,36 @@ def calc_mp2_selfenergy(omega,ints,sys):
 
     return sigma_a, sigma_b
 
-def gf2(nroot,ints,sys,maxit=50,tol=1.0e-08):
-
+def gf2_ip(nroot,ints,sys,maxit=50,tol=1.0e-08):
+    """Perform MBGF(2) iterations to relax the Koopmans IP energy.
+    
+    Parameters
+    ----------
+    nroot : int
+        Number of IP roots. IP solver obtains nroot IP energies starting
+        with HOMO. Can only request up to max(Nocc_a,Nocc_b) roots.
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+    excitation : str
+        Specify whether EA or IP roots should be solved for
+    maxit : int, optional
+        Maximum number of iterations for each root. Default is 100.
+    tol : float, optional
+        Convergence threshold on self-consistency of Dyson equation. Default is 1.0e-08.
+        
+    Returns
+    -------
+    omega : ndarray(dtype=np.float64, shape=(nroot))
+        MBGF(2) IP energies (hartree)
+    """
     fA = ints['fA']; fB = ints['fB'];
     omega = np.zeros(nroot)
     for p in range(sys['Nocc_a']-1,sys['Nocc_a']-nroot-1,-1):
         iroot = sys['Nocc_a'] - p
         print('\nStarting MBGF(2) iterations for root {}'.format(iroot))
-        print("Koopman's estimate of IP energy = {:>8f} hartree".format(fA['oo'][p,p]))
+        print("Koopmans estimate of IP energy = {:>8f} hartree".format(fA['oo'][p,p]))
         print('Iter        IP Energy       Residuum')
         print('========================================')
         e0 = fA['oo'][p,p]
