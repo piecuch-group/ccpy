@@ -26,11 +26,15 @@ def calc_driver_main(inputs,sys,ints):
     calc_type = inputs['calc_type']
 
     if calc_type == 'mp2' or calc_type == 'MP2':
-        from mp2_module import mp2
+        from mbpt_module import mp2
         Emp2 = mp2(sys,ints)
 
+    if calc_type == 'mp3' or calc_type == 'MP3':
+        from mbpt_module import mp3
+        Emp3 = mp3(sys,ints)
+
     if calc_type == 'ip-gf2' or calc_type == 'IP-GF2':
-        from gf2_module import gf2_ip
+        from mbgf_module import gf2_ip
         ip_omega_gf2 = gf2_ip(inputs['nroot'],ints,sys,maxit=inputs['maxit'],tol=inputs['tol'])
 
     if calc_type == 'ccs' or calc_type == 'CCS':

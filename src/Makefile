@@ -1,6 +1,6 @@
 # Build the ccq_py python module
 #MODULE := f90_crcc
-MODULES := cc_loops crcc_loops
+MODULES := cc_loops crcc_loops mbgf_loops mbpt_loops
 EXT_SUFFIX := $(shell python -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
 SOURCES := $(addsuffix .f90, $(MODULES))
 TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
@@ -18,8 +18,7 @@ FFLAGS := -std=f2018
 
 #SRC := cc_loops.f90
 LDFLAGS :=
-#LIBS := -L/home2/gururang/.conda/envs/ccpy_dev/lib -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
-LIBS := -L/opt/anaconda3/envs/ccpy_dev/lib -lmkl_core -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_avx2.1 -lgomp -lpthread -lm -ldl
+LIBS := -L/home2/gururang/.conda/envs/ccpy_dev/lib -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
 .PHONY: all clean
 
 all: $(TARGETS)
