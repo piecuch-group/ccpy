@@ -76,6 +76,21 @@ def calc_driver_main(inputs,sys,ints):
                         tol=inputs['eom_tol'],initial_guess=inputs['eom_init'],\
                         maxit=inputs['eom_maxit'])
 
+    if calc_type == 'ipeom2' or calc_type == 'IPEOM2':
+        from ccsd_module import ccsd
+        from ipeom2_module import ipeom2
+        from HBar_module import HBar_CCSD
+
+        cc_t, Eccsd = ccsd(sys,ints,\
+                        shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
+                        diis_size=inputs['diis_size'])
+
+        H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
+        
+        cc_t, omega = ipeom2(inputs['nroot'],H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,\
+                        tol=inputs['eom_tol'],initial_guess=inputs['eom_init'],\
+                        maxit=inputs['eom_maxit'])
+
     if calc_type == 'ccsdt' or calc_type == 'CCSDT':
         from ccsdt_module import ccsdt
         cc_t, Eccsdt = ccsdt(sys,ints,\
@@ -93,8 +108,6 @@ def calc_driver_main(inputs,sys,ints):
 
         H1A,H1B,H2A,H2B,H2C = HBar_CCSDT(cc_t,ints,sys)
         
-        #matfile = inputs['work_dir']+'/Rvec-h2o-631g.mat'
-        #test_updates(matfile,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
         cc_t, omega = eomccsdt(inputs['nroot'],H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,\
                         tol=inputs['eom_tol'],initial_guess=inputs['eom_init'],\
                         maxit=inputs['eom_maxit'])
