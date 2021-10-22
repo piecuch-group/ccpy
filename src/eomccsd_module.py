@@ -167,11 +167,18 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
             e, alpha = np.linalg.eig(G)
             #alphainvtr = np.linalg.inv(alpha).T
 
-            idx = np.argsort([abs(x-E0[iroot]) for x in e])
-            omega[iroot] = np.real(e[idx[0]])
-            alpha = np.real(alpha[:,idx[0]])
-            #alphainv = np.real(alphainvtr[:,idx[0]])
+            # select root based on maximum overlap with initial guess
+            # < b0 | V_i > = < b0 | \sum_k alpha_{ik} |b_k>
+            # = \sum_k alpha_{ik} < b0 | b_k > = \sum_k alpha_{i0}
+            idx = np.argsort( abs(alpha[0,:]) )
+            omega[iroot] = np.real(e[idx[-1]])
+            alpha = np.real(alpha[:,idx[-1]])
             Rvec[:,iroot] = np.dot(B,alpha)
+            #idx = np.argsort([abs(x-E0[iroot]) for x in e])
+            #omega[iroot] = np.real(e[idx[0]])
+            #alpha = np.real(alpha[:,idx[0]])
+            #alphainv = np.real(alphainvtr[:,idx[0]])
+            #Rvec[:,iroot] = np.dot(B,alpha)
             #Lvec0[:,iroot] = np.dot(B,alphainv)
 
             # calculate residual vector
