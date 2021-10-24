@@ -927,24 +927,23 @@ module cc_loops
               !f2py intent(in,out) :: r2d(0:nub-1,0:nob-1,0:nob-1)
               integer :: i, j, b
               real(8) :: denom
-              real(kind=8), parameter :: eps = 1.0d-012
 
               do i = 1,noa
                   denom = H1A_oo(i,i)
-                  r1a(i) = r1a(i)/(omega-denom+shift+eps)
+                  r1a(i) = r1a(i)/(omega-denom+shift)
               end do
 
               do i = 1,nob
                   denom = H1B_oo(i,i)
-                  r1b(i) = r1b(i)/(omega-denom+shift+eps)
+                  r1b(i) = r1b(i)/(omega-denom+shift)
               end do
 
               do i = 1,noa
-                do j = i+1,noa
+                do j = 1,noa
                    do b = 1,nua
                       denom = -H1A_vv(b,b) + H1A_oo(i,i) + H1A_oo(j,j)
-                      r2a(b,i,j) = r2a(b,i,j)/(omega-denom+shift+eps)
-                      r2a(b,j,i) = -r2a(b,i,j)
+                      r2a(b,i,j) = r2a(b,i,j)/(omega-denom+shift)
+                      !r2a(b,j,i) = -r2a(b,i,j)
                   end do
                 end do
               end do
@@ -953,7 +952,7 @@ module cc_loops
                 do j = 1,noa
                    do b = 1,nua
                       denom = -H1A_vv(b,b) + H1B_oo(i,i) + H1A_oo(j,j)
-                      r2b(b,i,j) = r2b(b,i,j)/(omega-denom+shift+eps)
+                      r2b(b,i,j) = r2b(b,i,j)/(omega-denom+shift)
                   end do
                 end do
               end do
@@ -962,17 +961,17 @@ module cc_loops
                 do j = 1,nob
                    do b = 1,nub
                       denom = -H1B_vv(b,b) + H1A_oo(i,i) + H1B_oo(j,j)
-                      r2c(b,i,j) = r2c(b,i,j)/(omega-denom+shift+eps)
+                      r2c(b,i,j) = r2c(b,i,j)/(omega-denom+shift)
                   end do
                 end do
               end do
 
               do i = 1,nob
-                do j = i+1,nob
+                do j = 1,nob
                    do b = 1,nub
                       denom = -H1B_vv(b,b) + H1B_oo(i,i) + H1B_oo(j,j)
-                      r2d(b,i,j) = r2d(b,i,j)/(omega-denom+shift+eps)
-                      r2d(b,j,i) = -r2d(b,i,j)
+                      r2d(b,i,j) = r2d(b,i,j)/(omega-denom+shift)
+                      !r2d(b,j,i) = -r2d(b,i,j)
                   end do
                 end do
               end do

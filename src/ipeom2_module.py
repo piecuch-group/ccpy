@@ -1,3 +1,8 @@
+"""Module containing functions to calculate the vertical ionization
+energies and linear excitation amplitudes for excited states of an
+N-1 electron system out of the CC ground state of an N electron system 
+using the ionization process (IP) equation-of-motion (EOM) CC with 
+singles and doubles (IP-EOMCCSD) with up to 2h-1p excitations."""
 import numpy as np
 import cc_loops
 
@@ -81,8 +86,8 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
 
     Returns
     -------
-    Rvec : ndarray(dtype=float, shape=(ndim_ccsd,nroot))
-        Matrix containing the final converged R vectors corresponding to the EOMCCSD linear excitation amplitudes
+    Rvec : ndarray(dtype=float, shape=(ndim_2h1p,nroot))
+        Matrix containing the final converged R vectors corresponding to the IP-EOMCCSD linear excitation amplitudes
     omega : ndarray(dtype=float, shape=(nroot))
         Vector of vertical excitation energies (in hartree) for each root
     is_converged : list
@@ -183,20 +188,22 @@ def flatten_R(r1a,r1b,r2a,r2b,r2c,r2d):
 
     Parameters
     ----------
-    r1a : ndarray(dtype=float, shape=(nua,noa))
-        Linear EOMCC excitation amplitudes R1(aa)
-    r1b : ndarray(dtype=float, shape=(nub,nob))
-        Linear EOMCC excitation amplitudes R1(bb)
-    r2a : ndarray(dtype=float, shape=(nua,nua,noa,noa))
-        Linear EOMCC excitation amplitudes R2(aa)
-    r2b : ndarray(dtype=float, shape=(nua,nub,noa,nob))
-        Linear EOMCC excitation amplitudes R2(ab)
-    r2c : ndarray(dtype=float, shape=(nub,nub,nob,nob))
-        Linear EOMCC excitation amplitudes R2(bb)
+    r1a : ndarray(dtype=float, shape=(noa))
+        Linear EOMCC excitation amplitudes R1h(a)
+    r1b : ndarray(dtype=float, shape=(nob))
+        Linear EOMCC excitation amplitudes R1h(b)
+    r2a : ndarray(dtype=float, shape=(nua,noa,noa))
+        Linear EOMCC excitation amplitudes R2h1p(aaa)
+    r2b : ndarray(dtype=float, shape=(nua,nub,noa))
+        Linear EOMCC excitation amplitudes R2h1p(aba)
+    r2c : ndarray(dtype=float, shape=(nub,noa,nob))
+        Linear EOMCC excitation amplitudes R2h1p(bab)
+    r2d : ndarray(dtype=float, shape=(nub,nob,nob))
+        Linear EOMCC excitation amplitudes R2h1p(bbb)
 
     Returns
     -------
-    R : ndarray(dtype=float, shape=(ndim_ccsd))
+    R : ndarray(dtype=float, shape=(ndim_2h1p))
         Flattened array of R vector for the given root
     """
     return np.concatenate((r1a.flatten(),r1b.flatten(),r2a.flatten(),r2b.flatten(),r2c.flatten(),r2d.flatten()),axis=0)
@@ -206,7 +213,7 @@ def unflatten_R(R,sys,order='C'):
 
     Parameters
     ----------
-    R : ndarray(dtype=float, shape=(ndim_ccsd))
+    R : ndarray(dtype=float, shape=(ndim_2h1p))
         Flattened array of R vector for the given root
     sys : dict
         System information dictionary
@@ -216,16 +223,18 @@ def unflatten_R(R,sys,order='C'):
 
     Returns
     -------
-    r1a : ndarray(dtype=float, shape=(nua,noa))
-        Linear EOMCC excitation amplitudes R1(aa)
-    r1b : ndarray(dtype=float, shape=(nub,nob))
-        Linear EOMCC excitation amplitudes R1(bb)
-    r2a : ndarray(dtype=float, shape=(nua,nua,noa,noa))
-        Linear EOMCC excitation amplitudes R2(aa)
-    r2b : ndarray(dtype=float, shape=(nua,nub,noa,nob))
-        Linear EOMCC excitation amplitudes R2(ab)
-    r2c : ndarray(dtype=float, shape=(nub,nub,nob,nob))
-        Linear EOMCC excitation amplitudes R2(bb)
+    r1a : ndarray(dtype=float, shape=(noa))
+        Linear EOMCC excitation amplitudes R1h(a)
+    r1b : ndarray(dtype=float, shape=(nob))
+        Linear EOMCC excitation amplitudes R1h(b)
+    r2a : ndarray(dtype=float, shape=(nua,noa,noa))
+        Linear EOMCC excitation amplitudes R2h1p(aaa)
+    r2b : ndarray(dtype=float, shape=(nua,nub,noa))
+        Linear EOMCC excitation amplitudes R2h1p(aba)
+    r2c : ndarray(dtype=float, shape=(nub,noa,nob))
+        Linear EOMCC excitation amplitudes R2h1p(bab)
+    r2d : ndarray(dtype=float, shape=(nub,nob,nob))
+        Linear EOMCC excitation amplitudes R2h1p(bbb)
     """
     n1a = sys['Nocc_a']
     n1b = sys['Nocc_b']
@@ -255,7 +264,7 @@ def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     Parameters
     ----------
-    R : ndarray(dtype=float, shape=(ndim_ccsd))
+    R : ndarray(dtype=float, shape=(ndim_2h1p))
         Flattened vector of R amplitudes
     cc_t : dict
         Cluster amplitudes T1, T2
@@ -268,7 +277,7 @@ def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     Returns
     -------
-    HR : ndarray(dtype=float, shape=(ndim_ccsd))
+    HR : ndarray(dtype=float, shape=(ndim_2h1p))
         Vector containing the matrix-vector product H(CCSD)*R
     """
     r1a, r1b, r2a, r2b, r2c, r2d = unflatten_R(R,sys)
