@@ -24,6 +24,7 @@ def calc_driver_main(inputs,sys,ints):
     None
     """
     calc_type = inputs['calc_type']
+    cc_t = None
 
     if calc_type == 'mp2' or calc_type == 'MP2':
         from mbpt_module import mp2
@@ -95,7 +96,7 @@ def calc_driver_main(inputs,sys,ints):
         from ccsdt_module import ccsdt
         cc_t, Eccsdt = ccsdt(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'],flag_save=inputs['save_data'],save_location=inputs['work_dir'])
+                        diis_size=inputs['diis_size'])
 
     if calc_type == 'eomccsdt' or calc_type == 'EOMCCSDT':
         from ccsdt_module import ccsdt
@@ -104,7 +105,7 @@ def calc_driver_main(inputs,sys,ints):
 
         cc_t, Eccsdt = ccsdt(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'],flag_save=inputs['save_data'],save_location=inputs['work_dir'])
+                        diis_size=inputs['diis_size'])
 
         H1A,H1B,H2A,H2B,H2C = HBar_CCSDT(cc_t,ints,sys)
         
@@ -192,5 +193,24 @@ def calc_driver_main(inputs,sys,ints):
                         diis_size=inputs['diis_size'],ccmaxit=inputs['maxit'],isRHF=inputs['isRHF'],\
                         flag_save=inputs['save_data'])
 
+    # Save the cc_t dictionary if it is initialized (e.g, not None)
+    save_location = inputs['work_dir'] + '/save_data'
+    save_cc_vectors(inputs['save_data'],save_location,cc_t)
+
     return
+
+def save_cc_vectors(if_save,save_location,cc_t=None):
+    if if_save:
+        if cc_t is not None:
+            print('\n\n   ***** Saving final cc_t dictionary to directory {} *****'.format(save_location))
+            if os.path.isdir(save_location): 
+                print('   Directory {} already exists'.format(save_location))
+            else:
+                print('   Making directory {}'.format(save_location))
+                os.mkdir(save_location)
+            print('   Saving',end=' ')
+            for key, value in cc_t.items():
+                print(' {} '.format(key),end='')
+                np.save(save_location+'/'+key,value,allow_pickle=True)
+            print('')
 

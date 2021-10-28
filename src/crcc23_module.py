@@ -121,6 +121,7 @@ def crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,nroot=0,omega=0.0):
     E23C = ints['Escf'] + EcorrC
     E23D = ints['Escf'] + EcorrD
  
+    print('CCSD = {} Eh'.format(ints['Escf']+Ecorr))
     print('CR-CC(2,3)_A = {} Eh     Ecorr_A = {} Eh     Delta_A = {} Eh'.format(E23A,EcorrA,deltaA))
     print('CR-CC(2,3)_B = {} Eh     Ecorr_B = {} Eh     Delta_B = {} Eh'.format(E23B,EcorrB,deltaB))
     print('CR-CC(2,3)_C = {} Eh     Ecorr_C = {} Eh     Delta_C = {} Eh'.format(E23C,EcorrC,deltaC))
@@ -179,7 +180,8 @@ def crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,nroot=0,omega=0.0):
         E23B = ints['Escf'] + EcorrB; VEE_B = (E23B - Ecrcc23[0]['B'])*27.211396641308;
         E23C = ints['Escf'] + EcorrC; VEE_C = (E23C - Ecrcc23[0]['C'])*27.211396641308;
         E23D = ints['Escf'] + EcorrD; VEE_D = (E23D - Ecrcc23[0]['D'])*27.211396641308;
- 
+
+        print('EOMCCSD = {} Eh'.format(ints['Escf']+Ecorr+omega[iroot]))
         print('CR-CC(2,3)_A = {} Eh     Ecorr_A = {} Eh     Delta_A = {} Eh     VEE = {} eV'.format(E23A,EcorrA,deltaA,VEE_A))
         print('CR-CC(2,3)_B = {} Eh     Ecorr_B = {} Eh     Delta_B = {} Eh     VEE = {} eV'.format(E23B,EcorrB,deltaB,VEE_B))
         print('CR-CC(2,3)_C = {} Eh     Ecorr_C = {} Eh     Delta_C = {} Eh     VEE = {} eV'.format(E23C,EcorrC,deltaC,VEE_C))

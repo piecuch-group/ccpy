@@ -4,6 +4,7 @@ Call this script with a supplied input file as
 """
 import os
 import argparse
+#os.addpath('/home2/gururang/CCpy/src')
 from parser_module import parse_input_file
 from system import build_system
 from integrals import get_integrals

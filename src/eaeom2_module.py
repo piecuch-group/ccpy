@@ -1,35 +1,35 @@
 """Module containing functions to calculate the vertical ionization
 energies and linear excitation amplitudes for excited states of an
-N-1 electron system out of the CC ground state of an N electron system 
-using the ionization process (IP) equation-of-motion (EOM) CC with 
-singles and doubles (IP-EOMCCSD) with up to 2h-1p excitations."""
+N+1 electron system out of the CC ground state of an N electron system 
+using the electron attachment (EA) equation-of-motion (EOM) CC with 
+singles and doubles (EA-EOMCCSD) with up to 2p-1h excitations."""
 import numpy as np
 import cc_loops
 
-def ipeom2(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0e-06,maxit=80):
-    print('\n==================================++Entering IP-EOMCCSD(2h-1p) Routine++=================================\n')
+def eaeom2(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0e-06,maxit=80):
+    print('\n==================================++Entering EA-EOMCCSD(2p-1h) Routine++=================================\n')
 
     if initial_guess == 'cis':
-        C_1h, E_1h = guess_1h(ints,sys)
-        B0 = np.zeros((sys['Nocc_a']+sys['Nocc_b'],nroot))
+        C_1p, E_1p = guess_1p(ints,sys)
+        B0 = np.zeros((sys['Nunocc_a']+sys['Nunocc_b'],nroot))
         E0 = np.zeros(nroot)
         ct = 0
-        for i in reversed(range(len(E_1h))):
-            B0[:,ct] = C_1h[:,i]
-            E0[ct] = -1.0 * E_1h[i]
+        for i in reversed(range(len(E_1p))):
+            B0[:,ct] = C_1p[:,i]
+            E0[ct] = -1.0 * E_1p[i]
             if ct+1 == nroot:
                 break
             ct += 1
-        print('Initial 1h Energies:')
+        print('Initial 1p Energies:')
         for i in range(nroot):
             print('Root - {}     E = {:.10f}'.format(i+1,E0[i]))
         print('')
-        n_2h1p = sys['Nocc_a']**2*sys['Nunocc_a']\
-                    +sys['Nocc_a']*sys['Nocc_b']*sys['Nunocc_a']\
-                    +sys['Nocc_b']*sys['Nocc_a']*sys['Nunocc_b']\
-                    +sys['Nocc_b']**2*sys['Nunocc_b']
-        ZEROS_2h1p = np.zeros((n_2h1p,nroot))
-        B0 = np.concatenate((B0,ZEROS_2h1p),axis=0)
+        n_2p1h = sys['Nocc_a']*sys['Nunocc_a']**2\
+                    +sys['Nunocc_b']*sys['Nocc_a']*sys['Nunocc_a']\
+                    +sys['Nunocc_a']*sys['Nocc_b']*sys['Nunocc_b']\
+                    +sys['Nocc_b']*sys['Nunocc_b']**2
+        ZEROS_2p1h = np.zeros((n_2p1h,nroot))
+        B0 = np.concatenate((B0,ZEROS_2p1h),axis=0)
 
     Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol)
     
@@ -40,7 +40,7 @@ def ipeom2(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0e-
     cc_t['r2c'] = [None]*len(omega)
     cc_t['r2d'] = [None]*len(omega)
 
-    print('Summary of IP-EOMCCSD(2h-1p):')
+    print('Summary of EA-EOMCCSD(2p-1h):')
     Eccsd = ints['Escf'] + calc_cc_energy(cc_t,ints)
     for i in range(len(omega)):
         r1a,r1b,r2a,r2b,r2c,r2d = unflatten_R(Rvec[:,i],sys)
@@ -86,8 +86,8 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
 
     Returns
     -------
-    Rvec : ndarray(dtype=float, shape=(ndim_2h1p,nroot))
-        Matrix containing the final converged R vectors corresponding to the IP-EOMCCSD linear excitation amplitudes
+    Rvec : ndarray(dtype=float, shape=(ndim_2p1h,nroot))
+        Matrix containing the final converged R vectors corresponding to the EA-EOMCCSD linear excitation amplitudes
     omega : ndarray(dtype=float, shape=(nroot))
         Vector of vertical excitation energies (in hartree) for each root
     is_converged : list
@@ -98,7 +98,7 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
     nua = H1A['ov'].shape[1]
     nub = H1B['ov'].shape[1]
 
-    ndim = noa + nob + noa**2*nua + noa*nob*nua + nob*noa*nub + nob**2*nub
+    ndim = nua + nub + noa*nua**2 + nub*noa*nua + nua*nob*nub + nob*nub**2
 
     Rvec = np.zeros((ndim,nroot))
     is_converged = [False] * nroot
@@ -143,7 +143,7 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
             
             # update residual vector
             q1a,q1b,q2a,q2b,q2c,q2d = unflatten_R(q,sys)
-            q1a,q1b,q2a,q2b,q2c,q2d = cc_loops.cc_loops.update_r_2h1p(q1a,q1b,q2a,q2b,q2c,q2d,omega[iroot],\
+            q1a,q1b,q2a,q2b,q2c,q2d = cc_loops.cc_loops.update_r_2p1h(q1a,q1b,q2a,q2b,q2c,q2d,omega[iroot],\
                             H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],0.0,\
                             sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'])
             q = flatten_R(q1a,q1b,q2a,q2b,q2c,q2d)
@@ -188,22 +188,22 @@ def flatten_R(r1a,r1b,r2a,r2b,r2c,r2d):
 
     Parameters
     ----------
-    r1a : ndarray(dtype=float, shape=(noa))
-        Linear EOMCC excitation amplitudes R1h(a)
-    r1b : ndarray(dtype=float, shape=(nob))
-        Linear EOMCC excitation amplitudes R1h(b)
-    r2a : ndarray(dtype=float, shape=(nua,noa,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aaa)
-    r2b : ndarray(dtype=float, shape=(nua,nub,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aba)
-    r2c : ndarray(dtype=float, shape=(nub,noa,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bab)
-    r2d : ndarray(dtype=float, shape=(nub,nob,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bbb)
+    r1a : ndarray(dtype=float, shape=(nua))
+        Linear EOMCC excitation amplitudes R1p(a)
+    r1b : ndarray(dtype=float, shape=(nub))
+        Linear EOMCC excitation amplitudes R1p(b)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(aaa)
+    r2b : ndarray(dtype=float, shape=(nub,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(baa)
+    r2c : ndarray(dtype=float, shape=(nua,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(abb)
+    r2d : ndarray(dtype=float, shape=(nub,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(bbb)
 
     Returns
     -------
-    R : ndarray(dtype=float, shape=(ndim_2h1p))
+    R : ndarray(dtype=float, shape=(ndim_2p1h))
         Flattened array of R vector for the given root
     """
     return np.concatenate((r1a.flatten(),r1b.flatten(),r2a.flatten(),r2b.flatten(),r2c.flatten(),r2d.flatten()),axis=0)
@@ -213,7 +213,7 @@ def unflatten_R(R,sys,order='C'):
 
     Parameters
     ----------
-    R : ndarray(dtype=float, shape=(ndim_2h1p))
+    R : ndarray(dtype=float, shape=(ndim_2p1h))
         Flattened array of R vector for the given root
     sys : dict
         System information dictionary
@@ -222,26 +222,26 @@ def unflatten_R(R,sys,order='C'):
         flattening should be used. Default is 'C'.
 
     Returns
-    -------
-    r1a : ndarray(dtype=float, shape=(noa))
-        Linear EOMCC excitation amplitudes R1h(a)
-    r1b : ndarray(dtype=float, shape=(nob))
-        Linear EOMCC excitation amplitudes R1h(b)
-    r2a : ndarray(dtype=float, shape=(nua,noa,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aaa)
-    r2b : ndarray(dtype=float, shape=(nua,nub,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aba)
-    r2c : ndarray(dtype=float, shape=(nub,noa,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bab)
-    r2d : ndarray(dtype=float, shape=(nub,nob,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bbb)
+    ----------
+    r1a : ndarray(dtype=float, shape=(nua))
+        Linear EOMCC excitation amplitudes R1p(a)
+    r1b : ndarray(dtype=float, shape=(nub))
+        Linear EOMCC excitation amplitudes R1p(b)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(aaa)
+    r2b : ndarray(dtype=float, shape=(nub,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(baa)
+    r2c : ndarray(dtype=float, shape=(nua,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(abb)
+    r2d : ndarray(dtype=float, shape=(nub,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(bbb)
     """
-    n1a = sys['Nocc_a']
-    n1b = sys['Nocc_b']
-    n2a = sys['Nocc_a'] ** 2 * sys['Nunocc_a'] 
-    n2b = sys['Nocc_a'] * sys['Nocc_b'] * sys['Nunocc_a']
-    n2c = sys['Nocc_a'] * sys['Nocc_b'] * sys['Nunocc_b']
-    n2d = sys['Nocc_b'] ** 2 * sys['Nunocc_b']
+    n1a = sys['Nunocc_a']
+    n1b = sys['Nunocc_b']
+    n2a = sys['Nocc_a'] * sys['Nunocc_a']**2 
+    n2b = sys['Nunocc_b'] * sys['Nocc_a'] * sys['Nunocc_a']
+    n2c = sys['Nunocc_a'] * sys['Nocc_b'] * sys['Nunocc_b']
+    n2d = sys['Nunocc_b'] ** 2 * sys['Nocc_b']
     idx_1a = slice(0,n1a)
     idx_1b = slice(n1a,n1a+n1b)
     idx_2a = slice(n1a+n1b,n1a+n1b+n2a)
@@ -249,12 +249,12 @@ def unflatten_R(R,sys,order='C'):
     idx_2c = slice(n1a+n1b+n2a+n2b,n1a+n1b+n2a+n2b+n2c)
     idx_2d = slice(n1a+n1b+n2a+n2b+n2c,n1a+n1b+n2a+n2b+n2c+n2d)
 
-    r1a  = np.reshape(R[idx_1a],sys['Nocc_a'],order=order)
-    r1b  = np.reshape(R[idx_1b],sys['Nocc_b'],order=order)
-    r2a  = np.reshape(R[idx_2a],(sys['Nunocc_a'],sys['Nocc_a'],sys['Nocc_a']),order=order)
-    r2b  = np.reshape(R[idx_2b],(sys['Nunocc_a'],sys['Nocc_b'],sys['Nocc_a']),order=order)
-    r2c  = np.reshape(R[idx_2c],(sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_b']),order=order)
-    r2d  = np.reshape(R[idx_2d],(sys['Nunocc_b'],sys['Nocc_b'],sys['Nocc_b']),order=order)
+    r1a  = np.reshape(R[idx_1a],sys['Nunocc_a'],order=order)
+    r1b  = np.reshape(R[idx_1b],sys['Nunocc_b'],order=order)
+    r2a  = np.reshape(R[idx_2a],(sys['Nunocc_a'],sys['Nunocc_a'],sys['Nocc_a']),order=order)
+    r2b  = np.reshape(R[idx_2b],(sys['Nunocc_b'],sys['Nunocc_a'],sys['Nocc_a']),order=order)
+    r2c  = np.reshape(R[idx_2c],(sys['Nunocc_a'],sys['Nunocc_b'],sys['Nocc_b']),order=order)
+    r2d  = np.reshape(R[idx_2d],(sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_b']),order=order)
 
     return r1a, r1b, r2a, r2b, r2c, r2d
 
@@ -264,7 +264,7 @@ def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     Parameters
     ----------
-    R : ndarray(dtype=float, shape=(ndim_2h1p))
+    R : ndarray(dtype=float, shape=(ndim_2p1h))
         Flattened vector of R amplitudes
     cc_t : dict
         Cluster amplitudes T1, T2
@@ -277,7 +277,7 @@ def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     Returns
     -------
-    HR : ndarray(dtype=float, shape=(ndim_2h1p))
+    HR : ndarray(dtype=float, shape=(ndim_2p1h))
         Vector containing the matrix-vector product H(CCSD)*R
     """
     r1a, r1b, r2a, r2b, r2c, r2d = unflatten_R(R,sys)
@@ -292,22 +292,22 @@ def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     return flatten_R(X1A, X1B, X2A, X2B, X2C, X2D)
 
 def build_HR_1A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
-    """Calculate the projection <i|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>.
+    """Calculate the projection <a|[ (H_N e^(T1+T2))_C*(R1p+R2p1h) ]_C|0>.
 
     Parameters
     ----------
-    r1a : ndarray(dtype=float, shape=(noa))
-        Linear EOMCC excitation amplitudes R1h(a)
-    r1b : ndarray(dtype=float, shape=(nob))
-        Linear EOMCC excitation amplitudes R1h(b)
-    r2a : ndarray(dtype=float, shape=(nua,noa,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aaa)
-    r2b : ndarray(dtype=float, shape=(nua,nub,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aba)
-    r2c : ndarray(dtype=float, shape=(nub,noa,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bab)
-    r2d : ndarray(dtype=float, shape=(nub,nob,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bbb)
+    r1a : ndarray(dtype=float, shape=(nua))
+        Linear EOMCC excitation amplitudes R1p(a)
+    r1b : ndarray(dtype=float, shape=(nub))
+        Linear EOMCC excitation amplitudes R1p(b)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(aaa)
+    r2b : ndarray(dtype=float, shape=(nub,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(baa)
+    r2c : ndarray(dtype=float, shape=(nua,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(abb)
+    r2d : ndarray(dtype=float, shape=(nub,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(bbb)
     cc_t : dict
         Current cluster amplitudes T1, T2
     H1*, H2* : dict
@@ -319,35 +319,35 @@ def build_HR_1A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     Returns
     --------
-    X1A : ndarray(dtype=float, shape=(noa))
+    X1A : ndarray(dtype=float, shape=(nua))
         Calculated HR Projection
     """
     X1A = 0.0
-    X1A -= np.einsum('mi,m->i',H1A['oo'],r1a,optimize=True)
-    X1A -= 0.5*np.einsum('mnif,fmn->i',H2A['ooov'],r2a,optimize=True)
-    X1A -= np.einsum('mnif,fmn->i',H2B['ooov'],r2c,optimize=True)
-    X1A += np.einsum('me,eim->i',H1A['ov'],r2a,optimize=True)
-    X1A += np.einsum('me,eim->i',H1B['ov'],r2c,optimize=True)
+    X1A += np.einsum('ae,e->a',H1A['vv'],r1a,optimize=True)
+    X1A += 0.5*np.einsum('anef,efn->a',H2A['vovv'],r2a,optimize=True)
+    X1A += np.einsum('anef,efn->a',H2B['vovv'],r2c,optimize=True)
+    X1A += np.einsum('me,aem->a',H1A['ov'],r2a,optimize=True)
+    X1A += np.einsum('me,aem->a',H1B['ov'],r2c,optimize=True)
 
     return X1A
 
 def build_HR_1B(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
-    """Calculate the projection <i~|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>.
+    """Calculate the projection <a~|[ (H_N e^(T1+T2))_C*(R1p+R2p1h) ]_C|0>.
 
     Parameters
     ----------
-    r1a : ndarray(dtype=float, shape=(noa))
-        Linear EOMCC excitation amplitudes R1h(a)
-    r1b : ndarray(dtype=float, shape=(nob))
-        Linear EOMCC excitation amplitudes R1h(b)
-    r2a : ndarray(dtype=float, shape=(nua,noa,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aaa)
-    r2b : ndarray(dtype=float, shape=(nua,nub,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aba)
-    r2c : ndarray(dtype=float, shape=(nub,noa,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bab)
-    r2d : ndarray(dtype=float, shape=(nub,nob,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bbb)
+    r1a : ndarray(dtype=float, shape=(nua))
+        Linear EOMCC excitation amplitudes R1p(a)
+    r1b : ndarray(dtype=float, shape=(nub))
+        Linear EOMCC excitation amplitudes R1p(b)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(aaa)
+    r2b : ndarray(dtype=float, shape=(nub,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(baa)
+    r2c : ndarray(dtype=float, shape=(nua,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(abb)
+    r2d : ndarray(dtype=float, shape=(nub,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(bbb)
     cc_t : dict
         Current cluster amplitudes T1, T2
     H1*, H2* : dict
@@ -359,35 +359,35 @@ def build_HR_1B(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     Returns
     --------
-    X1B : ndarray(dtype=float, shape=(nob))
+    X1B : ndarray(dtype=float, shape=(nub))
         Calculated HR Projection
     """
     X1B = 0.0
-    X1B -= np.einsum('mi,m->i',H1B['oo'],r1b,optimize=True)
-    X1B -= np.einsum('nmfi,fmn->i',H2B['oovo'],r2b,optimize=True)
-    X1B -= 0.5*np.einsum('mnif,fmn->i',H2C['ooov'],r2d,optimize=True)
-    X1B += np.einsum('me,eim->i',H1A['ov'],r2b,optimize=True)
-    X1B += np.einsum('me,eim->i',H1B['ov'],r2d,optimize=True)
+    X1B += np.einsum('ae,e->a',H1B['vv'],r1b,optimize=True)
+    X1B += np.einsum('nafe,efn->a',H2B['ovvv'],r2b,optimize=True)
+    X1B += 0.5*np.einsum('anef,efn->a',H2C['vovv'],r2d,optimize=True)
+    X1B += np.einsum('me,aem->a',H1A['ov'],r2b,optimize=True)
+    X1B += np.einsum('me,aem->a',H1B['ov'],r2d,optimize=True)
 
     return X1B
 
 def build_HR_2A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
-    """Calculate the projection <ijb|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>.
+    """Calculate the projection <jab|[ (H_N e^(T1+T2))_C*(R1p+R2p1h) ]_C|0>.
 
     Parameters
     ----------
-    r1a : ndarray(dtype=float, shape=(noa))
-        Linear EOMCC excitation amplitudes R1h(a)
-    r1b : ndarray(dtype=float, shape=(nob))
-        Linear EOMCC excitation amplitudes R1h(b)
-    r2a : ndarray(dtype=float, shape=(nua,noa,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aaa)
-    r2b : ndarray(dtype=float, shape=(nua,nub,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aba)
-    r2c : ndarray(dtype=float, shape=(nub,noa,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bab)
-    r2d : ndarray(dtype=float, shape=(nub,nob,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bbb)
+    r1a : ndarray(dtype=float, shape=(nua))
+        Linear EOMCC excitation amplitudes R1p(a)
+    r1b : ndarray(dtype=float, shape=(nub))
+        Linear EOMCC excitation amplitudes R1p(b)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(aaa)
+    r2b : ndarray(dtype=float, shape=(nub,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(baa)
+    r2c : ndarray(dtype=float, shape=(nua,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(abb)
+    r2d : ndarray(dtype=float, shape=(nub,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(bbb)
     cc_t : dict
         Current cluster amplitudes T1, T2
     H1*, H2* : dict
@@ -399,7 +399,7 @@ def build_HR_2A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     Returns
     --------
-    X2A : ndarray(dtype=float, shape=(nua,noa,noa))
+    X2A : ndarray(dtype=float, shape=(nua,nua,noa))
         Calculated HR Projection
     """
     vA = ints['vA']
@@ -407,40 +407,40 @@ def build_HR_2A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     t2a = cc_t['t2a']
 
     X2A = 0.0
-    X2A -= np.einsum('bmji,m->bij',H2A['vooo'],r1a,optimize=True)
-    X2A += np.einsum('be,eij->bij',H1A['vv'],r2a,optimize=True)
-    X2A += 0.5*np.einsum('mnij,bmn->bij',H2A['oooo'],r2a,optimize=True)
-    I1 = -0.5*np.einsum('mnef,fmn->e',vA['oovv'],r2a,optimize=True)\
-        -np.einsum('mnef,fmn->e',vB['oovv'],r2c,optimize=True)
-    X2A += np.einsum('e,ebij->bij',I1,t2a,optimize=True)
+    X2A += np.einsum('baje,e->abj',H2A['vvov'],r1a,optimize=True)
+    X2A += np.einsum('mj,abm->abj',H1A['oo'],r2a,optimize=True)
+    X2A += 0.5*np.einsum('abef,efj->abj',H2A['vvvv'],r2a,optimize=True)
+    I1 = 0.5*np.einsum('mnef,efn->m',vA['oovv'],r2a,optimize=True)\
+        +np.einsum('mnef,efn->m',vB['oovv'],r2c,optimize=True)
+    X2A == np.einsum('m,abmj->abj',I1,t2a,optimize=True)
 
-    D_ij = 0.0
-    D_ij -= np.einsum('mi,bmj->bij',H1A['oo'],r2a,optimize=True)
-    D_ij += np.einsum('bmje,eim->bij',H2A['voov'],r2a,optimize=True)
-    D_ij += np.einsum('bmje,eim->bij',H2B['voov'],r2c,optimize=True)
-    D_ij -= np.transpose(D_ij,(0,2,1))
+    D_ab = 0.0
+    D_ab -= np.einsum('ae,ebj->abj',H1A['vv'],r2a,optimize=True)
+    D_ab += np.einsum('bmje,aem->abj',H2A['voov'],r2a,optimize=True)
+    D_ab += np.einsum('bmje,aem->abj',H2B['voov'],r2c,optimize=True)
+    D_ab -= np.transpose(D_ab,(1,0,2))
 
-    X2A += D_ij
+    X2A += D_ab
 
     return X2A
 
 def build_HR_2B(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
-    """Calculate the projection <i~jb|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>.
+    """Calculate the projection <ja~b|[ (H_N e^(T1+T2))_C*(R1p+R2p1h) ]_C|0>.
 
     Parameters
     ----------
-    r1a : ndarray(dtype=float, shape=(noa))
-        Linear EOMCC excitation amplitudes R1h(a)
-    r1b : ndarray(dtype=float, shape=(nob))
-        Linear EOMCC excitation amplitudes R1h(b)
-    r2a : ndarray(dtype=float, shape=(nua,noa,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aaa)
-    r2b : ndarray(dtype=float, shape=(nua,nub,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aba)
-    r2c : ndarray(dtype=float, shape=(nub,noa,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bab)
-    r2d : ndarray(dtype=float, shape=(nub,nob,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bbb)
+    r1a : ndarray(dtype=float, shape=(nua))
+        Linear EOMCC excitation amplitudes R1p(a)
+    r1b : ndarray(dtype=float, shape=(nub))
+        Linear EOMCC excitation amplitudes R1p(b)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(aaa)
+    r2b : ndarray(dtype=float, shape=(nub,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(baa)
+    r2c : ndarray(dtype=float, shape=(nua,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(abb)
+    r2d : ndarray(dtype=float, shape=(nub,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(bbb)
     cc_t : dict
         Current cluster amplitudes T1, T2
     H1*, H2* : dict
@@ -452,7 +452,7 @@ def build_HR_2B(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     Returns
     --------
-    X2B : ndarray(dtype=float, shape=(nua,nob,noa))
+    X2B : ndarray(dtype=float, shape=(nub,nua,noa))
         Calculated HR Projection
     """
     t2b = cc_t['t2b']
@@ -475,22 +475,22 @@ def build_HR_2B(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     return X2B
 
 def build_HR_2C(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
-    """Calculate the projection <ij~b~|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>.
+    """Calculate the projection <j~ab~|[ (H_N e^(T1+T2))_C*(R1p+R2p1h) ]_C|0>.
 
     Parameters
     ----------
-    r1a : ndarray(dtype=float, shape=(noa))
-        Linear EOMCC excitation amplitudes R1h(a)
-    r1b : ndarray(dtype=float, shape=(nob))
-        Linear EOMCC excitation amplitudes R1h(b)
-    r2a : ndarray(dtype=float, shape=(nua,noa,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aaa)
-    r2b : ndarray(dtype=float, shape=(nua,nub,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aba)
-    r2c : ndarray(dtype=float, shape=(nub,noa,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bab)
-    r2d : ndarray(dtype=float, shape=(nub,nob,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bbb)
+    r1a : ndarray(dtype=float, shape=(nua))
+        Linear EOMCC excitation amplitudes R1p(a)
+    r1b : ndarray(dtype=float, shape=(nub))
+        Linear EOMCC excitation amplitudes R1p(b)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(aaa)
+    r2b : ndarray(dtype=float, shape=(nub,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(baa)
+    r2c : ndarray(dtype=float, shape=(nua,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(abb)
+    r2d : ndarray(dtype=float, shape=(nub,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(bbb)
     cc_t : dict
         Current cluster amplitudes T1, T2
     H1*, H2* : dict
@@ -502,7 +502,7 @@ def build_HR_2C(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     Returns
     --------
-    X2C : ndarray(dtype=float, shape=(nub,noa,nob))
+    X2C : ndarray(dtype=float, shape=(nua,nub,nob))
         Calculated HR Projection
     """
     t2b = cc_t['t2b']
@@ -525,22 +525,22 @@ def build_HR_2C(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     return X2C
 
 def build_HR_2D(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
-    """Calculate the projection <i~j~b~|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>.
+    """Calculate the projection <j~a~b~|[ (H_N e^(T1+T2))_C*(R1p+R2p1h) ]_C|0>.
 
     Parameters
     ----------
-    r1a : ndarray(dtype=float, shape=(noa))
-        Linear EOMCC excitation amplitudes R1h(a)
-    r1b : ndarray(dtype=float, shape=(nob))
-        Linear EOMCC excitation amplitudes R1h(b)
-    r2a : ndarray(dtype=float, shape=(nua,noa,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aaa)
-    r2b : ndarray(dtype=float, shape=(nua,nub,noa))
-        Linear EOMCC excitation amplitudes R2h1p(aba)
-    r2c : ndarray(dtype=float, shape=(nub,noa,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bab)
-    r2d : ndarray(dtype=float, shape=(nub,nob,nob))
-        Linear EOMCC excitation amplitudes R2h1p(bbb)
+    r1a : ndarray(dtype=float, shape=(nua))
+        Linear EOMCC excitation amplitudes R1p(a)
+    r1b : ndarray(dtype=float, shape=(nub))
+        Linear EOMCC excitation amplitudes R1p(b)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(aaa)
+    r2b : ndarray(dtype=float, shape=(nub,nua,noa))
+        Linear EOMCC excitation amplitudes R2p1h(baa)
+    r2c : ndarray(dtype=float, shape=(nua,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(abb)
+    r2d : ndarray(dtype=float, shape=(nub,nub,nob))
+        Linear EOMCC excitation amplitudes R2p1h(bbb)
     cc_t : dict
         Current cluster amplitudes T1, T2
     H1*, H2* : dict
@@ -552,7 +552,7 @@ def build_HR_2D(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     Returns
     --------
-    X2D : ndarray(dtype=float, shape=(nub,nob,nob))
+    X2D : ndarray(dtype=float, shape=(nub,nub,nob))
         Calculated HR Projection
     """
     vB = ints['vB']
@@ -577,8 +577,8 @@ def build_HR_2D(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
 
     return X2D
 
-def guess_1h(ints,sys):
-    """Build and diagonalize the Hamiltonian in the space of 1h excitations.
+def guess_1p(ints,sys):
+    """Build and diagonalize the Hamiltonian in the space of 1p excitations.
 
     Parameters
     ----------
@@ -589,16 +589,16 @@ def guess_1h(ints,sys):
 
     Returns
     -------
-    C : ndarray(dtype=float, shape=(ndim_1h,ndim_1h))
-        Matrix of 1h eigenvectors
+    C : ndarray(dtype=float, shape=(ndim_1p,ndim_1p))
+        Matrix of 1p eigenvectors
     E_1h : ndarray(dtype=float, shape=(ndim_cis))
-        Vector of 1h eigenvalues
+        Vector of 1p eigenvalues
     """
     fA = ints['fA']
     fB = ints['fB']
 
-    n1a = sys['Nocc_a']
-    n1b = sys['Nocc_b']
+    n1a = sys['Nunocc_a']
+    n1b = sys['Nunocc_b']
 
     HAA = np.zeros((n1a,n1a))
     HAB = np.zeros((n1a,n1b))
@@ -606,29 +606,29 @@ def guess_1h(ints,sys):
     HBB = np.zeros((n1b,n1b))
 
     ct1 = 0
-    for i in range(sys['Nocc_a']):
+    for a in range(sys['Nunocc_a']):
         ct2 = 0
-        for j in range(sys['Nocc_a']):
-            HAA[ct1,ct2] = fA['oo'][i,j]
+        for b in range(sys['Nunocc_a']):
+            HAA[ct1,ct2] = fA['vv'][a,b]
             ct2 += 1
         ct1+=1
 
     ct1 = 0
-    for i in range(sys['Nocc_b']):
+    for a in range(sys['Nunocc_b']):
         ct2 = 0
-        for j in range(sys['Nocc_b']):
-            HBB[ct1,ct2] = fB['oo'][i,j]
+        for b in range(sys['Nunocc_b']):
+            HBB[ct1,ct2] = fB['vv'][a,b]
             ct2 += 1
         ct1 += 1
 
     H = np.hstack( (np.vstack((HAA,HBA)), np.vstack((HAB,HBB))) )
 
-    E_1h, C = np.linalg.eigh(H) 
-    idx = np.argsort(E_1h)
-    E_1h = E_1h[idx]
+    E_1p, C = np.linalg.eigh(H) 
+    idx = np.argsort(E_1p)
+    E_1p = E_1p[idx]
     C = C[:,idx]
 
-    return C, E_1h
+    return C, E_1p
 
 def calc_cc_energy(cc_t,ints):
     """Calculate the CC correlation energy <0|(H_N e^T)_C|0>.

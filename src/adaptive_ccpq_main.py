@@ -496,6 +496,7 @@ def selection_function(sys,mcA,mcB,mcC,mcD,p_spaces,num_add,flag_RHF=False):
     n3d = sys['Nunocc_b']**3 * sys['Nocc_b']**3
     ntot = n3a + n3b + n3c + n3d
 
+    # check if flattening/sorting/unraveling is correct
     mvec = np.zeros(ntot)
     mvec[:n3a] = mcA.flatten()
     mvec[n3a:n3a+n3b] = mcB.flatten()
@@ -510,6 +511,7 @@ def selection_function(sys,mcA,mcB,mcC,mcD,p_spaces,num_add,flag_RHF=False):
                     'C' : p_spaces['C'],\
                     'D' : p_spaces['D']}
 
+    # this loop is not conserving spin symmetry!
     if not flag_RHF:
         ct = 0
         ct2 = 0
@@ -750,8 +752,6 @@ def selection_function(sys,mcA,mcB,mcC,mcD,p_spaces,num_add,flag_RHF=False):
                     p_spaces_out['C'][c,b,a,k,i,j] = 1
                     p_spaces_out['C'][c,a,b,k,j,i] = 1
                     p_spaces_out['C'][c,b,a,k,j,i] = 1
-
-
 
     return p_spaces_out, ct
 
