@@ -1,6 +1,6 @@
 # Build the ccq_py python module
 #MODULE := f90_crcc
-MODULES := cc_loops crcc_loops mbgf_loops mbpt_loops
+MODULES := cc_loops crcc_loops mbgf_loops mbpt_loops eomcc_initial_guess
 EXT_SUFFIX := $(shell python -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
 SOURCES := $(addsuffix .f90, $(MODULES))
 TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
@@ -14,7 +14,7 @@ TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 #		-ffixed-line-length-132 \
 #		-O3 \
 #		-std=f2018
-FFLAGS := -std=f2018
+FFLAGS := -std=f2018 -O3
 
 #SRC := cc_loops.f90
 LDFLAGS :=

@@ -3,8 +3,12 @@ energies and linear excitation amplitudes for excited states using
 the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD)."""
 import numpy as np
 import cc_loops
+import eomcc_initial_guess
+from scipy.io import loadmat
 
-def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0e-06,maxit=80):
+#print(eomcc_initial_guess.eomcc_initial_guess.eomccs_d.__doc__)
+
+def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',noact=200,nuact=200,tol=1.0e-06,maxit=80):
     """Perform the EOMCCSD excited-state calculation.
 
     Parameters
@@ -36,15 +40,24 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0e
     """
     print('\n==================================++Entering EOM-CCSD Routine++=================================\n')
 
-    if initial_guess == 'cis':
-        n1a = sys['Nocc_a'] * sys['Nunocc_a']
-        n1b = sys['Nocc_b'] * sys['Nunocc_b']
+    n1a = sys['Nocc_a'] * sys['Nunocc_a']
+    n1b = sys['Nocc_b'] * sys['Nunocc_b']
+    n2a = sys['Nocc_a']**2*sys['Nunocc_a']**2
+    n2a_unique = int(sys['Nocc_a']*(sys['Nocc_a']-1)/2 * sys['Nunocc_a']*(sys['Nunocc_a']-1)/2) 
+    n2c_unique = int(sys['Nocc_b']*(sys['Nocc_b']-1)/2 * sys['Nunocc_b']*(sys['Nunocc_b']-1)/2)
+    n2b = sys['Nocc_a']*sys['Nocc_b']*sys['Nunocc_a']*sys['Nunocc_b']
+    n2c = sys['Nocc_b']**2*sys['Nunocc_b']**2
+    n_singles = n1a + n1b
+    n_doubles = n2a + n2b + n2c
+    n_doubles_unique = n2a_unique + n2b + n2c_unique
+    ndim_ccsd = n_singles + n_doubles
+    ndim_ccsd_unique = n_singles + n_doubles_unique
 
+    if initial_guess == 'cis':
         Cvec, omega_cis = cis(ints,sys)
         C1A = Cvec[:n1a,:]
         C1B = Cvec[n1a:,:]
-
-        B0 = np.zeros((n1a+n1b,nroot))
+        B0 = np.zeros((n_singles,nroot))
         E0 = np.zeros(nroot)
 
         # locate only singlet roots
@@ -64,11 +77,29 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0e
         for i in range(nroot):
                 print('Root - {}     E = {:.10f}    ({:.10f})'.format(i+1,E0[i],E0[i]+ints['Escf']))
         print('')
-        n_doubles = sys['Nocc_a']**2*sys['Nunocc_a']**2\
-                    +sys['Nocc_a']*sys['Nocc_b']*sys['Nunocc_a']*sys['Nunocc_b']\
-                    +sys['Nocc_b']**2*sys['Nunocc_b']**2
         ZEROS_DOUBLES = np.zeros((n_doubles,nroot))
         B0 = np.concatenate((B0,ZEROS_DOUBLES),axis=0)
+
+    if initial_guess == 'eomccsd':
+
+        _,_,Hmat = eomcc_initial_guess.eomcc_initial_guess.eomccs_d(nroot,noact,nuact,
+                        H1A['oo'],H1A['vv'],H1A['ov'],H1B['oo'],H1B['vv'],H1B['ov'],\
+                        H2A['oooo'],H2A['vvvv'],H2A['voov'],H2A['vooo'],H2A['vvov'],\
+                        H2A['ooov'],H2A['vovv'],\
+                        H2B['oooo'],H2B['vvvv'],H2B['voov'],H2B['ovvo'],H2B['vovo'],\
+                        H2B['ovov'],H2B['vooo'],H2B['ovoo'],H2B['vvov'],H2B['vvvo'],\
+                        H2B['ooov'],H2B['oovo'],H2B['vovv'],H2B['ovvv'],\
+                        H2C['oooo'],H2C['vvvv'],H2C['voov'],H2C['vooo'],H2C['vvov'],\
+                        H2C['ooov'],H2C['vovv'],\
+                        n1a,n1b,n2a,n2a_unique,n2b,n2c,n2c_unique,ndim_ccsd_unique,ndim_ccsd)
+        omega_eomccsd, Cvec = np.linalg.eig(Hmat)
+        idx = np.argsort(omega_eomccsd)
+        omega_eomccsd = omega_eomccsd[idx]
+        Cvec = Cvec[:,idx]
+
+
+
+
 
     Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol)
     

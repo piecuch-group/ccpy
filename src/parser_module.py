@@ -65,7 +65,11 @@ def parse_input_file(inpfile):
             if 'adaptive_restart_dir' in line:
                 inputs['adaptive_restart_dir'] = inputs['work_dir']+'/'+line.split('=')[1].strip()
             if 'save_data' in line:
-                inputs['save_data'] = line.split('=')[1].strip()
+                temp = line.split('=')[1].strip()
+                if temp == 'True':
+                    inputs['save_data'] = True
+                else:
+                    inputs['save_data'] = False
             if 'nroot' in line:
                 inputs['nroot'] = int(line.split('=')[1].strip())
             if 'eom_tol' in line:

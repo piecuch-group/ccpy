@@ -7,7 +7,7 @@ import cc_loops
 
 #print(cc_loops.cc_loops.__doc__)
 
-def ccsdt(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_save=False,save_location=None):
+def ccsdt(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0):
     """Perform the ground-state CCSDT calculation.
 
     Parameters
@@ -74,12 +74,6 @@ def ccsdt(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_save=False,sav
     flag_conv = False
     it_macro = 0
     Ecorr_old = 0.0
-
-    if flag_save:
-        if save_location == None:
-            print('ERROR: PLEASE SPECIFY SAVE LOCATION')
-        else:
-            print('SAVING CLUSTER AMPLITUDES TO {}'.format(save_location))
 
     t_start = time.time()
     print('Iteration    Residuum               deltaE                 Ecorr')
@@ -166,11 +160,6 @@ def ccsdt(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_save=False,sav
         print('')
         print('CCSDT Correlation Energy = {} Eh'.format(Ecorr))
         print('CCSDT Total Energy = {} Eh'.format(Ecorr + ints['Escf']))
-        if flag_save:
-            print('Saving cluster amplitudes...')
-            for key, value in cc_t.items():
-                np.save(save_location+'/'+key,value)
-
     else:
         print('Failed to converge CCSDT in {} iterations'.format(maxit))
 

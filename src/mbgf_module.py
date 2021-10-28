@@ -118,7 +118,7 @@ def gf2_ip(nroot,ints,sys,maxit=50,tol=1.0e-08):
         iroot = sys['Nocc_a'] - p
         print('\nStarting MBGF(2) iterations for root {}'.format(iroot))
         print("Koopmans estimate of IP energy = {:>8f} hartree".format(-1.0*fA['oo'][p,p]))
-        print('Iter        IP Energy       Residuum')
+        print('Iter         IP Energy        Residuum')
         print('========================================')
         e0 = fA['oo'][p,p]
         # MBGF iterations for each root
@@ -130,7 +130,7 @@ def gf2_ip(nroot,ints,sys,maxit=50,tol=1.0e-08):
                             vC['oovv'],vC['vvoo'],vC['ooov'],vC['ovoo'])
             e1 = fA['oo'][p,p] + sigma_a[p,p]
             resid = e1-e0
-            print('  {}          {:>8f}      {:>8f}'.format(it+1,-1.0*e1,resid))
+            print('  {}          {:.8f}      {:.8f}'.format(it+1,-1.0*e1,resid))
             if abs(resid) < tol:
                 omega[iroot-1] = -1.0*e1
                 is_converged[iroot-1] = True
