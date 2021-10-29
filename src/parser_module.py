@@ -26,7 +26,6 @@ def parse_input_file(inpfile):
     inputs['save_data'] = False
     inputs['nroot'] = None
     inputs['eom_tol'] = 1.0e-06
-    inputs['eom_init'] = 'cis'
     inputs['eom_maxit'] = 80
     inputs['root_select'] = None
     inputs['eom_guess_naoct'] = 0
@@ -77,8 +76,6 @@ def parse_input_file(inpfile):
             if 'eom_tol' in line:
                 inputs['eom_tol'] = int(line.split('=')[1].strip())
                 inputs['eom_tol'] = 10**(-1.0*inputs['eom_tol'])
-            if 'eom_init' in line:
-                inputs['eom_init'] = line.split('=')[1].strip()
             if 'eom_maxit' in line:
                 inputs['eom_maxit'] = int(line.split('=')[1].strip())
             if 'eom_lccshift' in line:

@@ -3,8 +3,9 @@ energies and linear excitation amplitudes for excited states using
 the equation-of-motion (EOM) CC with singles, doubles, and triples (EOMCCSDT)."""
 import numpy as np
 import cc_loops
+import eomcc_initial_guess
 
-def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0e-06,maxit=80):
+def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,maxit=80):
     """Perform the EOMCCSDT excited-state calculation.
 
     Parameters
@@ -19,9 +20,12 @@ def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0
         Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
     sys : dict
         System information dictionary
-    initial_guess : str, optional
-        String that specifies the form of the initial guess, including options for
-        'cis' and 'eomccsd'. Default is 'cis'.
+    noact : int, optional
+        Number of active occupied orbitals used in EOMCCSd initial guess. 
+        Default is 0, corresponding to CIS.
+    nuact : int, optional
+        Number of active unoccupied orbitals used in EOMCCSd initial guess. 
+        Default is 0, corresponding to CIS.
     tol : float, optional
         Convergence tolerance for the EOMCC calculation. Default is 1.0e-06.
     maxit : int, optional
@@ -36,44 +40,64 @@ def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0
     """
     print('\n==================================++Entering EOM-CCSDT Routine++=================================\n')
 
-    if initial_guess == 'cis':
-        n1a = sys['Nocc_a'] * sys['Nunocc_a']
-        n1b = sys['Nocc_b'] * sys['Nunocc_b']
+    n1a = sys['Nocc_a'] * sys['Nunocc_a']
+    n1b = sys['Nocc_b'] * sys['Nunocc_b']
+    n2a = sys['Nocc_a']**2*sys['Nunocc_a']**2
+    n2b = sys['Nocc_a']*sys['Nocc_b']*sys['Nunocc_a']*sys['Nunocc_b']
+    n2c = sys['Nocc_b']**2*sys['Nunocc_b']**2
+    n3a = sys['Nocc_a']**3 * sys['Nunocc_a']**3
+    n3b = sys['Nocc_a']**2*sys['Nunocc_a']**2*sys['Nocc_b']*sys['Nunocc_b']
+    n3c = sys['Nocc_a']*sys['Nunocc_a']*sys['Nocc_b']**2*sys['Nunocc_b']**2
+    n3d = sys['Nocc_b']**3 * sys['Nunocc_b']**3
 
-        Cvec, omega_cis = cis(ints,sys)
-        C1A = Cvec[:n1a,:]
-        C1B = Cvec[n1a:,:]
+    B0 = np.zeros((n1a+n1b+n2a+n2b+n2c+n3a+n3b+n3c+n3d,nroot))
+    E0 = np.zeros(nroot)
 
-        B0 = np.zeros((n1a+n1b,nroot))
-        E0 = np.zeros(nroot)
+    idx2A,idx2B,idx2C,n2a_act,n2b_act,n2c_act = eomcc_initial_guess.eomcc_initial_guess.\
+                        get_active_dimensions(noact,nuact,sys['Nocc_a'],sys['Nunocc_a'],\
+                        sys['Nocc_b'],sys['Nunocc_b'])
+    ndim_act = n1a+n1b+n2a_act+n2b_act+n2c_act
 
-        # locate only singlet roots (for RHF reference)
-        ct = 0
-        for i in range(len(omega_cis)):
-            chk = np.linalg.norm(C1A[:,i] - C1B[:,i])
-            if abs(chk) < 1.0e-09:
-                B0[:,ct] = Cvec[:,i]
-                E0[ct] = omega_cis[i]
-                if ct+1 == nroot:
-                    break
-                ct += 1
-        else:
-            print('Could not find {} singlet roots in CIS guess!'.format(nroot))
+    print('Building EOMCCSd active-space matrix (Dim. = {})'.format(ndim_act))
+    Cvec, omega_eomccsd, Hmat = eomcc_initial_guess.eomcc_initial_guess.eomccs_d_matrix(idx2A,idx2B,idx2C,\
+                        H1A['oo'],H1A['vv'],H1A['ov'],H1B['oo'],H1B['vv'],H1B['ov'],\
+                        H2A['oooo'],H2A['vvvv'],H2A['voov'],H2A['vooo'],H2A['vvov'],\
+                        H2A['ooov'],H2A['vovv'],\
+                        H2B['oooo'],H2B['vvvv'],H2B['voov'],H2B['ovvo'],H2B['vovo'],\
+                        H2B['ovov'],H2B['vooo'],H2B['ovoo'],H2B['vvov'],H2B['vvvo'],\
+                        H2B['ooov'],H2B['oovo'],H2B['vovv'],H2B['ovvv'],\
+                        H2C['oooo'],H2C['vvvv'],H2C['voov'],H2C['vooo'],H2C['vvov'],\
+                        H2C['ooov'],H2C['vovv'],\
+                        n1a,n1b,n2a_act,n2b_act,n2c_act,ndim_act)
+    # sort the roots
+    idx = np.argsort(omega_eomccsd)
+    omega_eomccsd = omega_eomccsd[idx]
+    Cvec = Cvec[:,idx]
 
-        print('Initial CIS energies:')
-        for i in range(nroot):
-                print('Root - {}     E = {:.10f}    ({:.10f})'.format(i+1,E0[i],E0[i]+ints['Escf']))
-        print('')
-        n_doubles = sys['Nocc_a']**2*sys['Nunocc_a']**2\
-                    +sys['Nocc_a']*sys['Nocc_b']*sys['Nunocc_a']*sys['Nunocc_b']\
-                    +sys['Nocc_b']**2*sys['Nunocc_b']**2
-        n_triples=  sys['Nocc_a']**3*sys['Nunocc_a']**3\
-                    +sys['Nocc_a']**2*sys['Nocc_b']*sys['Nunocc_a']**2*sys['Nunocc_b']\
-                    +sys['Nocc_a']*sys['Nocc_b']**2*sys['Nunocc_a']*sys['Nunocc_b']**2\
-                    +sys['Nocc_b']**3*sys['Nunocc_b']**3
-        ZEROS_DOUBLES = np.zeros((n_doubles,nroot))
-        ZEROS_TRIPLES = np.zeros((n_triples,nroot))
-        B0 = np.concatenate((B0,ZEROS_DOUBLES,ZEROS_TRIPLES),axis=0)
+    # locate only singlet roots
+    ct = 0
+    for i in range(len(omega_eomccsd)):
+        chk = np.linalg.norm(Cvec[:n1a,i] - Cvec[n1a:n1a+n1b,i])
+        if abs(chk) < 1.0e-09:
+            r1a,r1b,r2a,r2b,r2c = eomcc_initial_guess.eomcc_initial_guess.\
+                                unflatten_guess_vector(Cvec[:,i],idx2A,idx2B,idx2C,\
+                                n1a,n1b,n2a_act,n2b_act,n2c_act)
+            B0[:,ct] = flatten_R(r1a,r1b,r2a,r2b,r2c,\
+                                np.zeros((sys['Nunocc_a'],sys['Nunocc_a'],sys['Nunocc_a'],sys['Nocc_a'],sys['Nocc_a'],sys['Nocc_a'])),\
+                                np.zeros((sys['Nunocc_a'],sys['Nunocc_a'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_a'],sys['Nocc_b'])),\
+                                np.zeros((sys['Nunocc_a'],sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_b'],sys['Nocc_b'])),\
+                                np.zeros((sys['Nunocc_b'],sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_b'],sys['Nocc_b'],sys['Nocc_b'])))
+            E0[ct] = omega_eomccsd[i]
+            if ct+1 == nroot:
+                break
+            ct += 1
+    else:
+        print('Could not find {} singlet roots in EOMCCSd guess!'.format(nroot))
+
+    print('Initial EOMCCSd energies:')
+    for i in range(nroot):
+        print('Root - {}     E = {:.10f}    ({:.10f})'.format(i+1,E0[i],E0[i]+ints['Escf']))
+    print('')
 
     Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol)
     
@@ -159,6 +183,9 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
     is_converged = [False] * nroot
     omega = np.zeros(nroot)
     residuals = np.zeros(nroot)
+
+    # orthonormalize the initial trial space
+    B0,_ = np.linalg.qr(B0)
 
     for iroot in range(nroot):
 

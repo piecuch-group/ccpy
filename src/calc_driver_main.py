@@ -74,7 +74,7 @@ def calc_driver_main(inputs,sys,ints):
         H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
         
         cc_t, omega = eomccsd(inputs['nroot'],H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,\
-                        tol=inputs['eom_tol'],initial_guess=inputs['eom_init'],\
+                        tol=inputs['eom_tol'],\
                         noact=inputs['eom_guess_noact'],nuact=inputs['eom_guess_nuact'],\
                         maxit=inputs['eom_maxit'])
 
@@ -111,7 +111,8 @@ def calc_driver_main(inputs,sys,ints):
         H1A,H1B,H2A,H2B,H2C = HBar_CCSDT(cc_t,ints,sys)
         
         cc_t, omega = eomccsdt(inputs['nroot'],H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,\
-                        tol=inputs['eom_tol'],initial_guess=inputs['eom_init'],\
+                        tol=inputs['eom_tol'],\
+                        noact=inputs['eom_guess_noact'],nuact=inputs['eom_guess_nuact'],\
                         maxit=inputs['eom_maxit'])
 
     if calc_type == 'crcc23' or calc_type == 'CRCC23' or calc_type == 'CR-CC(2,3)':
