@@ -4,17 +4,223 @@ module eomcc_initial_guess
 
         contains
 
-                subroutine eomccs_d(nroot,noact,nuact,Rvec,omega,Hmat,&
+                subroutine get_active_dimensions(idx2A,idx2B,idx2C,&
+                                n2a_act,n2b_act,n2c_act,noact,nuact,&
+                                noa,nua,nob,nub)
+
+                        integer, intent(in) :: noa, nua, nob, nub, noact, nuact
+                        integer, intent(out) :: idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob),&
+                                                n2a_act, n2b_act, n2c_act
+
+                        integer :: a, b, i, j, act_rng_oa(2), act_rng_ua(2), act_rng_ob(2), act_rng_ub(2),&
+                                   num_act_holes, num_act_particles
+
+                        act_rng_oa(1) = max(0, noa-noact)
+                        act_rng_oa(2) = noa
+                        act_rng_ua(1) = 0
+                        act_rng_ua(2) = min(nua, nuact)
+                        act_rng_ob(1) = max(0, nob-noact)
+                        act_rng_ob(2) = nob
+                        act_rng_ub(1) = 0
+                        act_rng_ub(2) = min(nub, nuact)
+
+                        idx2A = 0
+                        n2a_act = 0
+                        do i = 1, noa
+                        do j = i+1, noa
+                        do a = 1, nua
+                        do b = a+1, nua
+                            num_act_holes = 0
+                            num_act_particles = 0
+                            if (i>act_rng_oa(1) .and. i<=act_rng_oa(2)) then
+                                num_act_holes = num_act_holes + 1
+                            end if
+                            if (j>act_rng_oa(1) .and. j<=act_rng_oa(2)) then
+                                num_act_holes = num_act_holes + 1
+                            end if
+                            if (a>act_rng_ua(1) .and. a<=act_rng_ua(2)) then
+                                num_act_particles = num_act_particles + 1
+                            end if
+                            if (b>act_rng_ua(1) .and. b<=act_rng_ua(2)) then
+                                num_act_particles = num_act_particles + 1
+                            end if
+
+                            if (num_act_holes >= 1 .and. num_act_particles >= 1) then
+                                idx2A(a,b,i,j) = 1
+                                idx2A(b,a,i,j) = 1
+                                idx2A(a,b,j,i) = 1
+                                idx2A(b,a,j,i) = 1
+                                n2a_act = n2a_act + 1
+                            end if
+                        end do
+                        end do
+                        end do
+                        end do
+
+                        idx2B = 0
+                        n2b_act = 0
+                        do i = 1, noa
+                        do j = 1, nob
+                        do a = 1, nua
+                        do b = 1, nub
+                            num_act_holes = 0
+                            num_act_particles = 0
+                            if (i>act_rng_oa(1) .and. i<=act_rng_oa(2)) then
+                                num_act_holes = num_act_holes + 1
+                            end if
+                            if (j>act_rng_ob(1) .and. j<=act_rng_ob(2)) then
+                                num_act_holes = num_act_holes + 1
+                            end if
+                            if (a>act_rng_ua(1) .and. a<=act_rng_ua(2)) then
+                                num_act_particles = num_act_particles + 1
+                            end if
+                            if (b>act_rng_ub(1) .and. b<=act_rng_ub(2)) then
+                                num_act_particles = num_act_particles + 1
+                            end if
+
+                            if (num_act_holes >= 1 .and. num_act_particles >= 1) then
+                                idx2B(a,b,i,j) = 1
+                                n2b_act = n2b_act + 1
+                            end if
+                        end do
+                        end do
+                        end do
+                        end do
+
+                        idx2C = 0
+                        n2c_act = 0
+                        do i = 1, nob
+                        do j = i+1, nob
+                        do a = 1, nub
+                        do b = a+1, nub
+                            num_act_holes = 0
+                            num_act_particles = 0
+                            if (i>act_rng_ob(1) .and. i<=act_rng_ob(2)) then
+                                num_act_holes = num_act_holes + 1
+                            end if
+                            if (j>act_rng_ob(1) .and. j<=act_rng_ob(2)) then
+                                num_act_holes = num_act_holes + 1
+                            end if
+                            if (a>act_rng_ub(1) .and. a<=act_rng_ub(2)) then
+                                num_act_particles = num_act_particles + 1
+                            end if
+                            if (b>act_rng_ub(1) .and. b<=act_rng_ub(2)) then
+                                num_act_particles = num_act_particles + 1
+                            end if
+
+                            if (num_act_holes >= 1 .and. num_act_particles >= 1) then
+                                idx2C(a,b,i,j) = 1
+                                idx2C(b,a,i,j) = 1
+                                idx2C(a,b,j,i) = 1
+                                idx2C(b,a,j,i) = 1
+                                n2c_act = n2c_act + 1
+                            end if
+                        end do
+                        end do
+                        end do
+                        end do
+
+                end subroutine get_active_dimensions
+            
+                subroutine unflatten_guess_vector(r1a,r1b,r2a,r2b,r2c,&
+                                CIvec,&
+                                idx2A,idx2B,idx2C,&
+                                noa,nua,nob,nub,&
+                                n1a,n1b,n2a_act,n2b_act,n2c_act,ndim_act)
+
+                        integer, intent(in) :: noa, nua, nob, nub, n1a, n1b,&
+                                n2a_act, n2b_act, n2c_act, ndim_act,&
+                                idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob)
+                        real(kind=8), intent(in) :: CIvec(ndim_act)
+
+                        real(kind=8), intent(out) :: r1a(nua,noa), r1b(nub,nob),&
+                        r2a(nua,nua,nob,nob), r2b(nua,nub,noa,nob), r2c(nub,nub,nob,nob)
+
+                        integer :: i, j, a, b, ct, n2a, n2b, n2c
+
+                        n2a = noa**2 * nua**2
+                        n2b = noa*nob*nua*nub
+                        n2c = nob**2 * nub**2
+
+                        ct = 0
+                        r1a = 0.0d0
+                        do i = 1,noa
+                           do a = 1,nua
+                              ct = ct + 1
+                              r1a(a,i) = CIvec(ct)
+                           end do
+                        end do
+                        r1b = 0.0d0
+                        do i = 1,nob
+                           do a = 1,nub
+                              ct = ct + 1
+                              r1b(a,i) = CIvec(ct)
+                           end do
+                        end do
+                        r2a = 0.0d0
+                        do i = 1,noa
+                           do j = i+1,noa
+                              do a = 1,nua
+                                 do b = a+1,nua
+                                    if (idx2A(b,a,j,i)==0) cycle
+                                    ct = ct + 1
+                                    r2a(b,a,j,i) = CIvec(ct)
+                                    r2a(a,b,j,i) = -r2a(b,a,j,i)
+                                    r2a(b,a,i,j) = -r2a(b,a,j,i)
+                                    r2a(a,b,i,j) = r2a(b,a,j,i)
+                                 end do
+                              end do
+                           end do
+                        end do 
+                        r2b = 0.0d0
+                        do j = 1,nob
+                           do i = 1,noa
+                              do b = 1,nub
+                                 do a = 1,nua
+                                    if (idx2B(a,b,i,j)==0) cycle
+                                    ct = ct + 1
+                                    r2b(a,b,i,j) = CIvec(ct)
+                                 end do
+                              end do
+                           end do
+                        end do 
+                        r2c = 0.0d0
+                        do i = 1,nob
+                           do j = i+1,nob
+                              do a = 1,nub
+                                 do b = a+1,nub
+                                    if (idx2C(b,a,j,i)==0) cycle
+                                    ct = ct + 1
+                                    r2c(b,a,j,i) = CIvec(ct)
+                                    r2c(a,b,j,i) = -r2c(b,a,j,i)
+                                    r2c(b,a,i,j) = -r2c(b,a,j,i)
+                                    r2c(a,b,i,j) = r2c(b,a,j,i)
+                                 end do
+                              end do
+                           end do
+                        end do
+
+                        !print*,'Packing vectors'
+                        !Bvec(1:n1a) = pack(r1a,.true.)
+                        !Bvec(n1a+1:n1a+n1b) = pack(r1b,.true.)
+                        !Bvec(n1a+n1b+1:n1a+n1b+n2a) = pack(r2a,.true.)
+                        !Bvec(n1a+n1b+n2a+1:n1a+n1b+n2a+n2b) = pack(r2b,.true.)
+                        !Bvec(n1a+n1b+n2a+n2b+1:n1a+n1b+n2a+n2b+n2c) = pack(r2c,.true.)
+
+                end subroutine unflatten_guess_vector
+
+
+                subroutine eomccs_d_matrix(CIvec,omega,Hmat,idx2A,idx2B,idx2C,&
                                     H1A_oo,H1A_vv,H1A_ov,&
                                     H1B_oo,H1B_vv,H1B_ov,&
                                     H2A_oooo,H2A_vvvv,H2A_voov,H2A_vooo,H2A_vvov,H2A_ooov,H2A_vovv,&
                                     H2B_oooo,H2B_vvvv,H2B_voov,H2B_ovvo,H2B_vovo,H2B_ovov,H2B_vooo,&
                                     H2B_ovoo,H2B_vvov,H2B_vvvo,H2B_ooov,H2B_oovo,H2B_vovv,H2B_ovvv,&
                                     H2C_oooo,H2C_vvvv,H2C_voov,H2C_vooo,H2C_vvov,H2C_ooov,H2C_vovv,&
-                                    noa,nua,nob,nub,n1a,n1b,n2a,n2a_unique,n2b,n2c,n2c_unique,ndim_unique,ndim)
+                                    noa,nua,nob,nub,n1a,n1b,n2a_act,n2b_act,n2c_act,ndim_act)
 
-                        integer, intent(in) :: nroot, noa, nua, nob, nub, noact, nuact,&
-                                               n1a, n1b, n2a, n2a_unique, n2b, n2c, n2c_unique, ndim_unique, ndim
+                        integer, intent(in) :: noa, nua, nob, nub, n1a, n1b, n2a_act, n2b_act, n2c_act, ndim_act,&
+                                               idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob)
                         real(kind=8), intent(in) :: H1A_oo(noa,noa),H1A_vv(nua,nua),H1A_ov(noa,nua),&
                                     H1B_oo(nob,nob),H1B_vv(nub,nub),H1B_ov(nob,nub),&
                                     H2A_oooo(noa,noa,noa,noa),H2A_vvvv(nua,nua,nua,nua),H2A_voov(nua,noa,noa,nua),&
@@ -29,28 +235,19 @@ module eomcc_initial_guess
                                     H2C_vooo(nub,nob,nob,nob),H2C_vvov(nub,nub,nob,nub),H2C_ooov(nob,nob,nob,nub),&
                                     H2C_vovv(nub,nob,nub,nub)
 
-                        real(kind=8), intent(out) :: omega(nroot), Rvec(ndim,nroot), Hmat(ndim_unique,ndim_unique)
-
-                        real(kind=8), allocatable :: Htemp(:,:)
-                        real(kind=8) :: evecs(ndim_unique,ndim_unique), evals(ndim_unique)
-                        integer :: i, j, k, l, a, b, c, d, ct1, ct2, pos(6),&
-                                   act_rng_oa(2), act_rng_ua(2), act_rng_ob(2), act_rng_ub(2)
+                        real(kind=8), intent(out) :: CIvec(ndim_act,ndim_act), omega(ndim_act), Hmat(ndim_act,ndim_act)
+                        
+                        real(kind=8) :: Hmat2(ndim_act,ndim_act)
+                        real(kind=8), allocatable :: Htemp(:,:), VL(:,:), wi(:), work(:)
+                        integer :: i, j, k, l, a, b, c, d, ct1, ct2, pos(6), info
 
                         pos(1) = 0
                         pos(2) = n1a
                         pos(3) = n1a+n1b
-                        pos(4) = n1a+n1b+n2a_unique
-                        pos(5) = n1a+n1b+n2a_unique+n2b
-                        pos(6) = n1a+n1b+n2a_unique+n2b+n2c_unique
+                        pos(4) = n1a+n1b+n2a_act
+                        pos(5) = n1a+n1b+n2a_act+n2b_act
+                        pos(6) = n1a+n1b+n2a_act+n2b_act+n2c_act
 
-                        act_rng_oa(1) = max(0, noa-noact)
-                        act_rng_oa(2) = noa
-                        act_rng_ua(1) = 0
-                        act_rng_ua(2) = min(nua, nuact)
-                        act_rng_ob(1) = max(0, nob-noact)
-                        act_rng_ob(2) = nob
-                        act_rng_ub(1) = 0
-                        act_rng_ub(2) = min(nub, nuact)
 
                         ! < ia | H | jb >
                         allocate(Htemp(n1a,n1a))
@@ -129,7 +326,7 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ia | H | jkbc >
-                        allocate(Htemp(n1a,n2a_unique))
+                        allocate(Htemp(n1a,n2a_act))
                         ct1 = 0
                         do i = 1, noa
                         do a = 1, nua
@@ -139,8 +336,8 @@ module eomcc_initial_guess
                             do k = j+1, noa
                             do b = 1, nua
                             do c = b+1, nua
+                                if (idx2A(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
-                                if (.not. is_active(j,k,b,c,act_rng_oa,act_rng_ua)) cycle
                                 Htemp(ct1,ct2) =&
                                 calc_SADA_matel(i,a,j,k,b,c,H1A_ov,H2A_ooov,H2A_vovv)
                             end do
@@ -153,7 +350,7 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ia | H | jk~bc~ >
-                        allocate(Htemp(n1a,n2b))
+                        allocate(Htemp(n1a,n2b_act))
                         ct1 = 0
                         do i = 1, noa
                         do a = 1, nua
@@ -163,8 +360,8 @@ module eomcc_initial_guess
                             do k = 1, nob
                             do b = 1, nua
                             do c = 1, nub
+                                if (idx2B(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
-                                if (.not. is_active(j,k,b,c,act_rng_occ,act_rng_unocc)) cycle
                                 Htemp(ct1,ct2) =&
                                 calc_SADB_matel(i,a,j,k,b,c,H1B_ov,H2B_ooov,H2B_vovv)
                             end do
@@ -177,7 +374,7 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < i~a~ | H | jk~bc~ >
-                        allocate(Htemp(n1b,n2b))
+                        allocate(Htemp(n1b,n2b_act))
                         ct1 = 0
                         do i = 1, nob
                         do a = 1, nub
@@ -187,6 +384,7 @@ module eomcc_initial_guess
                             do k = 1, nob
                             do b = 1, nua
                             do c = 1, nub
+                                if (idx2B(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_SBDB_matel(i,a,j,k,b,c,H1A_ov,H2B_oovo,H2B_ovvv)
@@ -200,7 +398,7 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < i~a~ | H | j~k~b~c~ >
-                        allocate(Htemp(n1b,n2c_unique))
+                        allocate(Htemp(n1b,n2c_act))
                         ct1 = 0
                         do i = 1, nob
                         do a = 1, nub
@@ -210,6 +408,7 @@ module eomcc_initial_guess
                             do k = j+1, nob
                             do b = 1, nub
                             do c = b+1, nub
+                                if (idx2C(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_SBDC_matel(i,a,j,k,b,c,H1B_ov,H2C_ooov,H2C_vovv)
@@ -223,12 +422,13 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ijab | H | kc >
-                        allocate(Htemp(n2a_unique,n1a))
+                        allocate(Htemp(n2a_act,n1a))
                         ct1 = 0
                         do i = 1, noa
                         do j = i+1, noa
                         do a = 1, nua
                         do b = a+1, nua
+                            if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
@@ -246,12 +446,13 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ij~ab~ | H | kc >
-                        allocate(Htemp(n2b,n1a))
+                        allocate(Htemp(n2b_act,n1a))
                         ct1 = 0
                         do i = 1, noa
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
+                            if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
@@ -269,12 +470,13 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ij~ab~ | H | k~c~ >
-                        allocate(Htemp(n2b,n1b))
+                        allocate(Htemp(n2b_act,n1b))
                         ct1 = 0
                         do i = 1, noa
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
+                            if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, nob
@@ -292,12 +494,13 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < i~j~a~b~ | H | k~c~ >
-                        allocate(Htemp(n2c_unique,n1b))
+                        allocate(Htemp(n2c_act,n1b))
                         ct1 = 0
                         do i = 1, nob
                         do j = i+1, nob
                         do a = 1, nub
                         do b = a+1, nub
+                            if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, nob
@@ -315,18 +518,20 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ijab | H | klcd >
-                        allocate(Htemp(n2a_unique,n2a_unique))
+                        allocate(Htemp(n2a_act,n2a_act))
                         ct1 = 0
                         do i = 1, noa
                         do j = i+1, noa
                         do a = 1, nua
                         do b = a+1, nua
+                            if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
                             do l = k+1, noa
                             do c = 1, nua
                             do d = c+1, nua
+                                if (idx2A(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_DADA_matel(i,j,a,b,k,l,c,d,H1A_oo,H1A_vv,H2A_voov,H2A_oooo,H2A_vvvv)
@@ -342,18 +547,20 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ijab | H | kl~cd~ >
-                        allocate(Htemp(n2a_unique,n2b))
+                        allocate(Htemp(n2a_act,n2b_act))
                         ct1 = 0
                         do i = 1, noa
                         do j = i+1, noa
                         do a = 1, nua
                         do b = a+1, nua
+                            if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
                             do l = 1, nob
                             do c = 1, nua
                             do d = 1, nub
+                                if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_DADB_matel(i,j,a,b,k,l,c,d,H2B_voov)
@@ -369,18 +576,20 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ij~ab~ | H | klcd >
-                        allocate(Htemp(n2b,n2a_unique))
+                        allocate(Htemp(n2b_act,n2a_act))
                         ct1 = 0
                         do i = 1, noa
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
+                            if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
                             do l = k+1, noa
                             do c = 1, nua
                             do d = c+1, nua
+                                if (idx2A(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_DBDA_matel(i,j,a,b,k,l,c,d,H2B_ovvo)
@@ -396,18 +605,20 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ij~ab~ | H | kl~cd~ >
-                        allocate(Htemp(n2b,n2b))
+                        allocate(Htemp(n2b_act,n2b_act))
                         ct1 = 0
                         do i = 1, noa
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
+                            if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
                             do l = 1, nob
                             do c = 1, nua
                             do d = 1, nub
+                                if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_DBDB_matel(i,j,a,b,k,l,c,d,&
@@ -427,18 +638,20 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ij~ab~ | H | k~l~c~d~ >
-                        allocate(Htemp(n2b,n2c_unique))
+                        allocate(Htemp(n2b_act,n2c_act))
                         ct1 = 0
                         do i = 1, noa
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
+                            if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, nob
                             do l = k+1, nob
                             do c = 1, nub
                             do d = c+1, nub
+                                if (idx2C(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_DBDC_matel(i,j,a,b,k,l,c,d,H2B_voov)
@@ -454,18 +667,20 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < i~j~a~b~ | H | k~lc~d >
-                        allocate(Htemp(n2c_unique,n2b))
+                        allocate(Htemp(n2c_act,n2b_act))
                         ct1 = 0
                         do i = 1, nob
                         do j = i+1, nob
                         do a = 1, nub
                         do b = a+1, nub
+                            if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
                             do l = 1, nob
                             do c = 1, nua
                             do d = 1, nub
+                                if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_DCDB_matel(i,j,a,b,k,l,c,d,H2B_ovvo)
@@ -481,18 +696,20 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < i~j~a~b~ | H | k~l~c~d~ >
-                        allocate(Htemp(n2c_unique,n2c_unique))
+                        allocate(Htemp(n2c_act,n2c_act))
                         ct1 = 0
                         do i = 1, nob
                         do j = i+1, nob
                         do a = 1, nub
                         do b = a+1, nub
+                            if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, nob
                             do l = k+1, nob
                             do c = 1, nub
                             do d = c+1, nub
+                                if (idx2C(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_DCDC_matel(i,j,a,b,k,l,c,d,H1B_oo,H1B_vv,H2C_voov,H2C_oooo,H2C_vvvv)
@@ -507,8 +724,33 @@ module eomcc_initial_guess
                         Hmat(pos(5)+1:pos(6),pos(5)+1:pos(6)) = Htemp
                         deallocate(Htemp)
 
+                        Hmat2 = Hmat
+                        allocate(VL(ndim_act,ndim_act),wi(ndim_act),work(4*ndim_act))
+                        call dgeev('N','V',ndim_act,Hmat2,ndim_act,omega,wi,VL,ndim_act,CIvec,ndim_act,&
+                                work,4*ndim_act,info)
+                        if (info /= 0) then
+                            print*,'Problem diagonalizing EOMCCSd matrix'
+                        end if
+                        deallocate(VL,wi,work)
 
-                end subroutine eomccs_d
+
+                end subroutine eomccs_d_matrix
+
+                subroutine assemble_root_vector(CIvec,r1a,r1b,r2a,r2b,r2c,&
+                                n1a,n1b,n2a_unique,n2b,n2c_unique,ndim_unique,&
+                                noa,nua,nob,nub)
+
+                    integer, intent(in) :: n1a, n1b, n2a_unique, n2b, n2c_unique, ndim_unique,&
+                                           noa, nua, nob, nub
+                    real(kind=8), intent(in) :: CIvec(ndim_unique)
+
+                    real(kind=8), intent(out) :: r1a(nua,noa), r1b(nub,nob),&
+                    r2a(nua,nua,nob,nob), r2b(nua,nub,noa,nob), r2c(nub,nub,nob,nob)
+
+                    integer :: i, j, a, b, ct
+
+                end subroutine assemble_root_vector
+
 
                 function calc_SASA_matel(i,a,j,b,H1A_oo,H1A_vv,H2A_voov) result(val)
 
@@ -1130,39 +1372,6 @@ module eomcc_initial_guess
                         end if
 
                 end function calc_DCDC_matel
-
-                function is_active(i,j,a,b,act_rng_occ,act_rng_unocc) result(xbool)
-
-                        integer, intent(in) :: i, j, a, b,&
-                        act_rng_occ(2), act_rng_unocc(2)
-
-                        logical :: xbool
-
-                        integer :: num_act_holes, num_act_particles
-                
-                        xbool = .false.
-                        num_act_holes = 0
-                        num_act_particles = 0
-
-                        if (i > act_rng_occ(1) .and. i <= act_rng_occ(2)) then
-                            num_act_holes = num_act_holes + 1
-                        end if
-                        if (j > act_rng_occ(1) .and. j <= act_rng_occ(2)) then
-                            num_act_holes = num_act_holes + 1
-                        end if
-                        if (a > act_rng_unocc(1) .and. a <= act_rng_unocc(2)) then
-                            num_act_particles = num_act_particles + 1
-                        end if
-                        if (b > act_rng_unocc(1) .and. b <= act_rng_unocc(2)) then
-                            num_act_particles = num_act_particles + 1
-                        end if
-
-                        if (num_act_holes >= 1 .and. num_act_particles >= 1) then
-                            xbool = .true.
-                        end if
-
-                end function is_active 
-
 
 
                 !subroutine reorder_dets(I1,I2,idx1,idx2,phase)

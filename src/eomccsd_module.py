@@ -6,9 +6,9 @@ import cc_loops
 import eomcc_initial_guess
 from scipy.io import loadmat
 
-#print(eomcc_initial_guess.eomcc_initial_guess.eomccs_d.__doc__)
+#print(eomcc_initial_guess.eomcc_initial_guess.eomccs_d_matrix.__doc__)
 
-def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',noact=200,nuact=200,tol=1.0e-06,maxit=80):
+def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',noact=0,nuact=0,tol=1.0e-06,maxit=80):
     """Perform the EOMCCSD excited-state calculation.
 
     Parameters
@@ -43,21 +43,14 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',noact=20
     n1a = sys['Nocc_a'] * sys['Nunocc_a']
     n1b = sys['Nocc_b'] * sys['Nunocc_b']
     n2a = sys['Nocc_a']**2*sys['Nunocc_a']**2
-    n2a_unique = int(sys['Nocc_a']*(sys['Nocc_a']-1)/2 * sys['Nunocc_a']*(sys['Nunocc_a']-1)/2) 
-    n2c_unique = int(sys['Nocc_b']*(sys['Nocc_b']-1)/2 * sys['Nunocc_b']*(sys['Nunocc_b']-1)/2)
     n2b = sys['Nocc_a']*sys['Nocc_b']*sys['Nunocc_a']*sys['Nunocc_b']
     n2c = sys['Nocc_b']**2*sys['Nunocc_b']**2
-    n_singles = n1a + n1b
-    n_doubles = n2a + n2b + n2c
-    n_doubles_unique = n2a_unique + n2b + n2c_unique
-    ndim_ccsd = n_singles + n_doubles
-    ndim_ccsd_unique = n_singles + n_doubles_unique
 
     if initial_guess == 'cis':
         Cvec, omega_cis = cis(ints,sys)
         C1A = Cvec[:n1a,:]
         C1B = Cvec[n1a:,:]
-        B0 = np.zeros((n_singles,nroot))
+        B0 = np.zeros((n1a+n1b,nroot))
         E0 = np.zeros(nroot)
 
         # locate only singlet roots
@@ -77,12 +70,21 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',noact=20
         for i in range(nroot):
                 print('Root - {}     E = {:.10f}    ({:.10f})'.format(i+1,E0[i],E0[i]+ints['Escf']))
         print('')
-        ZEROS_DOUBLES = np.zeros((n_doubles,nroot))
+        ZEROS_DOUBLES = np.zeros((n2a+n2b+n2c,nroot))
         B0 = np.concatenate((B0,ZEROS_DOUBLES),axis=0)
 
     if initial_guess == 'eomccsd':
 
-        _,_,Hmat = eomcc_initial_guess.eomcc_initial_guess.eomccs_d(nroot,noact,nuact,
+        B0 = np.zeros((n1a+n1b+n2a+n2b+n2c,nroot))
+        E0 = np.zeros(nroot)
+
+        idx2A,idx2B,idx2C,n2a_act,n2b_act,n2c_act = eomcc_initial_guess.eomcc_initial_guess.\
+                        get_active_dimensions(noact,nuact,sys['Nocc_a'],sys['Nunocc_a'],\
+                        sys['Nocc_b'],sys['Nunocc_b'])
+        ndim_act = n1a+n1b+n2a_act+n2b_act+n2c_act
+
+        print('Building EOMCCSd active-space matrix (Dim. = {})'.format(ndim_act))
+        Cvec, omega_eomccsd, Hmat = eomcc_initial_guess.eomcc_initial_guess.eomccs_d_matrix(idx2A,idx2B,idx2C,\
                         H1A['oo'],H1A['vv'],H1A['ov'],H1B['oo'],H1B['vv'],H1B['ov'],\
                         H2A['oooo'],H2A['vvvv'],H2A['voov'],H2A['vooo'],H2A['vvov'],\
                         H2A['ooov'],H2A['vovv'],\
@@ -91,15 +93,41 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',noact=20
                         H2B['ooov'],H2B['oovo'],H2B['vovv'],H2B['ovvv'],\
                         H2C['oooo'],H2C['vvvv'],H2C['voov'],H2C['vooo'],H2C['vvov'],\
                         H2C['ooov'],H2C['vovv'],\
-                        n1a,n1b,n2a,n2a_unique,n2b,n2c,n2c_unique,ndim_ccsd_unique,ndim_ccsd)
-        omega_eomccsd, Cvec = np.linalg.eig(Hmat)
+                        n1a,n1b,n2a_act,n2b_act,n2c_act,ndim_act)
+        # sort the roots
         idx = np.argsort(omega_eomccsd)
         omega_eomccsd = omega_eomccsd[idx]
         Cvec = Cvec[:,idx]
 
+        np.save('/scratch/gururang/test_CCpy/chplus-1.0-olsen/save_data/Hmat',Hmat)
+        np.save('/scratch/gururang/test_CCpy/chplus-1.0-olsen/save_data/Cvec',Cvec)
 
+        # locate only singlet roots
+        ct = 0
+        for i in range(len(omega_eomccsd)):
+            chk = np.linalg.norm(Cvec[:n1a,i] - Cvec[n1a:n1a+n1b,i])
+            if abs(chk) < 1.0e-09:
+                r1a,r1b,r2a,r2b,r2c = eomcc_initial_guess.eomcc_initial_guess.\
+                                unflatten_guess_vector(Cvec[:,i],idx2A,idx2B,idx2C,\
+                                n1a,n1b,n2a_act,n2b_act,n2c_act)
+                np.save('/scratch/gururang/test_CCpy/chplus-1.0-olsen/save_data/r1a_guess',r1a)
+                np.save('/scratch/gururang/test_CCpy/chplus-1.0-olsen/save_data/r1b_guess',r1b)
+                np.save('/scratch/gururang/test_CCpy/chplus-1.0-olsen/save_data/r2a_guess',r2a)
+                np.save('/scratch/gururang/test_CCpy/chplus-1.0-olsen/save_data/r2b_guess',r2b)
+                np.save('/scratch/gururang/test_CCpy/chplus-1.0-olsen/save_data/r2c_guess',r2c)
+                B0[:,ct] = flatten_R(r1a,r1b,r2a,r2b,r2c)
+                np.save('/scratch/gururang/test_CCpy/chplus-1.0-olsen/save_data/B0_guess',B0[:,ct])
+                E0[ct] = omega_eomccsd[i]
+                if ct+1 == nroot:
+                    break
+                ct += 1
+        else:
+            print('Could not find {} singlet roots in EOMCCSd guess!'.format(nroot))
 
-
+        print('Initial EOMCCSd energies:')
+        for i in range(nroot):
+                print('Root - {}     E = {:.10f}    ({:.10f})'.format(i+1,E0[i],E0[i]+ints['Escf']))
+        print('')
 
     Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol)
     
@@ -173,10 +201,12 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
     ndim = noa*nua + nob*nub + noa**2*nua**2 + noa*nob*nua*nub + nob**2*nub**2
 
     Rvec = np.zeros((ndim,nroot))
-    #Lvec0 = np.zeros((ndim,nroot))
     is_converged = [False] * nroot
     omega = np.zeros(nroot)
     residuals = np.zeros(nroot)
+
+    # orthonormalize the initial trial space
+    B0,_ = np.linalg.qr(B0)
 
     for iroot in range(nroot):
 
@@ -193,10 +223,8 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
 
             sigma[:,it] = HR(B[:,it],cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
 
-            #print(np.linalg.norm(sigma))
             G = np.dot(B.T,sigma[:,:it+1])
             e, alpha = np.linalg.eig(G)
-            #alphainvtr = np.linalg.inv(alpha).T
 
             # select root based on maximum overlap with initial guess
             # < b0 | V_i > = < b0 | \sum_k alpha_{ik} |b_k>
@@ -205,12 +233,6 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
             omega[iroot] = np.real(e[idx[-1]])
             alpha = np.real(alpha[:,idx[-1]])
             Rvec[:,iroot] = np.dot(B,alpha)
-            #idx = np.argsort([abs(x-E0[iroot]) for x in e])
-            #omega[iroot] = np.real(e[idx[0]])
-            #alpha = np.real(alpha[:,idx[0]])
-            #alphainv = np.real(alphainvtr[:,idx[0]])
-            #Rvec[:,iroot] = np.dot(B,alpha)
-            #Lvec0[:,iroot] = np.dot(B,alphainv)
 
             # calculate residual vector
             q = np.dot(sigma[:,:it+1],alpha) - omega[iroot]*Rvec[:,iroot]
@@ -226,6 +248,8 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
             
             # update residual vector
             q1a,q1b,q2a,q2b,q2c = unflatten_R(q,sys)
+            #q1a,q1b,q2a,q2b,q2c = update_R(q1a,q1b,q2a,q2b,q2c,omega[iroot],\
+            #                H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'])
             q1a,q1b,q2a,q2b,q2c = cc_loops.cc_loops.update_r(q1a,q1b,q2a,q2b,q2c,omega[iroot],\
                             H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],0.0,\
                             sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'])
@@ -243,6 +267,48 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
         print('')
 
     return Rvec, omega, is_converged
+
+def update_R(r1a,r1b,r2a,r2b,r2c,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv):
+    
+    noa = r1a.shape[1]
+    nua = r1a.shape[0]
+    nob = r1b.shape[1]
+    nub = r1b.shape[0]
+
+    for a in range(nua):
+        for i in range(noa):
+            denom = H1A_vv[a,a] - H1A_oo[i,i]
+            r1a[a,i] /= (omega-denom)
+    for a in range(nub):
+        for i in range(nob):
+            denom = H1B_vv[a,a] - H1B_oo[i,i]
+            r1b[a,i] /= (omega-denom)
+    for a in range(nua):
+        for b in range(a+1,nua):
+            for i in range(noa):
+                for j in range(i+1,noa):
+                    denom = H1A_vv[a,a]+H1A_vv[b,b]-H1A_oo[i,i]-H1A_oo[j,j]
+                    r2a[a,b,i,j] /= (omega-denom)
+                    r2a[a,b,j,i] = -1.0*r2a[a,b,i,j]
+                    r2a[b,a,i,j] = -1.0*r2a[a,b,i,j]
+                    r2a[b,a,j,i] = r2a[a,b,i,j]
+    for a in range(nua):
+        for b in range(nub):
+            for i in range(noa):
+                for j in range(nob):
+                    denom = H1A_vv[a,a]+H1B_vv[b,b]-H1A_oo[i,i]-H1B_oo[j,j]
+                    r2b[a,b,i,j] /= (omega-denom)
+    for a in range(nub):
+        for b in range(a+1,nub):
+            for i in range(nob):
+                for j in range(i+1,nob):
+                    denom = H1B_vv[a,a]+H1B_vv[b,b]-H1B_oo[i,i]-H1B_oo[j,j]
+                    r2c[a,b,i,j] /= (omega-denom)
+                    r2c[a,b,j,i] = -1.0*r2c[a,b,i,j]
+                    r2c[b,a,i,j] = -1.0*r2c[a,b,i,j]
+                    r2c[b,a,j,i] = r2c[a,b,i,j]
+
+    return r1a,r1b,r2a,r2b,r2c
 
 def calc_r0(r1a,r1b,r2a,r2b,r2c,H1A,H1B,ints,omega):
     """Calculate the EOMCC overlap <0|[ (H_N e^T)_C * (R1+R2) ]_C|0>.
@@ -301,7 +367,7 @@ def orthogonalize(q,B):
         q -= np.dot(b.T,q)*b
     return q
 
-def flatten_R(r1a,r1b,r2a,r2b,r2c):
+def flatten_R(r1a,r1b,r2a,r2b,r2c,order='C'):
     """Flatten the R vector.
 
     Parameters
@@ -322,7 +388,7 @@ def flatten_R(r1a,r1b,r2a,r2b,r2c):
     R : ndarray(dtype=float, shape=(ndim_ccsd))
         Flattened array of R vector for the given root
     """
-    return np.concatenate((r1a.flatten(),r1b.flatten(),r2a.flatten(),r2b.flatten(),r2c.flatten()),axis=0)
+    return np.concatenate((r1a.flatten(order=order),r1b.flatten(order=order),r2a.flatten(order=order),r2b.flatten(order=order),r2c.flatten(order=order)),axis=0)
 
 def unflatten_R(R,sys,order='C'):
     """Unflatten the R vector into many-body tensor components.

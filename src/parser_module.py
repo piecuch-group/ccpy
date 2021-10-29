@@ -29,6 +29,8 @@ def parse_input_file(inpfile):
     inputs['eom_init'] = 'cis'
     inputs['eom_maxit'] = 80
     inputs['root_select'] = None
+    inputs['eom_guess_naoct'] = 0
+    inputs['eom_guess_nuact'] = 0
 
     with open(inpfile,'r') as f:
         for line in f.readlines():
@@ -85,6 +87,10 @@ def parse_input_file(inpfile):
                 temp = line.split('=')[1].strip()
                 temp2 = temp.split(',')
                 inputs['root_select'] = [int(x) for x in temp2]
+            if 'eom_guess_noact' in line and 'eom_guess_nuact' not in line:
+                inputs['eom_guess_noact'] = int(line.split('=')[1].strip())
+            if 'eom_guess_nuact' in line and 'eom_guess_noact' not in line:
+                inputs['eom_guess_nuact'] = int(line.split('=')[1].strip())
 
 
     with open(inpfile,'r') as f:
