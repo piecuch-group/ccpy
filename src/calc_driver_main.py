@@ -75,6 +75,7 @@ def calc_driver_main(inputs,sys,ints):
         
         cc_t, omega = eomccsd(inputs['nroot'],H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,\
                         tol=inputs['eom_tol'],initial_guess=inputs['eom_init'],\
+                        noact=inputs['eom_guess_noact'],nuact=inputs['eom_guess_nuact'],\
                         maxit=inputs['eom_maxit'])
 
     if calc_type == 'ipeom2' or calc_type == 'IPEOM2':
