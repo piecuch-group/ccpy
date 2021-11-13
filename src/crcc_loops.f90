@@ -335,9 +335,9 @@ module crcc_loops
                               D3A_O,D3A_V,&
                               noa,nua)
                         
-                        real, intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua
-                        real, intent(in) :: MM24A(1:nua,1:nua,1:nua,1:nua,1:noa,1:noa,1:noa,1:noa),&
+                        real(kind=8), intent(in) :: MM24A(1:nua,1:nua,1:nua,1:nua,1:noa,1:noa,1:noa,1:noa),&
                         L4A(1:nua,1:nua,1:nua,1:nua,1:noa,1:noa,1:noa,1:noa),&
                         fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
                         H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
@@ -347,15 +347,12 @@ module crcc_loops
                         D3A_O(1:nua,1:noa,1:noa),&
                         D3A_V(1:nua,1:noa,1:nua)
                         integer :: i, j, k, l, a, b, c, d, ii, jj, kk, ll, aa, bb, cc, dd
-                        real :: denom, temp, denom_sum_O, denom_sum_V
+                        real(kind=8) :: denom, temp
 
                         deltaA = 0.0
                         deltaB = 0.0
                         deltaC = 0.0
                         deltaD = 0.0
-
-                        denom_sum_O = 0.0
-                        denom_sum_V = 0.0
 
                         do ii = 1 , noa
                             do jj = ii+1, noa
@@ -413,21 +410,6 @@ module crcc_loops
 
                                                         deltaD = deltaD + temp/denom
 
-                                                        denom_sum_O = denom_sum_O &
-                                                        +D3A_O(a,i,j)+D3A_O(a,i,k)+D3A_O(a,i,l)+D3A_O(a,j,k)&
-                                                        +D3A_O(a,j,l)+D3A_O(a,k,l)+D3A_O(b,i,j)+D3A_O(b,i,k)&
-                                                        +D3A_O(b,i,l)+D3A_O(b,j,k)+D3A_O(b,j,l)+D3A_O(b,k,l)&
-                                                        +D3A_O(c,i,j)+D3A_O(c,i,k)+D3A_O(c,i,l)+D3A_O(c,j,k)&
-                                                        +D3A_O(c,j,l)+D3A_O(c,k,l)+D3A_O(d,i,j)+D3A_O(d,i,k)&
-                                                        +D3A_O(d,i,l)+D3A_O(d,j,k)+D3A_O(d,j,l)+D3A_O(d,k,l)
-
-                                                        denom_sum_V = denom_sum_V &
-                                                        -D3A_V(a,i,b)-D3A_V(a,j,b)-D3A_V(a,k,b)-D3A_V(a,l,b)&
-                                                        -D3A_V(a,i,c)-D3A_V(a,j,c)-D3A_V(a,k,c)-D3A_V(a,l,c)&
-                                                        -D3A_V(a,i,d)-D3A_V(a,j,d)-D3A_V(a,k,d)-D3A_V(a,l,d)&
-                                                        -D3A_V(b,i,c)-D3A_V(b,j,c)-D3A_V(b,k,c)-D3A_V(b,l,c)&
-                                                        -D3A_V(b,i,d)-D3A_V(b,j,d)-D3A_V(b,k,d)-D3A_V(b,l,d)&
-                                                        -D3A_V(c,i,d)-D3A_V(c,j,d)-D3A_V(c,k,d)-D3A_V(c,l,d)
                                                     end do 
                                                 end do 
                                             end do
@@ -436,9 +418,6 @@ module crcc_loops
                                 end do 
                             end do 
                         end do
-
-                        print*, 'D3A_O = ',denom_sum_O
-                        print*, 'D3A_V = ',denom_sum_V
 
               end subroutine crcc24A
 
@@ -452,9 +431,9 @@ module crcc_loops
                               D3A_O,D3A_V,D3B_O,D3B_V,D3C_O,D3C_V,&
                               noa,nua,nob,nub)
                         
-                        real, intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, nob, nub
-                        real, intent(in) :: MM24B(1:nua,1:nua,1:nua,1:nub,1:noa,1:noa,1:noa,1:nob),&
+                        real(kind=8), intent(in) :: MM24B(1:nua,1:nua,1:nua,1:nub,1:noa,1:noa,1:noa,1:nob),&
                         L4B(1:nua,1:nua,1:nua,1:nub,1:noa,1:noa,1:noa,1:nob),&
                         fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
                         H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
@@ -473,15 +452,12 @@ module crcc_loops
                         D3C_O(1:nub,1:noa,1:nob),&
                         D3C_V(1:nua,1:nob,1:nub)
                         integer :: i, j, k, l, a, b, c, d, ii, jj, kk, ll, aa, bb, cc, dd
-                        real :: denom, temp, denom_sum_O, denom_sum_V
+                        real(kind=8) :: denom, temp
 
                         deltaA = 0.0
                         deltaB = 0.0
                         deltaC = 0.0
                         deltaD = 0.0
-
-                        denom_sum_O = 0.0
-                        denom_sum_V = 0.0
 
                         do ii = 1 , noa
                             do jj = ii+1, noa
@@ -510,7 +486,7 @@ module crcc_loops
                                                         deltaB = deltaB + temp/denom
 
                                                         denom = denom & 
-                                                        -H2A_oooo(j,i,j,i)-H2A_oooo(k,i,k,i)-H2A_oooo(k,j,k,j)-H2A_voov(a,i,i,a)&
+                                                        -H2A_oooo(i,j,i,j)-H2A_oooo(i,k,i,k)-H2A_oooo(j,k,j,k)-H2A_voov(a,i,i,a)&
                                                         -H2A_voov(a,j,j,a)-H2A_voov(a,k,k,a)-H2A_voov(b,i,i,b)-H2A_voov(b,j,j,b)&
                                                         -H2A_voov(b,k,k,b)-H2A_voov(c,i,i,c)-H2A_voov(c,j,j,c)-H2A_voov(c,k,k,c)&
                                                         -H2A_vvvv(a,b,a,b)-H2A_vvvv(a,c,a,c)-H2A_vvvv(b,c,b,c)-H2B_oooo(i,l,i,l)&
@@ -535,40 +511,6 @@ module crcc_loops
 
                                                         deltaD = deltaD + temp/denom
 
-                                                        denom_sum_O = denom_sum_O &
-                                                        +D3A_O(a,i,j)+D3A_O(a,i,k)+D3A_O(a,j,k)+D3A_O(b,i,j)&
-                                                        +D3A_O(b,i,k)+D3A_O(b,j,k)+D3A_O(c,i,j)+D3A_O(c,i,k)&
-                                                        +D3A_O(c,j,k)&
-                                                        +D3B_O(a,i,l)+D3B_O(a,j,l)&
-                                                        +D3B_O(a,k,l)+D3B_O(b,i,l)+D3B_O(b,j,l)+D3B_O(b,k,l)&
-                                                        +D3B_O(c,i,l)+D3B_O(c,j,l)+D3B_O(c,k,l)&
-                                                        +D3C_O(d,i,l)+D3C_O(d,j,l)+D3C_O(d,k,l)
-
-                                                        denom_sum_V = denom_sum_V &
-                                                        -D3A_V(a,i,b)-D3A_V(a,j,b)-D3A_V(a,k,b)&
-                                                        -D3A_V(a,i,c)-D3A_V(a,j,c)-D3A_V(a,k,c)-D3A_V(b,i,c)&
-                                                        -D3A_V(b,j,c)-D3A_V(b,k,c)&
-                                                        -D3B_V(a,i,d)&
-                                                        -D3B_V(a,j,d)-D3B_V(a,k,d)-D3B_V(b,i,d)-D3B_V(b,j,d)&
-                                                        -D3B_V(b,k,d)-D3B_V(c,i,d)-D3B_V(c,j,d)-D3B_V(c,k,d)&
-                                                        +D3C_V(a,l,d)&
-                                                        +D3C_V(b,l,d)+D3C_V(c,l,d)
-
-                                                        !+D3A_O(a,i,j)+D3A_O(a,i,k)+D3A_O(a,j,k)+D3A_O(b,i,j)&
-                                                        !+D3A_O(b,i,k)+D3A_O(b,j,k)+D3A_O
-
-                                                        !+D3B_O(a,i,l)+D3B_O(a,j,l)+D3B_O(a,k,l)+D3B_O(b,i,l)&
-                                                        !+D3B_O(b,j,l)+D3B_O(b,k,l)
-
-                                                        !+D3A_O(c,i,j)+D3A_O(c,i,k)+D3A_O(c,i,l)+D3A_O(c,j,k)&
-                                                        !+D3A_O(c,j,l)+D3A_O(c,k,l)+D3A_O(d,i,j)+D3A_O(d,i,k)&
-                                                        !+D3A_O(d,i,l)+D3A_O(d,j,k)+D3A_O(d,j,l)+D3A_O(d,k,l)&
-                                                        !-D3A_V(a,i,b)-D3A_V(a,j,b)-D3A_V(a,k,b)-D3A_V(a,l,b)&
-                                                        !-D3A_V(a,i,c)-D3A_V(a,j,c)-D3A_V(a,k,c)-D3A_V(a,l,c)&
-                                                        !-D3A_V(a,i,d)-D3A_V(a,j,d)-D3A_V(a,k,d)-D3A_V(a,l,d)&
-                                                        !-D3A_V(b,i,c)-D3A_V(b,j,c)-D3A_V(b,k,c)-D3A_V(b,l,c)&
-                                                        !-D3A_V(b,i,d)-D3A_V(b,j,d)-D3A_V(b,k,d)-D3A_V(b,l,d)&
-                                                        !-D3A_V(c,i,d)-D3A_V(c,j,d)-D3A_V(c,k,d)-D3A_V(c,l,d)
                                                     end do 
                                                 end do 
                                             end do
@@ -577,9 +519,6 @@ module crcc_loops
                                 end do 
                             end do 
                         end do
-
-                        print*, 'D3B_O = ',denom_sum_O
-                        print*, 'D3B_V = ',denom_sum_V
 
               end subroutine crcc24B
 
@@ -593,9 +532,9 @@ module crcc_loops
                               D3A_O,D3A_V,D3B_O,D3B_V,D3C_O,D3C_V,D3D_O,D3D_V,&
                               noa,nua,nob,nub)
                         
-                        real, intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, nob, nub
-                        real, intent(in) :: MM24C(1:nua,1:nua,1:nub,1:nub,1:noa,1:noa,1:nob,1:nob),&
+                        real(kind=8), intent(in) :: MM24C(1:nua,1:nua,1:nub,1:nub,1:noa,1:noa,1:nob,1:nob),&
                         L4C(1:nua,1:nua,1:nub,1:nub,1:noa,1:noa,1:nob,1:nob),&
                         fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
                         H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
@@ -618,15 +557,12 @@ module crcc_loops
                         D3D_O(1:nub,1:nob,1:nob),&
                         D3D_V(1:nub,1:nob,1:nub)
                         integer :: i, j, k, l, a, b, c, d, ii, jj, kk, ll, aa, bb, cc, dd
-                        real :: denom, temp, denom_sum_O, denom_sum_V
+                        real(kind=8) :: denom, temp
 
                         deltaA = 0.0
                         deltaB = 0.0
                         deltaC = 0.0
                         deltaD = 0.0
-
-                        denom_sum_O = 0.0
-                        denom_sum_V = 0.0
 
                         do ii = 1 , noa
                             do jj = ii+1, noa
@@ -655,7 +591,7 @@ module crcc_loops
                                                         deltaB = deltaB + temp/denom
 
                                                         denom = denom &
-                                                        -H2A_oooo(j,i,j,i)-H2A_voov(a,i,i,a)-H2A_voov(a,j,j,a)-H2A_voov(b,i,i,b)&
+                                                        -H2A_oooo(i,j,i,j)-H2A_voov(a,i,i,a)-H2A_voov(a,j,j,a)-H2A_voov(b,i,i,b)&
                                                         -H2A_voov(b,j,j,b)-H2A_vvvv(a,b,a,b)-H2B_oooo(i,k,i,k)-H2B_oooo(j,k,j,k)&
                                                         -H2B_oooo(i,l,i,l)-H2B_oooo(j,l,j,l)+H2B_ovov(i,c,i,c)+H2B_ovov(j,c,j,c)&
                                                         +H2B_ovov(i,d,i,d)+H2B_ovov(j,d,j,d)+H2B_vovo(a,k,a,k)+H2B_vovo(a,l,a,l)&
@@ -679,22 +615,6 @@ module crcc_loops
 
                                                         deltaD = deltaD + temp/denom
 
-                                                        denom_sum_O = denom_sum_O &
-                                                        +D3A_O(a,i,j)+D3A_O(b,i,j)&
-                                                        +D3B_O(a,i,k)+D3B_O(a,i,l)+D3B_O(a,j,k)+D3B_O(a,j,l)&
-                                                        +D3B_O(b,i,k)+D3B_O(b,i,l)+D3B_O(b,j,k)+D3B_O(b,j,l)&
-                                                        +D3C_O(c,i,k)+D3C_O(c,i,l)+D3C_O(c,j,k)+D3C_O(c,j,l)&
-                                                        +D3C_O(d,i,k)+D3C_O(d,i,l)+D3C_O(d,j,k)+D3C_O(d,j,l)&
-                                                        +D3D_O(c,k,l)+D3D_O(d,k,l)
-
-                                                        denom_sum_V = denom_sum_V &
-                                                        -D3A_V(a,i,b)-D3A_V(a,j,b)&
-                                                        -D3B_V(a,i,c)-D3B_V(a,j,c)-D3B_V(b,i,c)-D3B_V(b,j,c)&
-                                                        -D3B_V(a,i,d)-D3B_V(a,j,d)-D3B_V(b,i,d)-D3B_V(b,j,d)&
-                                                        -D3C_V(a,k,c)-D3C_V(a,l,c)-D3C_V(b,k,c)-D3C_V(b,l,c)&
-                                                        -D3C_V(a,k,d)-D3C_V(a,l,d)-D3C_V(b,k,d)-D3C_V(b,l,d)&
-                                                        -D3D_V(c,k,d)-D3D_V(c,l,d)
-
                                                     end do 
                                                 end do 
                                             end do
@@ -703,9 +623,6 @@ module crcc_loops
                                 end do 
                             end do 
                         end do
-
-                        print*, 'D3C_O = ',denom_sum_O
-                        print*, 'D3C_V = ',denom_sum_V
 
               end subroutine crcc24C
 

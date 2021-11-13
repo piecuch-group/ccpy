@@ -4,16 +4,28 @@ module eomcc_initial_guess
 
         contains
 
-                subroutine get_active_dimensions(idx2A,idx2B,idx2C,&
-                                n2a_act,n2b_act,n2c_act,noact,nuact,&
-                                noa,nua,nob,nub)
+                ! There is something wrong here. I am confused whether we should
+                ! enforce that
+                ! sym_target = sym(K) * sym(H) * sym(L) 
+                ! or
+                ! 0 = sym(K) * sym(H) * sym(L)
 
-                        integer, intent(in) :: noa, nua, nob, nub, noact, nuact
-                        integer, intent(out) :: idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob),&
-                                                n2a_act, n2b_act, n2c_act
+                subroutine get_active_dimensions(idx1A,idx1B,idx2A,idx2B,idx2C,&
+                                syms1A,syms1B,syms2A,syms2B,syms2C,&
+                                n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,noact,nuact,&
+                                mo_syms,mult_table,&
+                                noa,nua,nob,nub,norb,h_group)
+
+                        integer, intent(in) :: noa, nua, nob, nub, noact, nuact, norb, h_group
+                        integer, intent(in) :: mo_syms(norb), mult_table(0:h_group-1,0:h_group-1)
+                        integer, intent(out) :: idx1A(nua,noa), idx1B(nub,nob),& 
+                                                idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob),&
+                                                syms1A(nua,noa), syms1B(nub,nob),&
+                                                syms2A(nua,nua,noa,noa), syms2B(nua,nub,noa,nob), syms2C(nub,nub,nob,nob),&
+                                                n1a_act, n1b_act, n2a_act, n2b_act, n2c_act
 
                         integer :: a, b, i, j, act_rng_oa(2), act_rng_ua(2), act_rng_ob(2), act_rng_ub(2),&
-                                   num_act_holes, num_act_particles
+                                   num_act_holes, num_act_particles, sa, sb, si, sj
 
                         act_rng_oa(1) = max(0, noa-noact)
                         act_rng_oa(2) = noa
@@ -24,7 +36,34 @@ module eomcc_initial_guess
                         act_rng_ub(1) = 0
                         act_rng_ub(2) = min(nub, nuact)
 
+                        idx1A = 0
+                        syms1A = -1
+                        n1a_act = 0
+                        do i = 1,noa
+                           do a = 1,nua
+                                 sa = mo_syms(a+noa)
+                                 si = mo_syms(i)
+                                 syms1A(a,i) = mult_table(sa,si)
+                                 idx1A(a,i) = 1
+                                 n1a_act = n1a_act + 1
+                           end do
+                        end do
+
+                        idx1B = 0
+                        syms1B = -1
+                        n1b_act = 0
+                        do i = 1,nob
+                           do a = 1,nub
+                                 idx1B(a,i) = 1
+                                 sa = mo_syms(a+nob)
+                                 si = mo_syms(i)
+                                 syms1B(a,i) = mult_table(sa,si)
+                                 n1b_act = n1b_act + 1
+                           end do
+                        end do
+
                         idx2A = 0
+                        syms2A = -1
                         n2a_act = 0
                         do i = 1, noa
                         do j = i+1, noa
@@ -44,8 +83,15 @@ module eomcc_initial_guess
                             if (b>act_rng_ua(1) .and. b<=act_rng_ua(2)) then
                                 num_act_particles = num_act_particles + 1
                             end if
-
                             if (num_act_holes >= 1 .and. num_act_particles >= 1) then
+                                sa = mo_syms(a+noa)
+                                sb = mo_syms(b+noa)
+                                si = mo_syms(i)
+                                sj = mo_syms(j)
+                                syms2A(a,b,i,j) = mult_table(sa,mult_table(sb,mult_table(si,sj)))
+                                syms2A(b,a,i,j) = syms2A(a,b,i,j)
+                                syms2A(a,b,j,i) = syms2A(a,b,i,j)
+                                syms2A(b,a,j,i) = syms2A(a,b,i,j)
                                 idx2A(a,b,i,j) = 1
                                 idx2A(b,a,i,j) = 1
                                 idx2A(a,b,j,i) = 1
@@ -58,6 +104,7 @@ module eomcc_initial_guess
                         end do
 
                         idx2B = 0
+                        syms2B = -1
                         n2b_act = 0
                         do i = 1, noa
                         do j = 1, nob
@@ -77,8 +124,12 @@ module eomcc_initial_guess
                             if (b>act_rng_ub(1) .and. b<=act_rng_ub(2)) then
                                 num_act_particles = num_act_particles + 1
                             end if
-
                             if (num_act_holes >= 1 .and. num_act_particles >= 1) then
+                                sa = mo_syms(a+noa)
+                                sb = mo_syms(b+nob)
+                                si = mo_syms(i)
+                                sj = mo_syms(j)
+                                syms2B(a,b,i,j) = mult_table(sa,mult_table(sb,mult_table(si,sj)))
                                 idx2B(a,b,i,j) = 1
                                 n2b_act = n2b_act + 1
                             end if
@@ -88,6 +139,7 @@ module eomcc_initial_guess
                         end do
 
                         idx2C = 0
+                        syms2C = -1
                         n2c_act = 0
                         do i = 1, nob
                         do j = i+1, nob
@@ -107,8 +159,15 @@ module eomcc_initial_guess
                             if (b>act_rng_ub(1) .and. b<=act_rng_ub(2)) then
                                 num_act_particles = num_act_particles + 1
                             end if
-
                             if (num_act_holes >= 1 .and. num_act_particles >= 1) then
+                                sa = mo_syms(a+nob)
+                                sb = mo_syms(b+nob)
+                                si = mo_syms(i)
+                                sj = mo_syms(j)
+                                syms2C(a,b,i,j) = mult_table(sa,mult_table(sb,mult_table(si,sj)))
+                                syms2C(b,a,i,j) = syms2C(a,b,i,j)
+                                syms2C(a,b,j,i) = syms2C(a,b,i,j)
+                                syms2C(b,a,j,i) = syms2C(a,b,i,j)
                                 idx2C(a,b,i,j) = 1
                                 idx2C(b,a,i,j) = 1
                                 idx2C(a,b,j,i) = 1
@@ -124,28 +183,26 @@ module eomcc_initial_guess
             
                 subroutine unflatten_guess_vector(r1a,r1b,r2a,r2b,r2c,&
                                 CIvec,&
-                                idx2A,idx2B,idx2C,&
+                                idx1A,idx1B,idx2A,idx2B,idx2C,&
                                 noa,nua,nob,nub,&
-                                n1a,n1b,n2a_act,n2b_act,n2c_act,ndim_act)
+                                n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,ndim_act)
 
-                        integer, intent(in) :: noa, nua, nob, nub, n1a, n1b,&
+                        integer, intent(in) :: noa, nua, nob, nub, n1a_act, n1b_act,&
                                 n2a_act, n2b_act, n2c_act, ndim_act,&
+                                idx1A(nua,noa), idx1B(nub,nob),&
                                 idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob)
                         real(kind=8), intent(in) :: CIvec(ndim_act)
 
                         real(kind=8), intent(out) :: r1a(nua,noa), r1b(nub,nob),&
                         r2a(nua,nua,nob,nob), r2b(nua,nub,noa,nob), r2c(nub,nub,nob,nob)
 
-                        integer :: i, j, a, b, ct, n2a, n2b, n2c
-
-                        n2a = noa**2 * nua**2
-                        n2b = noa*nob*nua*nub
-                        n2c = nob**2 * nub**2
+                        integer :: i, j, a, b, ct
 
                         ct = 0
                         r1a = 0.0d0
                         do i = 1,noa
                            do a = 1,nua
+                              if (idx1A(a,i)==0) cycle
                               ct = ct + 1
                               r1a(a,i) = CIvec(ct)
                            end do
@@ -153,6 +210,7 @@ module eomcc_initial_guess
                         r1b = 0.0d0
                         do i = 1,nob
                            do a = 1,nub
+                              if (idx1B(a,i)==0) cycle
                               ct = ct + 1
                               r1b(a,i) = CIvec(ct)
                            end do
@@ -200,27 +258,26 @@ module eomcc_initial_guess
                            end do
                         end do
 
-                        !print*,'Packing vectors'
-                        !Bvec(1:n1a) = pack(r1a,.true.)
-                        !Bvec(n1a+1:n1a+n1b) = pack(r1b,.true.)
-                        !Bvec(n1a+n1b+1:n1a+n1b+n2a) = pack(r2a,.true.)
-                        !Bvec(n1a+n1b+n2a+1:n1a+n1b+n2a+n2b) = pack(r2b,.true.)
-                        !Bvec(n1a+n1b+n2a+n2b+1:n1a+n1b+n2a+n2b+n2c) = pack(r2c,.true.)
-
                 end subroutine unflatten_guess_vector
 
 
-                subroutine eomccs_d_matrix(CIvec,omega,Hmat,idx2A,idx2B,idx2C,&
+                subroutine eomccs_d_matrix(CIvec,omega,Hmat,idx1A,idx1B,idx2A,idx2B,idx2C,&
                                     H1A_oo,H1A_vv,H1A_ov,&
                                     H1B_oo,H1B_vv,H1B_ov,&
                                     H2A_oooo,H2A_vvvv,H2A_voov,H2A_vooo,H2A_vvov,H2A_ooov,H2A_vovv,&
                                     H2B_oooo,H2B_vvvv,H2B_voov,H2B_ovvo,H2B_vovo,H2B_ovov,H2B_vooo,&
                                     H2B_ovoo,H2B_vvov,H2B_vvvo,H2B_ooov,H2B_oovo,H2B_vovv,H2B_ovvv,&
                                     H2C_oooo,H2C_vvvv,H2C_voov,H2C_vooo,H2C_vvov,H2C_ooov,H2C_vovv,&
-                                    noa,nua,nob,nub,n1a,n1b,n2a_act,n2b_act,n2c_act,ndim_act)
+                                    noa,nua,nob,nub,n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,ndim_act,&
+                                    sym_target,sym_ref,syms1A,syms1B,syms2A,syms2B,syms2C,mult_table,h_group)
 
-                        integer, intent(in) :: noa, nua, nob, nub, n1a, n1b, n2a_act, n2b_act, n2c_act, ndim_act,&
-                                               idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob)
+                        integer, intent(in) :: noa, nua, nob, nub, n1a_act, n1b_act, n2a_act, n2b_act, n2c_act, ndim_act,&
+                                               idx1A(nua,noa), idx1B(nub,nob),&
+                                               idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob),&
+                                               syms1A(nua,noa), syms1B(nub,nob),&
+                                               syms2A(nua,nua,noa,noa), syms2B(nua,nub,noa,nob), syms2C(nub,nub,nob,nob),&
+                                               sym_target, sym_ref, h_group
+                        integer, intent(in) :: mult_table(0:h_group-1,0:h_group-1)
                         real(kind=8), intent(in) :: H1A_oo(noa,noa),H1A_vv(nua,nua),H1A_ov(noa,nua),&
                                     H1B_oo(nob,nob),H1B_vv(nub,nub),H1B_ov(nob,nub),&
                                     H2A_oooo(noa,noa,noa,noa),H2A_vvvv(nua,nua,nua,nua),H2A_voov(nua,noa,noa,nua),&
@@ -239,25 +296,29 @@ module eomcc_initial_guess
                         
                         real(kind=8) :: Hmat2(ndim_act,ndim_act)
                         real(kind=8), allocatable :: Htemp(:,:), VL(:,:), wi(:), work(:)
-                        integer :: i, j, k, l, a, b, c, d, ct1, ct2, pos(6), info
+                        integer :: i, j, k, l, a, b, c, d, ct1, ct2, pos(6), info, g1, g2
 
                         pos(1) = 0
-                        pos(2) = n1a
-                        pos(3) = n1a+n1b
-                        pos(4) = n1a+n1b+n2a_act
-                        pos(5) = n1a+n1b+n2a_act+n2b_act
-                        pos(6) = n1a+n1b+n2a_act+n2b_act+n2c_act
-
+                        pos(2) = n1a_act
+                        pos(3) = n1a_act+n1b_act
+                        pos(4) = n1a_act+n1b_act+n2a_act
+                        pos(5) = n1a_act+n1b_act+n2a_act+n2b_act
+                        pos(6) = n1a_act+n1b_act+n2a_act+n2b_act+n2c_act
 
                         ! < ia | H | jb >
-                        allocate(Htemp(n1a,n1a))
+                        allocate(Htemp(n1a_act,n1a_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1 , noa
                         do a = 1 , nua
+                            g1 = syms1A(a,i)
+                            if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , noa
                             do b = 1 , nua
+                                g2 = syms1A(b,j)
+                                if (idx1A(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) = &
                                 calc_SASA_matel(i,a,j,b,H1A_oo,H1A_vv,H2A_voov)
@@ -269,14 +330,19 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < i~a~ | H | jb >
-                        allocate(Htemp(n1b,n1a))
+                        allocate(Htemp(n1b_act,n1a_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1 , nob
                         do a = 1 , nub
+                            g1 = syms1B(a,i)
+                            if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , noa
                             do b = 1 , nua
+                                g2 = syms1A(b,j)
+                                if (idx1A(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_SBSA_matel(i,a,j,b,H2B_ovvo)
@@ -288,14 +354,19 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ia | H | j~b~ >
-                        allocate(Htemp(n1a,n1b))
+                        allocate(Htemp(n1a_act,n1b_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1 , noa
                         do a = 1 , nua
+                            g1 = syms1A(a,i)
+                            if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , nob
                             do b = 1 , nub
+                                g2 = syms1B(b,j)
+                                if (idx1B(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_SASB_matel(i,a,j,b,H2B_voov)
@@ -307,14 +378,19 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < i~a~ | H | j~b~ >
-                        allocate(Htemp(n1b,n1b))
+                        allocate(Htemp(n1b_act,n1b_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1 , nob
                         do a = 1 , nub
+                            g1 = syms1B(a,i)
+                            if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , nob
                             do b = 1 , nub
+                                g2 = syms1B(b,j)
+                                if (idx1B(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_SBSB_matel(i,a,j,b,H1B_oo,H1B_vv,H2C_voov)
@@ -326,16 +402,20 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ia | H | jkbc >
-                        allocate(Htemp(n1a,n2a_act))
+                        allocate(Htemp(n1a_act,n2a_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, noa
                         do a = 1, nua
+                            g1 = syms1A(a,i)
+                            if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1, noa
                             do k = j+1, noa
                             do b = 1, nua
                             do c = b+1, nua
+                                g2 = syms2A(b,c,j,k)
                                 if (idx2A(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -350,16 +430,20 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ia | H | jk~bc~ >
-                        allocate(Htemp(n1a,n2b_act))
+                        allocate(Htemp(n1a_act,n2b_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, noa
                         do a = 1, nua
+                            g1 = syms1A(a,i)
+                            if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1, noa
                             do k = 1, nob
                             do b = 1, nua
                             do c = 1, nub
+                                g2 = syms2B(b,c,j,k)
                                 if (idx2B(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -374,16 +458,20 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < i~a~ | H | jk~bc~ >
-                        allocate(Htemp(n1b,n2b_act))
+                        allocate(Htemp(n1b_act,n2b_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, nob
                         do a = 1, nub
+                            g1 = syms1B(a,i)
+                            if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1, noa
                             do k = 1, nob
                             do b = 1, nua
                             do c = 1, nub
+                                g2 = syms2B(b,c,j,k)
                                 if (idx2B(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -398,16 +486,20 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < i~a~ | H | j~k~b~c~ >
-                        allocate(Htemp(n1b,n2c_act))
+                        allocate(Htemp(n1b_act,n2c_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, nob
                         do a = 1, nub
+                            g1 = syms1B(a,i)
+                            if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1, nob
                             do k = j+1, nob
                             do b = 1, nub
                             do c = b+1, nub
+                                g2 = syms2C(b,c,j,k)
                                 if (idx2C(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -422,17 +514,21 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ijab | H | kc >
-                        allocate(Htemp(n2a_act,n1a))
+                        allocate(Htemp(n2a_act,n1a_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, noa
                         do j = i+1, noa
                         do a = 1, nua
                         do b = a+1, nua
+                            g1 = syms2A(a,b,i,j)
                             if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
                             do c = 1, nua
+                                g2 = syms1A(c,k)
+                                if (idx1A(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_DASA_matel(i,j,a,b,k,c,H2A_vooo,H2A_vvov)
@@ -446,17 +542,21 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ij~ab~ | H | kc >
-                        allocate(Htemp(n2b_act,n1a))
+                        allocate(Htemp(n2b_act,n1a_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, noa
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
+                            g1 = syms2B(a,b,i,j)
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
                             do c = 1, nua
+                                g2 = syms1A(c,k)
+                                if (idx1A(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_DBSA_matel(i,j,a,b,k,c,H2B_ovoo,H2B_vvvo)
@@ -470,17 +570,21 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < ij~ab~ | H | k~c~ >
-                        allocate(Htemp(n2b_act,n1b))
+                        allocate(Htemp(n2b_act,n1b_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, noa
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
+                            g1 = syms2B(a,b,i,j)
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, nob
                             do c = 1, nub
+                                g2 = syms1B(c,k)
+                                if (idx1B(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_DBSB_matel(i,j,a,b,k,c,H2B_vooo,H2B_vvov)
@@ -494,17 +598,21 @@ module eomcc_initial_guess
                         deallocate(Htemp)
 
                         ! < i~j~a~b~ | H | k~c~ >
-                        allocate(Htemp(n2c_act,n1b))
+                        allocate(Htemp(n2c_act,n1b_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, nob
                         do j = i+1, nob
                         do a = 1, nub
                         do b = a+1, nub
+                            g1 = syms2C(a,b,i,j)
                             if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, nob
                             do c = 1, nub
+                                g2 = syms1B(c,k)
+                                if (idx1B(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
                                 calc_DCSB_matel(i,j,a,b,k,c,H2C_vooo,H2C_vvov)
@@ -519,11 +627,13 @@ module eomcc_initial_guess
 
                         ! < ijab | H | klcd >
                         allocate(Htemp(n2a_act,n2a_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, noa
                         do j = i+1, noa
                         do a = 1, nua
                         do b = a+1, nua
+                            g1 = syms2A(a,b,i,j)
                             if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -531,6 +641,7 @@ module eomcc_initial_guess
                             do l = k+1, noa
                             do c = 1, nua
                             do d = c+1, nua
+                                g2 = syms2A(c,d,k,l)
                                 if (idx2A(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -548,11 +659,13 @@ module eomcc_initial_guess
 
                         ! < ijab | H | kl~cd~ >
                         allocate(Htemp(n2a_act,n2b_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, noa
                         do j = i+1, noa
                         do a = 1, nua
                         do b = a+1, nua
+                            g1 = syms2A(a,b,i,j)
                             if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -560,6 +673,7 @@ module eomcc_initial_guess
                             do l = 1, nob
                             do c = 1, nua
                             do d = 1, nub
+                                g2 = syms2B(c,d,k,l)
                                 if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -577,11 +691,13 @@ module eomcc_initial_guess
 
                         ! < ij~ab~ | H | klcd >
                         allocate(Htemp(n2b_act,n2a_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, noa
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
+                            g1 = syms2B(a,b,i,j)
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -589,6 +705,7 @@ module eomcc_initial_guess
                             do l = k+1, noa
                             do c = 1, nua
                             do d = c+1, nua
+                                g2 = syms2A(c,d,k,l)
                                 if (idx2A(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -606,11 +723,13 @@ module eomcc_initial_guess
 
                         ! < ij~ab~ | H | kl~cd~ >
                         allocate(Htemp(n2b_act,n2b_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, noa
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
+                            g1 = syms2B(a,b,i,j)
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -618,6 +737,7 @@ module eomcc_initial_guess
                             do l = 1, nob
                             do c = 1, nua
                             do d = 1, nub
+                                g2 = syms2B(c,d,k,l)
                                 if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -639,11 +759,13 @@ module eomcc_initial_guess
 
                         ! < ij~ab~ | H | k~l~c~d~ >
                         allocate(Htemp(n2b_act,n2c_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, noa
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
+                            g1 = syms2B(a,b,i,j)
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -651,6 +773,7 @@ module eomcc_initial_guess
                             do l = k+1, nob
                             do c = 1, nub
                             do d = c+1, nub
+                                g2 = syms2C(c,d,k,l)
                                 if (idx2C(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -668,11 +791,13 @@ module eomcc_initial_guess
 
                         ! < i~j~a~b~ | H | k~lc~d >
                         allocate(Htemp(n2c_act,n2b_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, nob
                         do j = i+1, nob
                         do a = 1, nub
                         do b = a+1, nub
+                            g1 = syms2C(a,b,i,j)
                             if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -680,6 +805,7 @@ module eomcc_initial_guess
                             do l = 1, nob
                             do c = 1, nua
                             do d = 1, nub
+                                g2 = syms2B(c,d,k,l)
                                 if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -697,11 +823,13 @@ module eomcc_initial_guess
 
                         ! < i~j~a~b~ | H | k~l~c~d~ >
                         allocate(Htemp(n2c_act,n2c_act))
+                        Htemp = 0.0d0
                         ct1 = 0
                         do i = 1, nob
                         do j = i+1, nob
                         do a = 1, nub
                         do b = a+1, nub
+                            g1 = syms2C(a,b,i,j)
                             if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -709,6 +837,7 @@ module eomcc_initial_guess
                             do l = k+1, nob
                             do c = 1, nub
                             do d = c+1, nub
+                                g2 = syms2C(c,d,k,l)
                                 if (idx2C(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -735,21 +864,6 @@ module eomcc_initial_guess
 
 
                 end subroutine eomccs_d_matrix
-
-                subroutine assemble_root_vector(CIvec,r1a,r1b,r2a,r2b,r2c,&
-                                n1a,n1b,n2a_unique,n2b,n2c_unique,ndim_unique,&
-                                noa,nua,nob,nub)
-
-                    integer, intent(in) :: n1a, n1b, n2a_unique, n2b, n2c_unique, ndim_unique,&
-                                           noa, nua, nob, nub
-                    real(kind=8), intent(in) :: CIvec(ndim_unique)
-
-                    real(kind=8), intent(out) :: r1a(nua,noa), r1b(nub,nob),&
-                    r2a(nua,nua,nob,nob), r2b(nua,nub,noa,nob), r2c(nub,nub,nob,nob)
-
-                    integer :: i, j, a, b, ct
-
-                end subroutine assemble_root_vector
 
 
                 function calc_SASA_matel(i,a,j,b,H1A_oo,H1A_vv,H2A_voov) result(val)
@@ -1020,10 +1134,10 @@ module eomcc_initial_guess
                                 val = val - H1A_oo(k,i)
                             end if
                             if (i==l) then
-                                val = val - H1A_oo(k,j)
+                                val = val + H1A_oo(k,j)
                             end if
                             if (j==k) then
-                                val = val - H1A_oo(l,i)
+                                val = val + H1A_oo(l,i)
                             end if
                             if (i==k) then
                                 val = val - H1A_oo(l,j)
@@ -1034,13 +1148,13 @@ module eomcc_initial_guess
                                 val = val + H1A_vv(a,c)
                             end if 
                             if (b==c) then
-                                val = val + H1A_vv(a,d)
+                                val = val - H1A_vv(a,d)
                             end if
                             if (a==c) then
                                 val = val + H1A_vv(b,d)
                             end if
                             if (a==d) then
-                                val = val + H1A_vv(b,c)
+                                val = val - H1A_vv(b,c)
                             end if
                         end if
                         if (i==k) then
@@ -1285,10 +1399,10 @@ module eomcc_initial_guess
                                 val = val - H1B_oo(k,i)
                             end if
                             if (i==l) then
-                                val = val - H1B_oo(k,j)
+                                val = val + H1B_oo(k,j)
                             end if
                             if (j==k) then
-                                val = val - H1B_oo(l,i)
+                                val = val + H1B_oo(l,i)
                             end if
                             if (i==k) then
                                 val = val - H1B_oo(l,j)
@@ -1299,13 +1413,13 @@ module eomcc_initial_guess
                                 val = val + H1B_vv(a,c)
                             end if 
                             if (b==c) then
-                                val = val + H1B_vv(a,d)
+                                val = val - H1B_vv(a,d)
                             end if
                             if (a==c) then
                                 val = val + H1B_vv(b,d)
                             end if
                             if (a==d) then
-                                val = val + H1B_vv(b,c)
+                                val = val - H1B_vv(b,c)
                             end if
                         end if
                         if (i==k) then

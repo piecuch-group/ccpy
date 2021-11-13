@@ -24,11 +24,11 @@ def parse_input_file(inpfile):
     inputs['calc_type'] = None
     inputs['adaptive_restart_dir'] = None
     inputs['save_data'] = False
-    inputs['nroot'] = None
+    inputs['nroot'] = [None]
     inputs['eom_tol'] = 1.0e-06
     inputs['eom_maxit'] = 80
     inputs['root_select'] = None
-    inputs['eom_guess_naoct'] = 0
+    inputs['eom_guess_noact'] = 0
     inputs['eom_guess_nuact'] = 0
 
     with open(inpfile,'r') as f:
@@ -42,6 +42,8 @@ def parse_input_file(inpfile):
                 inputs['nfroz'] = int(line.split('=')[1].strip())
             if 'calc_type' in line:
                 inputs['calc_type'] = line.split('=')[1].strip()
+            if 'isRHF' in line:
+                inputs['isRHF'] = line.split('=')[1].strip()
             if 'maxit' in line and 'adaptive_maxit' not in line and 'eom_maxit' not in line:
                 inputs['maxit'] = int(line.split('=')[1].strip())
             if 'tol' in line and 'eom_tol' not in line:
@@ -72,7 +74,10 @@ def parse_input_file(inpfile):
                 else:
                     inputs['save_data'] = False
             if 'nroot' in line:
-                inputs['nroot'] = int(line.split('=')[1].strip())
+                #inputs['nroot'] = int(line.split('=')[1].strip())
+                temp = line.split('=')[1].strip()
+                temp2 = temp.split(',')
+                inputs['nroot'] = [int(x) for x in temp2]
             if 'eom_tol' in line:
                 inputs['eom_tol'] = int(line.split('=')[1].strip())
                 inputs['eom_tol'] = 10**(-1.0*inputs['eom_tol'])

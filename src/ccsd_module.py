@@ -360,31 +360,15 @@ def update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     I2B_voov += 0.5*np.einsum('mnef,afin->amie',vC['oovv'],t2b,optimize=True)
     I2B_voov += H2B['voov']
 
-    X2A = 0.0
-    X2A += vA['vvoo']
-    D1 = -np.einsum('amij,bm->abij',H2A['vooo'],t1a,optimize=True)
-    D2 = np.einsum('abie,ej->abij',H2A['vvov'],t1a,optimize=True)
-    D3 = np.einsum('ae,ebij->abij',I1A_vv,t2a,optimize=True)
-    D4 = -np.einsum('mi,abmj->abij',I1A_oo,t2a,optimize=True)
-    D5 = np.einsum('amie,ebmj->abij',I2A_voov,t2a,optimize=True)
-    D6 = np.einsum('amie,bejm->abij',I2B_voov,t2b,optimize=True)
-    X2A += 0.5*np.einsum('abef,efij->abij',H2A['vvvv'],t2a,optimize=True)
-    X2A += 0.5*np.einsum('mnij,abmn->abij',I2A_oooo,t2a,optimize=True)
-    
-    # diagrams that have A(ab)
-    D13 = D1 + D3
-    D13 = D13 - np.einsum('abij->baij',D13)
-    
-    # diagrams that have A(ij)
-    D24 = D2 + D4
-    D24 = D24 - np.einsum('abij->abji',D24)
-        
-    # diagrams that have A(ab)A(ij)
-    D56 = D5 + D6
-    D56 = D56 - np.einsum('abij->baij',D56) - np.einsum('abij->abji',D56) + np.einsum('abij->baji',D56)
-    
-    # total contribution
-    X2A += D13 + D24 + D56
+    X2A = 0.25*vA['vvoo']
+    X2A -= 0.5*np.einsum('amij,bm->abij',H2A['vooo'],t1a,optimize=True)
+    X2A += 0.5*np.einsum('abie,ej->abij',H2A['vvov'],t1a,optimize=True)
+    X2A += 0.5*np.einsum('ae,ebij->abij',I1A_vv,t2a,optimize=True)
+    X2A -= 0.5*np.einsum('mi,abmj->abij',I1A_oo,t2a,optimize=True)
+    X2A += np.einsum('amie,ebmj->abij',I2A_voov,t2a,optimize=True)
+    X2A += np.einsum('amie,bejm->abij',I2B_voov,t2b,optimize=True)
+    X2A += 0.125*np.einsum('abef,efij->abij',H2A['vvvv'],t2a,optimize=True)
+    X2A += 0.125*np.einsum('mnij,abmn->abij',I2A_oooo,t2a,optimize=True)
 
     t2a = cc_loops.cc_loops.update_t2a(t2a,X2A,fA['oo'],fA['vv'],shift)
 
@@ -537,31 +521,15 @@ def update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     I2C_voov += 0.5*np.einsum('mnef,afin->amie',vC['oovv'],t2c,optimize=True)
     I2C_voov += H2C['voov']
     
-    X2C = 0.0
-    X2C += vC['vvoo']
-    D1 = -np.einsum('mbij,am->abij',H2C['ovoo'],t1b,optimize=True)
-    D2 = np.einsum('abej,ei->abij',H2C['vvvo'],t1b,optimize=True)
-    D3 = np.einsum('ae,ebij->abij',I1B_vv,t2c,optimize=True)
-    D4 = -np.einsum('mi,abmj->abij',I1B_oo,t2c,optimize=True)
-    D5 = np.einsum('amie,ebmj->abij',I2C_voov,t2c,optimize=True)
-    D6 = np.einsum('maei,ebmj->abij',I2B_ovvo,t2b,optimize=True)
-    X2C += 0.5*np.einsum('abef,efij->abij',H2C['vvvv'],t2c,optimize=True)
-    X2C += 0.5*np.einsum('mnij,abmn->abij',I2C_oooo,t2c,optimize=True)
-    
-    # diagrams that have A(ab)
-    D13 = D1 + D3
-    D13 = D13 - np.einsum('abij->baij',D13)
-    
-    # diagrams that have A(ij)
-    D24 = D2 + D4
-    D24 = D24 - np.einsum('abij->abji',D24)
-        
-    # diagrams that have A(ab)A(ij)
-    D56 = D5 + D6
-    D56 = D56 - np.einsum('abij->baij',D56) - np.einsum('abij->abji',D56) + np.einsum('abij->baji',D56)
-    
-    # total contribution
-    X2C += D13 + D24 + D56
+    X2C = 0.25*vC['vvoo']
+    X2C -= 0.5*np.einsum('mbij,am->abij',H2C['ovoo'],t1b,optimize=True)
+    X2C += 0.5*np.einsum('abej,ei->abij',H2C['vvvo'],t1b,optimize=True)
+    X2C += 0.5*np.einsum('ae,ebij->abij',I1B_vv,t2c,optimize=True)
+    X2C -= 0.5*np.einsum('mi,abmj->abij',I1B_oo,t2c,optimize=True)
+    X2C += np.einsum('amie,ebmj->abij',I2C_voov,t2c,optimize=True)
+    X2C += np.einsum('maei,ebmj->abij',I2B_ovvo,t2b,optimize=True)
+    X2C += 0.125*np.einsum('abef,efij->abij',H2C['vvvv'],t2c,optimize=True)
+    X2C += 0.125*np.einsum('mnij,abmn->abij',I2C_oooo,t2c,optimize=True)
 
     t2c = cc_loops.cc_loops.update_t2c(t2c,X2C,fB['oo'],fB['vv'],shift)
 

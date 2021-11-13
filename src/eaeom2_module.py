@@ -105,6 +105,9 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
     omega = np.zeros(nroot)
     residuals = np.zeros(nroot)
 
+    # orthognormalize the initial trial space
+    B0,_ = np.linalg.qr(B0)
+
     for iroot in range(nroot):
 
         print('Solving for root - {}'.format(iroot+1))
