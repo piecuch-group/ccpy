@@ -50,16 +50,35 @@ def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06
     n3c = sys['Nocc_a']*sys['Nunocc_a']*sys['Nocc_b']**2*sys['Nunocc_b']**2
     n3d = sys['Nocc_b']**3 * sys['Nunocc_b']**3
 
-    B0 = np.zeros((n1a+n1b+n2a+n2b+n2c+n3a+n3b+n3c+n3d,nroot))
-    E0 = np.zeros(nroot)
+    num_roots_total = sum(nroot)
 
-    idx2A,idx2B,idx2C,n2a_act,n2b_act,n2c_act = eomcc_initial_guess.eomcc_initial_guess.\
-                        get_active_dimensions(noact,nuact,sys['Nocc_a'],sys['Nunocc_a'],\
-                        sys['Nocc_b'],sys['Nunocc_b'])
-    ndim_act = n1a+n1b+n2a_act+n2b_act+n2c_act
+    B0 = np.zeros((n1a+n1b+n2a+n2b+n2c+n3a+n3b+n3c+n3d,num_roots_total))
+    E0 = np.zeros(num_roots_total)
+    root_sym = [None]*num_roots_total
 
-    print('Building EOMCCSd active-space matrix (Dim. = {})'.format(ndim_act))
-    Cvec, omega_eomccsd, Hmat = eomcc_initial_guess.eomcc_initial_guess.eomccs_d_matrix(idx2A,idx2B,idx2C,\
+    mo_sym = np.array(sys['sym_nums'])[sys['Nfroz']:]
+    mult_table = np.array(sys['pg_mult_table'])
+    h_group = mult_table.shape[0]
+
+    nct = 0
+    for sym_target, num_root_sym in enumerate(nroot):
+
+        if num_root_sym == 0: continue
+
+        state_irrep = list(sys['irrep_map'].keys())[sym_target]
+        print('Initial guess for {} singlet states of {} symmetry '.format(num_root_sym,state_irrep),end='')
+
+        idx1A,idx1B,idx2A,idx2B,idx2C,n1a_act,n1b_act,n2a_act,n2b_act,n2c_act =\
+                        eomcc_initial_guess.eomcc_initial_guess.\
+                        get_active_dimensions(noact,nuact,sym_target,mo_sym,mult_table,\
+                        sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'],\
+                        sys['Nocc_a']+sys['Nocc_b'],h_group)
+        ndim_act = n1a_act+n1b_act+n2a_act+n2b_act+n2c_act
+
+        print('(Dim. = {})'.format(ndim_act))
+
+        Cvec, omega_eomccsd, Hmat = eomcc_initial_guess.eomcc_initial_guess.\
+                        eomccs_d_matrix(idx1A,idx1B,idx2A,idx2B,idx2C,\
                         H1A['oo'],H1A['vv'],H1A['ov'],H1B['oo'],H1B['vv'],H1B['ov'],\
                         H2A['oooo'],H2A['vvvv'],H2A['voov'],H2A['vooo'],H2A['vvov'],\
                         H2A['ooov'],H2A['vovv'],\
@@ -68,38 +87,42 @@ def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06
                         H2B['ooov'],H2B['oovo'],H2B['vovv'],H2B['ovvv'],\
                         H2C['oooo'],H2C['vvvv'],H2C['voov'],H2C['vooo'],H2C['vvov'],\
                         H2C['ooov'],H2C['vovv'],\
-                        n1a,n1b,n2a_act,n2b_act,n2c_act,ndim_act)
-    # sort the roots
-    idx = np.argsort(omega_eomccsd)
-    omega_eomccsd = omega_eomccsd[idx]
-    Cvec = Cvec[:,idx]
+                        n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,ndim_act)
+        # sort the roots
+        idx = np.argsort(omega_eomccsd)
+        omega_eomccsd = omega_eomccsd[idx]
+        Cvec = Cvec[:,idx]
 
-    # locate only singlet roots
-    ct = 0
-    for i in range(len(omega_eomccsd)):
-        chk = np.linalg.norm(Cvec[:n1a,i] - Cvec[n1a:n1a+n1b,i])
-        if abs(chk) < 1.0e-09:
-            r1a,r1b,r2a,r2b,r2c = eomcc_initial_guess.eomcc_initial_guess.\
-                                unflatten_guess_vector(Cvec[:,i],idx2A,idx2B,idx2C,\
-                                n1a,n1b,n2a_act,n2b_act,n2c_act)
-            B0[:,ct] = flatten_R(r1a,r1b,r2a,r2b,r2c,\
+        # locate only singlet roots
+        ct = 0
+        slice_1A = slice(0,n1a_act)
+        slice_1B = slice(n1a_act,n1a_act+n1b_act)
+        for i in range(len(omega_eomccsd)):
+            chk = np.linalg.norm(Cvec[slice_1A,i] - Cvec[slice_1B,i])
+            if abs(chk) < 1.0e-09:
+                r1a,r1b,r2a,r2b,r2c = eomcc_initial_guess.eomcc_initial_guess.\
+                                unflatten_guess_vector(Cvec[:,i],idx1A,idx1B,idx2A,idx2B,idx2C,\
+                                n1a_act,n1b_act,n2a_act,n2b_act,n2c_act)
+                B0[:,nct] = flatten_R(r1a,r1b,r2a,r2b,r2c,\
                                 np.zeros((sys['Nunocc_a'],sys['Nunocc_a'],sys['Nunocc_a'],sys['Nocc_a'],sys['Nocc_a'],sys['Nocc_a'])),\
                                 np.zeros((sys['Nunocc_a'],sys['Nunocc_a'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_a'],sys['Nocc_b'])),\
                                 np.zeros((sys['Nunocc_a'],sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_b'],sys['Nocc_b'])),\
                                 np.zeros((sys['Nunocc_b'],sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_b'],sys['Nocc_b'],sys['Nocc_b'])))
-            E0[ct] = omega_eomccsd[i]
-            if ct+1 == nroot:
-                break
-            ct += 1
-    else:
-        print('Could not find {} singlet roots in EOMCCSd guess!'.format(nroot))
+                E0[nct] = omega_eomccsd[i]
+                root_sym[nct] = state_irrep
+                nct += 1
+                if ct+1 == num_root_sym:
+                    break
+                ct += 1
+        else:
+            print('Could not find {} singlet roots of {} symmetry in EOMCCSd guess!'.format(num_root_sym,state_irrep))
 
     print('Initial EOMCCSd energies:')
-    for i in range(nroot):
-        print('Root - {}     E = {:.10f}    ({:.10f})'.format(i+1,E0[i],E0[i]+ints['Escf']))
+    for i in range(num_roots_total):
+        print('Root - {}  (Sym: {})     E = {:.10f}    ({:.10f})'.format(i+1,root_sym[i],E0[i],E0[i]+ints['Escf']))
     print('')
 
-    Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol)
+    Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,num_roots_total,B0,E0,sys,maxit,tol)
     
     cc_t['r1a'] = [None]*len(omega)
     cc_t['r1b'] = [None]*len(omega)

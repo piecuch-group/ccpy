@@ -56,14 +56,16 @@ module cc_loops
               real(8), intent(inout) :: t2a(1:nua,1:nua,1:noa,1:noa)
               !f2py intent(in,out) :: t2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
               integer :: i, j, a, b
-              real(8) :: denom
+              real(8) :: denom, val
 
               do i = 1,noa
                 do j = i+1,noa
                   do a = 1,nua
                     do b = a+1,nua
                       denom = fA_oo(i,i) + fA_oo(j,j) - fA_vv(a,a) - fA_vv(b,b)
-                      t2a(b,a,j,i) = t2a(b,a,j,i) + X2A(b,a,j,i)/(denom-shift)
+                      val = X2A(b,a,j,i) - X2A(a,b,j,i) - X2A(b,a,i,j) + X2A(a,b,i,j)
+                      t2a(b,a,j,i) = t2a(b,a,j,i) + val/(denom-shift)
+                      !t2a(b,a,j,i) = t2a(b,a,j,i) + X2A(b,a,j,i)/(denom-shift)
                       t2a(a,b,j,i) = -t2a(b,a,j,i)
                       t2a(b,a,i,j) = -t2a(b,a,j,i)
                       t2a(a,b,i,j) = t2a(b,a,j,i)
@@ -110,14 +112,16 @@ module cc_loops
               real(8), intent(inout) :: t2c(1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in,out) :: t2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
               integer :: i, j, a, b
-              real(8) :: denom
+              real(8) :: denom, val
 
               do i = 1,nob
                 do j = i+1,nob
                   do a = 1,nub
                     do b = a+1,nub
                       denom = fB_oo(i,i) + fB_oo(j,j) - fB_vv(a,a) - fB_vv(b,b)
-                      t2c(b,a,j,i) = t2c(b,a,j,i) + X2C(b,a,j,i)/(denom-shift)
+                      !t2c(b,a,j,i) = t2c(b,a,j,i) + X2C(b,a,j,i)/(denom-shift)
+                      val = X2C(b,a,j,i) - X2C(a,b,j,i) - X2C(b,a,i,j) + X2C(a,b,i,j)
+                      t2c(b,a,j,i) = t2c(b,a,j,i) + val/(denom-shift)
                       t2c(a,b,j,i) = -t2c(b,a,j,i)
                       t2c(b,a,i,j) = -t2c(b,a,j,i)
                       t2c(a,b,i,j) = t2c(b,a,j,i)

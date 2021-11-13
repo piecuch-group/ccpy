@@ -438,39 +438,21 @@ def update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     I2B_voov += 0.5*np.einsum('mnef,afin->amie',vC['oovv'],t2b,optimize=True)
     I2B_voov += H2B['voov']
 
-    X2A = 0.0
-    X2A += vA['vvoo']
-    D1 = -np.einsum('amij,bm->abij',H2A['vooo'],t1a,optimize=True)
-    D2 = np.einsum('abie,ej->abij',H2A['vvov'],t1a,optimize=True)
-    D3 = np.einsum('ae,ebij->abij',I1A_vv,t2a,optimize=True)
-    D4 = -np.einsum('mi,abmj->abij',I1A_oo,t2a,optimize=True)
-    D5 = np.einsum('amie,ebmj->abij',I2A_voov,t2a,optimize=True)
-    D6 = np.einsum('amie,bejm->abij',I2B_voov,t2b,optimize=True)
-    X2A += 0.5*np.einsum('abef,efij->abij',H2A['vvvv'],t2a,optimize=True)
-    X2A += 0.5*np.einsum('mnij,abmn->abij',I2A_oooo,t2a,optimize=True)
-    
-    # CCSDT contribution
-    X2A += np.einsum('me,abeijm->abij',H1A['ov'],t3a,optimize=True)
-    X2A += np.einsum('me,abeijm->abij',H1B['ov'],t3b,optimize=True)
-    Q3 = -np.einsum('mnif,abfmjn->abij',H2B['ooov'],t3b,optimize=True)
-    Q4 = -0.5*np.einsum('mnif,abfmjn->abij',H2A['ooov'],t3a,optimize=True)
-    Q5 = 0.5*np.einsum('anef,ebfijn->abij',H2A['vovv'],t3a,optimize=True)
-    Q6 = np.einsum('anef,ebfijn->abij',H2B['vovv'],t3b,optimize=True)
-
-    # diagrams that have A(ab)
-    D_ab = D1 + D3 + Q5 + Q6
-    D_ab -= np.einsum('abij->baij',D_ab,optimize=True)
-    
-    # diagrams that have A(ij)
-    D_ij = D2 + D4 + Q3 + Q4
-    D_ij = D_ij - np.einsum('abij->abji',D_ij,optimize=True)
-        
-    # diagrams that have A(ab)A(ij)
-    D56 = D5 + D6
-    D56 = D56 - np.einsum('abij->baij',D56,optimize=True) - np.einsum('abij->abji',D56,optimize=True) + np.einsum('abij->baji',D56,optimize=True)
-    
-    # total contribution
-    X2A += D_ij + D_ab + D56
+    X2A = 0.25*vA['vvoo']
+    X2A -= 0.5*np.einsum('amij,bm->abij',H2A['vooo'],t1a,optimize=True)
+    X2A += 0.5*np.einsum('abie,ej->abij',H2A['vvov'],t1a,optimize=True)
+    X2A += 0.5*np.einsum('ae,ebij->abij',I1A_vv,t2a,optimize=True)
+    X2A -= 0.5*np.einsum('mi,abmj->abij',I1A_oo,t2a,optimize=True)
+    X2A += np.einsum('amie,ebmj->abij',I2A_voov,t2a,optimize=True)
+    X2A += np.einsum('amie,bejm->abij',I2B_voov,t2b,optimize=True)
+    X2A += 0.125*np.einsum('abef,efij->abij',H2A['vvvv'],t2a,optimize=True)
+    X2A += 0.125*np.einsum('mnij,abmn->abij',I2A_oooo,t2a,optimize=True)
+    X2A += 0.25*np.einsum('me,abeijm->abij',H1A['ov'],t3a,optimize=True)
+    X2A += 0.25*np.einsum('me,abeijm->abij',H1B['ov'],t3b,optimize=True)
+    X2A -= 0.5*np.einsum('mnif,abfmjn->abij',H2B['ooov'],t3b,optimize=True)
+    X2A -= 0.25*np.einsum('mnif,abfmjn->abij',H2A['ooov'],t3a,optimize=True)
+    X2A += 0.25*np.einsum('anef,ebfijn->abij',H2A['vovv'],t3a,optimize=True)
+    X2A += 0.5*np.einsum('anef,ebfijn->abij',H2B['vovv'],t3b,optimize=True)
 
     t2a = cc_loops.cc_loops.update_t2a(t2a,X2A,fA['oo'],fA['vv'],shift)
 
@@ -643,39 +625,21 @@ def update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     I2C_voov += 0.5*np.einsum('mnef,afin->amie',vC['oovv'],t2c,optimize=True)
     I2C_voov += H2C['voov']
     
-    X2C = 0.0
-    X2C += vC['vvoo']
-    D1 = -np.einsum('mbij,am->abij',H2C['ovoo'],t1b,optimize=True)
-    D2 = np.einsum('abej,ei->abij',H2C['vvvo'],t1b,optimize=True)
-    D3 = np.einsum('ae,ebij->abij',I1B_vv,t2c,optimize=True)
-    D4 = -np.einsum('mi,abmj->abij',I1B_oo,t2c,optimize=True)
-    D5 = np.einsum('amie,ebmj->abij',I2C_voov,t2c,optimize=True)
-    D6 = np.einsum('maei,ebmj->abij',I2B_ovvo,t2b,optimize=True)
-    X2C += 0.5*np.einsum('abef,efij->abij',H2C['vvvv'],t2c,optimize=True)
-    X2C += 0.5*np.einsum('mnij,abmn->abij',I2C_oooo,t2c,optimize=True)
-
-    # CCSDT contribution
-    X2C += np.einsum('me,eabmij->abij',H1A['ov'],t3c,optimize=True)
-    X2C += np.einsum('me,abeijm->abij',H1B['ov'],t3d,optimize=True)
-    Q3 = 0.5*np.einsum('anef,ebfijn->abij',H2C['vovv'],t3d,optimize=True)
-    Q4 = np.einsum('nafe,febnij->abij',H2B['ovvv'],t3c,optimize=True)
-    Q5 = -0.5*np.einsum('mnif,abfmjn->abij',H2C['ooov'],t3d,optimize=True)
-    Q6 = -np.einsum('nmfi,fabnmj->abij',H2B['oovo'],t3c,optimize=True)
-    
-    # diagrams that have A(ab)
-    D_ab = D1 + D3 + Q3 + Q4
-    D_ab -= np.einsum('abij->baij',D_ab,optimize=True)
-    
-    # diagrams that have A(ij)
-    D_ij = D2 + D4 + Q5 + Q6
-    D_ij -= np.einsum('abij->abji',D_ij,optimize=True)
-        
-    # diagrams that have A(ab)A(ij)
-    D56 = D5 + D6
-    D56 = D56 - np.einsum('abij->baij',D56,optimize=True) - np.einsum('abij->abji',D56,optimize=True) + np.einsum('abij->baji',D56,optimize=True)
-    
-    # total contribution
-    X2C += D_ij + D_ab + D56
+    X2C = 0.25*vC['vvoo']
+    X2C -= 0.5*np.einsum('mbij,am->abij',H2C['ovoo'],t1b,optimize=True)
+    X2C += 0.5*np.einsum('abej,ei->abij',H2C['vvvo'],t1b,optimize=True)
+    X2C += 0.5*np.einsum('ae,ebij->abij',I1B_vv,t2c,optimize=True)
+    X2C -= 0.5*np.einsum('mi,abmj->abij',I1B_oo,t2c,optimize=True)
+    X2C += np.einsum('amie,ebmj->abij',I2C_voov,t2c,optimize=True)
+    X2C += np.einsum('maei,ebmj->abij',I2B_ovvo,t2b,optimize=True)
+    X2C += 0.125*np.einsum('abef,efij->abij',H2C['vvvv'],t2c,optimize=True)
+    X2C += 0.125*np.einsum('mnij,abmn->abij',I2C_oooo,t2c,optimize=True)
+    X2C += 0.25*np.einsum('me,eabmij->abij',H1A['ov'],t3c,optimize=True)
+    X2C += 0.25*np.einsum('me,abeijm->abij',H1B['ov'],t3d,optimize=True)
+    X2C += 0.25*np.einsum('anef,ebfijn->abij',H2C['vovv'],t3d,optimize=True)
+    X2C += 0.5*np.einsum('nafe,febnij->abij',H2B['ovvv'],t3c,optimize=True)
+    X2C -= 0.25*np.einsum('mnif,abfmjn->abij',H2C['ooov'],t3d,optimize=True)
+    X2C -= 0.5*np.einsum('nmfi,fabnmj->abij',H2B['oovo'],t3c,optimize=True)
 
     t2c = cc_loops.cc_loops.update_t2c(t2c,X2C,fB['oo'],fB['vv'],shift)
 

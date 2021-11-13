@@ -90,7 +90,8 @@ def calc_driver_main(inputs,sys,ints):
         H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
         
         cc_t, omega = ipeom2(inputs['nroot'],H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,\
-                        tol=inputs['eom_tol'],initial_guess=inputs['eom_init'],\
+                        tol=inputs['eom_tol'],\
+                        noact=inputs['eom_guess_noact'],nuact=inputs['eom_guess_nuact'],\
                         maxit=inputs['eom_maxit'])
 
     if calc_type == 'ccsdt' or calc_type == 'CCSDT':
@@ -133,6 +134,7 @@ def calc_driver_main(inputs,sys,ints):
         from ccsd_module import ccsd
         from HBar_module import HBar_CCSD
         from left_ccsd_module import left_ccsd
+        from crcc23_module import crcc23
         from crcc24_module import crcc24
         cc_t, Eccsd = ccsd(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
@@ -141,6 +143,7 @@ def calc_driver_main(inputs,sys,ints):
         cc_t = left_ccsd(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,\
                         shift=inputs['lccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
                         diis_size=inputs['diis_size'])
+        Ecrcc23,E23 = crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=inputs['isRHF'])
         Ecrcc24,E24 = crcc24(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=inputs['isRHF'])
 
     if calc_type == 'creomcc23' or calc_type == 'CREOMCC23' or calc_type == 'CR-EOMCC(2,3)':
@@ -157,14 +160,15 @@ def calc_driver_main(inputs,sys,ints):
         H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
         
         cc_t, omega = eomccsd(inputs['nroot'],H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,\
-                        tol=inputs['eom_tol'],initial_guess=inputs['eom_init'],\
+                        tol=inputs['eom_tol'],\
+                        noact=inputs['eom_guess_noact'],nuact=inputs['eom_guess_nuact'],\
                         maxit=inputs['eom_maxit'])
         cc_t = left_ccsd(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,\
                         shift=inputs['lccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'],nroot=inputs['nroot'],omega=omega,\
+                        diis_size=inputs['diis_size'],nroot=len(omega),omega=omega,\
                         eom_tol=inputs['eom_tol'],eom_lccshift=inputs['eom_lccshift'],eom_maxit=inputs['eom_maxit'])
         Ecrcc23,E23 = crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=inputs['isRHF'],\
-                        nroot=inputs['nroot'],omega=omega)
+                        nroot=len(omega),omega=omega)
 
     if calc_type == 'adaptive_ccpq_relaxed':
         from adaptive_ccpq_main import calc_adaptive_ccpq

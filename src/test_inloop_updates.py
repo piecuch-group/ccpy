@@ -24,9 +24,9 @@ def main():
     #work_dir = os.path.abspath(args.directory)+'/'
     #nfroz = args.frozen
 
-    #work_dir = '/home2/gururang/CCpy/tests/H2O-2Re-DZ/'
-    work_dir = '/home2/gururang/CCpy/tests/F2+-1.0-631g'
-    nfroz = 2
+    work_dir = '/home2/gururang/CCpy/tests/H2O-2Re-DZ/'
+    #work_dir = '/home2/gururang/CCpy/tests/F2+-1.0-631g'
+    nfroz = 0
 
     gamess_file = work_dir + '/' + get_file_names_with_strings(work_dir,'log')
     onebody_file = work_dir + '/' + get_file_names_with_strings(work_dir,'onebody')

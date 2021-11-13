@@ -10,7 +10,7 @@ twobody = twobody.inp
 nfroz = 0
 
 # Calculation type
-calc_type = CR-CC(2,3)
+calc_type = CCSD
 
 # max number of CC iterations
 maxit = 500

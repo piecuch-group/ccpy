@@ -6,30 +6,29 @@ singles and doubles (IP-EOMCCSD) with up to 2h-1p excitations."""
 import numpy as np
 import cc_loops
 
-def ipeom2(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,initial_guess='cis',tol=1.0e-06,maxit=80):
+def ipeom2(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,maxit=80):
     print('\n==================================++Entering IP-EOMCCSD(2h-1p) Routine++=================================\n')
 
-    if initial_guess == 'cis':
-        C_1h, E_1h = guess_1h(ints,sys)
-        B0 = np.zeros((sys['Nocc_a']+sys['Nocc_b'],nroot))
-        E0 = np.zeros(nroot)
-        ct = 0
-        for i in reversed(range(len(E_1h))):
-            B0[:,ct] = C_1h[:,i]
-            E0[ct] = -1.0 * E_1h[i]
-            if ct+1 == nroot:
-                break
-            ct += 1
-        print('Initial 1h Energies:')
-        for i in range(nroot):
-            print('Root - {}     E = {:.10f}'.format(i+1,E0[i]))
-        print('')
-        n_2h1p = sys['Nocc_a']**2*sys['Nunocc_a']\
+    C_1h, E_1h = guess_1h(ints,sys)
+    B0 = np.zeros((sys['Nocc_a']+sys['Nocc_b'],nroot))
+    E0 = np.zeros(nroot)
+    ct = 0
+    for i in reversed(range(len(E_1h))):
+        B0[:,ct] = C_1h[:,i]
+        E0[ct] = -1.0 * E_1h[i]
+        if ct+1 == nroot:
+            break
+        ct += 1
+    print('Initial 1h Energies:')
+    for i in range(nroot):
+        print('Root - {}     E = {:.10f}'.format(i+1,E0[i]))
+    print('')
+    n_2h1p = sys['Nocc_a']**2*sys['Nunocc_a']\
                     +sys['Nocc_a']*sys['Nocc_b']*sys['Nunocc_a']\
                     +sys['Nocc_b']*sys['Nocc_a']*sys['Nunocc_b']\
                     +sys['Nocc_b']**2*sys['Nunocc_b']
-        ZEROS_2h1p = np.zeros((n_2h1p,nroot))
-        B0 = np.concatenate((B0,ZEROS_2h1p),axis=0)
+    ZEROS_2h1p = np.zeros((n_2h1p,nroot))
+    B0 = np.concatenate((B0,ZEROS_2h1p),axis=0)
 
     Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol)
     
@@ -104,6 +103,9 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
     is_converged = [False] * nroot
     omega = np.zeros(nroot)
     residuals = np.zeros(nroot)
+
+    # orthonormalize the initial trial space
+    B0,_ = np.linalg.qr(B0)
 
     for iroot in range(nroot):
 

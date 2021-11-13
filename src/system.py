@@ -1,5 +1,4 @@
-import argparse
-#import resultsFile
+from symmetry_count import get_pg_irreps, sym_table 
 
 def build_system(gamess_file, Nfroz):
     import cclib
@@ -35,6 +34,11 @@ def build_system(gamess_file, Nfroz):
 
     mo_energies_hartree = [data.moenergies[0][i]*eVtohartree for i in range(Norb)]
 
+    # converting A1, A2, B1, B2, etc. irrep symbols to numbers using a consistent scheme
+    point_group = get_gamess_pointgroup(gamess_file)
+    pg_irrep_map = get_pg_irreps(point_group)
+    mosyms_num = [pg_irrep_map[x] for x in data.mosyms[0]]
+
     sys_t = {'Nelec' : Nelec-2*Nfroz,
              'Nocc_a' : Nocc_a-Nfroz,
              'Nocc_b' : Nocc_b-Nfroz,
@@ -43,9 +47,12 @@ def build_system(gamess_file, Nfroz):
              'Norb' : Norb,
              'Nfroz' : Nfroz,
              'sym' : data.mosyms[0],
+             'sym_nums' : mosyms_num,
              'mo_energy' : mo_energies_hartree,
              'mo_vector' : data.mocoeffs,
-             'point_group' : get_gamess_pointgroup(gamess_file),
+             'point_group' : point_group,
+             'irrep_map' : pg_irrep_map,
+             'pg_mult_table' : sym_table(point_group),
              'charge' : charge,
              'multiplicity' : multiplicity,
              'basis' : basis,
@@ -68,6 +75,7 @@ def print_gamess_info(data, gamess_file):
 
 def get_gamess_pointgroup(gamess_file):
     """Dumb way of getting the point group from GAMESS and GAMESS only"""
+    point_group = 'C1'
     flag_found = False
     with open(gamess_file,'r') as f:
         for line in f.readlines():

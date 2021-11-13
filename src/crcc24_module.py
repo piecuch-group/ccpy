@@ -1,15 +1,15 @@
 import numpy as np 
 import time 
-from f90_crcc import crcc_loops
+import crcc_loops
 
-def crcc24(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,iroot=0):
+def crcc24(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=True,iroot=0):
 
     print('\n==================================++Entering CR-CC(2,4) Routine++=============================')
     
     t_start = time.time()
 
     if flag_RHF:
-        print('Using closed-shell RHF symmetry...')
+        print('Using closed-shell RHF symmetry')
     
     # get fock matrices
     fA = ints['fA']; fB = ints['fB']
@@ -20,13 +20,13 @@ def crcc24(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,iroot=0):
     # MM24A correction
     MM24A = build_MM24A(cc_t,H2A,sys)
     L4A = build_L4A(cc_t,ints,sys,iroot=iroot)
-    dA_AAAA, dB_AAAA, dC_AAAA, dD_AAAA = crcc_loops.crcc24a(MM24A,L4A,fA['oo'],fA['vv'],H1A['oo'],H1A['vv'],\
+    dA_AAAA, dB_AAAA, dC_AAAA, dD_AAAA = crcc_loops.crcc_loops.crcc24a(MM24A,L4A,fA['oo'],fA['vv'],H1A['oo'],H1A['vv'],\
                     H2A['voov'],H2A['oooo'],H2A['vvvv'],D3A['O'],D3A['V'])
     
     # MM24B correction
     MM24B = build_MM24B(cc_t,H2A,H2B,sys)
     L4B = build_L4B(cc_t,ints,sys,iroot=iroot)
-    dA_AAAB, dB_AAAB, dC_AAAB, dD_AAAB = crcc_loops.crcc24b(MM24B,L4B,fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
+    dA_AAAB, dB_AAAB, dC_AAAB, dD_AAAB = crcc_loops.crcc_loops.crcc24b(MM24B,L4B,fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
                     H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],\
                     H2A['voov'],H2A['oooo'],H2A['vvvv'],\
                     H2B['ovov'],H2B['vovo'],H2B['oooo'],H2B['vvvv'],\
@@ -36,7 +36,7 @@ def crcc24(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,iroot=0):
     # MM24C correction
     MM24C = build_MM24C(cc_t,H2A,H2B,H2C,sys)
     L4C = build_L4C(cc_t,ints,sys,iroot=iroot) 
-    dA_AABB, dB_AABB, dC_AABB, dD_AABB = crcc_loops.crcc24c(MM24C,L4C,fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
+    dA_AABB, dB_AABB, dC_AABB, dD_AABB = crcc_loops.crcc_loops.crcc24c(MM24C,L4C,fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
                     H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],\
                     H2A['voov'],H2A['oooo'],H2A['vvvv'],\
                     H2B['ovov'],H2B['vovo'],H2B['oooo'],H2B['vvvv'],\

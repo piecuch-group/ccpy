@@ -4,7 +4,7 @@ the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD)."""
 import numpy as np
 import cc_loops
 import eomcc_initial_guess
-from scipy.io import loadmat
+#print(eomcc_initial_guess.eomcc_initial_guess.eomccs_d_matrix.__doc__)
 
 def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,maxit=80):
     """Perform the EOMCCSD excited-state calculation.
@@ -47,16 +47,37 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,
     n2b = sys['Nocc_a']*sys['Nocc_b']*sys['Nunocc_a']*sys['Nunocc_b']
     n2c = sys['Nocc_b']**2*sys['Nunocc_b']**2
 
-    B0 = np.zeros((n1a+n1b+n2a+n2b+n2c,nroot))
-    E0 = np.zeros(nroot)
+    num_roots_total = sum(nroot)
 
-    idx2A,idx2B,idx2C,n2a_act,n2b_act,n2c_act = eomcc_initial_guess.eomcc_initial_guess.\
-                        get_active_dimensions(noact,nuact,sys['Nocc_a'],sys['Nunocc_a'],\
-                        sys['Nocc_b'],sys['Nunocc_b'])
-    ndim_act = n1a+n1b+n2a_act+n2b_act+n2c_act
+    B0 = np.zeros((n1a+n1b+n2a+n2b+n2c,num_roots_total))
+    E0 = np.zeros(num_roots_total)
+    root_sym = [None]*num_roots_total
 
-    print('Building EOMCCSd active-space matrix (Dim. = {})'.format(ndim_act))
-    Cvec, omega_eomccsd, Hmat = eomcc_initial_guess.eomcc_initial_guess.eomccs_d_matrix(idx2A,idx2B,idx2C,\
+    mo_sym = np.array(sys['sym_nums'])[sys['Nfroz']:]
+    mult_table = np.array(sys['pg_mult_table'])
+    h_group = mult_table.shape[0]
+    sym_ref = 0
+
+    idx1A,idx1B,idx2A,idx2B,idx2C,\
+    syms1A,syms1B,syms2A,syms2B,syms2C,\
+    n1a_act,n1b_act,n2a_act,n2b_act,n2c_act =\
+                        eomcc_initial_guess.eomcc_initial_guess.\
+                        get_active_dimensions(noact,nuact,mo_sym,\
+                        mult_table,\
+                        sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'])
+    ndim_act = n1a_act+n1b_act+n2a_act+n2b_act+n2c_act
+    print('Dimension of EOMCCSd guess = {}'.format(ndim_act))
+
+    nct = 0
+    for sym_target, num_root_sym in enumerate(nroot):
+
+        if num_root_sym == 0: continue
+
+        state_irrep = list(sys['irrep_map'].keys())[sym_target]
+        print('Calculating initial guess for {} singlet states of {} symmetry '.format(num_root_sym,state_irrep))
+
+        Cvec, omega_eomccsd, Hmat = eomcc_initial_guess.eomcc_initial_guess.\
+                        eomccs_d_matrix(idx1A,idx1B,idx2A,idx2B,idx2C,\
                         H1A['oo'],H1A['vv'],H1A['ov'],H1B['oo'],H1B['vv'],H1B['ov'],\
                         H2A['oooo'],H2A['vvvv'],H2A['voov'],H2A['vooo'],H2A['vvov'],\
                         H2A['ooov'],H2A['vovv'],\
@@ -65,34 +86,43 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,
                         H2B['ooov'],H2B['oovo'],H2B['vovv'],H2B['ovvv'],\
                         H2C['oooo'],H2C['vvvv'],H2C['voov'],H2C['vooo'],H2C['vvov'],\
                         H2C['ooov'],H2C['vovv'],\
-                        n1a,n1b,n2a_act,n2b_act,n2c_act,ndim_act)
-    # sort the roots
-    idx = np.argsort(omega_eomccsd)
-    omega_eomccsd = omega_eomccsd[idx]
-    Cvec = Cvec[:,idx]
+                        n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,ndim_act,\
+                        sym_target,sym_ref,syms1A,syms1B,syms2A,syms2B,syms2C,\
+                        mult_table)
 
-    # locate only singlet roots
-    ct = 0
-    for i in range(len(omega_eomccsd)):
-        chk = np.linalg.norm(Cvec[:n1a,i] - Cvec[n1a:n1a+n1b,i])
-        if abs(chk) < 1.0e-09:
-            r1a,r1b,r2a,r2b,r2c = eomcc_initial_guess.eomcc_initial_guess.\
-                                unflatten_guess_vector(Cvec[:,i],idx2A,idx2B,idx2C,\
-                                n1a,n1b,n2a_act,n2b_act,n2c_act)
-            B0[:,ct] = flatten_R(r1a,r1b,r2a,r2b,r2c)
-            E0[ct] = omega_eomccsd[i]
-            if ct+1 == nroot:
-                break
-            ct += 1
-    else:
-        print('Could not find {} singlet roots in EOMCCSd guess!'.format(nroot))
+        # sort the roots
+        idx = np.argsort(omega_eomccsd)
+        omega_eomccsd = omega_eomccsd[idx]
+        Cvec = Cvec[:,idx]
+
+        # locate only singlet roots
+        ct = 0
+        slice_1A = slice(0,n1a_act)
+        slice_1B = slice(n1a_act,n1a_act+n1b_act)
+        for i in range(len(omega_eomccsd)):
+            chk = np.linalg.norm(Cvec[slice_1A,i] - Cvec[slice_1B,i])
+            #print(np.linalg.norm(Cvec[slice_1A,i]))
+            #print(np.linalg.norm(Cvec[slice_1B,i]))
+            if abs(chk) < 1.0e-01:
+                r1a,r1b,r2a,r2b,r2c = eomcc_initial_guess.eomcc_initial_guess.\
+                                unflatten_guess_vector(Cvec[:,i],idx1A,idx1B,idx2A,idx2B,idx2C,\
+                                n1a_act,n1b_act,n2a_act,n2b_act,n2c_act)
+                B0[:,nct] = flatten_R(r1a,r1b,r2a,r2b,r2c)
+                E0[nct] = omega_eomccsd[i]
+                root_sym[nct] = state_irrep
+                nct += 1
+                ct += 1
+                if ct == num_root_sym:
+                    break
+        else:
+            print('Could not find {} singlet roots of {} symmetry in EOMCCSd guess!'.format(num_root_sym,state_irrep)) 
 
     print('Initial EOMCCSd energies:')
-    for i in range(nroot):
-        print('Root - {}     E = {:.10f}    ({:.10f})'.format(i+1,E0[i],E0[i]+ints['Escf']))
+    for i in range(num_roots_total):
+        print('Root - {}  (Sym: {})     E = {:.10f}    ({:.10f})'.format(i+1,root_sym[i],E0[i],E0[i]+ints['Escf']))
     print('')
 
-    Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol)
+    Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,num_roots_total,B0,E0,sys,maxit,tol)
     
     cc_t['r1a'] = [None]*len(omega)
     cc_t['r1b'] = [None]*len(omega)
@@ -175,8 +205,11 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
 
         print('Solving for root - {}'.format(iroot+1))
         print('--------------------------------------------------------------------------------')
-        B = B0[:,iroot][:,np.newaxis]
 
+        # [TODO] add on converged R vectors to prevent collapse
+        # onto previous roots
+        curr_size = 0
+        B = B0[:,iroot][:,np.newaxis]
         sigma = np.zeros((ndim,maxit))
     
         omega[iroot] = E0[iroot]
@@ -184,9 +217,9 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
 
             omega_old = omega[iroot]
 
-            sigma[:,it] = HR(B[:,it],cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+            sigma[:,curr_size] = HR(B[:,curr_size],cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
 
-            G = np.dot(B.T,sigma[:,:it+1])
+            G = np.dot(B.T,sigma[:,:curr_size+1])
             e, alpha = np.linalg.eig(G)
 
             # select root based on maximum overlap with initial guess
@@ -198,7 +231,7 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
             Rvec[:,iroot] = np.dot(B,alpha)
 
             # calculate residual vector
-            q = np.dot(sigma[:,:it+1],alpha) - omega[iroot]*Rvec[:,iroot]
+            q = np.dot(sigma[:,:curr_size+1],alpha) - omega[iroot]*Rvec[:,iroot]
             residuals[iroot] = np.linalg.norm(q)
             deltaE = omega[iroot] - omega_old
 
@@ -220,6 +253,7 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
             q *= 1.0/np.linalg.norm(q)
 
             B = np.concatenate((B,q[:,np.newaxis]),axis=1)
+            curr_size += 1
 
         if is_converged[iroot]:
             print('Converged root {}'.format(iroot+1))
