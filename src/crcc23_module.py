@@ -147,7 +147,9 @@ def crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,nroot=0,omega=0.0):
         r0 = cc_t['r0'][iroot]
 
         EOMMM23A = build_EOM_MM23A(cc_t,H2A,H2B,iroot,sys)
-        #print(np.linalg.norm(EOMMM23A.flatten()))
+        EOMMM23A_v2 = build_EOM_MM23A_v2(cc_t,H2A,H2B,iroot,sys)
+        print(np.linalg.norm(EOMMM23A.flatten()))
+        print(np.linalg.norm(EOMMM23A_v2.flatten()))
         L3A = build_L3A(cc_t,H1A,H2A,ints,sys,iroot=iroot+1)
         #print(np.linalg.norm(L3A.flatten()))
         dA_AAA, dB_AAA, dC_AAA, dD_AAA = crcc_loops.crcc23a(EOMMM23A+r0*MM23A,L3A,omega[iroot],fA['oo'],fA['vv'],\
@@ -382,6 +384,48 @@ def build_MM23D(cc_t,H1B,H2C,sys):
     MM23D += np.einsum('acke,ebji->abcijk',I2C_vvov,t2c,optimize=True) # (bc)(ik)
 
     return MM23D
+
+def build_EOM_MM23A_v2(cc_t,H2A,H2B,iroot,sys):
+    t2a = cc_t['t2a']
+    r1a = cc_t['r1a'][iroot]
+    r1b = cc_t['r1b'][iroot]
+    r2a = cc_t['r2a'][iroot]
+    r2b = cc_t['r2b'][iroot]
+
+    Q1 = np.einsum('mnef,fn->me',H2A['oovv'],r1a,optimize=True)\
+        +np.einsum('mnef,fn->me',H2B['oovv'],r1b,optimize=True)
+
+    I1 = np.einsum('amje,bm->abej',H2A['voov'],r1a,optimize=True)\
+        +np.einsum('amfe,bejm->abfj',H2A['vovv'],r2a,optimize=True)\
+        +np.einsum('amfe,bejm->abfj',H2B['vovv'],r2b,optimize=True)
+    I1 -= np.transpose(I1,(1,0,2,3))
+    I2 = np.einsum('abfe,ej->abfj',H2A['vvvv'],r1a,optimize=True)\
+        +0.5*np.einsum('nmje,abmn->abej',H2A['ooov'],r2a,optimize=True)\
+        -np.einsum('me,abmj->abej',Q1,t2a,optimize=True)
+    Int1 = I1 + I2
+
+    I1 = -np.einsum('bmie,ej->mbij',H2A['voov'],r1a,optimize=True)\
+         +np.einsum('nmie,bejm->nbij',H2A['ooov'],r2a,optimize=True)\
+         +np.einsum('nmie,bejm->nbij',H2B['ooov'],r2b,optimize=True)
+    I1 -= np.transpose(I1,(0,1,3,2))
+    I2 = -1.0*np.einsum('nmij,bm->nbij',H2A['oooo'],r1a,optimize=True)\
+         +0.5*np.einsum('bmfe,efij->mbij',H2A['vovv'],r2a,optimize=True)
+    Int2 = I1 + I2
+
+    A1 = np.einsum('abej,ecik->abcijk',Int1,t2a,optimize=True)\
+        +np.einsum('baje,ecik->abcijk',H2A['vvov'],r2a,optimize=True)
+    A1 -= np.transpose(A1,(2,1,0,3,4,5)) - np.transpose(A1,(0,2,1,3,4,5))
+    A1 -= np.transpose(A1,(0,1,2,4,3,5)) - np.transpose(A1,(0,1,2,3,5,4))
+
+    A2 = -1.0*np.einsum('mbij,acmk->abcijk',Int2,t2a,optimize=True)\
+         -1.0*np.einsum('bmji,acmk->abcijk',H2A['vooo'],r2a,optimize=True)
+    A2 -= np.transpose(A2,(1,0,2,3,4,5)) - np.transpose(A2,(0,2,1,3,4,5))
+    A2 -= np.transpose(A2,(0,1,2,5,4,3)) - np.transpose(A2,(0,1,2,3,5,4))
+
+    return A1 + A2
+
+
+
 
 def build_EOM_MM23A(cc_t,H2A,H2B,iroot,sys):
     """Calculate the projection <ijkabc|[ (H_N e^(T1+T2))_C (R1+R2) ]_C|0>.
@@ -730,21 +774,20 @@ def build_EOM_MM23C(cc_t,H2A,H2B,H2C,iroot,sys):
     r2b = cc_t['r2b'][iroot]
     r2c = cc_t['r2c'][iroot]
 
-    EOMMM23C = 0.0
     D_jk = 0.0
     D_bc = 0.0
     D_jk_bc = 0.0
-
+    # diagram 1
     I1 = -1.0*np.einsum('mbie,am->abie',H2B['ovov'],r1a,optimize=True)
     I2 = -1.0*np.einsum('mnij,am->anij',H2B['oooo'],r1a,optimize=True)
     I3 = -1.0*np.einsum('mbej,am->abej',H2B['ovvo'],r1a,optimize=True)
     A1 = np.einsum('abie,ecjk->abcijk',I1,t2c,optimize=True)
-    D_bc += D1
+    D_bc += A1
     A2 = -1.0*np.einsum('anij,bcnk->abcijk',I2,t2c,optimize=True)
     D_jk += A2
     A3 = np.einsum('abej,ecik,->abcijk',I3,t2b,optimize=True)
     D_jk_bc += A3
-
+    # diagram 2
     I1 = -1.0*np.einsum('amej,bm->abej',H2B['vovo'],r1b,optimize=True)
     I2 = -1.0*np.einsum('amie,bm->abie',H2B['voov'],r1b,optimize=True)
     I3 = -1.0*np.einsum('cmke,bm->bcek',H2C['voov'],r1b,optimize=True)
@@ -761,7 +804,7 @@ def build_EOM_MM23C(cc_t,H2A,H2B,H2C,iroot,sys):
     D_bc += A4
     A5 = -1.0*np.einsum('nbij,acnk->abcijk',I5,t2b,optimize=True)
     D_jk_bc += A5
-
+    # diagram 3
     I1 = np.einsum('amej,ei->amij',H2B['vovo'],r1a,optimize=True)
     A1 = -1.0*np.einsum('amij,bcmk->abcijk',I1,t2c,optimize=True)
     D_jk += A1
@@ -771,7 +814,7 @@ def build_EOM_MM23C(cc_t,H2A,H2B,H2C,iroot,sys):
     I3 = np.einsum('mbej,ei->mbij',H2B['ovvo'],r1a,optimize=True)
     A3 = -1.0*np.einsum('mbij,acmk->abcijk',I3,t2b,optimize=True)
     D_jk_bc += A3
-
+    # diagram 4
     I1 = np.einsum('mbie,ej->mbij',H2B['ovov'],r1b,optimize=True)
     A1 = -1.0*np.einsum('mbij,acmk->abcijk',I1,t2b,optimize=True)
     D_jk_bc += A1
@@ -788,40 +831,112 @@ def build_EOM_MM23C(cc_t,H2A,H2B,H2C,iroot,sys):
     I5 = np.einsum('abfe,ej->abfj',H2B['vvvv'],r1b,optimize=True)
     A5 = np.einsum('abfj,fcik->abcijk',I5,t2b,optimize=True)
     D_jk_bc += A5
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
+    # diagram 5
+    I1 = 0.5*np.einsum('mnje,bcmn->bcje',H2C['ooov'],r2c,optimize=True)
+    A1 = np.einsum('bcje,aeik->abcijk',I1,t2b,optimize=True)
+    D_jk += A1
+    # diagram 6
+    I1 = np.einsum('mnie,abmn->abie',H2B['ooov'],r2b,optimize=True)
+    A1 = np.einsum('abie,ecjk->abcijk',I1,t2c,optimize=True)
+    D_bc += A1
+    I2 = np.einsum('mnej,abmn->abej',H2B['oovo'],r2b,optimize=True)
+    A2 = np.einsum('abej,ecik->abcijk',I2,t2b,optimize=True)
+    D_jk_bc += A2
+    # diagram 7
+    I1 = 0.5*np.einsum('mbfe,efjk->mbkj',H2B['ovvv'],r2c,optimize=True)
+    A1 = -1.0*np.einsum('mbkj,acim->abcijk',I1,t2b,optimize=True)
+    D_bc += A1
+    # diagram 8
+    I1 = np.einsum('amef,efij->amij',H2B['vovv'],r2b,optimize=True)
+    A1 = -1.0*np.einsum('amij,bcmk->abcijk',I1,t2c,optimize=True)
+    D_jk += A1
+    I2 = np.einsum('mbef,efij->mbij',H2B['ovvv'],r2b,optimize=True)
+    A2 = -1.0*np.einsum('mbij,acmk->abcijk',I2,t2b,optimize=True)
+    D_jk_bc += A2
+    # diagram 9
+    I1 = np.einsum('mnej,aeim->anij',H2B['oovo'],r2a,optimize=True)
+    A1 = -1.0*np.einsum('anij,bcnk->abcijk',I1,t2c,optimize=True)
+    D_jk += A1
+    I2 = np.einsum('mbef,aeim->abif',H2B['ovvv'],r2a,optimize=True)
+    A2 = np.einsum('abif,fcjk->abcijk',I2,t2c,optimize=True)
+    D_bc += A2
+    # diagram 10
+    I1 = np.einsum('mnej,aeim->anij',H2C['oovo'],r2b,optimize=True)
+    A1 = -1.0*np.einsum('anij,bcnk->abcijk',I1,t2c,optimize=True)
+    D_jk += A1
+    I2 = np.einsum('bmfe,aeim->abif',H2C['vovv'],r2b,optimize=True)
+    A2 = np.einsum('abif,fcjk->abcijk',I2,t2c,optimize=True)
+    D_bc += A2
+    # diagram 11
+    I1 = np.einsum('amfe,ecmk->acfk',H2A['vovv'],r2b,optimize=True)
+    A1 = np.einsum('acfk,fbij->abcijk',I1,t2b,optimize=True)
+    D_jk_bc += A1
+    I2 = np.einsum('mbef,ecmk->bcfk',H2B['ovvv'],r2b,optimize=True)
+    I2 -= np.transpose(I2,(1,0,3,2))
+    A2 = np.einsum('bcfk,afij->abcijk',I2,t2b,optimize=True)
+    D_jk += A2
+    I3 = np.einsum('mnei,ecmk->ncik',H2A['oovo'],r2b,optmize=True)
+    A3 = -1.0*np.einsum('ncik,abnj->abcijk',I3,t2b,optimize=True)
+    D_jk_bc += A3
+    I4 = np.einsum('mnej,ecmk->cnkj',H2B['oovo'],r2b,optimize=True)
+    I4 -= np.transpose(I4,(0,1,3,2))
+    A4 = -1.0*np.einsum('cnkj,abin->abcijk',I4,t2b,optimize=True)
+    D_bc += A4
+    # diagram 12
+    I1 = np.einsum('amfe,cekm->acfk',H2B['vovv'],r2c,optimize=True)
+    A1 = np.einsum('acfk,fbij->abcijk',I1,t2b,optimize=True)
+    D_jk_bc += A1
+    I2 = np.einsum('bmfe,cekm->bcfk',H2C['vovv'],r2c,optimize=True)
+    I2 -= np.transpose(I2,(1,0,2,3))
+    A2 = np.einsum('bcfk,afij->abcijk',I2,t2b,optimize=True)
+    D_jk += A2
+    I3 = np.einsum('nmie,cekm->ncik',H2B['ooov'],r2c,optimize=True)
+    A3 = -1.0*np.einsum('ncik,abnj->abcijk',I3,t2b,optimize=True)
+    D_jk_bc += A3
+    I4 = np.einsum('nmje,cekm->ncjk',H2C['ooov'],r2c,optimize=True)
+    I4 -= np.transpose(I4,(0,1,3,2))
+    A4 = -1.0*np.einsum('ncjk,abin->abcijk',I4,t2b,optimize=True)
+    D_bc += A4
+    # diagram 13
+    I1 = -1.0*np.einsum('mbfe,aemj->abfj',H2B['ovvv'],r2b,optimize=True)
+    A1 = np.einsum('abfj,fcik->abcijk',I1,t2b,optimize=True)
+    D_jk_bc += A1
+    I2 = -1.0*np.einsum('mnie,aemj->anij',H2B['ooov'],r2b,optimize=True)
+    A2 = -1.0*np.einsum('anij,bcnk->abcijk',I2,t2c,optimize=True)
+    D_jk += A2
+    # diagram 14
+    I1 = -1.0*np.einsum('nmej,ebim->nbij',H2B['oovo'],r2b,optimize=True)
+    A1 = -1.0*np.einsum('nbij,acnk->abcijk',I1,t2b,optimize=True)
+    D_jk_bc += A1
+    I2 = -1.0*np.einsum('amef,ebim->abif',H2B['vovv'],r2b,optimize=True)
+    A2 = np.einsum('abif,fcjk->abcijk',I2,t2c,optimize=True)
+    D_bc += A2
+    # diagram 15
+    D_jk_bc -= np.einsum('mcik,abmj->abcijk',H2B['ovoo'],r2b,optimize=True)
+    # diagram 16
+    D_jk -= np.einsum('amij,bcmk->abcijk',H2B['vooo'],r2c,optimize=True)
+    # diagram 17
+    D_bc -= np.einsum('cmkj,abim->abcijk',H2C['vooo'],r2b,optimize=True)
+    # diagram 18
+    D_jk_bc += np.einsum('acek,ebij->abcijk',H2B['vvvo'],r2b,optimize=True)
+    # diagram 19
+    D_bc += np.einsum('abie,ecjk->abcijk',H2B['vvov'],r2c,optimize=True)
+    # diagram 20
+    D_jk += np.einsum('cbke,aeij->abcijk',H2C['vvov'],r2b,optimize=True)
+    # diagram 21 - 23
+    I1A = np.einsum('mnef,fn->me',vA['oovv'],r1a,optimize=True)\
+                    +np.einsum('mnef,fn->me',vB['oovv'],r1b,optimize=True)
+    I1B = np.einsum('nmfe,fn->me',vC['oovv'],r1b,optimize=True)\
+                    +np.einsum('nmfe,fn->me',vB['oovv'],r1a,optimize=True)
+    D_bc -= np.einsum('me,ecjk,abim->abcijk',I1B,t2c,t2b,optimize=True)
+    D_jk -= np.einsum('me,bcmk,aeij->abcijk',I1B,t2c,t2b,optimize=True)
+    D_jk_bc -= np.einsum('me,ecik,abmj->abcijk',I1A,t2b,t2b,optimize=True)
+     
     D_jk -= np.transpose(D_jk,(0,1,2,3,5,4))
     D_bc -= np.transpose(D_bc,(0,2,1,3,4,5))
     D_jk_bc -= np.transpose(D_jk_bc,(0,2,1,3,4,5)) + np.transpose(D_jk_bc,(0,1,2,3,5,4)) - np.transpose(D_jk_bc,(0,2,1,3,5,4))
 
-    EOMMM23C += D_jk + D_bc + D_jk_bc
-
-    return EOMMM23C
+    return D_jk + D_bc + D_jk_bc
 
 def build_L3A(cc_t,H1A,H2A,ints,sys,iroot=0):
     """Calculate the projection <0|(L1+L2)(H_N e^(T1+T2))_C|ijkabc>.
