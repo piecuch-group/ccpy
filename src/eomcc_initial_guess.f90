@@ -1488,25 +1488,4 @@ module eomcc_initial_guess
                 end function calc_DCDC_matel
 
 
-                !subroutine reorder_dets(I1,I2,idx1,idx2,phase)
-                    ! reorder bitstring determinants I1 = [I1a, I1b] and I2 =
-                    ! [I2a,I2b] into the order of maximum coincidence as
-                    ! excitations out of HF, idx1 and idx2, and the resulting
-                    ! phase
-
-
-
-                !end subroutine reorder_dets
-
-                !function onebody_HBar_slater(det1,det2,H1A_oo,H1A_vv,H1A_ov,H1B_oo,H1B_vv,H1B_ov,noa,nua,nob,nub) result(val)
-
-                 !       integer, intent(in) :: noa, nua, nob, nub, i1, a1, i2, a2
-                 !       real(kind=8), intent(in) :: H1A_oo(noa,noa),H1A_vv(nua,nua),H1A_ov(noa,nua),&
-                 !                                   H1B_oo(nob,nob),H1B_vv(nub,nub),H1B_ov(nob,nub)
-
-                 !       real(kind=8) :: val
-
-
-                !end function onebody_HBar_slater
-
 end module eomcc_initial_guess                         

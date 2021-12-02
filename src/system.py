@@ -37,7 +37,7 @@ def build_system(gamess_file, Nfroz):
     # converting A1, A2, B1, B2, etc. irrep symbols to numbers using a consistent scheme
     point_group = get_gamess_pointgroup(gamess_file)
     pg_irrep_map = get_pg_irreps(point_group)
-    mosyms_num = [pg_irrep_map[x] for x in data.mosyms[0]]
+    mosyms_num = [pg_irrep_map[x.upper()] for x in data.mosyms[0]]
 
     sys_t = {'Nelec' : Nelec-2*Nfroz,
              'Nocc_a' : Nocc_a-Nfroz,
