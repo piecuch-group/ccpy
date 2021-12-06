@@ -41,7 +41,6 @@ def crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,nroot=0,omega=0.0):
         The corresponding CR-CC(2,3) corrections for the ground- and excited-state energetics. Contains all variants (A-D) based on the choice of perturbative denominator
     """
     print('\n==================================++Entering CR-CC(2,3) Routine++=============================')
-
     print('Performing correction for ground state')
     t_start = time.time()
 
@@ -147,19 +146,13 @@ def crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,nroot=0,omega=0.0):
         r0 = cc_t['r0'][iroot]
 
         EOMMM23A = build_EOM_MM23A(cc_t,H2A,H2B,iroot,sys)
-        EOMMM23A_v2 = build_EOM_MM23A_v2(cc_t,H2A,H2B,iroot,sys)
-        print(np.linalg.norm(EOMMM23A.flatten()))
-        print(np.linalg.norm(EOMMM23A_v2.flatten()))
         L3A = build_L3A(cc_t,H1A,H2A,ints,sys,iroot=iroot+1)
-        #print(np.linalg.norm(L3A.flatten()))
         dA_AAA, dB_AAA, dC_AAA, dD_AAA = crcc_loops.crcc23a(EOMMM23A+r0*MM23A,L3A,omega[iroot],fA['oo'],fA['vv'],\
                     H1A['oo'],H1A['vv'],H2A['voov'],H2A['oooo'],H2A['vvvv'],D3A['O'],D3A['V'],\
                     sys['Nocc_a'],sys['Nunocc_a'])
 
         EOMMM23B = build_EOM_MM23B(cc_t,H2A,H2B,H2C,iroot,sys)
-        #print(np.linalg.norm(EOMMM23B.flatten()))
         L3B = build_L3B(cc_t,H1A,H1B,H2A,H2B,ints,sys,iroot=iroot+1)
-        #print(np.linalg.norm(L3B.flatten()))
         dA_AAB, dB_AAB, dC_AAB, dD_AAB = crcc_loops.crcc23b(EOMMM23B+r0*MM23B,L3B,omega[iroot],fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
                     H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],H2A['voov'],H2A['oooo'],H2A['vvvv'],\
                     H2B['ovov'],H2B['vovo'],H2B['oooo'],H2B['vvvv'],H2C['voov'],\
@@ -385,50 +378,9 @@ def build_MM23D(cc_t,H1B,H2C,sys):
 
     return MM23D
 
-def build_EOM_MM23A_v2(cc_t,H2A,H2B,iroot,sys):
-    t2a = cc_t['t2a']
-    r1a = cc_t['r1a'][iroot]
-    r1b = cc_t['r1b'][iroot]
-    r2a = cc_t['r2a'][iroot]
-    r2b = cc_t['r2b'][iroot]
-
-    Q1 = np.einsum('mnef,fn->me',H2A['oovv'],r1a,optimize=True)\
-        +np.einsum('mnef,fn->me',H2B['oovv'],r1b,optimize=True)
-
-    I1 = np.einsum('amje,bm->abej',H2A['voov'],r1a,optimize=True)\
-        +np.einsum('amfe,bejm->abfj',H2A['vovv'],r2a,optimize=True)\
-        +np.einsum('amfe,bejm->abfj',H2B['vovv'],r2b,optimize=True)
-    I1 -= np.transpose(I1,(1,0,2,3))
-    I2 = np.einsum('abfe,ej->abfj',H2A['vvvv'],r1a,optimize=True)\
-        +0.5*np.einsum('nmje,abmn->abej',H2A['ooov'],r2a,optimize=True)\
-        -np.einsum('me,abmj->abej',Q1,t2a,optimize=True)
-    Int1 = I1 + I2
-
-    I1 = -np.einsum('bmie,ej->mbij',H2A['voov'],r1a,optimize=True)\
-         +np.einsum('nmie,bejm->nbij',H2A['ooov'],r2a,optimize=True)\
-         +np.einsum('nmie,bejm->nbij',H2B['ooov'],r2b,optimize=True)
-    I1 -= np.transpose(I1,(0,1,3,2))
-    I2 = -1.0*np.einsum('nmij,bm->nbij',H2A['oooo'],r1a,optimize=True)\
-         +0.5*np.einsum('bmfe,efij->mbij',H2A['vovv'],r2a,optimize=True)
-    Int2 = I1 + I2
-
-    A1 = np.einsum('abej,ecik->abcijk',Int1,t2a,optimize=True)\
-        +np.einsum('baje,ecik->abcijk',H2A['vvov'],r2a,optimize=True)
-    A1 -= np.transpose(A1,(2,1,0,3,4,5)) - np.transpose(A1,(0,2,1,3,4,5))
-    A1 -= np.transpose(A1,(0,1,2,4,3,5)) - np.transpose(A1,(0,1,2,3,5,4))
-
-    A2 = -1.0*np.einsum('mbij,acmk->abcijk',Int2,t2a,optimize=True)\
-         -1.0*np.einsum('bmji,acmk->abcijk',H2A['vooo'],r2a,optimize=True)
-    A2 -= np.transpose(A2,(1,0,2,3,4,5)) - np.transpose(A2,(0,2,1,3,4,5))
-    A2 -= np.transpose(A2,(0,1,2,5,4,3)) - np.transpose(A2,(0,1,2,3,5,4))
-
-    return A1 + A2
-
-
-
-
 def build_EOM_MM23A(cc_t,H2A,H2B,iroot,sys):
-    """Calculate the projection <ijkabc|[ (H_N e^(T1+T2))_C (R1+R2) ]_C|0>.
+    """Calculate the projection <ijkabc|(H_N e^(T1+T2))_C (R1+R2)|0> in
+    a factorized manner.
     
     Parameters
     ----------
@@ -453,88 +405,42 @@ def build_EOM_MM23A(cc_t,H2A,H2B,iroot,sys):
     r2a = cc_t['r2a'][iroot]
     r2b = cc_t['r2b'][iroot]
 
-    I1 = -1.0*np.einsum('amie,cm->acie',H2A['voov'],r1a,optimize=True)
-    I1 -= np.transpose(I1,(1,0,2,3))
-    I2 = -1.0*np.einsum('nmjk,cm->ncjk',H2A['oooo'],r1a,optimize=True)
-    D1 = np.einsum('abie,ecjk->abcijk',I1,t2a,optimize=True)\
-        -np.einsum('ncjk,abin->abcijk',I2,t2a,optimize=True)
-    D1 -= np.transpose(D1,(2,1,0,3,4,5)) + np.transpose(D1,(0,2,1,3,4,5))
-    D1 -= np.transpose(D1,(0,1,2,5,4,3)) + np.transpose(D1,(0,1,2,4,3,5))
+    Q1 = np.einsum('mnef,fn->me',H2A['oovv'],r1a,optimize=True)
+    Q1 += np.einsum('mnef,fn->me',H2B['oovv'],r1b,optimize=True)
 
-    I1 = np.einsum('amie,ej->amij',H2A['voov'],r1a,optimize=True)
+    I1 = np.einsum('amje,bm->abej',H2A['voov'],r1a,optimize=True)
+    I1 += np.einsum('amfe,bejm->abfj',H2A['vovv'],r2a,optimize=True)
+    I1 += np.einsum('amfe,bejm->abfj',H2B['vovv'],r2b,optimize=True)
+    I1 -= np.transpose(I1,(1,0,2,3))
+    I2 = np.einsum('abfe,ej->abfj',H2A['vvvv'],r1a,optimize=True)
+    I2 += 0.5*np.einsum('nmje,abmn->abej',H2A['ooov'],r2a,optimize=True)
+    I2 -= np.einsum('me,abmj->abej',Q1,t2a,optimize=True)
+    Int1 = I1 + I2
+
+    I1 = -np.einsum('bmie,ej->mbij',H2A['voov'],r1a,optimize=True)
+    I1 += np.einsum('nmie,bejm->nbij',H2A['ooov'],r2a,optimize=True)
+    I1 += np.einsum('nmie,bejm->nbij',H2B['ooov'],r2b,optimize=True)
     I1 -= np.transpose(I1,(0,1,3,2))
-    I2 = np.einsum('abfe,fi->abie',H2A['vvvv'],r1a,optimize=True)
-    D2 = -1.0*np.einsum('amij,bcmk->abcijk',I1,t2a,optimize=True)\
-        +np.einsum('cbke,aeij->abcijk',I2,t2a,optimize=True)
-    D2 -= np.transpose(D2,(1,0,2,3,4,5)) + np.transpose(D2,(2,1,0,3,4,5))
-    D2 -= np.transpose(D2,(0,1,2,5,4,3)) + np.transpose(D2,(0,1,2,3,5,4))
+    I2 = -1.0*np.einsum('nmij,bm->nbij',H2A['oooo'],r1a,optimize=True)
+    I2 += 0.5*np.einsum('bmfe,efij->mbij',H2A['vovv'],r2a,optimize=True)
+    Int2 = I1 + I2
 
-    I1 = 0.5*np.einsum('amef,efij->amij',H2A['vovv'],r2a,optimize=True)
-    D3 = -1.0*np.einsum('amij,bcmk->abcijk',I1,t2a,optimize=True)
-    D3 -= np.transpose(D3,(1,0,2,3,4,5)) + np.transpose(D3,(2,1,0,3,4,5))
-    D3 -= np.transpose(D3,(0,1,2,5,4,3)) + np.transpose(D3,(0,1,2,3,5,4))
+    A1 = np.einsum('abej,ecik->abcijk',Int1,t2a,optimize=True)
+    A1 += np.einsum('baje,ecik->abcijk',H2A['vvov'],r2a,optimize=True)
+    A1 -= np.transpose(A1,(2,1,0,3,4,5)) + np.transpose(A1,(0,2,1,3,4,5))
+    A1 -= np.transpose(A1,(0,1,2,4,3,5)) + np.transpose(A1,(0,1,2,3,5,4))
 
-    I1 = 0.5*np.einsum('mnie,abmn->abie',H2A['ooov'],r2a,optimize=True)
-    D4 = np.einsum('abie,ecjk->abcijk',I1,t2a,optimize=True)
-    D4 -= np.transpose(D4,(2,1,0,3,4,5)) + np.transpose(D4,(0,2,1,3,4,5))
-    D4 -= np.transpose(D4,(0,1,2,5,4,3)) + np.transpose(D4,(0,1,2,4,3,5))
+    A2 = -1.0*np.einsum('mbij,acmk->abcijk',Int2,t2a,optimize=True)
+    A2 -= np.einsum('bmji,acmk->abcijk',H2A['vooo'],r2a,optimize=True)
+    A2 -= np.transpose(A2,(1,0,2,3,4,5)) + np.transpose(A2,(0,2,1,3,4,5))
+    A2 -= np.transpose(A2,(0,1,2,5,4,3)) + np.transpose(A2,(0,1,2,3,5,4))
 
-    I1 = np.einsum('bmfe,aeim->abif',H2A['vovv'],r2a,optimize=True)
-    I1 -= np.transpose(I1,(1,0,2,3))
-    I2 = np.einsum('nmje,cekm->cnkj',H2A['ooov'],r2a,optimize=True)
-    I2 -= np.transpose(I2,(0,1,3,2))
-    D5 = np.einsum('abif,fcjk->abcijk',I1,t2a,optimize=True)\
-        -np.einsum('cnkj,abin->abcijk',I2,t2a,optimize=True)
-    D5 -= np.transpose(D5,(2,1,0,3,4,5)) + np.transpose(D5,(0,2,1,3,4,5))
-    D5 -= np.transpose(D5,(0,1,2,5,4,3)) + np.transpose(D5,(0,1,2,4,3,5))
+    return A1 + A2
 
-    I1 = np.einsum('bmfe,aeim->abif',H2B['vovv'],r2b,optimize=True)
-    I1 -= np.transpose(I1,(1,0,2,3))
-    I2 = np.einsum('nmje,cekm->cnkj',H2B['ooov'],r2b,optimize=True)
-    I2 -= np.transpose(I2,(0,1,3,2))
-    D6 = np.einsum('abif,fcjk->abcijk',I1,t2a,optimize=True)\
-        -np.einsum('cnkj,abin->abcijk',I2,t2a,optimize=True)
-    D6 -= np.transpose(D6,(2,1,0,3,4,5)) + np.transpose(D6,(0,2,1,3,4,5))
-    D6 -= np.transpose(D6,(0,1,2,5,4,3)) + np.transpose(D6,(0,1,2,4,3,5))
-
-    D7 = -1.0*np.einsum('amij,bcmk->abcijk',H2A['vooo'],r2a,optimize=True)
-    D7 -= np.transpose(D7,(1,0,2,3,4,5)) + np.transpose(D7,(2,1,0,3,4,5))
-    D7 -= np.transpose(D7,(0,1,2,5,4,3)) + np.transpose(D7,(0,1,2,3,5,4))
-
-    D8 = np.einsum('abie,ecjk->abcijk',H2A['vvov'],r2a,optimize=True)
-    D8 -= np.transpose(D8,(2,1,0,3,4,5)) + np.transpose(D8,(0,2,1,3,4,5))
-    D8 -= np.transpose(D8,(0,1,2,5,4,3)) + np.transpose(D8,(0,1,2,4,3,5))
-
-    I1 = np.einsum('mnef,fn->me',H2A['oovv'],r1a,optimize=True)\
-        +np.einsum('mnef,fn->me',H2B['oovv'],r1b,optimize=True)
-    I2 = np.einsum('me,ecjk->mcjk',I1,t2a,optimize=True)
-    D9 = -1.0*np.einsum('mcjk,abim->abcijk',I2,t2a,optimize=True)
-    D9 -= np.transpose(D9,(2,1,0,3,4,5)) + np.transpose(D9,(0,2,1,3,4,5))
-    D9 -= np.transpose(D9,(0,1,2,5,4,3)) + np.transpose(D9,(0,1,2,4,3,5))
-
-    #print(np.linalg.norm(D1.flatten()))
-    #print(np.linalg.norm(D2.flatten()))
-    #print(np.linalg.norm(D3.flatten()))
-    #print(np.linalg.norm(D4.flatten()))
-    #print(np.linalg.norm(D5.flatten()))
-    #print(np.linalg.norm(D6.flatten()))
-    #print(np.linalg.norm(D7.flatten()))
-    #print(np.linalg.norm(D8.flatten()))
-    #print(np.linalg.norm(D9.flatten()))
-
-    EOMMM23A = D1+D2+D3+D4+D5+D6+D7+D8+D9
-    #D237 = D2 + D3 + D7
-    #D237 -= np.transpose(D237,(1,0,2,3,4,5)) + np.transpose(D237,(2,1,0,3,4,5))
-    #D237 -= np.transpose(D237,(0,1,2,5,4,3)) + np.transpose(D237,(0,1,2,3,5,4))
-
-    #D145689 = D1 + D4 + D56 + D8 + D9
-    #D145689 -= np.transpose(D145689,(2,1,0,3,4,5)) + np.transpose(D145689,(0,2,1,3,4,5))
-    #D145689 -= np.transpose(D145689,(0,1,2,5,4,3)) + np.transpose(D145689,(0,1,2,4,3,5))
-
-    return EOMMM23A
 
 def build_EOM_MM23B(cc_t,H2A,H2B,H2C,iroot,sys):
-    """Calculate the projection <ijk~abc~|[ (H_N e^(T1+T2))_C (R1+R2) ]_C|0>.
+    """Calculate the projection <ijk~abc~|(H_N e^(T1+T2))_C (R1+R2)|0>
+    in a factorized manner.
     
     Parameters
     ----------
@@ -561,189 +467,80 @@ def build_EOM_MM23B(cc_t,H2A,H2B,H2C,iroot,sys):
     r2b = cc_t['r2b'][iroot]
     r2c = cc_t['r2c'][iroot]
 
-    I1 = np.einsum('mcie,ek->mcik',H2B['ovov'],r1b,optimize=True)
-    I2 = np.einsum('acfe,ek->acfk',H2B['vvvv'],r1b,optimize=True)
-    I3 = np.einsum('amie,ek->amik',H2B['voov'],r1b,optimize=True)
-    A1 = -1.0*np.einsum('mcik,abmj->abcijk',I1,t2a,optimize=True)
-    A1 -= np.transpose(A1,(0,1,2,4,3,5))
-    A2 = np.einsum('acfk,fbij->abcijk',I2,t2a,optimize=True)
-    A2 -= np.transpose(A2,(1,0,2,3,4,5))
-    A3  = -1.0*np.einsum('amik,bcjm->abcijk',I3,t2b,optimize=True)
-    A3 += -np.transpose(A3,(1,0,2,3,4,5)) - np.transpose(A3,(0,1,2,4,3,5)) + np.transpose(A3,(1,0,2,4,3,5))
-    D1 = A1 + A2 + A3
+    Q1 = np.einsum('mnef,fn->me',H2A['oovv'],r1a,optimize=True)+np.einsum('mnef,fn->me',H2B['oovv'],r1b,optimize=True)
+    Q2 = np.einsum('nmfe,fn->me',H2B['oovv'],r1a,optimize=True)+np.einsum('nmfe,fn->me',H2C['oovv'],r1b,optimize=True)
+    # Intermediate 1: X2B(bcek)*Y2A(aeij) -> Z3B(abcijk)
+    Int1 = -1.0*np.einsum('mcek,bm->bcek',H2B['ovvo'],r1a,optimize=True)
+    Int1 -= np.einsum('bmek,cm->bcek',H2B['vovo'],r1b,optimize=True)
+    Int1 += np.einsum('bcfe,ek->bcfk',H2B['vvvv'],r1b,optimize=True)
+    Int1 += np.einsum('mnek,bcmn->bcek',H2B['oovo'],r2b,optimize=True)
+    Int1 += np.einsum('bmfe,ecmk->bcfk',H2A['vovv'],r2b,optimize=True)
+    Int1 += np.einsum('bmfe,ecmk->bcfk',H2B['vovv'],r2c,optimize=True)
+    Int1 -= np.einsum('mcfe,bemk->bcfk',H2B['ovvv'],r2b,optimize=True)
+    A1 = np.einsum('bcek,aeij->abcijk',Int1,t2a,optimize=True)
+    A1 += np.einsum('bcek,aeij->abcijk',H2B['vvvo'],r2a,optimize=True)
+    # Intermediate 2: X2B(ncjk)*Y2A(abin) -> Z3B(abcijk)
+    Int2 = -1.0*np.einsum('nmjk,cm->ncjk',H2B['oooo'],r1b,optimize=True)
+    Int2 += np.einsum('mcje,ek->mcjk',H2B['ovov'],r1b,optimize=True)
+    Int2 += np.einsum('mcek,ej->mcjk',H2B['ovvo'],r1a,optimize=True)
+    Int2 += np.einsum('mcef,efjk->mcjk',H2B['ovvv'],r2b,optimize=True)
+    Int2 += np.einsum('nmje,ecmk->ncjk',H2A['ooov'],r2b,optimize=True)
+    Int2 += np.einsum('nmje,ecmk->ncjk',H2B['ooov'],r2c,optimize=True)
+    Int2 -= np.einsum('nmek,ecjm->ncjk',H2B['oovo'],r2b,optimize=True)
+    A2 = -1.0*np.einsum('ncjk,abin->abcijk',Int2,t2a,optimize=True)
+    A2 -= np.einsum('mcjk,abim->abcijk',H2B['ovoo'],r2a,optimize=True)
+    # Intermediate 3: X2A(abej)*Y2B(ecik) -> Z3B(abcijk)
+    Int3 = np.einsum('amje,bm->abej',H2A['voov'],r1a,optimize=True) #(*) flipped sign to use H2A(voov) instead of H2A(vovo)
+    Int3 += 0.5*np.einsum('abfe,ej->abfj',H2A['vvvv'],r1a,optimize=True) #(*) added factor 1/2 to compensate A(ab)
+    Int3 += 0.25*np.einsum('nmje,abmn->abej',H2A['ooov'],r2a,optimize=True) #(*) added factor 1/2 to compensate A(ab)
+    Int3 += np.einsum('amfe,bejm->abfj',H2A['vovv'],r2a,optimize=True)
+    Int3 += np.einsum('amfe,bejm->abfj',H2B['vovv'],r2b,optimize=True)
+    Int3 -= 0.5*np.einsum('me,abmj->abej',Q1,t2a,optimize=True) #(*) added factor 1/2 to compensate A(ab)
+    Int3 -= np.transpose(Int3,(1,0,2,3))
+    A3 = np.einsum('abej,ecik->abcijk',Int3,t2b,optimize=True)
+    A3 += np.einsum('baje,ecik->abcijk',H2A['vvov'],r2b,optimize=True)
+    # Intermediate 4: X2A(bnji)*Y2B(acnk) -> Z3B(abcijk)
+    Int4 = -0.5*np.einsum('nmij,bm->bnji',H2A['oooo'],r1a,optimize=True) #(*) added factor 1/2 to compenate A(ij)
+    Int4 -= np.einsum('bmie,ej->bmji',H2A['voov'],r1a,optimize=True) #(*) flipped sign to use H2A(voov) instead of H2A(vovo)
+    Int4 += 0.25*np.einsum('bmfe,efij->bmji',H2A['vovv'],r2a,optimize=True) #(*) added factor 1/2 to compensate A(ij)
+    Int4 += np.einsum('nmie,bejm->bnji',H2A['ooov'],r2a,optimize=True)
+    Int4 += np.einsum('nmie,bejm->bnji',H2B['ooov'],r2b,optimize=True)
+    Int4 += 0.5*np.einsum('me,ebij->bmji',Q1,t2a,optimize=True) # (*) added factor 1/2 to compensate A(ij)
+    Int4 -= np.transpose(Int4,(0,1,3,2))
+    A4 = -1.0*np.einsum('bnji,acnk->abcijk',Int4,t2b,optimize=True)
+    A4 -= np.einsum('bnji,acnk->abcijk',H2A['vooo'],r2b,optimize=True)
+    # Intermediate 5: X2B(bcje)*Y2B(aeik) -> Z3B(abcijk)
+    Int5 = -1.0*np.einsum('mcje,bm->bcje',H2B['ovov'],r1a,optimize=True)
+    Int5 -= np.einsum('bmje,cm->bcje',H2B['voov'],r1b,optimize=True)
+    Int5 += np.einsum('bcef,ej->bcjf',H2B['vvvv'],r1a,optimize=True)
+    Int5 += np.einsum('mnjf,bcmn->bcjf',H2B['ooov'],r2b,optimize=True)
+    Int5 += np.einsum('mcef,bejm->bcjf',H2B['ovvv'],r2a,optimize=True)
+    Int5 += np.einsum('cmfe,bejm->bcjf',H2C['vovv'],r2b,optimize=True)
+    Int5 -= np.einsum('bmef,ecjm->bcjf',H2B['vovv'],r2b,optimize=True)
+    A5 = np.einsum('bcje,aeik->abcijk',Int5,t2b,optimize=True)
+    A5 += np.einsum('bcje,aeik->abcijk',H2B['vvov'],r2b,optimize=True)
+    # Intermediate 6: X2B(bnjk)*Y2B(acin) -> Z3B(abcijk)
+    Int6 = -1.0*np.einsum('mnjk,bm->bnjk',H2B['oooo'],r1a,optimize=True)
+    Int6 += np.einsum('bmje,ek->bmjk',H2B['voov'],r1b,optimize=True)
+    Int6 += np.einsum('bmek,ej->bmjk',H2B['vovo'],r1a,optimize=True)
+    Int6 += np.einsum('bnef,efjk->bnjk',H2B['vovv'],r2b,optimize=True)
+    Int6 += np.einsum('mnek,bejm->bnjk',H2B['oovo'],r2a,optimize=True)
+    Int6 += np.einsum('nmke,bejm->bnjk',H2C['ooov'],r2b,optimize=True)
+    Int6 -= np.einsum('nmje,benk->bmjk',H2B['ooov'],r2b,optimize=True)
+    Int6 += np.einsum('me,bejk->bmjk',Q2,t2b,optimize=True)
+    A6 = -1.0*np.einsum('bnjk,acin->abcijk',Int6,t2b,optimize=True)
+    A6 -= np.einsum('bnjk,acin->abcijk',H2B['vooo'],r2b,optimize=True)
 
-    I1 = np.einsum('mcek,ej->mcjk',H2B['ovvo'],r1a,optimize=True)
-    I2 = np.einsum('bmek,ej->bmjk',H2B['vovo'],r1a,optimize=True)
-    I3 = np.einsum('amie,ej->amij',H2A['voov'],r1a,optimize=True)
-    I3 -= np.transpose(I3,(0,1,3,2))
-    I4 = np.einsum('bcef,ej->bcjf',H2B['vvvv'],r1a,optimize=True)
-    I5 = np.einsum('abfe,ej->abfj',H2A['vvvv'],r1a,optimize=True)
-    A1 = -1.0*np.einsum('mcjk,abim->abcijk',I1,t2a,optimize=True)
-    A2 = -1.0*np.einsum('bmjk,acim->abcijk',I2,t2b,optimize=True)
-    A3 = -1.0*np.einsum('amij,bcmk->abcijk',I3,t2b,optimize=True)
-    A4 = np.einsum('bcjf,afik->abcijk',I4,t2b,optimize=True)
-    A5 = np.einsum('abfj,fcik->abcijk',I5,t2b,optimize=True)
-    B1 = A1 + A5
-    B2 = A2 + A4
-    B1 -= np.transpose(B1,(0,1,2,4,3,5))
-    B2 += -np.transpose(B2,(0,1,2,4,3,5)) - np.transpose(B2,(1,0,2,3,4,5)) + np.transpose(B2,(1,0,2,4,3,5))
-    A3 -= np.transpose(A3,(1,0,2,3,4,5))
-    D2 = B1 + B2 + A3
+    D_ij = A2 + A3
+    D_ij -= np.transpose(D_ij,(0,1,2,4,3,5))
+    D_ab = A1 + A4
+    D_ab -= np.transpose(D_ab,(1,0,2,3,4,5))
+    D_ij_ab = A5 + A6
+    D_ij_ab -= np.transpose(D_ij_ab,(1,0,2,3,4,5))
+    D_ij_ab -= np.transpose(D_ij_ab,(0,1,2,4,3,5))
 
-    I1 = -1.0*np.einsum('bmek,cm->bcek',H2B['vovo'],r1b,optimize=True)
-    I2 = -1.0*np.einsum('bmje,cm->bcje',H2B['voov'],r1b,optimize=True)
-    I3 = -1.0*np.einsum('nmjk,cm->ncjk',H2B['oooo'],r1b,optimize=True)
-    A1 = np.einsum('bcek,aeij->abcijk',I1,t2a,optimize=True)
-    A2 = np.einsum('bcje,aeik->abcijk',I2,t2b,optimize=True)
-    A3 = -1.0*np.einsum('ncjk,abin->abcijk',I3,t2a,optimize=True)
-    A3 -= np.transpose(A3,(0,1,2,4,3,5))
-    A2 += -np.transpose(A2,(0,1,2,4,3,5)) - np.transpose(A2,(1,0,2,3,4,5)) + np.transpose(A2,(1,0,2,4,3,5))
-    A1 -= np.transpose(A1,(1,0,2,3,4,5))
-    D3 = A1 + A2 + A3
+    return D_ij + D_ab + D_ij_ab
 
-    I1 = -1.0*np.einsum('mcje,bm->bcje',H2B['ovov'],r1a,optimize=True)
-    I2 = -1.0*np.einsum('mcek,bm->bcek',H2B['ovvo'],r1a,optimize=True)
-    I3 = -1.0*np.einsum('mnjk,bm->bnjk',H2B['oooo'],r1a,optimize=True)
-    I4 = -1.0*np.einsum('mnji,bm->bnji',H2A['oooo'],r1a,optimize=True)
-    I5 = np.einsum('amje,bm->abej',H2A['voov'],r1a,optimize=True)
-    I5 -= np.transpose(I5,(1,0,2,3))
-    A1 = np.einsum('bcje,aeik->abcijk',I1,t2b,optimize=True)
-    A2 = np.einsum('bcek,aeij->abcijk',I2,t2a,optimize=True)
-    A3 = -1.0*np.einsum('bnjk,acin->abcijk',I3,t2b,optimize=True)
-    A4 = -1.0*np.einsum('bnji,acnk->abcijk',I4,t2b,optimize=True)
-    A5 = np.einsum('abej,ecik->abcijk',I5,t2b,optimize=True)
-    B1 = A1 + A3
-    B2 = A2 + A4
-    B1 += -np.transpose(B1,(0,1,2,4,3,5)) - np.transpose(B1,(1,0,2,3,4,5)) + np.transpose(B1,(1,0,2,4,3,5))
-    B2 -= np.transpose(B2,(1,0,2,3,4,5))
-    A5 -= np.transpose(A5,(0,1,2,4,3,5))
-    D4 = B1 + B2 + A5
-    
-    I1 = 0.5*np.einsum('nmje,abmn->abej',H2A['ooov'],r2a,optimize=True)
-    D5 = np.einsum('abej,ecik->abcijk',I1,t2b,optimize=True)
-    D5 -= np.transpose(D5,(0,1,2,4,3,5))
-
-    I1 = 0.5*np.einsum('bmef,efji->mbij',H2A['vovv'],r2a,optimize=True)
-    D6 = -1.0*np.einsum('mbij,acmk->abcijk',I1,t2b,optimize=True)
-    D6 -= np.transpose(D6,(1,0,2,3,4,5))
-
-    I1 = np.einsum('mnek,acmn->acek',H2B['oovo'],r2b,optimize=True)
-    I2 = np.einsum('mnie,acmn->acie',H2B['ooov'],r2b,optimize=True)
-    A1 = np.einsum('acek,ebij->abcijk',I1,t2a,optimize=True)
-    A1 -= np.transpose(A1,(1,0,2,3,4,5))
-    A2 = np.einsum('acie,bejk->abcijk',I2,t2b,optimize=True)
-    A2 += -np.transpose(A2,(0,1,2,4,3,5)) - np.transpose(A2,(1,0,2,3,4,5)) + np.transpose(A2,(1,0,2,4,3,5))
-    D7 = A1 + A2
-
-    I1 = np.einsum('mcef,efik->mcik',H2B['ovvv'],r2b,optimize=True)
-    I2 = np.einsum('amef,efik->amik',H2B['vovv'],r2b,optimize=True)
-    A1 = -1.0*np.einsum('mcik,abmj->abcijk',I1,t2a,optimize=True)
-    A1 -= np.transpose(A1,(0,1,2,4,3,5))
-    A2 = -1.0*np.einsum('amik,bcjm->abcijk',I2,t2b,optimize=True) 
-    A2 += -np.transpose(A2,(0,1,2,4,3,5)) - np.transpose(A2,(1,0,2,3,4,5)) + np.transpose(A2,(1,0,2,4,3,5))
-    D8 = A1 + A2
-
-    I1 = np.einsum('nmie,ecmk->ncik',H2A['ooov'],r2b,optimize=True)
-    I2 = np.einsum('amfe,ecmk->acfk',H2A['vovv'],r2b,optimize=True)
-    A1 = -1.0*np.einsum('ncik,abnj->abcijk',I1,t2a,optimize=True)
-    A2 = np.einsum('acfk,fbij->abcijk',I2,t2a,optimize=True)
-    A1 -= np.transpose(A1,(0,1,2,4,3,5))
-    A2 -= np.transpose(A2,(1,0,2,3,4,5))
-    D9 = A1 + A2
-
-    I1 = np.einsum('nmie,ecmk->ncik',H2B['ooov'],r2c,optimize=True)
-    I2 = np.einsum('amfe,ecmk->acfk',H2B['vovv'],r2c,optimize=True)
-    A1 = -1.0*np.einsum('ncik,abnj->abcijk',I1,t2a,optimize=True)
-    A2 = np.einsum('acfk,fbij->abcijk',I2,t2a,optimize=True)
-    A1 -= np.transpose(A1,(0,1,2,4,3,5))
-    A2 -= np.transpose(A2,(1,0,2,3,4,5))
-    D10 = A1 + A2
-
-    I1 = np.einsum('nmie,ebmj->nbij',H2A['ooov'],r2a,optimize=True)
-    I1 -= np.transpose(I1,(0,1,3,2))
-    I2 = np.einsum('mnek,bejm->bnjk',H2B['oovo'],r2a,optimize=True)
-    I3 = np.einsum('amfe,bejm->abfj',H2A['vovv'],r2a,optimize=True)
-    I3 -= np.transpose(I3,(1,0,2,3))
-    I4 = np.einsum('mcef,bejm->bcjf',H2B['ovvv'],r2a,optimize=True)
-    A1 = -1.0*np.einsum('nbij,acnk->abcijk',I1,t2b,optimize=True)
-    A1 -= np.transpose(A1,(1,0,2,3,4,5))
-    A2 = -1.0*np.einsum('bnjk,acin->abcijk',I2,t2b,optimize=True)
-    A3 = np.einsum('abfj,fcik->abcijk',I3,t2b,optimize=True)
-    A3 -= np.transpose(A3,(0,1,2,4,3,5))
-    A4 = np.einsum('bcjf,afik->abcijk',I4,t2b,optimize=True)
-    B1 = A2 + A4
-    B1 += -np.transpose(B1,(0,1,2,4,3,5)) - np.transpose(B1,(1,0,2,3,4,5)) + np.transpose(B1,(1,0,2,4,3,5))
-    D11 = A1 + A3 + B1
-
-    I1 = np.einsum('nmie,bejm->nbij',H2B['ooov'],r2b,optimize=True)
-    I1 -= np.transpose(I1,(0,1,3,2))
-    I2 = np.einsum('amfe,bejm->abfj',H2B['vovv'],r2b,optimize=True)
-    I2 -= np.transpose(I2,(1,0,2,3))
-    I3 = np.einsum('cmfe,bejm->bcjf',H2C['vovv'],r2b,optimize=True)
-    I4 = np.einsum('nmke,bejm->bnjk',H2C['ooov'],r2b,optimize=True)
-    A1 = -1.0*np.einsum('nbij,acnk->abcijk',I1,t2b,optimize=True)
-    A1 -= np.transpose(A1,(1,0,2,3,4,5))
-    A2 = np.einsum('abfj,fcik->abcijk',I2,t2b,optimize=True)
-    A2 -= np.transpose(A2,(0,1,2,4,3,5))
-    A3 = np.einsum('bcjf,afik->abcijk',I3,t2b,optimize=True)
-    A4 = -1.0*np.einsum('bnjk,acin->abcijk',I4,t2b,optimize=True)
-    B1 = A3 + A4
-    B1 += -np.transpose(B1,(0,1,2,4,3,5)) - np.transpose(B1,(1,0,2,3,4,5)) + np.transpose(B1,(1,0,2,4,3,5))
-    D12 = A1 + A2 + B1
-
-    I1 = -1.0*np.einsum('nmek,ecim->ncik',H2B['oovo'],r2b,optimize=True)
-    I2 = -1.0*np.einsum('amef,ecim->acif',H2B['vovv'],r2b,optimize=True)
-    A1 = -1.0*np.einsum('ncik,abnj->abcijk',I1,t2a,optimize=True)
-    A1 -= np.transpose(A1,(0,1,2,4,3,5))
-    A2 = np.einsum('acif,bfjk->abcijk',I2,t2b,optimize=True)
-    A2 += -np.transpose(A2,(0,1,2,4,3,5)) - np.transpose(A2,(1,0,2,3,4,5)) + np.transpose(A2,(1,0,2,4,3,5))
-    D13 = A1 + A2
-
-    I1 = -1.0*np.einsum('mnie,aemk->anik',H2B['ooov'],r2b,optimize=True)
-    I2 = -1.0*np.einsum('mcfe,aemk->acfk',H2B['ovvv'],r2b,optimize=True)
-    A1 = -1.0*np.einsum('anik,bcjn->abcijk',I1,t2b,optimize=True)
-    A1 += -np.transpose(A1,(0,1,2,4,3,5)) - np.transpose(A1,(1,0,2,3,4,5)) + np.transpose(A1,(1,0,2,4,3,5))
-    A2 = np.einsum('acfk,fbij->abcijk',I2,t2a,optimize=True)
-    A2 -= np.transpose(A2,(1,0,2,3,4,5))
-    D14 = A1 + A2
-
-    D15 = -1.0*np.einsum('mcjk,abim->abcijk',H2B['ovoo'],r2a,optimize=True)
-    D15 -= np.transpose(D15,(0,1,2,4,3,5))
-
-    D16 = -1.0*np.einsum('amij,bcmk->abcijk',H2A['vooo'],r2b,optimize=True)
-    D16 -= np.transpose(D16,(1,0,2,3,4,5))
-
-    D17 = -1.0*np.einsum('amik,bcjm->abcijk',H2B['vooo'],r2b,optimize=True)
-    D17 += -np.transpose(D17,(0,1,2,4,3,5)) - np.transpose(D17,(1,0,2,3,4,5)) + np.transpose(D17,(1,0,2,4,3,5))
-
-    D18 = np.einsum('bcek,aeij->abcijk',H2B['vvvo'],r2a,optimize=True)
-    D18 -= np.transpose(D18,(1,0,2,3,4,5))
-
-    D19 = np.einsum('abie,ecjk->abcijk',H2A['vvov'],r2b,optimize=True)
-    D19 -= np.transpose(D19,(0,1,2,4,3,5))
-
-    D20 = np.einsum('acie,bejk->abcijk',H2B['vvov'],r2b,optimize=True)
-    D20 += -np.transpose(D20,(0,1,2,4,3,5)) - np.transpose(D20,(1,0,2,3,4,5)) + np.transpose(D20,(1,0,2,4,3,5))
-
-    I1A = np.einsum('mnef,fn->me',H2A['oovv'],r1a,optimize=True)\
-         +np.einsum('mnef,fn->me',H2B['oovv'],r1b,optimize=True)
-    I1B = np.einsum('nmfe,fn->me',H2C['oovv'],r1b,optimize=True)\
-         +np.einsum('nmfe,fn->me',H2B['oovv'],r1a,optimize=True)
-    
-    I1 = np.einsum('me,aeij->amij',I1A,t2a,optimize=True)
-    D21 = -1.0*np.einsum('amij,bcmk->abcijk',I1,t2b,optimize=True)
-    D21 -= np.transpose(D21,(1,0,2,3,4,5))
-
-    I1 = -1.0*np.einsum('me,abim->abie',I1A,t2a,optimize=True)
-    D22 = np.einsum('abie,ecjk->abcijk',I1,t2b,optimize=True)
-    D22 -= np.transpose(D22,(0,1,2,4,3,5))
-
-    I1 = np.einsum('me,aeik->amik',I1B,t2b,optimize=True)
-    D23 = -1.0*np.einsum('amik,bcjm->abcijk',I1,t2b,optimize=True)
-    D23 += -np.transpose(D23,(0,1,2,4,3,5)) - np.transpose(D23,(1,0,2,3,4,5)) + np.transpose(D23,(1,0,2,4,3,5))
-
-    EOMMM23B = D1+D2+D3+D4+D5+D6+D7+D8+D9+D10+D11+D12+D13+D14+D15+D16+D17+D18+D19+D20+D21+D22+D23
-    return EOMMM23B
 
 def build_EOM_MM23C(cc_t,H2A,H2B,H2C,iroot,sys):
     """Calculate the projection <ij~k~ab~c~|[ (H_N e^(T1+T2))_C (R1+R2) ]_C|0>.

@@ -3,35 +3,16 @@ from solvers import diis
 import time
 import cc_loops
 
-def left_ccsd(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,maxit=100,tol=1e-08,diis_size=6,shift=0.0,nroot=0,omega=0.0,eom_tol=1.0e-06,eom_lccshift=0.0,eom_maxit=200):
+def left_ipeom2(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,nroot,omega,maxit=100,tol=1e-08,diis_size=6,shift=0.0,eom_tol=1.0e-06,eom_lccshift=0.0,eom_maxit=200):
 
-    print('\n==================================++Entering Left-CCSD Routine++=================================\n')
+    print('\n==================================++Entering Left-IPEOM(2h-1p) Routine++=================================\n')
 
-    n1a = sys['Nocc_a'] * sys['Nunocc_a']
-    n1b = sys['Nocc_b'] * sys['Nunocc_b']
-    n2a = sys['Nocc_a'] ** 2 * sys['Nunocc_a'] ** 2
-    n2b = sys['Nocc_a'] * sys['Nocc_b'] * sys['Nunocc_a'] * sys['Nunocc_b']
-    n2c = sys['Nocc_b'] ** 2 * sys['Nunocc_b'] ** 2
-    ndim = n1a + n1b + n2a + n2b + n2c
-    idx_1a = slice(0,n1a)
-    idx_1b = slice(n1a,n1a+n1b)
-    idx_2a = slice(n1a+n1b,n1a+n1b+n2a)
-    idx_2b = slice(n1a+n1b+n2a,n1a+n1b+n2a+n2b)
-    idx_2c = slice(n1a+n1b+n2a+n2b,n1a+n1b+n2a+n2b+n2c)
 
-    if nroot == 0:
-        cc_t['l1a'] = [None]
-        cc_t['l1b'] = [None]
-        cc_t['l2a'] = [None]
-        cc_t['l2b'] = [None]
-        cc_t['l2c'] = [None]
-
-    else:
-        cc_t['l1a'] = [None]*(nroot+1)
-        cc_t['l1b'] = [None]*(nroot+1)
-        cc_t['l2a'] = [None]*(nroot+1)
-        cc_t['l2b'] = [None]*(nroot+1)
-        cc_t['l2c'] = [None]*(nroot+1)
+    cc_t['l1a'] = [None]*(nroot+1)
+    cc_t['l1b'] = [None]*(nroot+1)
+    cc_t['l2a'] = [None]*(nroot+1)
+    cc_t['l2b'] = [None]*(nroot+1)
+    cc_t['l2c'] = [None]*(nroot+1)
 
 
     for iroot in range(nroot+1):
