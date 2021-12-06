@@ -43,7 +43,11 @@ def parse_input_file(inpfile):
             if 'calc_type' in line:
                 inputs['calc_type'] = line.split('=')[1].strip()
             if 'isRHF' in line:
-                inputs['isRHF'] = line.split('=')[1].strip()
+                temp = line.split('=')[1].strip()
+                if temp == 'True':
+                    inputs['isRHF'] = True
+                else:
+                    inputs['isRHF'] = False
             if 'maxit' in line and 'adaptive_maxit' not in line and 'eom_maxit' not in line:
                 inputs['maxit'] = int(line.split('=')[1].strip())
             if 'tol' in line and 'eom_tol' not in line:
