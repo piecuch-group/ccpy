@@ -1,5 +1,6 @@
 import numpy as np
 from solvers import diis
+from cc_energy import calc_cc_energy
 import time
 import cc_loops
 
@@ -101,8 +102,12 @@ def ccsdt_p(sys,ints,p_spaces,maxit=100,tol=1e-08,diis_size=6,shift=0.0,initial_
         # update T3 in the P space
         cc_t = update_t3a_inloop(cc_t,ints,list_of_triples['A'],H1A,H1B,H2A,H2B,H2C,sys,shift)
         cc_t = update_t3b_inloop(cc_t,ints,list_of_triples['B'],H1A,H1B,H2A,H2B,H2C,sys,shift)
-        cc_t = update_t3c_inloop(cc_t,ints,list_of_triples['C'],H1A,H1B,H2A,H2B,H2C,sys,shift)
-        cc_t = update_t3d_inloop(cc_t,ints,list_of_triples['D'],H1A,H1B,H2A,H2B,H2C,sys,shift)
+        if flag_RHF:
+            cc_t['t3c'] = np.transpose(cc_t['t3b'],(2,0,1,5,3,4))
+            cc_t['t3d'] = cc_t['t3a']
+        else:
+            cc_t = update_t3c_inloop(cc_t,ints,list_of_triples['C'],H1A,H1B,H2A,H2B,H2C,sys,shift)
+            cc_t = update_t3d_inloop(cc_t,ints,list_of_triples['D'],H1A,H1B,H2A,H2B,H2C,sys,shift)
         
         # store vectorized results
         T[idx_1a] = cc_t['t1a'].flatten()
@@ -1425,31 +1430,6 @@ def get_ccsd_intermediates(cc_t,ints,sys):
     H2C = {'vovv' : h2C_vovv, 'ooov' : h2C_ooov, 'vvvv' : h2C_vvvv, 'oooo' : h2C_oooo, 'voov' : h2C_voov, 'vooo' : h2C_vooo, 'vvov' : h2C_vvov}
 
     return H1A,H1B,H2A,H2B,H2C
-
-def calc_cc_energy(cc_t,ints):
-
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-    fA = ints['fA']
-    fB = ints['fB']
-    t1a = cc_t['t1a']
-    t1b = cc_t['t1b']
-    t2a = cc_t['t2a']
-    t2b = cc_t['t2b']
-    t2c = cc_t['t2c']
-
-    Ecorr = 0.0
-    Ecorr += np.einsum('me,em->',fA['ov'],t1a,optimize=True)
-    Ecorr += np.einsum('me,em->',fB['ov'],t1b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vA['oovv'],t2a,optimize=True)
-    Ecorr += np.einsum('mnef,efmn->',vB['oovv'],t2b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vC['oovv'],t2c,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vA['oovv'],t1a,t1a,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vC['oovv'],t1b,t1b,optimize=True)
-    Ecorr += np.einsum('mnef,em,fn->',vB['oovv'],t1a,t1b,optimize=True)
-
-    return Ecorr
 
 def update_t3a_inloop(cc_t,ints,list_of_triples_A,H1A,H1B,H2A,H2B,H2C,sys,shift):
 

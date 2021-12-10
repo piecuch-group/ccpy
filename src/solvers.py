@@ -1,5 +1,38 @@
 import numpy as np
 
+def diis_out_of_core(vecfid, dvecfid, vec_dim, diis_dim):
+
+    B_dim = diis_dim + 1
+    B = -1.0*np.ones((B_dim,B_dim))
+
+    # Here, we memory map the DIIS residual arrays stored on disk so that
+    # we can load half of each array at a time, thus reducing the storage
+    # requirements of the B matrix computation to only that of the T vector,
+    # as opposed to twice the T vector
+    nhalf = int(vec_dim/2)
+    for i in range(diis_dim):
+        diis_resid1 = np.load(dvecfid+'-'+str(i+1)+'.npy',mmap_mode='r')
+        for j in range(i,diis_dim):
+            diis_resid2 = np.load(dvecfid+'-'+str(j+1)+'.npy',mmap_mode='r')
+            B[i,j] = np.dot(diis_resid1[:nhalf].T,diis_resid2[:nhalf])
+            B[i,j] += np.dot(diis_resid1[nhalf:].T,diis_resid2[nhalf:])
+            B[j,i] = B[i,j]
+            del diis_resid2
+        del diis_resid1
+    B[-1,-1] = 0.0
+
+    rhs = np.zeros(B_dim)
+    rhs[-1] = -1.0
+
+    coeff = solve_gauss(B,rhs)
+    x_xtrap = np.zeros(vec_dim)
+    for i in range(diis_dim):
+        x1 = np.load(vecfid+'-'+str(i+1)+'.npy')
+        x_xtrap += coeff[i]*x1
+        del x1
+
+    return x_xtrap
+
 def diis(x_list, diis_resid):
 
     vec_dim, diis_dim = np.shape(x_list)

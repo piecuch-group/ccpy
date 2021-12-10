@@ -1134,10 +1134,12 @@ module eomcc_initial_guess
                                 val = val - H1A_oo(k,i)
                             end if
                             if (i==l) then
-                                val = val + H1A_oo(k,j)
+                                val = val + H1A_oo(k,j) ! correct
+                                !val = val - H1A_oo(k,j) ! previous
                             end if
                             if (j==k) then
-                                val = val + H1A_oo(l,i)
+                                val = val + H1A_oo(l,i) ! correct
+                                !val = val - H1A_oo(l,i) ! previous
                             end if
                             if (i==k) then
                                 val = val - H1A_oo(l,j)
@@ -1148,13 +1150,15 @@ module eomcc_initial_guess
                                 val = val + H1A_vv(a,c)
                             end if 
                             if (b==c) then
-                                val = val - H1A_vv(a,d)
+                                val = val - H1A_vv(a,d) ! previous
+                                !val = val + H1A_vv(a,d)
                             end if
                             if (a==c) then
                                 val = val + H1A_vv(b,d)
                             end if
                             if (a==d) then
-                                val = val - H1A_vv(b,c)
+                                val = val - H1A_vv(b,c) ! correct
+                                !val = val + H1A_vv(b,c) ! previous
                             end if
                         end if
                         if (i==k) then
@@ -1399,10 +1403,12 @@ module eomcc_initial_guess
                                 val = val - H1B_oo(k,i)
                             end if
                             if (i==l) then
-                                val = val + H1B_oo(k,j)
+                                val = val + H1B_oo(k,j) ! correct
+                                !val = val - H1B_oo(k,j) ! previous
                             end if
                             if (j==k) then
-                                val = val + H1B_oo(l,i)
+                                val = val + H1B_oo(l,i) ! correct
+                                !val = val - H1B_oo(l,i) ! previous
                             end if
                             if (i==k) then
                                 val = val - H1B_oo(l,j)
@@ -1413,13 +1419,15 @@ module eomcc_initial_guess
                                 val = val + H1B_vv(a,c)
                             end if 
                             if (b==c) then
-                                val = val - H1B_vv(a,d)
+                                val = val - H1B_vv(a,d) ! correct
+                                !val = val + H1B_vv(a,d) ! previous
                             end if
                             if (a==c) then
                                 val = val + H1B_vv(b,d)
                             end if
                             if (a==d) then
-                                val = val - H1B_vv(b,c)
+                                val = val - H1B_vv(b,c) ! correct
+                                !val = val + H1B_vv(b,c) ! previous
                             end if
                         end if
                         if (i==k) then

@@ -1,9 +1,10 @@
 import numpy as np
+from cc_energy import calc_cc_energy
 from solvers import diis
 import time
 import cc_loops
 
-def left_ccsd(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,maxit=100,tol=1e-08,diis_size=6,shift=0.0,nroot=0,omega=0.0,eom_tol=1.0e-06,eom_lccshift=0.0,eom_maxit=200):
+def left_ccsd(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,maxit=100,tol=1e-08,diis_size=6,shift=0.0,nroot=0,omega=0.0,eom_tol=1.0e-06,eom_lccshift=0.0,eom_maxit=200,flag_RHF=False):
 
     print('\n==================================++Entering Left-CCSD Routine++=================================\n')
 
@@ -91,10 +92,16 @@ def left_ccsd(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,maxit=100,tol=1e-08,diis_size=6,
 
             # update L1 and L2 by Jacobi
             X1A = build_LH_1A(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
-            X1B = build_LH_1B(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
+            if flag_RHF:
+                X1B = X1A
+            else:
+                X1B = build_LH_1B(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
             X2A = build_LH_2A(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
             X2B = build_LH_2B(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
-            X2C = build_LH_2C(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
+            if flag_RHF:
+                X2C = X2A
+            else:
+                X2C = build_LH_2C(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
 
             #l1a,l1b,l2a,l2b,l2c = update_L(l1a,l1b,l2a,l2b,l2c,X1A,X1B,X2A,X2B,X2C,omega,H1A,H1B,sys,shift):
             l1a,l1b,l2a,l2b,l2c = cc_loops.cc_loops.update_l(cc_t['l1a'][iroot],cc_t['l1b'][iroot],\
@@ -107,10 +114,16 @@ def left_ccsd(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,maxit=100,tol=1e-08,diis_size=6,
 
             # build LH - omega*L residual measure (use full LH)
             X1A = build_LH_1A(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
-            X1B = build_LH_1B(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
+            if flag_RHF:
+                X1B = X1A
+            else:
+                X1B = build_LH_1B(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
             X2A = build_LH_2A(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
             X2B = build_LH_2B(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
-            X2C = build_LH_2C(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
+            if flag_RHF:
+                X2C = X2A
+            else:
+                X2C = build_LH_2C(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
             LH = np.hstack((X1A.flatten(),X1B.flatten(),X2A.flatten(),X2B.flatten(),X2C.flatten()))
             L_resid  = LH -  omega_mu * L
 
@@ -480,76 +493,6 @@ def build_LH_2C(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys):
         X2C += vC['oovv']
 
     return X2C.transpose((2,3,0,1))
-
-def update_L(l1a,l1b,l2a,l2b,l2c,X1A,X1B,X2A,X2B,X2C,omega,H1A,H1B,sys,shift):
-
-    for a in range(sys['Nunocc_a']):
-        for i in range(sys['Nocc_a']):
-            denom = H1A['vv'][a,a] - H1A['oo'][i,i]
-            l1a[a,i] -= (X1A[a,i]-omega*l1a[a,i])/(denom - omega + shift)
-
-
-    for a in range(sys['Nunocc_b']):
-        for i in range(sys['Nocc_b']):
-            denom = H1B['vv'][a,a] - H1B['oo'][i,i]
-            l1b[a,i] -= (X1B[a,i]-omega*l1b[a,i])/(denom - omega + shift)
-
-    for a in range(sys['Nunocc_a']):
-        for b in range(a+1,sys['Nunocc_a']):
-            for i in range(sys['Nocc_a']):
-                for j in range(i+1,sys['Nocc_a']):
-                    denom = H1A['vv'][a,a] + H1A['vv'][b,b] - H1A['oo'][i,i] - H1A['oo'][j,j]
-                    l2a[a,b,i,j] -= (X2A[a,b,i,j]-omega*l2a[a,b,i,j])/(denom - omega + shift)
-                    l2a[a,b,j,i] = -l2a[a,b,i,j]
-                    l2a[b,a,i,j] = -l2a[a,b,i,j]
-                    l2a[b,a,j,i] =  l2a[a,b,i,j]
-
-
-    for a in range(sys['Nunocc_a']):
-        for b in range(sys['Nunocc_b']):
-            for i in range(sys['Nocc_a']):
-                for j in range(sys['Nocc_b']):
-                    denom = H1A['vv'][a,a] + H1B['vv'][b,b] - H1A['oo'][i,i] - H1B['oo'][j,j]
-                    l2b[a,b,i,j] -= (X2B[a,b,i,j]-omega*l2b[a,b,i,j])/(denom - omega + shift)
-    
-
-    for a in range(sys['Nunocc_b']):
-        for b in range(a+1,sys['Nunocc_b']):
-            for i in range(sys['Nocc_b']):
-                for j in range(i+1,sys['Nocc_b']):
-                    denom = H1B['vv'][a,a] + H1B['vv'][b,b] - H1B['oo'][i,i] - H1B['oo'][j,j]
-                    l2c[a,b,i,j] -= (X2C[a,b,i,j]-omega*l2c[a,b,i,j])/(denom - omega + shift)
-                    l2c[a,b,j,i] = -l2a[a,b,i,j]
-                    l2c[b,a,i,j] = -l2a[a,b,i,j]
-                    l2c[b,a,j,i] =  l2a[a,b,i,j]
-
-    return l1a, l1b, l2a, l2b, l2c
-
-def calc_cc_energy(cc_t,ints):
-
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-    fA = ints['fA']
-    fB = ints['fB']
-    t1a = cc_t['t1a']
-    t1b = cc_t['t1b']
-    t2a = cc_t['t2a']
-    t2b = cc_t['t2b']
-    t2c = cc_t['t2c']
-
-    Ecorr = 0.0
-    Ecorr += np.einsum('me,em->',fA['ov'],t1a,optimize=True)
-    Ecorr += np.einsum('me,em->',fB['ov'],t1b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vA['oovv'],t2a,optimize=True)
-    Ecorr += np.einsum('mnef,efmn->',vB['oovv'],t2b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vC['oovv'],t2c,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vA['oovv'],t1a,t1a,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vC['oovv'],t1b,t1b,optimize=True)
-    Ecorr += np.einsum('mnef,em,fn->',vB['oovv'],t1a,t1b,optimize=True)
-
-    return Ecorr
-
 
 def test_updates(matfile,ints,sys):
 

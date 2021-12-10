@@ -30,6 +30,7 @@ def parse_input_file(inpfile):
     inputs['root_select'] = None
     inputs['eom_guess_noact'] = 0
     inputs['eom_guess_nuact'] = 0
+    inputs['low_memory'] = False
 
     with open(inpfile,'r') as f:
         for line in f.readlines():
@@ -48,6 +49,12 @@ def parse_input_file(inpfile):
                     inputs['isRHF'] = True
                 else:
                     inputs['isRHF'] = False
+            if 'low_memory' in line:
+                temp = line.split('=')[1].strip()
+                if temp == 'True':
+                    inputs['low_memory'] = True
+                else:
+                    inputs['low_memory'] = False
             if 'maxit' in line and 'adaptive_maxit' not in line and 'eom_maxit' not in line:
                 inputs['maxit'] = int(line.split('=')[1].strip())
             if 'tol' in line and 'eom_tol' not in line:

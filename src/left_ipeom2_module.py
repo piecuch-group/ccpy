@@ -1,5 +1,6 @@
 import numpy as np
 from solvers import diis
+from cc_energy import calc_cc_energy
 import time
 import cc_loops
 
@@ -505,32 +506,6 @@ def update_L(l1a,l1b,l2a,l2b,l2c,X1A,X1B,X2A,X2B,X2C,omega,H1A,H1B,sys,shift):
                     l2c[b,a,j,i] =  l2a[a,b,i,j]
 
     return l1a, l1b, l2a, l2b, l2c
-
-def calc_cc_energy(cc_t,ints):
-
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-    fA = ints['fA']
-    fB = ints['fB']
-    t1a = cc_t['t1a']
-    t1b = cc_t['t1b']
-    t2a = cc_t['t2a']
-    t2b = cc_t['t2b']
-    t2c = cc_t['t2c']
-
-    Ecorr = 0.0
-    Ecorr += np.einsum('me,em->',fA['ov'],t1a,optimize=True)
-    Ecorr += np.einsum('me,em->',fB['ov'],t1b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vA['oovv'],t2a,optimize=True)
-    Ecorr += np.einsum('mnef,efmn->',vB['oovv'],t2b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vC['oovv'],t2c,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vA['oovv'],t1a,t1a,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vC['oovv'],t1b,t1b,optimize=True)
-    Ecorr += np.einsum('mnef,em,fn->',vB['oovv'],t1a,t1b,optimize=True)
-
-    return Ecorr
-
 
 def test_updates(matfile,ints,sys):
 
