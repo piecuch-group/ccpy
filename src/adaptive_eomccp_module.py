@@ -1,4 +1,5 @@
 import numpy as np
+from cc_energy import calc_cc_energy
 from HBar_module import HBar_CCSD
 import cc_loops
 
@@ -1157,86 +1158,3 @@ def cis(nroot,ints,sys):
 
     return C, E_cis
 
-def calc_cc_energy(cc_t,ints):
-
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-    fA = ints['fA']
-    fB = ints['fB']
-    t1a = cc_t['t1a']
-    t1b = cc_t['t1b']
-    t2a = cc_t['t2a']
-    t2b = cc_t['t2b']
-    t2c = cc_t['t2c']
-
-    Ecorr = 0.0
-    Ecorr += np.einsum('me,em->',fA['ov'],t1a,optimize=True)
-    Ecorr += np.einsum('me,em->',fB['ov'],t1b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vA['oovv'],t2a,optimize=True)
-    Ecorr += np.einsum('mnef,efmn->',vB['oovv'],t2b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vC['oovv'],t2c,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vA['oovv'],t1a,t1a,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vC['oovv'],t1b,t1b,optimize=True)
-    Ecorr += np.einsum('mnef,em,fn->',vB['oovv'],t1a,t1b,optimize=True)
-
-    return Ecorr
-
-def test_updates(matfile,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
-
-    from scipy.io import loadmat
-    #from fortran_cis import cis_hamiltonian
-
-    print('')
-    print('TEST SUBROUTINE:')
-    print('Loading Matlab .mat file from {}'.format(matfile))
-    print('')
-
-    data_dict = loadmat(matfile)
-    Rvec = data_dict['Rvec']
-
-    fA = ints['fA']
-    fB = ints['fB']
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-
-
-    for j in range(Rvec.shape[1]):
-
-        print('Testing updates on root {}'.format(j+1))
-        print("----------------------------------------")
-
-        #r1a = data_dict['r1a'+'-'+str(j+1)]
-        #r1b = data_dict['r1b'+'-'+str(j+1)]
-        #r2a = data_dict['r2a'+'-'+str(j+1)]
-        #r2b = data_dict['r2b'+'-'+str(j+1)]
-        #r2c = data_dict['r2c'+'-'+str(j+1)]
-        r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d = unflatten_R(Rvec[:,j],sys,order='F')
-
-        # test r1a update
-        X1A = build_HR_1A(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-        print('|X1A| = {}'.format(np.linalg.norm(X1A)))
-
-        # test r1b update
-        X1B = build_HR_1B(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-        print('|X1B| = {}'.format(np.linalg.norm(X1B)))
-
-        # test r2a update
-        X2A = build_HR_2A(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-        print('|X2A| = {}'.format(np.linalg.norm(X2A)))
-
-        # test r2b update
-        X2B = build_HR_2B(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-        print('|X2B| = {}'.format(np.linalg.norm(X2B)))
-
-        # test t2c update
-        X2C = build_HR_2C(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-        print('|X2C| = {}'.format(np.linalg.norm(X2C)))
-    
-        X3A = build_HR_3A(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-        print('|X3A| = {}'.format(np.linalg.norm(X3A)))
-
-        X3B = build_HR_3B(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-        print('|X3B| = {}'.format(np.linalg.norm(X3B)))
-    return

@@ -6,7 +6,7 @@ from integrals import get_integrals
 from ccsdt_module import ccsdt, get_ccsd_intermediates
 import ccp_matrix
 import time
-#from numba import njit
+from numba import njit
 
 def get_file_names_with_strings(path,identifier):
     full_list = os.listdir(path)
@@ -252,13 +252,13 @@ def build_HT3A(t3a_p,t3b_p,t3c_p,t3d_p,list_of_triples_A,H1A,H1B,H2A,H2B,H2C):
             # diagram 5 A(i/jk)A(c/ab)h(amie)t3a(ebcmjk)
             # -> A(jk)A(bc)A(a/bc)A(i/jk)A(a'\b'c')A(i'\j'k') x 
             #               d(kk')d(jj')d(bb')d(cc')h(a,i',i,a')
-            dgm5 = (k1==k2)*(j1==j2)*(b1==b2)*(c1==c2)*H2A['voov'][a1,i2,i1,a2]\
+            #dgm5 = (k1==k2)*(j1==j2)*(b1==b2)*(c1==c2)*H2A['voov'][a1,i2,i1,a2]\
+                            
+            #       -(k1==k2)*(j1==j2)*(b1==a2)*(c1==c2)*H2A['voov'][a1,i2,i1,b2]\
+            #       -(k1==k2)*(j1==j2)*(b1==b2)*(c1==a2)*H2A['voov'][a1,i2,i1,c2]\
 
-                   -(k1==k2)*(j1==j2)*(b1==a2)*(c1==c2)*H2A['voov'][a1,i2,i1,b2]\
-                   -(k1==k2)*(j1==j2)*(b1==b2)*(c1==a2)*H2A['voov'][a1,i2,i1,c2]\
-
-                   -(k1==k2)*(j1==i2)*(b1==b2)*(c1==c2)*H2A['voov'][a1,j2,i1,a2]\
-                   -(k1==i2)*(j1==j2)*(b1==b2)*(c1==c2)*H2A['voov'][a1,k2,i1,a2]\
+            #       -(k1==k2)*(j1==i2)*(b1==b2)*(c1==c2)*H2A['voov'][a1,j2,i1,a2]\
+            #       -(k1==i2)*(j1==j2)*(b1==b2)*(c1==c2)*H2A['voov'][a1,k2,i1,a2]\
 
             HT3A[idet] = HT3A[idet] + (dgm1+dgm2+dgm3+dgm4)*t3a_p[jdet]
 

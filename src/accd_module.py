@@ -1,5 +1,6 @@
 import numpy as np
 from solvers import diis
+from cc_energy import calc_cc_energy
 import time
 import cc_loops
 
@@ -439,24 +440,3 @@ def update_t2c_v2(cc_t,ints,sys,shift):
     cc_t['t2c'] = t2c
 
     return cc_t
-
-
-def calc_cc_energy(cc_t,ints):
-
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-    fA = ints['fA']
-    fB = ints['fB']
-    t2a = cc_t['t2a']
-    t2b = cc_t['t2b']
-    t2c = cc_t['t2c']
-
-    Ecorr = 0.0
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vA['oovv'],t2a,optimize=True)
-    Ecorr += np.einsum('mnef,efmn->',vB['oovv'],t2b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vC['oovv'],t2c,optimize=True)
-
-    return Ecorr
-
-

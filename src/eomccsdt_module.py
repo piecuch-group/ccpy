@@ -2,10 +2,11 @@
 energies and linear excitation amplitudes for excited states using
 the equation-of-motion (EOM) CC with singles, doubles, and triples (EOMCCSDT)."""
 import numpy as np
+from cc_energy import calc_cc_energy
 import cc_loops
 import eomcc_initial_guess
 
-def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,maxit=80):
+def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,maxit=80,flag_RHF=False):
     """Perform the EOMCCSDT excited-state calculation.
 
     Parameters
@@ -122,7 +123,7 @@ def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06
         print('Root - {}  (Sym: {})     E = {:.10f}    ({:.10f})'.format(i+1,root_sym[i],E0[i],E0[i]+ints['Escf']))
     print('')
 
-    Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,num_roots_total,B0,E0,sys,maxit,tol)
+    Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,num_roots_total,B0,E0,sys,maxit,tol,flag_RHF)
     
     cc_t['r1a'] = [None]*len(omega)
     cc_t['r1b'] = [None]*len(omega)
@@ -159,7 +160,7 @@ def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06
 
     return cc_t, omega
 
-def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
+def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol,flag_RHF):
     """Diagonalize the CCSDT similarity-transformed Hamiltonian HBar using the
     non-Hermitian Davidson algorithm.
 
@@ -223,7 +224,7 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
 
             omega_old = omega[iroot]
 
-            sigma[:,it] = HR(B[:,it],cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+            sigma[:,it] = HR(B[:,it],cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF)
 
             G = np.dot(B.T,sigma[:,:it+1])
             e, alpha = np.linalg.eig(G)
@@ -426,7 +427,7 @@ def unflatten_R(R,sys,order='C'):
     return r1a, r1b, r2a, r2b, r2c, r3a, r3b, r3c, r3d
 
 
-def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
+def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF):
     """Calculate the matrix-vector product H(CCSDT)*R.
 
     Parameters
@@ -1644,44 +1645,6 @@ def cis(ints,sys):
     C = C[:,idx]
 
     return C, E_cis
-
-def calc_cc_energy(cc_t,ints):
-    """Calculate the CC correlation energy <0|(H_N e^T)_C|0>.
-    
-    Parameters
-    ----------
-    cc_t : dict
-        Cluster amplitudes T1, T2
-    ints : dict
-        Sliced integrals F_N and V_N that define the bare Hamiltonian H_N
-        
-    Returns
-    -------
-    Ecorr : float
-        CC correlation energy
-    """
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-    fA = ints['fA']
-    fB = ints['fB']
-    t1a = cc_t['t1a']
-    t1b = cc_t['t1b']
-    t2a = cc_t['t2a']
-    t2b = cc_t['t2b']
-    t2c = cc_t['t2c']
-
-    Ecorr = 0.0
-    Ecorr += np.einsum('me,em->',fA['ov'],t1a,optimize=True)
-    Ecorr += np.einsum('me,em->',fB['ov'],t1b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vA['oovv'],t2a,optimize=True)
-    Ecorr += np.einsum('mnef,efmn->',vB['oovv'],t2b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vC['oovv'],t2c,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vA['oovv'],t1a,t1a,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vC['oovv'],t1b,t1b,optimize=True)
-    Ecorr += np.einsum('mnef,em,fn->',vB['oovv'],t1a,t1b,optimize=True)
-
-    return Ecorr
 
 def test_updates(matfile,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     """Test the EOMCCSDT updates using known results from Matlab code.

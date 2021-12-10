@@ -2,11 +2,12 @@
 energies and linear excitation amplitudes for excited states using
 the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD)."""
 import numpy as np
+from cc_energy import calc_cc_energy
 import cc_loops
 import eomcc_initial_guess
 #print(eomcc_initial_guess.eomcc_initial_guess.eomccs_d_matrix.__doc__)
 
-def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,maxit=80):
+def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,maxit=80,flag_RHF=False):
     """Perform the EOMCCSD excited-state calculation.
 
     Parameters
@@ -120,9 +121,12 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,
     print('Initial EOMCCSd energies:')
     for i in range(num_roots_total):
         print('Root - {}  (Sym: {})     E = {:.10f}    ({:.10f})'.format(i+1,root_sym[i],E0[i],E0[i]+ints['Escf']))
+        #r1a,r1b,r2a,r2b,r2c = unflatten_R(B0[:,i],sys)
+        #nprint = 10
+        #idx = np.argmax(abs(B0[:,i]))
     print('')
 
-    Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,num_roots_total,B0,E0,sys,maxit,tol)
+    Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,num_roots_total,B0,E0,sys,maxit,tol,flag_RHF)
     
     cc_t['r1a'] = [None]*len(omega)
     cc_t['r1b'] = [None]*len(omega)
@@ -151,7 +155,7 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,
 
     return cc_t, omega
 
-def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
+def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol,flag_RHF):
     """Diagonalize the CCSD similarity-transformed Hamiltonian HBar using the
     non-Hermitian Davidson algorithm.
 
@@ -217,7 +221,7 @@ def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
 
             omega_old = omega[iroot]
 
-            sigma[:,curr_size] = HR(B[:,curr_size],cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+            sigma[:,curr_size] = HR(B[:,curr_size],cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF)
 
             G = np.dot(B.T,sigma[:,:curr_size+1])
             e, alpha = np.linalg.eig(G)
@@ -390,7 +394,7 @@ def unflatten_R(R,sys,order='C'):
     return r1a, r1b, r2a, r2b, r2c
 
 
-def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
+def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF):
     """Calculate the matrix-vector product H(CCSD)*R.
 
     Parameters
@@ -405,6 +409,8 @@ def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
         Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
     sys : dict
         System information dictionary
+    flag_RHF : bool
+        True/False whether to use closed-shell RHF spin symmetry
 
     Returns
     -------
@@ -413,13 +419,19 @@ def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     """
     r1a, r1b, r2a, r2b, r2c = unflatten_R(R,sys)
 
-    X1A = build_HR_1A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X1B = build_HR_1B(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X2A = build_HR_2A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X2B = build_HR_2B(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X2C = build_HR_2C(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-
-    return flatten_R(X1A, X1B, X2A, X2B, X2C)
+    if flag_RHF:
+        X1A = build_HR_1A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2A = build_HR_2A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2B = build_HR_2B(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        Xout = flatten_R(X1A,X1A,X2A,X2B,X2A)
+    else:
+        X1A = build_HR_1A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X1B = build_HR_1B(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2A = build_HR_2A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2B = build_HR_2B(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2C = build_HR_2C(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        Xout = flatten_R(X1A, X1B, X2A, X2B, X2C)
+    return Xout
 
 def build_HR_1A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     """Calculate the projection <ia|[ (H_N e^(T1+T2))_C*(R1+R2) ]_C|0>.
@@ -554,21 +566,29 @@ def build_HR_2A(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     D7 = np.einsum('eb,aeij->abij',Q1,t2a,optimize=True) # A(ab)
     Q2 = -np.einsum('mnef,bfmn->eb',vB['oovv'],r2b,optimize=True)
     D8 = np.einsum('eb,aeij->abij',Q2,t2a,optimize=True) # A(ab)
+    #D7 = 0.0
+    #D8 = 0.0
 
     Q1 = 0.5*np.einsum('mnef,efjn->mj',vA['oovv'],r2a,optimize=True)
     D9 = -np.einsum('mj,abim->abij',Q1,t2a,optimize=True) # A(ij)
     Q2 = np.einsum('mnef,efjn->mj',vB['oovv'],r2b,optimize=True)
     D10 = -np.einsum('mj,abim->abij',Q2,t2a,optimize=True) # A(ij)
+    #D9 = 0.0
+    #D10 = 0.0
 
     Q1 = np.einsum('amfe,em->af',H2A['vovv'],r1a,optimize=True)
     D11 = np.einsum('af,fbij->abij',Q1,t2a,optimize=True) # A(ab)
     Q2 = np.einsum('nmie,em->ni',H2A['ooov'],r1a,optimize=True)
     D12 = -np.einsum('ni,abnj->abij',Q2,t2a,optimize=True) # A(ij)
+    #D11 = 0.0
+    #D12 = 0.0
 
     Q1 = np.einsum('amfe,em->af',H2B['vovv'],r1b,optimize=True)
     D13 = np.einsum('af,fbij->abij',Q1,t2a,optimize=True) # A(ab)
     Q2 = np.einsum('nmie,em->ni',H2B['ooov'],r1b,optimize=True)
     D14 = -np.einsum('ni,abnj->abij',Q2,t2a,optimize=True) # A(ij)
+    #D13 = 0.0
+    #D14 = 0.0
 
     D_ij = D1 + D6 + D9 + D10 + D12 + D14
     D_ab = D2 + D5 + D7 + D8  + D11 + D13
@@ -672,8 +692,6 @@ def build_HR_2B(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     X2B += np.einsum('bf,afij->abij',Q3,t2b,optimize=True)
     Q4 = np.einsum('nmje,em->nj',H2C['ooov'],r1b,optimize=True)
     X2B -= np.einsum('nj,abin->abij',Q4,t2b,optimize=True)
-
-
     return X2B
 
 def build_HR_2C(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
@@ -723,21 +741,29 @@ def build_HR_2C(r1a,r1b,r2a,r2b,r2c,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     D7 = np.einsum('eb,aeij->abij',Q1,t2c,optimize=True) # A(ab)
     Q2 = -np.einsum('nmfe,fbnm->eb',vB['oovv'],r2b,optimize=True)
     D8 = np.einsum('eb,aeij->abij',Q2,t2c,optimize=True) # A(ab)
+    #D7 = 0.0
+    #D8 = 0.0
 
     Q1 = 0.5*np.einsum('mnef,efjn->mj',vC['oovv'],r2c,optimize=True)
     D9 = -np.einsum('mj,abim->abij',Q1,t2c,optimize=True) # A(ij)
     Q2 = np.einsum('nmfe,fenj->mj',vB['oovv'],r2b,optimize=True)
     D10 = -np.einsum('mj,abim->abij',Q2,t2c,optimize=True) # A(ij)
+    #D9 = 0.0
+    #D10 = 0.0
 
     Q1 = np.einsum('amfe,em->af',H2C['vovv'],r1b,optimize=True)
     D11 = np.einsum('af,fbij->abij',Q1,t2c,optimize=True) # A(ab)
     Q2 = np.einsum('nmie,em->ni',H2C['ooov'],r1b,optimize=True)
     D12 = -np.einsum('ni,abnj->abij',Q2,t2c,optimize=True) # A(ij)
+    #D11 = 0.0
+    #D12 = 0.0
 
     Q1 = np.einsum('maef,em->af',H2B['ovvv'],r1a,optimize=True)
     D13 = np.einsum('af,fbij->abij',Q1,t2c,optimize=True) # A(ab)
     Q2 = np.einsum('mnei,em->ni',H2B['oovo'],r1a,optimize=True)
     D14 = -np.einsum('ni,abnj->abij',Q2,t2c,optimize=True) # A(ij)
+    #D13 = 0.0
+    #D14 = 0.0
 
     D_ij = D1 + D6 + D9 + D10 + D12 + D14
     D_ab = D2 + D5 + D7 + D8  + D11 + D13
@@ -833,44 +859,6 @@ def cis(ints,sys):
     C = C[:,idx]
 
     return C, E_cis
-
-def calc_cc_energy(cc_t,ints):
-    """Calculate the CC correlation energy <0|(H_N e^T)_C|0>.
-    
-    Parameters
-    ----------
-    cc_t : dict
-        Cluster amplitudes T1, T2
-    ints : dict
-        Sliced integrals F_N and V_N that define the bare Hamiltonian H_N
-        
-    Returns
-    -------
-    Ecorr : float
-        CC correlation energy
-    """
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-    fA = ints['fA']
-    fB = ints['fB']
-    t1a = cc_t['t1a']
-    t1b = cc_t['t1b']
-    t2a = cc_t['t2a']
-    t2b = cc_t['t2b']
-    t2c = cc_t['t2c']
-
-    Ecorr = 0.0
-    Ecorr += np.einsum('me,em->',fA['ov'],t1a,optimize=True)
-    Ecorr += np.einsum('me,em->',fB['ov'],t1b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vA['oovv'],t2a,optimize=True)
-    Ecorr += np.einsum('mnef,efmn->',vB['oovv'],t2b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vC['oovv'],t2c,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vA['oovv'],t1a,t1a,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vC['oovv'],t1b,t1b,optimize=True)
-    Ecorr += np.einsum('mnef,em,fn->',vB['oovv'],t1a,t1b,optimize=True)
-
-    return Ecorr
 
 def test_updates(matfile,cc_t,ints,sys):
     """Test the EOMCCSD updates using known results from Matlab code.

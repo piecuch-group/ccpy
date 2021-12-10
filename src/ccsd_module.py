@@ -2,13 +2,13 @@
 doubles (CCSD) calculation for a molecular system."""
 import numpy as np
 from solvers import diis
+from cc_energy import calc_cc_energy
 import time
 import cc_loops
 
 #print(cc_loops.cc_loops.__doc__)
 
-
-def ccsd(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0):
+def ccsd(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=False):
     """Perform the ground-state CCSD calculation.
 
     Parameters
@@ -78,7 +78,10 @@ def ccsd(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0):
        
         # update T1                        
         cc_t = update_t1a(cc_t,ints,sys,shift)
-        cc_t = update_t1b(cc_t,ints,sys,shift)
+        if flag_RHF:
+            cc_t['t1b'] = cc_t['t1a']
+        else:
+            cc_t = update_t1b(cc_t,ints,sys,shift)
 
         # CCS intermediates
         H1A,H1B,H2A,H2B,H2C = get_ccs_intermediates(cc_t,ints,sys)
@@ -86,7 +89,10 @@ def ccsd(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0):
         # update T2
         cc_t = update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
         cc_t = update_t2b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-        cc_t = update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
+        if flag_RHF:
+            cc_t['t2c'] = cc_t['t2a']
+        else:
+            cc_t = update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
         
         # store vectorized results
         T[idx_1a]= cc_t['t1a'].flatten()
@@ -729,122 +735,4 @@ def get_ccs_intermediates(cc_t,ints,sys):
            
 
     return H1A, H1B, H2A, H2B, H2C
-
-def calc_cc_energy(cc_t,ints):
-    """Calculate the CC correlation energy <0|(H_N e^T)_C|0>.
-    
-    Parameters
-    ----------
-    cc_t : dict
-        Cluster amplitudes T1, T2
-    ints : dict
-        Sliced integrals F_N and V_N that define the bare Hamiltonian H_N
-        
-    Returns
-    -------
-    Ecorr : float
-        CC correlation energy
-    """
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-    fA = ints['fA']
-    fB = ints['fB']
-    t1a = cc_t['t1a']
-    t1b = cc_t['t1b']
-    t2a = cc_t['t2a']
-    t2b = cc_t['t2b']
-    t2c = cc_t['t2c']
-
-    Ecorr = 0.0
-    Ecorr += np.einsum('me,em->',fA['ov'],t1a,optimize=True)
-    Ecorr += np.einsum('me,em->',fB['ov'],t1b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vA['oovv'],t2a,optimize=True)
-    Ecorr += np.einsum('mnef,efmn->',vB['oovv'],t2b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vC['oovv'],t2c,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vA['oovv'],t1a,t1a,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vC['oovv'],t1b,t1b,optimize=True)
-    Ecorr += np.einsum('mnef,em,fn->',vB['oovv'],t1a,t1b,optimize=True)
-
-    return Ecorr
-
-def test_updates(matfile,ints,sys):
-    """Test the CCSD updates using known results from Matlab code.
-
-    Parameters
-    ----------
-    matfile : str
-        Path to .mat file containing T1, T2 amplitudes from Matlab
-    ints : dict
-        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-    sys : dict
-        System information dictionary
-
-    Returns
-    -------
-    None
-    """
-    from scipy.io import loadmat
-
-    print('')
-    print('TEST SUBROUTINE:')
-    print('Loading Matlab .mat file from {}'.format(matfile))
-    print('')
-
-    data_dict = loadmat(matfile)
-    cc_t = data_dict['cc_t']
-
-    t1a = cc_t['t1a'][0,0]
-    t1b = cc_t['t1b'][0,0]
-    t2a = cc_t['t2a'][0,0]
-    t2b = cc_t['t2b'][0,0]
-    t2c = cc_t['t2c'][0,0]
-
-    cc_t = {'t1a' : t1a, 't1b' : t1b, 't2a' : t2a, 't2b' : t2b, 't2c' : t2c}
-
-    Ecorr = calc_cc_energy(cc_t,ints)
-    print('Correlation energy = {}'.format(Ecorr))
-
-    shift = 0.0
-
-    # test t1a update
-    out = update_t1a(cc_t,ints,sys,shift)
-    t1a = out['t1a']
-    print('|t1a| = {}'.format(np.linalg.norm(t1a)))
-
-    # test t1b update
-    out = update_t1b(cc_t,ints,sys,shift)
-    t1a = out['t1b']
-    print('|t1b| = {}'.format(np.linalg.norm(t1b)))
-
-    H1A,H1B,H2A,H2B,H2C = get_ccs_intermediates(cc_t,ints,sys)
-
-    # test t2a update
-    out = update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-    t2a = out['t2a']
-    print('|t2a| = {}'.format(np.linalg.norm(t2a)))
-
-    # test t2b update
-    out = update_t2b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-    t1a = out['t2b']
-    print('|t2b| = {}'.format(np.linalg.norm(t2b)))
-
-    # test t2c update
-    out = update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-    t2c = out['t2c']
-    print('|t2c| = {}'.format(np.linalg.norm(t2c)))
-
-    # test CCS HBar components
-    for key,item in H1A.items():
-        print('|H1A({})| = {}'.format(key,np.linalg.norm(item)))
-    for key,item in H1B.items():
-        print('|H1B({})| = {}'.format(key,np.linalg.norm(item)))
-    for key,item in H2A.items():
-        print('|H2A({})| = {}'.format(key,np.linalg.norm(item)))
-    for key,item in H2B.items():
-        print('|H2B({})| = {}'.format(key,np.linalg.norm(item)))
-    for key,item in H2C.items():
-        print('|H2C({})| = {}'.format(key,np.linalg.norm(item)))
-
-    return
 

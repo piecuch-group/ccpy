@@ -2,10 +2,11 @@
 for a molecular system."""
 import numpy as np
 from solvers import diis
+from cc_energy import calc_cc_energy
 import time
 import cc_loops
 
-def ccd(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0):
+def ccd(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=False):
     """Perform the ground-state CCD calculation.
 
     Parameters
@@ -70,7 +71,10 @@ def ccd(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0):
         # update T2
         cc_t = update_t2a(cc_t,ints,sys,shift)
         cc_t = update_t2b(cc_t,ints,sys,shift)
-        cc_t = update_t2c(cc_t,ints,sys,shift)
+        if flag_RHF:
+            cc_t['t2c'] = cc_t['t2a']
+        else:
+            cc_t = update_t2c(cc_t,ints,sys,shift)
         
         # store vectorized results
         T[idx_2a] = cc_t['t2a'].flatten()
@@ -362,37 +366,3 @@ def update_t2c(cc_t,ints,sys,shift):
 
     cc_t['t2c'] = t2c
     return cc_t
-
-
-def calc_cc_energy(cc_t,ints):
-    """Calculate the CC correlation energy <0|(H_N e^T)_C|0>.
-    
-    Parameters
-    ----------
-    cc_t : dict
-        Cluster amplitudes T1, T2
-    ints : dict
-        Sliced integrals F_N and V_N that define the bare Hamiltonian H_N
-        
-    Returns
-    -------
-    Ecorr : float
-        CC correlation energy
-    """
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-    fA = ints['fA']
-    fB = ints['fB']
-    t2a = cc_t['t2a']
-    t2b = cc_t['t2b']
-    t2c = cc_t['t2c']
-
-    Ecorr = 0.0
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vA['oovv'],t2a,optimize=True)
-    Ecorr += np.einsum('mnef,efmn->',vB['oovv'],t2b,optimize=True)
-    Ecorr += 0.25*np.einsum('mnef,efmn->',vC['oovv'],t2c,optimize=True)
-
-    return Ecorr
-
-

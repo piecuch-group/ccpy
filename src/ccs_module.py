@@ -2,10 +2,11 @@
 for a molecular system. Note that when using Hartree-Fock orbitals, CCS
 recovers no correlation energy and is generally meaningless."""
 import numpy as np
+from cc_energy import calc_cc_energy
 from solvers import diis
 import time
 
-def ccs(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0):
+def ccs(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=False):
     """Perform the ground-state CCS calculation.
 
     Parameters
@@ -29,7 +30,7 @@ def ccs(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0):
     cc_t : dict
         Contains the converged T1 cluster amplitudes
     Eccs : float
-        Total CCA energy
+        Total CCS energy
     """
     print('\n==================================++Entering CCS Routine++=================================\n')
 
@@ -64,7 +65,10 @@ def ccs(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0):
         # store old T and get current diis dimensions
         T_old = T.copy()
         cc_t['t1a']  = np.reshape(T[idx_1a],(sys['Nunocc_a'],sys['Nocc_a']))
-        cc_t['t1b']  = np.reshape(T[idx_1b],(sys['Nunocc_b'],sys['Nocc_b']))
+        if flag_RHF:
+            cc_t['t1b'] = cc_t['t1a']
+        else:
+            cc_t['t1b']  = np.reshape(T[idx_1b],(sys['Nunocc_b'],sys['Nocc_b']))
 
         # CC correlation energy
         Ecorr = calc_cc_energy(cc_t,ints)
@@ -320,36 +324,3 @@ def second_order_guess(sys,ints):
     cc_t = {'t1a' : t1a, 't1b' : t1b}
 
     return cc_t
-
-def calc_cc_energy(cc_t,ints):
-    """Calculate the CC correlation energy <0|(H_N e^T)_C|0>.
-    
-    Parameters
-    ----------
-    cc_t : dict
-        Cluster amplitudes T1, T2
-    ints : dict
-        Sliced integrals F_N and V_N that define the bare Hamiltonian H_N
-        
-    Returns
-    -------
-    Ecorr : float
-        CC correlation energy
-    """
-    vA = ints['vA']
-    vB = ints['vB']
-    vC = ints['vC']
-    fA = ints['fA']
-    fB = ints['fB']
-    t1a = cc_t['t1a']
-    t1b = cc_t['t1b']
-
-    Ecorr = 0.0
-    Ecorr += np.einsum('me,em->',fA['ov'],t1a,optimize=True)
-    Ecorr += np.einsum('me,em->',fB['ov'],t1b,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vA['oovv'],t1a,t1a,optimize=True)
-    Ecorr += 0.5*np.einsum('mnef,fn,em->',vC['oovv'],t1b,t1b,optimize=True)
-    Ecorr += np.einsum('mnef,em,fn->',vB['oovv'],t1a,t1b,optimize=True)
-
-    return Ecorr
-

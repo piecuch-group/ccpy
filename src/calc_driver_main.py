@@ -42,25 +42,25 @@ def calc_driver_main(inputs,sys,ints):
         from ccs_module import ccs
         cc_t, Eccs = ccs(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
         
     if calc_type == 'ccd' or calc_type == 'CCD':
         from ccd_module import ccd
         cc_t, Eccd = ccd(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
 
     if calc_type == 'accd' or calc_type == 'ACCD':
         from accd_module import accd
         cc_t, Eaccd = accd(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
 
     if calc_type == 'ccsd' or calc_type == 'CCSD':
         from ccsd_module import ccsd
         cc_t, Eccsd = ccsd(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
 
     if calc_type == 'eomccsd' or calc_type == 'EOMCCSD':
         from ccsd_module import ccsd
@@ -69,14 +69,14 @@ def calc_driver_main(inputs,sys,ints):
 
         cc_t, Eccsd = ccsd(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
 
         H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
         
         cc_t, omega = eomccsd(inputs['nroot'],H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,\
                         tol=inputs['eom_tol'],\
                         noact=inputs['eom_guess_noact'],nuact=inputs['eom_guess_nuact'],\
-                        maxit=inputs['eom_maxit'])
+                        maxit=inputs['eom_maxit'],flag_RHF=inputs['isRHF'])
 
     if calc_type == 'ipeom2' or calc_type == 'IPEOM2':
         from ccsd_module import ccsd
@@ -95,26 +95,32 @@ def calc_driver_main(inputs,sys,ints):
                         maxit=inputs['eom_maxit'])
 
     if calc_type == 'ccsdt' or calc_type == 'CCSDT':
-        from ccsdt_module import ccsdt
-        cc_t, Eccsdt = ccsdt(sys,ints,\
+        if inputs['low_memory']:
+            from ccsdt_module_lowmem import ccsdt
+        else:
+            from ccsdt_module import ccsdt
+        cc_t, Eccsdt = ccsdt(sys,ints,inputs['work_dir'],\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
 
     if calc_type == 'eomccsdt' or calc_type == 'EOMCCSDT':
-        from ccsdt_module import ccsdt
+        if inputs['low_memory']:
+            from ccsdt_module_lowmem import ccsdt
+        else:
+            from ccsdt_module import ccsdt
         from HBar_module import HBar_CCSDT
         from eomccsdt_module import eomccsdt, test_updates
 
         cc_t, Eccsdt = ccsdt(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
 
         H1A,H1B,H2A,H2B,H2C = HBar_CCSDT(cc_t,ints,sys)
         
         cc_t, omega = eomccsdt(inputs['nroot'],H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,\
                         tol=inputs['eom_tol'],\
                         noact=inputs['eom_guess_noact'],nuact=inputs['eom_guess_nuact'],\
-                        maxit=inputs['eom_maxit'])
+                        maxit=inputs['eom_maxit'],flag_RHF=inputs['isRHF'])
 
     if calc_type == 'crcc23' or calc_type == 'CRCC23' or calc_type == 'CR-CC(2,3)':
         from ccsd_module import ccsd
@@ -123,11 +129,11 @@ def calc_driver_main(inputs,sys,ints):
         from crcc23_module import crcc23
         cc_t, Eccsd = ccsd(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
         H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
         cc_t = left_ccsd(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,\
                         shift=inputs['lccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
         Ecrcc23,E23 = crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=inputs['isRHF'])
 
     if calc_type == 'crcc24' or calc_type == 'CRCC24' or calc_type == 'CR-CC(2,4)':
@@ -138,11 +144,11 @@ def calc_driver_main(inputs,sys,ints):
         from crcc24_module import crcc24
         cc_t, Eccsd = ccsd(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
         H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
         cc_t = left_ccsd(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,\
                         shift=inputs['lccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
         Ecrcc23,E23 = crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=inputs['isRHF'])
         Ecrcc24,E24 = crcc24(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=inputs['isRHF'])
 
@@ -155,18 +161,19 @@ def calc_driver_main(inputs,sys,ints):
 
         cc_t, Eccsd = ccsd(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
-                        diis_size=inputs['diis_size'])
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
 
         H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
         
         cc_t, omega = eomccsd(inputs['nroot'],H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,\
                         tol=inputs['eom_tol'],\
                         noact=inputs['eom_guess_noact'],nuact=inputs['eom_guess_nuact'],\
-                        maxit=inputs['eom_maxit'])
+                        maxit=inputs['eom_maxit'],flag_RHF=inputs['isRHF'])
         cc_t = left_ccsd(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,\
                         shift=inputs['lccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
                         diis_size=inputs['diis_size'],nroot=len(omega),omega=omega,\
-                        eom_tol=inputs['eom_tol'],eom_lccshift=inputs['eom_lccshift'],eom_maxit=inputs['eom_maxit'])
+                        eom_tol=inputs['eom_tol'],eom_lccshift=inputs['eom_lccshift'],eom_maxit=inputs['eom_maxit'],\
+                        flag_RHF=inputs['isRHF'])
         Ecrcc23,E23 = crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=inputs['isRHF'],\
                         nroot=len(omega),omega=omega)
 
