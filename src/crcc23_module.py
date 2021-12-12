@@ -72,20 +72,26 @@ def crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,nroot=0,omega=0.0):
     deltaC = 0.0
     deltaD = 0.0
 
-    MM23A = build_MM23A(cc_t,H1A,H2A,sys)
-    L3A = build_L3A(cc_t,H1A,H2A,ints,sys)
-    dA_AAA, dB_AAA, dC_AAA, dD_AAA = crcc_loops.crcc23a(MM23A,L3A,0.0,fA['oo'],fA['vv'],\
+    I2A_vvov = H2A['vvov']+np.einsum('me,abim->abie',H1A['ov'],cc_t['t2a'],optimize=True)
+    dA_AAA, dB_AAA, dC_AAA, dD_AAA = crcc_loops.crcc23a_opt(cc_t['t2a'],cc_t['l1a'][0],cc_t['l2a'][0],\
+                    H2A['vooo'],I2A_vvov,ints['vA']['oovv'],H1A['ov'],H2A['vovv'],H2A['ooov'],fA['oo'],fA['vv'],\
                     H1A['oo'],H1A['vv'],H2A['voov'],H2A['oooo'],H2A['vvvv'],D3A['O'],D3A['V'],\
                     sys['Nocc_a'],sys['Nunocc_a'])
 
-    MM23B = build_MM23B(cc_t,H1A,H1B,H2A,H2B,sys)
-    L3B = build_L3B(cc_t,H1A,H1B,H2A,H2B,ints,sys)
-    dA_AAB, dB_AAB, dC_AAB, dD_AAB = crcc_loops.crcc23b(MM23B,L3B,0.0,fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
+    I2B_ovoo = H2B['ovoo'] - np.einsum('me,ecjk->mcjk',H1A['ov'],t2b,optimize=True) 
+    I2B_vooo = H2B['vooo'] - np.einsum('me,aeik->amik',H1B['ov'],t2b,optimize=True) 
+    I2A_vooo = H2A['vooo'] - np.einsum('me,aeij->amij',H1A['ov'],t2a,optimize=True) 
+    dA_AAB, dB_AAB, dC_AAB, dD_AAB = crcc_loops.crcc23b_opt(cc_t['t2a'],cc_t['t2b'],cc_t['l1a'][0],cc_t['l1b'][0],\
+                    cc_t['l2a'][0],cc_t['l2b'][0],I2B_ovoo,I2B_vooo,I2A_vooo,\
+                    H2B['vvvo'],H2B['vvov'],H2A['vvov'],\
+                    H2B['vovv'],H2B['ovvv'],H2A['vovv'],\
+                    H2B['ooov'],H2B['oovo'],H2A['ooov'],\
+                    H1A['ov'],H1B['ov'],ints['vA']['oovv'],ints['vB']['oovv'],\
+                    fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
                     H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],H2A['voov'],H2A['oooo'],H2A['vvvv'],\
                     H2B['ovov'],H2B['vovo'],H2B['oooo'],H2B['vvvv'],H2C['voov'],\
                     D3A['O'],D3A['V'],D3B['O'],D3B['V'],D3C['O'],D3C['V'],\
                     sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'])
-
 
     if flag_RHF:
         deltaA = 2.0*dA_AAA + 2.0*dA_AAB
@@ -93,17 +99,23 @@ def crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,nroot=0,omega=0.0):
         deltaC = 2.0*dC_AAA + 2.0*dC_AAB
         deltaD = 2.0*dD_AAA + 2.0*dD_AAB
     else:
-        MM23C = build_MM23C(cc_t,H1A,H1B,H2B,H2C,sys)
-        L3C = build_L3C(cc_t,H1A,H1B,H2B,H2C,ints,sys)  
-        dA_ABB, dB_ABB, dC_ABB, dD_ABB = crcc_loops.crcc23c(MM23C,L3C,0.0,fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
+        I2B_vooo = H2B['vooo'] - np.einsum('me,aeij->amij',H1B['ov'],t2b,optimize=True)
+        I2C_vooo = H2C['vooo'] - np.einsum('me,cekj->cmkj',H1B['ov'],t2c,optimize=True)
+        I2B_ovoo = H2B['ovoo'] - np.einsum('me,ebij->mbij',H1A['ov'],t2b,optimize=True)
+        dA_ABB, dB_ABB, dC_ABB, dD_ABB = crcc_loops.crcc23c_opt(cc_t['t2b'],cc_t['t2c'],\
+                    cc_t['l1a'][0],cc_t['l1b'][0],cc_t['l2b'][0],cc_t['l2c'][0],\
+                    I2B_vooo,I2C_vooo,I2B_ovoo,H2B['vvov'],H2C['vvov'],H2B['vvvo'],\
+                    H2B['ovvv'],H2B['vovv'],H2C['vovv'],H2B['oovo'],H2B['ooov'],H2C['ooov'],\
+                    H1A['ov'],H1B['ov'],ints['vB']['oovv'],ints['vC']['oovv'],\
+                    fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
                     H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],H2A['voov'],\
                     H2B['ovov'],H2B['vovo'],H2B['oooo'],H2B['vvvv'],H2C['voov'],H2C['oooo'],H2C['vvvv'],\
                     D3B['O'],D3B['V'],D3C['O'],D3C['V'],D3D['O'],D3D['V'],\
                     sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'])
         
-        MM23D = build_MM23D(cc_t,H1B,H2C,sys) 
-        L3D = build_L3D(cc_t,H1B,H2C,ints,sys) 
-        dA_BBB, dB_BBB, dC_BBB, dD_BBB = crcc_loops.crcc23d(MM23D,L3D,0.0,fB['oo'],fB['vv'],\
+        I2C_vvov = H2C['vvov']+np.einsum('me,abim->abie',H1B['ov'],t2c,optimize=True)
+        dA_BBB, dB_BBB, dC_BBB, dD_BBB = crcc_loops.crcc23d_opt(cc_t['t2c'],cc_t['l1b'][0],cc_t['l2c'][0],\
+                    H2C['vooo'],I2C_vvov,ints['vC']['oovv'],H1B['ov'],H2C['vovv'],H2C['ooov'],fB['oo'],fB['vv'],\
                     H1B['oo'],H1B['vv'],H2C['voov'],H2C['oooo'],H2C['vvvv'],D3D['O'],D3D['V'],\
                     sys['Nocc_b'],sys['Nunocc_b'])
 
@@ -191,6 +203,7 @@ def crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,nroot=0,omega=0.0):
         print('finished in ({:0.2f}m  {:0.2f}s)'.format(minutes,seconds))
 
     return Ecrcc23, delta23
+
 
 def build_MM23A(cc_t,H1A,H2A,sys):
     """Calculate the projection <ijkabc|(H_N e^(T1+T2))_C|0>.

@@ -14,7 +14,7 @@ TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 #		-ffixed-line-length-132 \
 #		-O3 \
 #		-std=f2018
-FFLAGS := -std=f2018 -O3
+FFLAGS := -std=f2018 -O3 -ffree-line-length-512
 
 #SRC := cc_loops.f90
 LDFLAGS :=
