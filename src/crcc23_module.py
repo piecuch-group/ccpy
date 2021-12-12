@@ -156,21 +156,112 @@ def crcc23(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF=False,nroot=0,omega=0.0):
         deltaC = 0.0
         deltaD = 0.0
 
-        r0 = cc_t['r0'][iroot]
+        Q1 = np.einsum('mnef,fn->me',H2A['oovv'],cc_t['r1a'][iroot],optimize=True)
+        Q1 += np.einsum('mnef,fn->me',H2B['oovv'],cc_t['r1b'][iroot],optimize=True)
+        I1 = np.einsum('amje,bm->abej',H2A['voov'],cc_t['r1a'][iroot],optimize=True)
+        I1 += np.einsum('amfe,bejm->abfj',H2A['vovv'],cc_t['r2a'][iroot],optimize=True)
+        I1 += np.einsum('amfe,bejm->abfj',H2B['vovv'],cc_t['r2b'][iroot],optimize=True)
+        I1 -= np.transpose(I1,(1,0,2,3))
+        I2 = np.einsum('abfe,ej->abfj',H2A['vvvv'],cc_t['r1a'][iroot],optimize=True)
+        I2 += 0.5*np.einsum('nmje,abmn->abej',H2A['ooov'],cc_t['r2a'][iroot],optimize=True)
+        I2 -= np.einsum('me,abmj->abej',Q1,cc_t['t2a'],optimize=True)
+        chi2A_vvvo = I1 + I2
+        I1 = -np.einsum('bmie,ej->mbij',H2A['voov'],cc_t['r1a'][iroot],optimize=True)
+        I1 += np.einsum('nmie,bejm->nbij',H2A['ooov'],cc_t['r2a'][iroot],optimize=True)
+        I1 += np.einsum('nmie,bejm->nbij',H2B['ooov'],cc_t['r2b'][iroot],optimize=True)
+        I1 -= np.transpose(I1,(0,1,3,2))
+        I2 = -1.0*np.einsum('nmij,bm->nbij',H2A['oooo'],cc_t['r1a'][iroot],optimize=True)
+        I2 += 0.5*np.einsum('bmfe,efij->mbij',H2A['vovv'],cc_t['r2a'][iroot],optimize=True)
+        chi2A_ovoo = I1 + I2
+        I2A_vvov = H2A['vvov']+np.einsum('me,abim->abie',H1A['ov'],cc_t['t2a'],optimize=True)
+        dA_AAA, dB_AAA, dC_AAA, dD_AAA = crcc_loops.creomcc23a_opt(omega[iroot],cc_t['r0'][iroot],\
+                        cc_t['t2a'],cc_t['r2a'][iroot],cc_t['l1a'][iroot+1],cc_t['l2a'][iroot+1],\
+                        H2A['vooo'],I2A_vvov,H2A['vvov'],chi2A_vvvo,chi2A_ovoo,ints['vA']['oovv'],H1A['ov'],\
+                        H2A['vovv'],H2A['ooov'],fA['oo'],fA['vv'],\
+                        H1A['oo'],H1A['vv'],H2A['voov'],H2A['oooo'],H2A['vvvv'],D3A['O'],D3A['V'],\
+                        sys['Nocc_a'],sys['Nunocc_a'])
 
-        EOMMM23A = build_EOM_MM23A(cc_t,H2A,H2B,iroot,sys)
-        L3A = build_L3A(cc_t,H1A,H2A,ints,sys,iroot=iroot+1)
-        dA_AAA, dB_AAA, dC_AAA, dD_AAA = crcc_loops.crcc23a(EOMMM23A+r0*MM23A,L3A,omega[iroot],fA['oo'],fA['vv'],\
-                    H1A['oo'],H1A['vv'],H2A['voov'],H2A['oooo'],H2A['vvvv'],D3A['O'],D3A['V'],\
-                    sys['Nocc_a'],sys['Nunocc_a'])
+        Q1 = np.einsum('mnef,fn->me',H2A['oovv'],cc_t['r1a'][iroot],optimize=True)\
+                        +np.einsum('mnef,fn->me',H2B['oovv'],cc_t['r1b'][iroot],optimize=True)
+        Q2 = np.einsum('nmfe,fn->me',H2B['oovv'],cc_t['r1a'][iroot],optimize=True)\
+                        +np.einsum('nmfe,fn->me',H2C['oovv'],cc_t['r1b'][iroot],optimize=True)
+        # Intermediate 1: X2B(bcek)*Y2A(aeij) -> Z3B(abcijk)
+        Int1 = -1.0*np.einsum('mcek,bm->bcek',H2B['ovvo'],cc_t['r1a'][iroot],optimize=True)
+        Int1 -= np.einsum('bmek,cm->bcek',H2B['vovo'],cc_t['r1b'][iroot],optimize=True)
+        Int1 += np.einsum('bcfe,ek->bcfk',H2B['vvvv'],cc_t['r1b'][iroot],optimize=True)
+        Int1 += np.einsum('mnek,bcmn->bcek',H2B['oovo'],cc_t['r2b'][iroot],optimize=True)
+        Int1 += np.einsum('bmfe,ecmk->bcfk',H2A['vovv'],cc_t['r2b'][iroot],optimize=True)
+        Int1 += np.einsum('bmfe,ecmk->bcfk',H2B['vovv'],cc_t['r2c'][iroot],optimize=True)
+        Int1 -= np.einsum('mcfe,bemk->bcfk',H2B['ovvv'],cc_t['r2b'][iroot],optimize=True)
+        # Intermediate 2: X2B(ncjk)*Y2A(abin) -> Z3B(abcijk)
+        Int2 = -1.0*np.einsum('nmjk,cm->ncjk',H2B['oooo'],cc_t['r1b'][iroot],optimize=True)
+        Int2 += np.einsum('mcje,ek->mcjk',H2B['ovov'],cc_t['r1b'][iroot],optimize=True)
+        Int2 += np.einsum('mcek,ej->mcjk',H2B['ovvo'],cc_t['r1a'][iroot],optimize=True)
+        Int2 += np.einsum('mcef,efjk->mcjk',H2B['ovvv'],cc_t['r2b'][iroot],optimize=True)
+        Int2 += np.einsum('nmje,ecmk->ncjk',H2A['ooov'],cc_t['r2b'][iroot],optimize=True)
+        Int2 += np.einsum('nmje,ecmk->ncjk',H2B['ooov'],cc_t['r2c'][iroot],optimize=True)
+        Int2 -= np.einsum('nmek,ecjm->ncjk',H2B['oovo'],cc_t['r2b'][iroot],optimize=True)
+        # Intermediate 3: X2A(abej)*Y2B(ecik) -> Z3B(abcijk)
+        Int3 = np.einsum('amje,bm->abej',H2A['voov'],cc_t['r1a'][iroot],optimize=True) #(*) flipped sign to use H2A(voov) instead of H2A(vovo)
+        Int3 += 0.5*np.einsum('abfe,ej->abfj',H2A['vvvv'],cc_t['r1a'][iroot],optimize=True) #(*) added factor 1/2 to compensate A(ab)
+        Int3 += 0.25*np.einsum('nmje,abmn->abej',H2A['ooov'],cc_t['r2a'][iroot],optimize=True) #(*) added factor 1/2 to compensate A(ab)
+        Int3 += np.einsum('amfe,bejm->abfj',H2A['vovv'],cc_t['r2a'][iroot],optimize=True)
+        Int3 += np.einsum('amfe,bejm->abfj',H2B['vovv'],cc_t['r2b'][iroot],optimize=True)
+        Int3 -= 0.5*np.einsum('me,abmj->abej',Q1,cc_t['t2a'],optimize=True) #(*) added factor 1/2 to compensate A(ab)
+        Int3 -= np.transpose(Int3,(1,0,2,3))
+        # Intermediate 4: X2A(bnji)*Y2B(acnk) -> Z3B(abcijk)
+        Int4 = -0.5*np.einsum('nmij,bm->bnji',H2A['oooo'],cc_t['r1a'][iroot],optimize=True) #(*) added factor 1/2 to compenate A(ij)
+        Int4 -= np.einsum('bmie,ej->bmji',H2A['voov'],cc_t['r1a'][iroot],optimize=True) #(*) flipped sign to use H2A(voov) instead of H2A(vovo)
+        Int4 += 0.25*np.einsum('bmfe,efij->bmji',H2A['vovv'],cc_t['r2a'][iroot],optimize=True) #(*) added factor 1/2 to compensate A(ij)
+        Int4 += np.einsum('nmie,bejm->bnji',H2A['ooov'],cc_t['r2a'][iroot],optimize=True)
+        Int4 += np.einsum('nmie,bejm->bnji',H2B['ooov'],cc_t['r2b'][iroot],optimize=True)
+        Int4 += 0.5*np.einsum('me,ebij->bmji',Q1,cc_t['t2a'],optimize=True) # (*) added factor 1/2 to compensate A(ij)
+        Int4 -= np.transpose(Int4,(0,1,3,2))
+        # Intermediate 5: X2B(bcje)*Y2B(aeik) -> Z3B(abcijk)
+        Int5 = -1.0*np.einsum('mcje,bm->bcje',H2B['ovov'],cc_t['r1a'][iroot],optimize=True)
+        Int5 -= np.einsum('bmje,cm->bcje',H2B['voov'],cc_t['r1b'][iroot],optimize=True)
+        Int5 += np.einsum('bcef,ej->bcjf',H2B['vvvv'],cc_t['r1a'][iroot],optimize=True)
+        Int5 += np.einsum('mnjf,bcmn->bcjf',H2B['ooov'],cc_t['r2b'][iroot],optimize=True)
+        Int5 += np.einsum('mcef,bejm->bcjf',H2B['ovvv'],cc_t['r2a'][iroot],optimize=True)
+        Int5 += np.einsum('cmfe,bejm->bcjf',H2C['vovv'],cc_t['r2b'][iroot],optimize=True)
+        Int5 -= np.einsum('bmef,ecjm->bcjf',H2B['vovv'],cc_t['r2b'][iroot],optimize=True)
+        # Intermediate 6: X2B(bnjk)*Y2B(acin) -> Z3B(abcijk)
+        Int6 = -1.0*np.einsum('mnjk,bm->bnjk',H2B['oooo'],cc_t['r1a'][iroot],optimize=True)
+        Int6 += np.einsum('bmje,ek->bmjk',H2B['voov'],cc_t['r1b'][iroot],optimize=True)
+        Int6 += np.einsum('bmek,ej->bmjk',H2B['vovo'],cc_t['r1a'][iroot],optimize=True)
+        Int6 += np.einsum('bnef,efjk->bnjk',H2B['vovv'],cc_t['r2b'][iroot],optimize=True)
+        Int6 += np.einsum('mnek,bejm->bnjk',H2B['oovo'],cc_t['r2a'][iroot],optimize=True)
+        Int6 += np.einsum('nmke,bejm->bnjk',H2C['ooov'],cc_t['r2b'][iroot],optimize=True)
+        Int6 -= np.einsum('nmje,benk->bmjk',H2B['ooov'],cc_t['r2b'][iroot],optimize=True)
+        Int6 += np.einsum('me,bejk->bmjk',Q2,cc_t['t2b'],optimize=True)
 
-        EOMMM23B = build_EOM_MM23B(cc_t,H2A,H2B,H2C,iroot,sys)
-        L3B = build_L3B(cc_t,H1A,H1B,H2A,H2B,ints,sys,iroot=iroot+1)
-        dA_AAB, dB_AAB, dC_AAB, dD_AAB = crcc_loops.crcc23b(EOMMM23B+r0*MM23B,L3B,omega[iroot],fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
-                    H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],H2A['voov'],H2A['oooo'],H2A['vvvv'],\
-                    H2B['ovov'],H2B['vovo'],H2B['oooo'],H2B['vvvv'],H2C['voov'],\
-                    D3A['O'],D3A['V'],D3B['O'],D3B['V'],D3C['O'],D3C['V'],\
-                    sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'])
+        I2B_ovoo = H2B['ovoo'] - np.einsum('me,ecjk->mcjk',H1A['ov'],t2b,optimize=True) 
+        I2B_vooo = H2B['vooo'] - np.einsum('me,aeik->amik',H1B['ov'],t2b,optimize=True) 
+        I2A_vooo = H2A['vooo'] - np.einsum('me,aeij->amij',H1A['ov'],t2a,optimize=True) 
+        dA_AAB, dB_AAB, dC_AAB, dD_AAB = crcc_loops.creomcc23b_opt(omega[iroot],cc_t['r0'][iroot],\
+                        cc_t['t2a'],cc_t['t2b'],cc_t['r2a'][iroot],cc_t['r2b'][iroot],\
+                        cc_t['l1a'][iroot+1],cc_t['l1b'][iroot+1],cc_t['l2a'][iroot+1],cc_t['l2b'][iroot+1],\
+                        I2B_ovoo,I2B_vooo,I2A_vooo,\
+                        H2B['vvvo'],H2B['vvov'],H2A['vvov'],\
+                        H2B['vovv'],H2B['ovvv'],H2A['vovv'],\
+                        H2B['ooov'],H2B['oovo'],H2A['ooov'],\
+                        Int1,Int2,Int3,Int4,Int5,Int6,\
+                        H2B['ovoo'],H2A['vooo'],H2B['vooo'],\
+                        H1A['ov'],H1B['ov'],ints['vA']['oovv'],ints['vB']['oovv'],\
+                        fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
+                        H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],H2A['voov'],H2A['oooo'],H2A['vvvv'],\
+                        H2B['ovov'],H2B['vovo'],H2B['oooo'],H2B['vvvv'],H2C['voov'],\
+                        D3A['O'],D3A['V'],D3B['O'],D3B['V'],D3C['O'],D3C['V'],\
+                        sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'])
+
+        #MM23B = build_MM23B(cc_t,H1A,H1B,H2A,H2B,sys)
+        #EOMMM23B = build_EOM_MM23B(cc_t,H2A,H2B,H2C,iroot,sys)
+        #L3B = build_L3B(cc_t,H1A,H1B,H2A,H2B,ints,sys,iroot=iroot+1)
+        #dA_AAB, dB_AAB, dC_AAB, dD_AAB = crcc_loops.crcc23b(EOMMM23B+cc_t['r0'][iroot]*MM23B,L3B,omega[iroot],fA['oo'],fA['vv'],fB['oo'],fB['vv'],\
+        #            H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],H2A['voov'],H2A['oooo'],H2A['vvvv'],\
+        #            H2B['ovov'],H2B['vovo'],H2B['oooo'],H2B['vvvv'],H2C['voov'],\
+        #            D3A['O'],D3A['V'],D3B['O'],D3B['V'],D3C['O'],D3C['V'],\
+        #            sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'])
 
 
         #if flag_RHF:
