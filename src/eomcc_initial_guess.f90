@@ -194,7 +194,7 @@ module eomcc_initial_guess
                         real(kind=8), intent(in) :: CIvec(ndim_act)
 
                         real(kind=8), intent(out) :: r1a(nua,noa), r1b(nub,nob),&
-                        r2a(nua,nua,nob,nob), r2b(nua,nub,noa,nob), r2c(nub,nub,nob,nob)
+                        r2a(nua,nua,noa,noa), r2b(nua,nub,noa,nob), r2c(nub,nub,nob,nob)
 
                         integer :: i, j, a, b, ct
 

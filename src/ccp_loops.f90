@@ -1,136 +1,28 @@
 module ccp_loops
 
-      USE OMP_LIB
+!      USE OMP_LIB
+!      USE MKL_SERVICE
 
       implicit none
-
-      integer, parameter :: omp_num_threads = 8
-      integer, parameter :: mkl_num_threads = 4
 
 
       contains
 
-              subroutine initialize_t3(idx3a,idx3b,idx3c,idx3d,&
-                              num_ijk_3a,num_ijk_3b,num_ijk_3c,num_ijk_3d,&
-                              noa,nua,nob,nub)
-
-                 integer, intent(in) :: noa, nua, nob, nub
-                 integer, intent(out) :: idx3a(noa,noa,noa), idx3b(noa,noa,nob),&
-                 idx3c(noa,nob,nob), idx3d(nob,nob,nob), num_ijk_3a, num_ijk_3b,&
-                 num_ijk_3c, num_ijk_3d
-
-                 integer :: i, j, k
-                 integer, parameter :: t3a_io = 100, t3b_io = 101, t3c_io = 102, t3d_io = 103
-                 real(kind=8), allocatable :: temp(:,:,:)
-
-                 num_ijk_3a = 0
-                 do i = 1,noa
-                    do j = i+1,noa
-                       do k = j+1,noa
-                          num_ijk_3a = num_ijk_3a + 1
-                       end do
-                    end do
-                 end do
-                 num_ijk_3b = 0
-                 do i = 1,noa
-                    do j = i+1,noa
-                       do k = 1,nob
-                          num_ijk_3b = num_ijk_3b + 1
-                       end do
-                    end do
-                 end do
-                 num_ijk_3c = 0
-                 do i = 1,noa
-                    do j = 1,nob
-                       do k = j+1,nob
-                          num_ijk_3c = num_ijk_3c + 1
-                       end do
-                    end do
-                 end do
-                 num_ijk_3d = 0
-                 do i = 1,nob
-                    do j = i+1,nob
-                       do k = j+1,nob
-                          num_ijk_3d = num_ijk_3d + 1
-                       end do
-                    end do
-                 end do
-
-                 allocate(temp(nua,nua,nua))
-                 open(t3a_io,file='t3a.bin',access='sequential',form='unformatted',status='new',recl=num_ijk_3a)
-                 ct = 1
-                 do i = 1,noa
-                    do j = i+1,noa
-                       do k = j+1,noa
-                          write(t3a_io,temp,rec=ct)
-                          idx3a(i,j,k) = ct
-                          ct = ct + 1
-                       end do
-                    end do
-                 end do
-                 close(t3a_io)
-                 deallocate(temp)
-
-                 allocate(temp(nua,nua,nub))
-                 open(t3b_io,file='t3b.bin',access='sequential',form='unformatted',status='new',recl=num_ijk_3b)
-                 ct = 1
-                 do i = 1,noa
-                    do j = i+1,noa
-                       do k = 1,nob
-                          write(t3b_io,temp,rec=ct)
-                          idx3b(i,j,k) = ct
-                          ct = ct + 1
-                       end do
-                    end do
-                 end do
-                 close(t3b_io)
-                 deallocate(temp)
-
-                 allocate(temp(nua,nub,nub))
-                 open(t3c_io,file='t3c.bin',access='sequential',form='unformatted',status='new',recl=num_ijk_3c)
-                 ct = 1
-                 do i = 1,noa
-                    do j = 1,nob
-                       do k = j+1,nob
-                          write(t3c_io,temp,rec=ct)
-                          idx3c(i,j,k) = ct
-                          ct = ct + 1
-                       end do
-                    end do
-                 end do
-                 close(t3c_io)
-                 deallocate(temp)
-
-                 allocate(temp(nub,nub,nub))
-                 open(t3d_io,file='t3d.bin',access='sequential',form='unformatted',status='new',recl=num_ijk_3d)
-                 ct = 1
-                 do i = 1,nob
-                    do j = i+1,nob
-                       do k = j+1,nob
-                          write(t3c_io,temp,rec=ct)
-                          idx3d(i,j,k) = ct
-                          ct = ct + 1
-                       end do
-                    end do
-                 end do
-                 close(t3d_io)
-                 deallocate(temp)
-
-              end subroutine initialize_t3
-
-              subroutine update_t3a(t2a,idx3a,idx3b,&
-                         nocc_3a, nocc_3b,&
+              subroutine update_t3a(t2a,t3a,t3b,&
+                         triples_list,&
                          vA_oovv,vB_oovv,&
                          H1A_oo,H1A_vv,H2A_oooo,&
                          H2A_vvvv,H2A_voov,H2B_voov,&
                          H2A_vooo,I2A_vvov,&
                          fA_oo,fA_vv,shift,&
-                         noa,nua,nob,nub,num_triples)
+                         noa,nua,nob,nub,num_triples,t3a_new)
 
-                 integer, intent(in) :: noa, nua, nob, nub
-                 integer, intent(in) :: idx3a(noa,noa,noa), idx3b(noa,noa,nob), nocc_3a, nocc_3b
+                 integer, intent(in) :: noa, nua, nob, nub, num_triples
                  real(kind=8), intent(in) :: shift
+                 integer, intent(in) :: triples_list(num_triples,6)
                  real(kind=8), intent(in) :: t2a(nua,nua,noa,noa),&
+                                             t3a(nua,nua,nua,noa,noa,noa),&
+                                             t3b(nua,nua,nub,noa,noa,nob),&
                                              vA_oovv(noa,noa,nua,nua),&
                                              vB_oovv(noa,nob,nua,nub),&
                                              H1A_oo(noa,noa),H1A_vv(nua,nua),&
@@ -142,7 +34,11 @@ module ccp_loops
                                              I2A_vvov(nua,nua,noa,nua),&
                                              fA_oo(noa,noa),fA_vv(nua,nua)
 
-                integer :: a, b, c, i, j, k
+                real(kind=8), intent(out) :: t3a_new(nua,nua,nua,noa,noa,noa)
+
+                integer :: a, b, c, i, j, k, ct,&
+                           noa2, nua2, noaua, noanua2, nuanobnub,&
+                           noanobnub, noa2nua, nobub
                 real(kind=8) :: m1, m2, d1, d2, d3, d4, d5, d6,&
                                 residual, denom, val, mval
                 real(kind=8) :: vt3_oa(noa), vt3_ua(nua),&
@@ -154,48 +50,43 @@ module ccp_loops
                                 vB_oovv_r2(nub,noa,nob,nua),&
                                 temp1(noa), temp2(noa),&
                                 temp3(nua), temp4(nua)
-                real(kind=8), allocatable :: t3a(:,:,:), t3b(:,:,:), t3c(:,:,:), t3d(:,:,:)
 
 
-                integer, parameter :: t3a_io = 100, t3b_io = 101
                 real(kind=8), parameter :: MINUSONE=-1.0d+0, HALF=0.5d+0, ZERO=0.0d+0, ONE=1.0d+0
+    
                 real(kind=8), external :: ddot
 
-                integer :: m, n, e ,f
-                real(kind=8) :: error(8), refval
+                !integer :: m, n, e ,f
+                !real(kind=8) :: error(8), refval
                 
-                !call mkl_set_num_threads_local(mkl_num_threads)
-                !call omp_set_num_threads(omp_num_threads)
+                !call mkl_set_num_threads_local(1)
+                !call omp_set_num_threads(16)
 
-                do i = 1,8
-                    error(i) = ZERO
-                end do
+                noa2 = noa**2
+                nua2 = nua**2
+                noaua = noa*nua
+                nobub = nob*nub
+                noanua2 = noa*nua2
+                nuanobnub = nua*nob*nub
+                noa2nua = noa2*nua
+                noanobnub = noa*nob*nub
 
-                open(t3a_io,file='t3a.bin',access='sequential',status='old',recl=nocc_3a)
-                allocate(t3a(nua,nua,nua))
-                do i = 1,noa
-                   do j = i+1,noa
-                      do k = j+1,noa
-                         ! Diagram 1: -A(i/jk)A(a/bc) h1a(mi)t3a(abcmjk)
-                         do m = 1,noa
-                            read(t3a_io,rec=idx3a(m,j,k)) t3a
-                            call dgemm('t','n',
-                        
-                         do a = 1,nua
-                            do b = a+1,nua
-                               do c = b+1,nua
-    
-                               end do
-                            end do
-                         end do
-                      end do
-                    end do
-                 end do
+                call reorder1432(H2A_voov,H2A_voov_r)
+                call reorder1432(H2B_voov,H2B_voov_r)
+                call reorder3421(vA_oovv,vA_oovv_r1)
+                call reorder4123(vA_oovv,vA_oovv_r2)
+                call reorder3421(vB_oovv,vB_oovv_r1)
+                call reorder4123(vB_oovv,vB_oovv_r2)
 
-    
+                !do i = 1,8
+                !    error(i) = ZERO
+                !end do
 
-                !!!!!!!!!!!!
+                t3a_new = 0.0d0
 
+                !!!$OMP PARALLEL SHARED(t3a_new)
+                !!!$OMP DO
+                do ct = 1 , num_triples
            
                    ! Shift indices up by since the triples list is coming from
                    ! Python, where indices start from 0       
@@ -540,8 +431,8 @@ module ccp_loops
                    t3a_new(C,A,B,K,J,I) = mval
 
                 end do
-                !$OMP END DO
-                !$OMP END PARALLEL
+                !!!$OMP END DO
+                !!!$OMP END PARALLEL
 
                 !do i = 1,8
                 !   print*,'Error in term',i,'=',error(i)
@@ -635,8 +526,8 @@ module ccp_loops
                 !integer :: m, n, e, f
                 !real(kind=8) :: error(20), refval
 
-                call mkl_set_num_threads_local(mkl_num_threads)
-                call omp_set_num_threads(omp_num_threads)
+                call mkl_set_num_threads_local(1)
+                call omp_set_num_threads(16)
 
                 Noo_aa = noa*noa
                 Noo_ab = noa*nob
@@ -676,8 +567,8 @@ module ccp_loops
 
                 t3b_new = 0.0d0
 
-                !$OMP PARALLEL SHARED(t3b_new)
-                !$OMP DO
+                !!!$OMP PARALLEL SHARED(t3b_new)
+                !!!$OMP DO
                 do ct = 1 , num_triples
             
                    ! Shift indices up by since the triples list is coming from
@@ -1087,8 +978,8 @@ module ccp_loops
                    t3b_new(b,a,c,j,i,k) = val
 
                end do
-               !$OMP END DO
-               !$OMP END PARALLEL
+               !!!$OMP END DO
+               !!!$OMP END PARALLEL
 
                !do i = 1,20
                !   print*,'Error in term',i,'=',error(i)
@@ -1188,8 +1079,8 @@ module ccp_loops
                 !integer :: m, n, e, f
                 !real(kind=8) :: error(20), refval
 
-                call mkl_set_num_threads_local(mkl_num_threads)
-                call omp_set_num_threads(omp_num_threads)
+                call mkl_set_num_threads_local(1)
+                call omp_set_num_threads(16)
 
                 Noo_aa = noa*noa
                 Noo_ab = noa*nob
@@ -1233,8 +1124,8 @@ module ccp_loops
 
                 t3c_new = 0.0d0
 
-                !$OMP PARALLEL SHARED(t3c_new)
-                !$OMP DO
+                !!!$OMP PARALLEL SHARED(t3c_new)
+                !!!$OMP DO
                 do ct = 1 , num_triples
                    
                    ! Shift indices up by 1 since the triples list is coming from
@@ -1648,8 +1539,8 @@ module ccp_loops
                    t3c_new(a,c,b,i,k,j) = val
 
                 end do
-                !$OMP END DO
-                !$OMP END PARALLEL
+                !!!$OMP END DO
+                !!!$OMP END PARALLEL
 
                 !do i = 1,20
                 !   print*,'Error in term',i,'=',error(i)
@@ -1708,8 +1599,8 @@ module ccp_loops
                 !integer :: m, n, e, f
                 !real(kind=8) :: refval ,error(8)
 
-                call mkl_set_num_threads_local(mkl_num_threads)
-                call omp_set_num_threads(omp_num_threads)
+                call mkl_set_num_threads_local(1)
+                call omp_set_num_threads(16)
 
                 Nov_aa = noa*nua
                 Noo_bb = nob*nob
@@ -1733,8 +1624,8 @@ module ccp_loops
 
                 t3d_new = 0.0d0
 
-                !$OMP PARALLEL SHARED(t3d_new)
-                !$OMP DO
+                !!!$OMP PARALLEL SHARED(t3d_new)
+                !!!$OMP DO
                 do ct = 1 , num_triples
             
                    ! Shift indices up by since the triples list is coming from
@@ -2081,8 +1972,8 @@ module ccp_loops
                    t3d_new(C,A,B,K,J,I) = mval
 
                 end do
-                !$OMP END DO
-                !$OMP END PARALLEL
+                !!!$OMP END DO
+                !!!$OMP END PARALLEL
 
                 !do i = 1,8
                 !   print*,'Error in term',i,'=',error(i)

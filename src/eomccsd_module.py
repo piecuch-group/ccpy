@@ -97,14 +97,28 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,
         Cvec = Cvec[:,idx]
 
         # locate only singlet roots
-        ct = 0
-        slice_1A = slice(0,n1a_act)
-        slice_1B = slice(n1a_act,n1a_act+n1b_act)
-        for i in range(len(omega_eomccsd)):
-            chk = np.linalg.norm(Cvec[slice_1A,i] - Cvec[slice_1B,i])
-            #print(np.linalg.norm(Cvec[slice_1A,i]))
-            #print(np.linalg.norm(Cvec[slice_1B,i]))
-            if abs(chk) < 1.0e-01:
+        if sys['Nocc_a'] == sys['Nocc_b']: # if closed shell
+            ct = 0
+            slice_1A = slice(0,n1a_act)
+            slice_1B = slice(n1a_act,n1a_act+n1b_act)
+            for i in range(len(omega_eomccsd)):
+                chk = np.linalg.norm(Cvec[slice_1A,i] - Cvec[slice_1B,i])
+                if abs(chk) < 1.0e-01:
+                    r1a,r1b,r2a,r2b,r2c = eomcc_initial_guess.eomcc_initial_guess.\
+                                unflatten_guess_vector(Cvec[:,i],idx1A,idx1B,idx2A,idx2B,idx2C,\
+                                n1a_act,n1b_act,n2a_act,n2b_act,n2c_act)
+                    B0[:,nct] = flatten_R(r1a,r1b,r2a,r2b,r2c)
+                    E0[nct] = omega_eomccsd[i]
+                    root_sym[nct] = state_irrep
+                    nct += 1
+                    ct += 1
+                    if ct == num_root_sym:
+                        break
+            else:
+                print('Could not find {} singlet roots of {} symmetry in EOMCCSd guess!'.format(num_root_sym,state_irrep)) 
+        else: # open shell
+            ct = 0
+            for i in range(len(omega_eomccsd)):
                 r1a,r1b,r2a,r2b,r2c = eomcc_initial_guess.eomcc_initial_guess.\
                                 unflatten_guess_vector(Cvec[:,i],idx1A,idx1B,idx2A,idx2B,idx2C,\
                                 n1a_act,n1b_act,n2a_act,n2b_act,n2c_act)
@@ -115,9 +129,6 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,
                 ct += 1
                 if ct == num_root_sym:
                     break
-        else:
-            print('Could not find {} singlet roots of {} symmetry in EOMCCSd guess!'.format(num_root_sym,state_irrep)) 
-
     print('Initial EOMCCSd energies:')
     for i in range(num_roots_total):
         print('Root - {}  (Sym: {})     E = {:.10f}    ({:.10f})'.format(i+1,root_sym[i],E0[i],E0[i]+ints['Escf']))
