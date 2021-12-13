@@ -4,6 +4,8 @@ module crcc_loops
 
       contains
 
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OPTIMIZED CR-CC(2,3) ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
               subroutine crcc23A_opt(deltaA,deltaB,deltaC,deltaD,&
                               t2a,l1a,l2a,&
                               H2A_vooo,I2A_vvov,vA_oovv,H1A_ov,H2A_vovv,H2A_ooov,fA_oo,fA_vv,&
@@ -23,7 +25,7 @@ module crcc_loops
                         H2A_vooo(nua,noa,noa,noa),I2A_vvov(nua,nua,noa,nua),t2a(nua,nua,noa,noa),&
                         l1a(nua,noa),l2a(nua,nua,noa,noa),vA_oovv(noa,noa,nua,nua),&
                         H1A_ov(noa,nua),H2A_vovv(nua,noa,nua,nua),H2A_ooov(noa,noa,noa,nua)
-                        integer :: i, j, k, a, b, c, nua2, i1, i2, i3, i4
+                        integer :: i, j, k, a, b, c, nua2
                         real(kind=8) :: D, temp1, temp2, temp3, LM, X3A(nua,nua,nua), L3A(nua,nua,nua)
 
                         ! reordered arrays for DGEMMs
@@ -183,7 +185,7 @@ module crcc_loops
                         D3B_V(1:nua,1:noa,1:nub),&
                         D3C_O(1:nub,1:noa,1:nob),&
                         D3C_V(1:nua,1:nob,1:nub)
-                        integer :: i, j, k, a, b, c, i1, i2, i3, i4, nuanub, nua2
+                        integer :: i, j, k, a, b, c, nuanub, nua2
                         real(kind=8) :: D, temp1, temp2, temp3, LM, X3B(nua,nua,nub), L3B(nua,nua,nub)
 
                         ! arrays for reordering 
@@ -360,7 +362,7 @@ module crcc_loops
                         D3C_V(1:nua,1:nob,1:nub),&
                         D3D_O(1:nub,1:nob,1:nob),&
                         D3D_V(1:nub,1:nob,1:nub)
-                        integer :: i, j, k, a, b, c, i1, i2, i3, i4, nuanub, nub2
+                        integer :: i, j, k, a, b, c, nuanub, nub2
                         real(kind=8) :: D, LM, temp1, temp2, temp3, X3C(nua,nub,nub), L3C(nua,nub,nub)
 
                         ! arrays for reordering
@@ -683,19 +685,19 @@ module crcc_loops
                                    Y3A = 0.0d0
                                    L3A = 0.0d0
                                    !!!!! EOMMM(2,3)A !!!!!
-                                   ! Diagram 1: A(j/ik)A(c/ab) chi2A_vvvo(a,b,e,j)*t2a(e,c,i,k)
+                                   ! Diagram 1a: A(j/ik)A(c/ab) chi2A_vvvo(a,b,e,j)*t2a(e,c,i,k)
                                    call dgemm('n','n',nua2,nua,nua,0.5d0,chi2A_vvvo(:,:,:,j),nua2,t2a(:,:,i,k),nua,1.0d0,Y3A,nua2)
                                    call dgemm('n','n',nua2,nua,nua,-0.5d0,chi2A_vvvo(:,:,:,k),nua2,t2a(:,:,i,j),nua,1.0d0,Y3A,nua2)
                                    call dgemm('n','n',nua2,nua,nua,-0.5d0,chi2A_vvvo(:,:,:,i),nua2,t2a(:,:,j,k),nua,1.0d0,Y3A,nua2)
-                                   ! Diagram 2: A(j/ik)A(c/ab) H2A_vvov(b,a,j,e)*r2a(e,c,i,k)
+                                   ! Diagram 1b: A(j/ik)A(c/ab) H2A_vvov(b,a,j,e)*r2a(e,c,i,k)
                                    call dgemm('n','n',nua2,nua,nua,0.5d0,H2A_vvov_2143(:,:,:,j),nua2,r2a(:,:,i,k),nua,1.0d0,Y3A,nua2)
                                    call dgemm('n','n',nua2,nua,nua,-0.5d0,H2A_vvov_2143(:,:,:,k),nua2,r2a(:,:,i,j),nua,1.0d0,Y3A,nua2)
                                    call dgemm('n','n',nua2,nua,nua,-0.5d0,H2A_vvov_2143(:,:,:,i),nua2,r2a(:,:,j,k),nua,1.0d0,Y3A,nua2)
-                                   ! Diagram 3: -A(k/ij)A(b/ac) chi2A_ovoo(m,b,i,j)*t2a(a,c,m,k)
+                                   ! Diagram 2a: -A(k/ij)A(b/ac) chi2A_ovoo(m,b,i,j)*t2a(a,c,m,k)
                                    call dgemm('n','n',nua2,nua,noa,-0.5d0,t2a(:,:,:,j),nua2,chi2A_ovoo(:,:,i,k),noa,1.0d0,Y3A,nua2)
                                    call dgemm('n','n',nua2,nua,noa,0.5d0,t2a(:,:,:,i),nua2,chi2A_ovoo(:,:,j,k),noa,1.0d0,Y3A,nua2)
                                    call dgemm('n','n',nua2,nua,noa,0.5d0,t2a(:,:,:,k),nua2,chi2A_ovoo(:,:,i,j),noa,1.0d0,Y3A,nua2)
-                                   ! Diagram 4: -A(k/ij)A(b/ac) H2A_vooo(b,m,j,i)*r2a(a,c,m,k)
+                                   ! Diagram 2b: -A(k/ij)A(b/ac) H2A_vooo(b,m,j,i)*r2a(a,c,m,k)
                                    call dgemm('n','n',nua2,nua,noa,-0.5d0,r2a(:,:,:,j),nua2,H2A_vooo_2143(:,:,i,k),noa,1.0d0,Y3A,nua2)
                                    call dgemm('n','n',nua2,nua,noa,0.5d0,r2a(:,:,:,i),nua2,H2A_vooo_2143(:,:,j,k),noa,1.0d0,Y3A,nua2)
                                    call dgemm('n','n',nua2,nua,noa,0.5d0,r2a(:,:,:,k),nua2,H2A_vooo_2143(:,:,i,j),noa,1.0d0,Y3A,nua2)
@@ -895,38 +897,39 @@ module crcc_loops
                                 L3B = 0.0d0
                                 Y3B = 0.0d0
                                 !!!!! EOMMM(2,3)B !!!!!
-                                ! Diagram 1: A(ab) chi2B_vvvo(b,c,e,k)*t2a(a,e,i,j)
+                                ! Diagram 1a: A(ab) chi2B_vvvo(b,c,e,k)*t2a(a,e,i,j)
                                 call dgemm('n','t',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,chi2B_vvvo(:,:,:,k),nuanub,1.0d0,Y3B,nua)
-                                ! Diagram 2: A(ab) H2B_vvvo(b,c,e,k)*r2a(a,e,i,j)
+                                ! Diagram 1b: A(ab) H2B_vvvo(b,c,e,k)*r2a(a,e,i,j)
                                 call dgemm('n','t',nua,nuanub,nua,1.0d0,r2a(:,:,i,j),nua,H2B_vvvo(:,:,:,k),nuanub,1.0d0,Y3B,nua)
-                                ! Diagram 3: -A(ij) chi2B_ovoo(n,c,j,k)*t2a(a,b,i,n)
+                                ! Diagram 2a: -A(ij) chi2B_ovoo(n,c,j,k)*t2a(a,b,i,n)
                                 call dgemm('n','n',nua2,nub,noa,0.5d0,t2a(:,:,:,i),nua2,chi2B_ovoo(:,:,j,k),noa,1.0d0,Y3B,nua2)
                                 call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a(:,:,:,j),nua2,chi2B_ovoo(:,:,i,k),noa,1.0d0,Y3B,nua2)
-                                ! Diagram 4: -A(ij) H2B_ovoo(n,c,j,k)*r2a(a,b,i,n)
+                                ! Diagram 2b: -A(ij) H2B_ovoo(n,c,j,k)*r2a(a,b,i,n)
                                 call dgemm('n','n',nua2,nub,noa,0.5d0,r2a(:,:,:,i),nua2,H2B_ovoo(:,:,j,k),noa,1.0d0,Y3B,nua2)
                                 call dgemm('n','n',nua2,nub,noa,-0.5d0,r2a(:,:,:,j),nua2,H2B_ovoo(:,:,i,k),noa,1.0d0,Y3B,nua2)
-                                ! Diagram 5: A(ij) chi2A_vvvo(a,b,e,j)*t2b(e,c,i,k)
+                                ! Diagram 3a: A(ij) chi2A_vvvo(a,b,e,j)*t2b(e,c,i,k)
                                 call dgemm('n','n',nua2,nub,nua,0.5d0,chi2A_vvvo(:,:,:,j),nua2,t2b(:,:,i,k),nua,1.0d0,Y3B,nua2)
                                 call dgemm('n','n',nua2,nub,nua,-0.5d0,chi2A_vvvo(:,:,:,i),nua2,t2b(:,:,j,k),nua,1.0d0,Y3B,nua2)
-                                ! Diagram 6: A(ij) H2A_vvov(b,a,j,e)*r2b(e,c,i,k)
+                                ! Diagram 3b: A(ij) H2A_vvov(b,a,j,e)*r2b(e,c,i,k)
                                 call dgemm('n','n',nua2,nub,nua,0.5d0,H2A_vvov_2143(:,:,:,j),nua2,r2b(:,:,i,k),nua,1.0d0,Y3B,nua2)
                                 call dgemm('n','n',nua2,nub,nua,-0.5d0,H2A_vvov_2143(:,:,:,i),nua2,r2b(:,:,j,k),nua,1.0d0,Y3B,nua2)
-                                ! Diagram 7: -A(ab) chi2A_vooo(b,n,j,i)*t2b(a,c,n,k) -> -A(ab) chi2A_vooo(a,n,i,j)*t2b(b,c,n,k)
+                                ! Diagram 4a: -A(ab) chi2A_vooo(b,n,j,i)*t2b(a,c,n,k) -> -A(ab) chi2A_vooo(a,n,i,j)*t2b(b,c,n,k)
                                 call dgemm('n','t',nua,nuanub,noa,-1.0d0,chi2A_vooo(:,:,i,j),nua,t2b(:,:,:,k),nuanub,1.0d0,Y3B,nua)
-                                ! Diagram 8: -A(ab) H2A_vooo(b,n,j,i)*r2b(a,c,n,k)
+                                ! Diagram 4b: -A(ab) H2A_vooo(b,n,j,i)*r2b(a,c,n,k)
                                 call dgemm('n','t',nua,nuanub,noa,-1.0d0,H2A_vooo(:,:,i,j),nua,r2b(:,:,:,k),nuanub,1.0d0,Y3B,nua)
-                                ! Diagram 9: A(ij)A(ab) chi2B_vvov(b,c,j,e)*t2b(a,e,i,k)
-                                call dgemm('n','n',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,chi2B_vvov_4123(:,:,:,j),nua,1.0d0,Y3B,nua)
-                                call dgemm('n','n',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,chi2B_vvov_4123(:,:,:,i),nua,1.0d0,Y3B,nua)
-                                ! Diagram 10: A(ij)A(ab) H2B_vvov(b,c,j,e)*r2b(a,e,i,k)
-                                call dgemm('n','n',nua,nuanub,nub,1.0d0,r2b(:,:,i,k),nua,H2B_vvov_4123(:,:,:,j),nua,1.0d0,Y3B,nua)
-                                call dgemm('n','n',nua,nuanub,nub,-1.0d0,r2b(:,:,j,k),nua,H2B_vvov_4123(:,:,:,i),nua,1.0d0,Y3B,nua)
-                                ! Diagram 11: -A(ij)A(ab) chi2B_vooo(b,n,j,k)*t2b(a,c,i,n) -> -A(ij)A(ab) chi2B_vooo(a,n,i,k)*t2b(b,c,j,n)
+                                ! Diagram 5a: A(ij)A(ab) chi2B_vvov(b,c,j,e)*t2b(a,e,i,k)
+                                call dgemm('n','n',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,chi2B_vvov_4123(:,:,:,j),nub,1.0d0,Y3B,nua)
+                                call dgemm('n','n',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,chi2B_vvov_4123(:,:,:,i),nub,1.0d0,Y3B,nua)
+                                ! Diagram 5b: A(ij)A(ab) H2B_vvov(b,c,j,e)*r2b(a,e,i,k)
+                                call dgemm('n','n',nua,nuanub,nub,1.0d0,r2b(:,:,i,k),nua,H2B_vvov_4123(:,:,:,j),nub,1.0d0,Y3B,nua)
+                                call dgemm('n','n',nua,nuanub,nub,-1.0d0,r2b(:,:,j,k),nua,H2B_vvov_4123(:,:,:,i),nub,1.0d0,Y3B,nua)
+                                ! Diagram 6a: -A(ij)A(ab) chi2B_vooo(b,n,j,k)*t2b(a,c,i,n) -> -A(ij)A(ab) chi2B_vooo(a,n,i,k)*t2b(b,c,j,n)
                                 call dgemm('n','t',nua,nuanub,nob,-1.0d0,chi2B_vooo(:,:,i,k),nua,t2b_1243(:,:,:,j),nuanub,1.0d0,Y3B,nua)
                                 call dgemm('n','t',nua,nuanub,nob,1.0d0,chi2B_vooo(:,:,j,k),nua,t2b_1243(:,:,:,i),nuanub,1.0d0,Y3B,nua)
-                                ! Diagram 12: -A(ij)A(ab) H2B_vooo(b,n,j,k)*r2b(a,c,i,n)
+                                ! Diagram 6b: -A(ij)A(ab) H2B_vooo(b,n,j,k)*r2b(a,c,i,n)
                                 call dgemm('n','t',nua,nuanub,nob,-1.0d0,H2B_vooo(:,:,i,k),nua,r2b_1243(:,:,:,j),nuanub,1.0d0,Y3B,nua)
                                 call dgemm('n','t',nua,nuanub,nob,1.0d0,H2B_vooo(:,:,j,k),nua,r2b_1243(:,:,:,i),nuanub,1.0d0,Y3B,nua)
+
                                 !!!!! MM(2,3)B !!!!!
                                 ! Diagram 1: A(ab) H2B(bcek)*t2a(aeij)
                                 call dgemm('n','t',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,H2B_vvvo(:,:,:,k),nuanub,1.0d0,X3B,nua)
@@ -1021,8 +1024,414 @@ module crcc_loops
 
               end subroutine creomcc23B_opt
 
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OLD ROUTINES
-              !!!!!!!!!!!!!!!!!!!!!!
+              subroutine creomcc23C_opt(deltaA,deltaB,deltaC,deltaD,&
+                              omega,r0,&
+                              t2b,t2c,r2b,r2c,l1a,l1b,l2b,l2c,&
+                              I2B_vooo,I2C_vooo,I2B_ovoo,&
+                              H2B_vvov,H2C_vvov,H2B_vvvo,&
+                              H2B_ovvv,H2B_vovv,H2C_vovv,&
+                              H2B_oovo,H2B_ooov,H2C_ooov,&
+                              chi2B_vvov,chi2B_vooo,chi2C_vvvo,&
+                              chi2C_vooo,chi2B_vvvo,chi2B_ovoo,&
+                              H2B_vooo,H2C_vooo,H2B_ovoo,&
+                              H1A_ov,H1B_ov,&
+                              vB_oovv,vC_oovv,&
+                              fA_oo,fA_vv,fB_oo,fB_vv,&
+                              H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                              H2A_voov,&
+                              H2B_ovov,H2B_vovo,&
+                              H2B_oooo,H2B_vvvv,&
+                              H2C_voov,H2C_oooo,H2C_vvvv,&
+                              D3B_O,D3B_V,D3C_O,D3C_V,D3D_O,D3D_V,&
+                              noa,nua,nob,nub)
+                        
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        integer, intent(in) :: noa, nua, nob, nub
+                        real(kind=8), intent(in) :: t2b(nua,nub,noa,nob),&
+                        t2c(nub,nub,nob,nob),r2b(nua,nub,noa,nob),r2c(nub,nub,nob,nob),&
+                        l1a(nua,noa),l1b(nub,nob),&
+                        l2b(nua,nub,noa,nob),l2c(nub,nub,nob,nob),&
+                        I2B_vooo(nua,nob,noa,nob),I2C_vooo(nub,nob,nob,nob),&
+                        I2B_ovoo(noa,nub,noa,nob),H2B_vvov(nua,nub,noa,nub),&
+                        H2C_vvov(nub,nub,nob,nub),H2B_vvvo(nua,nub,nua,nob),&
+                        H2B_ovvv(noa,nub,nua,nub),H2B_vovv(nua,nob,nua,nub),&
+                        H2C_vovv(nub,nob,nub,nub),H2B_oovo(noa,nob,nua,nob),&
+                        H2B_ooov(noa,nob,noa,nub),H2C_ooov(nob,nob,nob,nub),&
+                        chi2B_vvov(nua,nub,noa,nub),chi2B_vooo(nua,nob,noa,nob),&
+                        chi2C_vvvo(nub,nub,nub,nob),chi2C_vooo(nub,nob,nob,nob),&
+                        chi2B_vvvo(nua,nub,nua,nob),chi2B_ovoo(noa,nub,noa,nob),&
+                        H2B_vooo(nua,nob,noa,nob),H2C_vooo(nub,nob,nob,nob),H2B_ovoo(noa,nub,noa,nob),&
+                        H1A_ov(noa,nua),H1B_ov(nob,nub),&
+                        vB_oovv(noa,nob,nua,nub),vC_oovv(nob,nob,nub,nub),& 
+                        fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
+                        fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
+                        H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
+                        H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
+                        H2A_voov(1:nua,1:noa,1:noa,1:nua),&
+                        H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
+                        H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
+                        H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
+                        H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        H2C_voov(1:nub,1:nob,1:nob,1:nub),&
+                        H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
+                        H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        D3B_O(1:nua,1:noa,1:nob),&
+                        D3B_V(1:nua,1:noa,1:nub),&
+                        D3C_O(1:nub,1:noa,1:nob),&
+                        D3C_V(1:nua,1:nob,1:nub),&
+                        D3D_O(1:nub,1:nob,1:nob),&
+                        D3D_V(1:nub,1:nob,1:nub)
+                        real(kind=8), intent(in) :: omega, r0
+
+                        integer :: i, j, k, a, b, c, nuanub, nub2
+                        real(kind=8) :: D, LM, temp1, temp2, temp3, temp4,&
+                                X3C(nua,nub,nub), L3C(nua,nub,nub), Y3C(nua,nub,nub)
+
+                        ! arrays for reordering
+                        real(kind=8) :: H2B_vvov_1243(nua,nub,nub,noa),&
+                                H2C_vvov_4213(nub,nub,nub,noa),&
+                                t2b_1243(nua,nub,nob,noa),&
+                                I2C_vooo_2134(nob,nub,nob,nob),&
+                                H2B_ovvv_3421(nua,nub,nub,noa),&
+                                H2C_vovv_1342(nub,nub,nub,nob),&
+                                H2B_vovv_3412(nua,nub,nua,nob),&
+                                H2B_oovo_3412(nua,nob,noa,nob),&
+                                H2C_ooov_3412(nob,nub,nob,nob),&
+                                l2b_1243(nua,nub,nob,noa),&
+                                H2B_ooov_3412(noa,nub,noa,nob),&
+                                chi2B_vvov_1243(nua,nub,nub,noa),&
+                                chi2C_vvvo_3214(nub,nub,nub,nob),&
+                                H2C_vvov_4123(nub,nub,nub,nob),&
+                                chi2C_vooo_2134(nob,nub,nob,nob),&
+                                r2b_1243(nua,nub,nob,noa),&
+                                H2C_vooo_2134(nob,nub,nob,nob)
+
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
+                        
+                        nuanub = nua*nub
+                        nub2 = nub*nub
+
+                        call reorder1243(H2B_vvov,H2B_vvov_1243)
+                        call reorder4213(H2C_vvov,H2C_vvov_4213)
+                        call reorder1243(t2b,t2b_1243)
+                        call reorder2134(I2C_vooo,I2C_vooo_2134)
+                        call reorder3421(H2B_ovvv,H2B_ovvv_3421)
+                        call reorder1342(H2C_vovv,H2C_vovv_1342)
+                        call reorder3412(H2B_vovv,H2B_vovv_3412)
+                        call reorder3412(H2B_oovo,H2B_oovo_3412)
+                        call reorder3412(H2C_ooov,H2C_ooov_3412)
+                        call reorder1243(l2b,l2b_1243)
+                        call reorder3412(H2B_ooov,H2B_ooov_3412)
+                        call reorder1243(chi2B_vvov,chi2B_vvov_1243)
+                        call reorder3214(chi2C_vvvo,chi2C_vvvo_3214)
+                        call reorder4123(H2C_vvov,H2C_vvov_4123)
+                        call reorder2134(chi2C_vooo,chi2C_vooo_2134)
+                        call reorder1243(r2b,r2b_1243)
+                        call reorder2134(H2C_vooo,H2C_vooo_2134)
+
+                        do i = 1 , noa
+                            do j = 1, nob
+                                do k = j+1, nob
+                                X3C = 0.0d0
+                                L3C = 0.0d0
+                                Y3C = 0.0d0
+
+                                !!!!! EOMMM(2,3)C !!!!!
+                                ! Diagram 1a: A(bc) chi2B_vvov(a,b,i,e)*t2c(e,c,j,k) 
+                                call dgemm('n','n',nuanub,nub,nub,1.0d0,chi2B_vvov_1243(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,Y3C,nuanub)
+                                ! Diagram 1b: A(bc) H2B_vvov(a,b,i,e)*r2c(e,c,j,k)  
+                                call dgemm('n','n',nuanub,nub,nub,1.0d0,H2B_vvov_1243(:,:,:,i),nuanub,r2c(:,:,j,k),nub,1.0d0,Y3C,nuanub)
+                                ! Diagram 2a: -A(jk) chi2B_vooo(a,n,i,j)*t2c(b,c,n,k)
+                                call dgemm('n','t',nua,nub2,nob,-0.5d0,chi2B_vooo(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,Y3C,nua) 
+                                call dgemm('n','t',nua,nub2,nob,0.5d0,chi2B_vooo(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,Y3C,nua) 
+                                ! Diagram 2b: -A(jk) H2B_vooo(a,n,i,j)*r2c(b,c,n,k) 
+                                call dgemm('n','t',nua,nub2,nob,-0.5d0,H2B_vooo(:,:,i,j),nua,r2c(:,:,:,k),nub2,1.0d0,Y3C,nua) 
+                                call dgemm('n','t',nua,nub2,nob,0.5d0,H2B_vooo(:,:,i,k),nua,r2c(:,:,:,j),nub2,1.0d0,Y3C,nua) 
+                                ! Diagram 3a: A(jk) chi2C_vvvo(c,b,e,j)*t2b(a,e,i,k)
+                                call dgemm('n','n',nua,nub2,nub,0.5d0,t2b(:,:,i,k),nua,chi2C_vvvo_3214(:,:,:,j),nub,1.0d0,Y3C,nua)
+                                call dgemm('n','n',nua,nub2,nub,-0.5d0,t2b(:,:,i,j),nua,chi2C_vvvo_3214(:,:,:,k),nub,1.0d0,Y3C,nua)
+                                ! Diagram 3b: A(jk) H2C_vvov(b,c,j,e)*r2b(a,e,i,k) 
+                                call dgemm('n','n',nua,nub2,nub,0.5d0,r2b(:,:,i,k),nua,H2C_vvov_4123(:,:,:,j),nub,1.0d0,Y3C,nua)
+                                call dgemm('n','n',nua,nub2,nub,-0.5d0,r2b(:,:,i,j),nua,H2C_vvov_4123(:,:,:,k),nub,1.0d0,Y3C,nua)
+                                ! Diagram 4a: -A(bc) chi2C_vooo(b,n,j,k)*t2b(a,c,i,n) -> -A(bc) t2b(a,b,i,n)*chi2C_vooo(c,n,k,j)
+                                call dgemm('n','n',nuanub,nub,nob,-1.0d0,t2b_1243(:,:,:,i),nuanub,chi2C_vooo_2134(:,:,k,j),nob,1.0d0,Y3C,nuanub)
+                                ! Diagram 4b: -A(bc) H2C_vooo(b,n,j,k)*r2b(a,c,i,n) -> -A(bc) r2b(a,b,i,n)*H2C_vooo(c,n,k,j)
+                                call dgemm('n','n',nuanub,nub,nob,-1.0d0,r2b_1243(:,:,:,i),nuanub,H2C_vooo_2134(:,:,k,j),nob,1.0d0,Y3C,nuanub)
+                                ! Diagram 5a: A(jk)A(bc) chi2B_vvvo(a,b,e,j)*t2b(e,c,i,k)
+                                call dgemm('n','n',nuanub,nub,nua,1.0d0,chi2B_vvvo(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,Y3C,nuanub) 
+                                call dgemm('n','n',nuanub,nub,nua,-1.0d0,chi2B_vvvo(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,Y3C,nuanub) 
+                                ! Diagram 5b: A(jk)A(bc) H2B_vvvo(a,b,e,j)*r2b(e,c,i,k) 
+                                call dgemm('n','n',nuanub,nub,nua,1.0d0,H2B_vvvo(:,:,:,j),nuanub,r2b(:,:,i,k),nua,1.0d0,Y3C,nuanub) 
+                                call dgemm('n','n',nuanub,nub,nua,-1.0d0,H2B_vvvo(:,:,:,k),nuanub,r2b(:,:,i,j),nua,1.0d0,Y3C,nuanub) 
+                                ! Diagram 6a: -A(jk)A(bc) chi2B_ovoo(n,b,i,j)*t2b(a,c,n,k) -> -A(jk)A(bc) t2b(a,b,n,j)*chi2B_ovoo(n,c,i,k)
+                                call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,chi2B_ovoo(:,:,i,k),noa,1.0d0,Y3C,nuanub)
+                                call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,chi2B_ovoo(:,:,i,j),noa,1.0d0,Y3C,nuanub)
+                                ! Diagram 6b: -A(jk)A(bc) H2B_ovoo(n,b,i,j)*r2b(a,c,n,k) -> -A(jk)A(bc) r2b(a,b,n,j)*H2B_ovoo(n,c,i,k)
+                                call dgemm('n','n',nuanub,nub,noa,-1.0d0,r2b(:,:,:,j),nuanub,H2B_ovoo(:,:,i,k),noa,1.0d0,Y3C,nuanub)
+                                call dgemm('n','n',nuanub,nub,noa,1.0d0,r2b(:,:,:,k),nuanub,H2B_ovoo(:,:,i,j),noa,1.0d0,Y3C,nuanub)
+
+                                !!!!! MM(2,3)C !!!!!
+                                ! Diagram 1: A(bc) H2B_vvov(a,b,i,e)*t2c(e,c,j,k)
+                                call dgemm('n','n',nuanub,nub,nub,1.0d0,H2B_vvov_1243(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,X3C,nuanub)
+                                ! Diagram 2: -A(jk) I2B_vooo(a,m,i,j)*t2c(b,c,m,k)
+                                call dgemm('n','t',nua,nub2,nob,-0.5d0,I2B_vooo(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,X3C,nua)
+                                call dgemm('n','t',nua,nub2,nob,0.5d0,I2B_vooo(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,X3C,nua)
+                                ! Diagram 3: A(jk) H2C_vvov(c,b,k,e)*t2b(a,e,i,j)
+                                call dgemm('n','n',nua,nub2,nub,0.5d0,t2b(:,:,i,j),nua,H2C_vvov_4213(:,:,:,k),nub,1.0d0,X3C,nua)
+                                call dgemm('n','n',nua,nub2,nub,-0.5d0,t2b(:,:,i,k),nua,H2C_vvov_4213(:,:,:,j),nub,1.0d0,X3C,nua)
+                                ! Diagram 4: -A(bc) I2C_vooo(c,m,k,j)*t2b(a,b,i,m)
+                                call dgemm('n','n',nuanub,nub,nob,-1.0d0,t2b_1243(:,:,:,i),nuanub,I2C_vooo_2134(:,:,k,j),nob,1.0d0,X3C,nuanub)
+                                ! Diagram 5: A(jk)A(bc) H2B_vvvo(a,b,e,j)*t2b(e,c,i,k)
+                                call dgemm('n','n',nuanub,nub,nua,1.0d0,H2B_vvvo(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,X3C,nuanub)
+                                call dgemm('n','n',nuanub,nub,nua,-1.0d0,H2B_vvvo(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,X3C,nuanub)
+                                ! Diagram 6: -A(jk)A(bc) I2B_ovoo(m,b,i,j)*t2b(a,c,m,k) -> -A(jk)A(bc) I2B_ovoo(m,c,i,k)*t2b(a,b,m,j)
+                                call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,I2B_ovoo(:,:,i,k),noa,1.0d0,X3C,nuanub)
+                                call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,I2B_ovoo(:,:,i,j),noa,1.0d0,X3C,nuanub)
+
+                                !!!!! L3C !!!!!
+                                ! Diagram 1: A(bc) H2B_ovvv(i,e,a,b)*l2c(e,c,j,k)
+                                call dgemm('n','n',nuanub,nub,nub,1.0d0,H2B_ovvv_3421(:,:,:,i),nuanub,l2c(:,:,j,k),nub,1.0d0,L3C,nuanub)
+                                ! Diagram 2: A(jk) H2C_vovv(e,k,b,c)*l2b(a,e,i,j)
+                                call dgemm('n','n',nua,nub2,nub,0.5d0,l2b(:,:,i,j),nua,H2C_vovv_1342(:,:,:,k),nub,1.0d0,L3C,nua)
+                                call dgemm('n','n',nua,nub2,nub,-0.5d0,l2b(:,:,i,k),nua,H2C_vovv_1342(:,:,:,j),nub,1.0d0,L3C,nua)
+                                ! Diagram 3: A(jk)A(bc) H2B_vovv(e,j,a,b)*l2b(e,c,i,k)
+                                call dgemm('n','n',nuanub,nub,nua,1.0d0,H2B_vovv_3412(:,:,:,j),nuanub,l2b(:,:,i,k),nua,1.0d0,L3C,nuanub)
+                                call dgemm('n','n',nuanub,nub,nua,-1.0d0,H2B_vovv_3412(:,:,:,k),nuanub,l2b(:,:,i,j),nua,1.0d0,L3C,nuanub)
+                                ! Diagram 4: -A(jk) H2B_oovo(i,j,a,m)*l2c(b,c,m,k)
+                                call dgemm('n','t',nua,nub2,nob,-0.5d0,H2B_oovo_3412(:,:,i,j),nua,l2c(:,:,:,k),nub2,1.0d0,L3C,nua)
+                                call dgemm('n','t',nua,nub2,nob,0.5d0,H2B_oovo_3412(:,:,i,k),nua,l2c(:,:,:,j),nub2,1.0d0,L3C,nua)
+                                ! Diagram 5: -A(bc) H2C_ooov(j,k,m,c)*l2b(a,b,i,m)
+                                call dgemm('n','n',nuanub,nub,nob,-1.0d0,l2b_1243(:,:,:,i),nuanub,H2C_ooov_3412(:,:,j,k),nob,1.0d0,L3C,nuanub)
+                                ! Diagram 6: -A(jk)A(bc) H2B_ooov(i,j,m,b)*l2b(a,c,m,k) -> -A(jk)A(bc) H2B_ooov(i,k,m,c)*l2b(a,b,m,j)
+                                call dgemm('n','n',nuanub,nub,noa,-1.0d0,l2b(:,:,:,j),nuanub,H2B_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
+                                call dgemm('n','n',nuanub,nub,noa,1.0d0,l2b(:,:,:,k),nuanub,H2B_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
+        
+
+                                    do a = 1, nua
+                                        do b = 1, nub
+                                            do c = b+1, nub
+
+                                                temp1 = X3C(a,b,c) - X3C(a,c,b)
+                                                temp2 = L3C(a,b,c) - L3C(a,c,b)
+                                                temp3 = l1b(c,k)*vB_oovv(i,j,a,b)&
+                                                -l1b(b,k)*vB_oovv(i,j,a,c)&
+                                                -l1b(c,j)*vB_oovv(i,k,a,b)&
+                                                +l1b(b,j)*vB_oovv(i,k,a,c)&
+                                                +l1a(a,i)*vC_oovv(j,k,b,c)&
+                                                +H1B_ov(k,c)*l2b(a,b,i,j)&
+                                                -H1B_ov(k,b)*l2b(a,c,i,j)&
+                                                -H1B_ov(j,c)*l2b(a,b,i,k)&
+                                                +H1B_ov(j,b)*l2b(a,c,i,k)&
+                                                +H1A_ov(i,a)*l2c(b,c,j,k)
+                                                temp4 = Y3C(a,b,c) - Y3C(a,c,b)
+
+                                                LM = (r0*temp1+temp4)*(temp2+temp3)
+
+                                                D = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
+                                                - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
+
+                                                deltaA = deltaA + LM/(omega+D)
+
+                                                D = H1A_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)&
+                                                - H1A_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c)
+
+                                                deltaB = deltaB + LM/(omega+D)
+
+                                                D = D &
+                                                -H2A_voov(a,i,i,a)+H2B_ovov(i,b,i,b)+H2B_ovov(i,c,i,c)&
+                                                +H2B_vovo(a,j,a,j)-H2C_voov(b,j,j,b)-H2C_voov(c,j,j,c)&
+                                                +H2B_vovo(a,k,a,k)-H2C_voov(b,k,k,b)-H2C_voov(c,k,k,c)&
+                                                -H2B_oooo(i,j,i,j)-H2B_oooo(i,k,i,k)-H2C_oooo(k,j,k,j)&
+                                                -H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
+     
+                                                deltaC = deltaC + LM/(omega+D)
+                                                D = D &
+                                                +D3B_O(a,i,j)+D3B_O(a,i,k)&
+                                                +D3C_O(b,i,j)+D3C_O(b,i,k)+D3D_O(b,j,k)&
+                                                +D3C_O(c,i,j)+D3C_O(c,i,k)+D3D_O(c,j,k)&
+                                                -D3B_V(a,i,b)-D3B_V(a,i,c)&
+                                                -D3C_V(a,j,b)-D3C_V(a,j,c)-D3D_V(b,j,c)&
+                                                -D3C_V(a,k,b)-D3C_V(a,k,c)-D3D_V(b,k,c)
+
+                                                deltaD = deltaD + LM/(omega+D)
+
+                                            end do
+                                        end do 
+                                    end do 
+                                end do 
+                            end do 
+                        end do
+
+              end subroutine creomcc23C_opt
+
+              subroutine creomcc23D_opt(deltaA,deltaB,deltaC,deltaD,&
+                              omega,r0,&
+                              t2c,r2c,l1b,l2c,&
+                              H2C_vooo,I2C_vvov,H2C_vvov,&
+                              chi2C_vvvo,chi2C_ovoo,&
+                              vC_oovv,H1B_ov,H2C_vovv,H2C_ooov,fB_oo,fB_vv,&
+                              H1B_oo,H1B_vv,&
+                              H2C_voov,H2C_oooo,H2C_vvvv,&
+                              D3D_O,D3D_V,nob,nub)
+
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        integer, intent(in) :: nob, nub
+                        real(kind=8), intent(in) :: fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
+                        H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
+                        H2C_voov(1:nub,1:nob,1:nob,1:nub),&
+                        H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
+                        H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        D3D_O(1:nub,1:nob,1:nob),&
+                        D3D_V(1:nub,1:nob,1:nub),&
+                        H2C_vooo(nub,nob,nob,nob),I2C_vvov(nub,nub,nob,nub),t2c(nub,nub,nob,nob),&
+                        l1b(nub,nob),l2c(nub,nub,nob,nob),vC_oovv(nob,nob,nub,nub),&
+                        H1B_ov(nob,nub),H2C_vovv(nub,nob,nub,nub),H2C_ooov(nob,nob,nob,nub),&
+                        r2c(nub,nub,nob,nob),H2C_vvov(nub,nub,nob,nub),chi2C_vvvo(nub,nub,nub,nob),&
+                        chi2C_ovoo(nob,nub,nob,nob)
+                        real(kind=8), intent(in) :: omega, r0
+
+                        integer :: i, j, k, a, b, c, nub2
+                        real(kind=8) :: D, temp1, temp2, temp3, temp4, LM,&
+                                X3D(nub,nub,nub), L3D(nub,nub,nub), Y3D(nub,nub,nub)
+
+                        ! reordered arrays for DGEMMs
+                        real(kind=8) :: I2C_vvov_1243(nub,nub,nub,nob), H2C_vovv_4312(nub,nub,nub,nob),&
+                                        H2C_ooov_4312(nub,nob,nob,nob), H2C_vvov_2143(nub,nub,nub,nob),&
+                                        H2C_vooo_2143(nob,nub,nob,nob)
+
+                        call reorder1243(I2C_vvov,I2C_vvov_1243)
+                        call reorder4312(H2C_vovv,H2C_vovv_4312)
+                        call reorder4312(H2C_ooov,H2C_ooov_4312)
+                        call reorder2143(H2C_vvov,H2C_vvov_2143)
+                        call reorder2143(H2C_vooo,H2C_vooo_2143)
+
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
+
+                        nub2 = nub*nub
+                        do i = 1 , nob
+                            do j = i+1, nob
+                                do k = j+1, nob
+
+                                   Y3D = 0.0d0
+                                   X3D = 0.0d0
+                                   L3D = 0.0d0
+                                   !!!!! EOMMM(2,3)D !!!!!
+                                   ! Diagram 1a: A(j/ik)A(c/ab) chi2C_vvvo(a,b,e,j)*t2c(e,c,i,k)
+                                   call dgemm('n','n',nub2,nub,nub,0.5d0,chi2C_vvvo(:,:,:,j),nub2,t2c(:,:,i,k),nub,1.0d0,Y3D,nub2)
+                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,chi2C_vvvo(:,:,:,k),nub2,t2c(:,:,i,j),nub,1.0d0,Y3D,nub2)
+                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,chi2C_vvvo(:,:,:,i),nub2,t2c(:,:,j,k),nub,1.0d0,Y3D,nub2)
+                                   ! Diagram 1b: A(j/ik)A(c/ab) H2C_vvov(b,a,j,e)*r2c(e,c,i,k)
+                                   call dgemm('n','n',nub2,nub,nub,0.5d0,H2C_vvov_2143(:,:,:,j),nub2,r2c(:,:,i,k),nub,1.0d0,Y3D,nub2)
+                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,H2C_vvov_2143(:,:,:,k),nub2,r2c(:,:,i,j),nub,1.0d0,Y3D,nub2)
+                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,H2C_vvov_2143(:,:,:,i),nub2,r2c(:,:,j,k),nub,1.0d0,Y3D,nub2)
+                                   ! Diagram 2a: -A(k/ij)A(b/ac) chi2C_ovoo(m,b,i,j)*t2c(a,c,m,k)
+                                   call dgemm('n','n',nub2,nub,nob,-0.5d0,t2c(:,:,:,j),nub2,chi2C_ovoo(:,:,i,k),nob,1.0d0,Y3D,nub2)
+                                   call dgemm('n','n',nub2,nub,nob,0.5d0,t2c(:,:,:,i),nub2,chi2C_ovoo(:,:,j,k),nob,1.0d0,Y3D,nub2)
+                                   call dgemm('n','n',nub2,nub,nob,0.5d0,t2c(:,:,:,k),nub2,chi2C_ovoo(:,:,i,j),nob,1.0d0,Y3D,nub2)
+                                   ! Diagram 2b: -A(k/ij)A(b/ac) H2C_vooo(b,m,j,i)*r2c(a,c,m,k)
+                                   call dgemm('n','n',nub2,nub,nob,-0.5d0,r2c(:,:,:,j),nub2,H2C_vooo_2143(:,:,i,k),nob,1.0d0,Y3D,nub2)
+                                   call dgemm('n','n',nub2,nub,nob,0.5d0,r2c(:,:,:,i),nub2,H2C_vooo_2143(:,:,j,k),nob,1.0d0,Y3D,nub2)
+                                   call dgemm('n','n',nub2,nub,nob,0.5d0,r2c(:,:,:,k),nub2,H2C_vooo_2143(:,:,i,j),nob,1.0d0,Y3D,nub2)
+                                   !!!!! MM(2,3)D !!!!!
+                                   ! Diagram 1: -A(k/ij)A(a/bc) H2C_vooo(a,m,i,j)*t2c(b,c,m,k)
+                                   call dgemm('n','t',nub,nub2,nob,-0.5d0,H2C_vooo(:,:,i,j),nub,t2c(:,:,:,k),nub2,1.0d0,X3D,nub)
+                                   call dgemm('n','t',nub,nub2,nob,0.5d0,H2C_vooo(:,:,k,j),nub,t2c(:,:,:,i),nub2,1.0d0,X3D,nub)
+                                   call dgemm('n','t',nub,nub2,nob,0.5d0,H2C_vooo(:,:,i,k),nub,t2c(:,:,:,j),nub2,1.0d0,X3D,nub)
+                                   ! Diagram 2: A(i/jk)A(c/ab) I2C_vvov(a,b,i,e)*t2c(e,c,j,k)
+                                   call dgemm('n','n',nub2,nub,nub,0.5d0,I2C_vvov_1243(:,:,:,i),nub2,t2c(:,:,j,k),nub,1.0d0,X3D,nub2)
+                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,I2C_vvov_1243(:,:,:,j),nub2,t2c(:,:,i,k),nub,1.0d0,X3D,nub2)
+                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,I2C_vvov_1243(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,X3D,nub2)
+                                   !!!!! L3A !!!!!
+                                   ! Diagram 1: A(i/jk)A(c/ab) H2C_vovv(e,i,b,a)*l2c(e,c,j,k)
+                                   call dgemm('n','n',nub2,nub,nub,0.5d0,H2C_vovv_4312(:,:,:,i),nub2,l2c(:,:,j,k),nub,1.0d0,L3D,nub2)                         
+                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,H2C_vovv_4312(:,:,:,j),nub2,l2c(:,:,i,k),nub,1.0d0,L3D,nub2)                         
+                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,H2C_vovv_4312(:,:,:,k),nub2,l2c(:,:,j,i),nub,1.0d0,L3D,nub2)
+                                   ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
+                                   call dgemm('n','t',nub,nub2,nob,-0.5d0,H2C_ooov_4312(:,:,j,i),nub,l2c(:,:,:,k),nub2,1.0d0,L3D,nub)
+                                   call dgemm('n','t',nub,nub2,nob,0.5d0,H2C_ooov_4312(:,:,k,i),nub,l2c(:,:,:,j),nub2,1.0d0,L3D,nub)
+                                   call dgemm('n','t',nub,nub2,nob,0.5d0,H2C_ooov_4312(:,:,j,k),nub,l2c(:,:,:,i),nub2,1.0d0,L3D,nub)
+
+                                    do a = 1, nub
+                                        do b = a+1, nub
+                                            do c = b+1, nub
+
+                                                temp1 = X3D(a,b,c) + X3D(b,c,a) + X3D(c,a,b)&
+                                                - X3D(a,c,b) - X3D(b,a,c) - X3D(c,b,a)
+
+                                                temp2 = L3D(a,b,c) + L3D(b,c,a) + L3D(c,a,b)&
+                                                - L3D(a,c,b) - L3D(b,a,c) - L3D(c,b,a)
+
+                                                temp3 =&
+                                                l1b(c,k)*vC_oovv(i,j,a,b)&
+                                                -l1b(a,k)*vC_oovv(i,j,c,b)&
+                                                -l1b(b,k)*vC_oovv(i,j,a,c)&
+                                                -l1b(c,i)*vC_oovv(k,j,a,b)&
+                                                -l1b(c,j)*vC_oovv(i,k,a,b)&
+                                                +l1b(a,i)*vC_oovv(k,j,c,b)&
+                                                +l1b(b,i)*vC_oovv(k,j,a,c)&
+                                                +l1b(a,j)*vC_oovv(i,k,c,b)&
+                                                +l1b(b,j)*vC_oovv(i,k,a,c)&
+                                                +H1B_ov(k,c)*l2c(a,b,i,j)&
+                                                -H1B_ov(k,a)*l2c(c,b,i,j)&
+                                                -H1B_ov(k,b)*l2c(a,c,i,j)&
+                                                -H1B_ov(i,c)*l2c(a,b,k,j)&
+                                                -H1B_ov(j,c)*l2c(a,b,i,k)&
+                                                +H1B_ov(i,a)*l2c(c,b,k,j)&
+                                                +H1B_ov(i,b)*l2c(a,c,k,j)&
+                                                +H1B_ov(j,a)*l2c(c,b,i,k)&
+                                                +H1b_ov(j,b)*l2c(a,c,i,k)
+
+                                                temp4 = Y3D(a,b,c) + Y3D(b,c,a) + Y3D(c,a,b)&
+                                                - Y3D(a,c,b) - Y3D(b,a,c) - Y3D(c,b,a)
+
+                                                LM = (r0*temp1+temp4)*(temp2+temp3)                                        
+        
+                                                D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
+                                                - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
+
+                                                deltaA = deltaA + LM/(omega+D)
+
+                                                D = H1B_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)&
+                                                - H1B_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c)
+
+                                                deltaB = deltaB + LM/(omega+D)
+
+                                                D = D &
+                                                -H2C_voov(a,i,i,a) - H2C_voov(b,i,i,b) - H2C_voov(c,i,i,c)&
+                                                -H2C_voov(a,j,j,a) - H2C_voov(b,j,j,b) - H2C_voov(c,j,j,c)&
+                                                -H2C_voov(a,k,k,a) - H2C_voov(b,k,k,b) - H2C_voov(c,k,k,c)&
+                                                -H2C_oooo(j,i,j,i) - H2C_oooo(k,i,k,i) - H2C_oooo(k,j,k,j)&
+                                                -H2C_vvvv(b,a,b,a) - H2C_vvvv(c,a,c,a) - H2C_vvvv(c,b,c,b)
+
+                                                deltaC = deltaC + LM/(omega+D)
+
+                                                D = D &
+                                                +D3D_O(a,i,j)+D3D_O(a,i,k)+D3D_O(a,j,k)&
+                                                +D3D_O(b,i,j)+D3D_O(b,i,k)+D3D_O(b,j,k)&
+                                                +D3D_O(c,i,j)+D3D_O(c,i,k)+D3D_O(c,j,k)&
+                                                -D3D_V(a,i,b)-D3D_V(a,i,c)-D3D_V(b,i,c)&
+                                                -D3D_V(a,j,b)-D3D_V(a,j,c)-D3D_V(b,j,c)&
+                                                -D3D_V(a,k,b)-D3D_V(a,k,c)-D3D_V(b,k,c)
+
+                                                deltaD = deltaD + LM/(omega+D)
+
+                                            end do
+                                        end do 
+                                    end do 
+
+                                end do 
+                            end do 
+                        end do
+
+              end subroutine creomcc23D_opt
+              
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OLD CR-CC(2,3) ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
               subroutine crcc23A(deltaA,deltaB,deltaC,deltaD,&
                               MM23A,L3A,omega,&
@@ -1348,6 +1757,8 @@ module crcc_loops
 
               end subroutine crcc23D
 
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CR-CC(2,4) ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
               subroutine crcc24A(deltaA,deltaB,deltaC,deltaD,&
                               MM24A,L4A,&
                               fA_oo,fA_vv,H1A_oo,H1A_vv,&
@@ -1646,6 +2057,8 @@ module crcc_loops
 
               end subroutine crcc24C
 
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! REORDER ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
               subroutine reorder3412(x_in,x_out)
 
                       real(kind=8), intent(in) :: x_in(:,:,:,:)
@@ -1836,5 +2249,23 @@ module crcc_loops
 
              end subroutine reorder4123
 
+             subroutine reorder3214(x_in,x_out)
+
+                      real(kind=8), intent(in) :: x_in(:,:,:,:)
+                      real(kind=8), intent(out) :: x_out(:,:,:,:)
+
+                      integer :: i1, i2, i3, i4
+
+                      do i1 = 1,size(x_in,1)
+                         do i2 = 1,size(x_in,2)
+                            do i3 = 1,size(x_in,3)
+                               do i4= 1,size(x_in,4)
+                                  x_out(i3,i2,i1,i4) = x_in(i1,i2,i3,i4)
+                               end do
+                            end do
+                         end do
+                      end do
+
+             end subroutine reorder3214
 
 end module crcc_loops
