@@ -15,8 +15,10 @@ def print_memory_usage():
     '''Displays the percentage of used RAM and available memory. Useful for 
     investigating the memory usages of various routines.'''
     import psutil
-    print('Percentage of used RAM: {}'.format(psutil.virtual_memory().percent))
-    print('Percentage of available memory: {}'.format(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total))
+    import os
+    current_process = psutil.Process(os.getpid())
+    memory = current_process.memory_info().rss
+    print(int(memory / (1024*1024) ), "MB")
     return
 
 def clean_up(fid,n):

@@ -95,19 +95,13 @@ def calc_driver_main(inputs,sys,ints):
                         maxit=inputs['eom_maxit'])
 
     if calc_type == 'ccsdt' or calc_type == 'CCSDT':
-        if inputs['low_memory']:
-            from ccsdt_module_lowmem import ccsdt
-        else:
-            from ccsdt_module import ccsdt
-        cc_t, Eccsdt = ccsdt(sys,ints,inputs['work_dir'],\
+        from ccsdt_module import ccsdt
+        cc_t, Eccsdt = ccsdt(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
                         diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
 
     if calc_type == 'eomccsdt' or calc_type == 'EOMCCSDT':
-        if inputs['low_memory']:
-            from ccsdt_module_lowmem import ccsdt
-        else:
-            from ccsdt_module import ccsdt
+        from ccsdt_module import ccsdt
         from HBar_module import HBar_CCSDT
         from eomccsdt_module import eomccsdt, test_updates
 

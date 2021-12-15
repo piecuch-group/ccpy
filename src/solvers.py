@@ -1,40 +1,70 @@
+"""Module containing the driving solvers"""
 import numpy as np
+import time
+from utilities import print_memory_usage
 
-def diis_out_of_core(vecfid, dvecfid, vec_dim, diis_dim):
+def diis_out_of_core(cc_t, slices, sizes, vec_dim, diis_dim):
+    """Performs DIIS extrapolation for the solution of nonlinear equations. Out of core
+    version with residuals and previous vectors stored on disk and accessed one-by-one.
+    
+    Parameters:
+    -----------
+    cc_t : dict
+        Dictionary of current T vector amplitudes
+    slices : dict
+        Dictionary containing slices of each T amplitude type and spincase
+    sizes : dict
+        Dictionary containing the sizes (tuples) for each T amplitude type and spincase
+    vec_dim : int
+        Total dimension of the T vector
+    diis_dim : int
+        Number of DIIS vectors used in extrapolation
 
+    Returns:
+    --------
+    cc_t : dict
+        New DIIS-extrapolated T vector amplitudes
+    """
     B_dim = diis_dim + 1
     B = -1.0*np.ones((B_dim,B_dim))
 
-    # Here, we memory map the DIIS residual arrays stored on disk so that
-    # we can load half of each array at a time, thus reducing the storage
-    # requirements of the B matrix computation to only that of the T vector,
-    # as opposed to twice the T vector
     nhalf = int(vec_dim/2)
+    diis_resid = np.memmap('dt.npy',dtype=np.float64,shape=(vec_dim,diis_dim),mode='r')
     for i in range(diis_dim):
-        diis_resid1 = np.load(dvecfid+'-'+str(i+1)+'.npy',mmap_mode='r')
         for j in range(i,diis_dim):
-            diis_resid2 = np.load(dvecfid+'-'+str(j+1)+'.npy',mmap_mode='r')
-            B[i,j] = np.dot(diis_resid1[:nhalf].T,diis_resid2[:nhalf])
-            B[i,j] += np.dot(diis_resid1[nhalf:].T,diis_resid2[nhalf:])
+            B[i,j] = np.dot(diis_resid[:nhalf,i],diis_resid[:nhalf,j])
+            B[i,j] += np.dot(diis_resid[nhalf:,i],diis_resid[nhalf:,j])
             B[j,i] = B[i,j]
-            del diis_resid2
-        del diis_resid1
     B[-1,-1] = 0.0
 
     rhs = np.zeros(B_dim)
     rhs[-1] = -1.0
 
     coeff = solve_gauss(B,rhs)
-    x_xtrap = np.zeros(vec_dim)
-    for i in range(diis_dim):
-        x1 = np.load(vecfid+'-'+str(i+1)+'.npy')
-        x_xtrap += coeff[i]*x1
-        del x1
 
-    return x_xtrap
+    tvec = np.memmap('t.npy',dtype=np.float64,shape=(vec_dim,diis_dim),mode='r')
+    for key in cc_t.keys():
+        cc_t[key] = 0.0*cc_t[key]
+        for i in range(diis_dim):
+            cc_t[key] += coeff[i]*np.reshape(tvec[slices[key],i],sizes[key])
+
+    return cc_t
 
 def diis(x_list, diis_resid):
-
+    """Performs DIIS extrapolation for the solution of nonlinear equations. In core
+    version with residuals and previous vectors stored fully as matrices in memory.
+    
+    Parameters:
+    -----------
+    x_list : ndarray(dtype=np.float64,shape=(vec_dim,diis_dim))
+        Matrix of previous T vectors
+    diis_resid : ndarray(dtype=np.float64,shape=(vec_dim,diis_dim))
+        Matrix of previous residuals
+    Returns:
+    --------
+    x_xtrap : ndarray(dtype=np.float64,shape=(vec_dim))
+        New DIIS-extrapolated T vector amplitudes
+    """
     vec_dim, diis_dim = np.shape(x_list)
     B_dim = diis_dim + 1
     B = -1.0*np.ones((B_dim,B_dim))
@@ -55,6 +85,8 @@ def diis(x_list, diis_resid):
     return x_xtrap
 
 def solve_gauss(A, b):
+    """DIIS helper function. Solves the linear system Ax=b using
+    Gaussian elimination"""
     n =  A.shape[0]
     for i in range(n-1):
         for j in range(i+1, n):
@@ -69,95 +101,450 @@ def solve_gauss(A, b):
         k = k-1
     return x
 
-def gramschmidt(X):
-    d, n = X.shape
-    m = min(d,n)
-    Q = np.zeros((d,m))
-    for i in range(m):
-        v = X[:,i]
-        for j in range(i):
-            m = np.dot(Q[:,j].T,v)
-            v -= m*Q[:,j]
-        Q[:,i] = v/np.linalg.norm(v)
-    return Q
+def davidson_out_of_core(HR,update_R,B0,E0,maxit,tol):
+    """Diagonalize the similarity-transformed Hamiltonian HBar using the
+    non-Hermitian Davidson algorithm. Low memory version where previous
+    iteration vectors are stored on disk and accessed one-by-one.
 
-def davidson_eomcc(A,H1A,H1B,vec_dim,nroot,sys,nvec=6,maxit=100,tol=1e-07,thresh_vec=1e-04):
+    Parameters
+    ----------
+    HR : func
+        Call type HR(R). Returns the matrix-vector product of HBar acting on an R vector.
+    B0 : ndarray(dtype=float, shape=(ndim,nroot))
+        Matrix containing the initial guess vectors for the Davidson procedure
+    E0 : ndarray(dtype=float, shape=(nroot))
+        Vector containing the energies corresponding to the initial guess vectors
+    maxit : int, optional
+        Maximum number of Davidson iterations in the EOMCC procedure.
+    tol : float, optional
+        Convergence tolerance for the EOMCC calculation. Default is 1.0e-06.
 
-    import scipy.linalg
+    Returns
+    -------
+    Rvec : ndarray(dtype=float, shape=(ndim,nroot))
+        Matrix containing the final converged R vectors corresponding to the EOMCC linear excitation amplitudes
+    omega : ndarray(dtype=float, shape=(nroot))
+        Vector of vertical excitation energies (in hartree) for each root
+    is_converged : list
+        List of boolean indicating whether each root converged to within the specified tolerance
+    """
+    ndim = B0.shape[0]
+    nroot = B0.shape[1]
+    bshape = (ndim,maxit)
 
-    def _diagonal_guess(nroot,H1A,H1B,sys):
-        for i in range(sys['Nocc_a']):
-            for a in range(sys['Nunocc_a']):
-                D1A[ct] = H1A['vv'][a,a] - H1A['oo'][i,i]
-        for i in range(sys['Nocc_b']):
-            for a in range(sys['Nunocc_b']):
-                D1B = H1B['vv'][a,a] - H1B['oo'][i,i]
-        idx = np.argsort(D)
-        I = np.eye(len(D))
-        return I[:,idx[:nroot]]
+    Rvec = np.zeros((ndim,nroot))
+    is_converged = [False] * nroot
+    omega = np.zeros(nroot)
+    residuals = np.zeros(nroot)
 
-    def _orthogonalize_root(r,B):
-        for i in range(B.shape[1]):
-            b = B[:,i]/np.linalg.norm(B[:,i])
-            r -= np.dot(b.T,r)*b
-        return r
+    # orthonormalize the initial trial space
+    # this is important when using doubles in EOMCCSd guess
+    B0,_ = np.linalg.qr(B0)
 
-    max_size = nroot*nvec
-    SIGMA = np.zeros((vec_dim,max_size))
-    B = np.zeros((vec_dim,max_size))
-    add_B = np.zeros((vec_dim,nroot))
+    for iroot in range(nroot):
+
+        print('Solving for root - {}'.format(iroot+1))
+        print('--------------------------------------------------------------------------------')
+
+        # Initialize the memory map for the B and sigma matrices
+        B = np.memmap('Rmat.npy',dtype=np.float64,mode='w+',shape=(ndim,maxit))
+        sigma = np.memmap('HRmat.npy',dtype=np.float64,mode='w+',shape=(ndim,maxit))
+        # [TODO] add on converged R vectors to prevent collapse onto previous roots
+        B[:,0] = B0[:,iroot]
+        sigma[:,0] = HR(B[:,0])
+        del sigma
+        del B
     
-    B[:,:nroot] = _diagonal_guess(nroot,H1A,H1B)
+        omega[iroot] = E0[iroot]
 
-    curr_size = nroot
-    for it in range(maxit):
+        for curr_size in range(1,maxit):
+            t1 = time.time()
 
-        B0 = gramschmidt(B[:,:curr_size])
-        B[:,:curr_size] = B0
+            omega_old = omega[iroot]
 
-        nprev = np.max(curr_size-nroot,0)
-        sigma = A.matmat(B[:,nprev:curr_size])
-        SIGMA[:,nprev:curr_size] = sigma
-        G = np.dot(B[:,:curr_size].T,SIGMA[:,:curr_size])
-        
-        eval_E, alpha = scipy.linalg.eig(G)
+            G = calc_Gmat(curr_size,bshape,flag_lowmem)
+            e, alpha = np.linalg.eig(G)
 
-        idx = np.argsort(eval_E)
-        eigval = eval_E[idx[:nroot]]
-        alpha = alpha[:,idx[:nroot]]
-        V = np.dot(B[:,:curr_size],alpha)
+            # select root based on maximum overlap with initial guess
+            # < b0 | V_i > = < b0 | \sum_k alpha_{ik} |b_k>
+            # = \sum_k alpha_{ik} < b0 | b_k > = \sum_k alpha_{i0}
+            idx = np.argsort( abs(alpha[0,:]) )
+            omega[iroot] = np.real(e[idx[-1]])
+            alpha = np.real(alpha[:,idx[-1]])
+            Rvec[:,iroot] = calc_Rvec(curr_size,alpha,bshape,flag_lowmem)
 
-        ct_add = 0
-        resid_norm = np.zeros(nroot)
-        print('\nIter - {}    Subspace Dim = {}'.format(it+1,curr_size))
-        print('----------------------------------------------------')
-        for j in range(nroot):
-            r = np.dot(SIGMA[:,:curr_size],alpha[:,j]) - V[:,j]*eigval[j]
-            resid_norm[j] = np.linalg.norm(r)
-            # HERE
-            #r1a = np.reshape(r[])
-            q = _update_R(r,eigval[j],D)
-            q = q/np.linalg.norm(q)
-            if ct_add > 0:
-                q_orth = _orthogonalize_root(q,np.concatenate((B[:,:curr_size],add_B[:,:ct_add]),axis=1))
-            else:
-                q_orth = _orthogonalize_root(q,B[:,:curr_size])
-            if np.linalg.norm(q_orth) > thresh_vec:
-                add_B[:,ct_add] = q_orth/np.linalg.norm(q_orth)
-                ct_add += 1
+            # calculate residual vector
+            q = calc_qvec(curr_size,alpha,bshape,flag_lowmem)
+            q -= omega[iroot]*Rvec[:,iroot]
+            residuals[iroot] = np.linalg.norm(q)
+            deltaE = omega[iroot] - omega_old
+            
+            # update residual vector
+            q = update_R(q,omega[iroot])
+            q *= 1.0/np.linalg.norm(q)
+            q = orthogonalize(q,curr_size,bshape)
+            q *= 1.0/np.linalg.norm(q)
 
-            print('Root - {}      e = {:.8f}      |r| = {:.8f}'.format(j+1,eigval[j],resid_norm[j]))
+            t2 = time.time()
+            minutes, seconds = divmod(t2 - t1, 60)
+            print('   Iter - {}      e = {:.10f}       |r| = {:.10f}      de = {:.10f}      {:.2f}m {:.2f}s'.\
+                            format(curr_size,omega[iroot],residuals[iroot],deltaE,minutes,seconds))
 
-        if all(resid_norm <= tol):
-            print('\nDavidson successfully converged!')
-            break
+            if residuals[iroot] < tol and abs(deltaE) < tol:
+                is_converged[iroot] = True
+                break
+
+            update_subspace_vecs(q,curr_size,HR,bshape)
+
+            #print_memory_usage()
+        if is_converged[iroot]:
+            print('Converged root {}'.format(iroot+1))
         else:
-            if curr_size >= max_size:
-                print('Restarting and collapsing')
-                B[:,:nroot] = np.dot(B,alpha)
-                curr_size = nroot
-            else:
-                B[:,curr_size:curr_size+ct_add] = add_B[:,:ct_add]
-                curr_size += ct_add
+            print('Failed to converge root {}'.format(iroot+1))
+        print('')
 
-    return eigval, V
+    return Rvec, omega, is_converged
+
+def update_subspace_vecs(q,curr_size,HR,bshape):
+
+    B = np.memmap('Rmat.npy',dtype=np.float64,shape=bshape,mode='r+')
+    sigma = np.memmap('HRmat.npy',dtype=np.float64,shape=bshape,mode='r+')
+    B[:,curr_size] = q
+    sigma[:,curr_size] = HR(q)
+    del B
+    del sigma
+    return
+
+def orthogonalize(q,curr_size,bshape):
+
+    B = np.memmap('Rmat.npy',dtype=np.float64,shape=bshape,mode='r')
+    for i in range(curr_size):
+        b = B[:,i]/np.linalg.norm(B[:,i])
+        q -= np.dot(b.T,q)*b
+    return q
+
+def calc_qvec(curr_size,alpha,bshape,flag_lowmem):
+
+    sigma = np.memmap('HRmat.npy',dtype=np.float64,shape=bshape,mode='r')
+    if flag_lowmem:
+        q = np.zeros(bshape[0])
+        for i in range(curr_size):
+            q += sigma[:,i]*alpha[i]
+    else:
+        q = np.dot(sigma[:,:curr_size],alpha)
+    return q
+
+def calc_Rvec(curr_size,alpha,bshape,flag_lowmem):
+
+    B = np.memmap('Rmat.npy',dtype=np.float64,shape=bshape,mode='r')
+    if flag_lowmem:
+        Rvec = np.zeros(bshape[0])
+        for i in range(curr_size):
+            Rvec += B[:,i]*alpha[i]
+    else:
+        Rvec = np.dot(B[:,:curr_size],alpha)
+    return Rvec
+
+def calc_Gmat(curr_size,bshape,flag_lowmem):
+    
+    B = np.memmap('Rmat.npy',dtype=np.float64,shape=bshape,mode='r')
+    sigma = np.memmap('HRmat.npy',dtype=np.float64,shape=bshape,mode='r')
+    if flag_lowmem:
+        Gmat = np.zeros((curr_size,curr_size))
+        for i in range(curr_size):
+            for j in range(curr_size):
+                Gmat[i,j] = np.dot(B[:,i].T,sigma[:,j])
+    else:
+        Gmat = np.dot(B[:,:curr_size].T,sigma[:,:curr_size])
+    return Gmat
+
+def davidson(HR,update_R,B0,E0,maxit,max_dim,tol):
+    """Diagonalize the similarity-transformed Hamiltonian HBar using the
+    non-Hermitian Davidson algorithm.
+
+    Parameters
+    ----------
+    HR : func
+        Function of the general call structure
+            HR(R,CC-t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF)
+    H1*, H2* : dict
+        Sliced similarity-transformed HBar integrals
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    cc_t : dict
+        Cluster amplitudes T1, T2 of the ground-state
+    nroot : int
+        Number of excited-states to solve for
+    B0 : ndarray(dtype=float, shape=(ndim,nroot))
+        Matrix containing the initial guess vectors for the Davidson procedure
+    E0 : ndarray(dtype=float, shape=(nroot))
+        Vector containing the energies corresponding to the initial guess vectors
+    sys : dict
+        System information dictionary
+    maxit : int, optional
+        Maximum number of Davidson iterations in the EOMCC procedure.
+    tol : float, optional
+        Convergence tolerance for the EOMCC calculation. Default is 1.0e-06.
+
+    Returns
+    -------
+    Rvec : ndarray(dtype=float, shape=(ndim,nroot))
+        Matrix containing the final converged R vectors corresponding to the EOMCC linear excitation amplitudes
+    omega : ndarray(dtype=float, shape=(nroot))
+        Vector of vertical excitation energies (in hartree) for each root
+    is_converged : list
+        List of boolean indicating whether each root converged to within the specified tolerance
+    """
+    ndim = B0.shape[0]
+    nroot = B0.shape[1]
+
+    Rvec = np.zeros((ndim,nroot))
+    is_converged = [False] * nroot
+    omega = np.zeros(nroot)
+    residuals = np.zeros(nroot)
+
+    # orthonormalize the initial trial space
+    # this is important when using doubles in EOMCCSd guess
+    B0,_ = np.linalg.qr(B0)
+
+    for iroot in range(nroot):
+
+        print('Solving for root - {}'.format(iroot+1))
+        print('--------------------------------------------------------------------------------')
+
+        # Initialize the memory map for the B and sigma matrices
+        sigma = np.zeros((ndim,max_dim))
+        B = np.zeros((ndim,max_dim))
+        B[:,0] = B0[:,iroot]
+        sigma[:,0] = HR(B[:,0])
+        omega[iroot] = E0[iroot]
+
+        curr_size = 1
+        for it in range(maxit):
+            omega_old = omega[iroot]
+
+            G = np.dot(B[:,:curr_size].T,sigma[:,:curr_size])
+            e, alpha = np.linalg.eig(G)
+
+            # select root based on maximum overlap with initial guess
+            # < b0 | V_i > = < b0 | \sum_k alpha_{ik} |b_k>
+            # = \sum_k alpha_{ik} < b0 | b_k > = \sum_k alpha_{i0}
+            idx = np.argsort( abs(alpha[0,:]) )
+            omega[iroot] = np.real(e[idx[-1]])
+            alpha = np.real(alpha[:,idx[-1]])
+            Rvec[:,iroot] = np.dot(B[:,:curr_size],alpha)
+
+            # calculate residual vector
+            q = np.dot(sigma[:,:curr_size],alpha) - omega[iroot]*Rvec[:,iroot]
+            residuals[iroot] = np.linalg.norm(q)
+            deltaE = omega[iroot] - omega_old
+
+            print('   Iter - {}      e = {:.10f}       |r| = {:.10f}      de = {:.10f}'.\
+                            format(it+1,omega[iroot],residuals[iroot],deltaE))
+
+            if residuals[iroot] < tol and abs(deltaE) < tol:
+                is_converged[iroot] = True
+                break
+            
+            # update residual vector
+            q = update_R(q,omega[iroot])
+            q *= 1.0/np.linalg.norm(q)
+            for p in range(curr_size):
+                b = B[:,p]/np.linalg.norm(B[:,p])
+                q -= np.dot(b.T,q)*b
+            q *= 1.0/np.linalg.norm(q)
+
+            if curr_size < max_dim:
+                B[:,curr_size] = q
+                sigma[:,curr_size] = HR(q)
+                curr_size += 1
+            else:
+                # Subspace collapse... it does not help for difficult roots
+                B[:,0] = B0[:,iroot]
+                B[:,1] = Rvec[:,iroot]
+                B[:,:2],_ = np.linalg.qr(B[:,:2])
+                sigma[:,0] = HR(B[:,0])
+                sigma[:,1] = HR(B[:,1])
+                curr_size = 2
+
+        if is_converged[iroot]:
+            print('Converged root {}'.format(iroot+1))
+        else:
+            print('Failed to converge root {}'.format(iroot+1))
+        print('')
+
+    return Rvec, omega, is_converged
+
+def solve_cc_jacobi_out_of_core(cc_t,update_t,ints,maxit,tol,ndim,diis_size):
+    import time
+    from cc_energy import calc_cc_energy
+
+    # Get dimensions of the CC theory
+    pos = [0] 
+    slices = {}
+    sizes = {}
+    ct = 0
+    ndim = 0
+    for key,value in cc_t.items():
+        ndim += np.size(value)
+        pos.append(pos[ct]+np.size(value))
+        slices[key] = slice(pos[ct],pos[ct+1])
+        sizes[key] = value.shape
+        ct += 1
+
+    # Create the memory maps to the T and dT (residual) vectors for DIIS stored on disk
+    tvec_mmap = np.memmap('t.npy', mode="w+", dtype=np.float64, shape=(ndim,diis_size))
+    resid_mmap = np.memmap('dt.npy', mode="w+", dtype=np.float64, shape=(ndim,diis_size))
+    del tvec_mmap
+    del resid_mmap
+
+    # Jacobi/DIIS iterations
+    it_micro = 0
+    flag_conv = False
+    it_macro = 0
+    Ecorr_old = 0.0
+
+    t_start = time.time()
+    print('Iteration    Residuum               deltaE                 Ecorr                Wall Time')
+    print('============================================================================================')
+    while it_micro < maxit:
+        # get iteration start time
+        t1 = time.time()
+
+        # get DIIS counter
+        ndiis = it_micro%diis_size
+      
+        # Update the T vector
+        cc_t, T_resid = update_t(cc_t)
+
+        # CC correlation energy
+        Ecorr = calc_cc_energy(cc_t,ints)
+
+        # change in Ecorr
+        deltaE = Ecorr - Ecorr_old
+
+        # check for exit condition
+        resid = np.linalg.norm(T_resid)
+        if resid < tol and abs(deltaE) < tol:
+            flag_conv = True
+            break
+
+        # Save T and dT vectors to disk using memory maps
+        tvec_mmap = np.memmap('t.npy', mode="r+", dtype=np.float64, shape=(ndim,diis_size))
+        for key, value in cc_t.items():
+            tvec_mmap[slices[key],ndiis] = value.flatten()
+        del tvec_mmap
+        resid_mmap = np.memmap('dt.npy', mode="r+", dtype=np.float64, shape=(ndim,diis_size))
+        resid_mmap[:,ndiis] = T_resid
+        del resid_mmap
+
+        # Do out-of-core DIIS extrapolation        
+        if ndiis == 0 and it_micro > 1:
+            it_macro = it_macro + 1
+            print('DIIS Cycle - {}'.format(it_macro))
+            cc_t = diis_out_of_core(cc_t,slices,sizes,ndim,diis_size)
+        
+        elapsed_time = time.time()-t1
+        minutes, seconds = divmod(elapsed_time, 60)
+
+        print('   {}       {:.10f}          {:.10f}          {:.10f}        {:0.2f}m  {:0.2f}s'.format(it_micro,resid,deltaE,Ecorr,minutes,seconds))
+        
+        it_micro += 1
+        Ecorr_old = Ecorr
+
+    t_end = time.time()
+    minutes, seconds = divmod(t_end-t_start, 60)
+    if flag_conv:
+        print('CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)'.format(minutes,seconds))
+        print('')
+        print('CC Correlation Energy = {} Eh'.format(Ecorr))
+        print('CC Total Energy = {} Eh'.format(ints['Escf']+Ecorr))
+    else:
+        print('Failed to converge CC in {} iterations'.format(maxit))
+
+    return cc_t, ints['Escf']+Ecorr
+
+def solve_cc_jacobi(cc_t,update_t,ints,maxit,tol,ndim,diis_size):
+    import time
+    from cc_energy import calc_cc_energy
+
+    # Get dimensions of the CC theory
+    pos = [0] 
+    slices = {}
+    sizes = {}
+    ct = 0
+    ndim = 0
+    for key,value in cc_t.items():
+        ndim += np.size(value)
+        pos.append(pos[ct]+np.size(value))
+        slices[key] = slice(pos[ct],pos[ct+1])
+        sizes[key] = value.shape
+        ct += 1
+
+    # Create the arrays in memory for DIIS extrapolation
+    T_list = np.zeros((ndim,diis_size))
+    T_resid_list = np.zeros((ndim,diis_size))
+
+    # Jacobi/DIIS iterations
+    it_micro = 0
+    flag_conv = False
+    it_macro = 0
+    Ecorr_old = 0.0
+
+    t_start = time.time()
+    print('Iteration    Residuum               deltaE                 Ecorr                Wall Time')
+    print('============================================================================================')
+    while it_micro < maxit:
+        # get iteration start time
+        t1 = time.time()
+
+        # get DIIS counter
+        ndiis = it_micro%diis_size
+      
+        # Update the T vector
+        cc_t, T_resid = update_t(cc_t)
+
+        # CC correlation energy
+        Ecorr = calc_cc_energy(cc_t,ints)
+
+        # change in Ecorr
+        deltaE = Ecorr - Ecorr_old
+
+        # check for exit condition
+        resid = np.linalg.norm(T_resid)
+        if resid < tol and abs(deltaE) < tol:
+            flag_conv = True
+            break
+
+        # Save T and dT vectors to disk for DIIS
+        for key,value in cc_t.items():
+            T_list[slices[key],ndiis] = value.flatten()
+        T_resid_list[:,ndiis] = T_resid
+        # Do DIIS extrapolation        
+        if ndiis == 0 and it_micro > 1:
+            it_macro = it_macro + 1
+            print('DIIS Cycle - {}'.format(it_macro))
+            T = diis(T_list,T_resid_list)
+            for key,value in cc_t.items():
+                cc_t[key] = np.reshape(T[slices[key]],sizes[key])
+        
+        elapsed_time = time.time()-t1
+        minutes, seconds = divmod(elapsed_time, 60)
+
+        print('   {}       {:.10f}          {:.10f}          {:.10f}        {:0.2f}m  {:0.2f}s'.format(it_micro,resid,deltaE,Ecorr,minutes,seconds))
+        
+        it_micro += 1
+        Ecorr_old = Ecorr
+
+    t_end = time.time()
+    minutes, seconds = divmod(t_end-t_start, 60)
+    if flag_conv:
+        print('CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)'.format(minutes,seconds))
+        print('')
+        print('CC Correlation Energy = {} Eh'.format(Ecorr))
+        print('CC Total Energy = {} Eh'.format(ints['Escf']+Ecorr))
+    else:
+        print('Failed to converge CC in {} iterations'.format(maxit))
+
+    return cc_t, ints['Escf']+Ecorr
+

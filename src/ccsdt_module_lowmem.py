@@ -1,5 +1,6 @@
 """Module with functions that perform the CC with singles, doubles,
-and triples (CCSDT) calculation for a molecular system."""
+and triples (CCSDT) calculation for a molecular system. Low memory
+version."""
 import numpy as np
 from solvers import diis_out_of_core
 from cc_energy import calc_cc_energy

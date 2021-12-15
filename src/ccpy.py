@@ -44,6 +44,7 @@ if __name__ == '__main__':
     print('  Left-CC shift = {}'.format(inputs['lccshift']))
     print('  Maxit = {}'.format(inputs['maxit']))
     print('  Tolerance = {}'.format(inputs['tol']))
+    print('  Using RHF symmetry = {}'.format(inputs['isRHF']))
     if 'EOM' in inputs['calc_type']:
         print('')
         print('  Excited-State Calculation')
