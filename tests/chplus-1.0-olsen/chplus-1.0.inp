@@ -1,0 +1,36 @@
+
+# GAMESS file
+gamess_file = chplus_re.log
+
+# integrals
+onebody = onebody.inp
+twobody = twobody.inp
+
+# Number of frozen spatial orbitals
+nfroz = 0
+
+# Calculation type
+calc_type = CR-EOMCC(2,3)
+
+# max number of CC iterations
+maxit = 200
+# tolerance
+tol = 8
+# diis_size
+diis_size = 6
+# RHF flag
+isRHF = False
+# shift parameter
+ccshift = 0.0
+lccshift = 0.0
+eom_lccshift = 0.8
+
+# EOM options
+nroot = 1,0,0,0
+eom_tol = 7
+eom_maxit = 500
+eom_guess_noact = 0
+eom_guess_nuact = 0
+
+save_data = False
+
