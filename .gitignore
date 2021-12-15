@@ -160,3 +160,7 @@ dmypy.json
 
 #DS_Store
 .DS_Store
+
+# Numpy files
+.npy
+.npz
