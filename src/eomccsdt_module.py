@@ -4,7 +4,9 @@ the equation-of-motion (EOM) CC with singles, doubles, and triples (EOMCCSDT).""
 import numpy as np
 from cc_energy import calc_cc_energy
 import cc_loops
-import eomcc_initial_guess
+from solvers import davidson
+from eomcc_initialize import get_eomcc_initial_guess
+from functools import partial
 
 def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,maxit=80,flag_RHF=False):
     """Perform the EOMCCSDT excited-state calculation.
@@ -51,79 +53,17 @@ def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06
     n3c = sys['Nocc_a']*sys['Nunocc_a']*sys['Nocc_b']**2*sys['Nunocc_b']**2
     n3d = sys['Nocc_b']**3 * sys['Nunocc_b']**3
 
-    num_roots_total = sum(nroot)
+    ndim = n1a+n1b+n2a+n2b+n2c+n3a+n3b+n3c+n3d
 
-    B0 = np.zeros((n1a+n1b+n2a+n2b+n2c+n3a+n3b+n3c+n3d,num_roots_total))
-    E0 = np.zeros(num_roots_total)
-    root_sym = [None]*num_roots_total
+    # Obtain initial guess using the EOMCCSd method
+    B0, E0 = get_eomcc_initial_guess(nroot,noact,nuact,ndim,H1A,H1B,H2A,H2B,H2C,ints,sys)
 
-    mo_sym = np.array(sys['sym_nums'])[sys['Nfroz']:]
-    mult_table = np.array(sys['pg_mult_table'])
-    h_group = mult_table.shape[0]
-
-    nct = 0
-    for sym_target, num_root_sym in enumerate(nroot):
-
-        if num_root_sym == 0: continue
-
-        state_irrep = list(sys['irrep_map'].keys())[sym_target]
-        print('Initial guess for {} singlet states of {} symmetry '.format(num_root_sym,state_irrep),end='')
-
-        idx1A,idx1B,idx2A,idx2B,idx2C,n1a_act,n1b_act,n2a_act,n2b_act,n2c_act =\
-                        eomcc_initial_guess.eomcc_initial_guess.\
-                        get_active_dimensions(noact,nuact,sym_target,mo_sym,mult_table,\
-                        sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'],\
-                        sys['Nocc_a']+sys['Nocc_b'],h_group)
-        ndim_act = n1a_act+n1b_act+n2a_act+n2b_act+n2c_act
-
-        print('(Dim. = {})'.format(ndim_act))
-
-        Cvec, omega_eomccsd, Hmat = eomcc_initial_guess.eomcc_initial_guess.\
-                        eomccs_d_matrix(idx1A,idx1B,idx2A,idx2B,idx2C,\
-                        H1A['oo'],H1A['vv'],H1A['ov'],H1B['oo'],H1B['vv'],H1B['ov'],\
-                        H2A['oooo'],H2A['vvvv'],H2A['voov'],H2A['vooo'],H2A['vvov'],\
-                        H2A['ooov'],H2A['vovv'],\
-                        H2B['oooo'],H2B['vvvv'],H2B['voov'],H2B['ovvo'],H2B['vovo'],\
-                        H2B['ovov'],H2B['vooo'],H2B['ovoo'],H2B['vvov'],H2B['vvvo'],\
-                        H2B['ooov'],H2B['oovo'],H2B['vovv'],H2B['ovvv'],\
-                        H2C['oooo'],H2C['vvvv'],H2C['voov'],H2C['vooo'],H2C['vvov'],\
-                        H2C['ooov'],H2C['vovv'],\
-                        n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,ndim_act)
-        # sort the roots
-        idx = np.argsort(omega_eomccsd)
-        omega_eomccsd = omega_eomccsd[idx]
-        Cvec = Cvec[:,idx]
-
-        # locate only singlet roots
-        ct = 0
-        slice_1A = slice(0,n1a_act)
-        slice_1B = slice(n1a_act,n1a_act+n1b_act)
-        for i in range(len(omega_eomccsd)):
-            chk = np.linalg.norm(Cvec[slice_1A,i] - Cvec[slice_1B,i])
-            if abs(chk) < 1.0e-09:
-                r1a,r1b,r2a,r2b,r2c = eomcc_initial_guess.eomcc_initial_guess.\
-                                unflatten_guess_vector(Cvec[:,i],idx1A,idx1B,idx2A,idx2B,idx2C,\
-                                n1a_act,n1b_act,n2a_act,n2b_act,n2c_act)
-                B0[:,nct] = flatten_R(r1a,r1b,r2a,r2b,r2c,\
-                                np.zeros((sys['Nunocc_a'],sys['Nunocc_a'],sys['Nunocc_a'],sys['Nocc_a'],sys['Nocc_a'],sys['Nocc_a'])),\
-                                np.zeros((sys['Nunocc_a'],sys['Nunocc_a'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_a'],sys['Nocc_b'])),\
-                                np.zeros((sys['Nunocc_a'],sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_b'],sys['Nocc_b'])),\
-                                np.zeros((sys['Nunocc_b'],sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_b'],sys['Nocc_b'],sys['Nocc_b'])))
-                E0[nct] = omega_eomccsd[i]
-                root_sym[nct] = state_irrep
-                nct += 1
-                if ct+1 == num_root_sym:
-                    break
-                ct += 1
-        else:
-            print('Could not find {} singlet roots of {} symmetry in EOMCCSd guess!'.format(num_root_sym,state_irrep))
-
-    print('Initial EOMCCSd energies:')
-    for i in range(num_roots_total):
-        print('Root - {}  (Sym: {})     E = {:.10f}    ({:.10f})'.format(i+1,root_sym[i],E0[i],E0[i]+ints['Escf']))
-    print('')
-
-    Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,num_roots_total,B0,E0,sys,maxit,tol,flag_RHF)
+    # Get the HR function
+    HR_func = partial(HR,cc_t=cc_t,H1A=H1A,H1B=H1B,H2A=H2A,H2B=H2B,H2C=H2C,ints=ints,sys=sys,flag_RHF=flag_RHF)
+    # Get the R update function
+    update_R_func = lambda r,omega : update_R(r,omega,H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],sys)
+    # Diagonalize Hamiltonian using Davidson algorithm
+    Rvec, omega, is_converged = davidson(HR_func,update_R_func,B0,E0,maxit,tol)
     
     cc_t['r1a'] = [None]*len(omega)
     cc_t['r1b'] = [None]*len(omega)
@@ -160,115 +100,14 @@ def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06
 
     return cc_t, omega
 
-def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol,flag_RHF):
-    """Diagonalize the CCSDT similarity-transformed Hamiltonian HBar using the
-    non-Hermitian Davidson algorithm.
+def update_R(r,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,sys):
 
-    Parameters
-    ----------
-    H1*, H2* : dict
-        Sliced CCSDT similarity-transformed HBar integrals
-    ints : dict
-        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-    cc_t : dict
-        Cluster amplitudes T1, T2 of the ground-state
-    nroot : int
-        Number of excited-states to solve for
-    B0 : ndarray(dtype=float, shape=(ndim_ccsdt,nroot))
-        Matrix containing the initial guess vectors for the Davidson procedure
-    E0 : ndarray(dtype=float, shape=(nroot))
-        Vector containing the energies corresponding to the initial guess vectors
-    sys : dict
-        System information dictionary
-    maxit : int, optional
-        Maximum number of Davidson iterations in the EOMCC procedure.
-    tol : float, optional
-        Convergence tolerance for the EOMCC calculation. Default is 1.0e-06.
+    r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d = unflatten_R(r,sys)
+    r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d = cc_loops.cc_loops.update_r_ccsdt(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,\
+                    omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,0.0,\
+                    sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'])
 
-    Returns
-    -------
-    Rvec : ndarray(dtype=float, shape=(ndim_ccsdt,nroot))
-        Matrix containing the final converged R vectors corresponding to the EOMCCSDT linear excitation amplitudes
-    omega : ndarray(dtype=float, shape=(nroot))
-        Vector of vertical excitation energies (in hartree) for each root
-    is_converged : list
-        List of boolean indicating whether each root converged to within the specified tolerance
-    """
-    noa = H1A['ov'].shape[0]
-    nob = H1B['ov'].shape[0]
-    nua = H1A['ov'].shape[1]
-    nub = H1B['ov'].shape[1]
-
-    ndim = noa*nua + nob*nub\
-           +noa**2*nua**2 + noa*nob*nua*nub + nob**2*nub**2\
-           +noa**3*nua**3 + noa**2*nob*nua**2*nub + noa*nob**2*nua*nub**2 + nob**3*nub**3
-
-    Rvec = np.zeros((ndim,nroot))
-    is_converged = [False] * nroot
-    omega = np.zeros(nroot)
-    residuals = np.zeros(nroot)
-
-    # orthonormalize the initial trial space
-    B0,_ = np.linalg.qr(B0)
-
-    for iroot in range(nroot):
-
-        print('Solving for root - {}'.format(iroot+1))
-        print('--------------------------------------------------------------------------------')
-        B = B0[:,iroot][:,np.newaxis]
-
-        sigma = np.zeros((ndim,maxit))
-    
-        omega[iroot] = E0[iroot]
-        for it in range(maxit):
-
-            omega_old = omega[iroot]
-
-            sigma[:,it] = HR(B[:,it],cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF)
-
-            G = np.dot(B.T,sigma[:,:it+1])
-            e, alpha = np.linalg.eig(G)
-
-            # select root based on maximum overlap with initial guess
-            # < b0 | V_i > = < b0 | \sum_k alpha_{ik} |b_k>
-            # = \sum_k alpha_{ik} < b0 | b_k > = \sum_k alpha_{i0}
-            idx = np.argsort( abs(alpha[0,:]) )
-            omega[iroot] = np.real(e[idx[-1]])
-            alpha = np.real(alpha[:,idx[-1]])
-            Rvec[:,iroot] = np.dot(B,alpha)
-
-            # calculate residual vector
-            q = np.dot(sigma[:,:it+1],alpha) - omega[iroot]*Rvec[:,iroot]
-            residuals[iroot] = np.linalg.norm(q)
-            deltaE = omega[iroot] - omega_old
-
-            print('   Iter - {}      e = {:.10f}       |r| = {:.10f}      de = {:.10f}'.\
-                            format(it+1,omega[iroot],residuals[iroot],deltaE))
-
-            if residuals[iroot] < tol and abs(deltaE) < tol:
-                is_converged[iroot] = True
-                break
-            
-            # update residual vector
-            q1a,q1b,q2a,q2b,q2c,q3a,q3b,q3c,q3d = unflatten_R(q,sys)
-            q1a,q1b,q2a,q2b,q2c,q3a,q3b,q3c,q3d = cc_loops.cc_loops.update_r_ccsdt(q1a,q1b,q2a,q2b,q2c,q3a,q3b,q3c,q3d,\
-                            omega[iroot],
-                            H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],0.0,\
-                            sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'])
-            q = flatten_R(q1a,q1b,q2a,q2b,q2c,q3a,q3b,q3c,q3d)
-            q *= 1.0/np.linalg.norm(q)
-            q = orthogonalize(q,B)
-            q *= 1.0/np.linalg.norm(q)
-
-            B = np.concatenate((B,q[:,np.newaxis]),axis=1)
-
-        if is_converged[iroot]:
-            print('Converged root {}'.format(iroot+1))
-        else:
-            print('Failed to converge root {}'.format(iroot+1))
-        print('')
-
-    return Rvec, omega, is_converged
+    return flatten_R(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d)
 
 def calc_r0(r1a,r1b,r2a,r2b,r2c,H1A,H1B,ints,omega):
     """Calculate the EOMCC overlap <0|[ (H_N e^T)_C * (R1+R2) ]_C|0>.
@@ -305,27 +144,6 @@ def calc_r0(r1a,r1b,r2a,r2b,r2c,H1A,H1B,ints,omega):
     r0 += 0.25*np.einsum('mnef,efmn->',ints['vC']['oovv'],r2c,optimize=True)
 
     return r0/omega
-
-def orthogonalize(q,B):
-    """Orthogonalize the correction vector to the vectors comprising
-    the current subspace.
-
-    Parameters
-    ----------
-    q : ndarray(dtype=float, shape=(ndim_ccsdt))
-        Preconditioned residual vector from Davidson procedure
-    B : ndarray(dtype=float, shape=(ndim_ccsdt,curr_size))
-        Matrix of subspace vectors in Davidson procedure
-
-    Returns
-    -------
-    q : ndarray(dtype=float, shape=(ndim_ccsdt))
-        Orthogonalized residual vector
-    """
-    for i in range(B.shape[1]):
-        b = B[:,i]/np.linalg.norm(B[:,i])
-        q -= np.dot(b.T,q)*b
-    return q
 
 def flatten_R(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d):
     """Flatten the R vector.

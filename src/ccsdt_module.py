@@ -1,17 +1,12 @@
 """Module with functions that perform the CC with singles, doubles,
 and triples (CCSDT) calculation for a molecular system."""
 import numpy as np
-from solvers import diis_out_of_core
-from cc_energy import calc_cc_energy
+from solvers import solve_cc_jacobi, solve_cc_jacobi_out_of_core
 from HBar_module import get_ccs_intermediates, get_ccsd_intermediates
-import time
 import cc_loops2
-from utilities import print_memory_usage, clean_up
+from functools import partial
 
-#print(cc_loops.cc_loops.__doc__)
-
-#@profile
-def ccsdt(sys,ints,work_dir,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=False):
+def ccsdt(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=False):
     """Perform the ground-state CCSDT calculation.
 
     Parameters
@@ -45,9 +40,6 @@ def ccsdt(sys,ints,work_dir,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=F
     """
     print('\n==================================++Entering CCSDT Routine++=================================\n')
 
-    vecfid = work_dir+'/t_diis'
-    dvecfid = work_dir+'/dt_diis'
-
     n1a = sys['Nocc_a'] * sys['Nunocc_a']
     n1b = sys['Nocc_b'] * sys['Nunocc_b']
     n2a = sys['Nocc_a'] ** 2 * sys['Nunocc_a'] ** 2
@@ -59,144 +51,63 @@ def ccsdt(sys,ints,work_dir,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=F
     n3d = sys['Nocc_b'] ** 3 * sys['Nunocc_b'] ** 3
 
     ndim = n1a + n1b + n2a + n2b + n2c + n3a + n3b + n3c + n3d
-    idx_1a = slice(0,n1a)
-    idx_1b = slice(n1a,n1a+n1b)
-    idx_2a = slice(n1a+n1b,n1a+n1b+n2a)
-    idx_2b = slice(n1a+n1b+n2a,n1a+n1b+n2a+n2b)
-    idx_2c = slice(n1a+n1b+n2a+n2b,n1a+n1b+n2a+n2b+n2c)
-    idx_3a = slice(n1a+n1b+n2a+n2b+n2c,n1a+n1b+n2a+n2b+n2c+n3a)
-    idx_3b = slice(n1a+n1b+n2a+n2b+n2c+n3a,n1a+n1b+n2a+n2b+n2c+n3a+n3b)    
-    idx_3c = slice(n1a+n1b+n2a+n2b+n2c+n3a+n3b,n1a+n1b+n2a+n2b+n2c+n3a+n3b+n3c)
-    idx_3d = slice(n1a+n1b+n2a+n2b+n2c+n3a+n3b+n3c,n1a+n1b+n2a+n2b+n2c+n3a+n3b+n3c+n3d)
 
+    # Initialize the cc_t dictionary containing the T vectors to 0
     cc_t = {}
-    T = np.zeros(ndim)
-    T_resid = np.zeros(ndim)
+    cc_t['t1a']  = np.zeros((sys['Nunocc_a'],sys['Nocc_a']))
+    cc_t['t1b']  = np.zeros((sys['Nunocc_b'],sys['Nocc_b']))
+    cc_t['t2a']  = np.zeros((sys['Nunocc_a'],sys['Nunocc_a'],sys['Nocc_a'],sys['Nocc_a']))
+    cc_t['t2b']  = np.zeros((sys['Nunocc_a'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_b']))
+    cc_t['t2c']  = np.zeros((sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_b'],sys['Nocc_b']))
+    cc_t['t3a']  = np.zeros((sys['Nunocc_a'],sys['Nunocc_a'],sys['Nunocc_a'],sys['Nocc_a'],sys['Nocc_a'],sys['Nocc_a']))
+    cc_t['t3b']  = np.zeros((sys['Nunocc_a'],sys['Nunocc_a'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_a'],sys['Nocc_b']))
+    cc_t['t3c']  = np.zeros((sys['Nunocc_a'],sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_b'],sys['Nocc_b']))
+    cc_t['t3d']  = np.zeros((sys['Nunocc_b'],sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_b'],sys['Nocc_b'],sys['Nocc_b']))
 
-    # [TODO]: Write the residual dt_diis-*.npy files in chunks using memmap
-    #resid_mmap = [None]*diis_size
-    #for i in range(diis_size):
-    #    resid_mmap[i] = open_memmap(dvecfid+'-'+str(i+1)+'.npy', mode="w+", shape=(ndim))
+    update_t_func = partial(update_t,ints=ints,sys=sys,shift=shift,flag_RHF=flag_RHF)
+    cc_t, Eccsdt = solve_cc_jacobi_out_of_core(cc_t,update_t_func,ints,maxit,tol,ndim,diis_size)
 
-    # Jacobi/DIIS iterations
-    it_micro = 0
-    flag_conv = False
-    it_macro = 0
-    Ecorr_old = 0.0
+    return cc_t, Eccsdt
 
-    t_start = time.time()
-    print('Iteration    Residuum               deltaE                 Ecorr')
-    print('=============================================================================')
-    while it_micro < maxit:
-        
-        # get DIIS counter
-        ndiis = it_micro%diis_size
+def update_t(cc_t,ints,sys,shift,flag_RHF):
 
-        # reshape T into tensor form
-        cc_t['t1a']  = np.reshape(T[idx_1a],(sys['Nunocc_a'],sys['Nocc_a']))
-        cc_t['t1b']  = np.reshape(T[idx_1b],(sys['Nunocc_b'],sys['Nocc_b']))
-        cc_t['t2a']  = np.reshape(T[idx_2a],(sys['Nunocc_a'],sys['Nunocc_a'],sys['Nocc_a'],sys['Nocc_a']))
-        cc_t['t2b']  = np.reshape(T[idx_2b],(sys['Nunocc_a'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_b']))
-        cc_t['t2c']  = np.reshape(T[idx_2c],(sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_b'],sys['Nocc_b']))
-        cc_t['t3a']  = np.reshape(T[idx_3a],(sys['Nunocc_a'],sys['Nunocc_a'],sys['Nunocc_a'],sys['Nocc_a'],sys['Nocc_a'],sys['Nocc_a']))
-        cc_t['t3b']  = np.reshape(T[idx_3b],(sys['Nunocc_a'],sys['Nunocc_a'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_a'],sys['Nocc_b']))
-        cc_t['t3c']  = np.reshape(T[idx_3c],(sys['Nunocc_a'],sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_b'],sys['Nocc_b']))
-        cc_t['t3d']  = np.reshape(T[idx_3d],(sys['Nunocc_b'],sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_b'],sys['Nocc_b'],sys['Nocc_b']))
+    # CCS intermediates
+    H1A,H1B,H2A,H2B,H2C = get_ccs_intermediates(cc_t,ints,sys)
 
-        # CC correlation energy
-        Ecorr = calc_cc_energy(cc_t,ints)
-       
-        # CCS intermediates
-        H1A,H1B,H2A,H2B,H2C = get_ccs_intermediates(cc_t,ints,sys)
-        #H1A2,H1B2,H2A2,H2B2,H2C2 = get_ccs_intermediates_v2(cc_t,ints,sys)
-        #for key in H2A.keys():
-        #    err = np.linalg.norm(H2A[key].flatten() - H2A2[key].flatten())
-        #    print('error in H2A({}) = {}'.format(key,err))
-
-        # update T2
-        cc_t, T_resid[idx_2a] = update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-        cc_t, T_resid[idx_2b] = update_t2b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-        if flag_RHF:
-            cc_t['t2c'] = cc_t['t2a']
-            T_resid[idx_2c] = T_resid[idx_2a]
-        else:
-            cc_t, T_resid[idx_2c] = update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-
-        # update T1                        
-        cc_t, T_resid[idx_1a] = update_t1a(cc_t,ints,sys,shift)
-        if flag_RHF:
-            cc_t['t1b'] = cc_t['t1a']
-            T_resid[idx_1b] = T_resid[idx_1a]
-        else:
-            cc_t, T_resid[idx_1b] = update_t1b(cc_t,ints,sys,shift)
-
-        # CCSD intermediates
-        H1A,H1B,H2A,H2B,H2C = get_ccsd_intermediates(cc_t,ints,sys)
-
-        # update T3
-        cc_t, T_resid[idx_3a] = update_t3a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-        cc_t, T_resid[idx_3b] = update_t3b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-        if flag_RHF:
-            cc_t['t3c'] = np.transpose(cc_t['t3b'],(2,0,1,5,3,4))
-            T_resid[idx_3c] = T_resid[idx_3b] # THIS PROBABLY DOESN'T WORK!
-            cc_t['t3d'] = cc_t['t3a']
-            T_resid[idx_3d] = T_resid[idx_3a]
-        else:
-            cc_t, T_resid[idx_3c] = update_t3c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-            cc_t, T_resid[idx_3d] = update_t3d(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-        
-        # store vectorized results
-        T[idx_1a] = cc_t['t1a'].flatten()
-        T[idx_1b] = cc_t['t1b'].flatten()
-        T[idx_2a] = cc_t['t2a'].flatten()
-        T[idx_2b] = cc_t['t2b'].flatten()
-        T[idx_2c] = cc_t['t2c'].flatten()
-        T[idx_3a] = cc_t['t3a'].flatten()
-        T[idx_3b] = cc_t['t3b'].flatten()
-        T[idx_3c] = cc_t['t3c'].flatten()
-        T[idx_3d] = cc_t['t3d'].flatten()
-
-        # build DIIS residual
-        #T_resid = T - T_old
-        
-        # change in Ecorr
-        deltaE = Ecorr - Ecorr_old
-
-        # check for exit condition
-        resid = np.linalg.norm(T_resid)
-        if resid < tol and abs(deltaE) < tol:
-            flag_conv = True
-            break
-
-        # Save T and dT vectors to disk for out of core DIIS
-        np.save(vecfid+'-'+str(ndiis+1)+'.npy',T)
-        np.save(dvecfid+'-'+str(ndiis+1)+'.npy',T_resid)
-        # Do DIIS extrapolation        
-        if ndiis == 0 and it_micro > 1:
-            it_macro = it_macro + 1
-            print('DIIS Cycle - {}'.format(it_macro))
-            T = diis_out_of_core(vecfid,dvecfid,ndim,diis_size)
-        
-        print('   {}       {:.10f}          {:.10f}          {:.10f}'.format(it_micro,resid,deltaE,Ecorr))
-        
-        it_micro += 1
-        Ecorr_old = Ecorr
-
-    t_end = time.time()
-    minutes, seconds = divmod(t_end-t_start, 60)
-    if flag_conv:
-        print('CCSDT successfully converged! ({:0.2f}m  {:0.2f}s)'.format(minutes,seconds))
-        print('')
-        print('CCSDT Correlation Energy = {} Eh'.format(Ecorr))
-        print('CCSDT Total Energy = {} Eh'.format(Ecorr + ints['Escf']))
+    # update T2
+    cc_t, dt_2a = update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
+    cc_t, dt_2b = update_t2b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
+    if flag_RHF:
+        cc_t['t2c'] = cc_t['t2a']
+        dt_2c = dt_2a.copy()
     else:
-        print('Failed to converge CCSDT in {} iterations'.format(maxit))
-   
-    # Clean up DIIS files from the working directory
-    clean_up(vecfid,diis_size)
-    clean_up(dvecfid,diis_size)
+        cc_t, dt_2c = update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
 
-    return cc_t, ints['Escf'] + Ecorr
+    # update T1                        
+    cc_t, dt_1a = update_t1a(cc_t,ints,sys,shift)
+    if flag_RHF:
+        cc_t['t1b'] = cc_t['t1a']
+        dt_1b = dt_1a.copy()
+    else:
+        cc_t, dt_1b = update_t1b(cc_t,ints,sys,shift)
+
+    # CCSD intermediates
+    H1A,H1B,H2A,H2B,H2C = get_ccsd_intermediates(cc_t,ints,sys)
+
+    # update T3
+    cc_t, dt_3a = update_t3a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
+    cc_t, dt_3b = update_t3b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
+    if flag_RHF:
+        cc_t['t3c'] = np.transpose(cc_t['t3b'],(2,0,1,5,3,4))
+        dt_3c = np.transpose(dt_3b,(2,1,0,5,4,3))
+        cc_t['t3d'] = cc_t['t3a']
+        dt_3d = dt_3a.copy()
+    else:
+        cc_t, dt_3c = update_t3c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
+        cc_t, dt_3d = update_t3d(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
+
+    return cc_t, \
+        np.concatenate((dt_1a.flatten(),dt_1b.flatten(),dt_2a.flatten(),dt_2b.flatten(),dt_2c.flatten(),dt_3a.flatten(),dt_3b.flatten(),dt_3c.flatten(),dt_3d.flatten()))
 
 #@profile
 def update_t1a(cc_t,ints,sys,shift):
@@ -259,7 +170,7 @@ def update_t1a(cc_t,ints,sys,shift):
     X1A += 0.25*np.einsum('mnef,aefimn->ai',ints['vC']['oovv'],cc_t['t3c'],optimize=True)
 
     cc_t['t1a'], resid = cc_loops2.cc_loops2.update_t1a(cc_t['t1a'],X1A,ints['fA']['oo'],ints['fA']['vv'],shift)
-    return cc_t, resid.flatten()
+    return cc_t, resid
 
 #@profile
 def update_t1b(cc_t,ints,sys,shift):
@@ -330,7 +241,7 @@ def update_t1b(cc_t,ints,sys,shift):
     X1B += np.einsum('mnef,efamni->ai',ints['vB']['oovv'],cc_t['t3c'],optimize=True)
     
     cc_t['t1b'], resid = cc_loops2.cc_loops2.update_t1b(cc_t['t1b'],X1B,ints['fB']['oo'],ints['fB']['vv'],shift)
-    return cc_t, resid.flatten()
+    return cc_t, resid
 
 #@profile
 def update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
@@ -384,7 +295,7 @@ def update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     X2A += 0.5*np.einsum('anef,ebfijn->abij',H2B['vovv'],cc_t['t3b'],optimize=True)
 
     cc_t['t2a'], resid = cc_loops2.cc_loops2.update_t2a(cc_t['t2a'],X2A,ints['fA']['oo'],ints['fA']['vv'],shift)
-    return cc_t, resid.flatten()
+    return cc_t, resid
 
 #@profile
 def update_t2b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
@@ -460,7 +371,7 @@ def update_t2b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     X2B += np.einsum('me,aebimj->abij',H1B['ov'],cc_t['t3c'],optimize=True)
 
     cc_t['t2b'], resid = cc_loops2.cc_loops2.update_t2b(cc_t['t2b'],X2B,ints['fA']['oo'],ints['fA']['vv'],ints['fB']['oo'],ints['fB']['vv'],shift)
-    return cc_t, resid.flatten()
+    return cc_t, resid
 
 #@profile
 def update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
@@ -514,7 +425,7 @@ def update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     X2C -= 0.5*np.einsum('nmfi,fabnmj->abij',H2B['oovo'],cc_t['t3c'],optimize=True)
 
     cc_t['t2c'], resid = cc_loops2.cc_loops2.update_t2c(cc_t['t2c'],X2C,ints['fB']['oo'],ints['fB']['vv'],shift)
-    return cc_t, resid.flatten()
+    return cc_t, resid
 
 #@profile
 def update_t3a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
@@ -556,7 +467,7 @@ def update_t3a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     X3A += 0.25*np.einsum('cmke,abeijm->abcijk',H2B['voov'],cc_t['t3b'],optimize=True)
 
     cc_t['t3a'], resid = cc_loops2.cc_loops2.update_t3a_v2(cc_t['t3a'],X3A,ints['fA']['oo'],ints['fA']['vv'],shift)
-    return cc_t, resid.flatten()
+    return cc_t, resid
 
 #@profile
 def update_t3b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
@@ -624,7 +535,7 @@ def update_t3b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     X3B -= 0.5*np.einsum('mcie,abemjk->abcijk',H2B['ovov'],cc_t['t3b'],optimize=True)
 
     cc_t['t3b'], resid = cc_loops2.cc_loops2.update_t3b_v2(cc_t['t3b'],X3B,ints['fA']['oo'],ints['fA']['vv'],ints['fB']['oo'],ints['fB']['vv'],shift)
-    return cc_t, resid.flatten()
+    return cc_t, resid
 
 #@profile
 def update_t3c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
@@ -692,7 +603,7 @@ def update_t3c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     X3C -= 0.5*np.einsum('amej,ebcimk->abcijk',H2B['vovo'],cc_t['t3c'],optimize=True)
 
     cc_t['t3c'], resid = cc_loops2.cc_loops2.update_t3c_v2(cc_t['t3c'],X3C,ints['fA']['oo'],ints['fA']['vv'],ints['fB']['oo'],ints['fB']['vv'],shift)             
-    return cc_t, resid.flatten()
+    return cc_t, resid
 
 #@profile
 def update_t3d(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
@@ -734,5 +645,5 @@ def update_t3d(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     X3D += 0.25*np.einsum('amie,ebcmjk->abcijk',H2C['voov'],cc_t['t3d'],optimize=True)
 
     cc_t['t3d'], resid = cc_loops2.cc_loops2.update_t3d_v2(cc_t['t3d'],X3D,ints['fB']['oo'],ints['fB']['vv'],shift)
-    return cc_t, resid.flatten()
+    return cc_t, resid
 

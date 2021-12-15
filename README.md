@@ -10,14 +10,14 @@ via the equation-of-motion (EOM) CC formalism. Supports CC(P;Q) calculations aim
 for ground states and EOMCCSDT energetics for excited states. All implementations are spin-integrated and make 
 use of fast BLAS routines for reasonable speed for research problems. 
 
-# Instruction
+# Installation
 The cleanest way to install `CCpy` is to create a conda virtual environment. To do so, run
 
 `conda create --name <env_name> python=3.9` 
 
-and install `numpy`, `scipy`, `mkl`, and `cclib` with the command
+and install `numpy`, `scipy`, `mkl`, `pytest`, and `cclib` with the command
 
-`conda install numpy scipy mkl` and `conda install --channel conda-forge cclib`.
+`conda install numpy scipy mkl pytest` and `conda install --channel conda-forge cclib`.
 
 Intel MKL is used to make all BLAS routines executed in Python and Fortran fast. Ensure that the Numpy installed
 in the conda environment is using MKL by running `np.show_config()`. When I do this, I have the following:
@@ -78,8 +78,7 @@ Supported SIMD extensions in this NumPy install:
 `
 
 This will show if Numpy is configured to use the MKL installed in the conda virtual environment. Then, to configure
-Fortran to use the correct MKL, note the root in `library_dirs` and insert that path into the Makefile for `${MKLROOT}`.
-
+Fortran to use the correct MKL, note the root in `library_dirs` and insert that path into the Makefile for `${MKLROOT}`. 
 If all is well, all Fortran files should compile when the make file is executed. If any MKL libraries are misnamed, this
 can be fixed by going to the MKL library path and linking each executable into the correct name (via `link <OLD.so> <NEW.so>`). 
 
