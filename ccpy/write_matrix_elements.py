@@ -59,6 +59,12 @@ def t3a_diagram6():
                         sign_str = '-'
                     print(sign_str+temp+'\\')
 
+def t3a_diagram7():
+    #
+
+def t3a_diagram8():
+    #
+
 def replacer(s, newstring, index, nofail=False):
     # raise an error if index is outside of the string
     if not nofail and index not in range(len(s)):
@@ -84,6 +90,7 @@ def apply_asym(perm,sign,expr):
         for idx in result2:
             expr = replacer(expr,s[0],idx)
         return sign, expr
+
 
 if __name__ == '__main__':
     t3a_diagram6()

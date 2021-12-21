@@ -5,33 +5,42 @@ using the ionization process (IP) equation-of-motion (EOM) CC with
 singles and doubles (IP-EOMCCSD) with up to 2h-1p excitations."""
 import numpy as np
 from cc_energy import calc_cc_energy
+from solvers import davidson_out_of_core
+from functools import partial
 import cc_loops
 
-def ipeom2(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,maxit=80):
+def ipeom2(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,maxit=80,flag_RHF=False):
     print('\n==================================++Entering IP-EOMCCSD(2h-1p) Routine++=================================\n')
 
+    num_roots_total = sum(nroot)
+
     C_1h, E_1h = guess_1h(ints,sys)
-    B0 = np.zeros((sys['Nocc_a']+sys['Nocc_b'],nroot))
-    E0 = np.zeros(nroot)
+    B0 = np.zeros((sys['Nocc_a']+sys['Nocc_b'],num_roots_total))
+    E0 = np.zeros(num_roots_total)
     ct = 0
     for i in reversed(range(len(E_1h))):
         B0[:,ct] = C_1h[:,i]
         E0[ct] = -1.0 * E_1h[i]
-        if ct+1 == nroot:
+        if ct+1 == num_roots_total:
             break
         ct += 1
     print('Initial 1h Energies:')
-    for i in range(nroot):
+    for i in range(num_roots_total):
         print('Root - {}     E = {:.10f}'.format(i+1,E0[i]))
     print('')
     n_2h1p = sys['Nocc_a']**2*sys['Nunocc_a']\
                     +sys['Nocc_a']*sys['Nocc_b']*sys['Nunocc_a']\
                     +sys['Nocc_b']*sys['Nocc_a']*sys['Nunocc_b']\
                     +sys['Nocc_b']**2*sys['Nunocc_b']
-    ZEROS_2h1p = np.zeros((n_2h1p,nroot))
+    ZEROS_2h1p = np.zeros((n_2h1p,num_roots_total))
     B0 = np.concatenate((B0,ZEROS_2h1p),axis=0)
 
-    Rvec, omega, is_converged = davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol)
+    # Get the HR function
+    HR_func = partial(HR,cc_t=cc_t,H1A=H1A,H1B=H1B,H2A=H2A,H2B=H2B,H2C=H2C,ints=ints,sys=sys,flag_RHF=flag_RHF)
+    # Get the R update function
+    update_R_func = lambda r,omega : update_R(r,omega,H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],sys)
+    # Diagonalize Hamiltonian using Davidson algorithm
+    Rvec, omega, is_converged = davidson_out_of_core(HR_func,update_R_func,B0,E0,maxit,tol)
     
     cc_t['r1a'] = [None]*len(omega)
     cc_t['r1b'] = [None]*len(omega)
@@ -54,137 +63,18 @@ def ipeom2(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,m
             tmp = 'CONVERGED'
         else:
             tmp = 'NOT CONVERGED'
-        print('   Root - {}    E = {}    omega = {:.10f}    [{}]'\
-                        .format(i+1,omega[i]+Eccsd,omega[i],tmp))
+        print('   Root - {}    E = {}    omega_IP = {:.10f}    omega = {:.10f}  [{}]'\
+                        .format(i+1,omega[i]+Eccsd,omega[i],omega[i]-omega[0],tmp))
 
     return cc_t, omega
 
-def davidson_solver(H1A,H1B,H2A,H2B,H2C,ints,cc_t,nroot,B0,E0,sys,maxit,tol):
-    """Diagonalize the CCSD similarity-transformed Hamiltonian HBar using the
-    non-Hermitian Davidson algorithm.
+def update_R(r,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,sys):
 
-    Parameters
-    ----------
-    H1*, H2* : dict
-        Sliced CCSD similarity-transformed HBar integrals
-    ints : dict
-        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-    cc_t : dict
-        Cluster amplitudes T1, T2 of the ground-state
-    nroot : int
-        Number of excited-states to solve for
-    B0 : ndarray(dtype=float, shape=(ndim_ccsd,nroot))
-        Matrix containing the initial guess vectors for the Davidson procedure
-    E0 : ndarray(dtype=float, shape=(nroot))
-        Vector containing the energies corresponding to the initial guess vectors
-    sys : dict
-        System information dictionary
-    maxit : int, optional
-        Maximum number of Davidson iterations in the EOMCC procedure.
-    tol : float, optional
-        Convergence tolerance for the EOMCC calculation. Default is 1.0e-06.
-
-    Returns
-    -------
-    Rvec : ndarray(dtype=float, shape=(ndim_2h1p,nroot))
-        Matrix containing the final converged R vectors corresponding to the IP-EOMCCSD linear excitation amplitudes
-    omega : ndarray(dtype=float, shape=(nroot))
-        Vector of vertical excitation energies (in hartree) for each root
-    is_converged : list
-        List of boolean indicating whether each root converged to within the specified tolerance
-    """
-    noa = H1A['ov'].shape[0]
-    nob = H1B['ov'].shape[0]
-    nua = H1A['ov'].shape[1]
-    nub = H1B['ov'].shape[1]
-
-    ndim = noa + nob + noa**2*nua + noa*nob*nua + nob*noa*nub + nob**2*nub
-
-    Rvec = np.zeros((ndim,nroot))
-    is_converged = [False] * nroot
-    omega = np.zeros(nroot)
-    residuals = np.zeros(nroot)
-
-    # orthonormalize the initial trial space
-    B0,_ = np.linalg.qr(B0)
-
-    for iroot in range(nroot):
-
-        print('Solving for root - {}'.format(iroot+1))
-        print('--------------------------------------------------------------------------------')
-        B = B0[:,iroot][:,np.newaxis]
-
-        sigma = np.zeros((ndim,maxit))
-    
-        omega[iroot] = E0[iroot]
-        for it in range(maxit):
-
-            omega_old = omega[iroot]
-
-            sigma[:,it] = HR(B[:,it],cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-
-            G = np.dot(B.T,sigma[:,:it+1])
-            e, alpha = np.linalg.eig(G)
-
-            # select root based on maximum overlap with initial guess
-            idx = np.argsort( abs(alpha[0,:]) )
-            omega[iroot] = np.real(e[idx[-1]])
-            alpha = np.real(alpha[:,idx[-1]])
-            Rvec[:,iroot] = np.dot(B,alpha)
-
-            # calculate residual vector
-            q = np.dot(sigma[:,:it+1],alpha) - omega[iroot]*Rvec[:,iroot]
-            residuals[iroot] = np.linalg.norm(q)
-            deltaE = omega[iroot] - omega_old
-
-            print('   Iter - {}      e = {:.10f}       |r| = {:.10f}      de = {:.10f}'.\
-                            format(it+1,omega[iroot],residuals[iroot],deltaE))
-
-            if residuals[iroot] < tol and abs(deltaE) < tol:
-                is_converged[iroot] = True
-                break
-            
-            # update residual vector
-            q1a,q1b,q2a,q2b,q2c,q2d = unflatten_R(q,sys)
-            q1a,q1b,q2a,q2b,q2c,q2d = cc_loops.cc_loops.update_r_2h1p(q1a,q1b,q2a,q2b,q2c,q2d,omega[iroot],\
-                            H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],0.0,\
+    r1a,r1b,r2a,r2b,r2c,r2d = unflatten_R(r,sys)
+    r1a,r1b,r2a,r2b,r2c,r2d = cc_loops.cc_loops.update_r_2h1p(r1a,r1b,r2a,r2b,r2c,r2d,omega,\
+                            H1A_oo,H1A_vv,H1B_oo,H1B_vv,0.0,\
                             sys['Nocc_a'],sys['Nunocc_a'],sys['Nocc_b'],sys['Nunocc_b'])
-            q = flatten_R(q1a,q1b,q2a,q2b,q2c,q2d)
-            q *= 1.0/np.linalg.norm(q)
-            q = orthogonalize(q,B)
-            q *= 1.0/np.linalg.norm(q)
-
-            B = np.concatenate((B,q[:,np.newaxis]),axis=1)
-
-        if is_converged[iroot]:
-            print('Converged root {}'.format(iroot+1))
-        else:
-            print('Failed to converge root {}'.format(iroot+1))
-        print('')
-
-    return Rvec, omega, is_converged
-
-
-def orthogonalize(q,B):
-    """Orthogonalize the correction vector to the vectors comprising
-    the current subspace.
-
-    Parameters
-    ----------
-    q : ndarray(dtype=float, shape=(ndim_ccsd))
-        Preconditioned residual vector from Davidson procedure
-    B : ndarray(dtype=float, shape=(ndim_ccsd,curr_size))
-        Matrix of subspace vectors in Davidson procedure
-
-    Returns
-    -------
-    q : ndarray(dtype=float, shape=(ndim_ccsd))
-        Orthogonalized residual vector
-    """
-    for i in range(B.shape[1]):
-        b = B[:,i]/np.linalg.norm(B[:,i])
-        q -= np.dot(b.T,q)*b
-    return q
+    return flatten_R(r1a,r1b,r2a,r2b,r2c,r2d)
 
 def flatten_R(r1a,r1b,r2a,r2b,r2c,r2d):
     """Flatten the R vector.
@@ -262,7 +152,7 @@ def unflatten_R(R,sys,order='C'):
     return r1a, r1b, r2a, r2b, r2c, r2d
 
 
-def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
+def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF):
     """Calculate the matrix-vector product H(CCSD)*R.
 
     Parameters
@@ -285,14 +175,21 @@ def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     """
     r1a, r1b, r2a, r2b, r2c, r2d = unflatten_R(R,sys)
 
-    X1A = build_HR_1A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X1B = build_HR_1B(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X2A = build_HR_2A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X2B = build_HR_2B(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X2C = build_HR_2C(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X2D = build_HR_2D(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+    if flag_RHF:
+        X1A = build_HR_1A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2A = build_HR_2A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2B = build_HR_2B(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        Xout = flatten_R(X1A, X1A, X2A, X2B, X2B, X2A)
+    else:
+        X1A = build_HR_1A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X1B = build_HR_1B(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2A = build_HR_2A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2B = build_HR_2B(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2C = build_HR_2C(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2D = build_HR_2D(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        Xout = flatten_R(X1A, X1B, X2A, X2B, X2C, X2D)
 
-    return flatten_R(X1A, X1B, X2A, X2B, X2C, X2D)
+    return Xout
 
 def build_HR_1A(r1a,r1b,r2a,r2b,r2c,r2d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     """Calculate the projection <i|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>.

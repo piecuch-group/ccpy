@@ -70,22 +70,21 @@ module ccp_matrix
 
 
                         HT3A = 0.0d0
-                        dgm1 = 0.0d0
                         do idet = 1,n3a_p
-                           i1 = list_of_triples_A(idet,1) + 1
-                           j1 = list_of_triples_A(idet,2) + 1
-                           k1 = list_of_triples_A(idet,3) + 1
-                           a1 = list_of_triples_A(idet,4) + 1
-                           b1 = list_of_triples_A(idet,5) + 1
-                           c1 = list_of_triples_A(idet,6) + 1
+                           a1 = list_of_triples_A(idet,1) + 1
+                           b1 = list_of_triples_A(idet,2) + 1
+                           c1 = list_of_triples_A(idet,3) + 1
+                           i1 = list_of_triples_A(idet,4) + 1
+                           j1 = list_of_triples_A(idet,5) + 1
+                           k1 = list_of_triples_A(idet,6) + 1
 
                            do jdet = 1,n3a_p
-                              i2 = list_of_triples_A(jdet,1) + 1
-                              j2 = list_of_triples_A(jdet,2) + 1
-                              k2 = list_of_triples_A(jdet,3) + 1
-                              a2 = list_of_triples_A(jdet,4) + 1
-                              b2 = list_of_triples_A(jdet,5) + 1
-                              c2 = list_of_triples_A(jdet,6) + 1
+                              a2 = list_of_triples_A(jdet,1) + 1
+                              b2 = list_of_triples_A(jdet,2) + 1
+                              c2 = list_of_triples_A(jdet,3) + 1
+                              i2 = list_of_triples_A(jdet,4) + 1
+                              j2 = list_of_triples_A(jdet,5) + 1
+                              k2 = list_of_triples_A(jdet,6) + 1
 
                               ! diagram 1 -A(i/jk)h(mi)t3a(abcmjk)
                               dgm1 = -delta(a1,a2)*delta(b1,b2)*delta(c1,c2)&
