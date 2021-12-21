@@ -53,7 +53,6 @@ def eomccsd(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06,
 
     # Obtain initial guess using the EOMCCSd method
     B0, E0 = get_eomcc_initial_guess(nroot,noact,nuact,ndim,H1A,H1B,H2A,H2B,H2C,ints,sys)
-
     # Get the HR function
     HR_func = partial(HR,cc_t=cc_t,H1A=H1A,H1B=H1B,H2A=H2A,H2B=H2B,H2C=H2C,ints=ints,sys=sys,flag_RHF=flag_RHF)
     # Get the R update function

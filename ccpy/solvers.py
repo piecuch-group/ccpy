@@ -101,7 +101,7 @@ def solve_gauss(A, b):
         k = k-1
     return x
 
-def davidson_out_of_core(HR,update_R,B0,E0,maxit,tol):
+def davidson_out_of_core(HR,update_R,B0,E0,maxit,tol,flag_lowmem=True):
     """Diagonalize the similarity-transformed Hamiltonian HBar using the
     non-Hermitian Davidson algorithm. Low memory version where previous
     iteration vectors are stored on disk and accessed one-by-one.
@@ -118,6 +118,9 @@ def davidson_out_of_core(HR,update_R,B0,E0,maxit,tol):
         Maximum number of Davidson iterations in the EOMCC procedure.
     tol : float, optional
         Convergence tolerance for the EOMCC calculation. Default is 1.0e-06.
+    flag_lowmem : bool, optional, default = True
+        Flag to use low-memory subroutines that do not store more than 1 R or Sigma vector
+        in memory at a time.
 
     Returns
     -------
@@ -144,6 +147,7 @@ def davidson_out_of_core(HR,update_R,B0,E0,maxit,tol):
     for iroot in range(nroot):
 
         print('Solving for root - {}'.format(iroot+1))
+        print(' Iter        omega                |r|               dE            Wall Time')
         print('--------------------------------------------------------------------------------')
 
         # Initialize the memory map for the B and sigma matrices
@@ -187,7 +191,7 @@ def davidson_out_of_core(HR,update_R,B0,E0,maxit,tol):
 
             t2 = time.time()
             minutes, seconds = divmod(t2 - t1, 60)
-            print('   Iter - {}      e = {:.10f}       |r| = {:.10f}      de = {:.10f}      {:.2f}m {:.2f}s'.\
+            print('   {}      {:.10f}       {:.10f}      {:.10f}      {:.2f}m {:.2f}s'.\
                             format(curr_size,omega[iroot],residuals[iroot],deltaE,minutes,seconds))
 
             if residuals[iroot] < tol and abs(deltaE) < tol:
@@ -310,6 +314,7 @@ def davidson(HR,update_R,B0,E0,maxit,max_dim,tol):
     for iroot in range(nroot):
 
         print('Solving for root - {}'.format(iroot+1))
+        print(' Iter        omega                |r|               dE            Wall Time')
         print('--------------------------------------------------------------------------------')
 
         # Initialize the memory map for the B and sigma matrices
@@ -321,8 +326,9 @@ def davidson(HR,update_R,B0,E0,maxit,max_dim,tol):
 
         curr_size = 1
         for it in range(maxit):
-            omega_old = omega[iroot]
+            t1 = time.time()
 
+            omega_old = omega[iroot]
             G = np.dot(B[:,:curr_size].T,sigma[:,:curr_size])
             e, alpha = np.linalg.eig(G)
 
@@ -339,9 +345,10 @@ def davidson(HR,update_R,B0,E0,maxit,max_dim,tol):
             residuals[iroot] = np.linalg.norm(q)
             deltaE = omega[iroot] - omega_old
 
-            print('   Iter - {}      e = {:.10f}       |r| = {:.10f}      de = {:.10f}'.\
-                            format(it+1,omega[iroot],residuals[iroot],deltaE))
-
+            t2 = time.time()
+            minutes, seconds = divmod(t2 - t1, 60)
+            print('   {}      {:.10f}       {:.10f}      {:.10f}      {:.2f}m {:.2f}s'.\
+                            format(curr_size,omega[iroot],residuals[iroot],deltaE,minutes,seconds))
             if residuals[iroot] < tol and abs(deltaE) < tol:
                 is_converged[iroot] = True
                 break

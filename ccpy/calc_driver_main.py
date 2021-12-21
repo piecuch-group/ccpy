@@ -6,6 +6,7 @@ from system import build_system
 from integrals import get_integrals
 from parser_module import parse_input_file
 from symmetry_count import get_symmetry_count
+from utilities import remove_file
 
 def calc_driver_main(inputs,sys,ints):
     """Performs the calculation specified by the user in the input.
@@ -92,7 +93,7 @@ def calc_driver_main(inputs,sys,ints):
         cc_t, omega = ipeom2(inputs['nroot'],H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,\
                         tol=inputs['eom_tol'],\
                         noact=inputs['eom_guess_noact'],nuact=inputs['eom_guess_nuact'],\
-                        maxit=inputs['eom_maxit'])
+                        maxit=inputs['eom_maxit'],flag_RHF=inputs['isRHF'])
 
     if calc_type == 'ccsdt' or calc_type == 'CCSDT':
         from ccsdt_module import ccsdt
@@ -103,7 +104,7 @@ def calc_driver_main(inputs,sys,ints):
     if calc_type == 'eomccsdt' or calc_type == 'EOMCCSDT':
         from ccsdt_module import ccsdt
         from HBar_module import HBar_CCSDT
-        from eomccsdt_module import eomccsdt, test_updates
+        from eomccsdt_module import eomccsdt
 
         cc_t, Eccsdt = ccsdt(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
@@ -203,6 +204,11 @@ def calc_driver_main(inputs,sys,ints):
     # Save the cc_t dictionary if it is initialized (e.g, not None)
     save_location = inputs['work_dir'] + '/save_data'
     save_cc_vectors(inputs['save_data'],save_location,cc_t)
+    # Remove scratch files
+    remove_file(inputs['work_dir']+'/t.npy')
+    remove_file(inputs['work_dir']+'/dt.npy')
+    remove_file(inputs['work_dir']+'/Rmat.npy')
+    remove_file(inputs['work_dir']+'/HRmat.npy')
 
     return
 

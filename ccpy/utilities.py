@@ -26,7 +26,11 @@ def clean_up(fid,n):
         remove_files(fid+'-'+str(i+1)+'.npy')
     return
 
-def remove_files(fid):
+
+def remove_file(filePath):
     import os
-    os.remove(fid)
+    try:
+        os.remove(filePath)
+    except OSError:
+        pass
     return
