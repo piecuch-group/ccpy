@@ -179,26 +179,26 @@ def print_amplitudes(R,sys,nprint=5):
     for n in range(nprint):
         if idx[n] < n1a:
             a,i = np.unravel_index(idx[n],r1a.shape,order='C')
-            print('      [{}]     {}A  ->  {}A     {:.6f}'.format(n+1,i+1,a+sys['Nocc_a']+1,R1[idx[n]]))
+            print('      [{}]     {}A  ->  {}A     {:.6f}'.format(n+1,i+sys['Nfroz']+1,a+sys['Nfroz']+sys['Nocc_a']+1,R1[idx[n]]))
         else:
             a,i = np.unravel_index(idx[n]-n1a,r1b.shape,order='C')
-            print('      [{}]     {}B  ->  {}B     {:.6f}'.format(n+1,i+1,a+sys['Nocc_b']+1,R1[idx[n]]))
+            print('      [{}]     {}B  ->  {}B     {:.6f}'.format(n+1,i+sys['Nfroz']+1,a+sys['Nocc_b']+sys['Nfroz']+1,R1[idx[n]]))
     R2 = R[n1a+n1b:]
     idx = np.flip(np.argsort(abs(R2)))
     print('     Largest Doubly Excited Amplitudes:')
     for n in range(nprint):
         if idx[n] < n2a:
             a,b,i,j = np.unravel_index(idx[n],r2a.shape,order='C')
-            print('      [{}]     {}A  {}A  ->  {}A  {}A    {:.6f}'.format(n+1,i+1,j+1,\
-                            a+sys['Nocc_a']+1,b+sys['Nocc_a']+1,R2[idx[n]]))
+            print('      [{}]     {}A  {}A  ->  {}A  {}A    {:.6f}'.format(n+1,i+sys['Nfroz']+1,j+sys['Nfroz']+1,\
+                            a+sys['Nocc_a']+sys['Nfroz']+1,b+sys['Nocc_a']+sys['Nfroz']+1,R2[idx[n]]))
         elif idx[n] < n2a+n2b:
             a,b,i,j = np.unravel_index(idx[n]-n2a,r2b.shape,order='C')
-            print('      [{}]     {}A  {}B  ->  {}A  {}B    {:.6f}'.format(n+1,i+1,j+1,\
-                            a+sys['Nocc_a']+1,b+sys['Nocc_b']+1,R2[idx[n]]))
+            print('      [{}]     {}A  {}B  ->  {}A  {}B    {:.6f}'.format(n+1,i+sys['Nfroz']+1,j+sys['Nfroz']+1,\
+                            a+sys['Nocc_a']+sys['Nfroz']+1,b+sys['Nocc_b']+sys['Nfroz']+1,R2[idx[n]]))
         else:
             a,b,i,j = np.unravel_index(idx[n]-n2a-n2b,r2c.shape,order='C')
-            print('      [{}]     {}B  {}B  ->  {}B  {}B    {:.6f}'.format(n+1,i+1,j+1,\
-                            a+sys['Nocc_b']+1,b+sys['Nocc_b']+1,R2[idx[n]]))
+            print('      [{}]     {}B  {}B  ->  {}B  {}B    {:.6f}'.format(n+1,i+sys['Nfroz']+1,j+sys['Nfroz']+1,\
+                            a+sys['Nocc_b']+sys['Nfroz']+1,b+sys['Nocc_b']+sys['Nfroz']+1,R2[idx[n]]))
 
 def unflatten_R(R,sys,order='C'):
     """Unflatten the R vector into many-body tensor components.
