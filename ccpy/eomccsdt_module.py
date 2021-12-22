@@ -4,7 +4,7 @@ the equation-of-motion (EOM) CC with singles, doubles, and triples (EOMCCSDT).""
 import numpy as np
 from cc_energy import calc_cc_energy
 import cc_loops
-from solvers import davidson_out_of_core
+from solvers import davidson_out_of_core, davidson
 from eomcc_initialize import get_eomcc_initial_guess
 from functools import partial
 
@@ -62,7 +62,8 @@ def eomccsdt(nroot,H1A,H1B,H2A,H2B,H2C,cc_t,ints,sys,noact=0,nuact=0,tol=1.0e-06
     # Get the R update function
     update_R_func = lambda r,omega : update_R(r,omega,H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],sys)
     # Diagonalize Hamiltonian using Davidson algorithm
-    Rvec, omega, is_converged = davidson_out_of_core(HR_func,update_R_func,B0,E0,maxit,tol)
+    Rvec, omega, is_converged = davidson(HR_func,update_R_func,B0,E0,maxit,maxit,tol)
+    #Rvec, omega, is_converged = davidson_out_of_core(HR_func,update_R_func,B0,E0,maxit,tol)
     
     cc_t['r1a'] = [None]*len(omega)
     cc_t['r1b'] = [None]*len(omega)
@@ -268,21 +269,20 @@ def HR(R,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,flag_RHF):
     r1a, r1b, r2a, r2b, r2c, r3a, r3b, r3c, r3d = unflatten_R(R,sys)
 
     X1A = build_HR_1A(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X1B = build_HR_1B(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
     X2A = build_HR_2A(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
     X2B = build_HR_2B(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X2C = build_HR_2C(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
     X3A = build_HR_3A(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
     X3B = build_HR_3B(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
     # closed shell symmetry
-    #if flag_RHF:
-    #    X3C = np.transpose(X3B,(2,1,0,5,4,3))
-    #else:
-    #    X3C = build_HR_3C(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    X3C = np.transpose(X3B,(2,1,0,5,4,3))
-    X3D = X3A.copy()
-
-    return flatten_R(X1A, X1B, X2A, X2B, X2C, X3A, X3B, X3C, X3D)
+    if flag_RHF:
+        return flatten_R(X1A, X1A, X2A, X2B, X2A, X3A, X3B,\
+                        np.transpose(X3B,(2,1,0,5,4,3)), X3A)
+    else:
+        X1B = build_HR_1B(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X2C = build_HR_2C(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X3C = build_HR_3C(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        X3D = build_HR_3D(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
+        return flatten_R(X1A, X1B, X2A, X2B, X2C, X3A, X3B, X3C, X3D)
 
 def build_HR_1A(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
     """Calculate the projection <ia|[ (H_N e^(T1+T2+T3))_C*(R1+R2+R3) ]_C|0>.
@@ -766,8 +766,8 @@ def build_HR_3A(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,int
 
     X3A = 0.0
     # <ijkabc| [H(R1+R2)]_C | 0 >
-    Q1 = np.einsum('mnef,fn->me',H2A['oovv'],r1a,optimize=True)
-    Q1 += np.einsum('mnef,fn->me',H2B['oovv'],r1b,optimize=True)
+    Q1 = np.einsum('mnef,fn->me',vA['oovv'],r1a,optimize=True)
+    Q1 += np.einsum('mnef,fn->me',vB['oovv'],r1b,optimize=True)
     I1 = np.einsum('amje,bm->abej',H2A['voov'],r1a,optimize=True)
     I1 += np.einsum('amfe,bejm->abfj',H2A['vovv'],r2a,optimize=True)
     I1 += np.einsum('amfe,bejm->abfj',H2B['vovv'],r2b,optimize=True)
@@ -835,12 +835,6 @@ def build_HR_3A(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,int
     X3A += (1.0/24.0)*np.einsum('abef,efcijk->abcijk',H2A['vvvv'],r3a,optimize=True)
     X3A += 0.25*np.einsum('amie,ebcmjk->abcijk',H2A['voov'],r3a,optimize=True)
     X3A += 0.25*np.einsum('amie,bcejkm->abcijk',H2B['voov'],r3b,optimize=True)
-    #I1 = 0.5*np.einsum('mnef,efcjnk->mcjk',vA['oovv'],r3a,optimize=True)\
-    #    +np.einsum('mnef,ecfjkn->mcjk',vB['oovv'],r3b,optimize=True)
-    #X3A -= 0.25*np.einsum('mcjk,abim->abcijk',I1,t2a,optimize=True)
-    #I1 = -0.5*np.einsum('mnef,abfimn->abie',vA['oovv'],r3a,optimize=True)\
-    #    -np.einsum('mnef,abfimn->abie',vB['oovv'],r3b,optimize=True)
-    #X3A += 0.25*np.einsum('abie,ecjk->abcijk',I1,t2a,optimize=True)
 
     # antisymmetrize terms and add up: A(abc)A(ijk) = A(a/bc)A(bc)A(i/jk)A(jk)
     X3A -= np.transpose(X3A,(0,1,2,3,5,4))
@@ -1161,8 +1155,8 @@ def build_HR_3C(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,int
     Int3 += np.einsum('maef,ebmj->abfj',H2B['ovvv'],r2b,optimize=True)
     Int3 -= 0.5*np.einsum('me,abmj->abej',Q1,cc_t['t2c'],optimize=True) #(*) added factor 1/2 to compensate A(ab)
     Int3 -= np.transpose(Int3,(1,0,2,3))
-    I1 = -0.5*np.einsum('mnef,abfimn->baei',vC['oovv'],r3d,optimize=True)\
-         -np.einsum('nmfe,fbamni->baei',vB['oovv'],r3c,optimize=True)
+    I1 = -0.5*np.einsum('mnef,abfmjn->abej',vC['oovv'],r3d,optimize=True)\
+         -np.einsum('nmfe,fbanjm->abej',vB['oovv'],r3c,optimize=True)
     X3C += 0.5*np.einsum('abej,ceki->cbakji',Int3+I1,cc_t['t2b'],optimize=True)
     X3C += 0.5*np.einsum('baje,ceki->cbakji',H2C['vvov'],r2b,optimize=True)
     # Intermediate 4: X2C(bnji)*Y2B(cakn) -> Z3C(cbakji)
@@ -1174,7 +1168,7 @@ def build_HR_3C(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,int
     Int4 += 0.5*np.einsum('me,ebij->bmji',Q1,cc_t['t2c'],optimize=True) # (*) added factor 1/2 to compensate A(ij)
     Int4 -= np.transpose(Int4,(0,1,3,2))
     I1 = 0.5*np.einsum('mnef,aefijn->amij',vC['oovv'],r3d,optimize=True)\
-        +np.einsum('nmfe,feamji->amij',vB['oovv'],r3c,optimize=True)
+        +np.einsum('nmfe,feanji->amij',vB['oovv'],r3c,optimize=True)
     X3C -= 0.5*np.einsum('bnji,cakn->cbakji',Int4+I1,cc_t['t2b'],optimize=True)
     X3C -= 0.5*np.einsum('bnji,cakn->cbakji',H2C['vooo'],r2b,optimize=True)
     # Intermediate 5: X2B(cbej)*Y2B(eaki) -> Z3C(cbakji)
@@ -1186,7 +1180,7 @@ def build_HR_3C(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,int
     Int5 += np.einsum('cmfe,ebmj->cbfj',H2A['vovv'],r2b,optimize=True)
     Int5 -= np.einsum('mbfe,cemj->cbfj',H2B['ovvv'],r2b,optimize=True)
     I1 = -1.0*np.einsum('mnef,cfbmnj->cbej',vB['oovv'],r3c,optimize=True)\
-         -0.5*np.einsum('nmfe,cfbmnj->cbej',vA['oovv'],r3b,optimize=True)
+         -0.5*np.einsum('mnef,cfbmnj->cbej',vA['oovv'],r3b,optimize=True)
     X3C += np.einsum('cbej,eaki->cbakji',Int5+I1,cc_t['t2b'],optimize=True)
     X3C += np.einsum('cbej,eaki->cbakji',H2B['vvvo'],r2b,optimize=True)
     # Intermediate 6: X2B(nbkj)*Y2B(cani) -> Z3C(cbakji)
@@ -1292,7 +1286,7 @@ def build_HR_3C(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,int
     X3C += 0.5*np.einsum('be,ceakji->cbakji',H1B['vv'],r3c,optimize=True)
     X3C += 0.25*np.einsum('ce,ebakji->cbakji',H1A['vv'],r3c,optimize=True)
     X3C += 0.125*np.einsum('mnij,cbaknm->cbakji',H2C['oooo'],r3c,optimize=True)
-    X3C += 0.5*np.einsum('nmkj,cbanmi->cbakji',H2B['oooo'],r3b,optimize=True)
+    X3C += 0.5*np.einsum('nmkj,cbanmi->cbakji',H2B['oooo'],r3c,optimize=True)
     X3C += 0.125*np.einsum('abef,cfekji->cbakji',H2C['vvvv'],r3c,optimize=True)
     X3C += 0.5*np.einsum('cbfe,feakji->cbakji',H2B['vvvv'],r3c,optimize=True)
     X3C += np.einsum('amie,cbekjm->cbakji',H2C['voov'],r3c,optimize=True)
@@ -1304,3 +1298,126 @@ def build_HR_3C(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,int
 
     X3C -= np.transpose(X3C,(0,1,2,3,5,4)) + np.transpose(X3C,(0,2,1,3,4,5)) - np.transpose(X3C,(0,2,1,3,5,4))
     return X3C
+
+def build_HR_3D(r1a,r1b,r2a,r2b,r2c,r3a,r3b,r3c,r3d,cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys):
+    """Calculate the projection <i~j~k~a~b~c~|[ (H_N e^(T1+T2+T3))_C*(R1+R2+R3) ]_C|0>.
+
+    Parameters
+    ----------
+    r1a : ndarray(dtype=float, shape=(nua,noa))
+        Linear EOMCC excitation amplitudes R1(aa)
+    r1b : ndarray(dtype=float, shape=(nub,nob))
+        Linear EOMCC excitation amplitudes R1(bb)
+    r2a : ndarray(dtype=float, shape=(nua,nua,noa,noa))
+        Linear EOMCC excitation amplitudes R2(aa)
+    r2b : ndarray(dtype=float, shape=(nua,nub,noa,nob))
+        Linear EOMCC excitation amplitudes R2(ab)
+    r2c : ndarray(dtype=float, shape=(nub,nub,nob,nob))
+        Linear EOMCC excitation amplitudes R2(bb)
+    r3a : ndarray(dtype=float, shape=(nua,nua,nua,noa,noa,noa))
+        Linear EOMCC excitation amplitudes R3(aaa)
+    r3b : ndarray(dtype=float, shape=(nua,nua,nub,noa,noa,nob))
+        Linear EOMCC excitation amplitudes R3(aab)
+    r3c : ndarray(dtype=float, shape=(nua,nub,nub,noa,nob,nob))
+        Linear EOMCC excitation amplitudes R3(abb)
+    r3d : ndarray(dtype=float, shape=(nub,nub,nub,nob,nob,nob))
+        Linear EOMCC excitation amplitudes R3(bbb)
+    cc_t : dict
+        Current cluster amplitudes T1, T2, and T3
+    H1*, H2* : dict
+        Sliced CCSDT similarity-transformed HBar integrals
+    ints : dict
+        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
+    sys : dict
+        System information dictionary
+
+    Returns
+    --------
+    X3D : ndarray(dtype=float, shape=(nub,nub,nub,nob,nob,nob))
+        Calculated HR Projection
+    """
+    t2c = cc_t['t2c']
+    t3c = cc_t['t3c']
+    t3d = cc_t['t3d']
+    vA = ints['vA']
+    vB = ints['vB']
+    vC = ints['vC']
+
+    X3D = 0.0
+    # <i~j~k~a~b~c~| [H(R1+R2)]_C | 0 >
+    Q1 = np.einsum('mnef,fn->me',vC['oovv'],r1b,optimize=True)
+    Q1 += np.einsum('nmfe,fn->me',vB['oovv'],r1a,optimize=True)
+    I1 = np.einsum('amje,bm->abej',H2C['voov'],r1b,optimize=True)
+    I1 += np.einsum('amfe,bejm->abfj',H2C['vovv'],r2c,optimize=True)
+    I1 += np.einsum('maef,ebmj->abfj',H2B['ovvv'],r2b,optimize=True)
+    I1 -= np.transpose(I1,(1,0,2,3))
+    I2 = np.einsum('abfe,ej->abfj',H2C['vvvv'],r1b,optimize=True)
+    I2 += 0.5*np.einsum('nmje,abmn->abej',H2C['ooov'],r2c,optimize=True)
+    I2 -= np.einsum('me,abmj->abej',Q1,cc_t['t2c'],optimize=True)
+    I3 = -0.5*np.einsum('mnef,abfimn->baei',vC['oovv'],r3d,optimize=True)\
+        -np.einsum('nmfe,fbanmi->baei',vB['oovv'],r3c,optimize=True)
+    X3D = 0.25*np.einsum('abej,ecik->abcijk',I1+I2+I3,cc_t['t2c'],optimize=True)
+    X3D += 0.25*np.einsum('baje,ecik->abcijk',H2C['vvov'],r2c,optimize=True)
+
+    I1 = -np.einsum('bmie,ej->mbij',H2C['voov'],r1b,optimize=True)
+    I1 += np.einsum('nmie,bejm->nbij',H2C['ooov'],r2c,optimize=True)
+    I1 += np.einsum('mnei,ebmj->nbij',H2B['oovo'],r2b,optimize=True)
+    I1 -= np.transpose(I1,(0,1,3,2))
+    I2 = -1.0*np.einsum('nmij,bm->nbij',H2C['oooo'],r1b,optimize=True)
+    I2 += 0.5*np.einsum('bmfe,efij->mbij',H2C['vovv'],r2c,optimize=True)
+    I3 = 0.5*np.einsum('mnef,efcjnk->mcjk',vC['oovv'],r3d,optimize=True)\
+        +np.einsum('nmfe,fcenkj->mcjk',vB['oovv'],r3c,optimize=True)
+    X3D -= 0.25*np.einsum('mbij,acmk->abcijk',I1+I2+I3,cc_t['t2c'],optimize=True)
+    X3D -= 0.25*np.einsum('bmji,acmk->abcijk',H2C['vooo'],r2c,optimize=True)
+
+    # additional terms with T3 in <ijkabc|[ H(R1+R2)]_C | 0>
+    I1 = -1.0*np.einsum('me,bm->be',H1B['ov'],r1b,optimize=True)\
+         +np.einsum('bnef,fn->be',H2C['vovv'],r1b,optimize=True)\
+         +np.einsum('nbfe,fn->be',H2B['ovvv'],r1a,optimize=True)
+    I2 = -0.5*np.einsum('mnef,bfmn->be',vC['oovv'],r2c,optimize=True)\
+         -np.einsum('nmfe,fbnm->be',vB['oovv'],r2b,optimize=True)
+    X3D += (1.0/12.0)*np.einsum('be,aecijk->abcijk',I1+I2,t3d,optimize=True) # A(b/ac)
+
+    I1 = np.einsum('me,ej->mj',H1B['ov'],r1b,optimize=True)\
+        +np.einsum('mnjf,fn->mj',H2C['ooov'],r1b,optimize=True)\
+        +np.einsum('nmfj,fn->mj',H2B['oovo'],r1a,optimize=True)
+    I2 = 0.5*np.einsum('mnef,efjn->mj',vC['oovv'],r2c,optimize=True)\
+        +np.einsum('nmfe,fenj->mj',vB['oovv'],r2b,optimize=True)
+    X3D -= (1.0/12.0)*np.einsum('mj,abcimk->abcijk',I1+I2,t3d,optimize=True) # A(j/ik)
+
+    I1 = np.einsum('nmje,ei->mnij',H2C['ooov'],r1b,optimize=True)
+    I1 -= np.transpose(I1,(0,1,3,2))
+    I2 = 0.5*np.einsum('mnef,efij->mnij',vC['oovv'],r2c,optimize=True)
+    X3D += (1.0/24.0)*np.einsum('mnij,abcmnk->abcijk',I1+I2,t3d,optimize=True) # A(k/ij)
+
+    I1 = -1.0*np.einsum('amef,bm->abef',H2C['vovv'],r1b,optimize=True)
+    I1 -= np.transpose(I1,(1,0,2,3))
+    I2 = 0.5*np.einsum('mnef,abmn->abef',vC['oovv'],r2c,optimize=True)
+    X3D += (1.0/24.0)*np.einsum('abef,efcijk->abcijk',I1+I2,t3d,optimize=True) # A(c/ab)
+
+    I1 = -1.0*np.einsum('nmje,bn->bmje',H2C['ooov'],r1b,optimize=True)\
+         +np.einsum('bmfe,fj->bmje',H2C['vovv'],r1b,optimize=True)
+    I2 = np.einsum('mnef,fcnk->cmke',vC['oovv'],r2c,optimize=True)\
+        +np.einsum('nmfe,fcnk->cmke',vB['oovv'],r2b,optimize=True)
+    X3D += 0.25*np.einsum('bmje,aecimk->abcijk',I1+I2,t3d,optimize=True) # A(j/ik)A(b/ac)
+
+    I1 = -1.0*np.einsum('mnej,bn->bmje',H2B['oovo'],r1b,optimize=True)\
+         +np.einsum('mbef,fj->bmje',H2B['ovvv'],r1b,optimize=True)
+    I2 = np.einsum('mnef,fcnk->cmke',vB['oovv'],r2c,optimize=True)\
+        +np.einsum('mnef,fcnk->cmke',vA['oovv'],r2b,optimize=True)
+    X3D += 0.25*np.einsum('bmje,ecamki->abcijk',I1+I2,t3c,optimize=True) # A(j/ik)A(b/ac)
+
+    # < i~j~k~a~b~c~ | (HR3)_C | 0 >
+    X3D -= (1.0/12.0)*np.einsum('mj,abcimk->abcijk',H1B['oo'],r3d,optimize=True)
+    X3D += (1.0/12.0)*np.einsum('be,aecijk->abcijk',H1B['vv'],r3d,optimize=True)
+    X3D += (1.0/24.0)*np.einsum('mnij,abcmnk->abcijk',H2C['oooo'],r3d,optimize=True)
+    X3D += (1.0/24.0)*np.einsum('abef,efcijk->abcijk',H2C['vvvv'],r3d,optimize=True)
+    X3D += 0.25*np.einsum('amie,ebcmjk->abcijk',H2C['voov'],r3d,optimize=True)
+    X3D += 0.25*np.einsum('maei,ecbmkj->abcijk',H2B['ovvo'],r3c,optimize=True)
+
+    # antisymmetrize terms and add up: A(abc)A(ijk) = A(a/bc)A(bc)A(i/jk)A(jk)
+    X3D -= np.transpose(X3D,(0,1,2,3,5,4))
+    X3D -= np.transpose(X3D,(0,1,2,4,3,5)) + np.transpose(X3D,(0,1,2,5,4,3))
+    X3D -= np.transpose(X3D,(0,2,1,3,4,5))
+    X3D -= np.transpose(X3D,(1,0,2,3,4,5)) + np.transpose(X3D,(2,1,0,3,4,5))
+    return X3D
