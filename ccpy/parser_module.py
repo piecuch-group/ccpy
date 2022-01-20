@@ -31,6 +31,7 @@ def parse_input_file(inpfile):
     inputs['eom_guess_noact'] = 0
     inputs['eom_guess_nuact'] = 0
     inputs['low_memory'] = False
+    inputs['multiplicity'] = 1.0
 
     with open(inpfile,'r') as f:
         for line in f.readlines():
@@ -104,6 +105,8 @@ def parse_input_file(inpfile):
                 inputs['eom_guess_noact'] = int(line.split('=')[1].strip())
             if 'eom_guess_nuact' in line and 'eom_guess_noact' not in line:
                 inputs['eom_guess_nuact'] = int(line.split('=')[1].strip())
+            if 'multiplicity' in line:
+                inputs['multiplicity'] = float(line.split('=')[1].strip())
 
 
     with open(inpfile,'r') as f:

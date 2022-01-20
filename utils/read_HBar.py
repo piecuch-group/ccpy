@@ -89,7 +89,7 @@ def savehbar(H1A,H1B,H2A,H2B,H2C,style='python'):
     if style=='matlab':
         savemat('/Users/karthik/Dropbox/Hartree Fock/hartree_fock/v4/CC_matlab/junreadsave-HBar'+'.mat',vec_dict)
     else:
-        np.save('HBar.npy',vec_dict)
+        np.save('HBar-jun.npy',vec_dict)
 
     return
 

@@ -1,4 +1,41 @@
-from symmetry_count import get_pg_irreps, sym_table 
+from dataclasses import dataclass
+from symmetry_count import get_pg_irreps, sym_table
+
+# System dataclass
+    #sys_t = {'Nelec' : Nelec-2*Nfroz,   
+    #         'Nocc_a' : Nocc_a-Nfroz,
+    #         'Nocc_b' : Nocc_b-Nfroz,
+    #         'Nunocc_a' : Nunocc_a,
+    #         'Nunocc_b' : Nunocc_b,
+    #         'Norb' : Norb,
+    #         'Nfroz' : Nfroz, (user-specififed)
+    #         'sym' : data.mosyms[0],
+    #         'sym_nums' : mosyms_num,
+    #         'mo_energy' : mo_energies_hartree,
+    #         'mo_vector' : data.mocoeffs,
+    #         'point_group' : point_group,
+    #         'irrep_map' : pg_irrep_map, 
+    #         'pg_mult_table' : sym_table(point_group),
+    #         'charge' : charge,
+    #         'multiplicity' : multiplicity,
+    #         'basis' : basis,
+    #         'mo_occ' : mo_occupation}
+# Here's how I want this to work. 
+# (1) I want a single System class that stores the same information (with default values)
+# (2) I want 2 convenient constructors for System. Namely, System.from_gamess(gamessFile, Nfroz)
+#     builds the system object from Gamess log file and System.from_pyscf(pyscfChkFile, Nfroz),
+#     which builds the system object from a PySCF checkfile containing information about the molecule/cell
+#     and the mean-field object. System.from_pyscf should work for PBC and molecular calculations
+# (3) There should also be a way to build the System by hand 
+#     (e.g., sys = System(Nelec, Nocc_a, Nocc_b, mo_coeff, ...),
+#     which would essentially be giving support for custom numerical Hamiltonians (e.g, PPP or Hubbard)
+
+#@dataclass
+#class System(dataFile, Nfroz):
+
+
+
+
 
 def build_system(gamess_file, Nfroz):
     import cclib

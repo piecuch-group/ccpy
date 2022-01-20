@@ -73,15 +73,13 @@ def left_ipeom2(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys,nroot,omega,maxit=100,tol=1e-0
 
             # update L1 and L2 by Jacobi
             X1A = build_LH_1A(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
-            X1B = build_LH_1B(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
             X2A = build_LH_2A(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
             X2B = build_LH_2B(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
-            X2C = build_LH_2C(cc_t,H1A,H1B,H2A,H2B,H2C,iroot,ints,sys)
 
-            #l1a,l1b,l2a,l2b,l2c = update_L(l1a,l1b,l2a,l2b,l2c,X1A,X1B,X2A,X2B,X2C,omega,H1A,H1B,sys,shift):
-            l1a,l1b,l2a,l2b,l2c = cc_loops.cc_loops.update_l(cc_t['l1a'][iroot],cc_t['l1b'][iroot],\
-                        cc_t['l2a'][iroot],cc_t['l2b'][iroot],cc_t['l2c'][iroot],\
-            X1A,X1B,X2A,X2B,X2C,omega_mu,H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],shiftval)
+            l1a,l1b,l2a,l2b,l2c = update_L(l1a,l1b,l2a,l2b,l2c,X1A,X1B,X2A,X2B,X2C,omega,H1A,H1B,sys,shift):
+            #l1a,l1b,l2a,l2b,l2c = cc_loops.cc_loops.update_l(cc_t['l1a'][iroot],cc_t['l1b'][iroot],\
+            #            cc_t['l2a'][iroot],cc_t['l2b'][iroot],cc_t['l2c'][iroot],\
+            #X1A,X1B,X2A,X2B,X2C,omega_mu,H1A['oo'],H1A['vv'],H1B['oo'],H1B['vv'],shiftval)
 
             cc_t['l1a'][iroot] = l1a; cc_t['l1b'][iroot] = l1b; cc_t['l2a'][iroot] = l2a; cc_t['l2b'][iroot] = l2b; cc_t['l2c'][iroot] = l2c
        
@@ -506,57 +504,3 @@ def update_L(l1a,l1b,l2a,l2b,l2c,X1A,X1B,X2A,X2B,X2C,omega,H1A,H1B,sys,shift):
                     l2c[b,a,j,i] =  l2a[a,b,i,j]
 
     return l1a, l1b, l2a, l2b, l2c
-
-def test_updates(matfile,ints,sys):
-
-    from scipy.io import loadmat
-    from HBar_module import HBar_CCSD
-
-    print('')
-    print('TEST SUBROUTINE:')
-    print('Loading Matlab .mat file from {}'.format(matfile))
-    print('')
-
-    data_dict = loadmat(matfile)
-    cc_t = data_dict['cc_t']
-
-    t1a = cc_t['t1a'][0,0]
-    t1b = cc_t['t1b'][0,0]
-    t2a = cc_t['t2a'][0,0]
-    t2b = cc_t['t2b'][0,0]
-    t2c = cc_t['t2c'][0,0]
-
-    l1a = data_dict['l1a']
-    l1b = data_dict['l1b']
-    l2a = data_dict['l2a']
-    l2b = data_dict['l2b']
-    l2c = data_dict['l2c']
-
-    cc_t = {'t1a' : t1a, 't1b' : t1b, 't2a' : t2a, 't2b' : t2b, 't2c' : t2c,
-            'l1a' : l1a, 'l1b' : l1b, 'l2a' : l2a, 'l2b' : l2b, 'l2c' : l2c}
-
-    shift = 0.0
-
-    H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
-
-    # test l1a update
-    X1A = build_LH_1A(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    print('|X1A| = {}'.format(np.linalg.norm(X1A)))
-
-    # test l1b update
-    X1B = build_LH_1B(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    print('|X1B| = {}'.format(np.linalg.norm(X1B)))
-
-    # test l2a update
-    X2A = build_LH_2A(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    print('|X2A| = {}'.format(np.linalg.norm(X2A)))
-
-    # test l2b update
-    X2B = build_LH_2B(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    print('|X2B| = {}'.format(np.linalg.norm(X2B)))
-
-    # test l2c update
-    X2C = build_LH_2C(cc_t,H1A,H1B,H2A,H2B,H2C,ints,sys)
-    print('|X2C| = {}'.format(np.linalg.norm(X2C)))
-
-    return
