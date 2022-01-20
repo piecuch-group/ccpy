@@ -312,12 +312,16 @@ module eomcc_initial_guess
                         do i = 1 , noa
                         do a = 1 , nua
                             g1 = syms1A(a,i)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , noa
                             do b = 1 , nua
                                 g2 = syms1A(b,j)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx1A(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) = &
@@ -336,12 +340,16 @@ module eomcc_initial_guess
                         do i = 1 , nob
                         do a = 1 , nub
                             g1 = syms1B(a,i)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , noa
                             do b = 1 , nua
-                                g2 = syms1A(b,j)
+                                !g2 = syms1A(b,j)
+                                ! enforce spatial symmetry
+                                if (g2 /= sym_target) cycle
                                 if (idx1A(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -360,12 +368,16 @@ module eomcc_initial_guess
                         do i = 1 , noa
                         do a = 1 , nua
                             g1 = syms1A(a,i)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , nob
                             do b = 1 , nub
                                 g2 = syms1B(b,j)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx1B(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -384,12 +396,16 @@ module eomcc_initial_guess
                         do i = 1 , nob
                         do a = 1 , nub
                             g1 = syms1B(a,i)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , nob
                             do b = 1 , nub
                                 g2 = syms1B(b,j)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx1B(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -408,6 +424,8 @@ module eomcc_initial_guess
                         do i = 1, noa
                         do a = 1, nua
                             g1 = syms1A(a,i)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -416,6 +434,8 @@ module eomcc_initial_guess
                             do b = 1, nua
                             do c = b+1, nua
                                 g2 = syms2A(b,c,j,k)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx2A(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -436,6 +456,8 @@ module eomcc_initial_guess
                         do i = 1, noa
                         do a = 1, nua
                             g1 = syms1A(a,i)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -444,6 +466,8 @@ module eomcc_initial_guess
                             do b = 1, nua
                             do c = 1, nub
                                 g2 = syms2B(b,c,j,k)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx2B(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -464,6 +488,8 @@ module eomcc_initial_guess
                         do i = 1, nob
                         do a = 1, nub
                             g1 = syms1B(a,i)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -472,6 +498,8 @@ module eomcc_initial_guess
                             do b = 1, nua
                             do c = 1, nub
                                 g2 = syms2B(b,c,j,k)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx2B(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -492,6 +520,8 @@ module eomcc_initial_guess
                         do i = 1, nob
                         do a = 1, nub
                             g1 = syms1B(a,i)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -500,6 +530,8 @@ module eomcc_initial_guess
                             do b = 1, nub
                             do c = b+1, nub
                                 g2 = syms2C(b,c,j,k)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx2C(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -522,12 +554,16 @@ module eomcc_initial_guess
                         do a = 1, nua
                         do b = a+1, nua
                             g1 = syms2A(a,b,i,j)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
                             do c = 1, nua
                                 g2 = syms1A(c,k)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx1A(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -550,12 +586,16 @@ module eomcc_initial_guess
                         do a = 1, nua
                         do b = 1, nub
                             g1 = syms2B(a,b,i,j)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
                             do c = 1, nua
                                 g2 = syms1A(c,k)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx1A(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -578,12 +618,16 @@ module eomcc_initial_guess
                         do a = 1, nua
                         do b = 1, nub
                             g1 = syms2B(a,b,i,j)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, nob
                             do c = 1, nub
                                 g2 = syms1B(c,k)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx1B(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -606,12 +650,16 @@ module eomcc_initial_guess
                         do a = 1, nub
                         do b = a+1, nub
                             g1 = syms2C(a,b,i,j)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, nob
                             do c = 1, nub
                                 g2 = syms1B(c,k)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx1B(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -634,6 +682,8 @@ module eomcc_initial_guess
                         do a = 1, nua
                         do b = a+1, nua
                             g1 = syms2A(a,b,i,j)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -642,6 +692,8 @@ module eomcc_initial_guess
                             do c = 1, nua
                             do d = c+1, nua
                                 g2 = syms2A(c,d,k,l)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx2A(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -666,6 +718,8 @@ module eomcc_initial_guess
                         do a = 1, nua
                         do b = a+1, nua
                             g1 = syms2A(a,b,i,j)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -674,6 +728,8 @@ module eomcc_initial_guess
                             do c = 1, nua
                             do d = 1, nub
                                 g2 = syms2B(c,d,k,l)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -698,6 +754,8 @@ module eomcc_initial_guess
                         do a = 1, nua
                         do b = 1, nub
                             g1 = syms2B(a,b,i,j)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -706,6 +764,8 @@ module eomcc_initial_guess
                             do c = 1, nua
                             do d = c+1, nua
                                 g2 = syms2A(c,d,k,l)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx2A(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -730,6 +790,8 @@ module eomcc_initial_guess
                         do a = 1, nua
                         do b = 1, nub
                             g1 = syms2B(a,b,i,j)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -738,6 +800,8 @@ module eomcc_initial_guess
                             do c = 1, nua
                             do d = 1, nub
                                 g2 = syms2B(c,d,k,l)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -766,6 +830,8 @@ module eomcc_initial_guess
                         do a = 1, nua
                         do b = 1, nub
                             g1 = syms2B(a,b,i,j)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -774,6 +840,8 @@ module eomcc_initial_guess
                             do c = 1, nub
                             do d = c+1, nub
                                 g2 = syms2C(c,d,k,l)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx2C(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -798,6 +866,8 @@ module eomcc_initial_guess
                         do a = 1, nub
                         do b = a+1, nub
                             g1 = syms2C(a,b,i,j)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -806,6 +876,8 @@ module eomcc_initial_guess
                             do c = 1, nua
                             do d = 1, nub
                                 g2 = syms2B(c,d,k,l)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -830,6 +902,8 @@ module eomcc_initial_guess
                         do a = 1, nub
                         do b = a+1, nub
                             g1 = syms2C(a,b,i,j)
+                            ! enforce spatial symmetry
+                            !if (g1 /= sym_target) cycle
                             if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -838,6 +912,8 @@ module eomcc_initial_guess
                             do c = 1, nub
                             do d = c+1, nub
                                 g2 = syms2C(c,d,k,l)
+                                ! enforce spatial symmetry
+                                !if (g2 /= sym_target) cycle
                                 if (idx2C(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -1150,8 +1226,8 @@ module eomcc_initial_guess
                                 val = val + H1A_vv(a,c)
                             end if 
                             if (b==c) then
-                                val = val - H1A_vv(a,d) ! previous
-                                !val = val + H1A_vv(a,d)
+                                val = val - H1A_vv(a,d) ! correct
+                                !val = val + H1A_vv(a,d) ! previous
                             end if
                             if (a==c) then
                                 val = val + H1A_vv(b,d)

@@ -1,6 +1,7 @@
 """Module for handling the initial EOMCCSd guess for the EOMCC calculations"""
 import numpy as np
 import eomcc_initial_guess
+from cis_module import cis
 
 def get_eomcc_initial_guess(nroot,noact,nuact,ndim,H1A,H1B,H2A,H2B,H2C,ints,sys):
     """Obtains the EOMCCSd initial guess.
@@ -63,6 +64,11 @@ def get_eomcc_initial_guess(nroot,noact,nuact,ndim,H1A,H1B,H2A,H2B,H2C,ints,sys)
 
         state_irrep = list(sys['irrep_map'].keys())[sym_target]
         print('Calculating initial guess for {} singlet states of {} symmetry '.format(num_root_sym,state_irrep))
+
+        #if spin_adapt:
+        #    omega_eomccsd, Cvec = cis(nroot,mult,H1A,H1B,H2A,H2B,H2C,sys)
+        #else:
+
 
         Cvec, omega_eomccsd, Hmat = eomcc_initial_guess.eomcc_initial_guess.\
                         eomccs_d_matrix(idx1A,idx1B,idx2A,idx2B,idx2C,\

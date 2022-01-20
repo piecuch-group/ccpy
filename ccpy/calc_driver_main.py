@@ -39,6 +39,24 @@ def calc_driver_main(inputs,sys,ints):
         from mbgf_module import gf2_ip
         ip_omega_gf2 = gf2_ip(inputs['nroot'],ints,sys,maxit=inputs['maxit'],tol=inputs['tol'])
 
+    if calc_type == 'cis' or calc_type == 'CIS':
+        from cis_module import cis
+        omega_cis, V_cis = cis(inputs['nroot'],inputs['multiplicity'],\
+                        ints['fA'],ints['fB'],ints['vA'],ints['vB'],ints['vC'],sys)
+
+    if calc_type == 'hbar-cis' or calc_type == 'HBAR-CIS':
+        from cis_module import cis
+        from ccsd_module import ccsd
+        from HBar_module import HBar_CCSD
+
+        cc_t, Eccsd = ccsd(sys,ints,\
+                        shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
+                        diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
+
+        H1A,H1B,H2A,H2B,H2C = HBar_CCSD(cc_t,ints,sys)
+        omega_cis, V_cis = cis(inputs['nroot'],inputs['multiplicity'],\
+                        H1A,H1B,H2A,H2B,H2C,sys)
+
     if calc_type == 'ccs' or calc_type == 'CCS':
         from ccs_module import ccs
         cc_t, Eccs = ccs(sys,ints,\
@@ -58,10 +76,13 @@ def calc_driver_main(inputs,sys,ints):
                         diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
 
     if calc_type == 'ccsd' or calc_type == 'CCSD':
-        from ccsd_module import ccsd
+        from ccsd_module_opt import ccsd
         cc_t, Eccsd = ccsd(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
                         diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
+
+        assert(np.allclose(-198.331928923402,Eccsd))
+        print('Error in CCSD energy = {}'.format(-198.331928923402-Eccsd))
 
     if calc_type == 'eomccsd' or calc_type == 'EOMCCSD':
         from ccsd_module import ccsd
