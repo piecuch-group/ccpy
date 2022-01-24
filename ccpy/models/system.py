@@ -1,40 +1,23 @@
-from dataclasses import dataclass
-from symmetry_count import get_pg_irreps, sym_table
+from pydantic import BaseModel
 
-# System dataclass
-    #sys_t = {'Nelec' : Nelec-2*Nfroz,   
-    #         'Nocc_a' : Nocc_a-Nfroz,
-    #         'Nocc_b' : Nocc_b-Nfroz,
-    #         'Nunocc_a' : Nunocc_a,
-    #         'Nunocc_b' : Nunocc_b,
-    #         'Norb' : Norb,
-    #         'Nfroz' : Nfroz, (user-specififed)
-    #         'sym' : data.mosyms[0],
-    #         'sym_nums' : mosyms_num,
-    #         'mo_energy' : mo_energies_hartree,
-    #         'mo_vector' : data.mocoeffs,
-    #         'point_group' : point_group,
-    #         'irrep_map' : pg_irrep_map, 
-    #         'pg_mult_table' : sym_table(point_group),
-    #         'charge' : charge,
-    #         'multiplicity' : multiplicity,
-    #         'basis' : basis,
-    #         'mo_occ' : mo_occupation}
-# Here's how I want this to work. 
-# (1) I want a single System class that stores the same information (with default values)
-# (2) I want 2 convenient constructors for System. Namely, System.from_gamess(gamessFile, Nfroz)
-#     builds the system object from Gamess log file and System.from_pyscf(pyscfChkFile, Nfroz),
-#     which builds the system object from a PySCF checkfile containing information about the molecule/cell
-#     and the mean-field object. System.from_pyscf should work for PBC and molecular calculations
-# (3) There should also be a way to build the System by hand 
-#     (e.g., sys = System(Nelec, Nocc_a, Nocc_b, mo_coeff, ...),
-#     which would essentially be giving support for custom numerical Hamiltonians (e.g, PPP or Hubbard)
-
-#@dataclass
-#class System(dataFile, Nfroz):
+from ccpy.utilities.symmetry_count import get_pg_irreps, sym_table
+from ccpy.models.integrals import Integrals
 
 
+class System(BaseModel):
 
+    nfrozen: int
+    nelectrons: int
+    norbitals: int
+    noccupied_alpha: int
+    noccupied_beta: int
+    nunoccupied_alpha: int
+    nunoccupied_beta: int
+    multiplicity: int
+    is_closed_shell: bool
+    charge: int
+    basis: str
+    integrals: Integrals
 
 
 def build_system(gamess_file, Nfroz):
@@ -66,8 +49,8 @@ def build_system(gamess_file, Nfroz):
 
     assert len(mo_occupation) == Norb, "Occupation number vector has wrong size"
 
-    Nunocc_a = Norb  - Nocc_a
-    Nunocc_b = Norb  - Nocc_b
+    Nunocc_a = Norb - Nocc_a
+    Nunocc_b = Norb - Nocc_b
 
     mo_energies_hartree = [data.moenergies[0][i]*eVtohartree for i in range(Norb)]
 
@@ -97,6 +80,7 @@ def build_system(gamess_file, Nfroz):
 
     return sys_t
 
+
 def print_gamess_info(data, gamess_file):
 
     basis_name = data.metadata.get("basis_set", "User-defined")
@@ -109,6 +93,7 @@ def print_gamess_info(data, gamess_file):
     print('  SCF Type : {}'.format(scf_type))
     print('  Basis : {}'.format(basis_name))
     print('')
+
 
 def get_gamess_pointgroup(gamess_file):
     """Dumb way of getting the point group from GAMESS and GAMESS only"""

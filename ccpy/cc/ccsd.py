@@ -45,6 +45,7 @@ def ccsd(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=False):
     ndim = n1a + n1b + n2a + n2b + n2c
 
     # Initialize the cc_t dictionary containing the T vectors to 0
+    T = build_cluster_explansion(system, 2, active=[2, 3])
     cc_t = {}
     cc_t['t1a']  = np.zeros((sys['Nunocc_a'],sys['Nocc_a']))
     cc_t['t1b']  = np.zeros((sys['Nunocc_b'],sys['Nocc_b']))
