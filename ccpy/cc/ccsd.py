@@ -58,6 +58,7 @@ def ccsd(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=False):
 
     return cc_t, Eccsd
 
+
 def update_t(cc_t,ints,sys,shift,flag_RHF):
 
     # update T1                        
@@ -69,7 +70,7 @@ def update_t(cc_t,ints,sys,shift,flag_RHF):
         cc_t, dt_1b = update_t1b(cc_t,ints,sys,shift)
     
     # CCS intermediates
-    H1A,H1B,H2A,H2B,H2C = get_ccs_intermediates(cc_t,ints,sys)
+    H1A, H1B, H2A, H2B, H2C = get_ccs_intermediates(cc_t, ints, sys)
 
     # update T2
     cc_t, dt_2a = update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
@@ -85,7 +86,7 @@ def update_t(cc_t,ints,sys,shift,flag_RHF):
         np.concatenate((dt_1a.flatten(),dt_1b.flatten(),dt_2a.flatten(),dt_2b.flatten(),dt_2c.flatten()))
 
 
-def update_t1a(cc_t,ints,sys,shift):
+def update_t1a(cc_t, ints, sys, shift):
     """Update t1a amplitudes by calculating the projection <ia|(H_N e^(T1+T2+T3))_C|0>.
 
     Parameters
@@ -104,32 +105,32 @@ def update_t1a(cc_t,ints,sys,shift):
     cc_t : dict
         New cluster amplitudes T1, T2
     """
-    chi1A_vv = 0.0
-    chi1A_vv += ints['fA']['vv']
-    chi1A_vv += np.einsum('anef,fn->ae',ints['vA']['vovv'],cc_t['t1a'],optimize=True)
-    chi1A_vv += np.einsum('anef,fn->ae',ints['vB']['vovv'],cc_t['t1b'],optimize=True)
-    chi1A_oo = 0.0
-    chi1A_oo += ints['fA']['oo']
-    chi1A_oo += np.einsum('mnif,fn->mi',ints['vA']['ooov'],cc_t['t1a'],optimize=True)
-    chi1A_oo += np.einsum('mnif,fn->mi',ints['vB']['ooov'],cc_t['t1b'],optimize=True)
-    h1A_ov = 0.0
-    h1A_ov += ints['fA']['ov']
+    chi1A_vv = ints['fA']['vv'][:, :]
+    chi1A_vv += np.einsum('anef,fn->ae', ints['vA']['vovv'], cc_t['t1a'], optimize=True)
+    chi1A_vv += np.einsum('anef,fn->ae', ints['vB']['vovv'], cc_t['t1b'], optimize=True)
+
+
+    chi1A_oo = ints['fA']['oo'][:, :]
+    chi1A_oo += np.einsum('mnif,fn->mi', ints['vA']['ooov'], cc_t['t1a'], optimize=True)
+    chi1A_oo += np.einsum('mnif,fn->mi', ints['vB']['ooov'], cc_t['t1b'], optimize=True)
+
+    h1A_ov = ints['fA']['ov'][:, :]
     h1A_ov += np.einsum('mnef,fn->me',ints['vA']['oovv'],cc_t['t1a'],optimize=True) 
-    h1A_ov += np.einsum('mnef,fn->me',ints['vB']['oovv'],cc_t['t1b'],optimize=True) 
-    h1B_ov = 0.0
-    h1B_ov += ints['fB']['ov'] 
+    h1A_ov += np.einsum('mnef,fn->me',ints['vB']['oovv'],cc_t['t1b'],optimize=True)
+
+    h1B_ov = ints['fB']['ov'][:, :]
     h1B_ov += np.einsum('nmfe,fn->me',ints['vB']['oovv'],cc_t['t1a'],optimize=True) 
-    h1B_ov += np.einsum('mnef,fn->me',ints['vC']['oovv'],cc_t['t1b'],optimize=True) 
-    h1A_oo = 0.0
-    h1A_oo += chi1A_oo 
-    h1A_oo += np.einsum('me,ei->mi',h1A_ov,cc_t['t1a'],optimize=True) 
+    h1B_ov += np.einsum('mnef,fn->me',ints['vC']['oovv'],cc_t['t1b'],optimize=True)
+
+    h1A_oo = chi1A_oo[:, :]
+    h1A_oo += np.einsum('me,ei->mi',h1A_ov,cc_t['t1a'],optimize=True)
+
     h2A_ooov = ints['vA']['ooov'] + np.einsum('mnfe,fi->mnie',ints['vA']['oovv'],cc_t['t1a'],optimize=True) 
     h2B_ooov = ints['vB']['ooov'] + np.einsum('mnfe,fi->mnie',ints['vB']['oovv'],cc_t['t1a'],optimize=True) 
     h2A_vovv = ints['vA']['vovv'] - np.einsum('mnfe,an->amef',ints['vA']['oovv'],cc_t['t1a'],optimize=True) 
     h2B_vovv = ints['vB']['vovv'] - np.einsum('nmef,an->amef',ints['vB']['oovv'],cc_t['t1a'],optimize=True) 
 
-    X1A = 0.0
-    X1A += ints['fA']['vo']
+    X1A = ints['fA']['vo'][:, :]
     X1A -= np.einsum('mi,am->ai',h1A_oo,cc_t['t1a'],optimize=True) 
     X1A += np.einsum('ae,ei->ai',chi1A_vv,cc_t['t1a'],optimize=True) 
     X1A += np.einsum('anif,fn->ai',ints['vA']['voov'],cc_t['t1a'],optimize=True) 
@@ -141,8 +142,14 @@ def update_t1a(cc_t,ints,sys,shift):
     X1A += 0.5*np.einsum('anef,efin->ai',h2A_vovv,cc_t['t2a'],optimize=True)
     X1A += np.einsum('anef,efin->ai',h2B_vovv,cc_t['t2b'],optimize=True)
 
-    cc_t['t1a'], resid = cc_loops2.cc_loops2.update_t1a(cc_t['t1a'],X1A,ints['fA']['oo'],ints['fA']['vv'],shift)
-    return cc_t, resid
+    cc_t['t1a'], residuum = cc_loops2.cc_loops2.update_t1a(cc_t['t1a'],
+                                                           X1A,
+                                                           ints['fA']['oo'],
+                                                           ints['fA']['vv'],
+                                                           shift)
+
+    return cc_t, residuum
+
 
 #@profile
 def update_t1b(cc_t,ints,sys,shift):
@@ -212,6 +219,7 @@ def update_t1b(cc_t,ints,sys,shift):
     cc_t['t1b'], resid = cc_loops2.cc_loops2.update_t1b(cc_t['t1b'],X1B,ints['fB']['oo'],ints['fB']['vv'],shift)
     return cc_t, resid
 
+
 #@profile
 def update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
     """Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2+T3))_C|0>.
@@ -259,6 +267,7 @@ def update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
 
     cc_t['t2a'], resid = cc_loops2.cc_loops2.update_t2a(cc_t['t2a'],X2A,ints['fA']['oo'],ints['fA']['vv'],shift)
     return cc_t, resid
+
 
 #@profile
 def update_t2b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
