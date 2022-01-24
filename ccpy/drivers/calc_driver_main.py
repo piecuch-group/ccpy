@@ -8,6 +8,8 @@ from parser_module import parse_input_file
 from symmetry_count import get_symmetry_count
 from utilities import remove_file
 
+from ccpy import cc
+
 def calc_driver_main(inputs,sys,ints):
     """Performs the calculation specified by the user in the input.
 
@@ -26,6 +28,12 @@ def calc_driver_main(inputs,sys,ints):
     """
     calc_type = inputs['calc_type']
     cc_t = None
+
+    if calculation_type not in cc.MODULES:
+        raise NotImplementedError("Calculation type {calculation_type} not implemented")
+
+    ground_state_energy = jacobi(sys, integrals, calculation)
+
 
     if calc_type == 'mp2' or calc_type == 'MP2':
         from mbpt_module import mp2
