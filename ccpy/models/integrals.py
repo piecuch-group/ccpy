@@ -1,5 +1,36 @@
 import numpy as np
 
+class Integrals:
+
+    def __init__(self,H1A,H1B,H2A,H2B,H2C):
+
+    @classmethod
+    def fromPyscfMolecular(cls, meanFieldObj):
+        from pyscf import ao2mo
+
+        nmo = mf.mo_coeff.shape[1]
+        e_nuc = mol.energy_nuc()
+
+        kinetic_ao = mol.intor_symmetric('int1e_kin')
+        nuclear_ao = mol.intor_symmetric('int1e_nuc')
+        Z = np.einsum('pi,pq,qj->ij', mf.mo_coeff, kinetic_ao + nuclear_ao, mf.mo_coeff)
+
+        V = np.reshape(ao2mo.kernel(mol, mf.mo_coeff, compact=False), (nmo, nmo, nmo, nmo))
+        if notation != 'chemist':  # physics notation
+            V = np.transpose(V, (0, 2, 1, 3))
+
+        e_calc = calc_hf_energy(Z, V, mol.nelectron, notation)
+        e_calc += e_nuc
+        assert (np.allclose(e_calc, mf.energy_tot(), atol=1.0e-06, rtol=0.0))
+
+        return Z, V, e_nuc
+
+    @classmethod
+    def fromPGFiles(cls, onebody_file, twobody_file):
+
+    @staticmethod
+    def dumpIntegralsToPGFiles(self):
+
 def parse_onebody(filename,sys):
     """This function reads the onebody.inp file from GAMESS
     and returns a numpy matrix.

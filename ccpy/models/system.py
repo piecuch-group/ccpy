@@ -1,133 +1,119 @@
-from pydantic import BaseModel
+class System:
+    """Class that holds information about the molecular or periodic system."""
 
-from ccpy.utilities.symmetry_count import get_pg_irreps, sym_table
-from ccpy.models.integrals import Integrals
+    def __init__(self, nelectrons, norbitals, multiplicity, nfrozen, point_group='C1',orbital_symmetries=None,charge=0):
+        self.nelectrons = nelectrons - 2*nfrozen
+        self.norbitals = norbitals - nfrozen
+        self.multiplicity = multiplicity
+        self.noccupied_alpha = (self.nelectrons + (self.multiplicity -1)) // 2
+        self.noccupied_beta = (self.nelectrons + (self.multiplicity - 1)) // 2
+        self.nunoccupied_alpha = self.norbitals - self.noccupied_alpha
+        self.nunoccupied_beta = self.norbitals - self.noccupied_beta
+        self.charge = charge
+        self.point_group = point_group
+        if orbital_symmetries is None:
+            self.orbital_symmetries = ['A1'] * norbitals
+        else:
+            self.orbital_symmetries = orbital_symmetries
 
+    def __repr__(self):
+        for key,value in vars(self).items():
+            print('     ',key,'->',value)
+        return ''
 
-class System(BaseModel):
+    @classmethod
+    def fromGamessFile(cls, gamessFile, nfrozen):
+        """Builds the System object using the SCF information contained within a
+        GAMESS log file."""
+        import cclib
+        data = cclib.io.ccread(gamessFile)
+        return cls(data.nelectrons,
+                   data.nmo,
+                   data.mult,
+                   nfrozen,
+                   cls.getGamessPointGroup(gamessFile),
+                   data.mosyms[0],
+                   data.charge)
 
-    nfrozen: int
-    nelectrons: int
-    norbitals: int
-    noccupied_alpha: int
-    noccupied_beta: int
-    nunoccupied_alpha: int
-    nunoccupied_beta: int
-    multiplicity: int
-    is_closed_shell: bool
-    charge: int
-    basis: str
-    integrals: Integrals
+    @classmethod
+    def fromPyscfMolecular(cls, meanFieldObj, nfrozen):
+        """Builds the System object using the information contained within a PySCF
+        mean-field object for a molecular system."""
+        return cls(meanFieldObj.mol.nelectron,
+                meanFieldObj.mo_coeff.shape[1],
+                2*meanFieldObj.mol.spin + 1,
+                nfrozen,
+                meanFieldObj.mol.symmetry,
+                [meanFieldObj.mol.irrep_name[x] for x in meanFieldObj.orbsym],
+                meanFieldObj.mol.charge)
 
+    #[TODO] Interface to periodic system calculations in PySCF (supercell framework only)
+    # @classmethod
+    # def fromPyscfPeriodicSuperCell(cls, periodicMeanFieldObj, nfrozen):
+    #     """Builds the System object using the information contained within a PySCF
+    #     mean-field object for a periodic system run using a supercell."""
 
-def build_system(gamess_file, Nfroz):
-    import cclib
+    @staticmethod
+    def getGamessPointGroup(gamessFile):
+        """Dumb way of getting the point group from GAMESS log files."""
+        point_group = 'C1'
+        flag_found = False
+        with open(gamessFile, 'r') as f:
+            for line in f.readlines():
+                if flag_found:
+                    order = line.split()[-1]
+                    if len(point_group) == 3:
+                        point_group = point_group[0] + order + point_group[2]
+                    if len(point_group) == 2:
+                        point_group = point_group[0] + order
+                    if len(point_group) == 1:
+                        point_group = point_group[0] + order
+                    break
+                if 'THE POINT GROUP OF THE MOLECULE IS' in line:
+                    point_group = line.split()[-1]
+                    flag_found = True
+        return point_group
 
-    eVtohartree = 0.036749308136649
-
-    data = cclib.io.ccread(gamess_file)
-
-    print_gamess_info(data, gamess_file)
-
-    Nelec = data.nelectrons
-    multiplicity = data.mult
-    Nocc_a = (Nelec + (multiplicity - 1)) // 2
-    Nocc_b = (Nelec - (multiplicity - 1)) // 2
-    Norb = data.nmo
-    methods = data.metadata["methods"]
-    scftyp = methods[0]
-
-    charge = data.charge
-    basis = data.gbasis
-
-    mo_energies = data.moenergies
-
-    mo_occupation =  \
-        [2.0] * Nocc_b \
-        + [1.0] * (Nocc_a - Nocc_b) \
-        + [0.0] * (Norb - Nocc_a)
-
-    assert len(mo_occupation) == Norb, "Occupation number vector has wrong size"
-
-    Nunocc_a = Norb - Nocc_a
-    Nunocc_b = Norb - Nocc_b
-
-    mo_energies_hartree = [data.moenergies[0][i]*eVtohartree for i in range(Norb)]
-
-    # converting A1, A2, B1, B2, etc. irrep symbols to numbers using a consistent scheme
-    point_group = get_gamess_pointgroup(gamess_file)
-    pg_irrep_map = get_pg_irreps(point_group)
-    mosyms_num = [pg_irrep_map[x.upper()] for x in data.mosyms[0]]
-
-    sys_t = {'Nelec' : Nelec-2*Nfroz,
-             'Nocc_a' : Nocc_a-Nfroz,
-             'Nocc_b' : Nocc_b-Nfroz,
-             'Nunocc_a' : Nunocc_a,
-             'Nunocc_b' : Nunocc_b,
-             'Norb' : Norb,
-             'Nfroz' : Nfroz,
-             'sym' : data.mosyms[0],
-             'sym_nums' : mosyms_num,
-             'mo_energy' : mo_energies_hartree,
-             'mo_vector' : data.mocoeffs,
-             'point_group' : point_group,
-             'irrep_map' : pg_irrep_map,
-             'pg_mult_table' : sym_table(point_group),
-             'charge' : charge,
-             'multiplicity' : multiplicity,
-             'basis' : basis,
-             'mo_occ' : mo_occupation}
-
-    return sys_t
+    def dumpSystemToPGFiles(self):
+      """Dumps the molecule information into the cc.inp, *.inf, and *.gjf files used
+         by the Piecuch Group codes."""
 
 
-def print_gamess_info(data, gamess_file):
+if __name__ == "__main__":
 
-    basis_name = data.metadata.get("basis_set", "User-defined")
-    scf_type = data.metadata["methods"][0]
+    test_case = 'pyscf'
 
-    print('')
-    print('GAMESS Run Information:')
-    print('-----------------------------------------------')
-    print('  GAMESS file location : {}'.format(gamess_file))
-    print('  SCF Type : {}'.format(scf_type))
-    print('  Basis : {}'.format(basis_name))
-    print('')
+    if test_case == 'native':
+        # H2O / cc-pVDZ
+        nfrozen = 1
+        norbitals = 24
+        nelectrons = 10
+        multiplicity = 1
+        sys = System(nelectrons, norbitals, multiplicity, nfrozen)
 
+    if test_case == 'gamess':
+        # F2+ / 6-31G
+        nfrozen = 2
+        gamessFile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/F2+-1.0-631g.log"
+        sys = System.fromGamessFile(gamessFile, nfrozen)
 
-def get_gamess_pointgroup(gamess_file):
-    """Dumb way of getting the point group from GAMESS and GAMESS only"""
-    point_group = 'C1'
-    flag_found = False
-    with open(gamess_file,'r') as f:
-        for line in f.readlines():
+    if test_case == 'pyscf':
+        from pyscf import gto, scf
+        mol = gto.Mole()
+        mol.build(
+            atom = '''F 0.0 0.0 -2.66816
+                      F 0.0 0.0  2.66816''',
+            basis = 'ccpvdz',
+            charge = 0,
+            spin = 0,
+            symmetry = 'D2H',
+            cart = True,
+            unit = 'Bohr',
+        )
+        rhf = scf.RHF(mol)
+        rhf.kernel()
 
-            if flag_found:
-                order = line.split()[-1]
-                if len(point_group) == 3:
-                    point_group = point_group[0] + order + point_group[2]
-                if len(point_group) == 2:
-                    point_group = point_group[0] + order
-                if len(point_group) == 1:
-                    point_group = point_group[0] + order
-                break
+        nfrozen = 2
+        sys = System.fromPyscfMolecular(rhf, nfrozen)
 
-            if 'THE POINT GROUP OF THE MOLECULE IS' in line:
-                point_group = line.split()[-1]
-                flag_found = True
-
-    return point_group
-
-def main(args):
-
-    sys_t = build_system(args.gamess_file,args.frozen)
-    for key, value in sys_t.items():
-        print(key,'->',value)
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('gamess_file',type=str,help='Path to GAMESS log file containing SCF calculation')
-    parser.add_argument('-f','--frozen',type=int,default=0,help='Number of frozen spatial orbitals')
-    args = parser.parse_args()
-    main(args)
+    print(sys)
