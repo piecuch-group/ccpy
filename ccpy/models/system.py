@@ -1,7 +1,20 @@
 class System:
     """Class that holds information about the molecular or periodic system."""
-
     def __init__(self, nelectrons, norbitals, multiplicity, nfrozen, point_group='C1',orbital_symmetries=None,charge=0):
+        """Default constructor for the System object.
+
+        Arguments:
+        ----------
+        nelectrons : int -> total number of electrons
+        norbitals : int -> total number of spatial orbitals
+        multiplicity : int -> spin multiplicity of reference state (2S+1)
+        nfrozen : int -> number of frozen spatial orbitals
+        point_group : str -> spatial point group, default = 'C1'
+        orbital_symmetries : list -> point group irreps of each molecular orbital, default = [None]*norbitals
+        charge : int -> total charge on the molecule, default = 0
+        Returns:
+        ----------
+        sys : Object -> System object"""
         self.nelectrons = nelectrons - 2*nfrozen
         self.norbitals = norbitals - nfrozen
         self.multiplicity = multiplicity
@@ -24,7 +37,15 @@ class System:
     @classmethod
     def fromGamessFile(cls, gamessFile, nfrozen):
         """Builds the System object using the SCF information contained within a
-        GAMESS log file."""
+        GAMESS log file.
+
+        Arguments:
+        ----------
+        gamessFile : str -> Path to GAMESS log file
+        nfrozen : int -> number of frozen electrons
+        Returns:
+        ----------
+        sys : Object -> System object"""
         import cclib
         data = cclib.io.ccread(gamessFile)
         return cls(data.nelectrons,
@@ -38,7 +59,15 @@ class System:
     @classmethod
     def fromPyscfMolecular(cls, meanFieldObj, nfrozen):
         """Builds the System object using the information contained within a PySCF
-        mean-field object for a molecular system."""
+        mean-field object for a molecular system.
+
+        Arguments:
+        ----------
+        meanFieldObj : Object -> PySCF SCF/mean-field object
+        nfrozen : int -> number of frozen electrons
+        Returns:
+        ----------
+        sys : Object -> System object"""
         return cls(meanFieldObj.mol.nelectron,
                 meanFieldObj.mo_coeff.shape[1],
                 2*meanFieldObj.mol.spin + 1,
@@ -55,7 +84,14 @@ class System:
 
     @staticmethod
     def getGamessPointGroup(gamessFile):
-        """Dumb way of getting the point group from GAMESS log files."""
+        """Dumb way of getting the point group from GAMESS log files.
+
+        Arguments:
+        ----------
+        gamessFile : str -> Path to GAMESS log file
+        Returns:
+        ----------
+        point_group : str -> Molecular point group"""
         point_group = 'C1'
         flag_found = False
         with open(gamessFile, 'r') as f:
@@ -74,14 +110,9 @@ class System:
                     flag_found = True
         return point_group
 
-    def dumpSystemToPGFiles(self):
-      """Dumps the molecule information into the cc.inp, *.inf, and *.gjf files used
-         by the Piecuch Group codes."""
-
-
 if __name__ == "__main__":
 
-    test_case = 'pyscf'
+    test_case = 'gamess'
 
     if test_case == 'native':
         # H2O / cc-pVDZ
@@ -110,7 +141,7 @@ if __name__ == "__main__":
             cart = True,
             unit = 'Bohr',
         )
-        rhf = scf.RHF(mol)
+        rhf = scf.HF(mol)
         rhf.kernel()
 
         nfrozen = 2
