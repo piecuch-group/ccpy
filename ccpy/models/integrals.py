@@ -1,8 +1,57 @@
 import numpy as np
+from ccpy.models.system import System
 
-class Integrals:
+# occ_a = slice(0, sys.noccupied_alpha)
+# occ_b = slice(0, sys.noccupied_beta)
+# unocc_a = slice(sys.noccupied_alpha, sys.norbitals)
+# unocc_b = slice(sys.noccupied_beta, sys.norbitals)
 
-    def __init__(self,H1A,H1B,H2A,H2B,H2C):
+class OneBodyIntegral:
+
+    def __init__(self, sys, data_type=np.float64):
+        self.oo = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
+        self.ov = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
+        self.vo = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
+        self.vv = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
+
+
+class TwoBodyIntegral:
+
+    def __init__(self, sys, spin_type, data_type=np.float64):
+
+        if spin_type == 'aaaa':
+            self.oooo = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
+            self.oovo = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha, sys.noccupied_alpha), dtype=data_type)
+            self.vooo = np.zeros((sys.nunoccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
+            self.vvoo = np.zeros((sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
+            self.voov = np.zeros((sys.nunoccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha), dtype=data_type)
+            self.oovv = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha), dtype=data_type)
+            self.vvov = np.zeros((sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha), dtype=data_type)
+            self.vovv = np.zeros((sys.nunoccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha), dtype=data_type)
+            self.vvvv = np.zeros((sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha), dtype=data_type)
+
+        if spin_type == 'bbbb':
+            self.oooo = np.zeros((sys.noccupied_beta, sys.noccupied_beta, sys.noccupied_beta, sys.noccupied_beta), dtype=data_type)
+            self.oovo = np.zeros((sys.noccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta, sys.noccupied_beta), dtype=data_type)
+            self.vooo = np.zeros((sys.nunoccupied_beta, sys.noccupied_beta, sys.noccupied_beta, sys.noccupied_beta), dtype=data_type)
+            self.vvoo = np.zeros((sys.nunoccupied_beta, sys.nunoccupied_beta, sys.noccupied_beta, sys.noccupied_beta), dtype=data_type)
+            self.voov = np.zeros((sys.nunoccupied_beta, sys.noccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta), dtype=data_type)
+            self.oovv = np.zeros((sys.noccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta), dtype=data_type)
+            self.vvov = np.zeros((sys.nunoccupied_beta, sys.nunoccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta), dtype=data_type)
+            self.vovv = np.zeros((sys.nunoccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta), dtype=data_type)
+            self.vvvv = np.zeros((sys.nunoccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta), dtype=data_type)
+
+        if spin_type == 'abab':
+
+class Hamiltonian:
+
+    aa : OneBodyIntegral
+    bb : OneBodyIntegral
+    aaaa : TwoBodyIntegral
+    abab : TwoBodyIntegral
+    bbbb : TwoBodyIntegral
+
+
 
     @classmethod
     def fromPyscfMolecular(cls, meanFieldObj):
@@ -25,11 +74,11 @@ class Integrals:
 
         return Z, V, e_nuc
 
-    @classmethod
-    def fromPGFiles(cls, onebody_file, twobody_file):
-
-    @staticmethod
-    def dumpIntegralsToPGFiles(self):
+    # @classmethod
+    # def fromPGFiles(cls, onebody_file, twobody_file):
+    #
+    # @staticmethod
+    # def dumpIntegralsToPGFiles(self):
 
 def parse_onebody(filename,sys):
     """This function reads the onebody.inp file from GAMESS
@@ -416,3 +465,6 @@ def get_integrals(onebody_file,twobody_file,sys,**kwargs):
         ints['muzB'] = muzB
 
     return ints
+
+if __name__ == '__main__':
+    Z = OneBodyIntegral()
