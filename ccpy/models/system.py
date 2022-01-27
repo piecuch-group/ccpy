@@ -17,6 +17,7 @@ class System:
         sys : Object -> System object"""
         self.nelectrons = nelectrons - 2*nfrozen
         self.norbitals = norbitals - nfrozen
+        self.nfrozen = nfrozen
         self.multiplicity = multiplicity
         self.noccupied_alpha = (self.nelectrons + (self.multiplicity -1)) // 2
         self.noccupied_beta = (self.nelectrons + (self.multiplicity - 1)) // 2
