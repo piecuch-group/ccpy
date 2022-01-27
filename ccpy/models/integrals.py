@@ -1,86 +1,208 @@
 import numpy as np
-from ccpy.models.system import System
+from dataclasses import dataclass
 
-# occ_a = slice(0, sys.noccupied_alpha)
-# occ_b = slice(0, sys.noccupied_beta)
-# unocc_a = slice(sys.noccupied_alpha, sys.norbitals)
-# unocc_b = slice(sys.noccupied_beta, sys.norbitals)
+# Example: Alternative constructor that avoids using parent __init__
+#
+# class MyClass(set):
+#
+#     def __init__(self, filename):
+#         self._value = load_from_file(filename)
+#
+#     @classmethod
+#     def from_somewhere(cls, somename):
+#         obj = cls.__new__(cls)  # Does not call __init__
+#         super(MyClass, obj).__init__()  # Don't forget to call any polymorphic base class initializers
+#         obj._value = load_from_somewhere(somename)
+#         return obj
+
+@dataclass
+class SortedIntegral:
+
 
 class OneBodyIntegral:
-
     def __init__(self, sys, data_type=np.float64):
         self.oo = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
         self.ov = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
         self.vo = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
         self.vv = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
 
+    def sortIntegrals(self, z, slice_occ, slice_unocc):
+        self.oo = z[slice_occ, slice_occ]
+        self.ov = z[slice_occ, slice_unocc]
+        self.vo = z[slice_unocc, slice_occ]
+        self.vv = z[slice_unocc, slice_unocc]
+
 
 class TwoBodyIntegral:
-
     def __init__(self, sys, spin_type, data_type=np.float64):
 
         if spin_type == 'aaaa':
-            self.oooo = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
-            self.oovo = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha, sys.noccupied_alpha), dtype=data_type)
-            self.vooo = np.zeros((sys.nunoccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
-            self.vvoo = np.zeros((sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha), dtype=data_type)
-            self.voov = np.zeros((sys.nunoccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha), dtype=data_type)
-            self.oovv = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha), dtype=data_type)
-            self.vvov = np.zeros((sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha), dtype=data_type)
-            self.vovv = np.zeros((sys.nunoccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha), dtype=data_type)
-            self.vvvv = np.zeros((sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha), dtype=data_type)
+            self.oooo = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha),
+                                 dtype=data_type)
+            self.oovo = np.zeros((sys.noccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha, sys.noccupied_alpha),
+                                 dtype=data_type)
+            self.vooo = np.zeros((sys.nunoccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha),
+                                 dtype=data_type)
+            self.vvoo = np.zeros(
+                (sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha),
+                dtype=data_type)
+            self.voov = np.zeros(
+                (sys.nunoccupied_alpha, sys.noccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha),
+                dtype=data_type)
+            self.oovv = np.zeros(
+                (sys.noccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha),
+                dtype=data_type)
+            self.vvov = np.zeros(
+                (sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha),
+                dtype=data_type)
+            self.vovv = np.zeros(
+                (sys.nunoccupied_alpha, sys.noccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha),
+                dtype=data_type)
+            self.vvvv = np.zeros(
+                (sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha, sys.nunoccupied_alpha),
+                dtype=data_type)
 
         if spin_type == 'bbbb':
-            self.oooo = np.zeros((sys.noccupied_beta, sys.noccupied_beta, sys.noccupied_beta, sys.noccupied_beta), dtype=data_type)
-            self.oovo = np.zeros((sys.noccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta, sys.noccupied_beta), dtype=data_type)
-            self.vooo = np.zeros((sys.nunoccupied_beta, sys.noccupied_beta, sys.noccupied_beta, sys.noccupied_beta), dtype=data_type)
-            self.vvoo = np.zeros((sys.nunoccupied_beta, sys.nunoccupied_beta, sys.noccupied_beta, sys.noccupied_beta), dtype=data_type)
-            self.voov = np.zeros((sys.nunoccupied_beta, sys.noccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta), dtype=data_type)
-            self.oovv = np.zeros((sys.noccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta), dtype=data_type)
-            self.vvov = np.zeros((sys.nunoccupied_beta, sys.nunoccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta), dtype=data_type)
-            self.vovv = np.zeros((sys.nunoccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta), dtype=data_type)
-            self.vvvv = np.zeros((sys.nunoccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta), dtype=data_type)
+            self.oooo = np.zeros((sys.noccupied_beta, sys.noccupied_beta, sys.noccupied_beta, sys.noccupied_beta),
+                                 dtype=data_type)
+            self.oovo = np.zeros((sys.noccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta, sys.noccupied_beta),
+                                 dtype=data_type)
+            self.vooo = np.zeros((sys.nunoccupied_beta, sys.noccupied_beta, sys.noccupied_beta, sys.noccupied_beta),
+                                 dtype=data_type)
+            self.vvoo = np.zeros((sys.nunoccupied_beta, sys.nunoccupied_beta, sys.noccupied_beta, sys.noccupied_beta),
+                                 dtype=data_type)
+            self.voov = np.zeros((sys.nunoccupied_beta, sys.noccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta),
+                                 dtype=data_type)
+            self.oovv = np.zeros((sys.noccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta),
+                                 dtype=data_type)
+            self.vvov = np.zeros((sys.nunoccupied_beta, sys.nunoccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta),
+                                 dtype=data_type)
+            self.vovv = np.zeros((sys.nunoccupied_beta, sys.noccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta),
+                                 dtype=data_type)
+            self.vvvv = np.zeros(
+                (sys.nunoccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta, sys.nunoccupied_beta),
+                dtype=data_type)
 
         if spin_type == 'abab':
+            self.oooo = np.zeros((sys.noccupied_alpha, sys.noccupied_beta, sys.noccupied_alpha, sys.noccupied_beta),
+                                 dtype=data_type)
+            self.oovo = np.zeros((sys.noccupied_alpha, sys.noccupied_beta, sys.nunoccupied_alpha, sys.noccupied_beta),
+                                 dtype=data_type)
+            self.ooov = np.zeros((sys.noccupied_alpha, sys.noccupied_beta, sys.noccupied_alpha, sys.nunoccupied_beta),
+                                 dtype=data_type)
+            self.vooo = np.zeros((sys.nunoccupied_alpha, sys.noccupied_beta, sys.noccupied_alpha, sys.noccupied_beta),
+                                 dtype=data_type)
+            self.ovoo = np.zeros((sys.noccupied_alpha, sys.nunoccupied_beta, sys.noccupied_alpha, sys.noccupied_beta),
+                                 dtype=data_type)
+            self.vvoo = np.zeros((sys.nunoccupied_alpha, sys.nunoccupied_beta, sys.noccupied_alpha, sys.noccupied_beta),
+                                 dtype=data_type)
+            self.voov = np.zeros((sys.nunoccupied_alpha, sys.noccupied_beta, sys.noccupied_alpha, sys.nunoccupied_beta),
+                                 dtype=data_type)
+            self.ovvo = np.zeros((sys.noccupied_alpha, sys.nunoccupied_beta, sys.nunoccupied_alpha, sys.noccupied_beta),
+                                 dtype=data_type)
+            self.vovo = np.zeros((sys.nunoccupied_alpha, sys.noccupied_beta, sys.nunoccupied_alpha, sys.noccupied_beta),
+                                 dtype=data_type)
+            self.ovov = np.zeros((sys.noccupied_alpha, sys.nunoccupied_beta, sys.noccupied_alpha, sys.nunoccupied_beta),
+                                 dtype=data_type)
+            self.oovv = np.zeros((sys.noccupied_alpha, sys.noccupied_beta, sys.nunoccupied_alpha, sys.nunoccupied_beta),
+                                 dtype=data_type)
+            self.vvov = np.zeros(
+                (sys.nunoccupied_alpha, sys.nunoccupied_beta, sys.noccupied_alpha, sys.nunoccupied_beta),
+                dtype=data_type)
+            self.vvvo = np.zeros(
+                (sys.nunoccupied_alpha, sys.nunoccupied_beta, sys.nunoccupied_alpha, sys.noccupied_beta),
+                dtype=data_type)
+            self.vovv = np.zeros(
+                (sys.nunoccupied_alpha, sys.noccupied_beta, sys.nunoccupied_alpha, sys.nunoccupied_beta),
+                dtype=data_type)
+            self.ovvv = np.zeros(
+                (sys.noccupied_alpha, sys.nunoccupied_beta, sys.nunoccupied_alpha, sys.nunoccupied_beta),
+                dtype=data_type)
+            self.vvvv = np.zeros(
+                (sys.nunoccupied_alpha, sys.nunoccupied_beta, sys.nunoccupied_alpha, sys.nunoccupied_beta),
+                dtype=data_type)
+
+        @classmethod
+        def fromSliceFullMatrix(cls, v, **kwargs):
+            self.oooo = v[slice_occ, slice_occ, slice_occ, slice_occ]
+            self.oovo =
+            self.vooo =
+            self.vvoo =
+            self.voov =
+            self.oovv =
+            self.vvov =
+            self.vovv =
+            self.vvvv =
+
+            if
+            self.oooo =
+            self.oovo =
+            self.ooov =
+            self.vooo =
+            self.ovoo =
+            self.vvoo =
+            self.voov =
+            self.ovvo =
+            self.vovo =
+            self.ovov =
+            self.oovv =
+            self.vvov =
+            self.vvvo =
+            self.vovv =
+            self.ovvv =
+            self.vvvv =
 
 class Hamiltonian:
 
-    aa : OneBodyIntegral
-    bb : OneBodyIntegral
-    aaaa : TwoBodyIntegral
-    abab : TwoBodyIntegral
-    bbbb : TwoBodyIntegral
-
-
+    def __init__(self, H1A, H1B, H2A, H2B, H2C):
+        self.aa = H1A
+        self.bb = H1B
+        self.aaaa = H2A
+        self.abab = H2B
+        self.bbbb = H2C
 
     @classmethod
-    def fromPyscfMolecular(cls, meanFieldObj):
+    def fromPyscfMolecular(cls, meanFieldObj, nfrozen, normalOrdered=True):
         from pyscf import ao2mo
 
-        nmo = mf.mo_coeff.shape[1]
-        e_nuc = mol.energy_nuc()
+        norbitals = meanFieldObj.mo_coeff.shape[1]
+        nuclearRepulsion = meanFieldObj.mol.energy_nuc()
 
-        kinetic_ao = mol.intor_symmetric('int1e_kin')
-        nuclear_ao = mol.intor_symmetric('int1e_nuc')
-        Z = np.einsum('pi,pq,qj->ij', mf.mo_coeff, kinetic_ao + nuclear_ao, mf.mo_coeff)
-
-        V = np.reshape(ao2mo.kernel(mol, mf.mo_coeff, compact=False), (nmo, nmo, nmo, nmo))
+        kineticAOIntegrals = meanFieldObj.mol.intor_symmetric('int1e_kin')
+        nuclearAOIntegrals = meanFieldObj.mol.intor_symmetric('int1e_nuc')
+        Z = np.einsum('pi,pq,qj->ij', meanFieldObj.mo_coeff, kineticAOIntegrals + nuclearAOIntegrals, meanFieldObj.mo_coeff)
+        V = np.reshape(ao2mo.kernel(meanFieldObj.mol, meanFieldObj.mo_coeff, compact=False), (norbitals, norbitals, norbitals, norbitals))
         if notation != 'chemist':  # physics notation
             V = np.transpose(V, (0, 2, 1, 3))
 
-        e_calc = calc_hf_energy(Z, V, mol.nelectron, notation)
-        e_calc += e_nuc
-        assert (np.allclose(e_calc, mf.energy_tot(), atol=1.0e-06, rtol=0.0))
+        ehfCalculated = calculateHFEnergy(Z, V, meanFieldObj.mol.nelectron)
+        ehfCalculated += nuclearRepulsion
+        assert (np.allclose(ehfCalculated, meanFieldObj.energy_tot(), atol=1.0e-06, rtol=0.0))
 
-        return Z, V, e_nuc
+        if not normalOrdered:
+            return cls(Z1A, Z1B, V2A, V2B, V2C)
+        else:
 
-    # @classmethod
-    # def fromPGFiles(cls, onebody_file, twobody_file):
-    #
+
+    @classmethod
+    def fromPGFiles(cls, onebody_file, twobody_file, sys, normalOrdered=True):
+
+
+
+
     # @staticmethod
     # def dumpIntegralsToPGFiles(self):
 
-def parse_onebody(filename,sys):
+def getNumberTotalOrbitals(onebody_file):
+
+    with open(onebody_file) as f_in:
+        lines = f_in.readlines()
+        ct = 0
+        for line in lines:
+            ct += 1
+    return int(-0.5 + np.sqrt(0.25 + 2*x))
+
+def loadOnebodyIntegralFile(onebody_file, norbitalsTotal, data_type=np.float64):
     """This function reads the onebody.inp file from GAMESS
     and returns a numpy matrix.
     
@@ -96,29 +218,23 @@ def parse_onebody(filename,sys):
     e1int : ndarray(dtype=float, shape=(norb,norb))
         Onebody part of the bare Hamiltonian in the MO basis (Z)
     """
-    Norb = sys['Norb']
-    
-    e1int = np.zeros((Norb,Norb))
-    
+    e1int = np.zeros((norbitalsTotal, norbitalsTotal), dtype=data_type)
     try:
-        print('     onebody file : {}'.format(filename))
-        with open(filename) as f_in:
+        with open(onebody_file) as f_in:
             lines = f_in.readlines()
             ct = 0
-            for i in range(Norb):
-                for j in range(i+1):
+            for i in range(norbitalsTotal):
+                for j in range(i + 1):
                     val = float(lines[ct].split()[0])
-                    e1int[i,j] = val
-                    e1int[j,i] = val
+                    e1int[i, j] = val
+                    e1int[j, i] = val
                     ct += 1
     except IOError:
-        print('Error: {} does not appear to exist.'.format(filename))
-        sys.exit()
-
+        print('Error: {} does not appear to exist.'.format(onebody_file))
     return e1int
-            
-    
-def parse_twobody(filename,sys):
+
+
+def loadTwobodyIntegralFile(twobody_file, norbitalsTotal, data_type=np.float64):
     """This function reads the twobody.inp file from GAMESS
     and returns a numpy matrix.
     
@@ -137,24 +253,16 @@ def parse_twobody(filename,sys):
         Twobody part of the bare Hamiltonian in the MO basis (V)
     """
     try:
-        print('     twobody file : {}'.format(filename))
-
-        Norb = sys['Norb']
-
         # initialize numpy array
-        e2int = np.zeros((Norb, Norb, Norb, Norb))
-
+        e2int = np.zeros((norbitalsTotal, norbitalsTotal, norbitalsTotal, norbitalsTotal), dtype=data_type)
         # open file
-        with open(filename) as f_in:
-            
+        with open(twobody_file) as f_in:
             # loop over lines
             for line in f_in:
-                
                 # split fields and parse
                 fields = line.split()
                 indices = tuple(map(int, fields[:4]))
                 val = float(fields[4])
-                
                 # check whether value is nuclear repulsion
                 # fill matrix otherwise
                 if sum(indices) == 0:
@@ -162,16 +270,13 @@ def parse_twobody(filename,sys):
                 else:
                     indices = tuple(i - 1 for i in indices)
                     e2int[indices] = val
-                    
         # convert e2int from chemist notation (ia|jb) to
         # physicist notation <ij|ab>
         e2int = np.einsum('iajb->ijab', e2int)
-
     except IOError:
-        print('Error: {} does not appear to exist.'.format(filename))
-        sys.exit()
-
+        print('Error: {} does not appear to exist.'.format(twobody_file))
     return e_nn, e2int
+
 
 def build_v(e2int):
     """Generate the antisymmetrized version of the twobody matrix.
@@ -189,17 +294,18 @@ def build_v(e2int):
     """
     v_aa = e2int - np.einsum("pqrs->pqsr", e2int)
     v_ab = e2int
-    v_bb = e2int - np.einsum('pqrs->pqsr',e2int)
+    v_bb = e2int - np.einsum('pqrs->pqsr', e2int)
 
     v = {
-        "A" : v_aa,
-        "B" : v_ab,
-        "C" : v_bb
+        "A": v_aa,
+        "B": v_ab,
+        "C": v_bb
     }
 
     return v
 
-def build_f(e1int,v,sys):
+
+def build_f(e1int, v, sys):
     """This function generates the Fock matrix using the formula
        F = Z + G where G is \sum_{i} <pi|v|qi>_A split for different
        spin cases.
@@ -218,253 +324,23 @@ def build_f(e1int,v,sys):
        f : dict
            Dictionary containing the Fock matrices for the aa and bb cases
     """
-    Nocc_a = sys['Nocc_a']+sys['Nfroz']
-    Nocc_b = sys['Nocc_b']+sys['Nfroz']
-
+    Nocc_a = sys['Nocc_a'] + sys['Nfroz']
+    Nocc_b = sys['Nocc_b'] + sys['Nfroz']
 
     # <p|f|q> = <p|z|q> + <pi|v|qi> + <pi~|v|qi~>
-    f_a = e1int + np.einsum('piqi->pq',v['A'][:,:Nocc_a,:,:Nocc_a]) + np.einsum('piqi->pq',v['B'][:,:Nocc_b,:,:Nocc_b])
+    f_a = e1int + np.einsum('piqi->pq', v['A'][:, :Nocc_a, :, :Nocc_a]) + np.einsum('piqi->pq',
+                                                                                    v['B'][:, :Nocc_b, :, :Nocc_b])
 
     # <p~|f|q~> = <p~|z|q~> + <p~i~|v|q~i~> + <ip~|v|iq~>
-    f_b = e1int + np.einsum('piqi->pq',v['C'][:,:Nocc_b,:,:Nocc_b]) + np.einsum('ipiq->pq',v['B'][:Nocc_a,:,:Nocc_a,:])
+    f_b = e1int + np.einsum('piqi->pq', v['C'][:, :Nocc_b, :, :Nocc_b]) + np.einsum('ipiq->pq',
+                                                                                    v['B'][:Nocc_a, :, :Nocc_a, :])
 
     f = {
-        "A" : f_a,
-        "B" : f_b
+        "A": f_a,
+        "B": f_b
     }
 
     return f
-
-def slice_onebody_ints(f,sys):
-    """Slice the onebody integrals and sort them by occ/unocc blocks.
-
-    Parameters
-    ----------
-    f : dict
-        AA and BB Fock matrices
-    sys : dict
-        System information dictionary
-
-    Returns
-    -------
-    fA : dict
-        Sliced Fock matrices for the A spincase
-    fB : dict
-        Sliced Fock matrices for the B spincase
-    """
-    Nocc_a = sys['Nocc_a']
-    Nocc_b = sys['Nocc_b']
-    Nunocc_a = sys['Nunocc_a']
-    Nunocc_b = sys['Nunocc_b']
-
-    oa = slice(sys['Nfroz'],sys['Nocc_a']+sys['Nfroz'])
-    ob = slice(sys['Nfroz'],sys['Nocc_b']+sys['Nfroz'])
-    ua = slice(sys['Nocc_a']+sys['Nfroz'],sys['Norb'])
-    ub = slice(sys['Nocc_b']+sys['Nfroz'],sys['Norb'])
-
-    fA_oo = f['A'][oa,oa]
-    fA_ov = f['A'][oa,ua]
-    fA_vo = f['A'][ua,oa]
-    fA_vv = f['A'][ua,ua]
-
-    fB_oo = f['B'][ob,ob]
-    fB_ov = f['B'][ob,ub]
-    fB_vo = f['B'][ub,ob]
-    fB_vv = f['B'][ub,ub]
-
-    fA = {'oo' : fA_oo, 'ov' : fA_ov, 'vo' : fA_vo, 'vv' : fA_vv}
-    fB = {'oo' : fB_oo, 'ov' : fB_ov, 'vo' : fB_vo, 'vv' : fB_vv}
-
-    return fA, fB
-
-def slice_twobody_ints(v,sys):
-    """Slice the twobody integrals and sort them by occ/unocc blocks.
-
-    Parameters
-    ----------
-    f : dict
-        AA and BB Fock matrices
-    sys : dict
-        System information dictionary
-
-    Returns
-    -------
-    vA : dict
-        Sliced twobody matrices for the AA spincase
-    vB : dict
-        Sliced twobody matrices for the AB spincase
-    vC : dict
-        Sliced twobody matrices for the BB spincase
-    """
-    Nocc_a = sys['Nocc_a']
-    Nocc_b = sys['Nocc_b']
-    Nunocc_a = sys['Nunocc_a']
-    Nunocc_b = sys['Nunocc_b']
-
-    oa = slice(sys['Nfroz'],sys['Nocc_a']+sys['Nfroz'])
-    ob = slice(sys['Nfroz'],sys['Nocc_b']+sys['Nfroz'])
-    ua = slice(sys['Nocc_a']+sys['Nfroz'],sys['Norb'])
-    ub = slice(sys['Nocc_b']+sys['Nfroz'],sys['Norb'])
-
-    vA_oooo = v['A'][oa,oa,oa,oa]
-    vA_ooov = v['A'][oa,oa,oa,ua]
-    vA_oovo = v['A'][oa,oa,ua,oa]
-    vA_ovoo = v['A'][oa,ua,oa,oa]
-    vA_vooo = v['A'][ua,oa,oa,oa]
-    vA_oovv = v['A'][oa,oa,ua,ua]
-    vA_ovov = v['A'][oa,ua,oa,ua]
-    vA_voov = v['A'][ua,oa,oa,ua]
-    vA_ovvo = v['A'][oa,ua,ua,oa]
-    vA_vovo = v['A'][ua,oa,ua,oa]
-    vA_vvoo = v['A'][ua,ua,oa,oa]
-    vA_ovvv = v['A'][oa,ua,ua,ua]
-    vA_vovv = v['A'][ua,oa,ua,ua]
-    vA_vvov = v['A'][ua,ua,oa,ua]
-    vA_vvvo = v['A'][ua,ua,ua,oa]
-    vA_vvvv = v['A'][ua,ua,ua,ua]
-
-    vB_oooo = v['B'][oa,ob,oa,ob]
-    vB_ooov = v['B'][oa,ob,oa,ub]
-    vB_oovo = v['B'][oa,ob,ua,ob]
-    vB_ovoo = v['B'][oa,ub,oa,ob]
-    vB_vooo = v['B'][ua,ob,oa,ob]
-    vB_oovv = v['B'][oa,ob,ua,ub]
-    vB_ovov = v['B'][oa,ub,oa,ub]
-    vB_voov = v['B'][ua,ob,oa,ub]
-    vB_ovvo = v['B'][oa,ub,ua,ob]
-    vB_vovo = v['B'][ua,ob,ua,ob]
-    vB_vvoo = v['B'][ua,ub,oa,ob]
-    vB_vvvo = v['B'][ua,ub,ua,ob]
-    vB_vvov = v['B'][ua,ub,oa,ub]
-    vB_vovv = v['B'][ua,ob,ua,ub]
-    vB_ovvv = v['B'][oa,ub,ua,ub]
-    vB_vvvv = v['B'][ua,ub,ua,ub]
-
-    vC_oooo = v['C'][ob,ob,ob,ob]
-    vC_ooov = v['C'][ob,ob,ob,ub]
-    vC_oovo = v['C'][ob,ob,ub,ob]
-    vC_ovoo = v['C'][ob,ub,ob,ob]
-    vC_vooo = v['C'][ub,ob,ob,ob]
-    vC_oovv = v['C'][ob,ob,ub,ub]
-    vC_ovov = v['C'][ob,ub,ob,ub]
-    vC_voov = v['C'][ub,ob,ob,ub]
-    vC_ovvo = v['C'][ob,ub,ub,ob]
-    vC_vovo = v['C'][ub,ob,ub,ob]
-    vC_vvoo = v['C'][ub,ub,ob,ob]
-    vC_ovvv = v['C'][ob,ub,ub,ub]
-    vC_vovv = v['C'][ub,ob,ub,ub]
-    vC_vvov = v['C'][ub,ub,ob,ub]
-    vC_vvvo = v['C'][ub,ub,ub,ob]
-    vC_vvvv = v['C'][ub,ub,ub,ub]
-
-    vA = {'oooo' : vA_oooo, 'ooov' : vA_ooov, 'oovo' : vA_oovo, 'ovoo' : vA_ovoo, \
-          'vooo' : vA_vooo, 'oovv' : vA_oovv, 'ovov' : vA_ovov, 'ovvo' : vA_ovvo, \
-          'vovo' : vA_vovo, 'voov' : vA_voov, 'vvoo' : vA_vvoo, 'vvvo' : vA_vvvo, \
-          'vvov' : vA_vvov, 'vovv' : vA_vovv, 'ovvv' : vA_ovvv, 'vvvv' : vA_vvvv}
-    vB = {'oooo' : vB_oooo, 'ooov' : vB_ooov, 'oovo' : vB_oovo, 'ovoo' : vB_ovoo, \
-          'vooo' : vB_vooo, 'oovv' : vB_oovv, 'ovov' : vB_ovov, 'ovvo' : vB_ovvo, \
-          'vovo' : vB_vovo, 'voov' : vB_voov, 'vvoo' : vB_vvoo, 'vvvo' : vB_vvvo, \
-          'vvov' : vB_vvov, 'vovv' : vB_vovv, 'ovvv' : vB_ovvv, 'vvvv' : vB_vvvv}
-    vC = {'oooo' : vC_oooo, 'ooov' : vC_ooov, 'oovo' : vC_oovo, 'ovoo' : vC_ovoo, \
-          'vooo' : vC_vooo, 'oovv' : vC_oovv, 'ovov' : vC_ovov, 'ovvo' : vC_ovvo, \
-          'vovo' : vC_vovo, 'voov' : vC_voov, 'vvoo' : vC_vvoo, 'vvvo' : vC_vvvo, \
-          'vvov' : vC_vvov, 'vovv' : vC_vovv, 'ovvv' : vC_ovvv, 'vvvv' : vC_vvvv}
-
-    return vA, vB, vC
-
-def get_integrals(onebody_file,twobody_file,sys,**kwargs):
-    """Get the dictionary of onebody and twobody integrals in
-    the MO basis.
-
-    Parameters
-    ----------
-    onebody_file : str
-        Path to onebody integral file
-    twobody_file : str
-        Path to twobody integral file
-    sys : dict
-        System information dictionary
-    kwargs : dict, optional
-        Keyword dictionary with possible fields: 'mux_file', 'muy_file', and 'muz_file'
-        for loading in dipole moment integrals
-
-    Returns
-    -------
-    ints : dict
-        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-    """
-    is_mux = False; is_muy = False; is_muz = False;
-
-    print('')
-    print('  Reading integrals...')
-
-    e1int = parse_onebody(onebody_file,sys)
-    e_nn, e2int = parse_twobody(twobody_file,sys)
-
-    if 'mux_file' in kwargs:
-        is_mux = True
-        muxints = parse_onebody(kwargs['mux_file'],sys)
-        mu_x = {'A' : muxints, 'B' : muxints}
-    if 'muy_file' in kwargs:
-        is_muy = True
-        muyints = parse_onebody(kwargs['muy_file'],sys)
-        mu_y = {'A' : muyints, 'B' : muyints}
-    if 'muz_file' in kwargs:
-        is_muz = True
-        muzints = parse_onebody(kwargs['muz_file'],sys)
-        mu_z = {'A' : muzints, 'B' : muzints}
-
-    print('  Integrals read successfully!')
-
-    Escf = e_nn
-    for i in range(sys['Nocc_a']+sys['Nfroz']):
-        Escf += e1int[i,i]
-    for i in range(sys['Nocc_b']+sys['Nfroz']):
-        Escf += e1int[i,i]
-    for i in range(sys['Nocc_a']+sys['Nfroz']):
-        for j in range(sys['Nocc_a']+sys['Nfroz']):
-           Escf += 0.5*(e2int[i,j,i,j] - e2int[i,j,j,i])
-    for i in range(sys['Nocc_a']+sys['Nfroz']):
-        for j in range(sys['Nocc_b']+sys['Nfroz']):
-           Escf += e2int[i,j,i,j]
-    for i in range(sys['Nocc_b']+sys['Nfroz']):
-        for j in range(sys['Nocc_b']+sys['Nfroz']):
-           Escf += 0.5*(e2int[i,j,i,j] - e2int[i,j,j,i])
-
-    v = build_v(e2int)
-    f = build_f(e1int,v,sys)
-    fA,fB = slice_onebody_ints(f,sys)
-    vA,vB,vC = slice_twobody_ints(v,sys)
-    if is_mux:
-        muxA,muxB = slice_onebody_ints(mu_x,sys)
-    if is_muy:
-        muyA,muyB = slice_onebody_ints(mu_y,sys)
-    if is_muz:
-        muzA,muzB = slice_onebody_ints(mu_z,sys)
-
-
-    # calculating HF energy from F and V matrices
-    # Escf = e_nn
-    # Escf += np.einsum('ii->',fA['oo'],optimize=True)
-    # Escf += np.einsum('ii->',fB['oo'],optimize=True)
-    # Escf -= 0.5*np.einsum('ijij->',vA['oooo'],optimize=True)
-    # Escf -= 0.5*np.einsum('ijij->',vC['oooo'],optimize=True)
-    # Escf -= np.einsum('ijij->',vB['oooo'],optimize=True)
-
-
-    ints = {'fA' : fA, 'fB' : fB, 'vA' : vA, 'vB' : vB, 'vC' : vC, 'Vnuc' : e_nn, 'Escf' : Escf}
-    #ints = {'fA' : fA, 'fB' : fB, 'vA' : vA, 'vB' : vB, 'vC' : vC, 'Vnuc' : e_nn, 'Escf' : Escf, v : 'Vmat', f : 'Fmat'}
-    if is_mux:
-        ints['muxA'] = muxA
-        ints['muxB'] = muxB
-    if is_muy:
-        ints['muyA'] = muyA
-        ints['muyB'] = muyB
-    if is_muz:
-        ints['muzA'] = muzA
-        ints['muzB'] = muzB
-
-    return ints
 
 if __name__ == '__main__':
     Z = OneBodyIntegral()
