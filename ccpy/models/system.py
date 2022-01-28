@@ -4,7 +4,7 @@ class System:
 
     def __init__(self, nelectrons, norbitals, multiplicity, nfrozen,
                  point_group='C1', orbital_symmetries=None, charge=0,
-                 nkpts=0, nuclear_repulsion=0):
+                 nkpts=0, reference_energy=0, nuclear_repulsion=0):
         """Default constructor for the System object.
 
         Arguments:
@@ -36,6 +36,7 @@ class System:
             self.orbital_symmetries = ['A1'] * norbitals
         else:
             self.orbital_symmetries = orbital_symmetries
+        self.reference_energy = reference_energy
         self.nuclear_repulsion = nuclear_repulsion
 
     def __repr__(self):
