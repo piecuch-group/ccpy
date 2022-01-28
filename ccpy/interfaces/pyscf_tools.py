@@ -14,17 +14,37 @@ def parsePyscfMolecularMeanField(meanFieldObj, nfrozen):
        integrals: Integral object"""
     from ccpy.models.system import System
     #from ccpy.models.integrals import Integral
+    from pyscf import ao2mo
 
-    system = System(meanFieldObj.mol.nelectron,
-               meanFieldObj.mo_coeff.shape[1],
-               meanFieldObj.mol.spin + 1, # PySCF mol.spin returns 2S, not S
+    molecule = meanFieldObj.mol
+    nelectrons = molecule.nelectron
+    mo_coeff = meanFieldObj.mo_coeff
+    norbitals = mo_coeff.shape[1]
+    nuclearRepulsion = molecule.energy_nuc()
+
+    system = System(nelectrons,
+               norbitals,
+               molecule.spin + 1, # PySCF mol.spin returns 2S, not S
                nfrozen,
-               meanFieldObj.mol.symmetry,
-               [meanFieldObj.mol.irrep_name[x] for x in meanFieldObj.orbsym],
-               meanFieldObj.mol.charge)
+               molecule.symmetry,
+               [molecule.irrep_name[x] for x in meanFieldObj.orbsym],
+               molecule.charge,
+               nuclearRepulsion)
 
-    return system
+    kineticAOIntegrals = molecule.intor_symmetric('int1e_kin')
+    nuclearAOIntegrals = molecule.intor_symmetric('int1e_nuc')
+    e1int = np.einsum('pi,pq,qj->ij', mo_coeff, kineticAOIntegrals + nuclearAOIntegrals, mo_coeff)
+    e2int = np.transpose(
+                np.reshape(ao2mo.kernel(molecule, mo_coeff, compact=False), (norbitals, norbitals, norbitals, norbitals)),
+                (0,2,1,3)
+            )
 
+    # Check that the HF energy calculated using the integrals matches the PySCF result
+    # e_calc = calc_hf_energy(e1int, e2int, nelectrons)
+    # e_calc += e_nuc
+    # assert(np.allclose(e_calc, mf.energy_tot(), atol=1.0e-06, rtol=0.0))
+
+    return system, e1int, e2int
 
 def get_kconserv1(a, kpts, thresh=1.0e-07):
 

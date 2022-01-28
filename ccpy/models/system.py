@@ -2,7 +2,9 @@ class System:
 
     """Class that holds information about the molecular or periodic system."""
 
-    def __init__(self, nelectrons, norbitals, multiplicity, nfrozen, point_group='C1',orbital_symmetries=None,charge=0):
+    def __init__(self, nelectrons, norbitals, multiplicity, nfrozen,
+                 point_group='C1', orbital_symmetries=None, charge=0,
+                 nuclearRepulsion=0):
         """Default constructor for the System object.
 
         Arguments:
@@ -14,6 +16,7 @@ class System:
         point_group : str -> spatial point group, default = 'C1'
         orbital_symmetries : list -> point group irreps of each molecular orbital, default = [None]*norbitals
         charge : int -> total charge on the molecule, default = 0
+        e_nuclear : float -> nuclear repulsion energy at the molecular geometry (in hartree)
         Returns:
         ----------
         sys : Object -> System object"""
@@ -31,6 +34,7 @@ class System:
             self.orbital_symmetries = ['A1'] * norbitals
         else:
             self.orbital_symmetries = orbital_symmetries
+        self.e_nuclear = nuclearRepulsion
 
     def __repr__(self):
         for key,value in vars(self).items():
@@ -74,6 +78,6 @@ if __name__ == "__main__":
         mf.kernel()
 
         nfrozen = 2
-        system = parsePyscfMolecularMeanField(mf, nfrozen)
+        system, e1int, e2int = parsePyscfMolecularMeanField(mf, nfrozen)
 
     print(system)
