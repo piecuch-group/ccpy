@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import numpy as np
 from itertools import combinations
 
-#from ccpy.drivers.solvers import diis
+from ccpy.drivers.solvers import diis
 
 
 class Operator(BaseModel):
@@ -13,22 +13,6 @@ class Operator(BaseModel):
     spin_type: int
     array: Any
 
-class SlicedOperator:
-
-    def __init__(self, system, name):
-        dimensions_table = {'a': {'o': system.noccupied_alpha, 'v': system.nunoccupied_alpha},
-                            'b': {'o': system.noccupied_beta,  'v': system.nunoccupied_beta}}
-        order = len(name)
-        double_spin_string = list(name) * 2
-        for i in range(2*order+1):
-            for combs in combinations(range(2*order),i):
-                attr = ['o'] * (2*order)
-                dimensions = [0] * 2*order
-                for k in combs:
-                    attr[k] = 'v'
-                for k in range(2*order):
-                    dimensions[k] = dimensions_table[double_spin_string[k]][attr[k]]
-                self.__dict__[''.join(attr)] = np.zeros(dimensions)
 
 class DIIS:
 
@@ -49,29 +33,21 @@ class DIIS:
     def extrapolate(self):
         return diis(self.T_list, self.T_residuum_list)
 
-class ManyBodyOperator:
-
-    def __init__(self, system, order):
-        for i in range(1, order + 1):
-            for j in range(i + 1):
-                name = get_operator_name(i, j)
-                self.__dict__[name] = SlicedOperator(system, name)
-
-    def __repr__(self):
-        for key,value in vars(self).items():
-            print('     ',key,'->',value)
-        return ''
 
 class ClusterOperator:
 
-    def __init__(self, system, order):
-        self.order = order
-        self.T = build_cluster_expansion(system, order)
+    def __init__(self, system, order, data_type=np.float64):
+        #self.order = order
+        for i in range(1, order + 1):
+            for j in range(i + 1):
+                name = get_operator_name(i, j)
+                dimensions = get_operator_dimension(i, j, system)
+                self.__dict__[name] = np.zeros(dimensions, dtype=data_type)
 
     def flatten(self):
-        return np.hstack([t.flatten() for t in self.T.values()])
-
-
+        #spin_cases = [key for key in self.__dict__ if not key.startswith("__") and key not in ['order']]
+        spin_cases = [key for key in self.__dict__ if not key.startswith("__")]
+        return np.hstack([self.__dict__[key].flatten() for key in spin_cases])
 
 
 # TODO: move this to a classmethod or something
@@ -101,9 +77,63 @@ def build_cluster_expansion(system, order):
 
     return operators
 
+
+# class SortedOperator:
+#
+#     def __init__(self, system, name, data_type, matrix=None):
+#
+#         dimensions_table = {'a': {'o': system.noccupied_alpha, 'v': system.nunoccupied_alpha},
+#                             'b': {'o': system.noccupied_beta,  'v': system.nunoccupied_beta}}
+#         order = len(name)
+#         double_spin_string = list(name) * 2
+#
+#         if matrix is not None:
+#             slice_table = {'a': {'o': slice(0, system.noccupied_alpha), 'v': slice(system.noccupied_alpha, system.norbitals)},
+#                            'b': {'o': slice(0, system.noccupied_beta),  'v': slice(system.noccupied_beta, system.norbitals)}}
+#
+#         for i in range(2*order+1):
+#             for combs in combinations(range(2*order),i):
+#                 attr = ['o'] * (2*order)
+#                 dimensions = [0] * 2*order
+#                 for k in combs:
+#                     attr[k] = 'v'
+#
+#                 if matrix is not None:
+#                     slicearr = [slice(None)] * (2*order)
+#
+#                 for k in range(2*order):
+#                     if matrix is None:
+#                         dimensions[k] = dimensions_table[double_spin_string[k]][attr[k]]
+#                     else:
+#                         slicearr[k] = slice_table[double_spin_string[k]][attr[k]]
+#
+#                 if matrix is None:
+#                     self.__dict__[''.join(attr)] = np.zeros(dimensions, dtype=data_type)
+#                 else:
+#                     self.__dict__[''.join(attr)] = matrix[tuple(slicearr)]
+#
+# class ManyBodyOperator:
+#
+#     def __init__(self, system, order, matrices=None, data_type=np.float64):
+#         self.order = order
+#         for i in range(1, order + 1):
+#             for j in range(i + 1):
+#                 name = get_operator_name(i, j)
+#                 if matrices is None:
+#                     self.__dict__[name] = SortedOperator(system, name, data_type)
+#                 else:
+#                     self.__dict__[name] = SortedOperator(system, name, data_type, matrices[i-1])
+#
+#     def __repr__(self):
+#         for key,value in vars(self).items():
+#             print('     ',key,'->',value)
+#         return ''
+
+
+
 if __name__ == "__main__":
 
-    from ccpy.interfaces.pyscf_tools import parsePyscfMolecularMeanField
+    from ccpy.interfaces.pyscf_tools import loadFromPyscfMolecular
     from pyscf import gto, scf
 
     mol = gto.Mole()
@@ -121,31 +151,16 @@ if __name__ == "__main__":
     mf.kernel()
 
     nfrozen = 2
-    system, e1int, e2int = parsePyscfMolecularMeanField(mf, nfrozen)
+    system, H = loadFromPyscfMolecular(mf, nfrozen)
 
     print(system)
 
     T = ClusterOperator(system, 3)
+    for key, value in T.__dict__.items():
+        print(key,'->',value.shape)
+    print(T.flatten().shape)
 
-    for key, values in T.T.items():
-        print(key,'->',values.array.shape)
 
-    print('Testing 2-body operator:')
-    H = ManyBodyOperator(system, 2)
-    print('1-body part: AA')
-    print(H.a.oo.shape)
-    print(H.a.ov.shape)
-    print(H.a.vo.shape)
-    print(H.a.vv.shape)
-    print('1-body part: BB')
-    print(H.b.oo.shape)
-    print(H.b.ov.shape)
-    print(H.b.vo.shape)
-    print(H.b.vv.shape)
-    print('2-body part: ABAB')
-    print(H.ab.oooo.shape)
-    print(H.ab.vooo.shape)
-    print(H.ab.vooo.shape)
 
 
 

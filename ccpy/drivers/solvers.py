@@ -1,7 +1,7 @@
 """Module containing the driving solvers"""
 import numpy as np
 import time
-from utilities import print_memory_usage
+from ccpy.utilities.utilities import print_memory_usage
 
 def diis_out_of_core(cc_t, slices, sizes, vec_dim, diis_dim):
     """Performs DIIS extrapolation for the solution of nonlinear equations. Out of core
