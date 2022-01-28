@@ -1,39 +1,39 @@
 import numpy as np
 
-def loadFromGamess(gamessLogFile, onebody_file, twobody_file, nfrozen, normalOrdered=True, data_type=np.float64):
+def loadFromGamess(gamess_logfile, onebody_file, twobody_file, nfrozen, normal_ordered=True, data_type=np.float64):
 
     from cclib.io import ccread
     from ccpy.models.system import System
     from ccpy.models.integrals import getHamiltonian
     from ccpy.drivers.hf_energy import calc_hf_energy
 
-    data = ccread(gamessLogFile)
+    data = ccread(gamess_logfile)
 
     system = System(data.nelectrons,
                data.nmo,
                data.mult,
                nfrozen,
-               point_group = getGamessPointGroup(gamessLogFile),
+               point_group = getGamessPointGroup(gamess_logfile),
                orbital_symmetries = data.mosyms[0],
                charge = data.charge,
-               nuclearRepulsion = getGamessNuclearRepulsion(gamessLogFile))
+               nuclear_repulsion = getGamessNuclearRepulsion(gamess_logfile))
 
     e1int = loadOnebodyIntegralFile(onebody_file, system, data_type)
-    nuclearRepulsion, e2int = loadTwobodyIntegralFile(twobody_file, system, data_type)
+    nuclear_repulsion, e2int = loadTwobodyIntegralFile(twobody_file, system, data_type)
 
-    assert (np.allclose(nuclearRepulsion, system.e_nuclear, atol=1.0e-06, rtol=0.0))
-    system.e_nuclear = nuclearRepulsion
+    assert (np.allclose(nuclear_repulsion, system.nuclear_repulsion, atol=1.0e-06, rtol=0.0))
+    system.nuclear_repulsion = nuclear_repulsion
 
     # Check that the HF energy calculated using the integrals matches the GAMESS result
     hf_energy = calc_hf_energy(e1int, e2int, system)
-    hf_energy += nuclearRepulsion
-    assert (np.allclose(hf_energy, getGamessSCFEnergy(gamessLogFile), atol=1.0e-06, rtol=0.0))
+    hf_energy += system.nuclear_repulsion
+    assert (np.allclose(hf_energy, getGamessSCFEnergy(gamess_logfile), atol=1.0e-06, rtol=0.0))
 
-    return system, getHamiltonian(e1int, e2int, system, normalOrdered)
+    return system, getHamiltonian(e1int, e2int, system, normal_ordered)
 
-def getGamessSCFEnergy(gamessLogFile):
+def getGamessSCFEnergy(gamess_logfile):
 
-    with open(gamessLogFile, 'r') as f:
+    with open(gamess_logfile, 'r') as f:
         for line in f.readlines():
             if all( s in line.split() for s in ['FINAL', 'ROHF', 'ENERGY', 'IS']) or\
                     all( s in line.split() for s in ['FINAL', 'RHF', 'ENERGY', 'IS']):
@@ -42,16 +42,16 @@ def getGamessSCFEnergy(gamessLogFile):
                 break
     return hf_energy
 
-def getGamessNuclearRepulsion(gamessLogFile):
+def getGamessNuclearRepulsion(gamess_logfile):
 
-    with open(gamessLogFile, 'r') as f:
+    with open(gamess_logfile, 'r') as f:
         for line in f.readlines():
             if all( s in line.split() for s in ['THE', 'NUCLEAR', 'REPULSION', 'ENERGY', 'IS']):
                 e_nuclear = float(line.split()[-1])
                 break
     return e_nuclear
 
-def getGamessPointGroup(gamessLogFile):
+def getGamessPointGroup(gamess_logfile):
     """Dumb way of getting the point group from GAMESS log files.
 
     Arguments:
@@ -62,7 +62,7 @@ def getGamessPointGroup(gamessLogFile):
     point_group : str -> Molecular point group"""
     point_group = 'C1'
     flag_found = False
-    with open(gamessLogFile, 'r') as f:
+    with open(gamess_logfile, 'r') as f:
         for line in f.readlines():
             if flag_found:
                 order = line.split()[-1]

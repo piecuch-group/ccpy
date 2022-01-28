@@ -53,12 +53,12 @@ class Integral:
                 matrices[name] = np.zeros(dimension, dtype=data_type)
         return cls(system, order, matrices)
 
-def getHamiltonian(e1int, e2int, system, normalOrdered):
+def getHamiltonian(e1int, e2int, system, normal_ordered):
 
     corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
 
     twobody = build_v(e2int)
-    if normalOrdered:
+    if normal_ordered:
         onebody = build_f(e1int, twobody, system)
     else:
         onebody = {'a' : e1int, 'b' : e1int}
@@ -160,16 +160,16 @@ if __name__ == '__main__':
     hf_energy -= 0.5*np.einsum('ijij->', H.aa.oooo, optimize=True)
     hf_energy -= np.einsum('ijij->', H.ab.oooo, optimize=True)
     hf_energy -= 0.5*np.einsum('ijij->', H.bb.oooo, optimize=True)
-    hf_energy += system.e_nuclear
+    hf_energy += system.nuclear_repulsion
     assert(np.allclose(hf_energy, mf.energy_tot(), atol=1.0e-06, rtol=0.0))
 
     # Testing from GAMESS
     nfrozen = 0
-    gamessLogFile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/F2+-1.0-631g.log"
-    onebodyFile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/onebody.inp"
-    twobodyFile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/twobody.inp"
+    gamess_logfile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/F2+-1.0-631g.log"
+    onebody_file = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/onebody.inp"
+    twobody_file = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/twobody.inp"
 
-    system, H = loadFromGamess(gamessLogFile, onebodyFile, twobodyFile, nfrozen, normalOrdered=True, data_type=np.float64)
+    system, H = loadFromGamess(gamess_logfile, onebody_file, twobody_file, nfrozen, normal_ordered=True, data_type=np.float64)
 
     print(system)
 
@@ -179,5 +179,5 @@ if __name__ == '__main__':
     hf_energy -= 0.5 * np.einsum('ijij->', H.aa.oooo, optimize=True)
     hf_energy -= np.einsum('ijij->', H.ab.oooo, optimize=True)
     hf_energy -= 0.5 * np.einsum('ijij->', H.bb.oooo, optimize=True)
-    hf_energy += system.e_nuclear
+    hf_energy += system.nuclear_repulsion
     assert (np.allclose(hf_energy, -198.0361965498, atol=1.0e-06, rtol=0.0))

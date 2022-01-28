@@ -4,7 +4,7 @@ class System:
 
     def __init__(self, nelectrons, norbitals, multiplicity, nfrozen,
                  point_group='C1', orbital_symmetries=None, charge=0,
-                 nkpts=0, nuclearRepulsion=0):
+                 nkpts=0, nuclear_repulsion=0):
         """Default constructor for the System object.
 
         Arguments:
@@ -36,7 +36,7 @@ class System:
             self.orbital_symmetries = ['A1'] * norbitals
         else:
             self.orbital_symmetries = orbital_symmetries
-        self.e_nuclear = nuclearRepulsion
+        self.nuclear_repulsion = nuclear_repulsion
 
     def __repr__(self):
         for key,value in vars(self).items():
@@ -59,11 +59,11 @@ if __name__ == "__main__":
         from ccpy.interfaces.gamess_tools import loadFromGamess
         # F2+ / 6-31G
         nfrozen = 2
-        gamessFile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/F2+-1.0-631g.log"
-        onebodyFile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/onebody.inp"
-        twobodyFile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/twobody.inp"
+        gamess_logfile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/F2+-1.0-631g.log"
+        onebody_file = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/onebody.inp"
+        twobody_file = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/twobody.inp"
 
-        system, H = loadFromGamess(gamessFile, onebodyFile, twobodyFile, nfrozen)
+        system, H = loadFromGamess(gamess_logfile, onebody_file, twobody_file, nfrozen)
 
     if test_case == 'pyscf':
         from ccpy.interfaces.pyscf_tools import loadFromPyscfMolecular

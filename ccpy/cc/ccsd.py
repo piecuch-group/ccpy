@@ -1,92 +1,35 @@
 """Module with functions that perform the CC with singles and 
 doubles (CCSD) calculation for a molecular system."""
 import numpy as np
-from solvers import solve_cc_jacobi, solve_cc_jacobi_out_of_core
-from HBar_module import get_ccs_intermediates, get_ccsd_intermediates
-from cc_energy import calc_cc_energy
-import cc_loops2
-from functools import partial
-
-#print(cc_loops.cc_loops.__doc__)
-
-def ccsd(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=False):
-    """Perform the ground-state CCSD calculation.
-
-    Parameters
-    ----------
-    sys : dict
-        System information dictionary
-    ints : dict
-        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-    maxit : int, optional
-        Maximum number of iterations for the CC calculation. Default is 100.
-    tol : float, optional
-        Convergence tolerance for the CC calculation. Default is 1.0e-08.
-    diis_siize : int, optional
-        Size of the inversion subspace used in DIIS convergence acceleration. Default is 6.
-    shift : float, optional
-        Value (in hartree) of the denominator shifting parameter used to converge difficult CC calculations.
-        Default is 0.0.
-
-    Returns
-    -------
-    cc_t : dict
-        Contains the converged T1, T2 cluster amplitudes
-    Eccsd : float
-        Total CCSD energy
-    """
-    print('\n==================================++Entering CCSD Routine++=================================\n')
-
-    n1a = sys['Nocc_a'] * sys['Nunocc_a']
-    n1b = sys['Nocc_b'] * sys['Nunocc_b']
-    n2a = sys['Nocc_a'] ** 2 * sys['Nunocc_a'] ** 2
-    n2b = sys['Nocc_a'] * sys['Nocc_b'] * sys['Nunocc_a'] * sys['Nunocc_b']
-    n2c = sys['Nocc_b'] ** 2 * sys['Nunocc_b'] ** 2
-    ndim = n1a + n1b + n2a + n2b + n2c
-
-    # Initialize the cc_t dictionary containing the T vectors to 0
-    T = build_cluster_explansion(system, 2, active=[2, 3])
-    cc_t = {}
-    cc_t['t1a']  = np.zeros((sys['Nunocc_a'],sys['Nocc_a']))
-    cc_t['t1b']  = np.zeros((sys['Nunocc_b'],sys['Nocc_b']))
-    cc_t['t2a']  = np.zeros((sys['Nunocc_a'],sys['Nunocc_a'],sys['Nocc_a'],sys['Nocc_a']))
-    cc_t['t2b']  = np.zeros((sys['Nunocc_a'],sys['Nunocc_b'],sys['Nocc_a'],sys['Nocc_b']))
-    cc_t['t2c']  = np.zeros((sys['Nunocc_b'],sys['Nunocc_b'],sys['Nocc_b'],sys['Nocc_b']))
-
-    update_t_func = partial(update_t,ints=ints,sys=sys,shift=shift,flag_RHF=flag_RHF)
-    cc_t, Eccsd = solve_cc_jacobi(cc_t,update_t_func,ints,maxit,tol,ndim,diis_size)
-
-    return cc_t, Eccsd
+from ccpy.hbar.HBar import get_ccs_intermediates
+from ccpy.utilities.updates import cc_loops2
 
 
-def update_t(cc_t,ints,sys,shift,flag_RHF):
+def update_t(T, dT, H, shift, flag_RHF):
 
     # update T1                        
-    cc_t, dt_1a = update_t1a(cc_t,ints,sys,shift)
+    T, dT = update_t1a(T, dT, H, shift)
     if flag_RHF:
-        cc_t['t1b'] = cc_t['t1a']
-        dt_1b = dt_1a.copy()
+        T.b = T.a.copy()
+        dT.b = dT.a.copy()
     else:
-        cc_t, dt_1b = update_t1b(cc_t,ints,sys,shift)
+        T, dT = update_t1b(T, dT, H, shift)
     
     # CCS intermediates
-    H1A, H1B, H2A, H2B, H2C = get_ccs_intermediates(cc_t, ints, sys)
+    hbar = get_ccs_intermediates(T, H)
 
     # update T2
-    cc_t, dt_2a = update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
-    cc_t, dt_2b = update_t2b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
+    T, dT = update_t2a(T, dT, hbar, H, shift)
+    T, dT = update_t2b(T, dT, hbar, H, shift)
     if flag_RHF:
-        cc_t['t2c'] = cc_t['t2a']
-        dt_2c = dt_2a.copy()
+        T.bb = T.aa.copy()
+        dT.bb = dT.aa.copy()
     else:
-        cc_t, dt_2c = update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift)
+        T, dT = update_t2c(T, dT, hbar, H, shift)
 
+    return T, dT
 
-    return cc_t, \
-        np.concatenate((dt_1a.flatten(),dt_1b.flatten(),dt_2a.flatten(),dt_2b.flatten(),dt_2c.flatten()))
-
-
-def update_t1a(cc_t, ints, sys, shift):
+def update_t1a(T, dT, H, shift):
     """Update t1a amplitudes by calculating the projection <ia|(H_N e^(T1+T2+T3))_C|0>.
 
     Parameters
@@ -105,54 +48,53 @@ def update_t1a(cc_t, ints, sys, shift):
     cc_t : dict
         New cluster amplitudes T1, T2
     """
-    chi1A_vv = ints['fA']['vv'][:, :]
-    chi1A_vv += np.einsum('anef,fn->ae', ints['vA']['vovv'], cc_t['t1a'], optimize=True)
-    chi1A_vv += np.einsum('anef,fn->ae', ints['vB']['vovv'], cc_t['t1b'], optimize=True)
+    chi1A_vv = H.a.vv.copy()
+    chi1A_vv += np.einsum('anef,fn->ae', H.aa.vovv, T.a, optimize=True)
+    chi1A_vv += np.einsum('anef,fn->ae', H.ab.vovv, T.b, optimize=True)
 
+    chi1A_oo = H.a.oo.copy()
+    chi1A_oo += np.einsum('mnif,fn->mi', H.aa.ooov, T.a, optimize=True)
+    chi1A_oo += np.einsum('mnif,fn->mi', H.ab.ooov, T.b, optimize=True)
 
-    chi1A_oo = ints['fA']['oo'][:, :]
-    chi1A_oo += np.einsum('mnif,fn->mi', ints['vA']['ooov'], cc_t['t1a'], optimize=True)
-    chi1A_oo += np.einsum('mnif,fn->mi', ints['vB']['ooov'], cc_t['t1b'], optimize=True)
+    h1A_ov = H.a.ov.copy()
+    h1A_ov += np.einsum('mnef,fn->me', H.aa.oovv, T.a, optimize=True)
+    h1A_ov += np.einsum('mnef,fn->me', H.ab.oovv, T.b, optimize=True)
 
-    h1A_ov = ints['fA']['ov'][:, :]
-    h1A_ov += np.einsum('mnef,fn->me',ints['vA']['oovv'],cc_t['t1a'],optimize=True) 
-    h1A_ov += np.einsum('mnef,fn->me',ints['vB']['oovv'],cc_t['t1b'],optimize=True)
+    h1B_ov = H.b.ov.copy()
+    h1B_ov += np.einsum('nmfe,fn->me', H.ab.oovv, T.a, optimize=True)
+    h1B_ov += np.einsum('mnef,fn->me', H.bb.oovv, T.b, optimize=True)
 
-    h1B_ov = ints['fB']['ov'][:, :]
-    h1B_ov += np.einsum('nmfe,fn->me',ints['vB']['oovv'],cc_t['t1a'],optimize=True) 
-    h1B_ov += np.einsum('mnef,fn->me',ints['vC']['oovv'],cc_t['t1b'],optimize=True)
+    h1A_oo = chi1A_oo.copy()
+    h1A_oo += np.einsum('me,ei->mi', h1A_ov, T.a, optimize=True)
 
-    h1A_oo = chi1A_oo[:, :]
-    h1A_oo += np.einsum('me,ei->mi',h1A_ov,cc_t['t1a'],optimize=True)
+    h2A_ooov = H.aa.ooov + np.einsum('mnfe,fi->mnie', H.aa.oovv, T.a, optimize=True)
+    h2B_ooov = H.ab.ooov + np.einsum('mnfe,fi->mnie', H.ab.oovv, T.a, optimize=True)
+    h2A_vovv = H.aa.vovv - np.einsum('mnfe,an->amef', H.aa.oovv, T.a, optimize=True)
+    h2B_vovv = H.ab.vovv - np.einsum('nmef,an->amef', H.ab.oovv, T.a, optimize=True)
 
-    h2A_ooov = ints['vA']['ooov'] + np.einsum('mnfe,fi->mnie',ints['vA']['oovv'],cc_t['t1a'],optimize=True) 
-    h2B_ooov = ints['vB']['ooov'] + np.einsum('mnfe,fi->mnie',ints['vB']['oovv'],cc_t['t1a'],optimize=True) 
-    h2A_vovv = ints['vA']['vovv'] - np.einsum('mnfe,an->amef',ints['vA']['oovv'],cc_t['t1a'],optimize=True) 
-    h2B_vovv = ints['vB']['vovv'] - np.einsum('nmef,an->amef',ints['vB']['oovv'],cc_t['t1a'],optimize=True) 
+    dT.a = H.a.vo.copy()
+    dT.a -= np.einsum('mi,am->ai', h1A_oo, T.a, optimize=True)
+    dT.a += np.einsum('ae,ei->ai', chi1A_vv, T.a, optimize=True)
+    dT.a += np.einsum('anif,fn->ai', H.aa.voov, T.a, optimize=True)
+    dT.a += np.einsum('anif,fn->ai', H.ab.voov, T.b, optimize=True)
+    dT.a += np.einsum('me,aeim->ai', h1A_ov, T.aa, optimize=True)
+    dT.a += np.einsum('me,aeim->ai', h1B_ov, T.ab, optimize=True)
+    dT.a -= 0.5*np.einsum('mnif,afmn->ai', h2A_ooov, T.aa, optimize=True)
+    dT.a -= np.einsum('mnif,afmn->ai', h2B_ooov, T.ab, optimize=True)
+    dT.a += 0.5*np.einsum('anef,efin->ai', h2A_vovv, T.aa, optimize=True)
+    dT.a += np.einsum('anef,efin->ai', h2B_vovv, T.ab, optimize=True)
 
-    X1A = ints['fA']['vo'][:, :]
-    X1A -= np.einsum('mi,am->ai',h1A_oo,cc_t['t1a'],optimize=True) 
-    X1A += np.einsum('ae,ei->ai',chi1A_vv,cc_t['t1a'],optimize=True) 
-    X1A += np.einsum('anif,fn->ai',ints['vA']['voov'],cc_t['t1a'],optimize=True) 
-    X1A += np.einsum('anif,fn->ai',ints['vB']['voov'],cc_t['t1b'],optimize=True) 
-    X1A += np.einsum('me,aeim->ai',h1A_ov,cc_t['t2a'],optimize=True)
-    X1A += np.einsum('me,aeim->ai',h1B_ov,cc_t['t2b'],optimize=True)
-    X1A -= 0.5*np.einsum('mnif,afmn->ai',h2A_ooov,cc_t['t2a'],optimize=True)
-    X1A -= np.einsum('mnif,afmn->ai',h2B_ooov,cc_t['t2b'],optimize=True)
-    X1A += 0.5*np.einsum('anef,efin->ai',h2A_vovv,cc_t['t2a'],optimize=True)
-    X1A += np.einsum('anef,efin->ai',h2B_vovv,cc_t['t2b'],optimize=True)
-
-    cc_t['t1a'], residuum = cc_loops2.cc_loops2.update_t1a(cc_t['t1a'],
-                                                           X1A,
-                                                           ints['fA']['oo'],
-                                                           ints['fA']['vv'],
-                                                           shift)
-
-    return cc_t, residuum
+    #T, update_t1a_loop(T, X1A, fA_oo, fA_vv, shift)
+    T.a, dT.a = cc_loops2.cc_loops2.update_t1a(T.a,
+                                               dT.a,
+                                               H.a.oo,
+                                               H.a.vv,
+                                               shift)
+    return T, dT
 
 
 #@profile
-def update_t1b(cc_t,ints,sys,shift):
+def update_t1b(T, dT, H, shift):
     """Update t1b amplitudes by calculating the projection <i~a~|(H_N e^(T1+T2+T3))_C|0>.
 
     Parameters
@@ -172,56 +114,51 @@ def update_t1b(cc_t,ints,sys,shift):
         New cluster amplitudes T1, T2
     """
     # Intermediates
-    chi1B_vv = 0.0
-    chi1B_vv += ints['fB']['vv']
-    chi1B_vv += np.einsum('anef,fn->ae',ints['vC']['vovv'],cc_t['t1b'],optimize=True)
-    chi1B_vv += np.einsum('nafe,fn->ae',ints['vB']['ovvv'],cc_t['t1a'],optimize=True)
-    chi1B_oo = 0.0
-    chi1B_oo += ints['fB']['oo']
-    chi1B_oo += np.einsum('mnif,fn->mi',ints['vC']['ooov'],cc_t['t1b'],optimize=True)
-    chi1B_oo += np.einsum('nmfi,fn->mi',ints['vB']['oovo'],cc_t['t1a'],optimize=True)
-    h1A_ov = 0.0
-    h1A_ov += ints['fA']['ov']
-    h1A_ov += np.einsum('mnef,fn->me',ints['vA']['oovv'],cc_t['t1a'],optimize=True) 
-    h1A_ov += np.einsum('mnef,fn->me',ints['vB']['oovv'],cc_t['t1b'],optimize=True) 
-    h1B_ov = 0.0
-    h1B_ov += ints['fB']['ov'] 
-    h1B_ov += np.einsum('nmfe,fn->me',ints['vB']['oovv'],cc_t['t1a'],optimize=True) 
-    h1B_ov += np.einsum('mnef,fn->me',ints['vC']['oovv'],cc_t['t1b'],optimize=True) 
-    h1B_oo = 0.0
-    h1B_oo += chi1B_oo + np.einsum('me,ei->mi',h1B_ov,cc_t['t1b'],optimize=True)
-    h2C_ooov = 0.0
-    h2C_ooov += ints['vC']['ooov']
-    h2C_ooov += np.einsum('mnfe,fi->mnie',ints['vC']['oovv'],cc_t['t1b'],optimize=True)
-    h2B_oovo = 0.0
-    h2B_oovo += ints['vB']['oovo']
-    h2B_oovo += np.einsum('nmef,fi->nmei',ints['vB']['oovv'],cc_t['t1b'],optimize=True)
-    h2C_vovv = 0.0
-    h2C_vovv += ints['vC']['vovv']
-    h2C_vovv -= np.einsum('mnfe,an->amef',ints['vC']['oovv'],cc_t['t1b'],optimize=True)
-    h2B_ovvv = 0.0
-    h2B_ovvv += ints['vB']['ovvv']
-    h2B_ovvv -= np.einsum('mnfe,an->mafe',ints['vB']['oovv'],cc_t['t1b'],optimize=True)
+    chi1B_vv = H.b.vv.copy()
+    chi1B_vv += np.einsum('anef,fn->ae', H.bb.vovv, T.b, optimize=True)
+    chi1B_vv += np.einsum('nafe,fn->ae', H.ab.ovvv, T.a ,optimize=True)
 
-    X1B = 0.0
-    X1B += ints['fB']['vo']
-    X1B -= np.einsum('mi,am->ai',h1B_oo,cc_t['t1b'],optimize=True)
-    X1B += np.einsum('ae,ei->ai',chi1B_vv,cc_t['t1b'],optimize=True)
-    X1B += np.einsum('anif,fn->ai',ints['vC']['voov'],cc_t['t1b'],optimize=True)
-    X1B += np.einsum('nafi,fn->ai',ints['vB']['ovvo'],cc_t['t1a'],optimize=True)
-    X1B += np.einsum('me,eami->ai',h1A_ov,cc_t['t2b'],optimize=True)
-    X1B += np.einsum('me,aeim->ai',h1B_ov,cc_t['t2c'],optimize=True)
-    X1B -= 0.5*np.einsum('mnif,afmn->ai',h2C_ooov,cc_t['t2c'],optimize=True)
-    X1B -= np.einsum('nmfi,fanm->ai',h2B_oovo,cc_t['t2b'],optimize=True)
-    X1B += 0.5*np.einsum('anef,efin->ai',h2C_vovv,cc_t['t2c'],optimize=True)
-    X1B += np.einsum('nafe,feni->ai',h2B_ovvv,cc_t['t2b'],optimize=True)
+    chi1B_oo = H.b.oo.copy()
+    chi1B_oo += np.einsum('mnif,fn->mi', H.bb.ooov, T.b, optimize=True)
+    chi1B_oo += np.einsum('nmfi,fn->mi', H.ab.oovo, T.a, optimize=True)
+
+    h1A_ov = H.a.ov.copy()
+    h1A_ov += np.einsum('mnef,fn->me', H.aa.oovv, T.a, optimize=True)
+    h1A_ov += np.einsum('mnef,fn->me', H.ab.oovv, T.b, optimize=True)
+
+    h1B_ov = H.b.ov.copy()
+    h1B_ov += np.einsum('nmfe,fn->me', H.ab.oovv, T.a, optimize=True)
+    h1B_ov += np.einsum('mnef,fn->me', H.bb.oovv, T.b, optimize=True)
+
+    h1B_oo = chi1B_oo + np.einsum('me,ei->mi', h1B_ov, T.b, optimize=True)
+
+    h2C_ooov = H.bb.ooov + np.einsum('mnfe,fi->mnie', H.bb.oovv, T.b, optimize=True)
+    h2B_oovo = H.ab.oovo + np.einsum('nmef,fi->nmei', H.ab.oovv, T.b, optimize=True)
+    h2C_vovv = H.bb.vovv - np.einsum('mnfe,an->amef', H.bb.oovv, T.b, optimize=True)
+    h2B_ovvv = H.ab.ovvv - np.einsum('mnfe,an->mafe', H.ab.oovv, T.b, optimize=True)
+
+    dT.b = H.b.vo.copy()
+    dT.b -= np.einsum('mi,am->ai', h1B_oo, T.b, optimize=True)
+    dT.b += np.einsum('ae,ei->ai', chi1B_vv, T.b, optimize=True)
+    dT.b += np.einsum('anif,fn->ai', H.bb.voov, T.b, optimize=True)
+    dT.b += np.einsum('nafi,fn->ai', H.ab.ovvo, T.a, optimize=True)
+    dT.b += np.einsum('me,eami->ai', h1A_ov, T.ab, optimize=True)
+    dT.b += np.einsum('me,aeim->ai', h1B_ov, T.bb, optimize=True)
+    dT.b -= 0.5*np.einsum('mnif,afmn->ai', h2C_ooov, T.bb, optimize=True)
+    dT.b -= np.einsum('nmfi,fanm->ai', h2B_oovo, T.ab, optimize=True)
+    dT.b += 0.5*np.einsum('anef,efin->ai', h2C_vovv, T.bb, optimize=True)
+    dT.b += np.einsum('nafe,feni->ai', h2B_ovvv, T.ab, optimize=True)
     
-    cc_t['t1b'], resid = cc_loops2.cc_loops2.update_t1b(cc_t['t1b'],X1B,ints['fB']['oo'],ints['fB']['vv'],shift)
-    return cc_t, resid
+    T.b, dT.b = cc_loops2.cc_loops2.update_t1b(T.b,
+                                               dT.b,
+                                               H.b.oo,
+                                               H.b.vv,
+                                               shift)
+    return T, dT
 
 
 #@profile
-def update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
+def update_t2a(T, dT, H, H0, shift):
     """Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2+T3))_C|0>.
 
     Parameters
@@ -241,36 +178,39 @@ def update_t2a(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
         New cluster amplitudes T1, T2
     """
     # intermediates
-    I1A_oo = 0.5*np.einsum('mnef,efin->mi',ints['vA']['oovv'],cc_t['t2a'],optimize=True)
-    I1A_oo += np.einsum('mnef,efin->mi',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I1A_oo += H1A['oo']
-    I1A_vv = -0.5*np.einsum('mnef,afmn->ae',ints['vA']['oovv'],cc_t['t2a'],optimize=True)
-    I1A_vv -= np.einsum('mnef,afmn->ae',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I1A_vv += H1A['vv']
-    I2A_voov = 0.5*np.einsum('mnef,afin->amie',ints['vA']['oovv'],cc_t['t2a'],optimize=True)
-    I2A_voov += np.einsum('mnef,afin->amie',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I2A_voov += H2A['voov'] 
-    I2A_oooo = 0.5*np.einsum('mnef,efij->mnij',ints['vA']['oovv'],cc_t['t2a'],optimize=True)
-    I2A_oooo += H2A['oooo'] 
-    I2B_voov = 0.5*np.einsum('mnef,afin->amie',ints['vC']['oovv'],cc_t['t2b'],optimize=True)
-    I2B_voov += H2B['voov']
+    I1A_oo = H.a.oo + 0.5*np.einsum('mnef,efin->mi', H.aa.oovv, T.aa, optimize=True)\
+                    + np.einsum('mnef,efin->mi', H.ab.oovv, T.ab, optimize=True)
 
-    X2A = 0.25*ints['vA']['vvoo']
-    X2A -= 0.5*np.einsum('amij,bm->abij',H2A['vooo'],cc_t['t1a'],optimize=True)
-    X2A += 0.5*np.einsum('abie,ej->abij',H2A['vvov'],cc_t['t1a'],optimize=True)
-    X2A += 0.5*np.einsum('ae,ebij->abij',I1A_vv,cc_t['t2a'],optimize=True)
-    X2A -= 0.5*np.einsum('mi,abmj->abij',I1A_oo,cc_t['t2a'],optimize=True)
-    X2A += np.einsum('amie,ebmj->abij',I2A_voov,cc_t['t2a'],optimize=True)
-    X2A += np.einsum('amie,bejm->abij',I2B_voov,cc_t['t2b'],optimize=True)
-    X2A += 0.125*np.einsum('abef,efij->abij',H2A['vvvv'],cc_t['t2a'],optimize=True)
-    X2A += 0.125*np.einsum('mnij,abmn->abij',I2A_oooo,cc_t['t2a'],optimize=True)
+    I1A_vv = H.a.vv - 0.5*np.einsum('mnef,afmn->ae', H.aa.oovv, T.aa, optimize=True)\
+                    - np.einsum('mnef,afmn->ae',H.ab.oovv, T.ab, optimize=True)
 
-    cc_t['t2a'], resid = cc_loops2.cc_loops2.update_t2a(cc_t['t2a'],X2A,ints['fA']['oo'],ints['fA']['vv'],shift)
-    return cc_t, resid
+    I2A_voov = H.aa.voov + 0.5*np.einsum('mnef,afin->amie', H.aa.oovv, T.aa, optimize=True)\
+                         + np.einsum('mnef,afin->amie', H.ab.oovv, T.ab, optimize=True)
+
+    I2A_oooo = H.aa.oooo + 0.5*np.einsum('mnef,efij->mnij', H.aa.oovv, T.aa, optimize=True)
+
+    I2B_voov = H.ab.voov + 0.5*np.einsum('mnef,afin->amie', H.bb.oovv, T.ab, optimize=True)
+
+    dT.aa = 0.25*H0.aa.vvoo
+    dT.aa -= 0.5*np.einsum('amij,bm->abij', H.aa.vooo, T.a, optimize=True)
+    dT.aa += 0.5*np.einsum('abie,ej->abij', H.aa.vvov, T.a, optimize=True)
+    dT.aa += 0.5*np.einsum('ae,ebij->abij', I1A_vv, T.aa, optimize=True)
+    dT.aa -= 0.5*np.einsum('mi,abmj->abij',I1A_oo, T.aa, optimize=True)
+    dT.aa += np.einsum('amie,ebmj->abij', I2A_voov, T.aa, optimize=True)
+    dT.aa += np.einsum('amie,bejm->abij', I2B_voov, T.ab, optimize=True)
+    dT.aa += 0.125*np.einsum('abef,efij->abij', H.aa.vvvv, T.aa, optimize=True)
+    dT.aa += 0.125*np.einsum('mnij,abmn->abij', I2A_oooo, T.aa, optimize=True)
+
+    T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(T.aa,
+                                                 dT.aa,
+                                                 H0.a.oo,
+                                                 H0.a.vv,
+                                                 shift)
+    return T, dT
 
 
 #@profile
-def update_t2b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
+def update_t2b(T, dT, H, H0, shift):
     """Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2+T3))_C|0>.
 
     Parameters
@@ -290,53 +230,55 @@ def update_t2b(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
         New cluster amplitudes T1, T2
     """
     # intermediates
-    I1A_vv = -0.5*np.einsum('mnef,afmn->ae',ints['vA']['oovv'],cc_t['t2a'],optimize=True)
-    I1A_vv -= np.einsum('mnef,afmn->ae',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I1A_vv += H1A['vv']
-    I1B_vv = -np.einsum('nmfe,fbnm->be',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I1B_vv -= 0.5*np.einsum('mnef,fbnm->be',ints['vC']['oovv'],cc_t['t2c'],optimize=True)
-    I1B_vv += H1B['vv']
-    I1A_oo = 0.5*np.einsum('mnef,efin->mi',ints['vA']['oovv'],cc_t['t2a'],optimize=True)
-    I1A_oo += np.einsum('mnef,efin->mi',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I1A_oo += H1A['oo']
-    I1B_oo = np.einsum('nmfe,fenj->mj',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I1B_oo += 0.5*np.einsum('mnef,efjn->mj',ints['vC']['oovv'],cc_t['t2c'],optimize=True)
-    I1B_oo += H1B['oo']
-    I2A_voov = np.einsum('mnef,aeim->anif',ints['vA']['oovv'],cc_t['t2a'],optimize=True)
-    I2A_voov += np.einsum('nmfe,aeim->anif',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I2A_voov += H2A['voov']
-    I2B_voov = np.einsum('mnef,aeim->anif',ints['vB']['oovv'],cc_t['t2a'],optimize=True)
-    I2B_voov += np.einsum('mnef,aeim->anif',ints['vC']['oovv'],cc_t['t2b'],optimize=True)
-    I2B_voov += H2B['voov']
-    I2B_oooo = np.einsum('mnef,efij->mnij',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I2B_oooo += H2B['oooo']
-    I2B_vovo = -np.einsum('mnef,afmj->anej',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I2B_vovo += H2B['vovo']
+    I1A_vv = H.a.vv - 0.5*np.einsum('mnef,afmn->ae', H.aa.oovv, T.aa, optimize=True)\
+                    - np.einsum('mnef,afmn->ae', H.ab.oovv, T.ab, optimize=True)
 
-    X2B = 0.0
-    X2B += ints['vB']['vvoo']
-    X2B -= np.einsum('mbij,am->abij',H2B['ovoo'],cc_t['t1a'],optimize=True)
-    X2B -= np.einsum('amij,bm->abij',H2B['vooo'],cc_t['t1b'],optimize=True)
-    X2B += np.einsum('abej,ei->abij',H2B['vvvo'],cc_t['t1a'],optimize=True)
-    X2B += np.einsum('abie,ej->abij',H2B['vvov'],cc_t['t1b'],optimize=True)
-    X2B += np.einsum('ae,ebij->abij',I1A_vv,cc_t['t2b'],optimize=True)
-    X2B += np.einsum('be,aeij->abij',I1B_vv,cc_t['t2b'],optimize=True)
-    X2B -= np.einsum('mi,abmj->abij',I1A_oo,cc_t['t2b'],optimize=True)
-    X2B -= np.einsum('mj,abim->abij',I1B_oo,cc_t['t2b'],optimize=True)
-    X2B += np.einsum('amie,ebmj->abij',I2A_voov,cc_t['t2b'],optimize=True)
-    X2B += np.einsum('amie,ebmj->abij',I2B_voov,cc_t['t2c'],optimize=True)
-    X2B += np.einsum('mbej,aeim->abij',H2B['ovvo'],cc_t['t2a'],optimize=True)
-    X2B += np.einsum('bmje,aeim->abij',H2C['voov'],cc_t['t2b'],optimize=True)
-    X2B -= np.einsum('mbie,aemj->abij',H2B['ovov'],cc_t['t2b'],optimize=True)
-    X2B -= np.einsum('amej,ebim->abij',I2B_vovo,cc_t['t2b'],optimize=True)
-    X2B += np.einsum('mnij,abmn->abij',I2B_oooo,cc_t['t2b'],optimize=True)
-    X2B += np.einsum('abef,efij->abij',H2B['vvvv'],cc_t['t2b'],optimize=True)
+    I1B_vv = H.b.vv - np.einsum('nmfe,fbnm->be', H.ab.oovv, T.ab, optimize=True)\
+                    - 0.5*np.einsum('mnef,fbnm->be', H.bb.oovv, T.bb, optimize=True)
 
-    cc_t['t2b'], resid = cc_loops2.cc_loops2.update_t2b(cc_t['t2b'],X2B,ints['fA']['oo'],ints['fA']['vv'],ints['fB']['oo'],ints['fB']['vv'],shift)
-    return cc_t, resid
+    I1A_oo = H.a.oo + 0.5*np.einsum('mnef,efin->mi', H.aa.oovv, T.aa, optimize=True)\
+                    + np.einsum('mnef,efin->mi', H.ab.oovv, T.ab, optimize=True)
+
+    I1B_oo = H.b.oo + np.einsum('nmfe,fenj->mj', H.ab.oovv, T.ab, optimize=True)\
+                    + 0.5*np.einsum('mnef,efjn->mj', H.bb.oovv, T.bb, optimize=True)
+
+    I2A_voov = H.aa.voov + np.einsum('mnef,aeim->anif', H.aa.oovv, T.aa, optimize=True)\
+                         + np.einsum('nmfe,aeim->anif', H.ab.oovv, T.ab, optimize=True)
+
+    I2B_voov = H.ab.voov + np.einsum('mnef,aeim->anif', H.ab.oovv, T.aa, optimize=True)\
+                         + np.einsum('mnef,aeim->anif', H.bb.oovv, T.ab, optimize=True)
+
+    I2B_oooo = H.ab.oooo + np.einsum('mnef,efij->mnij', H.ab.oovv, T.ab, optimize=True)
+
+    I2B_vovo = H.ab.vovo - np.einsum('mnef,afmj->anej', H.ab.oovv, T.ab, optimize=True)
+
+    dT.ab = H.ab.vvoo.copy()
+    dT.ab -= np.einsum('mbij,am->abij', H.ab.ovoo, T.a, optimize=True)
+    dT.ab -= np.einsum('amij,bm->abij', H.ab.vooo, T.b, optimize=True)
+    dT.ab += np.einsum('abej,ei->abij', H.ab.vvvo, T.a, optimize=True)
+    dT.ab += np.einsum('abie,ej->abij', H.ab.vvov, T.b, optimize=True)
+    dT.ab += np.einsum('ae,ebij->abij', I1A_vv, T.ab, optimize=True)
+    dT.ab += np.einsum('be,aeij->abij', I1B_vv, T.ab, optimize=True)
+    dT.ab -= np.einsum('mi,abmj->abij', I1A_oo, T.ab, optimize=True)
+    dT.ab -= np.einsum('mj,abim->abij', I1B_oo, T.ab, optimize=True)
+    dT.ab += np.einsum('amie,ebmj->abij', I2A_voov, T.ab, optimize=True)
+    dT.ab += np.einsum('amie,ebmj->abij', I2B_voov, T.bb, optimize=True)
+    dT.ab += np.einsum('mbej,aeim->abij', H.ab.ovvo, T.aa, optimize=True)
+    dT.ab += np.einsum('bmje,aeim->abij', H.bb.voov, T.ab, optimize=True)
+    dT.ab -= np.einsum('mbie,aemj->abij', H.ab.ovov, T.ab, optimize=True)
+    dT.ab -= np.einsum('amej,ebim->abij', I2B_vovo, T.ab, optimize=True)
+    dT.ab += np.einsum('mnij,abmn->abij', I2B_oooo, T.ab, optimize=True)
+    dT.ab += np.einsum('abef,efij->abij', H.ab.vvvv, T.ab, optimize=True)
+
+    T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(T.ab,
+                                                 dT.ab,
+                                                 H0.a.oo, H0.a.vv,
+                                                 H0.b.oo, H0.b.vv,
+                                                 shift)
+    return T, dT
 
 #@profile
-def update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
+def update_t2c(T, dT, H, H0, shift):
     """Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2+T3))_C|0>.
 
     Parameters
@@ -356,29 +298,83 @@ def update_t2c(cc_t,ints,H1A,H1B,H2A,H2B,H2C,sys,shift):
         New cluster amplitudes T1, T2
     """
     # intermediates
-    I1B_oo = 0.5*np.einsum('mnef,efin->mi',ints['vC']['oovv'],cc_t['t2c'],optimize=True)
-    I1B_oo += np.einsum('nmfe,feni->mi',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I1B_oo += H1B['oo']
-    I1B_vv = -0.5*np.einsum('mnef,afmn->ae',ints['vC']['oovv'],cc_t['t2c'],optimize=True)
-    I1B_vv -= np.einsum('nmfe,fanm->ae',ints['vB']['oovv'],cc_t['t2b'],optimize=True)
-    I1B_vv += H1B['vv']
-    I2C_oooo = 0.5*np.einsum('mnef,efij->mnij',ints['vC']['oovv'],cc_t['t2c'],optimize=True)
-    I2C_oooo += H2C['oooo']
-    I2B_ovvo = np.einsum('mnef,afin->maei',ints['vB']['oovv'],cc_t['t2c'],optimize=True)
-    I2B_ovvo += 0.5*np.einsum('mnef,fani->maei',ints['vA']['oovv'],cc_t['t2b'],optimize=True)
-    I2B_ovvo += H2B['ovvo']
-    I2C_voov = 0.5*np.einsum('mnef,afin->amie',ints['vC']['oovv'],cc_t['t2c'],optimize=True)
-    I2C_voov += H2C['voov']
-    
-    X2C = 0.25*ints['vC']['vvoo']
-    X2C -= 0.5*np.einsum('bmji,am->abij',H2C['vooo'],cc_t['t1b'],optimize=True)
-    X2C += 0.5*np.einsum('baje,ei->abij',H2C['vvov'],cc_t['t1b'],optimize=True)
-    X2C += 0.5*np.einsum('ae,ebij->abij',I1B_vv,cc_t['t2c'],optimize=True)
-    X2C -= 0.5*np.einsum('mi,abmj->abij',I1B_oo,cc_t['t2c'],optimize=True)
-    X2C += np.einsum('amie,ebmj->abij',I2C_voov,cc_t['t2c'],optimize=True)
-    X2C += np.einsum('maei,ebmj->abij',I2B_ovvo,cc_t['t2b'],optimize=True)
-    X2C += 0.125*np.einsum('abef,efij->abij',H2C['vvvv'],cc_t['t2c'],optimize=True)
-    X2C += 0.125*np.einsum('mnij,abmn->abij',I2C_oooo,cc_t['t2c'],optimize=True)
+    I1B_oo = H.b.oo + 0.5*np.einsum('mnef,efin->mi', H.bb.oovv, T.bb, optimize=True)\
+                    + np.einsum('nmfe,feni->mi', H.ab.oovv, T.ab, optimize=True)
 
-    cc_t['t2c'], resid = cc_loops2.cc_loops2.update_t2c(cc_t['t2c'],X2C,ints['fB']['oo'],ints['fB']['vv'],shift)
-    return cc_t, resid
+
+    I1B_vv = H.b.vv - 0.5*np.einsum('mnef,afmn->ae', H.bb.oovv, T.bb, optimize=True)\
+                    - np.einsum('nmfe,fanm->ae', H.ab.oovv, T.ab, optimize=True)
+
+    I2C_oooo = H.bb.oooo + 0.5*np.einsum('mnef,efij->mnij', H.bb.oovv, T.bb, optimize=True)
+
+    I2B_ovvo = H.ab.ovvo + np.einsum('mnef,afin->maei', H.ab.oovv, T.bb, optimize=True)\
+                         + 0.5*np.einsum('mnef,fani->maei', H.aa.oovv, T.ab, optimize=True)
+
+    I2C_voov = H.bb.voov + 0.5*np.einsum('mnef,afin->amie', H.bb.oovv, T.bb, optimize=True)
+
+    dT.bb = 0.25*H.bb.vvoo
+    dT.bb -= 0.5*np.einsum('bmji,am->abij', H.bb.vooo, T.b, optimize=True)
+    dT.bb += 0.5*np.einsum('baje,ei->abij', H.bb.vvov, T.b, optimize=True)
+    dT.bb += 0.5*np.einsum('ae,ebij->abij', I1B_vv, T.bb, optimize=True)
+    dT.bb -= 0.5*np.einsum('mi,abmj->abij', I1B_oo, T.bb, optimize=True)
+    dT.bb += np.einsum('amie,ebmj->abij', I2C_voov, T.bb, optimize=True)
+    dT.bb += np.einsum('maei,ebmj->abij', I2B_ovvo, T.ab, optimize=True)
+    dT.bb += 0.125*np.einsum('abef,efij->abij', H.bb.vvvv, T.bb, optimize=True)
+    dT.bb += 0.125*np.einsum('mnij,abmn->abij', I2C_oooo, T.bb, optimize=True)
+
+    T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(T.bb,
+                                                 dT.bb,
+                                                 H0.b.oo,
+                                                 H0.b.vv,
+                                                 shift)
+    return T, dT
+
+
+def update_t1a_loop(T, X1A, fA_oo, fA_vv, shift):
+
+    for a in range(X1A.shape[0]):
+        for i in range(X1A.shape[1]):
+            denom = fA_oo[i, i] - fA_vv[a, a] + shift
+            X1A[a, i] /= denom
+            T.a[a, i] += X1A[a, i]
+    return T, X1A
+
+
+def update_t1b_loop(T, X1B, fB_oo, fAB_vv, shift):
+    for a in range(X1B.shape[0]):
+        for i in range(X1B.shape[1]):
+            denom = fB_oo[i, i] - fB_vv[a, a] + shift
+            X1B[a, i] /= denom
+            T.b[a, i] += X1B[a, i]
+    return T, X1B
+
+
+def update_t2a_loop(T, X2A, fA_oo, fA_vv, shift):
+    for a in range(X2A.shape[0]):
+        for b in range(a+1, X2A.shape[1]):
+            for i in range(X2A.shape[2]):
+                for j in range(i+1, X2A.shape[3]):
+                    denom = fA_oo[i, i] + fA_oo[j, j] - fA_vv[a, a] - fA_vv[b, b] + shift
+                    X2A[a, b, i, j] /= denom
+                    T.aa[a, b, i, j] += X2A[a, b, i, j]
+    return T, X2A
+
+def update_t2b_loop(T, X2B, fA_oo, fA_vv, fB_oo, fB_vv, shift):
+    for a in range(X2B.shape[0]):
+        for b in range(X2B.shape[1]):
+            for i in range(X2B.shape[2]):
+                for j in range(X2B.shape[3]):
+                    denom = fA_oo[i, i] + fB_oo[j, j] - fA_vv[a, a] - fB_vv[b, b] + shift
+                    X2B[a, b, i, j] /= denom
+                    T.ab[a, b, i, j] += X2B[a, b, i, j]
+    return T, X2B
+
+def update_t2c_loop(T, X2C, fB_oo, fB_vv, shift):
+    for a in range(X2C.shape[0]):
+        for b in range(a+1, X2C.shape[1]):
+            for i in range(X2C.shape[2]):
+                for j in range(i+1, X2C.shape[3]):
+                    denom = fB_oo[i, i] + fB_oo[j, j] - fB_vv[a, a] - fB_vv[b, b] + shift
+                    X2C[a, b, i, j] /= denom
+                    T.bb[a, b, i, j] += X2C[a, b, i, j]
+    return T, X2C
