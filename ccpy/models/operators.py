@@ -15,39 +15,47 @@ class Operator(BaseModel):
 
 
 class DIIS:
+    from ccpy.drivers.solvers import diis
 
-    def __init__(self, T, diis_size=6):
-
-        dim = 0
-        for key, item in T.items():
-            dim += item.size
+    def __init__(self, T, diis_size):
 
         self.diis_size = diis_size
-        self.T_list = np.zeros((dim, diis_size))
-        self.T_residuum_list = np.zeros((dim, diis_size))
+        self.T_list = np.zeros((T.ndim, diis_size))
+        self.T_residuum_list = np.zeros((T.ndim, diis_size))
 
     def push(self, T, T_residuum, iteration):
-        self.T_list[:, iteration % self.diis_size] = T
-        self.T_residuum_list[:, iteration % self.diis_size] = T_residuum
+        self.T_list[:, iteration % self.diis_size] = T.flatten()
+        self.T_residuum_list[:, iteration % self.diis_size] = T_residuum.flatten()
 
     def extrapolate(self):
         return diis(self.T_list, self.T_residuum_list)
 
-
 class ClusterOperator:
 
     def __init__(self, system, order, data_type=np.float64):
-        #self.order = order
+        self.order = order
+        self.spin_cases = []
+        self.dimensions = []
+        ndim = 0
         for i in range(1, order + 1):
             for j in range(i + 1):
                 name = get_operator_name(i, j)
                 dimensions = get_operator_dimension(i, j, system)
                 self.__dict__[name] = np.zeros(dimensions, dtype=data_type)
+                self.spin_cases.append(name)
+                self.dimensions.append(dimensions)
+                ndim += np.prod(dimensions)
+        self.ndim = ndim
 
     def flatten(self):
-        #spin_cases = [key for key in self.__dict__ if not key.startswith("__") and key not in ['order']]
-        spin_cases = [key for key in self.__dict__ if not key.startswith("__")]
-        return np.hstack([self.__dict__[key].flatten() for key in spin_cases])
+        return np.hstack([self.__getattribute__(key).flatten() for key in self.spin_cases])
+
+    def unflatten(self, T_flat):
+        prev = 0
+        for dims, name in zip(self.dimensions, self.spin_cases):
+            ndim = np.prod(dims)
+            self.__dict__[name] = np.reshape(T_flat[prev : ndim + prev], dims)
+            prev += ndim
 
 
 # TODO: move this to a classmethod or something
@@ -155,9 +163,13 @@ if __name__ == "__main__":
 
     print(system)
 
-    T = ClusterOperator(system, 3)
-    for key, value in T.__dict__.items():
-        print(key,'->',value.shape)
+    order = 4
+    T = ClusterOperator(system, order)
+    print('Cluster operator order',order)
+    print('---------------------------')
+    for key in T.spin_cases:
+        print(key,'->',T.__getattribute__(key).shape)
+    print('Flattened dimension = ',T.ndim)
     print(T.flatten().shape)
 
 

@@ -471,87 +471,66 @@ def solve_cc_jacobi_out_of_core(cc_t,update_t,ints,maxit,tol,ndim,diis_size):
 
     return cc_t, ints['Escf']+Ecorr
 
-def solve_cc_jacobi(cc_t,update_t,ints,maxit,tol,ndim,diis_size):
+def solve_cc_jacobi(update_t, T, dT, H, calculation):
     import time
-    from cc_energy import calc_cc_energy
+    from ccpy.drivers.cc_energy import calc_cc_energy
+    from ccpy.models.operators import DIIS
 
-    # Get dimensions of the CC theory
-    pos = [0] 
-    slices = {}
-    sizes = {}
-    ct = 0
-    ndim = 0
-    for key,value in cc_t.items():
-        ndim += np.size(value)
-        pos.append(pos[ct]+np.size(value))
-        slices[key] = slice(pos[ct],pos[ct+1])
-        sizes[key] = value.shape
-        ct += 1
-
-    # Create the arrays in memory for DIIS extrapolation
-    T_list = np.zeros((ndim,diis_size))
-    T_resid_list = np.zeros((ndim,diis_size))
+    # instantiate the DIIS accelerator object
+    diis_engine = DIIS(T, calculation.diis_size)
 
     # Jacobi/DIIS iterations
-    it_micro = 0
-    flag_conv = False
-    it_macro = 0
-    Ecorr_old = 0.0
+    ndiis_cycle = 0
+    energy_old = 0.0
 
     t_start = time.time()
     print('Iteration    Residuum               deltaE                 Ecorr                Wall Time')
     print('============================================================================================')
-    while it_micro < maxit:
+    for niter in range(calculation.maximum_iterations):
         # get iteration start time
         t1 = time.time()
-
-        # get DIIS counter
-        ndiis = it_micro%diis_size
       
         # Update the T vector
-        cc_t, T_resid = update_t(cc_t)
+        T, dT = update_t(T, dT, H, calculation.level_shift, calculation.RHF_symmetry)
 
         # CC correlation energy
-        Ecorr = calc_cc_energy(cc_t,ints)
+        energy = calc_cc_energy(T, H)
 
-        # change in Ecorr
-        deltaE = Ecorr - Ecorr_old
+        # change in energy
+        delta_energy = energy - energy_old
 
         # check for exit condition
-        resid = np.linalg.norm(T_resid)
-        if resid < tol and abs(deltaE) < tol:
-            flag_conv = True
+        residuum = np.linalg.norm(dT.flatten())
+        if residuum < calculation.convergence_tolerance and \
+                abs(delta_energy) < calculation.convergence_tolerance:
+
+            t_end = time.time()
+            minutes, seconds = divmod(t_end - t_start, 60)
+            print('CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)'.format(minutes, seconds))
+
             break
 
         # Save T and dT vectors to disk for DIIS
-        for key,value in cc_t.items():
-            T_list[slices[key],ndiis] = value.flatten()
-        T_resid_list[:,ndiis] = T_resid
-        # Do DIIS extrapolation        
-        if ndiis == 0 and it_micro > 1:
-            it_macro = it_macro + 1
-            print('DIIS Cycle - {}'.format(it_macro))
-            T = diis(T_list,T_resid_list)
-            for key,value in cc_t.items():
-                cc_t[key] = np.reshape(T[slices[key]],sizes[key])
-        
+        diis_engine.push(T, dT, niter)
+
+        # Do DIIS extrapolation
+        if niter % calculation.diis_size == 0 and niter > 1:
+            ndiis_cycle += 1
+            print('DIIS Cycle - {}'.format(ndiis_cycle))
+            T.unflatten(diis_engine.extrapolate())
+
+        # Update old energy
+        energy_old = energy
+
         elapsed_time = time.time()-t1
         minutes, seconds = divmod(elapsed_time, 60)
-
-        print('   {}       {:.10f}          {:.10f}          {:.10f}        {:0.2f}m  {:0.2f}s'.format(it_micro,resid,deltaE,Ecorr,minutes,seconds))
-        
-        it_micro += 1
-        Ecorr_old = Ecorr
-
-    t_end = time.time()
-    minutes, seconds = divmod(t_end-t_start, 60)
-    if flag_conv:
-        print('CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)'.format(minutes,seconds))
-        print('')
-        print('CC Correlation Energy = {} Eh'.format(Ecorr))
-        print('CC Total Energy = {} Eh'.format(ints['Escf']+Ecorr))
+        print('   {}       {:.10f}          {:.10f}          {:.10f}        {:0.2f}m  {:0.2f}s'.format(niter,
+                                                                                                       residuum,
+                                                                                                       delta_energy,
+                                                                                                       energy,
+                                                                                                       minutes,seconds))
     else:
-        print('Failed to converge CC in {} iterations'.format(maxit))
+        print('CC calculation did not converge.')
 
-    return cc_t, ints['Escf']+Ecorr
+    return T, energy
 

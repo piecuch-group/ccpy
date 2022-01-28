@@ -1,6 +1,6 @@
 import numpy as np
 
-def loadFromPyscfMolecular(meanFieldObj, nfrozen, normalOrdered=True, dumpIntegrals=False):
+def loadFromPyscfMolecular(meanfield, nfrozen, normal_ordered=True, dumpIntegrals=False):
     """Builds the System and Integral objects using the information contained within a PySCF
        mean-field object for a molecular system.
 
@@ -18,24 +18,24 @@ def loadFromPyscfMolecular(meanFieldObj, nfrozen, normalOrdered=True, dumpIntegr
     from ccpy.utilities.dumping import dumpIntegralstoPGFiles
     from pyscf import ao2mo
 
-    molecule = meanFieldObj.mol
+    molecule = meanfield.mol
     nelectrons = molecule.nelectron
-    mo_coeff = meanFieldObj.mo_coeff
+    mo_coeff = meanfield.mo_coeff
     norbitals = mo_coeff.shape[1]
-    nuclearRepulsion = molecule.energy_nuc()
+    nuclear_repulsion = molecule.energy_nuc()
 
     system = System(nelectrons,
                norbitals,
                molecule.spin + 1, # PySCF mol.spin returns 2S, not S
                nfrozen,
                point_group = molecule.symmetry,
-               orbital_symmetries = [molecule.irrep_name[x] for x in meanFieldObj.orbsym],
+               orbital_symmetries = [molecule.irrep_name[x] for x in meanfield.orbsym],
                charge = molecule.charge,
-               nuclearRepulsion = nuclearRepulsion)
+               nuclear_repulsion = nuclear_repulsion)
 
-    kineticAOIntegrals = molecule.intor_symmetric('int1e_kin')
-    nuclearAOIntegrals = molecule.intor_symmetric('int1e_nuc')
-    e1int = np.einsum('pi,pq,qj->ij', mo_coeff, kineticAOIntegrals + nuclearAOIntegrals, mo_coeff)
+    kinetic_aoints = molecule.intor_symmetric('int1e_kin')
+    nuclear_aoints = molecule.intor_symmetric('int1e_nuc')
+    e1int = np.einsum('pi,pq,qj->ij', mo_coeff, kinetic_aoints + nuclear_aoints, mo_coeff)
     e2int = np.transpose(
                 np.reshape(ao2mo.kernel(molecule, mo_coeff, compact=False), (norbitals, norbitals, norbitals, norbitals)),
                 (0,2,1,3)
@@ -43,13 +43,13 @@ def loadFromPyscfMolecular(meanFieldObj, nfrozen, normalOrdered=True, dumpIntegr
 
     # Check that the HF energy calculated using the integrals matches the PySCF result
     hf_energy = calc_hf_energy(e1int, e2int, system)
-    hf_energy += nuclearRepulsion
-    assert(np.allclose(hf_energy, meanFieldObj.energy_tot(), atol=1.0e-06, rtol=0.0))
+    hf_energy += nuclear_repulsion
+    assert(np.allclose(hf_energy, meanfield.energy_tot(), atol=1.0e-06, rtol=0.0))
 
     if dumpIntegrals:
         dumpIntegralstoPGFiles(e1int, e2int, system)
 
-    return system, getHamiltonian(e1int, e2int, system, normalOrdered)
+    return system, getHamiltonian(e1int, e2int, system, normal_ordered)
 
 def get_kconserv1(a, kpts, thresh=1.0e-07):
 

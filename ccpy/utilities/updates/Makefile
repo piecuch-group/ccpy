@@ -18,7 +18,8 @@ FFLAGS := -std=f2018 -O3 -ffree-line-length-512
 
 #SRC := cc_loops.f90
 LDFLAGS :=
-LIBS := -L/home2/gururang/.conda/envs/ccpy_dev/lib -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
+LIBS := -L/anaconda3/envs/ccpy_refactor/lib -lmkl_core -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_avx2.1 -lgomp -lpthread -lm -ldl
+#LIBS := -L/home2/gururang/.conda/envs/ccpy_dev/lib -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
 .PHONY: all clean
 
 all: $(TARGETS)
