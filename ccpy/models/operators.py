@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 import numpy as np
 
-from ccpy.drivers.solvers import diis
+#from ccpy.drivers.solvers import diis
 
 
 class Operator(BaseModel):
@@ -31,6 +31,20 @@ class DIIS:
 
     def extrapolate(self):
         return diis(self.T_list, self.T_residuum_list)
+
+class ManyBodyOperator:
+
+    def __init__(self, system, order):
+        for i in range(1, order + 1):
+            for j in range(i + 1):
+                name = get_operator_name(i, j)
+                dimensions = get_operator_dimension(i, j, system)
+                self.__dict__[name] = np.zeros(dimensions)
+
+    def __repr__(self):
+        for key,value in vars(self).items():
+            print('     ',key,'->',value)
+        return ''
 
 class ClusterOperator:
 
@@ -71,5 +85,37 @@ def build_cluster_expansion(system, order):
 
     return operators
 
+if __name__ == "__main__":
+
+    from ccpy.interfaces.pyscf_tools import parsePyscfMolecularMeanField
+    from pyscf import gto, scf
+
+    mol = gto.Mole()
+    mol.build(
+        atom='''F 0.0 0.0 -2.66816
+                F 0.0 0.0  2.66816''',
+        basis='ccpvdz',
+        charge=1,
+        spin=1,
+        symmetry='D2H',
+        cart=True,
+        unit='Bohr',
+    )
+    mf = scf.ROHF(mol)
+    mf.kernel()
+
+    nfrozen = 2
+    system = parsePyscfMolecularMeanField(mf, nfrozen)
+
+    print(system)
+
+    T = ClusterOperator(system, 3)
+
+    for key, values in T.T.items():
+        print(key,'->',values.array.shape)
+
+    M = ManyBodyOperator(system, 3)
+
+    print(dir(M))
 
 

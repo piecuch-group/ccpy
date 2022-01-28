@@ -1,5 +1,31 @@
 import numpy as np
 
+def parsePyscfMolecularMeanField(meanFieldObj, nfrozen):
+    """Builds the System and Integral objects using the information contained within a PySCF
+       mean-field object for a molecular system.
+
+       Arguments:
+       ----------
+       meanFieldObj : Object -> PySCF SCF/mean-field object
+       nfrozen : int -> number of frozen electrons
+       Returns:
+       ----------
+       system: System object
+       integrals: Integral object"""
+    from ccpy.models.system import System
+    #from ccpy.models.integrals import Integral
+
+    system = System(meanFieldObj.mol.nelectron,
+               meanFieldObj.mo_coeff.shape[1],
+               meanFieldObj.mol.spin + 1, # PySCF mol.spin returns 2S, not S
+               nfrozen,
+               meanFieldObj.mol.symmetry,
+               [meanFieldObj.mol.irrep_name[x] for x in meanFieldObj.orbsym],
+               meanFieldObj.mol.charge)
+
+    return system
+
+
 def get_kconserv1(a, kpts, thresh=1.0e-07):
 
     nkpts = len(kpts)
