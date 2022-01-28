@@ -28,6 +28,7 @@ def loadFromGamess(gamess_logfile, onebody_file, twobody_file, nfrozen, normal_o
     hf_energy = calc_hf_energy(e1int, e2int, system)
     hf_energy += system.nuclear_repulsion
     assert (np.allclose(hf_energy, getGamessSCFEnergy(gamess_logfile), atol=1.0e-06, rtol=0.0))
+    system.reference_energy = hf_energy
 
     return system, getHamiltonian(e1int, e2int, system, normal_ordered)
 

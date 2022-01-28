@@ -484,8 +484,8 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation):
     energy_old = 0.0
 
     t_start = time.time()
-    print('Iteration    Residuum               deltaE                 Ecorr                Wall Time')
-    print('============================================================================================')
+    print('  Iter        Residuum        deltaE          Ecorr')
+    print(' ======================================================')
     for niter in range(calculation.maximum_iterations):
         # get iteration start time
         t1 = time.time()
@@ -506,7 +506,7 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation):
 
             t_end = time.time()
             minutes, seconds = divmod(t_end - t_start, 60)
-            print('CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)'.format(minutes, seconds))
+            print(' CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)'.format(minutes, seconds))
 
             break
 
@@ -516,7 +516,7 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation):
         # Do DIIS extrapolation
         if niter % calculation.diis_size == 0 and niter > 1:
             ndiis_cycle += 1
-            print('DIIS Cycle - {}'.format(ndiis_cycle))
+            print(' DIIS Cycle - {}'.format(ndiis_cycle))
             T.unflatten(diis_engine.extrapolate())
 
         # Update old energy
@@ -524,11 +524,11 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation):
 
         elapsed_time = time.time()-t1
         minutes, seconds = divmod(elapsed_time, 60)
-        print('   {}       {:.10f}          {:.10f}          {:.10f}        {:0.2f}m  {:0.2f}s'.format(niter,
-                                                                                                       residuum,
-                                                                                                       delta_energy,
-                                                                                                       energy,
-                                                                                                       minutes,seconds))
+        print('   {}       {:.10f}   {:.10f}   {:.10f}   ({:0.2f}m {:0.2f}s)'.format(niter,
+                                                                                           residuum,
+                                                                                           delta_energy,
+                                                                                           energy,
+                                                                                           minutes,seconds))
     else:
         print('CC calculation did not converge.')
 

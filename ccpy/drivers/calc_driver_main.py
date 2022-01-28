@@ -25,6 +25,10 @@ def calc_driver_main(calculation, system, H, T_init=None):
     #if calculation_type not in cc.MODULES:
     #    raise NotImplementedError("Calculation type {calculation_type} not implemented")
 
+    print('   ===========================================')
+    print('               ',calculation.calculation_type.upper(),'Calculation')
+    print('   ===========================================\n')
+
     # CCSD Calculation
     order = 2
     if T_init is None:
@@ -33,36 +37,13 @@ def calc_driver_main(calculation, system, H, T_init=None):
 
     from ccpy.cc.ccsd import update_t
     T, cc_energy = solve_cc_jacobi(update_t, T, dT, H, calculation)
+    total_energy = system.reference_energy + cc_energy
 
+    print('')
+    print('  CC Calculation Summary')
+    print('  -------------------------------------')
+    print('    Reference energy = ', system.reference_energy)
+    print('    CC correlation energy = ', cc_energy)
+    print('    Total CC energy = ', total_energy)
 
-    return
-
-if __name__ == "__main__":
-
-    from ccpy.interfaces.pyscf_tools import loadFromPyscfMolecular
-    from pyscf import gto, scf
-
-    from ccpy.models.calculation import Calculation
-
-    # Testing from PySCF
-    mol = gto.Mole()
-    mol.build(
-        atom='''F 0.0 0.0 -2.66816
-                F 0.0 0.0  2.66816''',
-        basis='ccpvdz',
-        charge=0,
-        spin=0,
-        symmetry='D2H',
-        cart=True,
-        unit='Bohr',
-    )
-    mf = scf.ROHF(mol)
-    mf.kernel()
-
-    nfrozen = 2
-    system, H = loadFromPyscfMolecular(mf, nfrozen, dumpIntegrals=False)
-
-    print(system)
-
-    calculation = Calculation('CCSD')
-    calc_driver_main(calculation, system, H)
+    return T, total_energy

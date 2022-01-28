@@ -45,6 +45,7 @@ def loadFromPyscfMolecular(meanfield, nfrozen, normal_ordered=True, dumpIntegral
     hf_energy = calc_hf_energy(e1int, e2int, system)
     hf_energy += nuclear_repulsion
     assert(np.allclose(hf_energy, meanfield.energy_tot(), atol=1.0e-06, rtol=0.0))
+    system.reference_energy = hf_energy
 
     if dumpIntegrals:
         dumpIntegralstoPGFiles(e1int, e2int, system)
