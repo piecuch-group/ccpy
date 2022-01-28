@@ -4,7 +4,7 @@ class System:
 
     def __init__(self, nelectrons, norbitals, multiplicity, nfrozen,
                  point_group='C1', orbital_symmetries=None, charge=0,
-                 nuclearRepulsion=0):
+                 nkpts=0, nuclearRepulsion=0):
         """Default constructor for the System object.
 
         Arguments:
@@ -16,6 +16,7 @@ class System:
         point_group : str -> spatial point group, default = 'C1'
         orbital_symmetries : list -> point group irreps of each molecular orbital, default = [None]*norbitals
         charge : int -> total charge on the molecule, default = 0
+        nkpts : int -> number of k-points used in reciprocal space sampling (periodic calculations only)
         e_nuclear : float -> nuclear repulsion energy at the molecular geometry (in hartree)
         Returns:
         ----------
@@ -29,6 +30,7 @@ class System:
         self.nunoccupied_alpha = self.norbitals - self.noccupied_alpha
         self.nunoccupied_beta = self.norbitals - self.noccupied_beta
         self.charge = charge
+        self.nkpts = nkpts
         self.point_group = point_group
         if orbital_symmetries is None:
             self.orbital_symmetries = ['A1'] * norbitals
@@ -54,14 +56,17 @@ if __name__ == "__main__":
         system = System(nelectrons, norbitals, multiplicity, nfrozen)
 
     if test_case == 'gamess':
-        from ccpy.interfaces.gamess_tools import parseGamessLogFile
+        from ccpy.interfaces.gamess_tools import loadFromGamess
         # F2+ / 6-31G
         nfrozen = 2
         gamessFile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/F2+-1.0-631g.log"
-        system = parseGamessLogFile(gamessFile, nfrozen)
+        onebodyFile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/onebody.inp"
+        twobodyFile = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/twobody.inp"
+
+        system, H = loadFromGamess(gamessFile, onebodyFile, twobodyFile, nfrozen)
 
     if test_case == 'pyscf':
-        from ccpy.interfaces.pyscf_tools import parsePyscfMolecularMeanField
+        from ccpy.interfaces.pyscf_tools import loadFromPyscfMolecular
         from pyscf import gto, scf
         mol = gto.Mole()
         mol.build(
@@ -78,6 +83,6 @@ if __name__ == "__main__":
         mf.kernel()
 
         nfrozen = 2
-        system, e1int, e2int = parsePyscfMolecularMeanField(mf, nfrozen)
+        system, H = loadFromPyscfMolecular(mf, nfrozen)
 
     print(system)

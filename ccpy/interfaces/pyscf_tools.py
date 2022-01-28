@@ -1,6 +1,6 @@
 import numpy as np
 
-def parsePyscfMolecularMeanField(meanFieldObj, nfrozen):
+def loadFromPyscfMolecular(meanFieldObj, nfrozen, normalOrdered=True, dumpIntegrals=False):
     """Builds the System and Integral objects using the information contained within a PySCF
        mean-field object for a molecular system.
 
@@ -13,7 +13,9 @@ def parsePyscfMolecularMeanField(meanFieldObj, nfrozen):
        system: System object
        integrals: Integral object"""
     from ccpy.models.system import System
-    #from ccpy.models.integrals import Integral
+    from ccpy.models.integrals import getHamiltonian
+    from ccpy.drivers.hf_energy import calc_hf_energy
+    from ccpy.utilities.dumping import dumpIntegralstoPGFiles
     from pyscf import ao2mo
 
     molecule = meanFieldObj.mol
@@ -26,10 +28,10 @@ def parsePyscfMolecularMeanField(meanFieldObj, nfrozen):
                norbitals,
                molecule.spin + 1, # PySCF mol.spin returns 2S, not S
                nfrozen,
-               molecule.symmetry,
-               [molecule.irrep_name[x] for x in meanFieldObj.orbsym],
-               molecule.charge,
-               nuclearRepulsion)
+               point_group = molecule.symmetry,
+               orbital_symmetries = [molecule.irrep_name[x] for x in meanFieldObj.orbsym],
+               charge = molecule.charge,
+               nuclearRepulsion = nuclearRepulsion)
 
     kineticAOIntegrals = molecule.intor_symmetric('int1e_kin')
     nuclearAOIntegrals = molecule.intor_symmetric('int1e_nuc')
@@ -40,11 +42,14 @@ def parsePyscfMolecularMeanField(meanFieldObj, nfrozen):
             )
 
     # Check that the HF energy calculated using the integrals matches the PySCF result
-    # e_calc = calc_hf_energy(e1int, e2int, nelectrons)
-    # e_calc += e_nuc
-    # assert(np.allclose(e_calc, mf.energy_tot(), atol=1.0e-06, rtol=0.0))
+    hf_energy = calc_hf_energy(e1int, e2int, system)
+    hf_energy += nuclearRepulsion
+    assert(np.allclose(hf_energy, meanFieldObj.energy_tot(), atol=1.0e-06, rtol=0.0))
 
-    return system, e1int, e2int
+    if dumpIntegrals:
+        dumpIntegralstoPGFiles(e1int, e2int, system)
+
+    return system, getHamiltonian(e1int, e2int, system, normalOrdered)
 
 def get_kconserv1(a, kpts, thresh=1.0e-07):
 
@@ -148,46 +153,7 @@ def get_pbc_mo_integrals(cell, kmf, kpts, notation='chemist'):
 
     return Z, V, e_nuc
 
-def calc_khf_energy(e1int,e2int,Nelec,Nkpts,notation):
 
-    # Note that any V must have a factor of 1/Nkpts!
-    e1a = 0.0
-    e1b = 0.0
-    e2a = 0.0
-    e2b = 0.0
-    e2c = 0.0
-
-    if Nelec%2 == 0:
-        Nocc_a = int(Nelec/2)
-        Nocc_b = int(Nelec/2)
-    else:
-        Nocc_a = int( (Nelec+1)/2 )
-        Nocc_b = int( (Nelec-1)/2 )
-
-    # slices
-    oa = slice(0,Nocc_a)
-    ob = slice(0,Nocc_b)
-    
-    if notation == 'chemist':
-        e1a = np.einsum('uuii->',e1int[:,:,oa,oa])
-        e1b = np.einsum('uuii->',e1int[:,:,ob,ob])
-        e2a = 0.5*(np.einsum('uuvviijj->',e2int[:,:,:,:,oa,oa,oa,oa])\
-                    -np.einsum('uvvuijji->',e2int[:,:,:,:,oa,oa,oa,oa]))
-        e2b = 1.0*(np.einsum('uuvviijj->',e2int[:,:,:,:,oa,ob,oa,ob]))
-        e2c = 0.5*(np.einsum('uuvviijj->',e2int[:,:,:,:,ob,ob,ob,ob])\
-                    -np.einsum('uvvuijji->',e2int[:,:,:,:,ob,ob,ob,ob]))
-    else: # physicist notation
-        e1a = np.einsum('uuii->',e1int[:,:,oa,oa])
-        e1b = np.einsum('uuii->',e1int[:,:,ob,ob])
-        e2a = 0.5*(np.einsum('uvuvijij->',e2int[:,:,:,:,oa,oa,oa,oa])\
-                    -np.einsum('uvvuijji->',e2int[:,:,:,:,oa,oa,oa,oa]))
-        e2b = 1.0*(np.einsum('uvuvijij->',e2int[:,:,:,:,oa,ob,oa,ob]))
-        e2c = 0.5*(np.einsum('uvuvijij->',e2int[:,:,:,:,ob,ob,ob,ob])\
-                    -np.einsum('uvvuijji->',e2int[:,:,:,:,ob,ob,ob,ob]))
-
-    Escf = e1a + e1b + e2a + e2b + e2c
-
-    return np.real(Escf)/Nkpts
 
 def get_sc_mo_integrals(supcell, kmf, G, notation='chemist'):
     from pyscf.pbc import df
@@ -232,115 +198,3 @@ def get_sc_mo_integrals(supcell, kmf, G, notation='chemist'):
     assert(np.allclose(e_calc, kmf.energy_tot(), atol=1.0e-06, rtol=0.0))
 
     return Z, V, e_nuc
-
-
-def get_mo_integrals(mol, mf, notation='chemist'):
-    from pyscf import ao2mo
-
-    nmo = mf.mo_coeff.shape[1]
-    e_nuc = mol.energy_nuc()
-
-    kinetic_ao = mol.intor_symmetric('int1e_kin')
-    nuclear_ao = mol.intor_symmetric('int1e_nuc')
-    Z = np.einsum('pi,pq,qj->ij',mf.mo_coeff, kinetic_ao+nuclear_ao, mf.mo_coeff)
-
-    V = np.reshape(ao2mo.kernel(mol,mf.mo_coeff,compact=False),(nmo,nmo,nmo,nmo))
-    if notation != 'chemist': # physics notation
-        V = np.transpose(V,(0,2,1,3))
-
-    e_calc = calc_hf_energy(Z,V,mol.nelectron,notation)
-    e_calc += e_nuc
-    assert(np.allclose(e_calc, mf.energy_tot(), atol=1.0e-06, rtol=0.0))
-
-    return Z, V, e_nuc
-
-
-def calc_hf_energy(e1int,e2int,Nelec,notation):
-
-    if Nelec%2 == 0:
-        Nocc_a = int(Nelec/2)
-        Nocc_b = int(Nelec/2)
-    else:
-        Nocc_a = int( (Nelec+1)/2 )
-        Nocc_b = int( (Nelec-1)/2 )
-
-    # slices
-    oa = slice(0,Nocc_a)
-    ob = slice(0,Nocc_b)
-
-    if notation == 'chemist':
-        e1a = np.einsum('ii->',e1int[oa,oa])
-        e1b = np.einsum('ii->',e1int[ob,ob])
-        e2a = 0.5*(np.einsum('iijj->',e2int[oa,oa,oa,oa])\
-                    -np.einsum('ijji->',e2int[oa,oa,oa,oa]))
-        e2b = 1.0*(np.einsum('iijj->',e2int[oa,ob,oa,ob]))
-        e2c = 0.5*(np.einsum('iijj->',e2int[ob,ob,ob,ob])\
-                    -np.einsum('ijji->',e2int[ob,ob,ob,ob]))
-    else: # physics notation
-        e1a = np.einsum('ii->',e1int[oa,oa])
-        e1b = np.einsum('ii->',e1int[ob,ob])
-        e2a = 0.5*(np.einsum('ijij->',e2int[oa,oa,oa,oa])\
-                    -np.einsum('ijji->',e2int[oa,oa,oa,oa]))
-        e2b = 1.0*(np.einsum('ijij->',e2int[oa,ob,oa,ob]))
-        e2c = 0.5*(np.einsum('ijij->',e2int[ob,ob,ob,ob])\
-                    -np.einsum('ijji->',e2int[ob,ob,ob,ob]))
-
-    Escf = e1a + e1b + e2a + e2b + e2c
-
-    return Escf
-
-def write_onebody_pbc_integrals(Z):
-
-    Nkpts = Z.shape[0]
-    Norb = Z.shape[2]
-    with open('onebody.inp','w') as f:
-        for kp in range(Nkpts):
-            for kq in range(Nkpts):
-                ct = 1
-                for i in range(Norb):
-                    for j in range(i+1):
-                        f.write('     {}    {:.11f}\n'.format(Z[kp,kq,i,j],ct))
-                        ct += 1
-    return
-
-def write_twobody_pbc_integrals(V,e_nuc):
-    # inefficient. we should be saving only those V(kp,kq,kr,ks) that
-    # obey symmetry constraint
-    Nkpts = V.shape[0]
-    Norb = V.shape[4]
-    with open('twobody.inp','w') as f:
-        for kp in range(Nkpts):
-            for kq in range(Nkpts):
-                for kr in range(Nkpts):
-                    for ks in range(Nkpts):
-                        for i in range(Norb):
-                            for j in range(Norb):
-                                for k in range(Norb):
-                                    for l in range(Norb):
-                                        f.write('    {}    {}    {}    {}       {:.11f}\n'.format(i+1,j+1,k+1,l+1,V[kp,kq,kr,ks,i,j,k,l]))
-        f.write('    {}    {}    {}    {}        {:.11f}\n'.format(0,0,0,0,e_nuc))
-    return
-
-def write_onebody_integrals(Z):
-
-    Norb = Z.shape[0]
-    with open('onebody.inp','w') as f:
-        ct = 1
-        for i in range(Norb):
-            for j in range(i+1):
-                f.write('     {}    {:.11f}\n'.format(Z[i,j],ct))
-                ct += 1
-    return
-
-
-def write_twobody_integrals(V,e_nuc):
-    
-    Norb = V.shape[0]
-    with open('twobody.inp','w') as f:
-        for i in range(Norb):
-            for j in range(Norb):
-                for k in range(Norb):
-                    for l in range(Norb):
-                            f.write('    {}    {}    {}    {}       {:.11f}\n'.format(i+1,j+1,k+1,l+1,V[i,j,k,l]))
-        f.write('    {}    {}    {}    {}        {:.11f}\n'.format(0,0,0,0,e_nuc))
-    return
