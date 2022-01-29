@@ -5,16 +5,16 @@
 from ccpy.drivers.solvers import solve_cc_jacobi
 from ccpy.models.operators import ClusterOperator
 
-def calc_driver_main(calculation, system, H, T_init=None):
+def calc_driver_main(calculation, system, hamiltonian, T_init=None):
     """Performs the calculation specified by the user in the input.
 
     Parameters
     ----------
-    inputs : dict
+    calculation : Object
         Contains all input keyword flags obtained from parsing the user-supplied input
-    sys : dict
+    system : Object
         System information dictionary
-    ints : dict
+    hamiltonian : Object
         Sliced F_N and V_N integrals that define the bare Hamiltonian H_N
 
     Returns
@@ -23,7 +23,7 @@ def calc_driver_main(calculation, system, H, T_init=None):
     """
 
     #if calculation_type not in cc.MODULES:
-    #    raise NotImplementedError("Calculation type {calculation_type} not implemented")
+    #   raise NotImplementedError("Calculation type {calculation_type} not implemented")
 
     print('   ===========================================')
     print('               ',calculation.calculation_type.upper(),'Calculation')
@@ -36,7 +36,7 @@ def calc_driver_main(calculation, system, H, T_init=None):
         dT = ClusterOperator(system, order)
 
     from ccpy.cc.ccsd import update_t
-    T, cc_energy = solve_cc_jacobi(update_t, T, dT, H, calculation)
+    T, cc_energy = solve_cc_jacobi(update_t, T, dT, hamiltonian, calculation, diis_out_of_core=True)
     total_energy = system.reference_energy + cc_energy
 
     print('')

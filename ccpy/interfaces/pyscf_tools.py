@@ -1,6 +1,6 @@
 import numpy as np
 
-def loadFromPyscfMolecular(meanfield, nfrozen, normal_ordered=True, dumpIntegrals=False):
+def loadFromPyscfMolecular(meanfield, nfrozen, normal_ordered=True, dump_integrals=False):
     """Builds the System and Integral objects using the information contained within a PySCF
        mean-field object for a molecular system.
 
@@ -47,7 +47,7 @@ def loadFromPyscfMolecular(meanfield, nfrozen, normal_ordered=True, dumpIntegral
     assert(np.allclose(hf_energy, meanfield.energy_tot(), atol=1.0e-06, rtol=0.0))
     system.reference_energy = hf_energy
 
-    if dumpIntegrals:
+    if dump_integrals:
         dumpIntegralstoPGFiles(e1int, e2int, system)
 
     return system, getHamiltonian(e1int, e2int, system, normal_ordered)

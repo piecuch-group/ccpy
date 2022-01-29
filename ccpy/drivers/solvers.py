@@ -1,105 +1,7 @@
 """Module containing the driving solvers"""
 import numpy as np
 import time
-from ccpy.utilities.utilities import print_memory_usage
 
-def diis_out_of_core(cc_t, slices, sizes, vec_dim, diis_dim):
-    """Performs DIIS extrapolation for the solution of nonlinear equations. Out of core
-    version with residuals and previous vectors stored on disk and accessed one-by-one.
-    
-    Parameters:
-    -----------
-    cc_t : dict
-        Dictionary of current T vector amplitudes
-    slices : dict
-        Dictionary containing slices of each T amplitude type and spincase
-    sizes : dict
-        Dictionary containing the sizes (tuples) for each T amplitude type and spincase
-    vec_dim : int
-        Total dimension of the T vector
-    diis_dim : int
-        Number of DIIS vectors used in extrapolation
-
-    Returns:
-    --------
-    cc_t : dict
-        New DIIS-extrapolated T vector amplitudes
-    """
-    B_dim = diis_dim + 1
-    B = -1.0*np.ones((B_dim,B_dim))
-
-    nhalf = int(vec_dim/2)
-    diis_resid = np.memmap('dt.npy',dtype=np.float64,shape=(vec_dim,diis_dim),mode='r')
-    for i in range(diis_dim):
-        for j in range(i,diis_dim):
-            B[i,j] = np.dot(diis_resid[:nhalf,i],diis_resid[:nhalf,j])
-            B[i,j] += np.dot(diis_resid[nhalf:,i],diis_resid[nhalf:,j])
-            B[j,i] = B[i,j]
-    B[-1,-1] = 0.0
-
-    rhs = np.zeros(B_dim)
-    rhs[-1] = -1.0
-
-    coeff = solve_gauss(B,rhs)
-
-    tvec = np.memmap('t.npy',dtype=np.float64,shape=(vec_dim,diis_dim),mode='r')
-    for key in cc_t.keys():
-        cc_t[key] = 0.0*cc_t[key]
-        for i in range(diis_dim):
-            cc_t[key] += coeff[i]*np.reshape(tvec[slices[key],i],sizes[key])
-
-    return cc_t
-
-def diis(x_list, diis_resid):
-    """Performs DIIS extrapolation for the solution of nonlinear equations. In core
-    version with residuals and previous vectors stored fully as matrices in memory.
-    
-    Parameters:
-    -----------
-    x_list : ndarray(dtype=np.float64,shape=(vec_dim,diis_dim))
-        Matrix of previous T vectors
-    diis_resid : ndarray(dtype=np.float64,shape=(vec_dim,diis_dim))
-        Matrix of previous residuals
-    Returns:
-    --------
-    x_xtrap : ndarray(dtype=np.float64,shape=(vec_dim))
-        New DIIS-extrapolated T vector amplitudes
-    """
-    vec_dim, diis_dim = np.shape(x_list)
-    B_dim = diis_dim + 1
-    B = -1.0*np.ones((B_dim,B_dim))
-
-    for i in range(diis_dim):
-        for j in range(diis_dim):
-            B[i,j] = np.dot(diis_resid[:,i].T,diis_resid[:,j])
-    B[-1,-1] = 0.0
-
-    rhs = np.zeros(B_dim)
-    rhs[-1] = -1.0
-
-    coeff = solve_gauss(B,rhs)
-    x_xtrap = np.zeros(vec_dim)
-    for i in range(diis_dim):
-        x_xtrap += coeff[i]*x_list[:,i]
-
-    return x_xtrap
-
-def solve_gauss(A, b):
-    """DIIS helper function. Solves the linear system Ax=b using
-    Gaussian elimination"""
-    n =  A.shape[0]
-    for i in range(n-1):
-        for j in range(i+1, n):
-            m = A[j,i]/A[i,i]
-            A[j,:] -= m*A[i,:]
-            b[j] -= m*b[i]
-    x = np.zeros(n)
-    k = n-1
-    x[k] = b[k]/A[k,k]
-    while k >= 0:
-        x[k] = (b[k] - np.dot(A[k,k+1:],x[k+1:]))/A[k,k]
-        k = k-1
-    return x
 
 def davidson_out_of_core(HR,update_R,B0,E0,maxit,tol,flag_lowmem=True):
     """Diagonalize the similarity-transformed Hamiltonian HBar using the
@@ -382,105 +284,17 @@ def davidson(HR,update_R,B0,E0,maxit,max_dim,tol):
 
     return Rvec, omega, is_converged
 
-def solve_cc_jacobi_out_of_core(cc_t,update_t,ints,maxit,tol,ndim,diis_size):
-    import time
-    from cc_energy import calc_cc_energy
-
-    # Get dimensions of the CC theory
-    pos = [0] 
-    slices = {}
-    sizes = {}
-    ct = 0
-    ndim = 0
-    for key,value in cc_t.items():
-        ndim += np.size(value)
-        pos.append(pos[ct]+np.size(value))
-        slices[key] = slice(pos[ct],pos[ct+1])
-        sizes[key] = value.shape
-        ct += 1
-
-    # Create the memory maps to the T and dT (residual) vectors for DIIS stored on disk
-    tvec_mmap = np.memmap('t.npy', mode="w+", dtype=np.float64, shape=(ndim,diis_size))
-    resid_mmap = np.memmap('dt.npy', mode="w+", dtype=np.float64, shape=(ndim,diis_size))
-    del tvec_mmap
-    del resid_mmap
-
-    # Jacobi/DIIS iterations
-    it_micro = 0
-    flag_conv = False
-    it_macro = 0
-    Ecorr_old = 0.0
-
-    t_start = time.time()
-    print('Iteration    Residuum               deltaE                 Ecorr                Wall Time')
-    print('============================================================================================')
-    while it_micro < maxit:
-        # get iteration start time
-        t1 = time.time()
-
-        # get DIIS counter
-        ndiis = it_micro%diis_size
-      
-        # Update the T vector
-        cc_t, T_resid = update_t(cc_t)
-
-        # CC correlation energy
-        Ecorr = calc_cc_energy(cc_t,ints)
-
-        # change in Ecorr
-        deltaE = Ecorr - Ecorr_old
-
-        # check for exit condition
-        resid = np.linalg.norm(T_resid)
-        if resid < tol and abs(deltaE) < tol:
-            flag_conv = True
-            break
-
-        # Save T and dT vectors to disk using memory maps
-        tvec_mmap = np.memmap('t.npy', mode="r+", dtype=np.float64, shape=(ndim,diis_size))
-        for key, value in cc_t.items():
-            tvec_mmap[slices[key],ndiis] = value.flatten()
-        del tvec_mmap
-        resid_mmap = np.memmap('dt.npy', mode="r+", dtype=np.float64, shape=(ndim,diis_size))
-        resid_mmap[:,ndiis] = T_resid
-        del resid_mmap
-
-        # Do out-of-core DIIS extrapolation        
-        if ndiis == 0 and it_micro > 1:
-            it_macro = it_macro + 1
-            print('DIIS Cycle - {}'.format(it_macro))
-            cc_t = diis_out_of_core(cc_t,slices,sizes,ndim,diis_size)
-        
-        elapsed_time = time.time()-t1
-        minutes, seconds = divmod(elapsed_time, 60)
-
-        print('   {}       {:.10f}          {:.10f}          {:.10f}        {:0.2f}m  {:0.2f}s'.format(it_micro,resid,deltaE,Ecorr,minutes,seconds))
-        
-        it_micro += 1
-        Ecorr_old = Ecorr
-
-    t_end = time.time()
-    minutes, seconds = divmod(t_end-t_start, 60)
-    if flag_conv:
-        print('CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)'.format(minutes,seconds))
-        print('')
-        print('CC Correlation Energy = {} Eh'.format(Ecorr))
-        print('CC Total Energy = {} Eh'.format(ints['Escf']+Ecorr))
-    else:
-        print('Failed to converge CC in {} iterations'.format(maxit))
-
-    return cc_t, ints['Escf']+Ecorr
-
-def solve_cc_jacobi(update_t, T, dT, H, calculation):
+def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
     import time
     from ccpy.drivers.cc_energy import calc_cc_energy
-    from ccpy.models.operators import DIIS
+    from ccpy.drivers.diis import DIIS
 
     # instantiate the DIIS accelerator object
-    diis_engine = DIIS(T, calculation.diis_size)
+    diis_engine = DIIS(T, calculation.diis_size, diis_out_of_core)
 
     # Jacobi/DIIS iterations
     ndiis_cycle = 0
+    energy = 0.0
     energy_old = 0.0
 
     t_start = time.time()
@@ -525,10 +339,10 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation):
         elapsed_time = time.time()-t1
         minutes, seconds = divmod(elapsed_time, 60)
         print('   {}       {:.10f}   {:.10f}   {:.10f}   ({:0.2f}m {:0.2f}s)'.format(niter,
-                                                                                           residuum,
-                                                                                           delta_energy,
-                                                                                           energy,
-                                                                                           minutes,seconds))
+                                                                                     residuum,
+                                                                                     delta_energy,
+                                                                                     energy,
+                                                                                     minutes,seconds))
     else:
         print('CC calculation did not converge.')
 

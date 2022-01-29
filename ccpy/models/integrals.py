@@ -24,6 +24,8 @@ class SortedIntegral:
         double_spin_string = list(name) * 2
         slice_table = {'a': {'o': slice(0, system.noccupied_alpha), 'v': slice(system.noccupied_alpha, system.norbitals)},
                        'b': {'o': slice(0, system.noccupied_beta),  'v': slice(system.noccupied_beta, system.norbitals)}}
+
+        #self.slices = []
         for i in range(2*order+1):
             for combs in combinations(range(2*order),i):
                 attr = ['o'] * (2*order)
@@ -33,6 +35,7 @@ class SortedIntegral:
                 for k in range(2*order):
                     slicearr[k] = slice_table[double_spin_string[k]][attr[k]]
                 self.__dict__[''.join(attr)] = matrix[tuple(slicearr)]
+                #self.slices.append(''.join(attr))
 
 class Integral:
 
@@ -41,7 +44,8 @@ class Integral:
         for i in range(1, order + 1): # Loop over many-body ranks
             for j in range(i + 1): # Loop over distinct spin cases per rank
                 name = get_operator_name(i, j)
-                self.__dict__[name] = SortedIntegral(system, name, matrices[name])
+                sorted_integral = SortedIntegral(system, name, matrices[name])
+                self.__dict__[name] = sorted_integral
 
     @classmethod
     def fromEmpty(cls, system, order, data_type=np.float64):
