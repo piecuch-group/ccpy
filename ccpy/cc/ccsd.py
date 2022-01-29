@@ -1,7 +1,7 @@
 """Module with functions that perform the CC with singles and 
 doubles (CCSD) calculation for a molecular system."""
 import numpy as np
-from ccpy.hbar.HBar import get_ccs_intermediates
+from ccpy.hbar.HBar import get_ccs_intermediates_opt as build_intermediates
 from ccpy.utilities.updates import cc_loops2
 
 
@@ -16,7 +16,7 @@ def update_t(T, dT, H, shift, flag_RHF):
         T, dT = update_t1b(T, dT, H, shift)
     
     # CCS intermediates
-    hbar = get_ccs_intermediates(T, H)
+    hbar = build_intermediates(T, H)
 
     # update T2
     T, dT = update_t2a(T, dT, hbar, H, shift)
@@ -72,8 +72,7 @@ def update_t1a(T, dT, H, shift):
     h2A_vovv = H.aa.vovv - np.einsum('mnfe,an->amef', H.aa.oovv, T.a, optimize=True)
     h2B_vovv = H.ab.vovv - np.einsum('nmef,an->amef', H.ab.oovv, T.a, optimize=True)
 
-    dT.a = H.a.vo.copy()
-    dT.a -= np.einsum('mi,am->ai', h1A_oo, T.a, optimize=True)
+    dT.a = -np.einsum('mi,am->ai', h1A_oo, T.a, optimize=True)
     dT.a += np.einsum('ae,ei->ai', chi1A_vv, T.a, optimize=True)
     dT.a += np.einsum('anif,fn->ai', H.aa.voov, T.a, optimize=True)
     dT.a += np.einsum('anif,fn->ai', H.ab.voov, T.b, optimize=True)
@@ -86,7 +85,7 @@ def update_t1a(T, dT, H, shift):
 
     #T, update_t1a_loop(T, X1A, fA_oo, fA_vv, shift)
     T.a, dT.a = cc_loops2.cc_loops2.update_t1a(T.a,
-                                               dT.a,
+                                               dT.a + H.a.vo,
                                                H.a.oo,
                                                H.a.vv,
                                                shift)
@@ -137,8 +136,7 @@ def update_t1b(T, dT, H, shift):
     h2C_vovv = H.bb.vovv - np.einsum('mnfe,an->amef', H.bb.oovv, T.b, optimize=True)
     h2B_ovvv = H.ab.ovvv - np.einsum('mnfe,an->mafe', H.ab.oovv, T.b, optimize=True)
 
-    dT.b = H.b.vo.copy()
-    dT.b -= np.einsum('mi,am->ai', h1B_oo, T.b, optimize=True)
+    dT.b = -np.einsum('mi,am->ai', h1B_oo, T.b, optimize=True)
     dT.b += np.einsum('ae,ei->ai', chi1B_vv, T.b, optimize=True)
     dT.b += np.einsum('anif,fn->ai', H.bb.voov, T.b, optimize=True)
     dT.b += np.einsum('nafi,fn->ai', H.ab.ovvo, T.a, optimize=True)
@@ -150,7 +148,7 @@ def update_t1b(T, dT, H, shift):
     dT.b += np.einsum('nafe,feni->ai', h2B_ovvv, T.ab, optimize=True)
     
     T.b, dT.b = cc_loops2.cc_loops2.update_t1b(T.b,
-                                               dT.b,
+                                               dT.b + H.b.vo,
                                                H.b.oo,
                                                H.b.vv,
                                                shift)
@@ -191,8 +189,7 @@ def update_t2a(T, dT, H, H0, shift):
 
     I2B_voov = H.ab.voov + 0.5*np.einsum('mnef,afin->amie', H.bb.oovv, T.ab, optimize=True)
 
-    dT.aa = 0.25*H0.aa.vvoo
-    dT.aa -= 0.5*np.einsum('amij,bm->abij', H.aa.vooo, T.a, optimize=True)
+    dT.aa = -0.5*np.einsum('amij,bm->abij', H.aa.vooo, T.a, optimize=True)
     dT.aa += 0.5*np.einsum('abie,ej->abij', H.aa.vvov, T.a, optimize=True)
     dT.aa += 0.5*np.einsum('ae,ebij->abij', I1A_vv, T.aa, optimize=True)
     dT.aa -= 0.5*np.einsum('mi,abmj->abij',I1A_oo, T.aa, optimize=True)
@@ -202,7 +199,7 @@ def update_t2a(T, dT, H, H0, shift):
     dT.aa += 0.125*np.einsum('mnij,abmn->abij', I2A_oooo, T.aa, optimize=True)
 
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(T.aa,
-                                                 dT.aa,
+                                                 dT.aa + 0.25*H0.aa.vvoo,
                                                  H0.a.oo,
                                                  H0.a.vv,
                                                  shift)
@@ -252,8 +249,7 @@ def update_t2b(T, dT, H, H0, shift):
 
     I2B_vovo = H.ab.vovo - np.einsum('mnef,afmj->anej', H.ab.oovv, T.ab, optimize=True)
 
-    dT.ab = H.ab.vvoo.copy()
-    dT.ab -= np.einsum('mbij,am->abij', H.ab.ovoo, T.a, optimize=True)
+    dT.ab = -np.einsum('mbij,am->abij', H.ab.ovoo, T.a, optimize=True)
     dT.ab -= np.einsum('amij,bm->abij', H.ab.vooo, T.b, optimize=True)
     dT.ab += np.einsum('abej,ei->abij', H.ab.vvvo, T.a, optimize=True)
     dT.ab += np.einsum('abie,ej->abij', H.ab.vvov, T.b, optimize=True)
@@ -271,7 +267,7 @@ def update_t2b(T, dT, H, H0, shift):
     dT.ab += np.einsum('abef,efij->abij', H.ab.vvvv, T.ab, optimize=True)
 
     T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(T.ab,
-                                                 dT.ab,
+                                                 dT.ab + H0.ab.vvoo,
                                                  H0.a.oo, H0.a.vv,
                                                  H0.b.oo, H0.b.vv,
                                                  shift)
@@ -312,9 +308,8 @@ def update_t2c(T, dT, H, H0, shift):
 
     I2C_voov = H.bb.voov + 0.5*np.einsum('mnef,afin->amie', H.bb.oovv, T.bb, optimize=True)
 
-    dT.bb = 0.25*H.bb.vvoo
-    dT.bb -= 0.5*np.einsum('bmji,am->abij', H.bb.vooo, T.b, optimize=True)
-    dT.bb += 0.5*np.einsum('baje,ei->abij', H.bb.vvov, T.b, optimize=True)
+    dT.bb = -0.5*np.einsum('amij,bm->abij', H.bb.vooo, T.b, optimize=True)
+    dT.bb += 0.5*np.einsum('abie,ej->abij', H.bb.vvov, T.b, optimize=True)
     dT.bb += 0.5*np.einsum('ae,ebij->abij', I1B_vv, T.bb, optimize=True)
     dT.bb -= 0.5*np.einsum('mi,abmj->abij', I1B_oo, T.bb, optimize=True)
     dT.bb += np.einsum('amie,ebmj->abij', I2C_voov, T.bb, optimize=True)
@@ -323,7 +318,7 @@ def update_t2c(T, dT, H, H0, shift):
     dT.bb += 0.125*np.einsum('mnij,abmn->abij', I2C_oooo, T.bb, optimize=True)
 
     T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(T.bb,
-                                                 dT.bb,
+                                                 dT.bb + 0.25*H0.bb.vvoo,
                                                  H0.b.oo,
                                                  H0.b.vv,
                                                  shift)
