@@ -1,11 +1,11 @@
 """Module with functions that perform the CC with singles and 
 doubles (CCSD) calculation for a molecular system."""
 import numpy as np
-from ccpy.hbar.HBar import get_ccs_intermediates_opt as build_intermediates
+from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt as build_intermediates
 from ccpy.utilities.updates import cc_loops2
 
 
-def update_t(T, dT, H, shift, flag_RHF):
+def update(T, dT, H, shift, flag_RHF):
 
     # update T1                        
     T, dT = update_t1a(T, dT, H, shift)

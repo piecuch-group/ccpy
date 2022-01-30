@@ -26,8 +26,6 @@ if __name__ == '__main__':
     nfrozen = 2
     system, H = loadFromPyscfMolecular(mf, nfrozen, dump_integrals=False)
 
-    print(system)
-
     calculation = Calculation('ccsd')
     T, cc_energy = calc_driver_main(calculation, system, H)
 

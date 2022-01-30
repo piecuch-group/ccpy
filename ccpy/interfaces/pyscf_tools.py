@@ -31,7 +31,9 @@ def loadFromPyscfMolecular(meanfield, nfrozen, normal_ordered=True, dump_integra
                point_group = molecule.symmetry,
                orbital_symmetries = [molecule.irrep_name[x] for x in meanfield.orbsym],
                charge = molecule.charge,
-               nuclear_repulsion = nuclear_repulsion)
+               nuclear_repulsion = nuclear_repulsion,
+               mo_energies = meanfield.mo_energy,
+               mo_occupation = meanfield.mo_occ)
 
     kinetic_aoints = molecule.intor_symmetric('int1e_kin')
     nuclear_aoints = molecule.intor_symmetric('int1e_nuc')
