@@ -107,3 +107,7 @@ ENV/
 
 # pycharm
 .idea
+
+# numpy save files
+.npy
+.npz
