@@ -298,8 +298,8 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
     energy_old = 0.0
 
     t_start = time.time()
-    print('  Iter        Residuum        deltaE          Ecorr')
-    print(' ======================================================')
+    print('   Iter       Residuum        deltaE          Ecorr')
+    print('  ======================================================')
     for niter in range(calculation.maximum_iterations):
         # get iteration start time
         t1 = time.time()
@@ -320,7 +320,7 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
 
             t_end = time.time()
             minutes, seconds = divmod(t_end - t_start, 60)
-            print(' CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)'.format(minutes, seconds))
+            print('   CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)'.format(minutes, seconds))
 
             break
 
@@ -330,7 +330,7 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
         # Do DIIS extrapolation
         if niter % calculation.diis_size == 0 and niter > 1:
             ndiis_cycle += 1
-            print(' DIIS Cycle - {}'.format(ndiis_cycle))
+            print('   DIIS Cycle - {}'.format(ndiis_cycle))
             T.unflatten(diis_engine.extrapolate())
 
         # Update old energy
