@@ -296,6 +296,7 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
     ndiis_cycle = 0
     energy = 0.0
     energy_old = 0.0
+    is_converged = False
 
     t_start = time.time()
     print('   Iter       Residuum        deltaE          Ecorr')
@@ -305,7 +306,7 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
         t1 = time.time()
       
         # Update the T vector
-        T, dT = update_t(T, dT, H, calculation.level_shift, calculation.RHF_symmetry)
+        T, dT = update_t(T, dT, H, calculation.energy_shift, calculation.RHF_symmetry)
 
         # CC correlation energy
         energy = calc_cc_energy(T, H)
@@ -321,7 +322,7 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
             t_end = time.time()
             minutes, seconds = divmod(t_end - t_start, 60)
             print('   CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)'.format(minutes, seconds))
-
+            is_converged = True
             break
 
         # Save T and dT vectors to disk for DIIS
@@ -346,5 +347,5 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
     else:
         print('CC calculation did not converge.')
 
-    return T, energy
+    return T, energy, is_converged
 

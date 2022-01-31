@@ -1,3 +1,5 @@
+from ccpy.utilities.printing import SystemPrinter
+
 class System:
 
     """Class that holds information about the molecular or periodic system."""
@@ -43,8 +45,9 @@ class System:
         self.mo_occupation = mo_occupation
 
     def __repr__(self):
-        for key,value in vars(self).items():
-            print('     ',key,'->',value)
+        SystemPrinter(self).header()
+        # for key,value in vars(self).items():
+        #     print('     ',key,'->',value)
         return ''
 
 if __name__ == "__main__":

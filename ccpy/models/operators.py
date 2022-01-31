@@ -10,6 +10,15 @@ class Operator(BaseModel):
     spin_type: int
     array: Any
 
+# class Operator:
+#
+#     def __init__(self, name, spin_type, array):
+#         self.name = name
+#         self.spin_type = spin_type
+#         self.array = array
+
+
+
 class ClusterOperator:
 
     def __init__(self, system, order, data_type=np.float64):

@@ -1,11 +1,23 @@
 import datetime
 from art import tprint
 
+ccpy_title =\
+"""
+   _____    _____     __ __     __  __  
+  /\ __/\  /\ __/\  /_/\__/\  /\  /\  /\
+  ) )__\/  ) )__\/  ) ) ) ) ) \ \ \/ / /
+  / / /    / / /    /_/ /_/ /   \ \__/ / 
+  \ \ \_   \ \ \_   \ \ \_\/     \__/ /  
+   ) )__/\  ) )__/\  )_) )       / / /   
+   \/___\/  \/___\/  \_\/        \/_/
+"""
+
 whitespace = '  '
 
 def ccpy_header():
     # twisted, sub-zero, swampland, starwars
     tprint('   ccpy', 'twisted')
+    #print(whitespace, ccpy_title)
     print(whitespace,'Authors:')
     print(whitespace,' Karthik Gururangan (gururang@msu.edu)')
     print(whitespace,' J. Emiliano Deustua (edeustua@caltech.edu)')
@@ -56,7 +68,7 @@ class CCPrinter:
         print(whitespace,'Calculation type = ',self.calculation.calculation_type.upper())
         print(whitespace,'Maximum iterations =',self.calculation.maximum_iterations)
         print(whitespace,'Convergence tolerance =',self.calculation.convergence_tolerance)
-        print(whitespace,'Energy shift =',self.calculation.level_shift)
+        print(whitespace,'Energy shift =',self.calculation.energy_shift)
         print(whitespace,'DIIS size = ',self.calculation.diis_size)
         print(whitespace,'RHF symmetry =',self.calculation.RHF_symmetry)
         print(whitespace,'--------------------------------------------------')
