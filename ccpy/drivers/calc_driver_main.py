@@ -6,7 +6,7 @@ from ccpy.models.operators import ClusterOperator
 
 from ccpy.utilities.printing import *
 
-def calc_driver_main(calculation, system, hamiltonian, T_init=None):
+def calc_driver_main(calculation, system, hamiltonian, T=None):
     """Performs the calculation specified by the user in the input."""
 
     ccpy_header()
@@ -21,14 +21,15 @@ def calc_driver_main(calculation, system, hamiltonian, T_init=None):
     cc_printer.header()
     # CCSD Calculation
     order = 2
-    if T_init is None:
+    if T is None:
         T = ClusterOperator(system, order)
-        dT = ClusterOperator(system, order)
+
+    dT = ClusterOperator(system, order)
 
     from ccpy.cc.ccsd import update
-    T, cc_energy = solve_cc_jacobi(update, T, dT, hamiltonian, calculation, diis_out_of_core=True)
+    T, cc_energy, is_converged = solve_cc_jacobi(update, T, dT, hamiltonian, calculation, diis_out_of_core=True)
     total_energy = system.reference_energy + cc_energy
 
     cc_printer.calculation_summary(system.reference_energy, cc_energy)
 
-    return T, total_energy
+    return T, total_energy, is_converged
