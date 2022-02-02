@@ -2,11 +2,11 @@ import numpy as np
 
 if __name__ == '__main__':
 
-    from ccpy.interfaces.pyscf_tools import loadFromPyscfMolecular
+    from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
     from pyscf import gto, scf, cc
 
     from ccpy.models.calculation import Calculation
-    from ccpy.drivers.calc_driver_main import calc_driver_main
+    from ccpy.drivers.cc import driver
 
     # Testing from PySCF
     mol = gto.Mole()
@@ -30,10 +30,10 @@ if __name__ == '__main__':
     mf.kernel()
 
     nfrozen = 4
-    system, H = loadFromPyscfMolecular(mf, nfrozen, dump_integrals=False)
+    system, H = load_pyscf_integrals(mf, nfrozen, dump_integrals=False)
 
     calculation = Calculation('ccsd')
-    T, cc_energy = calc_driver_main(calculation, system, H)
+    T, cc_energy = driver(calculation, system, H)
 
     pyscf_cc = cc.CCSD(mf, frozen=nfrozen)
     pyscf_cc.run()

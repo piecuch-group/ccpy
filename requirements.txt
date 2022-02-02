@@ -1,0 +1,5 @@
+numpy
+scipy
+pydantic
+setuptools
+art

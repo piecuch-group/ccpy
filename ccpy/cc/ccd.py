@@ -6,6 +6,7 @@ from cc_energy import calc_cc_energy
 import time
 import cc_loops
 
+
 def ccd(sys,ints,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=False):
     """Perform the ground-state CCD calculation.
 

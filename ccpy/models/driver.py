@@ -2,6 +2,7 @@ from typing import Callable
 from pydantic import BaseModel
 
 from ccpy.models.operators import ClusterOperator
+from ccpy.models import System
 
 
 class CCDriver(BaseModel):

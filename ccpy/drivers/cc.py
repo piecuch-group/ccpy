@@ -6,7 +6,8 @@ from ccpy.models.operators import ClusterOperator
 
 from ccpy.utilities.printing import *
 
-def calc_driver_main(calculation, system, hamiltonian, T=None):
+
+def driver(calculation, system, hamiltonian, T=None):
     """Performs the calculation specified by the user in the input."""
 
     ccpy_header()

@@ -8,8 +8,6 @@ import time
 import cc_loops
 from utilities import print_memory_usage, clean_up
 
-#print(cc_loops.cc_loops.__doc__)
-
 def ccsdt(sys,ints,work_dir,maxit=100,tol=1e-08,diis_size=6,shift=0.0,flag_RHF=False):
     """Perform the ground-state CCSDT calculation.
 
