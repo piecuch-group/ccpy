@@ -1,7 +1,7 @@
-from typing import Any, List, Dict
-from pydantic import BaseModel
+from typing import Any
 
 import numpy as np
+from pydantic import BaseModel
 
 
 class Operator(BaseModel):
@@ -9,6 +9,7 @@ class Operator(BaseModel):
     name: str
     spin_type: int
     array: Any
+
 
 # class Operator:
 #
@@ -18,9 +19,7 @@ class Operator(BaseModel):
 #         self.array = array
 
 
-
 class ClusterOperator:
-
     def __init__(self, system, order, data_type=np.float64):
         self.order = order
         self.spin_cases = []
@@ -37,7 +36,9 @@ class ClusterOperator:
         self.ndim = ndim
 
     def flatten(self):
-        return np.hstack([self.__getattribute__(key).flatten() for key in self.spin_cases])
+        return np.hstack(
+            [self.__getattribute__(key).flatten() for key in self.spin_cases]
+        )
 
     def unflatten(self, T_flat):
         prev = 0
@@ -49,7 +50,8 @@ class ClusterOperator:
 
 # TODO: move this to a classmethod or something
 def get_operator_name(i, j):
-    return "a" * (i - j)  + "b" * j
+    return "a" * (i - j) + "b" * j
+
 
 def get_operator_dimension(i, j, system):
 
@@ -63,33 +65,37 @@ def get_operator_dimension(i, j, system):
 
     return ket + bra
 
+
 def build_cluster_expansion(system, order):
     operators = dict()
 
-    for i in range(1, order+1):
-        for j in range(i+1):
+    for i in range(1, order + 1):
+        for j in range(i + 1):
             name = get_operator_name(i, j)
             dimensions = get_operator_dimension(i, j, system)
-            operators[name] = Operator(name=name, spin_type=j, array=np.zeros(dimensions))
+            operators[name] = Operator(
+                name=name, spin_type=j, array=np.zeros(dimensions)
+            )
 
     return operators
 
 
 if __name__ == "__main__":
 
-    from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
     from pyscf import gto, scf
+
+    from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 
     mol = gto.Mole()
     mol.build(
-        atom='''F 0.0 0.0 -2.66816
-                F 0.0 0.0  2.66816''',
-        basis='ccpvdz',
+        atom="""F 0.0 0.0 -2.66816
+                F 0.0 0.0  2.66816""",
+        basis="ccpvdz",
         charge=1,
         spin=1,
-        symmetry='D2H',
+        symmetry="D2H",
         cart=True,
-        unit='Bohr',
+        unit="Bohr",
     )
     mf = scf.ROHF(mol)
     mf.kernel()
@@ -101,15 +107,9 @@ if __name__ == "__main__":
 
     order = 4
     T = ClusterOperator(system, order)
-    print('Cluster operator order',order)
-    print('---------------------------')
+    print("Cluster operator order", order)
+    print("---------------------------")
     for key in T.spin_cases:
-        print(key,'->',T.__getattribute__(key).shape)
-    print('Flattened dimension = ',T.ndim)
+        print(key, "->", T.__getattribute__(key).shape)
+    print("Flattened dimension = ", T.ndim)
     print(T.flatten().shape)
-
-
-
-
-
-

@@ -1,56 +1,78 @@
 import numpy as np
 
-def loadFromGamess(gamess_logfile, onebody_file, twobody_file, nfrozen, normal_ordered=True, data_type=np.float64):
+
+def loadFromGamess(
+    gamess_logfile,
+    onebody_file,
+    twobody_file,
+    nfrozen,
+    normal_ordered=True,
+    data_type=np.float64,
+):
 
     from cclib.io import ccread
-    from ccpy.models.system import System
-    from ccpy.models.integrals import getHamiltonian
+
     from ccpy.drivers.hf_energy import calc_hf_energy
+    from ccpy.models.integrals import getHamiltonian
+    from ccpy.models.system import System
 
     data = ccread(gamess_logfile)
 
-    system = System(data.nelectrons,
-               data.nmo,
-               data.mult,
-               nfrozen,
-               point_group = getGamessPointGroup(gamess_logfile),
-               orbital_symmetries = data.mosyms[0],
-               charge = data.charge,
-               nuclear_repulsion = getGamessNuclearRepulsion(gamess_logfile))
+    system = System(
+        data.nelectrons,
+        data.nmo,
+        data.mult,
+        nfrozen,
+        point_group=getGamessPointGroup(gamess_logfile),
+        orbital_symmetries=data.mosyms[0],
+        charge=data.charge,
+        nuclear_repulsion=getGamessNuclearRepulsion(gamess_logfile),
+    )
 
     e1int = loadOnebodyIntegralFile(onebody_file, system, data_type)
     nuclear_repulsion, e2int = loadTwobodyIntegralFile(twobody_file, system, data_type)
 
-    assert (np.allclose(nuclear_repulsion, system.nuclear_repulsion, atol=1.0e-06, rtol=0.0))
+    assert np.allclose(
+        nuclear_repulsion, system.nuclear_repulsion, atol=1.0e-06, rtol=0.0
+    )
     system.nuclear_repulsion = nuclear_repulsion
 
     # Check that the HF energy calculated using the integrals matches the GAMESS result
     hf_energy = calc_hf_energy(e1int, e2int, system)
     hf_energy += system.nuclear_repulsion
-    assert (np.allclose(hf_energy, getGamessSCFEnergy(gamess_logfile), atol=1.0e-06, rtol=0.0))
+    assert np.allclose(
+        hf_energy, getGamessSCFEnergy(gamess_logfile), atol=1.0e-06, rtol=0.0
+    )
     system.reference_energy = hf_energy
 
     return system, getHamiltonian(e1int, e2int, system, normal_ordered)
 
+
 def getGamessSCFEnergy(gamess_logfile):
 
-    with open(gamess_logfile, 'r') as f:
+    with open(gamess_logfile, "r") as f:
         for line in f.readlines():
-            if all( s in line.split() for s in ['FINAL', 'ROHF', 'ENERGY', 'IS']) or\
-                    all( s in line.split() for s in ['FINAL', 'RHF', 'ENERGY', 'IS']):
+            if all(s in line.split() for s in ["FINAL", "ROHF", "ENERGY", "IS"]) or all(
+                s in line.split() for s in ["FINAL", "RHF", "ENERGY", "IS"]
+            ):
                 print(line.split())
                 hf_energy = float(line.split()[4])
                 break
     return hf_energy
 
+
 def getGamessNuclearRepulsion(gamess_logfile):
 
-    with open(gamess_logfile, 'r') as f:
+    with open(gamess_logfile, "r") as f:
         for line in f.readlines():
-            if all( s in line.split() for s in ['THE', 'NUCLEAR', 'REPULSION', 'ENERGY', 'IS']):
+            if all(
+                s in line.split()
+                for s in ["THE", "NUCLEAR", "REPULSION", "ENERGY", "IS"]
+            ):
                 e_nuclear = float(line.split()[-1])
                 break
     return e_nuclear
+
 
 def getGamessPointGroup(gamess_logfile):
     """Dumb way of getting the point group from GAMESS log files.
@@ -61,9 +83,9 @@ def getGamessPointGroup(gamess_logfile):
     Returns:
     ----------
     point_group : str -> Molecular point group"""
-    point_group = 'C1'
+    point_group = "C1"
     flag_found = False
-    with open(gamess_logfile, 'r') as f:
+    with open(gamess_logfile, "r") as f:
         for line in f.readlines():
             if flag_found:
                 order = line.split()[-1]
@@ -74,7 +96,7 @@ def getGamessPointGroup(gamess_logfile):
                 if len(point_group) == 1:
                     point_group = point_group[0] + order
                 break
-            if 'THE POINT GROUP OF THE MOLECULE IS' in line:
+            if "THE POINT GROUP OF THE MOLECULE IS" in line:
                 point_group = line.split()[-1]
                 flag_found = True
     return point_group
@@ -118,7 +140,7 @@ def loadOnebodyIntegralFile(onebody_file, system, data_type):
                     e1int[j, i] = val
                     ct += 1
     except IOError:
-        print('Error: {} does not appear to exist.'.format(onebody_file))
+        print("Error: {} does not appear to exist.".format(onebody_file))
     return e1int
 
 
@@ -161,7 +183,7 @@ def loadTwobodyIntegralFile(twobody_file, system, data_type):
                     e2int[indices] = val
         # convert e2int from chemist notation (ia|jb) to
         # physicist notation <ij|ab>
-        e2int = np.einsum('iajb->ijab', e2int)
+        e2int = np.einsum("iajb->ijab", e2int)
     except IOError:
-        print('Error: {} does not appear to exist.'.format(twobody_file))
+        print("Error: {} does not appear to exist.".format(twobody_file))
     return e_nn, e2int
