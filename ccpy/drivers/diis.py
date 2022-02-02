@@ -51,6 +51,7 @@ class DIIS:
         rhs[-1] = -1.0
 
         # TODO: replace with numpy.linalg.solve
+        # TODO: replace with scipy.linalg.lu
         coeff = solve_gauss(B, rhs)
         x_xtrap = np.zeros(self.ndim)
         for i in range(self.diis_size):

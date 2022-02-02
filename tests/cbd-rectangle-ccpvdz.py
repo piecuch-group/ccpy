@@ -11,20 +11,20 @@ if __name__ == '__main__':
     # Testing from PySCF
     mol = gto.Mole()
     mol.build(
-        atom = '''C   0.68350000  0.78650000  0.00000000
-                  C  -0.68350000  0.78650000  0.00000000
-                  C   0.68350000 -0.78650000  0.00000000
-                  C  -0.68350000 -0.78650000  0.00000000
-                  H   1.45771544  1.55801763  0.00000000
-                  H   1.45771544 -1.55801763  0.00000000
-                  H  -1.45771544  1.55801763  0.00000000
-                  H  -1.45771544 -1.55801763  0.00000000''',
-        basis = 'ccpvdz',
-        charge = 0,
-        spin = 0,
-        symmetry = 'D2H',
-        cart = False,
-        unit = 'Angstrom',
+        atom="""C   0.68350000  0.78650000  0.00000000
+                C  -0.68350000  0.78650000  0.00000000
+                C   0.68350000 -0.78650000  0.00000000
+                C  -0.68350000 -0.78650000  0.00000000
+                H   1.45771544  1.55801763  0.00000000
+                H   1.45771544 -1.55801763  0.00000000
+                H  -1.45771544  1.55801763  0.00000000
+                H  -1.45771544 -1.55801763  0.00000000""",
+        basis="ccpvdz",
+        charge=0,
+        spin=0,
+        symmetry="D2H",
+        cart=False,
+        unit="Angstrom",
     )
     mf = scf.ROHF(mol)
     mf.kernel()
@@ -38,4 +38,4 @@ if __name__ == '__main__':
     pyscf_cc = cc.CCSD(mf, frozen=nfrozen)
     pyscf_cc.run()
 
-    assert( np.allclose(pyscf_cc.e_tot, cc_energy, atol=1.0e-06, rtol=1.0e-06) )
+    assert np.allclose(pyscf_cc.e_tot, cc_energy, atol=1.0e-06, rtol=1.0e-06)
