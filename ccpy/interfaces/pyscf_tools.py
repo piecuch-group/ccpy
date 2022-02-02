@@ -52,10 +52,9 @@ def load_pyscf_integrals(
     )
 
     # Check that the HF energy calculated using the integrals matches the PySCF result
-    hf_energy = calc_hf_energy(e1int, e2int, system, notation="physics")
+    hf_energy = get_hf_energy(e1int, e2int, system, notation="physics")
     hf_energy += nuclear_repulsion
 
-    print(hf_energy, meanfield.energy_tot())
     if not np.allclose(hf_energy, meanfield.energy_tot(), atol=1.0e-06, rtol=0.0):
         raise RuntimeError("Integrals don't match mean field energy")
 
@@ -264,7 +263,7 @@ def get_sc_mo_integrals(supcell, kmf, G, notation="chemist"):
     if notation != "chemist":
         V = np.transpose(V, (0, 2, 1, 3))
 
-    e_hf = calc_hf_energy(Z, V, supcell.nelectron, notation)
+    e_hf = get_hf_energy(Z, V, supcell.nelectron, notation)
     e_calc = e_hf + e_nuc + e_ewald
     print("")
     print("PBC MO Integral Conversion Summary:")
@@ -294,14 +293,14 @@ def get_mo_integrals(mol, mf, notation="chemist"):
     if notation != "chemist":  # physics notation
         V = np.transpose(V, (0, 2, 1, 3))
 
-    e_calc = calc_hf_energy(Z, V, mol.nelectron, notation)
+    e_calc = get_hf_energy(Z, V, mol.nelectron, notation)
     e_calc += e_nuc
     assert np.allclose(e_calc, mf.energy_tot(), atol=1.0e-06, rtol=0.0)
 
     return Z, V, e_nuc
 
 
-def calc_hf_energy(e1int, e2int, system, notation="chemist"):
+def get_hf_energy(e1int, e2int, system, notation="chemist"):
 
     oa = slice(0, system.nfrozen + system.noccupied_alpha)
     ob = slice(0, system.nfrozen + system.noccupied_beta)

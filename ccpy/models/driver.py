@@ -6,7 +6,7 @@ from ccpy.models import System
 from ccpy.models.operators import ClusterOperator
 
 
-class CCDriver(BaseModel):
+class CCMethod(BaseModel):
 
     method_name: str  # should correlate to order for ClusterOperator
     update_function: Callable

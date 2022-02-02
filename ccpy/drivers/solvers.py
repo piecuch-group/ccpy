@@ -311,7 +311,7 @@ def davidson(HR, update_R, B0, E0, maxit, max_dim, tol):
 def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
     import time
 
-    from ccpy.drivers.cc_energy import calc_cc_energy
+    from ccpy.drivers.cc_energy import get_cc_energy
     from ccpy.drivers.diis import DIIS
 
     # instantiate the DIIS accelerator object
@@ -333,7 +333,7 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
         T, dT = update_t(T, dT, H, calculation.energy_shift, calculation.RHF_symmetry)
 
         # CC correlation energy
-        energy = calc_cc_energy(T, H)
+        energy = get_cc_energy(T, H)
 
         # change in energy
         delta_energy = energy - energy_old
