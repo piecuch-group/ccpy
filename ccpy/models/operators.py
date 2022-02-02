@@ -29,7 +29,7 @@ class ClusterOperator:
             for j in range(i + 1):
                 name = get_operator_name(i, j)
                 dimensions = get_operator_dimension(i, j, system)
-                self.__dict__[name] = np.zeros(dimensions, dtype=data_type)
+                setattr(self, name, np.zeros(dimensions, dtype=data_type))
                 self.spin_cases.append(name)
                 self.dimensions.append(dimensions)
                 ndim += np.prod(dimensions)
@@ -37,14 +37,14 @@ class ClusterOperator:
 
     def flatten(self):
         return np.hstack(
-            [self.__getattribute__(key).flatten() for key in self.spin_cases]
+            [getattr(self, key).flatten() for key in self.spin_cases]
         )
 
     def unflatten(self, T_flat):
         prev = 0
         for dims, name in zip(self.dimensions, self.spin_cases):
             ndim = np.prod(dims)
-            self.__dict__[name] = np.reshape(T_flat[prev : ndim + prev], dims)
+            setattr(self, name, np.reshape(T_flat[prev : ndim + prev], dims))
             prev += ndim
 
 
@@ -110,6 +110,6 @@ if __name__ == "__main__":
     print("Cluster operator order", order)
     print("---------------------------")
     for key in T.spin_cases:
-        print(key, "->", T.__getattribute__(key).shape)
+        print(key, "->", getattr(T, key).shape)
     print("Flattened dimension = ", T.ndim)
     print(T.flatten().shape)
