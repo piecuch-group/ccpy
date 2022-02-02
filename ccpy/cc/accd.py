@@ -1,5 +1,5 @@
 import numpy as np
-from solvers import diis
+from ccpy.drivers.solvers import diis
 from cc_energy import calc_cc_energy
 import time
 import cc_loops

@@ -2,7 +2,7 @@ import numpy as np
 
 if __name__ == '__main__':
 
-    from ccpy.interfaces.pyscf_tools import loadFromPyscfMolecular
+    from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
     from pyscf import gto, scf, cc
 
     from ccpy.models.calculation import Calculation
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     mf.kernel()
 
     nfrozen = 2
-    system, H = loadFromPyscfMolecular(mf, nfrozen, dump_integrals=False)
+    system, H = load_pyscf_integrals(mf, nfrozen, dump_integrals=False)
 
     mycc = CCDriver('ccsd'
     

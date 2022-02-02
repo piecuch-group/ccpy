@@ -77,7 +77,7 @@ def build_cluster_expansion(system, order):
 
 if __name__ == "__main__":
 
-    from ccpy.interfaces.pyscf_tools import loadFromPyscfMolecular
+    from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
     from pyscf import gto, scf
 
     mol = gto.Mole()
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     mf.kernel()
 
     nfrozen = 2
-    system, H = loadFromPyscfMolecular(mf, nfrozen)
+    system, H = load_pyscf_integrals(mf, nfrozen)
 
     print(system)
 

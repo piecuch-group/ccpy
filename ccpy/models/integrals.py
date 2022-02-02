@@ -135,7 +135,7 @@ def build_f(e1int, v, system):
 
 if __name__ == '__main__':
 
-    from ccpy.interfaces.pyscf_tools import loadFromPyscfMolecular
+    from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
     from ccpy.interfaces.gamess_tools import loadFromGamess
     from pyscf import gto, scf
 
@@ -155,7 +155,7 @@ if __name__ == '__main__':
     mf.kernel()
 
     nfrozen = 0
-    system, H = loadFromPyscfMolecular(mf, nfrozen, dumpIntegrals=False)
+    system, H = load_pyscf_integrals(mf, nfrozen, dumpIntegrals=False)
     print(system)
 
     # Testing HF energy using F and V, only works if nfrozen = 0

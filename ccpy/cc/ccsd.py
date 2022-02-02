@@ -1,6 +1,7 @@
 """Module with functions that perform the CC with singles and 
 doubles (CCSD) calculation for a molecular system."""
 import numpy as np
+
 from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt as build_intermediates
 from ccpy.utilities.updates import cc_loops2
 
@@ -296,7 +297,6 @@ def update_t2c(T, dT, H, H0, shift):
     # intermediates
     I1B_oo = H.b.oo + 0.5*np.einsum('mnef,efin->mi', H.bb.oovv, T.bb, optimize=True)\
                     + np.einsum('nmfe,feni->mi', H.ab.oovv, T.ab, optimize=True)
-
 
     I1B_vv = H.b.vv - 0.5*np.einsum('mnef,afmn->ae', H.bb.oovv, T.bb, optimize=True)\
                     - np.einsum('nmfe,fanm->ae', H.ab.oovv, T.ab, optimize=True)

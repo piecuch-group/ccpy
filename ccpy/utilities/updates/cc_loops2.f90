@@ -1,7 +1,7 @@
 module cc_loops2
 
   implicit none
-  
+
   contains
 
       subroutine update_t1a(t1a,resid,X1A,fA_oo,fA_vv,shift,noa,nua)

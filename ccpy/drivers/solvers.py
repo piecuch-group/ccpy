@@ -2,6 +2,8 @@
 import numpy as np
 import time
 
+from ccpy.utilities.printing import (print_iteration_header, print_iteration)
+
 
 def davidson_out_of_core(HR,update_R,B0,E0,maxit,tol,flag_lowmem=True):
     """Diagonalize the similarity-transformed Hamiltonian HBar using the
@@ -284,6 +286,7 @@ def davidson(HR,update_R,B0,E0,maxit,max_dim,tol):
 
     return Rvec, omega, is_converged
 
+
 def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
     import time
     from ccpy.drivers.cc_energy import calc_cc_energy
@@ -299,8 +302,7 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
     is_converged = False
 
     t_start = time.time()
-    print('   Iter       Residuum        deltaE          Ecorr')
-    print('  ======================================================')
+    print_iteration_header()
     for niter in range(calculation.maximum_iterations):
         # get iteration start time
         t1 = time.time()
@@ -338,12 +340,9 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
         energy_old = energy
 
         elapsed_time = time.time()-t1
-        minutes, seconds = divmod(elapsed_time, 60)
-        print('   {}       {:.10f}   {:.10f}   {:.10f}   ({:0.2f}m {:0.2f}s)'.format(niter,
-                                                                                     residuum,
-                                                                                     delta_energy,
-                                                                                     energy,
-                                                                                     minutes,seconds))
+        print_iteration(
+            niter, residuum, delta_energy, energy, elapsed_time
+        )
     else:
         print('CC calculation did not converge.')
 

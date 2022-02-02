@@ -1,7 +1,7 @@
 """A Python framework for coupled-cluster computations of molecular systems"""
 
 # Add import here
-from .ccpy import *
+from . import *
 
 # Handle versioneer
 from ._version import get_versions

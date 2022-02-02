@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def calc_rdm_oo(cc_t,sys,mu,nu):
 
     noa = sys['Nocc_a']
@@ -40,12 +41,12 @@ def calc_rdm_oo(cc_t,sys,mu,nu):
     rdm1_ooa = np.zeros((noa,noa))
     rdm1_oob = np.zeros((nob,nob))
 
-    rdm1_ooa += -1.0*np.einsum('ei,ej->ij',l1a,t1a,optimize=True)\
-                -0.5*np.einsum('efin,efjn->ij',l2a,t2a,optimize=True)\
-                -np.einsum('efin,efjn->ij',l2b,t2b,optimize=True)\
-                -(1.0/12.0)*np.einsum('efgino,efgjno->ij',l3a,t3a,optimize=True)\
-                -0.5*np.einsum('efgino,efgjno->ij',l3b,t3b,optimize=True)\
-                -0.25*np.einsum('efgino,efgjno->ij',l3c,t3c,optimize=True)
+    rdm1_ooa += (-1.0*np.einsum('ei,ej->ij', l1a, t1a, optimize=True)
+                -0.5*np.einsum('efin,efjn->ij', l2a, t2a, optimize=True)
+                -np.einsum('efin,efjn->ij',l2b,t2b,optimize=True)
+                -(1.0/12.0)*np.einsum('efgino,efgjno->ij',l3a,t3a,optimize=True)
+                -0.5*np.einsum('efgino,efgjno->ij',l3b,t3b,optimize=True)
+                -0.25*np.einsum('efgino,efgjno->ij',l3c,t3c,optimize=True))
 
     rdm1_oob += -1.0*np.einsum('ei,ej->ij',l1b,t1b,optimize=True)\
                 -0.5*np.einsum('efin,efjn->ij',l2c,t2c,optimize=True)\
