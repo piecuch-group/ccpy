@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 
+# TODO: This is where I still need to think more about how we should proceed
 @dataclass
 class Calculation:
 

@@ -61,9 +61,11 @@ def t3a_diagram6():
                     print(sign_str+temp+'\\')
 
 def t3a_diagram7():
+    pass
     #
 
 def t3a_diagram8():
+    pass
     #
 
 def replacer(s, newstring, index, nofail=False):

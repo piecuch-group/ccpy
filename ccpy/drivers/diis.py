@@ -50,6 +50,7 @@ class DIIS:
         rhs = np.zeros(B_dim)
         rhs[-1] = -1.0
 
+        # TODO: replace with numpy.linalg.solve
         coeff = solve_gauss(B, rhs)
         x_xtrap = np.zeros(self.ndim)
         for i in range(self.diis_size):
@@ -58,6 +59,7 @@ class DIIS:
         return x_xtrap
 
 
+# TODO: Is this really needed? scipy/numpy does it better
 def solve_gauss(A, b):
     """DIIS helper function. Solves the linear system Ax=b using
     Gaussian elimination"""
@@ -73,4 +75,5 @@ def solve_gauss(A, b):
     while k >= 0:
         x[k] = (b[k] - np.dot(A[k, k + 1 :], x[k + 1 :])) / A[k, k]
         k = k - 1
+
     return x

@@ -1,7 +1,8 @@
 import numpy as np
 
 
-def cal
+#def cal:
+#pass
 
 def build_eomccsd_matrix(dets1A,dets1B,dets2A,dets2B,dets2C,H1A,H1B,H2A,H2B,H2C):
 
@@ -287,7 +288,7 @@ def build_eomccsd_matrix(dets1A,dets1B,dets2A,dets2B,dets2C,H1A,H1B,H2A,H2B,H2C)
                             +(i==k)*(j==l)*H2C['vvvv'][a,b,c,d]
     # Assemble full matrix
     h1a = np.concatenate( (H1A1A, H1A1B, H1A2A, H1A2B, np.zeros((n1a,n2c))), axis=1)
-    h1b = np.concatenate( (H1B1A, H1B1B, np.zeros((n1b,n2a)), H1B2B, H1B2C)), axis=1)
+    h1b = np.concatenate( (H1B1A, H1B1B, np.zeros((n1b, n2a)), H1B2B, H1B2C), axis=1)
     h2a = np.concatenate( (H2A1A, np.zeros((n2a,n1b)), H2A2A, H2A2B, np.zeros((n2a,n2c))), axis=1)
     h2b = np.concatenate( (H2B1A, H2B1B, H2B2A, H2B2B, H2B2C), axis=1)
     h2c = np.concatenate( (np.zeros((n2c,n1a)), H2C1B, np.zeros((n2c,n2a)), H2C2B, H2C2C), axis=1)

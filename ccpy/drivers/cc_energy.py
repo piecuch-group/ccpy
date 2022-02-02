@@ -2,7 +2,7 @@
 import numpy as np
 
 
-def calc_cc_energy(T, H0):
+def get_cc_energy(T, H0):
     """Calculate the CC correlation energy <0|(H_N e^T)_C|0>.
 
     Parameters
