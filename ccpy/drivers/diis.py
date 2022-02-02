@@ -1,7 +1,7 @@
 import numpy as np
 
-class DIIS:
 
+class DIIS:
     def __init__(self, T, diis_size, out_of_core):
 
         self.diis_size = diis_size
@@ -9,8 +9,12 @@ class DIIS:
         self.ndim = T.ndim
 
         if self.out_of_core:
-            self.T_list = np.memmap('t.npy', mode="w+", dtype=T.a.dtype, shape=(self.ndim, self.diis_size))
-            self.T_residuum_list = np.memmap('dt.npy', mode="w+", dtype=T.a.dtype, shape=(self.ndim, self.diis_size))
+            self.T_list = np.memmap(
+                "t.npy", mode="w+", dtype=T.a.dtype, shape=(self.ndim, self.diis_size)
+            )
+            self.T_residuum_list = np.memmap(
+                "dt.npy", mode="w+", dtype=T.a.dtype, shape=(self.ndim, self.diis_size)
+            )
             self.flush()
         else:
             self.T_list = np.zeros((self.ndim, diis_size))
@@ -34,8 +38,12 @@ class DIIS:
         nhalf = int(self.ndim / 2)
         for i in range(self.diis_size):
             for j in range(i, self.diis_size):
-                B[i, j] = np.dot(self.T_residuum_list[:nhalf, i], self.T_residuum_list[:nhalf, j])
-                B[i, j] += np.dot(self.T_residuum_list[nhalf:, i], self.T_residuum_list[nhalf:, j])
+                B[i, j] = np.dot(
+                    self.T_residuum_list[:nhalf, i], self.T_residuum_list[:nhalf, j]
+                )
+                B[i, j] += np.dot(
+                    self.T_residuum_list[nhalf:, i], self.T_residuum_list[nhalf:, j]
+                )
                 B[j, i] = B[i, j]
         B[-1, -1] = 0.0
 
@@ -49,19 +57,20 @@ class DIIS:
 
         return x_xtrap
 
+
 def solve_gauss(A, b):
     """DIIS helper function. Solves the linear system Ax=b using
     Gaussian elimination"""
-    n =  A.shape[0]
-    for i in range(n-1):
-        for j in range(i+1, n):
-            m = A[j,i]/A[i,i]
-            A[j,:] -= m*A[i,:]
-            b[j] -= m*b[i]
+    n = A.shape[0]
+    for i in range(n - 1):
+        for j in range(i + 1, n):
+            m = A[j, i] / A[i, i]
+            A[j, :] -= m * A[i, :]
+            b[j] -= m * b[i]
     x = np.zeros(n)
-    k = n-1
-    x[k] = b[k]/A[k,k]
+    k = n - 1
+    x[k] = b[k] / A[k, k]
     while k >= 0:
-        x[k] = (b[k] - np.dot(A[k,k+1:],x[k+1:]))/A[k,k]
-        k = k-1
+        x[k] = (b[k] - np.dot(A[k, k + 1 :], x[k + 1 :])) / A[k, k]
+        k = k - 1
     return x

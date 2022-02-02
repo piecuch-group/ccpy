@@ -1,5 +1,6 @@
-import numpy as np
 from itertools import combinations
+
+import numpy as np
 
 A_i1j1 = {'1' : 1.0, 'i1,j1' : -1.0}
 A_j1k1 = {'1' : 1.0, 'j1,k1' : -1.0}
