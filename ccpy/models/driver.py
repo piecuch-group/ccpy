@@ -4,6 +4,8 @@ from pydantic import BaseModel
 
 from ccpy.models import System
 from ccpy.models.operators import ClusterOperator
+from ccpy.models.system import System
+from ccpy.models.integrals import Integral
 
 
 class CCMethod(BaseModel):
@@ -11,7 +13,7 @@ class CCMethod(BaseModel):
     method_name: str  # should correlate to order for ClusterOperator
     update_function: Callable
     system: System
-    hamiltonian: H
+    hamiltonian: Integral
     max_iterations: int = 60
     energy_threshold: float = 1e-7
     residuum_threshold: float = 1e-7
@@ -24,7 +26,7 @@ class CCMethod(BaseModel):
     def is_converged(self):
         pass
 
-    def kernel(self, system, H, T=ClusterOperator()):
+    def kernel(self, system, H, T=ClusterOperator(self.system, self.order)):
         T, energy = solve_cc_jacobi(
             update_t, T, dT, H, calculation, diis_out_of_core=False
         )
