@@ -76,13 +76,10 @@ def calc_driver_main(inputs,sys,ints):
                         diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
 
     if calc_type == 'ccsd' or calc_type == 'CCSD':
-        from ccsd_module_opt import ccsd
+        from ccsd_module import ccsd
         cc_t, Eccsd = ccsd(sys,ints,\
                         shift=inputs['ccshift'],tol=inputs['tol'],maxit=inputs['maxit'],\
                         diis_size=inputs['diis_size'],flag_RHF=inputs['isRHF'])
-
-        assert(np.allclose(-198.331928923402,Eccsd))
-        print('Error in CCSD energy = {}'.format(-198.331928923402-Eccsd))
 
     if calc_type == 'eomccsd' or calc_type == 'EOMCCSD':
         from ccsd_module import ccsd

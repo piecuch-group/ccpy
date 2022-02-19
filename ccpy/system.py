@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+#from dataclasses import dataclass
 from symmetry_count import get_pg_irreps, sym_table
 
 # System dataclass
