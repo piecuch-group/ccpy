@@ -1,4 +1,5 @@
 def get_pg_irreps(pg):
+    pg = pg.upper()
     pg_irreps = {
         "C1": {"A": 0},
         "CS": {"A'": 0, "A''": 1},

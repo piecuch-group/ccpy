@@ -34,7 +34,7 @@ def load_pyscf_integrals(
         molecule.spin + 1,  # PySCF mol.spin returns 2S, not S
         nfrozen,
         point_group=molecule.symmetry,
-        orbital_symmetries=[molecule.irrep_name[x] for x in meanfield.orbsym],
+        orbital_symmetries=[molecule.irrep_name[x].upper() for x in meanfield.orbsym],
         charge=molecule.charge,
         nuclear_repulsion=nuclear_repulsion,
         mo_energies=meanfield.mo_energy,
