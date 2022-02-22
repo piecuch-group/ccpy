@@ -59,6 +59,7 @@ class SystemPrinter:
         )
         print(WHITESPACE, "  Charge =", self.system.charge)
         print(WHITESPACE, "  Point group =", self.system.point_group)
+        print(WHITESPACE, "  Symmetry of reference =", self.system.reference_symmetry)
         print(
             WHITESPACE, "  Spin multiplicity of reference =", self.system.multiplicity
         )
@@ -75,7 +76,7 @@ class SystemPrinter:
                 MO_FMT.format(
                     i + 1,
                     self.system.mo_energies[i],
-                    self.system.orbital_symmetries[i],
+                    self.system.orbital_symmetries_all[i],
                     self.system.mo_occupation[i],
                 )
             )
@@ -83,7 +84,7 @@ class SystemPrinter:
         print(WHITESPACE, "Nuclear Repulsion Energy =", self.system.nuclear_repulsion)
         print(WHITESPACE, "Reference Energy =", self.system.reference_energy)
         print("")
-
+        return
 
 class CCPrinter:
     def __init__(self, calculation):
