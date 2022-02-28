@@ -1,4 +1,4 @@
-from ccsd import update
 
-#__all__ = ["ccsd"]
-#MODULES = [module for module in __all__]
+
+__all__ = ["ccs", "ccd", "ccsd", "ccsdt", "ccsdt_low_memory", "ccsdt1", "ccsdt2", "ccsdt3", "ccp", "accd"]
+MODULES = [module for module in __all__]

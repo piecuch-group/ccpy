@@ -1,9 +1,11 @@
 """Main calculation driver module of CCpy."""
 
-from ccpy import cc
-from ccpy.drivers.solvers import solve_cc_jacobi
+from importlib import import_module
+
+import ccpy.cc
+from ccpy.drivers.solvers import cc_jacobi
 from ccpy.models.operators import ClusterOperator
-from ccpy.utilities.printing import *
+from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter
 
 
 def driver(calculation, system, hamiltonian, T=None):
@@ -13,26 +15,33 @@ def driver(calculation, system, hamiltonian, T=None):
     sys_printer = SystemPrinter(system)
     sys_printer.header()
 
-    if calculation.calculation_type not in cc.MODULES:
+    # check if requested CC calculation is implemented in modules
+    if calculation.calculation_type not in ccpy.cc.MODULES:
         raise NotImplementedError(
             "{} not implemented".format(calculation.calculation_type)
         )
 
+    # import the specific CC method module and get its update function
+    cc_mod = import_module("ccpy.cc." + calculation.calculation_type.lower())
+    update_function = getattr(cc_mod, 'update')
+
     cc_printer = CCPrinter(calculation)
-
     cc_printer.header()
-    # CCSD Calculation
-    order = 2
+
+    # initialize the cluster operator anew, or use restart
     if T is None:
-        T = ClusterOperator(system, order)
+        T = ClusterOperator(system, calculation.order)
 
-    dT = ClusterOperator(system, order)
+    # regardless of restart status, initialize residual anew
+    dT = ClusterOperator(system, calculation.order)
 
-    from ccpy.cc.ccsd import update
-
-    T, cc_energy, is_converged = solve_cc_jacobi(
-        update, T, dT, hamiltonian, calculation, diis_out_of_core=True
-    )
+    T, cc_energy, is_converged = cc_jacobi(
+                                           update_function,
+                                           T,
+                                           dT,
+                                           hamiltonian,
+                                           calculation,
+                                           )
     total_energy = system.reference_energy + cc_energy
 
     cc_printer.calculation_summary(system.reference_energy, cc_energy)

@@ -12,7 +12,7 @@ def calculate_permutation_parity(lst):
     return parity
 
 def do_lineup_permutation(f1, f2):
-    """Given two lists f1 and f2, returns their sorted counterpats in
+    """Given two lists f1 and f2, returns their sorted counterparts in
     order of maximum coincidence along with the associated phase of permutation
     for each list."""
 

@@ -132,8 +132,8 @@ class CCPrinter:
         )
 
 
-ITERATION_HEADER_FMT = "{:>20} {:>20} {:>20} {:>20} {:>20}"
-ITERATION_FMT = "{:>20} {:>20.8f} {:>20.8f} {:>20.8f} {:>20}"
+ITERATION_HEADER_FMT = "{:>21} {:>16} {:>18} {:>19} {:>23}"
+ITERATION_FMT = "{:>20} {:>20.10f} {:>20.10f} {:>20.10f} {:>20}"
 ITERATION_HEADER = ITERATION_HEADER_FMT.format(
     "Iter.", "Residuum", "δE", "ΔE", "Wall time"
 )
