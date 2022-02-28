@@ -308,20 +308,22 @@ def davidson(HR, update_R, B0, E0, maxit, max_dim, tol):
     return Rvec, omega, is_converged
 
 
-def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
+def cc_jacobi(update_t, T, dT, H, calculation):
     import time
 
     from ccpy.drivers.cc_energy import get_cc_energy
     from ccpy.drivers.diis import DIIS
 
     # instantiate the DIIS accelerator object
-    diis_engine = DIIS(T, calculation.diis_size, diis_out_of_core)
+    diis_engine = DIIS(T, calculation.diis_size, calculation.diis_out_of_core)
 
     # Jacobi/DIIS iterations
     ndiis_cycle = 0
     energy = 0.0
     energy_old = 0.0
     is_converged = False
+
+    print("   Energy of initial guess = {:>20.10f}".format(get_cc_energy(T, H)))
 
     t_start = time.time()
     print_iteration_header()
@@ -344,6 +346,9 @@ def solve_cc_jacobi(update_t, T, dT, H, calculation, diis_out_of_core=False):
             residuum < calculation.convergence_tolerance
             and abs(delta_energy) < calculation.convergence_tolerance
         ):
+            # print the iteration of convergence
+            elapsed_time = time.time() - t1
+            print_iteration(niter, residuum, delta_energy, energy, elapsed_time)
 
             t_end = time.time()
             minutes, seconds = divmod(t_end - t_start, 60)
