@@ -2,33 +2,14 @@ import numpy as np
 
 
 def get_ccs_intermediates_opt(T, H0):
-    """Calculate the CCS-like similarity-transformed HBar intermediates (H_N e^T1)_C.
-
-    Parameters
-    ----------
-    cc_t : dict
-        Cluster amplitudes T1
-    ints : dict
-        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-    sys : dict
-        System information dictionary
-
-    Returns
-    -------
-    H1* : dict
-        One-body HBar similarity-transformed intermediates. Sorted by occ/unocc blocks.
-    H2* : dict
-        Two-body HBar similarity-transformed intermediates. Sorted by occ/unocc blocks.
     """
-    # H = Integral.fromEmpty(system, 2, data_type=np.type)
+    Calculate the CCS-like similarity-transformed HBar intermediates (H_N e^T1)_C.
+    """
 
     from copy import deepcopy
-    #from ccpy.models.integrals import Integral
 
     # Copy the Bare Hamiltonian object for T1-transforemd HBar
     H = deepcopy(H0)
-
-    #H = Integral.from_empty(system, 2)
 
     # 1-body components
     # -------------------#
@@ -36,7 +17,6 @@ def get_ccs_intermediates_opt(T, H0):
         np.einsum("mnef,fn->me", H0.aa.oovv, T.a, optimize=True)
         + np.einsum("mnef,fn->me", H0.ab.oovv, T.b, optimize=True)
     )
-    #print(np.linalg.norm(H.a.ov.flatten()))
 
     H.b.ov += np.einsum("nmfe,fn->me", H0.ab.oovv, T.a, optimize=True) + np.einsum(
         "mnef,fn->me", H0.bb.oovv, T.b, optimize=True
@@ -208,9 +188,8 @@ def get_ccs_intermediates_opt(T, H0):
 def get_ccs_intermediates(T, H0):
     """
     Calculate the CCS-like similarity-transformed HBar intermediates (H_N e^T1)_C.
+    Copied as-is from original CCpy.
     """
-    # H = Integral.fromEmpty(system, 2, data_type=np.type)
-
     from copy import deepcopy
 
     # Copy the Bare Hamiltonian object for T1-transforemd HBar
@@ -272,7 +251,6 @@ def get_ccs_intermediates(T, H0):
         - np.einsum("amje,ei->amij", H0.aa.voov, T.a, optimize=True)
         - 0.5 * np.einsum("nmef,fj,an,ei->amij", H0.aa.oovv, T.a, T.a, T.a, optimize=True)
     )
-    #H.aa.vooo -= np.transpose(H.aa.vooo, (0, 1, 3, 2))
 
     H.aa.vvov += (
          0.5 * np.einsum("abfe,fi->abie", H0.aa.vvvv, T.a, optimize=True)
@@ -381,7 +359,6 @@ def get_ccs_intermediates(T, H0):
         + np.einsum("mbif,fj->bmji", H0.bb.ovov, T.b, optimize=True)
         - np.einsum("mbjf,fi->bmji", H0.bb.ovov, T.b, optimize=True)
     )
-    #H.bb.vooo -= np.transpose(H.bb.vooo, (0, 1, 3, 2))
 
     H.bb.vvov +=(
         0.5 * np.einsum("abef,fj->baje", H0.bb.vvvv, T.b, optimize=True)
