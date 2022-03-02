@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def loadFromGamess(
+def load_from_gamess(
     gamess_logfile,
     onebody_file,
     twobody_file,
@@ -12,6 +12,7 @@ def loadFromGamess(
 
     from cclib.io import ccread
 
+    from ccpy.constants import constants
     from ccpy.drivers.hf_energy import calc_hf_energy
     from ccpy.models.integrals import getHamiltonian
     from ccpy.models.system import System
@@ -24,9 +25,10 @@ def loadFromGamess(
         data.mult,
         nfrozen,
         point_group=getGamessPointGroup(gamess_logfile),
-        orbital_symmetries=data.mosyms[0],
+        orbital_symmetries=[x.upper() for x in data.mosyms[0]],
         charge=data.charge,
         nuclear_repulsion=getGamessNuclearRepulsion(gamess_logfile),
+        mo_energies=[x * constants.eVtohartree for x in data.moenergies[0]],
     )
 
     e1int = loadOnebodyIntegralFile(onebody_file, system, data_type)
@@ -55,7 +57,6 @@ def getGamessSCFEnergy(gamess_logfile):
             if all(s in line.split() for s in ["FINAL", "ROHF", "ENERGY", "IS"]) or all(
                 s in line.split() for s in ["FINAL", "RHF", "ENERGY", "IS"]
             ):
-                print(line.split())
                 hf_energy = float(line.split()[4])
                 break
     return hf_energy

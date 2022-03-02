@@ -118,11 +118,11 @@ class CCPrinter:
     @staticmethod
     def calculation_summary(reference_energy, cc_energy):
         DATA_FMT = "{:<30} {:>20.8f}"
-        print("\nCC Calculation Summary")
-        print("----------------------------------------")
-        print(DATA_FMT.format("Reference energy", reference_energy))
-        print(DATA_FMT.format("CC correlation energy", cc_energy))
-        print(DATA_FMT.format("Total CC energy", reference_energy + cc_energy))
+        print("\n   CC Calculation Summary")
+        print("  --------------------------------------------------")
+        print(DATA_FMT.format("   Reference energy", reference_energy))
+        print(DATA_FMT.format("   CC correlation energy", cc_energy))
+        print(DATA_FMT.format("   Total CC energy", reference_energy + cc_energy))
         print(
             "\nCC calculation ended at",
             datetime.datetime.strptime(

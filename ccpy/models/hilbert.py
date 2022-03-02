@@ -2,7 +2,6 @@ import numpy as np
 
 from ccpy.models.operators import get_operator_name
 
-
 class Determinant:
 
     def __init__(self, spatial_excitation, spincase, system, bit_length=32):
@@ -66,7 +65,6 @@ class DeterminantalSubspace:
         self.order = order
         self.spin_cases = []
         self.dimensions = []
-        self.n_int = int(np.floor((system.norbitals - 1) / 32) + 1)
 
         ndim = 0
         for i in range(1, order + 1):
@@ -85,7 +83,7 @@ class DeterminantalSubspace:
     def add_determinant(self, determinant):
         setattr(self, determinant.spincase, self.__getattribute__(determinant.spincase) + [determinant])
 
-    # [TODO] add determinants of particular symmetry by filtering with Determinants.symmetry attribute
+    # [TODO] add determinants of particular symmetry by filtering according to symmetry attribute
     def fill_singles(self, system):
         setattr(self, 'a', self.__getattribute__('a') +
                 [Determinant([a, i], 'a', system) for a in range(system.nunoccupied_alpha) for i in

@@ -2,7 +2,7 @@
 doubles (CCSD) calculation for a molecular system."""
 import numpy as np
 
-from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt as build_intermediates
+from ccpy.hbar.hbar_ccs import get_ccs_intermediates as build_intermediates
 from ccpy.utilities.updates import cc_loops2
 
 
@@ -33,23 +33,8 @@ def update(T, dT, H, shift, flag_RHF):
 
 
 def update_t1a(T, dT, H, shift):
-    """Update t1a amplitudes by calculating the projection <ia|(H_N e^(T1+T2+T3))_C|0>.
-
-    Parameters
-    ----------
-    cc_t : dict
-        Current cluster amplitudes T1, T2
-    ints : dict
-        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-    sys : dict
-        System information dictionary
-    shift : float
-        Energy denominator shift (in hartree)
-
-    Returns
-    --------
-    cc_t : dict
-        New cluster amplitudes T1, T2
+    """
+    Update t1a amplitudes by calculating the projection <ia|(H_N e^(T1+T2+T3))_C|0>.
     """
     chi1A_vv = H.a.vv.copy()
     chi1A_vv += np.einsum("anef,fn->ae", H.aa.vovv, T.a, optimize=True)
@@ -95,23 +80,8 @@ def update_t1a(T, dT, H, shift):
 
 # @profile
 def update_t1b(T, dT, H, shift):
-    """Update t1b amplitudes by calculating the projection <i~a~|(H_N e^(T1+T2+T3))_C|0>.
-
-    Parameters
-    ----------
-    cc_t : dict
-        Current cluster amplitudes T1, T2
-    ints : dict
-        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-    sys : dict
-        System information dictionary
-    shift : float
-        Energy denominator shift (in hartree)
-
-    Returns
-    --------
-    cc_t : dict
-        New cluster amplitudes T1, T2
+    """
+    Update t1b amplitudes by calculating the projection <i~a~|(H_N e^(T1+T2+T3))_C|0>.
     """
     # Intermediates
     chi1B_vv = H.b.vv.copy()
@@ -218,23 +188,8 @@ def update_t2a(T, dT, H, H0, shift):
 
 # @profile
 def update_t2b(T, dT, H, H0, shift):
-    """Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2+T3))_C|0>.
-
-    Parameters
-    ----------
-    cc_t : dict
-        Current cluster amplitudes T1, T2
-    ints : dict
-        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-    sys : dict
-        System information dictionary
-    shift : float
-        Energy denominator shift (in hartree)
-
-    Returns
-    --------
-    cc_t : dict
-        New cluster amplitudes T1, T2
+    """
+    Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2+T3))_C|0>.
     """
     # intermediates
     I1A_vv = (
@@ -302,23 +257,8 @@ def update_t2b(T, dT, H, H0, shift):
 
 # @profile
 def update_t2c(T, dT, H, H0, shift):
-    """Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2+T3))_C|0>.
-
-    Parameters
-    ----------
-    cc_t : dict
-        Current cluster amplitudes T1, T2
-    ints : dict
-        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-    sys : dict
-        System information dictionary
-    shift : float
-        Energy denominator shift (in hartree)
-
-    Returns
-    --------
-    cc_t : dict
-        New cluster amplitudes T1, T2
+    """
+    Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2+T3))_C|0>.
     """
     # intermediates
     I1B_oo = (
