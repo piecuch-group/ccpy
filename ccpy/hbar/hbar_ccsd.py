@@ -4,7 +4,8 @@ import numpy as np
 
 
 def build_hbar_ccsd(T, H0):
-
+    """Calculate the CCSD similarity-transformed Hamiltonian (H_N e^(T1+T2))_C.
+    Copied as-is from original CCpy implementation."""
     from copy import deepcopy
 
     # Copy the Bare Hamiltonian object for T1/T2-similarity transformed HBar
@@ -69,7 +70,7 @@ def build_hbar_ccsd(T, H0):
     H.ab.ooov = I2B_ooov + 0.5 * Q1
 
     Q1 = -np.einsum("mnef,an->maef", H0.ab.oovv, T.b, optimize=True)
-    I2B_ovvv = H0.bb.ovvv + 0.5 * Q1
+    I2B_ovvv = H0.ab.ovvv + 0.5 * Q1
     H.ab.ovvv = I2B_ovvv + 0.5 * Q1
 
     Q1 = np.einsum("nmef,fi->nmei", H0.ab.oovv, T.b, optimize=True)
@@ -178,7 +179,7 @@ def build_hbar_ccsd(T, H0):
                 + np.einsum("amef,efij->amij", H0.ab.vovv, T.ab, optimize=True)
     )
 
-    Q1 = H0.ab.ovov + np.einsum("mafe,fj->maje", H0.bb.ovvv, T.a, optimize=True)
+    Q1 = H0.ab.ovov + np.einsum("mafe,fj->maje", H0.ab.ovvv, T.a, optimize=True)
     H.ab.ovoo += (
                 np.einsum("me,eaji->maji", H.a.ov, T.ab, optimize=True)
                 - np.einsum("mnji,an->maji", H.ab.oooo, T.b, optimize=True)
@@ -187,7 +188,7 @@ def build_hbar_ccsd(T, H0):
                 - np.einsum("mnfi,fajn->maji", H.ab.oovo, T.ab, optimize=True)
                 + np.einsum("maje,ei->maji", Q1, T.b, optimize=True)
                 + np.einsum("maei,ej->maji", H0.ab.ovvo, T.a, optimize=True)
-                + np.einsum("mafe,feji->maji", H0.bb.ovvv, T.ab, optimize=True)
+                + np.einsum("mafe,feji->maji", H0.ab.ovvv, T.ab, optimize=True)
     )
 
     Q1 = (
