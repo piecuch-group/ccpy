@@ -1,23 +1,4 @@
-from typing import Any
-
 import numpy as np
-from pydantic import BaseModel
-
-
-class Operator(BaseModel):
-
-    name: str
-    spin_type: int
-    array: Any
-
-
-# class Operator:
-#
-#     def __init__(self, name, spin_type, array):
-#         self.name = name
-#         self.spin_type = spin_type
-#         self.array = array
-
 
 class ClusterOperator:
     def __init__(self, system, order, data_type=np.float64):
@@ -47,8 +28,6 @@ class ClusterOperator:
             setattr(self, name, np.reshape(T_flat[prev : ndim + prev], dims))
             prev += ndim
 
-
-# TODO: move this to a classmethod or something
 def get_operator_name(i, j):
     return "a" * (i - j) + "b" * j
 
@@ -66,18 +45,42 @@ def get_operator_dimension(i, j, system):
     return ket + bra
 
 
-def build_cluster_expansion(system, order):
-    operators = dict()
 
-    for i in range(1, order + 1):
-        for j in range(i + 1):
-            name = get_operator_name(i, j)
-            dimensions = get_operator_dimension(i, j, system)
-            operators[name] = Operator(
-                name=name, spin_type=j, array=np.zeros(dimensions)
-            )
 
-    return operators
+# from typing import Any
+# from pydantic import BaseModel
+#
+# class Operator(BaseModel):
+#
+#     name: str
+#     spin_type: int
+#     array: Any
+#
+# def build_cluster_expansion(system, order):
+#     operators = dict()
+#
+#     for i in range(1, order + 1):
+#         for j in range(i + 1):
+#             name = get_operator_name(i, j)
+#             dimensions = get_operator_dimension(i, j, system)
+#             operators[name] = Operator(
+#                 name=name, spin_type=j, array=np.zeros(dimensions)
+#             )
+#
+#     return operators
+
+# class Operator:
+#
+#     def __init__(self, name, spin_type, array):
+#         self.name = name
+#         self.spin_type = spin_type
+#         self.array = array
+
+
+
+
+
+
 
 
 if __name__ == "__main__":

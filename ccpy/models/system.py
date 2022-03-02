@@ -56,7 +56,17 @@ class System:
         self.reference_energy = reference_energy
         self.nuclear_repulsion = nuclear_repulsion
         self.mo_energies = mo_energies
-        self.mo_occupation = mo_occupation
+
+        if mo_occupation is None:
+            mo_occupation = [2.0] * nfrozen +\
+                            [2.0] * self.noccupied_beta +\
+                            [1.0] * (self.noccupied_alpha - self.noccupied_beta) +\
+                            [0.0] * (self.norbitals - self.noccupied_alpha)
+
+            assert len(mo_occupation) == self.norbitals + nfrozen, "Occupation vector has wrong size"
+            self.mo_occupation = mo_occupation
+        else:
+            self.mo_occupation = mo_occupation
 
         # Get the point group symmetry of the reference state by exploiting
         # homomorphism between Abelian groups and binary vector spaces

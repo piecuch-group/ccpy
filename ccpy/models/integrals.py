@@ -58,7 +58,7 @@ class Integral:
                 self.__dict__[name] = sorted_integral
 
     @classmethod
-    def fromEmpty(cls, system, order, data_type=np.float64):
+    def from_empty(cls, system, order, data_type=np.float64):
         matrices = {}
         for i in range(1, order + 1):  # Loop over many-body ranks
             for j in range(i + 1):  # Loop over distinct spin cases per rank
