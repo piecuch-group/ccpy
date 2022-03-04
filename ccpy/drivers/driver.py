@@ -1,20 +1,19 @@
 """Ground-state CC calculation driver."""
-
+import copy
 from importlib import import_module
+from copy import deepcopy
 
 import ccpy.cc
-from ccpy.drivers.solvers import cc_jacobi
+import ccpy.left
+from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi
 from ccpy.models.operators import ClusterOperator
 from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter
 
+
 #[TODO]: Think whether this driver will be used for CC(P) as well as normal CC.
 # The form of the update function would change in CC(P) as lists of triples will need to be passed in
-def driver(calculation, system, hamiltonian, T=None):
+def cc_driver(calculation, system, hamiltonian, T=None):
     """Performs the calculation specified by the user in the input."""
-
-    ccpy_header()
-    sys_printer = SystemPrinter(system)
-    sys_printer.header()
 
     # check if requested CC calculation is implemented in modules
     if calculation.calculation_type not in ccpy.cc.MODULES:
@@ -51,12 +50,8 @@ def driver(calculation, system, hamiltonian, T=None):
 
 #[TODO]: Think whether this driver will be used for CC(P) as well as normal CC.
 # The form of the update function would change in CC(P) as lists of triples will need to be passed in
-def ccpdriver(calculation, system, hamiltonian, pspace, T=None):
+def ccp_driver(calculation, system, hamiltonian, pspace, T=None):
     """Performs the calculation specified by the user in the input."""
-
-    ccpy_header()
-    sys_printer = SystemPrinter(system)
-    sys_printer.header()
 
     # check if requested CC calculation is implemented in modules
     if calculation.calculation_type not in ccpy.cc.MODULES:
@@ -90,3 +85,54 @@ def ccpdriver(calculation, system, hamiltonian, pspace, T=None):
     cc_printer.calculation_summary(system.reference_energy, cc_energy)
 
     return T, total_energy, is_converged
+
+
+def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
+    """Performs the calculation specified by the user in the input."""
+
+    # check if requested CC calculation is implemented in modules
+    if calculation.calculation_type not in ccpy.left.MODULES:
+        raise NotImplementedError(
+            "{} not implemented".format(calculation.calculation_type)
+        )
+
+    # import the specific CC method module and get its update function
+    lcc_mod = import_module("ccpy.left." + calculation.calculation_type.lower())
+    update_function = getattr(lcc_mod, 'update')
+
+    cc_printer = CCPrinter(calculation)
+    cc_printer.header()
+
+    # decide whether this is a ground-state calculation
+    is_ground = True
+    if R is not None:
+        if omega == 0.0:
+            is_ground = False
+        else:
+            print('WARNING: omega for ground-state left CC calculation is not identicall 0!')
+
+    # initialize the cluster operator anew, or use restart
+    if is_ground:
+        if L is None:
+            L = copy.deepcopy(T)
+    else:
+        if L is None:
+            L = copy.deepcopy(R)
+
+    # regardless of restart status, initialize residual anew
+    LH = ClusterOperator(system, calculation.order)
+
+    L, lcc_energy, is_converged = left_cc_jacobi(update_function,
+                                         L,
+                                         LH,
+                                         T,
+                                         R,
+                                         hamiltonian,
+                                         omega,
+                                         calculation,
+                                         )
+    total_energy = system.reference_energy + lcc_energy
+
+    cc_printer.calculation_summary(system.reference_energy, lcc_energy)
+
+    return L, total_energy, is_converged

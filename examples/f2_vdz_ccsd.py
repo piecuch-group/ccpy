@@ -2,7 +2,9 @@ from pyscf import gto, scf
 
 from ccpy.models.calculation import Calculation
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
-from ccpy.drivers.cc import driver
+from ccpy.drivers.driver import cc_driver, lcc_driver
+
+from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
 
 mol = gto.Mole()
 mol.build(
@@ -23,11 +25,20 @@ system, H = load_pyscf_integrals(mf, nfrozen=2)
 system.print_info()
 
 calculation = Calculation(
-    order=3,
-    calculation_type="ccsdt",
+    order=2,
+    calculation_type="ccsd",
 )
 
-T, total_energy, is_converged = driver(calculation, system, H)
+T, total_energy, is_converged = cc_driver(calculation, system, H)
+
+calculation = Calculation(
+    order=2,
+    calculation_type="left_ccsd",
+)
+
+Hbar = build_hbar_ccsd(T, H)
+
+L, total_energy, is_converged = lcc_driver(calculation, system, T, Hbar, omega=0.0, L=None, R=None)
 
 
 

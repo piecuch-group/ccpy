@@ -320,10 +320,10 @@ def cc_jacobi(update_t, T, dT, H, calculation):
     # Jacobi/DIIS iterations
     ndiis_cycle = 0
     energy = 0.0
-    energy_old = 0.0
+    energy_old = get_cc_energy(T, H)
     is_converged = False
 
-    print("   Energy of initial guess = {:>20.10f}".format(get_cc_energy(T, H)))
+    print("   Energy of initial guess = {:>20.10f}".format(energy_old))
 
     t_start = time.time()
     print_iteration_header()
@@ -378,3 +378,101 @@ def cc_jacobi(update_t, T, dT, H, calculation):
         print("CC calculation did not converge.")
 
     return T, energy, is_converged
+
+
+def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation):
+    import time
+
+    from ccpy.drivers.cc_energy import get_lcc_energy
+    from ccpy.drivers.diis import DIIS
+
+    # decide whether this is an excited-state left CC calc based on R
+    is_ground = True
+    if R is not None:
+        is_ground = False
+
+    # instantiate the DIIS accelerator object
+    diis_engine = DIIS(L, calculation.diis_size, calculation.diis_out_of_core)
+
+    # Jacobi/DIIS iterations
+    ndiis_cycle = 0
+    energy = 0.0
+    energy_old = get_lcc_energy(L, LH)
+    is_converged = False
+
+    print("   Energy of initial guess = {:>20.10f}".format(energy_old))
+
+    t_start = time.time()
+    print_iteration_header()
+    for niter in range(calculation.maximum_iterations):
+        # get iteration start time
+        t1 = time.time()
+
+        # Update the L vector
+        L, LH = update_l(L,
+                         LH,
+                         T,
+                         H,
+                         omega,
+                         calculation.energy_shift,
+                         is_ground,
+                         calculation.RHF_symmetry)
+
+        # left CC correlation energy
+        energy = get_lcc_energy(L, LH)
+
+        # change in energy
+        delta_energy = energy - energy_old
+
+        # check for exit condition
+        residuum = np.linalg.norm(LH.flatten())
+        if (
+            residuum < calculation.convergence_tolerance
+            and abs(delta_energy) < calculation.convergence_tolerance
+        ):
+            # print the iteration of convergence
+            elapsed_time = time.time() - t1
+            print_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+
+            t_end = time.time()
+            minutes, seconds = divmod(t_end - t_start, 60)
+            print(
+                "   Left CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)".format(
+                    minutes, seconds
+                )
+            )
+            is_converged = True
+            break
+
+        # Save T and dT vectors to disk for DIIS
+        diis_engine.push(L, LH, niter)
+
+        # Do DIIS extrapolation
+        if niter % calculation.diis_size == 0 and niter > 1:
+            ndiis_cycle += 1
+            print("   DIIS Cycle - {}".format(ndiis_cycle))
+            L.unflatten(diis_engine.extrapolate())
+
+        # Update old energy
+        energy_old = energy
+
+        # biorthogonalize to R for excited states
+        if not is_ground:
+            LR = np.dot(L.flatten().T, R.flatten())
+            L.unflatten(1.0/LR * L.flatten())
+
+        elapsed_time = time.time() - t1
+        print_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+    else:
+        print("Left CC calculation did not converge.")
+
+    # explicitly enforce biorthonormality
+    if not is_ground:
+        LR = np.einsum("em,em->", R.a, L.a, optimize=True)
+        LR += np.einsum("em,em->", R.b, L.b, optimize=True)
+        LR += 0.25 * np.einsum("efmn,efmn->", R.aa, L.aa, optimize=True)
+        LR += np.einsum("efmn,efmn->", R.ab, L.ab, optimize=True)
+        LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
+        L.unflatten(1.0/LR * L.flatten())
+
+    return L, energy, is_converged
