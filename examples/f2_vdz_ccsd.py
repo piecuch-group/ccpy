@@ -23,13 +23,12 @@ system, H = load_pyscf_integrals(mf, nfrozen=2)
 system.print_info()
 
 calculation = Calculation(
-    order=2,
-    calculation_type="ccsd",
+    order=3,
+    calculation_type="ccsdt",
 )
 
 T, total_energy, is_converged = driver(calculation, system, H)
 
-T, total_energy, is_converged = driver(calculation, system, H, T=T)
 
 
 
