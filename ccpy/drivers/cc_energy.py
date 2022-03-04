@@ -28,3 +28,6 @@ def get_cc_energy(T, H0):
 
     Ecorr = e1a + e1b + e2aa + e2ab + e2bb + e1a1a + e1a1b + e1b1b
     return Ecorr
+
+def get_lcc_energy(L, LH):
+    return np.sqrt( np.sum(LH.flatten()**2) ) / np.sqrt( np.sum(L.flatten()**2) )
