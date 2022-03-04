@@ -2,7 +2,7 @@
 doubles (CCSD) calculation for a molecular system."""
 import numpy as np
 
-from ccpy.hbar.hbar_ccs import get_ccs_intermediates as build_intermediates
+from ccpy.hbar.hbar_ccs import get_ccs_intermediates
 from ccpy.utilities.updates import cc_loops2
 
 
@@ -18,7 +18,7 @@ def update(T, dT, H, shift, flag_RHF):
         T, dT = update_t1b(T, dT, H, shift)
 
     # CCS intermediates
-    hbar = build_intermediates(T, H)
+    hbar = get_ccs_intermediates(T, H)
 
     # update T2
     T, dT = update_t2a(T, dT, hbar, H, shift)
