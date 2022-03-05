@@ -28,7 +28,7 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF):
         LH.ab += np.transpose(H.ab.oovv, (2, 3, 0, 1))
         LH.bb += np.transpose(H.bb.oovv, (2, 3, 0, 1))
 
-    # update L; this function takes in LH and builds residual LH - omega * L
+    # [TODO]: update L; this function takes in LH and builds residual LH - omega * L
     # should make this so that it computes residual and returns in, just like in
     # ground-state CC functions
     L.a, L.b, L.aa, L.ab, L.bb = cc_loops.cc_loops.update_l(L.a, L.b, L.aa, L.ab, L.bb,
@@ -38,7 +38,7 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF):
                                                             shift,
     )
 
-    # build residual
+    # build residual LH - omega * L
     LH.a -= omega * L.a
     LH.b -= omega * L.b
     LH.aa -= omega * L.aa
@@ -46,7 +46,6 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF):
     LH.bb -= omega * L.bb
 
     return L, LH
-
 
 def build_LH_1A(L, LH, T, H):
 
