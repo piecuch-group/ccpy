@@ -10,7 +10,6 @@ def calc_crcc23(T, L, H, H0, system, use_RHF=False):
     """
     Calculate the ground-state CR-CC(2,3) correction to the CCSD energy.
     """
-
     t_start = time.time()
     
     # get the Hbar 3-body diagonal

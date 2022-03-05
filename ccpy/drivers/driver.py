@@ -131,6 +131,6 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
                                          )
     total_energy = system.reference_energy + lcc_energy
 
-    cc_printer.calculation_summary(system.reference_energy, lcc_energy)
+    #cc_printer.calculation_summary(system.reference_energy, lcc_energy)
 
     return L, total_energy, is_converged
