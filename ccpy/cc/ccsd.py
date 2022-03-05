@@ -126,23 +126,8 @@ def update_t1b(T, dT, H, shift):
 
 # @profile
 def update_t2a(T, dT, H, H0, shift):
-    """Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2+T3))_C|0>.
-
-    Parameters
-    ----------
-    cc_t : dict
-        Current cluster amplitudes T1, T2
-    ints : dict
-        Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-    sys : dict
-        System information dictionary
-    shift : float
-        Energy denominator shift (in hartree)
-
-    Returns
-    --------
-    cc_t : dict
-        New cluster amplitudes T1, T2
+    """
+    Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2))_C|0>.
     """
     # intermediates
     I1A_oo = (
@@ -189,7 +174,7 @@ def update_t2a(T, dT, H, H0, shift):
 # @profile
 def update_t2b(T, dT, H, H0, shift):
     """
-    Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2))_C|0>.
     """
     # intermediates
     I1A_vv = (
@@ -258,7 +243,7 @@ def update_t2b(T, dT, H, H0, shift):
 # @profile
 def update_t2c(T, dT, H, H0, shift):
     """
-    Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2))_C|0>.
     """
     # intermediates
     I1B_oo = (
