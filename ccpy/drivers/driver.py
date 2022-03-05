@@ -1,4 +1,5 @@
-"""Ground-state CC calculation driver."""
+"""Main calculation driver module of CCpy."""
+
 import copy
 from importlib import import_module
 from copy import deepcopy
@@ -10,8 +11,6 @@ from ccpy.models.operators import ClusterOperator
 from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter
 
 
-#[TODO]: Think whether this driver will be used for CC(P) as well as normal CC.
-# The form of the update function would change in CC(P) as lists of triples will need to be passed in
 def cc_driver(calculation, system, hamiltonian, T=None):
     """Performs the calculation specified by the user in the input."""
 
@@ -48,8 +47,7 @@ def cc_driver(calculation, system, hamiltonian, T=None):
 
     return T, total_energy, is_converged
 
-#[TODO]: Think whether this driver will be used for CC(P) as well as normal CC.
-# The form of the update function would change in CC(P) as lists of triples will need to be passed in
+# [TODO]: The form of the update function would change in CC(P) as lists of triples will need to be passed in
 def ccp_driver(calculation, system, hamiltonian, pspace, T=None):
     """Performs the calculation specified by the user in the input."""
 
@@ -86,7 +84,7 @@ def ccp_driver(calculation, system, hamiltonian, pspace, T=None):
 
     return T, total_energy, is_converged
 
-
+# [TODO]: Pass in cc_energy or somehow fix issue that output prints 0 for correlation energy
 def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
     """Performs the calculation specified by the user in the input."""
 
