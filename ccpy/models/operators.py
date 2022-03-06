@@ -263,7 +263,7 @@ if __name__ == "__main__":
     print(t3.flatten().shape)
 
     order = 3
-    T = ClusterOperator(system, order, active_orders=[3], num_active=[2])
+    T = ClusterOperator(system, order, active_orders=[3], num_active=[1])
     print("Cluster operator order", order)
     print("---------------------------")
     for spin in T.spin_cases:
