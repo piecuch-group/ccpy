@@ -19,33 +19,32 @@ class System:
         nuclear_repulsion=0,
         mo_energies=None,
         mo_occupation=None,
+        num_act_holes_alpha = 0,
+        num_act_particles_alpha = 0,
+        num_act_holes_beta = 0,
+        num_act_particles_beta = 0,
     ):
-        """Default constructor for the System object.
-
-        Arguments:
-        ----------
-        nelectrons : int -> total number of electrons
-        norbitals : int -> total number of spatial orbitals
-        multiplicity : int -> spin multiplicity of reference state (2S+1)
-        nfrozen : int -> number of frozen spatial orbitals
-        point_group : str -> spatial point group, default = 'C1'
-        orbital_symmetries : list -> point group irreps of each molecular orbital, default = [None]*norbitals
-        charge : int -> total charge on the molecule, default = 0
-        nkpts : int -> number of k-points used in reciprocal space sampling (periodic calculations only)
-        e_nuclear : float -> nuclear repulsion energy at the molecular geometry (in hartree)
-        Returns:
-        ----------
-        sys : Object -> System object"""
+        # basic information
         self.nelectrons = nelectrons - 2 * nfrozen
         self.norbitals = norbitals - nfrozen
         self.nfrozen = nfrozen
         self.multiplicity = multiplicity
+        self.charge = charge
+        # orbital partitioning
         self.noccupied_alpha = int((self.nelectrons + self.multiplicity - 1) / 2)
         self.noccupied_beta = int((self.nelectrons - self.multiplicity + 1) / 2)
         self.nunoccupied_alpha = self.norbitals - self.noccupied_alpha
         self.nunoccupied_beta = self.norbitals - self.noccupied_beta
-        self.charge = charge
-        self.nkpts = nkpts
+        # active space orbital partitioning
+        self.num_act_occupied_alpha = min(self.noccupied_alpha, num_act_holes_alpha)
+        self.num_core_alpha = max(0, self.noccupied_alpha - self.num_act_occupied_alpha)
+        self.num_act_occupied_beta = min(self.noccupied_beta, num_act_holes_beta)
+        self.num_core_beta = max(0, self.noccupied_beta - self.num_act_occupied_beta)
+        self.num_act_unoccupied_alpha = min(self.nunoccupied_alpha, num_act_particles_alpha)
+        self.num_virt_alpha = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_alpha)
+        self.num_act_unoccupied_beta = min(self.nunoccupied_beta, num_act_particles_beta)
+        self.num_virt_beta = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_beta)
+        # symmetry information
         self.point_group = point_group
         self.point_group_irrep_to_number = get_pg_irreps(self.point_group)
         self.point_group_number_to_irrep = {v: k for k, v in self.point_group_irrep_to_number.items()}
@@ -53,10 +52,7 @@ class System:
             self.orbital_symmetries_all = ["A1"] * norbitals
         else:
             self.orbital_symmetries_all = orbital_symmetries
-        self.reference_energy = reference_energy
-        self.nuclear_repulsion = nuclear_repulsion
-        self.mo_energies = mo_energies
-
+        # MO energies and occupation
         if mo_occupation is None:
             mo_occupation = [2.0] * nfrozen +\
                             [2.0] * self.noccupied_beta +\
@@ -67,6 +63,12 @@ class System:
             self.mo_occupation = mo_occupation
         else:
             self.mo_occupation = mo_occupation
+        self.mo_energies = mo_energies
+        # reference energies
+        self.reference_energy = reference_energy
+        self.nuclear_repulsion = nuclear_repulsion
+        # periodic system information
+        self.nkpts = nkpts
 
         # Get the point group symmetry of the reference state by exploiting
         # homomorphism between Abelian groups and binary vector spaces

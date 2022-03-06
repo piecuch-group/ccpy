@@ -47,7 +47,6 @@ class SortedIntegral:
                 self.__dict__["".join(attr)] = matrix[tuple(slicearr)]
                 # self.slices.append(''.join(attr))
 
-
 class Integral:
     def __init__(self, system, order, matrices):
         self.order = order

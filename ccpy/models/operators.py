@@ -1,20 +1,149 @@
 import numpy as np
 from itertools import combinations_with_replacement
 
+class ActiveAmplitude:
+
+    def __init__(self, system, order, spincase, num_active, data_type=np.float64):
+        self.order = order
+        self.spincase = spincase
+        self.num_active = num_active
+        self.slices = []
+        self.dimensions = []
+        self.ndim = 0
+
+        dims_alpha = {"o": system.noccupied_alpha - system.num_act_occupied_alpha,
+                      "O": system.noccupied_alpha - (system.noccupied_alpha - system.num_act_occupied_alpha),
+                      "V": system.noccupied_alpha + system.num_act_unoccupied_alpha - system.noccupied_alpha,
+                      "v": system.norbitals - (system.noccupied_alpha + system.num_act_unoccupied_alpha)
+        }
+        dims_beta =  {"o": system.noccupied_beta - system.num_act_occupied_beta,
+                      "O": system.noccupied_beta - (system.noccupied_beta - system.num_act_occupied_beta),
+                      "V": system.noccupied_beta + system.num_act_unoccupied_beta - system.noccupied_beta,
+                      "v": system.norbitals - (system.noccupied_beta + system.num_act_unoccupied_beta)
+        }
+        for pa in self.get_particle_alpha_combinations():
+            dim_pa = [dims_alpha[x] for x in pa]
+            for pb in self.get_particle_beta_combinations():
+                dim_pb = [dims_beta[x] for x in pb]
+                for ha in self.get_hole_alpha_combinations():
+                    dim_ha = [dims_alpha[x] for x in ha]
+                    for hb in self.get_hole_beta_combinations():
+                        dim_hb = [dims_beta[x] for x in hb]
+
+                        dimensions = tuple(dim_pa + dim_pb + dim_ha + dim_hb)
+                        temp = ''.join(pa + pb + ha + hb)
+                        num_act_holes = temp.count('O')
+                        num_act_particles = temp.count('V')
+                        if num_act_holes >= num_active and num_act_particles >= num_active:
+                            self.slices.append(temp)
+                            self.dimensions.append(dimensions)
+                            self.ndim += np.prod(dimensions)
+                            setattr(self, temp, np.zeros(dimensions, dtype=data_type))
+
+
+    def get_hole_alpha_combinations(self):
+        double_spin_string = list(self.spincase) * 2
+        num_alpha_hole = double_spin_string[self.order : 2*self.order].count("a")
+
+        # alpha hole
+        hole_alpha_slices = []
+        for i in range(num_alpha_hole + 1):
+            temp = ['O'] * num_alpha_hole
+            for j in range(i):
+                temp[j] = 'o'
+            hole_alpha_slices.append(temp)
+
+        return hole_alpha_slices
+
+    def get_particle_alpha_combinations(self):
+        double_spin_string = list(self.spincase) * 2
+        num_alpha_particle = double_spin_string[: self.order].count("a")
+
+        # alpha particle
+        particle_alpha_slices = []
+        for i in range(num_alpha_particle + 1):
+            temp = ['V'] * num_alpha_particle
+            for j in range(i):
+                temp[num_alpha_particle - 1 - j] = 'v'
+            particle_alpha_slices.append(temp)
+
+        return particle_alpha_slices
+
+    def get_hole_beta_combinations(self):
+        double_spin_string = list(self.spincase) * 2
+        num_beta_hole = double_spin_string[self.order : 2*self.order].count("b")
+
+        # beta hole
+        hole_beta_slices = []
+        for i in range(num_beta_hole + 1):
+            temp = ['O'] * num_beta_hole
+            for j in range(i):
+                temp[j] = 'o'
+            hole_beta_slices.append(temp)
+
+        return hole_beta_slices
+
+    def get_particle_beta_combinations(self):
+        double_spin_string = list(self.spincase) * 2
+        num_beta_particle = double_spin_string[: self.order].count("b")
+
+        # beta particle
+        particle_beta_slices = []
+        for i in range(num_beta_particle + 1):
+            temp = ['V'] * num_beta_particle
+            for j in range(i):
+                temp[num_beta_particle - 1 - j] = 'v'
+            particle_beta_slices.append(temp)
+
+        return particle_beta_slices
+
+    def flatten(self):
+        return np.hstack(
+            [getattr(self, key).flatten() for key in self.slices]
+        )
+
+    def unflatten(self, T_flat):
+        prev = 0
+        for dims, name in zip(self.dimensions, self.slices):
+            ndim = np.prod(dims)
+            setattr(self, name, np.reshape(T_flat[prev : ndim + prev], dims))
+            prev += ndim
+
+
 class ClusterOperator:
-    def __init__(self, system, order, data_type=np.float64):
+    def __init__(self, system, order, active_orders=[-1], num_active=None, data_type=np.float64):
         self.order = order
         self.spin_cases = []
         self.dimensions = []
+
         ndim = 0
+        act_cnt = 0
         for i in range(1, order + 1):
+
+            if i in active_orders:
+                nact = num_active[act_cnt]
+                act_cnt += 1
+
             for j in range(i + 1):
                 name = get_operator_name(i, j)
                 dimensions = get_operator_dimension(i, j, system)
-                setattr(self, name, np.zeros(dimensions, dtype=data_type))
+
+                if i in active_orders:
+
+                    active_t = ActiveAmplitude(system, i, name, nact, data_type=data_type)
+                    setattr(self, name, active_t)
+                    for dim in active_t.dimensions:
+                        self.dimensions.append(dim)
+                    ndim += active_t.ndim
+
+                else:
+
+                    setattr(self, name, np.zeros(dimensions, dtype=data_type))
+                    self.dimensions.append(dimensions)
+                    ndim += np.prod(dimensions)
+
                 self.spin_cases.append(name)
-                self.dimensions.append(dimensions)
-                ndim += np.prod(dimensions)
+
         self.ndim = ndim
 
     def flatten(self):
@@ -26,11 +155,21 @@ class ClusterOperator:
         prev = 0
         for dims, name in zip(self.dimensions, self.spin_cases):
             ndim = np.prod(dims)
-            setattr(self, name, np.reshape(T_flat[prev : ndim + prev], dims))
+            setattr(self, name, np.reshape(T_flat[prev: ndim + prev], dims))
             prev += ndim
 
 
 class FockOperator:
+    """Builds generalized particle-nonconserving operators of the EA/IP-type and
+    higher-order extensions, such as DEA/DIP, etc.
+    Naming convention goes as follows:
+        Suppose R.* has n letters. The first n - num_add indices, where num_add is the number of
+        added particles (EA) or holes (IP), denote the particle-conserving
+        part, while the last num_add refer to the added particles or holes. For example,
+        R.aab in the DIP case (num_add=2) means that the first R.a part is an alpha-alpha singles
+        block of dimension (nua, noa), and the last R.*ab part refers to the added holes,
+        which are of alpha and beta character, respectively. Thus, the total dimension of
+        R.aab in the DIP case is (nua, noa, noa, nob)."""
     def __init__(self, system, num_particles, num_holes, data_type=np.float64):
         self.num_particles = num_particles
         self.num_holes = num_holes
@@ -131,35 +270,59 @@ if __name__ == "__main__":
     mf.kernel()
 
     nfrozen = 2
-    system, H = load_pyscf_integrals(mf, nfrozen)
+    system, H = load_pyscf_integrals(mf, nfrozen,
+                                     num_act_holes_alpha = 2,
+                                     num_act_particles_alpha = 1,
+                                     num_act_holes_beta = 1,
+                                     num_act_particles_beta = 2)
 
     print(system)
 
-    order = 3
-    T = ClusterOperator(system, order)
+    print('Active t3 aaa')
+    print('----------------')
+    t3 = ActiveAmplitude(system, 3, 'aaa', 1)
+    for slice, dim in zip(t3.slices, t3.dimensions):
+        print(slice, "->", dim)
+    print("Flattened dimension = ", t3.ndim)
+    print(t3.flatten().shape)
+
+    print('Active t3 aab')
+    print('----------------')
+    t3 = ActiveAmplitude(system, 3, 'aab', 1)
+    for slice, dim in zip(t3.slices, t3.dimensions):
+        print(slice, "->", dim)
+    print("Flattened dimension = ", t3.ndim)
+    print(t3.flatten().shape)
+
+    order = 4
+    T = ClusterOperator(system, order, active_orders=[3, 4], num_active=[1, 2])
     print("Cluster operator order", order)
     print("---------------------------")
-    for key in T.spin_cases:
-        print(key, "->", getattr(T, key).shape)
+    for spin in T.spin_cases:
+        try:
+            print(spin, "->", getattr(T, spin).shape)
+        except:
+            for slice, dim in zip(getattr(T, spin).slices, getattr(T, spin).dimensions):
+                print(spin, "->", slice, "->", dim)
     print("Flattened dimension = ", T.ndim)
     print(T.flatten().shape)
-
-    num_particles = 2
-    num_holes = 3
-    R = FockOperator(system, num_particles, num_holes)
-    print("IP operator", num_particles, 'p-', num_holes, 'h')
-    print("---------------------------")
-    for key in R.spin_cases:
-        print(key, "->", getattr(R, key).shape)
-    print("Flattened dimension = ", R.ndim)
-    print(R.flatten().shape)
-
-    num_particles = 4
-    num_holes = 2
-    R = FockOperator(system, num_particles, num_holes)
-    print("EA operator", num_particles, 'p-', num_holes, 'h')
-    print("---------------------------")
-    for key in R.spin_cases:
-        print(key, "->", getattr(R, key).shape)
-    print("Flattened dimension = ", R.ndim)
-    print(R.flatten().shape)
+    #
+    # num_particles = 1
+    # num_holes = 3
+    # R = FockOperator(system, num_particles, num_holes)
+    # print("IP operator", num_particles, 'p-', num_holes, 'h')
+    # print("---------------------------")
+    # for key in R.spin_cases:
+    #     print(key, "->", getattr(R, key).shape)
+    # print("Flattened dimension = ", R.ndim)
+    # print(R.flatten().shape)
+    #
+    # num_particles = 4
+    # num_holes = 2
+    # R = FockOperator(system, num_particles, num_holes)
+    # print("EA operator", num_particles, 'p-', num_holes, 'h')
+    # print("---------------------------")
+    # for key in R.spin_cases:
+    #     print(key, "->", getattr(R, key).shape)
+    # print("Flattened dimension = ", R.ndim)
+    # print(R.flatten().shape)

@@ -8,7 +8,10 @@ from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 
 
 def load_pyscf_integrals(
-    meanfield, nfrozen=0, normal_ordered=True, dump_integrals=False
+    meanfield, nfrozen=0,
+    num_act_holes_alpha=0, num_act_particles_alpha=0,
+    num_act_holes_beta=0, num_act_particles_beta=0,
+    normal_ordered=True, dump_integrals=False
 ):
     """Builds the System and Integral objects using the information contained within a PySCF
     mean-field object for a molecular system.
@@ -39,6 +42,10 @@ def load_pyscf_integrals(
         nuclear_repulsion=nuclear_repulsion,
         mo_energies=meanfield.mo_energy,
         mo_occupation=meanfield.mo_occ,
+        num_act_holes_alpha=num_act_holes_alpha,
+        num_act_particles_alpha=num_act_particles_alpha,
+        num_act_holes_beta=num_act_holes_beta,
+        num_act_particles_beta=num_act_particles_beta,
     )
 
     kinetic_aoints = molecule.intor_symmetric("int1e_kin")
