@@ -1,7 +1,7 @@
 import numpy as np
 from itertools import combinations_with_replacement
 
-class ActiveAmplitude:
+class ActiveOperator:
 
     def __init__(self, system, order, spincase, num_active, data_type=np.float64):
         self.order = order
@@ -21,13 +21,18 @@ class ActiveAmplitude:
                       "V": system.noccupied_beta + system.num_act_unoccupied_beta - system.noccupied_beta,
                       "v": system.norbitals - (system.noccupied_beta + system.num_act_unoccupied_beta)
         }
-        for pa in self.get_particle_alpha_combinations():
+        double_spin_string = list(self.spincase) * 2
+        num_alpha_hole = double_spin_string[self.order : 2*self.order].count("a")
+        num_alpha_particle = double_spin_string[: self.order].count("a")
+        num_beta_particle = double_spin_string[: self.order].count("b")
+        num_beta_hole = double_spin_string[self.order: 2 * self.order].count("b")
+        for pa in self.get_particle_combinations(double_spin_string, num_alpha_particle):
             dim_pa = [dims_alpha[x] for x in pa]
-            for pb in self.get_particle_beta_combinations():
+            for pb in self.get_particle_combinations(double_spin_string, num_beta_particle):
                 dim_pb = [dims_beta[x] for x in pb]
-                for ha in self.get_hole_alpha_combinations():
+                for ha in self.get_hole_combinations(double_spin_string, num_alpha_hole):
                     dim_ha = [dims_alpha[x] for x in ha]
-                    for hb in self.get_hole_beta_combinations():
+                    for hb in self.get_hole_combinations(double_spin_string, num_beta_hole):
                         dim_hb = [dims_beta[x] for x in hb]
 
                         dimensions = tuple(dim_pa + dim_pb + dim_ha + dim_hb)
@@ -41,61 +46,23 @@ class ActiveAmplitude:
                             setattr(self, temp, np.zeros(dimensions, dtype=data_type))
 
 
-    def get_hole_alpha_combinations(self):
-        double_spin_string = list(self.spincase) * 2
-        num_alpha_hole = double_spin_string[self.order : 2*self.order].count("a")
-
-        # alpha hole
-        hole_alpha_slices = []
-        for i in range(num_alpha_hole + 1):
-            temp = ['O'] * num_alpha_hole
+    def get_hole_combinations(self, double_spin_string, n):
+        combs = []
+        for i in range(n + 1):
+            temp = ['O'] * n
             for j in range(i):
                 temp[j] = 'o'
-            hole_alpha_slices.append(temp)
+            combs.append(temp)
+        return combs
 
-        return hole_alpha_slices
-
-    def get_particle_alpha_combinations(self):
-        double_spin_string = list(self.spincase) * 2
-        num_alpha_particle = double_spin_string[: self.order].count("a")
-
-        # alpha particle
-        particle_alpha_slices = []
-        for i in range(num_alpha_particle + 1):
-            temp = ['V'] * num_alpha_particle
+    def get_particle_combinations(self, double_spin_string, n):
+        combs = []
+        for i in range(n + 1):
+            temp = ['V'] * n
             for j in range(i):
-                temp[num_alpha_particle - 1 - j] = 'v'
-            particle_alpha_slices.append(temp)
-
-        return particle_alpha_slices
-
-    def get_hole_beta_combinations(self):
-        double_spin_string = list(self.spincase) * 2
-        num_beta_hole = double_spin_string[self.order : 2*self.order].count("b")
-
-        # beta hole
-        hole_beta_slices = []
-        for i in range(num_beta_hole + 1):
-            temp = ['O'] * num_beta_hole
-            for j in range(i):
-                temp[j] = 'o'
-            hole_beta_slices.append(temp)
-
-        return hole_beta_slices
-
-    def get_particle_beta_combinations(self):
-        double_spin_string = list(self.spincase) * 2
-        num_beta_particle = double_spin_string[: self.order].count("b")
-
-        # beta particle
-        particle_beta_slices = []
-        for i in range(num_beta_particle + 1):
-            temp = ['V'] * num_beta_particle
-            for j in range(i):
-                temp[num_beta_particle - 1 - j] = 'v'
-            particle_beta_slices.append(temp)
-
-        return particle_beta_slices
+                temp[n - 1 - j] = 'v'
+            combs.append(temp)
+        return combs
 
     def flatten(self):
         return np.hstack(
@@ -111,11 +78,12 @@ class ActiveAmplitude:
 
 
 class ClusterOperator:
-    def __init__(self, system, order, active_orders=[-1], num_active=None, data_type=np.float64):
+    def __init__(self, system, order, active_orders=[None], num_active=[None], data_type=np.float64):
         self.order = order
         self.spin_cases = []
         self.dimensions = []
 
+        # [TODO]: think of a nicer way to handle the active order cases
         ndim = 0
         act_cnt = 0
         for i in range(1, order + 1):
@@ -130,7 +98,7 @@ class ClusterOperator:
 
                 if i in active_orders:
 
-                    active_t = ActiveAmplitude(system, i, name, nact, data_type=data_type)
+                    active_t = ActiveOperator(system, i, name, nact, data_type=data_type)
                     setattr(self, name, active_t)
                     for dim in active_t.dimensions:
                         self.dimensions.append(dim)
@@ -294,8 +262,8 @@ if __name__ == "__main__":
     print("Flattened dimension = ", t3.ndim)
     print(t3.flatten().shape)
 
-    order = 4
-    T = ClusterOperator(system, order, active_orders=[3, 4], num_active=[1, 2])
+    order = 3
+    T = ClusterOperator(system, order, active_orders=[3], num_active=[2])
     print("Cluster operator order", order)
     print("---------------------------")
     for spin in T.spin_cases:
