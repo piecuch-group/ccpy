@@ -26,13 +26,13 @@ class ActiveOperator:
         num_alpha_particle = double_spin_string[: self.order].count("a")
         num_beta_particle = double_spin_string[: self.order].count("b")
         num_beta_hole = double_spin_string[self.order: 2 * self.order].count("b")
-        for pa in self.get_particle_combinations(double_spin_string, num_alpha_particle):
+        for pa in self.get_particle_combinations(num_alpha_particle):
             dim_pa = [dims_alpha[x] for x in pa]
-            for pb in self.get_particle_combinations(double_spin_string, num_beta_particle):
+            for pb in self.get_particle_combinations(num_beta_particle):
                 dim_pb = [dims_beta[x] for x in pb]
-                for ha in self.get_hole_combinations(double_spin_string, num_alpha_hole):
+                for ha in self.get_hole_combinations( num_alpha_hole):
                     dim_ha = [dims_alpha[x] for x in ha]
-                    for hb in self.get_hole_combinations(double_spin_string, num_beta_hole):
+                    for hb in self.get_hole_combinations(num_beta_hole):
                         dim_hb = [dims_beta[x] for x in hb]
 
                         dimensions = tuple(dim_pa + dim_pb + dim_ha + dim_hb)
@@ -46,7 +46,7 @@ class ActiveOperator:
                             setattr(self, temp, np.zeros(dimensions, dtype=data_type))
 
 
-    def get_hole_combinations(self, double_spin_string, n):
+    def get_hole_combinations(self, n):
         combs = []
         for i in range(n + 1):
             temp = ['O'] * n
@@ -55,7 +55,7 @@ class ActiveOperator:
             combs.append(temp)
         return combs
 
-    def get_particle_combinations(self, double_spin_string, n):
+    def get_particle_combinations(self, n):
         combs = []
         for i in range(n + 1):
             temp = ['V'] * n
@@ -248,7 +248,7 @@ if __name__ == "__main__":
 
     print('Active t3 aaa')
     print('----------------')
-    t3 = ActiveAmplitude(system, 3, 'aaa', 1)
+    t3 = ActiveOperator(system, 3, 'aaa', 1)
     for slice, dim in zip(t3.slices, t3.dimensions):
         print(slice, "->", dim)
     print("Flattened dimension = ", t3.ndim)
@@ -256,7 +256,7 @@ if __name__ == "__main__":
 
     print('Active t3 aab')
     print('----------------')
-    t3 = ActiveAmplitude(system, 3, 'aab', 1)
+    t3 = ActiveOperator(system, 3, 'aab', 1)
     for slice, dim in zip(t3.slices, t3.dimensions):
         print(slice, "->", dim)
     print("Flattened dimension = ", t3.ndim)
