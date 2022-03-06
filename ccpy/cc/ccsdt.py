@@ -357,7 +357,7 @@ def update_t3a(T, dT, H, H0, shift):
     """
     Update t3a amplitudes by calculating the projection <ijkabc|(H_N e^(T1+T2+T3))_C|0>.
     """
-    # # <ijkabc | H(2) | 0 > + (VT3)_C intermediates
+    # <ijkabc | H(2) | 0 > + (VT3)_C intermediates
     I2A_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.aa.oovv, T.aaa, optimize=True)
     I2A_vvov -= np.einsum("mnef,abfimn->abie", H0.ab.oovv, T.aab, optimize=True)
     I2A_vvov += H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
