@@ -20,6 +20,9 @@ def update(T, dT, H, shift, flag_RHF):
     return T, dT
 
 def update_t2a(T, dT, H, shift):
+    """
+    Update t2a amplitudes by calculating the projection <ijab|(H_N e^T2)_C|0>.
+    """
 
     # < ijab | (F T2)_C | 0 >
     dT.aa = -0.5 * np.einsum("mi,abmj->abij", H.a.oo, T.aa, optimize=True)  # A(ij)
@@ -41,7 +44,7 @@ def update_t2a(T, dT, H, shift):
     dT.aa += 0.5 * np.einsum(
         "mnef,aeim,bfjn->abij", H.bb.oovv, T.ab, T.ab, optimize=True
     ) # A(ij)
-    dT.aa += 0.125 * np.einsum(
+    dT.aa += 0.25 * 0.25 * np.einsum(
         "mnef,efij,abmn->abij", H.aa.oovv, T.aa, T.aa, optimize=True
     ) # 1
     dT.aa -= 0.25 * np.einsum(
@@ -65,6 +68,9 @@ def update_t2a(T, dT, H, shift):
 
 
 def update_t2b(T, dT, H, shift):
+    """
+    Update t2b amplitudes by calculating the projection <i~jab~|(H_N e^T2)_C|0>.
+    """
 
     # < ijab | (F T2)_C | 0 >
     dT.ab = -np.einsum("mi,abmj->abij", H.a.oo, T.ab, optimize=True)
@@ -106,9 +112,9 @@ def update_t2b(T, dT, H, shift):
 
 
 def update_t2c(T, dT, H, shift):
-
-
-
+    """
+    Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^T2)_C|0>.
+    """
     # < ijab | (F T2)_C | 0 >
     dT.bb = -0.5 * np.einsum("mi,abmj->abij", H.b.oo, T.bb, optimize=True)  # A(ij)
     dT.bb += 0.5*np.einsum("ae,ebij->abij", H.b.vv, T.bb, optimize=True)  # A(ab)
@@ -129,7 +135,7 @@ def update_t2c(T, dT, H, shift):
     dT.bb += 0.5 * np.einsum(
         "nmfe,eami,fbnj->abij", H.aa.oovv, T.ab, T.ab, optimize=True
     ) # A(ij)
-    dT.bb += 0.125 * np.einsum(
+    dT.bb += 0.25 * 0.25 * np.einsum(
         "mnef,efij,abmn->abij", H.bb.oovv, T.bb, T.bb, optimize=True
     ) # 1
     dT.bb -= 0.25 * np.einsum(
@@ -150,42 +156,4 @@ def update_t2c(T, dT, H, shift):
         T.bb, dT.bb + 0.25 * H.bb.vvoo, H.b.oo, H.b.vv, shift
     )
     return T, dT
-
-    # # < ijab | (F T2)_C | 0 >
-    # D1 = -np.einsum("mi,abmj->abij", H.b.oo, T.bb, optimize=True)  # A(ij)
-    # D2 = np.einsum("ae,ebij->abij", H.b.vv, T.bb, optimize=True)  # A(ab)
-    #
-    # # < ijab | (V T2)_C | 0 >
-    # D3 = np.einsum("amie,ebmj->abij", H.bb.voov, T.bb, optimize=True)  # A(ab)A(ij)
-    # D4 = np.einsum("maei,ebmj->abij", H.ab.ovvo, T.ab, optimize=True)  # A(ab)A(ij)
-    # D5 = 0.5 * np.einsum("mnij,abmn->abij", vC["oooo"], T.bb, optimize=True)  # 1
-    # D6 = 0.5 * np.einsum("abef,efij->abij", vC["vvvv"], T.bb, optimize=True)  # 1
-    #
-    # # < ijab | (V T2**2)_C | 0 >
-    # D7 = np.einsum("mnef,aeim,bfjn->abij", H.bb.oovv, T.bb, T.bb, optimize=True)  # A(ij)
-    # D8 = np.einsum(
-    #     "nmfe,aeim,fbnj->abij", H.ab.oovv, T.bb, T.ab, optimize=True
-    # )  # A(ij)A(ab)
-    # D9 = np.einsum("mnef,eami,fbnj->abij", H.aa.oovv, T.ab, T.ab, optimize=True)  # A(ij)
-    # D10 = 0.25 * np.einsum(
-    #     "mnef,efij,abmn->abij", H.bb.oovv, T.bb, T.bb, optimize=True
-    # )  # 1
-    # D11 = -0.5 * np.einsum(
-    #     "mnef,abim,efjn->abij", H.bb.oovv, T.bb, T.bb, optimize=True
-    # )  # A(ij)
-    # D12 = -np.einsum(
-    #     "nmfe,abim,fenj->abij", H.ab.oovv, T.bb, T.ab, optimize=True
-    # )  # A(ij)
-    # D13 = -0.5 * np.einsum(
-    #     "mnef,aeij,bfmn->abij", H.bb.oovv, T.bb, T.bb, optimize=True
-    # )  # A(ab)
-    # D14 = -np.einsum(
-    #     "nmfe,aeij,fbnm->abij", H.ab.oovv, T.bb, T.ab, optimize=True
-    # )  # A(ab)
-    #
-    # X2C = (
-    #     0.5 * (D1 + D2 + D7 + D9 + D11 + D12 + D13 + D14)
-    #     + 0.25 * (D5 + D6 + D10 + vC["vvoo"])
-    #     + (D3 + D4 + D8)
-    # )
 
