@@ -3,7 +3,7 @@ from itertools import combinations_with_replacement
 
 class ActiveOperator:
 
-    def __init__(self, system, order, spincase, num_active, data_type=np.float64):
+    def __init__(self, system, order, spincase, num_active, matrix=None, data_type=np.float64):
         self.order = order
         self.spincase = spincase
         self.num_active = num_active
