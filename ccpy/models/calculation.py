@@ -13,6 +13,8 @@ class Calculation:
 
     calculation_type: str
     order: int
+    active_orders: [None]
+    num_active : [None]
     maximum_iterations: int = 60
     convergence_tolerance: float = 1.0e-07
     energy_shift: float = 0.0
