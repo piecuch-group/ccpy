@@ -15,7 +15,7 @@ from ccpy.utilities.active_space import fill_t3aaa, fill_t3aab, fill_t3abb, fill
 
 from ccpy.cc.ccsdt1_updates import *
 
-def calc_error_t3a(dT_act, dT, system):
+def calc_error(dT_act, dT, system):
 
     def _get_error(x, y):
         error = x - y
@@ -34,6 +34,39 @@ def calc_error_t3a(dT_act, dT, system):
     print("Error in VVvooO = ", _get_error(dT_act.aaa.VVvooO, dT.aaa[Va, Va, va, oa, oa, Oa]))
     print("Error in VvvoOO = ", _get_error(dT_act.aaa.VvvoOO, dT.aaa[Va, va, va, oa, Oa, Oa]))
     print("Error in VvvooO = ", _get_error(dT_act.aaa.VvvooO, dT.aaa[Va, va, va, oa, oa, Oa]))
+
+    print('Error in T3.aab')
+    print('-------------------------')
+    print("Error in VVVOOO = ", _get_error(dT_act.aab.VVVOOO, dT.aab[Va, Va, Vb, Oa, Oa, Ob]))
+    # one inactive
+    print("Error in VVVOOo = ", _get_error(dT_act.aab.VVVOOo, dT.aab[Va, Va, Vb, Oa, Oa, ob]))
+    print("Error in VvVOOO = ", _get_error(dT_act.aab.VvVOOO, dT.aab[Va, va, Vb, Oa, Oa, Ob]))
+    print("Error in VVvOOO = ", _get_error(dT_act.aab.VVvOOO, dT.aab[Va, Va, vb, Oa, Oa, Ob]))
+    print("Error in VVVoOO = ", _get_error(dT_act.aab.VVVoOO, dT.aab[Va, Va, Vb, oa, Oa, Ob]))
+    # two inactive
+    print("Error in VVVooO = ", _get_error(dT_act.aab.VVVooO, dT.aab[Va, Va, Vb, oa, oa, Ob]))
+    print("Error in VVVoOo = ", _get_error(dT_act.aab.VVVoOo, dT.aab[Va, Va, Vb, oa, Oa, ob]))
+    print("Error in vvVOOO = ", _get_error(dT_act.aab.vvVOOO, dT.aab[va, va, Vb, Oa, Oa, Ob]))
+    print("Error in VvvOOO = ", _get_error(dT_act.aab.VvvOOO, dT.aab[Va, va, vb, Oa, Oa, Ob]))
+    print("Error in VVvoOO = ", _get_error(dT_act.aab.VVvoOO, dT.aab[Va, Va, vb, oa, Oa, Ob]))
+    print("Error in VvVOOo = ", _get_error(dT_act.aab.VvVOOo, dT.aab[Va, va, Vb, Oa, Oa, ob]))
+    print("Error in VvVoOO = ", _get_error(dT_act.aab.VvVoOO, dT.aab[Va, va, Vb, oa, Oa, Ob]))
+    print("Error in VVvOOo = ", _get_error(dT_act.aab.VVvOOo, dT.aab[Va, Va, vb, Oa, Oa, ob]))
+    # three inactive
+    print("Error in VvVooO = ", _get_error(dT_act.aab.VvVooO, dT.aab[Va, va, Vb, oa, oa, Ob]))
+    print("Error in VvVoOo = ", _get_error(dT_act.aab.VvVoOo, dT.aab[Va, va, Vb, oa, Oa, ob]))
+    print("Error in VVvooO = ", _get_error(dT_act.aab.VVvooO, dT.aab[Va, Va, vb, oa, oa, Ob]))
+    print("Error in VVvoOo = ", _get_error(dT_act.aab.VVvoOo, dT.aab[Va, Va, vb, oa, Oa, ob]))
+    print("Error in vvVoOO = ", _get_error(dT_act.aab.vvVoOO, dT.aab[va, va, Vb, oa, Oa, Ob]))
+    print("Error in vvVOOo = ", _get_error(dT_act.aab.vvVOOo, dT.aab[va, va, Vb, Oa, Oa, ob]))
+    print("Error in VvvoOO = ", _get_error(dT_act.aab.VvvoOO, dT.aab[Va, va, vb, oa, Oa, Ob]))
+    print("Error in VvvOOo = ", _get_error(dT_act.aab.VvvOOo, dT.aab[Va, va, vb, Oa, Oa, ob]))
+    # four inactive
+    print("Error in vvVooO = ", _get_error(dT_act.aab.vvVooO, dT.aab[va, va, Vb, oa, oa, Ob]))
+    print("Error in vvVoOo = ", _get_error(dT_act.aab.vvVoOo, dT.aab[va, va, Vb, oa, Oa, ob]))
+    print("Error in VvvooO = ", _get_error(dT_act.aab.VvvooO, dT.aab[Va, va, vb, oa, oa, Ob]))
+    print("Error in VvvoOo = ", _get_error(dT_act.aab.VvvoOo, dT.aab[Va, va, vb, oa, Oa, ob]))
+
 
 def calc_full_update_t3a(T, dT, H, H0, shift, system):
 
@@ -78,8 +111,6 @@ def calc_full_update_t3b(T, dT, H, H0, shift, system):
 
 def update_t3a(T, dT, H, H0, shift, system):
 
-    oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-
     _, dT = update_t3a_111111.update(T, dT, H, H0, shift, system)
     _, dT = update_t3a_110111.update(T, dT, H, H0, shift, system)
     _, dT = update_t3a_111011.update(T, dT, H, H0, shift, system)
@@ -89,6 +120,40 @@ def update_t3a(T, dT, H, H0, shift, system):
     _, dT = update_t3a_100011.update(T, dT, H, H0, shift, system)
     _, dT = update_t3a_110001.update(T, dT, H, H0, shift, system)
     _, dT = update_t3a_100001.update(T, dT, H, H0, shift, system)
+
+    return T, dT
+
+def update_t3b(T, dT, H, H0, shift, system):
+
+    _, dT = update_t3b_111111.update(T, dT, H, H0, shift, system)
+    # one inactive
+    _, dT = update_t3b_111110.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_111011.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_110111.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_101111.update(T, dT, H, H0, shift, system)
+    # two inactive
+    _, dT = update_t3b_111001.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_111010.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_001111.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_100111.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_110011.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_101110.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_101011.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_110110.update(T, dT, H, H0, shift, system)
+    # three inactive
+    _, dT = update_t3b_101001.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_101010.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_110001.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_110010.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_001011.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_001110.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_100011.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_100110.update(T, dT, H, H0, shift, system)
+    # four inactive
+    _, dT = update_t3b_001001.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_001010.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_100001.update(T, dT, H, H0, shift, system)
+    _, dT = update_t3b_100010.update(T, dT, H, H0, shift, system)
 
     return T, dT
 
@@ -150,6 +215,7 @@ if __name__ == "__main__":
 
     # get the active-space updates
     _, dT_act = update_t3a(T_act, dT_act, HBar, H, 0.0, system)
+    _, dT_act = update_t3b(T_act, dT_act, HBar, H, 0.0, system)
 
     # Get the error
-    calc_error_t3a(dT_act, dT, system)
+    calc_error(dT_act, dT, system)
