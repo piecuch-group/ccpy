@@ -237,9 +237,9 @@ def zero_t3abb_outside_active_space(T, system, num_act):
 
                             if active_h < num_act or active_p < num_act:
                                 T.abb[a, b, c, i, j, k] = 0.0
-                                T.abb[b, a, c, i, j, k] = 0.0
-                                T.abb[a, b, c, j, i, k] = 0.0
-                                T.abb[b, a, c, j, i, k] = 0.0
+                                T.abb[a, c, b, i, j, k] = 0.0
+                                T.abb[a, b, c, i, k, j] = 0.0
+                                T.abb[a, c, b, i, k, j] = 0.0
     return T
 
 

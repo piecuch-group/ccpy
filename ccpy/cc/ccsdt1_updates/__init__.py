@@ -1,3 +1,6 @@
+from os.path import dirname, basename, isfile, join
+import glob
 
-__all__ = ["update_t3a_111111", "update_t3a_110111", "update_t3a_111011", "update_t3a_100111", "update_t3a_110011",
-           "update_t3a_100011", "update_t3a_110001", "update_t3a_100001", "update_t3a_111001"]
+modules = glob.glob(join(dirname(__file__), "*.py"))
+
+__all__ = [ basename(f)[:-3] for f in modules if isfile(f) and not f.endswith('__init__.py')]
