@@ -915,7 +915,7 @@ def update_t3a(T, dT, H, H0, shift):
     )
 
 
-    return dT
+    return T, dT
 
 
 # @profile
