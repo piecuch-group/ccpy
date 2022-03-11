@@ -111,7 +111,18 @@ def calc_error(dT_act, dT, system):
 
 def calc_full_update_t3a(T, dT, H, H0, shift, system):
 
-    dT.aaa = -(1.0 / 12.0) * np.einsum("mk,abcijm->abcijk", H.a.oo, T.aaa, optimize=True)
+    I2A_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.aa.oovv, T.aaa, optimize=True)
+    I2A_vvov -= np.einsum("mnef,abfimn->abie", H0.ab.oovv, T.aab, optimize=True)
+    I2A_vvov += H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
+
+    I2A_vooo = 0.5 * np.einsum("mnef,aefijn->amij", H0.aa.oovv, T.aaa, optimize=True)
+    I2A_vooo += H.aa.vooo + np.einsum("mnef,aefijn->amij", H0.ab.oovv, T.aab, optimize=True)
+
+    # MM(2,3)A
+    dT.aaa = -0.25 * np.einsum("amij,bcmk->abcijk", I2A_vooo, T.aa, optimize=True)
+    dT.aaa += 0.25 * np.einsum("abie,ecjk->abcijk", I2A_vvov, T.aa, optimize=True)
+
+    dT.aaa -= (1.0 / 12.0) * np.einsum("mk,abcijm->abcijk", H.a.oo, T.aaa, optimize=True)
     dT.aaa += (1.0 / 12.0) * np.einsum("ce,abeijk->abcijk", H.a.vv, T.aaa, optimize=True)
     dT.aaa += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aaa, optimize=True)
     dT.aaa += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aaa, optimize=True)
@@ -130,25 +141,66 @@ def calc_full_update_t3a(T, dT, H, H0, shift, system):
 
 def calc_full_update_t3b(T, dT, H, H0, shift, system):
 
+    # <ijk~abc~ | H(2) | 0 > + (VT3)_C intermediates
+    I2A_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.aa.oovv, T.aaa, optimize=True)
+    I2A_vvov += -np.einsum("mnef,abfimn->abie", H0.ab.oovv, T.aab, optimize=True)
+    I2A_vvov += H.aa.vvov
+
+    I2A_vooo = 0.5 * np.einsum("mnef,aefijn->amij", H0.aa.oovv, T.aaa, optimize=True)
+    I2A_vooo += np.einsum("mnef,aefijn->amij", H0.ab.oovv, T.aab, optimize=True)
+    I2A_vooo += -np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+    I2A_vooo += H.aa.vooo
+
+    I2B_vvvo = -0.5 * np.einsum("mnef,afbmnj->abej", H0.aa.oovv, T.aab, optimize=True)
+    I2B_vvvo += -np.einsum("mnef,afbmnj->abej", H0.ab.oovv, T.abb, optimize=True)
+    I2B_vvvo += H.ab.vvvo
+
+    I2B_ovoo = 0.5 * np.einsum("mnef,efbinj->mbij", H0.aa.oovv, T.aab, optimize=True)
+    I2B_ovoo += np.einsum("mnef,efbinj->mbij", H0.ab.oovv, T.abb, optimize=True)
+    I2B_ovoo += -np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
+    I2B_ovoo += H.ab.ovoo
+
+    I2B_vvov = -np.einsum("nmfe,afbinm->abie", H0.ab.oovv, T.aab, optimize=True)
+    I2B_vvov += -0.5 * np.einsum("nmfe,afbinm->abie", H0.bb.oovv, T.abb, optimize=True)
+    I2B_vvov += H.ab.vvov
+
+    I2B_vooo = np.einsum("nmfe,afeinj->amij", H0.ab.oovv, T.aab, optimize=True)
+    I2B_vooo += 0.5 * np.einsum("nmfe,afeinj->amij", H0.bb.oovv, T.abb, optimize=True)
+    I2B_vooo += -np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
+    I2B_vooo += H.ab.vooo
+
+    VT3 = {'aa': {'vooo': I2A_vooo, 'vvov': I2A_vvov},
+           'ab': {'vvvo' : I2B_vvvo, 'ovoo': I2B_ovoo, 'vvov' : I2B_vvov, 'vooo' : I2B_vooo},
+           'bb': {},
+           }
+
+    # MM(2,3)B
+    dT.aab = 0.5 * np.einsum("bcek,aeij->abcijk", I2B_vvvo, T.aa, optimize=True)
+    dT.aab -= 0.5 * np.einsum("mcjk,abim->abcijk", I2B_ovoo, T.aa, optimize=True)
+    dT.aab += np.einsum("acie,bejk->abcijk", I2B_vvov, T.ab, optimize=True)
+    dT.aab -= np.einsum("amik,bcjm->abcijk", I2B_vooo, T.ab, optimize=True)
+    dT.aab += 0.5 * np.einsum("abie,ecjk->abcijk", I2A_vvov, T.ab, optimize=True)
+    dT.aab -= 0.5 * np.einsum("amij,bcmk->abcijk", I2A_vooo, T.ab, optimize=True)
+
     # calculate full update
-    dT.aab = -0.5 * np.einsum("mi,abcmjk->abcijk", HBar.a.oo, T.aab, optimize=True)
-    dT.aab -= 0.25 * np.einsum("mk,abcijm->abcijk", HBar.b.oo, T.aab, optimize=True)
-    dT.aab += 0.5 * np.einsum("ae,ebcijk->abcijk", HBar.a.vv, T.aab, optimize=True)
-    dT.aab += 0.25 * np.einsum("ce,abeijk->abcijk", HBar.b.vv, T.aab, optimize=True)
-    dT.aab += 0.125 * np.einsum("mnij,abcmnk->abcijk", HBar.aa.oooo, T.aab, optimize=True)
-    dT.aab += 0.5 * np.einsum("mnjk,abcimn->abcijk", HBar.ab.oooo, T.aab, optimize=True)
-    dT.aab += 0.125 * np.einsum("abef,efcijk->abcijk", HBar.aa.vvvv, T.aab, optimize=True)
-    dT.aab += 0.5 * np.einsum("bcef,aefijk->abcijk", HBar.ab.vvvv, T.aab, optimize=True)
-    dT.aab += np.einsum("amie,ebcmjk->abcijk", HBar.aa.voov, T.aab, optimize=True)
-    dT.aab += np.einsum("amie,becjmk->abcijk", HBar.ab.voov, T.abb, optimize=True)
-    dT.aab += 0.25 * np.einsum("mcek,abeijm->abcijk", HBar.ab.ovvo, T.aaa, optimize=True)
-    dT.aab += 0.25 * np.einsum("cmke,abeijm->abcijk", HBar.bb.voov, T.aab, optimize=True)
-    dT.aab -= 0.5 * np.einsum("amek,ebcijm->abcijk", HBar.ab.vovo, T.aab, optimize=True)
-    dT.aab -= 0.5 * np.einsum("mcie,abemjk->abcijk", HBar.ab.ovov, T.aab, optimize=True)
+    dT.aab -= 0.5 * np.einsum("mi,abcmjk->abcijk", H.a.oo, T.aab, optimize=True)
+    dT.aab -= 0.25 * np.einsum("mk,abcijm->abcijk", H.b.oo, T.aab, optimize=True)
+    dT.aab += 0.5 * np.einsum("ae,ebcijk->abcijk", H.a.vv, T.aab, optimize=True)
+    dT.aab += 0.25 * np.einsum("ce,abeijk->abcijk", H.b.vv, T.aab, optimize=True)
+    dT.aab += 0.125 * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aab, optimize=True)
+    dT.aab += 0.5 * np.einsum("mnjk,abcimn->abcijk", H.ab.oooo, T.aab, optimize=True)
+    dT.aab += 0.125 * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aab, optimize=True)
+    dT.aab += 0.5 * np.einsum("bcef,aefijk->abcijk", H.ab.vvvv, T.aab, optimize=True)
+    dT.aab += np.einsum("amie,ebcmjk->abcijk", H.aa.voov, T.aab, optimize=True)
+    dT.aab += np.einsum("amie,becjmk->abcijk", H.ab.voov, T.abb, optimize=True)
+    dT.aab += 0.25 * np.einsum("mcek,abeijm->abcijk", H.ab.ovvo, T.aaa, optimize=True)
+    dT.aab += 0.25 * np.einsum("cmke,abeijm->abcijk", H.bb.voov, T.aab, optimize=True)
+    dT.aab -= 0.5 * np.einsum("amek,ebcijm->abcijk", H.ab.vovo, T.aab, optimize=True)
+    dT.aab -= 0.5 * np.einsum("mcie,abemjk->abcijk", H.ab.ovov, T.aab, optimize=True)
     dT.aab -= np.transpose(dT.aab, (1, 0, 2, 3, 4, 5))
     dT.aab -= np.transpose(dT.aab, (0, 1, 2, 4, 3, 5))
 
-    return T, dT
+    return T, dT, VT3
 
 def calc_full_update_t3c(T, dT, H, H0, shift, system):
 
@@ -193,7 +245,6 @@ def calc_full_update_t3d(T, dT, H, H0, shift, system):
     return T, dT
 
 def update_t3a(T, dT, H, H0, shift, system):
-
     _, dT = update_t3a_111111.update(T, dT, H, H0, shift, system)
     _, dT = update_t3a_110111.update(T, dT, H, H0, shift, system)
     _, dT = update_t3a_111011.update(T, dT, H, H0, shift, system)
@@ -292,18 +343,39 @@ def update_t3d(T, dT, H, H0, shift, system):
 if __name__ == "__main__":
 
     mol = gto.Mole()
-    mol.build(
-        atom="""F 0.0 0.0 -2.66816
-                F 0.0 0.0  2.66816""",
-        basis="ccpvdz",
-        charge=0,
-        spin=0,
-        symmetry="D2H",
-        cart=True,
-        unit='Bohr',
-    )
-    mf = scf.ROHF(mol)
-    mf.kernel()
+
+    case = 'F2'
+
+    if case == 'F2':
+        mol.build(
+            atom="""F 0.0 0.0 -2.66816
+                    F 0.0 0.0  2.66816""",
+            basis="ccpvdz",
+            charge=0,
+            spin=0,
+            symmetry="D2H",
+            cart=True,
+            unit='Bohr',
+        )
+        mf = scf.ROHF(mol)
+        mf.kernel()
+
+    if case == 'H2O':
+        mol.build(
+            atom="""H 0.0 -1.515263  -1.058898
+                    H 0.0 1.515263  -1.058898
+                    O 0.0 0.0 -0.0090""",
+            basis="ccpvdz",
+            charge=0,
+            spin=0,
+            symmetry="C2V",
+            cart=True,
+            unit='Bohr',
+        )
+        mf = scf.RHF(mol)
+        mf.kernel()
+
+
 
     system, H = load_pyscf_integrals(mf, nfrozen=2,
                                      num_act_holes_alpha=4, num_act_particles_alpha=10,
@@ -335,6 +407,11 @@ if __name__ == "__main__":
     T = zero_t3bbb_outside_active_space(T, system, 1)
 
     # fill in the active-space cluster operator
+    T_act.a = T.a.copy()
+    T_act.b = T.b.copy()
+    T_act.aa = T.aa.copy()
+    T_act.ab = T.ab.copy()
+    T_act.bb = T.bb.copy()
     T_act = fill_t3aaa(T_act, T, system)
     T_act = fill_t3aab(T_act, T, system)
     T_act = fill_t3abb(T_act, T, system)
@@ -342,11 +419,16 @@ if __name__ == "__main__":
 
     # get the full update
     _, dT = calc_full_update_t3a(T, dT, HBar, H, 0.0, system)
-    _, dT = calc_full_update_t3b(T, dT, HBar, H, 0.0, system)
+    _, dT, VT3_exact = calc_full_update_t3b(T, dT, HBar, H, 0.0, system)
     _, dT = calc_full_update_t3c(T, dT, HBar, H, 0.0, system)
     _, dT = calc_full_update_t3d(T, dT, HBar, H, 0.0, system)
 
-    # get the active-space updates
+    # update CCSD HBar with the (V*T3)_C two-body intermediates
+    HBar = intermediates.build_VT3_intermediates(T_act, HBar, system)
+
+    #error = VT3['ab']['vvov'] - VT3_exact['ab']['vvov']
+    #print("error in vvov = ", np.linalg.norm(error.flatten()))
+
     _, dT_act = update_t3a(T_act, dT_act, HBar, H, 0.0, system)
     _, dT_act = update_t3b(T_act, dT_act, HBar, H, 0.0, system)
     _, dT_act = update_t3c(T_act, dT_act, HBar, H, 0.0, system)

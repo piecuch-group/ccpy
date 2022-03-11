@@ -2,8 +2,40 @@ import numpy as np
 from ccpy.utilities.active_space import get_active_slices
 
 def update(T, dT, H, H0, shift, system):
-    oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
+    oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
+    # MM(2,3)
+    dT.aab.VvVOOo = (1.0 / 2.0) * (
+            +1.0 * np.einsum('bCek,AeIJ->AbCIJk', H.ab.vvvo[va, Vb, :, ob], T.aa[Va, :, Oa, Oa], optimize=True)
+    )
+    dT.aab.VvVOOo += (1.0 / 2.0) * (
+            -1.0 * np.einsum('ACek,beIJ->AbCIJk', H.ab.vvvo[Va, Vb, :, ob], T.aa[va, :, Oa, Oa], optimize=True)
+    )
+    dT.aab.VvVOOo += (2.0 / 2.0) * (
+            -1.0 * np.einsum('mCJk,AbIm->AbCIJk', H.ab.ovoo[:, Vb, Oa, ob], T.aa[Va, va, Oa, :], optimize=True)
+    )
+    dT.aab.VvVOOo += (2.0 / 2.0) * (
+            +1.0 * np.einsum('ACIe,beJk->AbCIJk', H.ab.vvov[Va, Vb, Oa, :], T.ab[va, :, Oa, ob], optimize=True)
+    )
+    dT.aab.VvVOOo += (2.0 / 2.0) * (
+            -1.0 * np.einsum('bCIe,AeJk->AbCIJk', H.ab.vvov[va, Vb, Oa, :], T.ab[Va, :, Oa, ob], optimize=True)
+    )
+    dT.aab.VvVOOo += (2.0 / 2.0) * (
+            -1.0 * np.einsum('AmIk,bCJm->AbCIJk', H.ab.vooo[Va, :, Oa, ob], T.ab[va, Vb, Oa, :], optimize=True)
+    )
+    dT.aab.VvVOOo += (2.0 / 2.0) * (
+            +1.0 * np.einsum('bmIk,ACJm->AbCIJk', H.ab.vooo[va, :, Oa, ob], T.ab[Va, Vb, Oa, :], optimize=True)
+    )
+    dT.aab.VvVOOo += (2.0 / 2.0) * (
+            +1.0 * np.einsum('AbIe,eCJk->AbCIJk', H.aa.vvov[Va, va, Oa, :], T.ab[:, Vb, Oa, ob], optimize=True)
+    )
+    dT.aab.VvVOOo += (1.0 / 2.0) * (
+            -1.0 * np.einsum('AmIJ,bCmk->AbCIJk', H.aa.vooo[Va, :, Oa, Oa], T.ab[va, Vb, :, ob], optimize=True)
+    )
+    dT.aab.VvVOOo += (1.0 / 2.0) * (
+            +1.0 * np.einsum('bmIJ,ACmk->AbCIJk', H.aa.vooo[va, :, Oa, Oa], T.ab[Va, Vb, :, ob], optimize=True)
+    )
+    # (H(2) * T3)_C
     dT.aab.VvVOOo += (2.0 / 2.0) * (
             -1.0 * np.einsum('mI,AbCmJk->AbCIJk', H.a.oo[oa, Oa], T.aab.VvVoOo, optimize=True)
             - 1.0 * np.einsum('MI,AbCMJk->AbCIJk', H.a.oo[Oa, Oa], T.aab.VvVOOo, optimize=True)

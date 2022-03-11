@@ -4,6 +4,13 @@ from ccpy.utilities.active_space import get_active_slices
 def update(T, dT, H, H0, shift, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
+    # MM(2,3)
+    dT.aaa.VVVoOO =  -(6.0 / 12.0) * np.einsum("AmiJ,BCmK->ABCiJK", H.aa.vooo[Va, :, oa, Oa], T.aa[Va, Va, :, Oa], optimize=True)
+    dT.aaa.VVVoOO -= -(3.0 / 12.0) * np.einsum("AmKJ,BCmi->ABCiJK", H.aa.vooo[Va, :, Oa, Oa], T.aa[Va, Va, :, oa], optimize=True)
+
+    dT.aaa.VVVoOO += (3.0 / 12.0) * np.einsum("ABie,eCJK->ABCiJK", H.aa.vvov[Va, Va, oa, :], T.aa[:, Va, Oa, Oa], optimize=True)
+    dT.aaa.VVVoOO -= (6.0 / 12.0) * np.einsum("ABJe,eCiK->ABCiJK", H.aa.vvov[Va, Va, Oa, :], T.aa[:, Va, oa, Oa], optimize=True)
+    # (H(2) * T3)_C
     dT.aaa.VVVoOO += (1.0 / 12.0) * (
             +1.0 * np.einsum('mi,CBAmJK->ABCiJK', H.a.oo[oa, oa], T.aaa.VVVoOO, optimize=True)
             + 1.0 * np.einsum('Mi,CBAMJK->ABCiJK', H.a.oo[Oa, oa], T.aaa.VVVOOO, optimize=True)

@@ -2,8 +2,41 @@ import numpy as np
 from ccpy.utilities.active_space import get_active_slices
 
 def update(T, dT, H, H0, shift, system):
+
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
+    # MM(2,3)
+    dT.aab.VVvoOO = (2.0 / 2.0) * (
+            +1.0 * np.einsum('BceK,AeiJ->ABciJK', H.ab.vvvo[Va, vb, :, Ob], T.aa[Va, :, oa, Oa], optimize=True)
+    )
+    dT.aab.VVvoOO += (1.0 / 2.0) * (
+            -1.0 * np.einsum('mcJK,ABim->ABciJK', H.ab.ovoo[:, vb, Oa, Ob], T.aa[Va, Va, oa, :], optimize=True)
+    )
+    dT.aab.VVvoOO += (1.0 / 2.0) * (
+            +1.0 * np.einsum('mciK,ABJm->ABciJK', H.ab.ovoo[:, vb, oa, Ob], T.aa[Va, Va, Oa, :], optimize=True)
+    )
+    dT.aab.VVvoOO += (2.0 / 2.0) * (
+            +1.0 * np.einsum('Acie,BeJK->ABciJK', H.ab.vvov[Va, vb, oa, :], T.ab[Va, :, Oa, Ob], optimize=True)
+    )
+    dT.aab.VVvoOO += (2.0 / 2.0) * (
+            -1.0 * np.einsum('AcJe,BeiK->ABciJK', H.ab.vvov[Va, vb, Oa, :], T.ab[Va, :, oa, Ob], optimize=True)
+    )
+    dT.aab.VVvoOO += (2.0 / 2.0) * (
+            -1.0 * np.einsum('AmiK,BcJm->ABciJK', H.ab.vooo[Va, :, oa, Ob], T.ab[Va, vb, Oa, :], optimize=True)
+    )
+    dT.aab.VVvoOO += (2.0 / 2.0) * (
+            +1.0 * np.einsum('AmJK,Bcim->ABciJK', H.ab.vooo[Va, :, Oa, Ob], T.ab[Va, vb, oa, :], optimize=True)
+    )
+    dT.aab.VVvoOO += (1.0 / 2.0) * (
+            +1.0 * np.einsum('ABie,ecJK->ABciJK', H.aa.vvov[Va, Va, oa, :], T.ab[:, vb, Oa, Ob], optimize=True)
+    )
+    dT.aab.VVvoOO += (1.0 / 2.0) * (
+            -1.0 * np.einsum('ABJe,eciK->ABciJK', H.aa.vvov[Va, Va, Oa, :], T.ab[:, vb, oa, Ob], optimize=True)
+    )
+    dT.aab.VVvoOO += (2.0 / 2.0) * (
+            -1.0 * np.einsum('AmiJ,BcmK->ABciJK', H.aa.vooo[Va, :, oa, Oa], T.ab[Va, vb, :, Ob], optimize=True)
+    )
+    # (H(2) * T3)_C
     dT.aab.VVvoOO += (1.0 / 2.0) * (
             +1.0 * np.einsum('mi,BAcmJK->ABciJK', H.a.oo[oa, oa], T.aab.VVvoOO, optimize=True)
             + 1.0 * np.einsum('Mi,BAcMJK->ABciJK', H.a.oo[Oa, oa], T.aab.VVvOOO, optimize=True)
