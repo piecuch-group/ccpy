@@ -2,8 +2,58 @@ import numpy as np
 from ccpy.utilities.active_space import get_active_slices
 
 def update(T, dT, H, H0, shift, system):
-    oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
+    oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
+    # MM(2,3)
+    dT.abb.VVvOoO = (1.0 / 1.0) * (
+            +1.0 * np.einsum('ABIe,ecjK->ABcIjK', H.ab.vvov[Va, Vb, Oa, :], T.bb[:, vb, ob, Ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            -1.0 * np.einsum('AcIe,eBjK->ABcIjK', H.ab.vvov[Va, vb, Oa, :], T.bb[:, Vb, ob, Ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            -1.0 * np.einsum('AmIj,BcmK->ABcIjK', H.ab.vooo[Va, :, Oa, ob], T.bb[Vb, vb, :, Ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            +1.0 * np.einsum('AmIK,Bcmj->ABcIjK', H.ab.vooo[Va, :, Oa, Ob], T.bb[Vb, vb, :, ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            +1.0 * np.einsum('cBKe,AeIj->ABcIjK', H.bb.vvov[vb, Vb, Ob, :], T.ab[Va, :, Oa, ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            -1.0 * np.einsum('cBje,AeIK->ABcIjK', H.bb.vvov[vb, Vb, ob, :], T.ab[Va, :, Oa, Ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            -1.0 * np.einsum('cmKj,ABIm->ABcIjK', H.bb.vooo[vb, :, Ob, ob], T.ab[Va, Vb, Oa, :], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            +1.0 * np.einsum('BmKj,AcIm->ABcIjK', H.bb.vooo[Vb, :, Ob, ob], T.ab[Va, vb, Oa, :], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            +1.0 * np.einsum('ABej,ecIK->ABcIjK', H.ab.vvvo[Va, Vb, :, ob], T.ab[:, vb, Oa, Ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            -1.0 * np.einsum('Acej,eBIK->ABcIjK', H.ab.vvvo[Va, vb, :, ob], T.ab[:, Vb, Oa, Ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            -1.0 * np.einsum('ABeK,ecIj->ABcIjK', H.ab.vvvo[Va, Vb, :, Ob], T.ab[:, vb, Oa, ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            +1.0 * np.einsum('AceK,eBIj->ABcIjK', H.ab.vvvo[Va, vb, :, Ob], T.ab[:, Vb, Oa, ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            -1.0 * np.einsum('mBIj,AcmK->ABcIjK', H.ab.ovoo[:, Vb, Oa, ob], T.ab[Va, vb, :, Ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            +1.0 * np.einsum('mcIj,ABmK->ABcIjK', H.ab.ovoo[:, vb, Oa, ob], T.ab[Va, Vb, :, Ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            +1.0 * np.einsum('mBIK,Acmj->ABcIjK', H.ab.ovoo[:, Vb, Oa, Ob], T.ab[Va, vb, :, ob], optimize=True)
+    )
+    dT.abb.VVvOoO += (1.0 / 1.0) * (
+            -1.0 * np.einsum('mcIK,ABmj->ABcIjK', H.ab.ovoo[:, vb, Oa, Ob], T.ab[Va, Vb, :, ob], optimize=True)
+    )
+    # (H(2) * T3)_C
     dT.abb.VVvOoO += (1.0 / 1.0) * (
             -1.0 * np.einsum('mI,ABcmjK->ABcIjK', H.a.oo[oa, Oa], T.abb.VVvooO, optimize=True)
             - 1.0 * np.einsum('MI,ABcMjK->ABcIjK', H.a.oo[Oa, Oa], T.abb.VVvOoO, optimize=True)
