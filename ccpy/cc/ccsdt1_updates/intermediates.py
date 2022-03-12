@@ -712,16 +712,206 @@ def build_VT3_intermediates(T, H, system):
             - 0.5 * np.einsum('NMFe,aFbiNM->abie', H.bb.oovv[Ob, Ob, Vb, :], T.abb.vVvoOO, optimize=True)
     )
 
+    #########################################################################
+    ############################ bb intermdiates ############################
+    #########################################################################
+
+    ##### I2C_vooo #####
+    I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
+    # AmIJ
+    I2C_vooo[Vb, :, Ob, Ob] += (1.0 / 1.0) * (
+            -0.5 * np.einsum('mnef,AfenIJ->AmIJ', H.bb.oovv[:, ob, vb, vb], T.bbb.VvvoOO, optimize=True)
+            - 0.5 * np.einsum('mNef,AfeIJN->AmIJ', H.bb.oovv[:, Ob, vb, vb], T.bbb.VvvOOO, optimize=True)
+            + 1.0 * np.einsum('mneF,FAenIJ->AmIJ', H.bb.oovv[:, ob, vb, Vb], T.bbb.VVvoOO, optimize=True)
+            - 0.5 * np.einsum('mnEF,FEAnIJ->AmIJ', H.bb.oovv[:, ob, Vb, Vb], T.bbb.VVVoOO, optimize=True)
+            + 1.0 * np.einsum('mNeF,FAeIJN->AmIJ', H.bb.oovv[:, Ob, vb, Vb], T.bbb.VVvOOO, optimize=True)
+            - 0.5 * np.einsum('mNEF,FEAIJN->AmIJ', H.bb.oovv[:, Ob, Vb, Vb], T.bbb.VVVOOO, optimize=True)
+    )
+    I2C_vooo[Vb, :, Ob, Ob] += (1.0 / 1.0) * (
+            +1.0 * np.einsum('nmfe,fAenIJ->AmIJ', H.ab.oovv[oa, :, va, vb], T.abb.vVvoOO, optimize=True)
+            - 1.0 * np.einsum('nmfE,fEAnIJ->AmIJ', H.ab.oovv[oa, :, va, Vb], T.abb.vVVoOO, optimize=True)
+            + 1.0 * np.einsum('Nmfe,fAeNIJ->AmIJ', H.ab.oovv[Oa, :, va, vb], T.abb.vVvOOO, optimize=True)
+            - 1.0 * np.einsum('NmfE,fEANIJ->AmIJ', H.ab.oovv[Oa, :, va, Vb], T.abb.vVVOOO, optimize=True)
+            + 1.0 * np.einsum('nmFe,FAenIJ->AmIJ', H.ab.oovv[oa, :, Va, vb], T.abb.VVvoOO, optimize=True)
+            - 1.0 * np.einsum('nmFE,FEAnIJ->AmIJ', H.ab.oovv[oa, :, Va, Vb], T.abb.VVVoOO, optimize=True)
+            + 1.0 * np.einsum('NmFe,FAeNIJ->AmIJ', H.ab.oovv[Oa, :, Va, vb], T.abb.VVvOOO, optimize=True)
+            - 1.0 * np.einsum('NmFE,FEANIJ->AmIJ', H.ab.oovv[Oa, :, Va, Vb], T.abb.VVVOOO, optimize=True)
+    )
+    # AmiJ
+    I2C_vooo[Vb, :, ob, Ob] += (1.0 / 1.0) * (
+            +0.5 * np.einsum('mnef,AfeinJ->AmiJ', H.bb.oovv[:, ob, vb, vb], T.bbb.VvvooO, optimize=True)
+            + 1.0 * np.einsum('mnEf,EAfinJ->AmiJ', H.bb.oovv[:, ob, Vb, vb], T.bbb.VVvooO, optimize=True)
+            + 0.5 * np.einsum('mnEF,FEAinJ->AmiJ', H.bb.oovv[:, ob, Vb, Vb], T.bbb.VVVooO, optimize=True)
+            - 0.5 * np.einsum('mNef,AfeiJN->AmiJ', H.bb.oovv[:, Ob, vb, vb], T.bbb.VvvoOO, optimize=True)
+            - 1.0 * np.einsum('mNEf,EAfiJN->AmiJ', H.bb.oovv[:, Ob, Vb, vb], T.bbb.VVvoOO, optimize=True)
+            - 0.5 * np.einsum('mNEF,FEAiJN->AmiJ', H.bb.oovv[:, Ob, Vb, Vb], T.bbb.VVVoOO, optimize=True)
+    )
+    I2C_vooo[Vb, :, ob, Ob] += (1.0 / 1.0) * (
+            +1.0 * np.einsum('nmfe,fAeniJ->AmiJ', H.ab.oovv[oa, :, va, vb], T.abb.vVvooO, optimize=True)
+            + 1.0 * np.einsum('nmFe,FAeniJ->AmiJ', H.ab.oovv[oa, :, Va, vb], T.abb.VVvooO, optimize=True)
+            - 1.0 * np.einsum('nmfE,fEAniJ->AmiJ', H.ab.oovv[oa, :, va, Vb], T.abb.vVVooO, optimize=True)
+            - 1.0 * np.einsum('nmFE,FEAniJ->AmiJ', H.ab.oovv[oa, :, Va, Vb], T.abb.VVVooO, optimize=True)
+            + 1.0 * np.einsum('Nmfe,fAeNiJ->AmiJ', H.ab.oovv[Oa, :, va, vb], T.abb.vVvOoO, optimize=True)
+            + 1.0 * np.einsum('NmFe,FAeNiJ->AmiJ', H.ab.oovv[Oa, :, Va, vb], T.abb.VVvOoO, optimize=True)
+            - 1.0 * np.einsum('NmfE,fEANiJ->AmiJ', H.ab.oovv[Oa, :, va, Vb], T.abb.vVVOoO, optimize=True)
+            - 1.0 * np.einsum('NmFE,FEANiJ->AmiJ', H.ab.oovv[Oa, :, Va, Vb], T.abb.VVVOoO, optimize=True)
+    )
+    I2C_vooo[Vb, :, Ob, ob] = -1.0*np.transpose(I2C_vooo[Vb, :, ob, Ob], (0, 1, 3, 2))
+    # Amij
+    I2C_vooo[Vb, :, ob, ob] += (1.0 / 1.0) * (
+            -0.5 * np.einsum('mNef,AfeijN->Amij', H.bb.oovv[:, Ob, vb, vb], T.bbb.VvvooO, optimize=True)
+            + 1.0 * np.einsum('mNeF,FAeijN->Amij', H.bb.oovv[:, Ob, vb, Vb], T.bbb.VVvooO, optimize=True)
+            - 0.5 * np.einsum('mNEF,FEAijN->Amij', H.bb.oovv[:, Ob, Vb, Vb], T.bbb.VVVooO, optimize=True)
+    )
+    I2C_vooo[Vb, :, ob, ob] += (1.0 / 1.0) * (
+            +1.0 * np.einsum('Nmfe,fAeNij->Amij', H.ab.oovv[Oa, :, va, vb], T.abb.vVvOoo, optimize=True)
+            - 1.0 * np.einsum('NmfE,fEANij->Amij', H.ab.oovv[Oa, :, va, Vb], T.abb.vVVOoo, optimize=True)
+            + 1.0 * np.einsum('NmFe,FAeNij->Amij', H.ab.oovv[Oa, :, Va, vb], T.abb.VVvOoo, optimize=True)
+            - 1.0 * np.einsum('NmFE,FEANij->Amij', H.ab.oovv[Oa, :, Va, Vb], T.abb.VVVOoo, optimize=True)
+    )
+    # amIJ
+    I2C_vooo[vb, :, Ob, Ob] += (1.0 / 1.0) * (
+            -1.0 * np.einsum('mneF,FeanIJ->amIJ', H.bb.oovv[:, ob, vb, Vb], T.bbb.VvvoOO, optimize=True)
+            - 0.5 * np.einsum('mnEF,FEanIJ->amIJ', H.bb.oovv[:, ob, Vb, Vb], T.bbb.VVvoOO, optimize=True)
+            - 1.0 * np.einsum('mNeF,FeaIJN->amIJ', H.bb.oovv[:, Ob, vb, Vb], T.bbb.VvvOOO, optimize=True)
+            - 0.5 * np.einsum('mNEF,FEaIJN->amIJ', H.bb.oovv[:, Ob, Vb, Vb], T.bbb.VVvOOO, optimize=True)
+    )
+    I2C_vooo[vb, :, Ob, Ob] += (1.0 / 1.0) * (
+            -1.0 * np.einsum('nmfE,fEanIJ->amIJ', H.ab.oovv[oa, :, va, Vb], T.abb.vVvoOO, optimize=True)
+            - 1.0 * np.einsum('nmFe,FeanIJ->amIJ', H.ab.oovv[oa, :, Va, vb], T.abb.VvvoOO, optimize=True)
+            - 1.0 * np.einsum('nmFE,FEanIJ->amIJ', H.ab.oovv[oa, :, Va, Vb], T.abb.VVvoOO, optimize=True)
+            - 1.0 * np.einsum('NmfE,fEaNIJ->amIJ', H.ab.oovv[Oa, :, va, Vb], T.abb.vVvOOO, optimize=True)
+            - 1.0 * np.einsum('NmFe,FeaNIJ->amIJ', H.ab.oovv[Oa, :, Va, vb], T.abb.VvvOOO, optimize=True)
+            - 1.0 * np.einsum('NmFE,FEaNIJ->amIJ', H.ab.oovv[Oa, :, Va, Vb], T.abb.VVvOOO, optimize=True)
+    )
+    # amiJ
+    I2C_vooo[vb, :, ob, Ob] += (1.0 / 1.0) * (
+            -1.0 * np.einsum('mnEf,EfainJ->amiJ', H.bb.oovv[:, ob, Vb, vb], T.bbb.VvvooO, optimize=True)
+            + 0.5 * np.einsum('mnEF,FEainJ->amiJ', H.bb.oovv[:, ob, Vb, Vb], T.bbb.VVvooO, optimize=True)
+            + 1.0 * np.einsum('mNEf,EfaiJN->amiJ', H.bb.oovv[:, Ob, Vb, vb], T.bbb.VvvoOO, optimize=True)
+            - 0.5 * np.einsum('mNEF,FEaiJN->amiJ', H.bb.oovv[:, Ob, Vb, Vb], T.bbb.VVvoOO, optimize=True)
+    )
+    I2C_vooo[vb, :, ob, Ob] += (1.0 / 1.0) * (
+            -1.0 * np.einsum('nmFe,FeaniJ->amiJ', H.ab.oovv[oa, :, Va, vb], T.abb.VvvooO, optimize=True)
+            - 1.0 * np.einsum('NmFe,FeaNiJ->amiJ', H.ab.oovv[Oa, :, Va, vb], T.abb.VvvOoO, optimize=True)
+            - 1.0 * np.einsum('nmfE,fEaniJ->amiJ', H.ab.oovv[oa, :, va, Vb], T.abb.vVvooO, optimize=True)
+            - 1.0 * np.einsum('nmFE,FEaniJ->amiJ', H.ab.oovv[oa, :, Va, Vb], T.abb.VVvooO, optimize=True)
+            - 1.0 * np.einsum('NmfE,fEaNiJ->amiJ', H.ab.oovv[Oa, :, va, Vb], T.abb.vVvOoO, optimize=True)
+            - 1.0 * np.einsum('NmFE,FEaNiJ->amiJ', H.ab.oovv[Oa, :, Va, Vb], T.abb.VVvOoO, optimize=True)
+    )
+    I2C_vooo[vb, :, Ob, ob] = -1.0*np.transpose(I2C_vooo[vb, :, ob, Ob], (0, 1, 3, 2))
+    # amij
+    I2C_vooo[vb, :, ob, ob] += (1.0 / 1.0) * (
+            +1.0 * np.einsum('mNEf,EfaijN->amij', H.bb.oovv[:, Ob, Vb, vb], T.bbb.VvvooO, optimize=True)
+            - 0.5 * np.einsum('mNEF,FEaijN->amij', H.bb.oovv[:, Ob, Vb, Vb], T.bbb.VVvooO, optimize=True)
+    )
+    I2C_vooo[vb, :, ob, ob] += (1.0 / 1.0) * (
+            -1.0 * np.einsum('NmFe,FeaNij->amij', H.ab.oovv[Oa, :, Va, vb], T.abb.VvvOoo, optimize=True)
+            - 1.0 * np.einsum('NmfE,fEaNij->amij', H.ab.oovv[Oa, :, va, Vb], T.abb.vVvOoo, optimize=True)
+            - 1.0 * np.einsum('NmFE,FEaNij->amij', H.ab.oovv[Oa, :, Va, Vb], T.abb.VVvOoo, optimize=True)
+    )
+    ##### I2C_vvov #####
+    I2C_vvov = H.bb.vvov.copy()
+    # ABIe
+    I2C_vvov[Vb, Vb, Ob, :] += (1.0 / 1.0) * (
+            +0.5 * np.einsum('mnef,BAfmnI->ABIe', H.bb.oovv[ob, ob, :, vb], T.bbb.VVvooO, optimize=True)
+            + 0.5 * np.einsum('mneF,FBAmnI->ABIe', H.bb.oovv[ob, ob, :, Vb], T.bbb.VVVooO, optimize=True)
+            + 1.0 * np.einsum('Mnef,BAfnIM->ABIe', H.bb.oovv[Ob, ob, :, vb], T.bbb.VVvoOO, optimize=True)
+            + 0.5 * np.einsum('MNef,BAfIMN->ABIe', H.bb.oovv[Ob, Ob, :, vb], T.bbb.VVvOOO, optimize=True)
+            + 1.0 * np.einsum('MneF,FBAnIM->ABIe', H.bb.oovv[Ob, ob, :, Vb], T.bbb.VVVoOO, optimize=True)
+            + 0.5 * np.einsum('MNeF,FBAIMN->ABIe', H.bb.oovv[Ob, Ob, :, Vb], T.bbb.VVVOOO, optimize=True)
+    )
+    I2C_vvov[Vb, Vb, Ob, :] += (1.0 / 1.0) * (
+            -1.0 * np.einsum('nmfe,fBAnmI->ABIe', H.ab.oovv[oa, ob, va, :], T.abb.vVVooO, optimize=True)
+            - 1.0 * np.einsum('nmFe,FBAnmI->ABIe', H.ab.oovv[oa, ob, Va, :], T.abb.VVVooO, optimize=True)
+            - 1.0 * np.einsum('Nmfe,fBANmI->ABIe', H.ab.oovv[Oa, ob, va, :], T.abb.vVVOoO, optimize=True)
+            - 1.0 * np.einsum('NmFe,FBANmI->ABIe', H.ab.oovv[Oa, ob, Va, :], T.abb.VVVOoO, optimize=True)
+            + 1.0 * np.einsum('nMfe,fBAnIM->ABIe', H.ab.oovv[oa, Ob, va, :], T.abb.vVVoOO, optimize=True)
+            + 1.0 * np.einsum('nMFe,FBAnIM->ABIe', H.ab.oovv[oa, Ob, Va, :], T.abb.VVVoOO, optimize=True)
+            + 1.0 * np.einsum('NMfe,fBANIM->ABIe', H.ab.oovv[Oa, Ob, va, :], T.abb.vVVOOO, optimize=True)
+            + 1.0 * np.einsum('NMFe,FBANIM->ABIe', H.ab.oovv[Oa, Ob, Va, :], T.abb.VVVOOO, optimize=True)
+    )
+    # AbIe
+    I2C_vvov[Vb, vb, Ob, :] += (1.0 / 1.0) * (
+            +0.5 * np.einsum('mnef,AfbmnI->AbIe', H.bb.oovv[ob, ob, :, vb], T.bbb.VvvooO, optimize=True)
+            - 0.5 * np.einsum('mneF,FAbmnI->AbIe', H.bb.oovv[ob, ob, :, Vb], T.bbb.VVvooO, optimize=True)
+            + 1.0 * np.einsum('Mnef,AfbnIM->AbIe', H.bb.oovv[Ob, ob, :, vb], T.bbb.VvvoOO, optimize=True)
+            - 1.0 * np.einsum('MneF,FAbnIM->AbIe', H.bb.oovv[Ob, ob, :, Vb], T.bbb.VVvoOO, optimize=True)
+            + 0.5 * np.einsum('MNef,AfbIMN->AbIe', H.bb.oovv[Ob, Ob, :, vb], T.bbb.VvvOOO, optimize=True)
+            - 0.5 * np.einsum('MNeF,FAbIMN->AbIe', H.bb.oovv[Ob, Ob, :, Vb], T.bbb.VVvOOO, optimize=True)
+    )
+    I2C_vvov[Vb, vb, Ob, :] += (1.0 / 1.0) * (
+            +1.0 * np.einsum('nmfe,fAbnmI->AbIe', H.ab.oovv[oa, ob, va, :], T.abb.vVvooO, optimize=True)
+            + 1.0 * np.einsum('nmFe,FAbnmI->AbIe', H.ab.oovv[oa, ob, Va, :], T.abb.VVvooO, optimize=True)
+            + 1.0 * np.einsum('Nmfe,fAbNmI->AbIe', H.ab.oovv[Oa, ob, va, :], T.abb.vVvOoO, optimize=True)
+            + 1.0 * np.einsum('NmFe,FAbNmI->AbIe', H.ab.oovv[Oa, ob, Va, :], T.abb.VVvOoO, optimize=True)
+            - 1.0 * np.einsum('nMfe,fAbnIM->AbIe', H.ab.oovv[oa, Ob, va, :], T.abb.vVvoOO, optimize=True)
+            - 1.0 * np.einsum('nMFe,FAbnIM->AbIe', H.ab.oovv[oa, Ob, Va, :], T.abb.VVvoOO, optimize=True)
+            - 1.0 * np.einsum('NMfe,fAbNIM->AbIe', H.ab.oovv[Oa, Ob, va, :], T.abb.vVvOOO, optimize=True)
+            - 1.0 * np.einsum('NMFe,FAbNIM->AbIe', H.ab.oovv[Oa, Ob, Va, :], T.abb.VVvOOO, optimize=True)
+    )
+    I2C_vvov[vb, Vb, Ob, :] = -1.0*np.transpose(I2C_vvov[Vb, vb, Ob, :], (1, 0, 2, 3))
+    # abIe
+    I2C_vvov[vb, vb, Ob, :] += (1.0 / 1.0) * (
+            +0.5 * np.einsum('mneF,FbamnI->abIe', H.bb.oovv[ob, ob, :, Vb], T.bbb.VvvooO, optimize=True)
+            + 1.0 * np.einsum('MneF,FbanIM->abIe', H.bb.oovv[Ob, ob, :, Vb], T.bbb.VvvoOO, optimize=True)
+            + 0.5 * np.einsum('MNeF,FbaIMN->abIe', H.bb.oovv[Ob, Ob, :, Vb], T.bbb.VvvOOO, optimize=True)
+    )
+    I2C_vvov[vb, vb, Ob, :] += (1.0 / 1.0) * (
+            -1.0 * np.einsum('nmFe,FbanmI->abIe', H.ab.oovv[oa, ob, Va, :], T.abb.VvvooO, optimize=True)
+            - 1.0 * np.einsum('NmFe,FbaNmI->abIe', H.ab.oovv[Oa, ob, Va, :], T.abb.VvvOoO, optimize=True)
+            + 1.0 * np.einsum('nMFe,FbanIM->abIe', H.ab.oovv[oa, Ob, Va, :], T.abb.VvvoOO, optimize=True)
+            + 1.0 * np.einsum('NMFe,FbaNIM->abIe', H.ab.oovv[Oa, Ob, Va, :], T.abb.VvvOOO, optimize=True)
+    )
+    # ABie
+    I2C_vvov[Vb, Vb, ob, :] += (1.0 / 1.0) * (
+            -1.0 * np.einsum('Mnef,BAfinM->ABie', H.bb.oovv[Ob, ob, :, vb], T.bbb.VVvooO, optimize=True)
+            + 0.5 * np.einsum('MNef,BAfiMN->ABie', H.bb.oovv[Ob, Ob, :, vb], T.bbb.VVvoOO, optimize=True)
+            - 1.0 * np.einsum('MneF,FBAinM->ABie', H.bb.oovv[Ob, ob, :, Vb], T.bbb.VVVooO, optimize=True)
+            + 0.5 * np.einsum('MNeF,FBAiMN->ABie', H.bb.oovv[Ob, Ob, :, Vb], T.bbb.VVVoOO, optimize=True)
+    )
+    I2C_vvov[Vb, Vb, ob, :] += (1.0 / 1.0) * (
+            +1.0 * np.einsum('Nmfe,fBANim->ABie', H.ab.oovv[Oa, ob, va, :], T.abb.vVVOoo, optimize=True)
+            + 1.0 * np.einsum('NmFe,FBANim->ABie', H.ab.oovv[Oa, ob, Va, :], T.abb.VVVOoo, optimize=True)
+            + 1.0 * np.einsum('nMfe,fBAniM->ABie', H.ab.oovv[oa, Ob, va, :], T.abb.vVVooO, optimize=True)
+            + 1.0 * np.einsum('NMfe,fBANiM->ABie', H.ab.oovv[Oa, Ob, va, :], T.abb.vVVOoO, optimize=True)
+            + 1.0 * np.einsum('nMFe,FBAniM->ABie', H.ab.oovv[oa, Ob, Va, :], T.abb.VVVooO, optimize=True)
+            + 1.0 * np.einsum('NMFe,FBANiM->ABie', H.ab.oovv[Oa, Ob, Va, :], T.abb.VVVOoO, optimize=True)
+    )
+    # Abie
+    I2C_vvov[Vb, vb, ob, :] += (1.0 / 1.0) * (
+            +1.0 * np.einsum('mNef,AfbimN->Abie', H.bb.oovv[ob, Ob, :, vb], T.bbb.VvvooO, optimize=True)
+            + 0.5 * np.einsum('MNef,AfbiMN->Abie', H.bb.oovv[Ob, Ob, :, vb], T.bbb.VvvoOO, optimize=True)
+            - 1.0 * np.einsum('mNeF,FAbimN->Abie', H.bb.oovv[ob, Ob, :, Vb], T.bbb.VVvooO, optimize=True)
+            - 0.5 * np.einsum('MNeF,FAbiMN->Abie', H.bb.oovv[Ob, Ob, :, Vb], T.bbb.VVvoOO, optimize=True)
+    )
+    I2C_vvov[Vb, vb, ob, :] += (1.0 / 1.0) * (
+            -1.0 * np.einsum('nMfe,fAbniM->Abie', H.ab.oovv[oa, Ob, va, :], T.abb.vVvooO, optimize=True)
+            - 1.0 * np.einsum('nMFe,FAbniM->Abie', H.ab.oovv[oa, Ob, Va, :], T.abb.VVvooO, optimize=True)
+            - 1.0 * np.einsum('Nmfe,fAbNim->Abie', H.ab.oovv[Oa, ob, va, :], T.abb.vVvOoo, optimize=True)
+            - 1.0 * np.einsum('NMfe,fAbNiM->Abie', H.ab.oovv[Oa, Ob, va, :], T.abb.vVvOoO, optimize=True)
+            - 1.0 * np.einsum('NmFe,FAbNim->Abie', H.ab.oovv[Oa, ob, Va, :], T.abb.VVvOoo, optimize=True)
+            - 1.0 * np.einsum('NMFe,FAbNiM->Abie', H.ab.oovv[Oa, Ob, Va, :], T.abb.VVvOoO, optimize=True)
+    )
+    I2C_vvov[vb, Vb, ob, :] = -1.0*np.transpose(I2C_vvov[Vb, vb, ob, :], (1, 0, 2, 3))
+    # abie
+    I2C_vvov[vb, vb, ob, :] += (1.0 / 1.0) * (
+            -1.0 * np.einsum('MneF,FbainM->abie', H.bb.oovv[Ob, ob, :, Vb], T.bbb.VvvooO, optimize=True)
+            + 0.5 * np.einsum('MNeF,FbaiMN->abie', H.bb.oovv[Ob, Ob, :, Vb], T.bbb.VvvoOO, optimize=True)
+    )
+    I2C_vvov[vb, vb, ob, :] += (1.0 / 1.0) * (
+            +1.0 * np.einsum('NmFe,FbaNim->abie', H.ab.oovv[Oa, ob, Va, :], T.abb.VvvOoo, optimize=True)
+            + 1.0 * np.einsum('nMFe,FbaniM->abie', H.ab.oovv[oa, Ob, Va, :], T.abb.VvvooO, optimize=True)
+            + 1.0 * np.einsum('NMFe,FbaNiM->abie', H.ab.oovv[Oa, Ob, Va, :], T.abb.VvvOoO, optimize=True)
+    )
+
     H.aa.vooo = I2A_vooo
     H.aa.vvov = I2A_vvov
     H.ab.ovoo = I2B_ovoo
     H.ab.vvvo = I2B_vvvo
     H.ab.vooo = I2B_vooo
     H.ab.vvov = I2B_vvov
-
-    # VT3 = {'aa' : {'vooo' : I2A_vooo, 'vvov' : I2A_vvov},
-    #        'ab' : {'ovoo' : I2B_ovoo, 'vvvo' : I2B_vvvo, 'vooo' : I2B_vooo, 'vvov' : I2B_vvov},
-    #        'bb' : {},
-    #        }
+    H.bb.vooo = I2C_vooo
+    H.bb.vvov = I2C_vvov
 
     return H

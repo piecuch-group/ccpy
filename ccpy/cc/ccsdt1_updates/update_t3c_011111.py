@@ -3,7 +3,26 @@ from ccpy.utilities.active_space import get_active_slices
 
 def update(T, dT, H, H0, shift, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-
+    # MM(2,3)
+    dT.abb.vVVOOO = (2.0 / 4.0) * (
+            +1.0 * np.einsum('aBIe,eCJK->aBCIJK', H.ab.vvov[va, Vb, Oa, :], T.bb[:, Vb, Ob, Ob], optimize=True)
+    )
+    dT.abb.vVVOOO += (2.0 / 4.0) * (
+            -1.0 * np.einsum('amIJ,BCmK->aBCIJK', H.ab.vooo[va, :, Oa, Ob], T.bb[Vb, Vb, :, Ob], optimize=True)
+    )
+    dT.abb.vVVOOO += (2.0 / 4.0) * (
+            +1.0 * np.einsum('CBKe,aeIJ->aBCIJK', H.bb.vvov[Vb, Vb, Ob, :], T.ab[va, :, Oa, Ob], optimize=True)
+    )
+    dT.abb.vVVOOO += (2.0 / 4.0) * (
+            -1.0 * np.einsum('CmKJ,aBIm->aBCIJK', H.bb.vooo[Vb, :, Ob, Ob], T.ab[va, Vb, Oa, :], optimize=True)
+    )
+    dT.abb.vVVOOO += (4.0 / 4.0) * (
+            +1.0 * np.einsum('aBeJ,eCIK->aBCIJK', H.ab.vvvo[va, Vb, :, Ob], T.ab[:, Vb, Oa, Ob], optimize=True)
+    )
+    dT.abb.vVVOOO += (4.0 / 4.0) * (
+            -1.0 * np.einsum('mBIJ,aCmK->aBCIJK', H.ab.ovoo[:, Vb, Oa, Ob], T.ab[va, Vb, :, Ob], optimize=True)
+    )
+    # (H(2) * T3)_C
     dT.abb.vVVOOO += (1.0 / 4.0) * (
             +1.0 * np.einsum('mI,aCBmJK->aBCIJK', H.a.oo[oa, Oa], T.abb.vVVoOO, optimize=True)
             + 1.0 * np.einsum('MI,aCBMJK->aBCIJK', H.a.oo[Oa, Oa], T.abb.vVVOOO, optimize=True)

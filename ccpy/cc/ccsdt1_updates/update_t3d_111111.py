@@ -2,8 +2,15 @@ import numpy as np
 from ccpy.utilities.active_space import get_active_slices
 
 def update(T, dT, H, H0, shift, system):
-    oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-
+    oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)\
+    # MM(2,3)
+    dT.bbb.VVVOOO = (9.0 / 36.0) * (
+            -1.0 * np.einsum('AmIJ,BCmK->ABCIJK', H.bb.vooo[Vb, :, Ob, Ob], T.bb[Vb, Vb, :, Ob], optimize=True)
+    )
+    dT.bbb.VVVOOO += (9.0 / 36.0) * (
+            +1.0 * np.einsum('ABIe,eCJK->ABCIJK', H.bb.vvov[Vb, Vb, Ob, :], T.bb[:, Vb, Ob, Ob], optimize=True)
+    )
+    # (H(2) * T3)_C
     dT.bbb.VVVOOO += (3.0 / 36.0) * (
             +1.0 * np.einsum('mI,CBAmJK->ABCIJK', H.b.oo[ob, Ob], T.bbb.VVVoOO, optimize=True)
             + 1.0 * np.einsum('MI,CBAMJK->ABCIJK', H.b.oo[Ob, Ob], T.bbb.VVVOOO, optimize=True)

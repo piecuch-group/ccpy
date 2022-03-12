@@ -3,7 +3,20 @@ from ccpy.utilities.active_space import get_active_slices
 
 def update(T, dT, H, H0, shift, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-
+    # MM(2,3)
+    dT.bbb.VvvOOO = (3.0 / 12.0) * (
+            -1.0 * np.einsum('AmIJ,bcmK->AbcIJK', H.bb.vooo[Vb, :, Ob, Ob], T.bb[vb, vb, :, Ob], optimize=True)
+    )
+    dT.bbb.VvvOOO += (6.0 / 12.0) * (
+            +1.0 * np.einsum('bmIJ,AcmK->AbcIJK', H.bb.vooo[vb, :, Ob, Ob], T.bb[Vb, vb, :, Ob], optimize=True)
+    )
+    dT.bbb.VvvOOO += (6.0 / 12.0) * (
+            +1.0 * np.einsum('AbIe,ecJK->AbcIJK', H.bb.vvov[Vb, vb, Ob, :], T.bb[:, vb, Ob, Ob], optimize=True)
+    )
+    dT.bbb.VvvOOO += (3.0 / 12.0) * (
+            -1.0 * np.einsum('cbIe,eAJK->AbcIJK', H.bb.vvov[vb, vb, Ob, :], T.bb[:, Vb, Ob, Ob], optimize=True)
+    )
+    # (H(2) * T3)_C
     dT.bbb.VvvOOO += (3.0 / 12.0) * (
             +1.0 * np.einsum('mI,AcbmJK->AbcIJK', H.b.oo[ob, Ob], T.bbb.VvvoOO, optimize=True)
             + 1.0 * np.einsum('MI,AcbMJK->AbcIJK', H.b.oo[Ob, Ob], T.bbb.VvvOOO, optimize=True)
