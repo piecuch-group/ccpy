@@ -3402,6 +3402,591 @@ end subroutine update_t3c_100001
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  T3D UPDATES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+subroutine update_t3d_111111(t3d, resid, X3D, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             nob_act, nub_act, nob_inact, nub_inact)
 
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3D(1:nub_act, 1:nub_act, 1:nub_act, 1:nob_act, 1:nob_act, 1:nob_act)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3d(1:nub_act, 1:nub_act, 1:nub_act, 1:nob_act, 1:nob_act, 1:nob_act)
+      !f2py intent(in, out)  :: t3d(0:nub_act-1, 0:nub_act-1, 0:nub_act-1, 0:nob_act-1, 0:nob_act-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nub_act, 1:nub_act, 1:nub_act, 1:nob_act, 1:nob_act, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , nob_act
+         do j = i+1 , nob_act
+            do k = j+1 , nob_act
+               do a = 1 , nub_act
+                  do b = a+1 , nub_act
+                     do c = b+1 , nub_act
+
+                        denom = fB_oo_act(i,i) + fB_oo_act(j,j) + fB_oo_act(k,k)&
+                               -fB_vv_act(a,a) - fB_vv_act(b,b) - fB_vv_act(c,c)
+
+                        val = X3D(a, b, c, i, j, k)/(denom - shift)
+
+                        t3d(a, b, c, i, j, k) = t3d(a, b, c, i, j, k) + val
+                        t3d(a, b, c, i, k, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, j, i, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, j, k, i) = t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, k, i, j) = t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, k, j, i) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, i, k, j) = t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, j, i, k) = t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, j, k, i) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, k, i, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, k, j, i) = t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, i, k, j) = t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, j, i, k) = t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, j, k, i) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, k, i, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, k, j, i) = t3d(a, b, c, i, j, k)
+                        t3d(b, c, a, i, j, k) = t3d(a, b, c, i, j, k)
+                        t3d(b, c, a, i, k, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, c, a, j, i, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, c, a, j, k, i) = t3d(a, b, c, i, j, k)
+                        t3d(b, c, a, k, i, j) = t3d(a, b, c, i, j, k)
+                        t3d(b, c, a, k, j, i) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, a, b, i, j, k) = t3d(a, b, c, i, j, k)
+                        t3d(c, a, b, i, k, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, a, b, j, i, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, a, b, j, k, i) = t3d(a, b, c, i, j, k)
+                        t3d(c, a, b, k, i, j) = t3d(a, b, c, i, j, k)
+                        t3d(c, a, b, k, j, i) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, b, a, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, b, a, i, k, j) = t3d(a, b, c, i, j, k)
+                        t3d(c, b, a, j, i, k) = t3d(a, b, c, i, j, k)
+                        t3d(c, b, a, j, k, i) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, b, a, k, i, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, b, a, k, j, i) = t3d(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, i, k, j) = -1.0 * val
+                        resid(a, b, c, j, i, k) = -1.0 * val
+                        resid(a, b, c, j, k, i) = val
+                        resid(a, b, c, k, i, j) = val
+                        resid(a, b, c, k, j, i) = -1.0 * val
+                        resid(a, c, b, i, j, k) = -1.0 * val
+                        resid(a, c, b, i, k, j) = val
+                        resid(a, c, b, j, i, k) = val
+                        resid(a, c, b, j, k, i) = -1.0 * val
+                        resid(a, c, b, k, i, j) = -1.0 * val
+                        resid(a, c, b, k, j, i) = val
+                        resid(b, a, c, i, j, k) = -1.0 * val
+                        resid(b, a, c, i, k, j) = val
+                        resid(b, a, c, j, i, k) = val
+                        resid(b, a, c, j, k, i) = -1.0 * val
+                        resid(b, a, c, k, i, j) = -1.0 * val
+                        resid(b, a, c, k, j, i) = val
+                        resid(b, c, a, i, j, k) = val
+                        resid(b, c, a, i, k, j) = -1.0 * val
+                        resid(b, c, a, j, i, k) = -1.0 * val
+                        resid(b, c, a, j, k, i) = val
+                        resid(b, c, a, k, i, j) = val
+                        resid(b, c, a, k, j, i) = -1.0 * val
+                        resid(c, a, b, i, j, k) = val
+                        resid(c, a, b, i, k, j) = -1.0 * val
+                        resid(c, a, b, j, i, k) = -1.0 * val
+                        resid(c, a, b, j, k, i) = val
+                        resid(c, a, b, k, i, j) = val
+                        resid(c, a, b, k, j, i) = -1.0 * val
+                        resid(c, b, a, i, j, k) = -1.0 * val
+                        resid(c, b, a, i, k, j) = val
+                        resid(c, b, a, j, i, k) = val
+                        resid(c, b, a, j, k, i) = -1.0 * val
+                        resid(c, b, a, k, i, j) = -1.0 * val
+                        resid(c, b, a, k, j, i) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3d_111111
+
+subroutine update_t3d_110111(t3d, resid, X3D, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3D(1:nub_act, 1:nub_act, 1:nub_inact, 1:nob_act, 1:nob_act, 1:nob_act)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3d(1:nub_act, 1:nub_act, 1:nub_inact, 1:nob_act, 1:nob_act, 1:nob_act)
+      !f2py intent(in, out)  :: t3d(0:nub_act-1, 0:nub_act-1, 0:nub_inact-1, 0:nob_act-1, 0:nob_act-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nub_act, 1:nub_act, 1:nub_inact, 1:nob_act, 1:nob_act, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , nob_act
+         do j = i+1 , nob_act
+            do k = j+1 , nob_act
+               do a = 1 , nub_act
+                  do b = a+1 , nub_act
+                     do c = 1 , nub_inact
+
+                        denom = fB_oo_act(i,i) + fB_oo_act(j,j) + fB_oo_act(k,k)&
+                               -fB_vv_act(a,a) - fB_vv_act(b,b) - fB_vv_inact(c,c)
+
+                        val = X3D(a, b, c, i, j, k)/(denom - shift)
+
+                        t3d(a, b, c, i, j, k) = t3d(a, b, c, i, j, k) + val
+                        t3d(a, b, c, i, k, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, j, i, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, j, k, i) = t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, k, i, j) = t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, k, j, i) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, i, k, j) = t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, j, i, k) = t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, j, k, i) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, k, i, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, k, j, i) = t3d(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, i, k, j) = -1.0 * val
+                        resid(a, b, c, j, i, k) = -1.0 * val
+                        resid(a, b, c, j, k, i) = val
+                        resid(a, b, c, k, i, j) = val
+                        resid(a, b, c, k, j, i) = -1.0 * val
+                        resid(b, a, c, i, j, k) = -1.0 * val
+                        resid(b, a, c, i, k, j) = val
+                        resid(b, a, c, j, i, k) = val
+                        resid(b, a, c, j, k, i) = -1.0 * val
+                        resid(b, a, c, k, i, j) = -1.0 * val
+                        resid(b, a, c, k, j, i) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3d_110111
+
+subroutine update_t3d_111011(t3d, resid, X3D, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3D(1:nub_act, 1:nub_act, 1:nub_act, 1:nob_inact, 1:nob_act, 1:nob_act)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3d(1:nub_act, 1:nub_act, 1:nub_act, 1:nob_inact, 1:nob_act, 1:nob_act)
+      !f2py intent(in, out)  :: t3d(0:nub_act-1, 0:nub_act-1, 0:nub_act-1, 0:nob_inact-1, 0:nob_act-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nub_act, 1:nub_act, 1:nub_act, 1:nob_inact, 1:nob_act, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , nob_inact
+         do j = 1 , nob_act
+            do k = j+1 , nob_act
+               do a = 1 , nub_act
+                  do b = a+1 , nub_act
+                     do c = b+1 , nub_act
+
+                        denom = fB_oo_inact(i,i) + fB_oo_act(j,j) + fB_oo_act(k,k)&
+                               -fB_vv_act(a,a) - fB_vv_act(b,b) - fB_vv_act(c,c)
+
+                        val = X3D(a, b, c, i, j, k)/(denom - shift)
+
+                        t3d(a, b, c, i, j, k) = t3d(a, b, c, i, j, k) + val
+                        t3d(a, b, c, i, k, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, i, k, j) = t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, i, k, j) = t3d(a, b, c, i, j, k)
+                        t3d(b, c, a, i, j, k) = t3d(a, b, c, i, j, k)
+                        t3d(b, c, a, i, k, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, a, b, i, j, k) = t3d(a, b, c, i, j, k)
+                        t3d(c, a, b, i, k, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, b, a, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, b, a, i, k, j) = t3d(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, i, k, j) = -1.0 * val
+                        resid(a, c, b, i, j, k) = -1.0 * val
+                        resid(a, c, b, i, k, j) = val
+                        resid(b, a, c, i, j, k) = -1.0 * val
+                        resid(b, a, c, i, k, j) = val
+                        resid(b, c, a, i, j, k) = val
+                        resid(b, c, a, i, k, j) = -1.0 * val
+                        resid(c, a, b, i, j, k) = val
+                        resid(c, a, b, i, k, j) = -1.0 * val
+                        resid(c, b, a, i, j, k) = -1.0 * val
+                        resid(c, b, a, i, k, j) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3d_111011
+
+subroutine update_t3d_110011(t3d, resid, X3D, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3D(1:nub_act, 1:nub_act, 1:nub_inact, 1:nob_inact, 1:nob_act, 1:nob_act)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3d(1:nub_act, 1:nub_act, 1:nub_inact, 1:nob_inact, 1:nob_act, 1:nob_act)
+      !f2py intent(in, out)  :: t3d(0:nub_act-1, 0:nub_act-1, 0:nub_inact-1, 0:nob_inact-1, 0:nob_act-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nub_act, 1:nub_act, 1:nub_inact, 1:nob_inact, 1:nob_act, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , nob_inact
+         do j = 1 , nob_act
+            do k = j+1 , nob_act
+               do a = 1 , nub_act
+                  do b = a+1 , nub_act
+                     do c = 1 , nub_inact
+
+                        denom = fB_oo_inact(i,i) + fB_oo_act(j,j) + fB_oo_act(k,k)&
+                               -fB_vv_act(a,a) - fB_vv_act(b,b) - fB_vv_inact(c,c)
+
+                        val = X3D(a, b, c, i, j, k)/(denom - shift)
+
+                        t3d(a, b, c, i, j, k) = t3d(a, b, c, i, j, k) + val
+                        t3d(a, b, c, i, k, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, i, k, j) = t3d(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, i, k, j) = -1.0 * val
+                        resid(b, a, c, i, j, k) = -1.0 * val
+                        resid(b, a, c, i, k, j) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3d_110011
+
+subroutine update_t3d_100111(t3d, resid, X3D, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3D(1:nub_act, 1:nub_inact, 1:nub_inact, 1:nob_act, 1:nob_act, 1:nob_act)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3d(1:nub_act, 1:nub_inact, 1:nub_inact, 1:nob_act, 1:nob_act, 1:nob_act)
+      !f2py intent(in, out)  :: t3d(0:nub_act-1, 0:nub_inact-1, 0:nub_inact-1, 0:nob_act-1, 0:nob_act-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nub_act, 1:nub_inact, 1:nub_inact, 1:nob_act, 1:nob_act, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , nob_act
+         do j = i+1 , nob_act
+            do k = j+1 , nob_act
+               do a = 1 , nub_act
+                  do b = 1 , nub_inact
+                     do c = b+1 , nub_inact
+
+                        denom = fB_oo_act(i,i) + fB_oo_act(j,j) + fB_oo_act(k,k)&
+                               -fB_vv_act(a,a) - fB_vv_inact(b,b) - fB_vv_inact(c,c)
+
+                        val = X3D(a, b, c, i, j, k)/(denom - shift)
+
+                        t3d(a, b, c, i, j, k) = t3d(a, b, c, i, j, k) + val
+                        t3d(a, b, c, i, k, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, j, i, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, j, k, i) = t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, k, i, j) = t3d(a, b, c, i, j, k)
+                        t3d(a, b, c, k, j, i) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, i, k, j) = t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, j, i, k) = t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, j, k, i) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, k, i, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, k, j, i) = t3d(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, i, k, j) = -1.0 * val
+                        resid(a, b, c, j, i, k) = -1.0 * val
+                        resid(a, b, c, j, k, i) = val
+                        resid(a, b, c, k, i, j) = val
+                        resid(a, b, c, k, j, i) = -1.0 * val
+                        resid(a, c, b, i, j, k) = -1.0 * val
+                        resid(a, c, b, i, k, j) = val
+                        resid(a, c, b, j, i, k) = val
+                        resid(a, c, b, j, k, i) = -1.0 * val
+                        resid(a, c, b, k, i, j) = -1.0 * val
+                        resid(a, c, b, k, j, i) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3d_100111
+
+subroutine update_t3d_111001(t3d, resid, X3D, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3D(1:nub_act, 1:nub_act, 1:nub_act, 1:nob_inact, 1:nob_inact, 1:nob_act)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3d(1:nub_act, 1:nub_act, 1:nub_act, 1:nob_inact, 1:nob_inact, 1:nob_act)
+      !f2py intent(in, out)  :: t3d(0:nub_act-1, 0:nub_act-1, 0:nub_act-1, 0:nob_inact-1, 0:nob_inact-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nub_act, 1:nub_act, 1:nub_act, 1:nob_inact, 1:nob_inact, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , nob_inact
+         do j = i+1 , nob_inact
+            do k = 1 , nob_act
+               do a = 1 , nub_act
+                  do b = a+1 , nub_act
+                     do c = b+1 , nub_act
+
+                        denom = fB_oo_inact(i,i) + fB_oo_inact(j,j) + fB_oo_act(k,k)&
+                               -fB_vv_act(a,a) - fB_vv_act(b,b) - fB_vv_act(c,c)
+
+                        val = X3D(a, b, c, i, j, k)/(denom - shift)
+
+                        t3d(a, b, c, i, j, k) = t3d(a, b, c, i, j, k) + val
+                        t3d(a, b, c, j, i, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, j, i, k) = t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, j, i, k) = t3d(a, b, c, i, j, k)
+                        t3d(b, c, a, i, j, k) = t3d(a, b, c, i, j, k)
+                        t3d(b, c, a, j, i, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, a, b, i, j, k) = t3d(a, b, c, i, j, k)
+                        t3d(c, a, b, j, i, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, b, a, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(c, b, a, j, i, k) = t3d(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, j, i, k) = -1.0 * val
+                        resid(a, c, b, i, j, k) = -1.0 * val
+                        resid(a, c, b, j, i, k) = val
+                        resid(b, a, c, i, j, k) = -1.0 * val
+                        resid(b, a, c, j, i, k) = val
+                        resid(b, c, a, i, j, k) = val
+                        resid(b, c, a, j, i, k) = -1.0 * val
+                        resid(c, a, b, i, j, k) = val
+                        resid(c, a, b, j, i, k) = -1.0 * val
+                        resid(c, b, a, i, j, k) = -1.0 * val
+                        resid(c, b, a, j, i, k) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3d_111001
+
+subroutine update_t3d_110001(t3d, resid, X3D, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3D(1:nub_act, 1:nub_act, 1:nub_inact, 1:nob_inact, 1:nob_inact, 1:nob_act)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3d(1:nub_act, 1:nub_act, 1:nub_inact, 1:nob_inact, 1:nob_inact, 1:nob_act)
+      !f2py intent(in, out)  :: t3d(0:nub_act-1, 0:nub_act-1, 0:nub_inact-1, 0:nob_inact-1, 0:nob_inact-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nub_act, 1:nub_act, 1:nub_inact, 1:nob_inact, 1:nob_inact, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , nob_inact
+         do j = i+1 , nob_inact
+            do k = 1 , nob_act
+               do a = 1 , nub_act
+                  do b = a+1 , nub_act
+                     do c = 1 , nub_inact
+
+                        denom = fB_oo_inact(i,i) + fB_oo_inact(j,j) + fB_oo_act(k,k)&
+                               -fB_vv_act(a,a) - fB_vv_act(b,b) - fB_vv_inact(c,c)
+
+                        val = X3D(a, b, c, i, j, k)/(denom - shift)
+
+                        t3d(a, b, c, i, j, k) = t3d(a, b, c, i, j, k) + val
+                        t3d(a, b, c, j, i, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(b, a, c, j, i, k) = t3d(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, j, i, k) = -1.0 * val
+                        resid(b, a, c, i, j, k) = -1.0 * val
+                        resid(b, a, c, j, i, k) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3d_110001
+
+subroutine update_t3d_100011(t3d, resid, X3D, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3D(1:nub_act, 1:nub_inact, 1:nub_inact, 1:nob_inact, 1:nob_act, 1:nob_act)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3d(1:nub_act, 1:nub_inact, 1:nub_inact, 1:nob_inact, 1:nob_act, 1:nob_act)
+      !f2py intent(in, out)  :: t3d(0:nub_act-1, 0:nub_inact-1, 0:nub_inact-1, 0:nob_inact-1, 0:nob_act-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nub_act, 1:nub_inact, 1:nub_inact, 1:nob_inact, 1:nob_act, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , nob_inact
+         do j = 1 , nob_act
+            do k = j+1 , nob_act
+               do a = 1 , nub_act
+                  do b = 1 , nub_inact
+                     do c = b+1 , nub_inact
+
+                        denom = fB_oo_inact(i,i) + fB_oo_act(j,j) + fB_oo_act(k,k)&
+                               -fB_vv_act(a,a) - fB_vv_inact(b,b) - fB_vv_inact(c,c)
+
+                        val = X3D(a, b, c, i, j, k)/(denom - shift)
+
+                        t3d(a, b, c, i, j, k) = t3d(a, b, c, i, j, k) + val
+                        t3d(a, b, c, i, k, j) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, i, k, j) = t3d(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, i, k, j) = -1.0 * val
+                        resid(a, c, b, i, j, k) = -1.0 * val
+                        resid(a, c, b, i, k, j) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3d_100011
+
+subroutine update_t3d_100001(t3d, resid, X3D, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3D(1:nub_act, 1:nub_inact, 1:nub_inact, 1:nob_inact, 1:nob_inact, 1:nob_act)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3d(1:nub_act, 1:nub_inact, 1:nub_inact, 1:nob_inact, 1:nob_inact, 1:nob_act)
+      !f2py intent(in, out)  :: t3d(0:nub_act-1, 0:nub_inact-1, 0:nub_inact-1, 0:nob_inact-1, 0:nob_inact-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nub_act, 1:nub_inact, 1:nub_inact, 1:nob_inact, 1:nob_inact, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , nob_inact
+         do j = i+1 , nob_inact
+            do k = 1 , nob_act
+               do a = 1 , nub_act
+                  do b = 1 , nub_inact
+                     do c = b+1 , nub_inact
+
+                        denom = fB_oo_inact(i,i) + fB_oo_inact(j,j) + fB_oo_act(k,k)&
+                               -fB_vv_act(a,a) - fB_vv_inact(b,b) - fB_vv_inact(c,c)
+
+                        val = X3D(a, b, c, i, j, k)/(denom - shift)
+
+                        t3d(a, b, c, i, j, k) = t3d(a, b, c, i, j, k) + val
+                        t3d(a, b, c, j, i, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, i, j, k) = -1.0 * t3d(a, b, c, i, j, k)
+                        t3d(a, c, b, j, i, k) = t3d(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, j, i, k) = -1.0 * val
+                        resid(a, c, b, i, j, k) = -1.0 * val
+                        resid(a, c, b, j, i, k) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3d_100001
 
 end module cc_active_loops
