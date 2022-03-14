@@ -10,8 +10,9 @@ from ccpy.cc.ccsdt1_updates import *
 
 def update(T, dT, H, shift, flag_RHF, system):
 
-    # update T1 at CCSD level
-    dT = update_t1a.build_ccsd(T, dT, H)
+    ####### T updates #######
+    # t1a update
+    dT = update_t1a.build_ccsd(T, dT, H)   # base CCSD part
     # Add on T3 parts
     dT = update_t1a.build_11(T, dT, H, system)
     dT = update_t1a.build_10(T, dT, H, system)
