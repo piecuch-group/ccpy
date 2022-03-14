@@ -7,6 +7,7 @@ import time
 from ccpy.hbar.hbar_ccs import get_ccs_intermediates
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.cc.ccsdt1_updates import *
+from ccpy.utilities.updates import cc_active_loops
 
 def update(T, dT, H, shift, flag_RHF, system):
 
