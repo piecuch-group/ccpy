@@ -18,7 +18,7 @@ def update(T, dT, H, shift, flag_RHF, system):
     dT = update_t1a.build_01(T, dT, H, system)
     dT = update_t1a.build_00(T, dT, H, system)
     # update loop
-    #T, dT = update_t1a.update(T, dT, H, shift)
+    T, dT = update_t1a.update(T, dT, H, shift)
     if flag_RHF:
         # TODO: Maybe copy isn't needed. Reference should suffice
         T.b = T.a.copy()
@@ -31,7 +31,7 @@ def update(T, dT, H, shift, flag_RHF, system):
         dT = update_t1b.build_01(T, dT, H, system)
         dT = update_t1b.build_00(T, dT, H, system)
         # update loop
-        #T, dT = update_t1b.update(T, dT, H, shift)
+        T, dT = update_t1b.update(T, dT, H, shift)
 
     # CCS intermediates
     hbar = get_ccs_intermediates(T, H)
@@ -51,7 +51,7 @@ def update(T, dT, H, shift, flag_RHF, system):
     dT = update_t2a.build_0000(T, dT, hbar, system)
     dT.aa += x2
     # update loop
-    #T, dT = update_t2a.update(T, dT, H, shift)
+    T, dT = update_t2a.update(T, dT, H, shift)
 
     dT = update_t2b.build_ccsd(T, dT, hbar)   # base CCSD part
     # Add on T3 parts
@@ -72,7 +72,7 @@ def update(T, dT, H, shift, flag_RHF, system):
     dT = update_t2b.build_0010(T, dT, hbar, system)
     dT = update_t2b.build_0000(T, dT, hbar, system)
     # update loop
-    #T, dT = update_t2b.update(T, dT, H, shift)
+    T, dT = update_t2b.update(T, dT, H, shift)
 
     if flag_RHF:
         T.bb = T.aa.copy()
@@ -91,7 +91,7 @@ def update(T, dT, H, shift, flag_RHF, system):
         dT = update_t2c.build_0000(T, dT, hbar, system)
         dT.bb += x2
         # update loop
-        #T, dT = update_t2c.update(T, dT, H, shift)
+        T, dT = update_t2c.update(T, dT, H, shift)
 
     # CCSD intermediates
     hbar = get_ccsd_intermediates(T, H)

@@ -61,13 +61,13 @@ def build_1111(T, dT, H, system):
             - 1.0 * np.einsum('ME,EBAIJM->ABIJ', H.a.ov[Oa, Va], T.aaa.VVVOOO, optimize=True)
     )
     dT.aa[Va, Va, Oa, Oa] += (1.0 / 4.0) * (
-            -1.0 * np.einsum('me,BAeIJm->ABIJ', H.b.ov[ob, vb], T.aab.VVvOOo, optimize=True)
+            - 1.0 * np.einsum('me,BAeIJm->ABIJ', H.b.ov[ob, vb], T.aab.VVvOOo, optimize=True)
             - 1.0 * np.einsum('Me,BAeIJM->ABIJ', H.b.ov[Ob, vb], T.aab.VVvOOO, optimize=True)
             - 1.0 * np.einsum('mE,BAEIJm->ABIJ', H.b.ov[ob, Vb], T.aab.VVVOOo, optimize=True)
             - 1.0 * np.einsum('ME,BAEIJM->ABIJ', H.b.ov[Ob, Vb], T.aab.VVVOOO, optimize=True)
     )
     dT.aa[Va, Va, Oa, Oa] += (2.0 / 4.0) * (
-            +1.0 * np.einsum('mnIf,BAfmJn->ABIJ', H.ab.ooov[oa, ob, Oa, vb], T.aab.VVvoOo, optimize=True)
+            + 1.0 * np.einsum('mnIf,BAfmJn->ABIJ', H.ab.ooov[oa, ob, Oa, vb], T.aab.VVvoOo, optimize=True)
             + 1.0 * np.einsum('mNIf,BAfmJN->ABIJ', H.ab.ooov[oa, Ob, Oa, vb], T.aab.VVvoOO, optimize=True)
             + 1.0 * np.einsum('MnIf,BAfMJn->ABIJ', H.ab.ooov[Oa, ob, Oa, vb], T.aab.VVvOOo, optimize=True)
             + 1.0 * np.einsum('MNIf,BAfMJN->ABIJ', H.ab.ooov[Oa, Ob, Oa, vb], T.aab.VVvOOO, optimize=True)
