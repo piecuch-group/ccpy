@@ -579,7 +579,7 @@ if __name__ == "__main__":
         mol.build(
             atom="""F 0.0 0.0 -2.66816
                     F 0.0 0.0  2.66816""",
-            basis="ccpvtz",
+            basis="ccpvdz",
             charge=0,
             spin=0,
             symmetry="D2H",

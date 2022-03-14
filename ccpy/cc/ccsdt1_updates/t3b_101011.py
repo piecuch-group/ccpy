@@ -1,5 +1,6 @@
 import numpy as np
 from ccpy.utilities.active_space import get_active_slices
+from ccpy.utilities.updates import cc_active_loops
 
 def build(T, dT, H, H0, shift, system):
 
@@ -196,3 +197,23 @@ def build(T, dT, H, H0, shift, system):
     )
 
     return dT
+
+def update(T, dT, H, shift, system):
+
+    oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
+
+    T.aab.VvVoOO, dT.aab.VvVoOO = cc_active_loops.cc_active_loops.update_t3b_101011(
+        T.aab.VvVoOO,
+        dT.aab.VvVoOO,
+        H.a.oo[Oa, Oa],
+        H.a.vv[Va, Va],
+        H.a.oo[oa, oa],
+        H.a.vv[va, va],
+        H.b.oo[Ob, Ob],
+        H.b.vv[Vb, Vb],
+        H.b.oo[ob, ob],
+        H.b.vv[vb, vb],
+        shift,
+    )
+
+    return T, dT
