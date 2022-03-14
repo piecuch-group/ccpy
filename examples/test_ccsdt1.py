@@ -573,13 +573,13 @@ if __name__ == "__main__":
 
     mol = gto.Mole()
 
-    case = 'H2O'
+    case = 'F2'
 
     if case == 'F2':
         mol.build(
             atom="""F 0.0 0.0 -2.66816
                     F 0.0 0.0  2.66816""",
-            basis="ccpvdz",
+            basis="ccpvtz",
             charge=0,
             spin=0,
             symmetry="D2H",
@@ -607,8 +607,8 @@ if __name__ == "__main__":
 
 
     system, H = load_pyscf_integrals(mf, nfrozen=2,
-                                     num_act_holes_alpha=3, num_act_particles_alpha=3,
-                                     num_act_holes_beta=3, num_act_particles_beta=3
+                                     num_act_holes_alpha=5, num_act_particles_alpha=9,
+                                     num_act_holes_beta=5, num_act_particles_beta=9,
                                      )
 
     calculation = Calculation(
