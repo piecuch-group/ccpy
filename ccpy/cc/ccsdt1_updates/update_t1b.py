@@ -2,7 +2,7 @@ import numpy as np
 
 from ccpy.utilities.active_space import get_active_slices
 
-from ccpy.utilities.updates import cc_loops2
+from ccpy.utilities.updates import cc_active_loops
 
 def build_ccsd(T, dT, H):
     """
@@ -42,6 +42,8 @@ def build_ccsd(T, dT, H):
     dT.b -= np.einsum("nmfi,fanm->ai", h2B_oovo, T.ab, optimize=True)
     dT.b += 0.5 * np.einsum("anef,efin->ai", h2C_vovv, T.bb, optimize=True)
     dT.b += np.einsum("nafe,feni->ai", h2B_ovvv, T.ab, optimize=True)
+
+    dT.b += H.b.vo
 
     return dT
 
@@ -198,9 +200,9 @@ def build_00(T, dT, H, system):
 
 def update(T, dT, H, shift):
 
-    T.b, dT.b = cc_loops2.cc_loops2.update_t1b(
+    T.b, dT.b = cc_active_loops.cc_active_loops.update_t1b(
         T.b,
-        dT.b + H.b.vo,
+        dT.b,
         H.b.oo,
         H.b.vv,
         shift,

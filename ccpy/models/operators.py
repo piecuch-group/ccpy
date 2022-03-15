@@ -122,9 +122,14 @@ class ClusterOperator:
     def unflatten(self, T_flat):
         prev = 0
         for dims, name in zip(self.dimensions, self.spin_cases):
-            ndim = np.prod(dims)
-            setattr(self, name, np.reshape(T_flat[prev: ndim + prev], dims))
-            prev += ndim
+
+            if isinstance(getattr(self, name), ActiveOperator):
+                getattr(self, name).unflatten(T_flat[prev : prev + getattr(self, name).ndim])
+                prev += getattr(self, name).ndim
+            else:
+                ndim = np.prod(dims)
+                setattr(self, name, np.reshape(T_flat[prev: ndim + prev], dims))
+                prev += ndim
 
 
 class FockOperator:
@@ -246,13 +251,13 @@ if __name__ == "__main__":
 
     print(system)
 
-    print('Active t3 aaa')
-    print('----------------')
-    t3 = ActiveOperator(system, 3, 'aaa', 1)
-    for slice, dim in zip(t3.slices, t3.dimensions):
-        print(slice, "->", dim)
-    print("Flattened dimension = ", t3.ndim)
-    print(t3.flatten().shape)
+    # print('Active t3 aaa')
+    # print('----------------')
+    # t3 = ActiveOperator(system, 3, 'aaa', 1)
+    # for slice, dim in zip(t3.slices, t3.dimensions):
+    #     print(slice, "->", dim)
+    # print("Flattened dimension = ", t3.ndim)
+    # print(t3.flatten().shape)
 
     print('Active t3 aab')
     print('----------------')
@@ -260,6 +265,10 @@ if __name__ == "__main__":
     for slice, dim in zip(t3.slices, t3.dimensions):
         print(slice, "->", dim)
     print("Flattened dimension = ", t3.ndim)
+    print(t3.flatten().shape)
+    A = np.zeros(t3.ndim)
+    print(A.shape)
+    t3.unflatten(A)
     print(t3.flatten().shape)
 
     order = 3
@@ -273,6 +282,18 @@ if __name__ == "__main__":
             for slice, dim in zip(getattr(T, spin).slices, getattr(T, spin).dimensions):
                 print(spin, "->", slice, "->", dim)
     print("Flattened dimension = ", T.ndim)
+    print(T.flatten().shape)
+
+    A = np.zeros(shape=T.ndim)
+
+    #print(T.dimensions)
+    #print(T.spin_cases)
+
+    T.unflatten(A)
+
+    T.aaa.VVVOOO
+
+
     print(T.flatten().shape)
     #
     # num_particles = 1

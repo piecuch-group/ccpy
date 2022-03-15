@@ -6,7 +6,7 @@ import time
 from ccpy.utilities.updates import cc_loops2
 
 
-def update(T, dT, H, shift, flag_RHF):
+def update(T, dT, H, shift, flag_RHF, system):
 
     # update T2
     T, dT = update_t2a(T, dT, H, shift)

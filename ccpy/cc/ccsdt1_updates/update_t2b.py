@@ -2,10 +2,10 @@ import numpy as np
 
 from ccpy.utilities.active_space import get_active_slices
 
-from ccpy.utilities.updates import cc_loops2
+from ccpy.utilities.updates import cc_active_loops
 
 
-def build_ccsd(T, dT, H):
+def build_ccsd(T, H):
     """
     Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -50,29 +50,31 @@ def build_ccsd(T, dT, H):
 
     I2B_vovo = H.ab.vovo - np.einsum("mnef,afmj->anej", H.ab.oovv, T.ab, optimize=True)
 
-    dT.ab = -np.einsum("mbij,am->abij", H.ab.ovoo, T.a, optimize=True)
-    dT.ab -= np.einsum("amij,bm->abij", H.ab.vooo, T.b, optimize=True)
-    dT.ab += np.einsum("abej,ei->abij", H.ab.vvvo, T.a, optimize=True)
-    dT.ab += np.einsum("abie,ej->abij", H.ab.vvov, T.b, optimize=True)
-    dT.ab += np.einsum("ae,ebij->abij", I1A_vv, T.ab, optimize=True)
-    dT.ab += np.einsum("be,aeij->abij", I1B_vv, T.ab, optimize=True)
-    dT.ab -= np.einsum("mi,abmj->abij", I1A_oo, T.ab, optimize=True)
-    dT.ab -= np.einsum("mj,abim->abij", I1B_oo, T.ab, optimize=True)
-    dT.ab += np.einsum("amie,ebmj->abij", I2A_voov, T.ab, optimize=True)
-    dT.ab += np.einsum("amie,ebmj->abij", I2B_voov, T.bb, optimize=True)
-    dT.ab += np.einsum("mbej,aeim->abij", H.ab.ovvo, T.aa, optimize=True)
-    dT.ab += np.einsum("bmje,aeim->abij", H.bb.voov, T.ab, optimize=True)
-    dT.ab -= np.einsum("mbie,aemj->abij", H.ab.ovov, T.ab, optimize=True)
-    dT.ab -= np.einsum("amej,ebim->abij", I2B_vovo, T.ab, optimize=True)
-    dT.ab += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
-    dT.ab += np.einsum("abef,efij->abij", H.ab.vvvv, T.ab, optimize=True)
+    x2 = -np.einsum("mbij,am->abij", H.ab.ovoo, T.a, optimize=True)
+    x2 -= np.einsum("amij,bm->abij", H.ab.vooo, T.b, optimize=True)
+    x2 += np.einsum("abej,ei->abij", H.ab.vvvo, T.a, optimize=True)
+    x2 += np.einsum("abie,ej->abij", H.ab.vvov, T.b, optimize=True)
+    x2 += np.einsum("ae,ebij->abij", I1A_vv, T.ab, optimize=True)
+    x2 += np.einsum("be,aeij->abij", I1B_vv, T.ab, optimize=True)
+    x2 -= np.einsum("mi,abmj->abij", I1A_oo, T.ab, optimize=True)
+    x2 -= np.einsum("mj,abim->abij", I1B_oo, T.ab, optimize=True)
+    x2 += np.einsum("amie,ebmj->abij", I2A_voov, T.ab, optimize=True)
+    x2 += np.einsum("amie,ebmj->abij", I2B_voov, T.bb, optimize=True)
+    x2 += np.einsum("mbej,aeim->abij", H.ab.ovvo, T.aa, optimize=True)
+    x2 += np.einsum("bmje,aeim->abij", H.bb.voov, T.ab, optimize=True)
+    x2 -= np.einsum("mbie,aemj->abij", H.ab.ovov, T.ab, optimize=True)
+    x2 -= np.einsum("amej,ebim->abij", I2B_vovo, T.ab, optimize=True)
+    x2 += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
+    x2 += np.einsum("abef,efij->abij", H.ab.vvvv, T.ab, optimize=True)
 
-    return dT
+    x2 += H.ab.vvoo
+
+    return x2
 
 
 def build_1111(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dT.ab[Va, Vb, Oa, Ob] += (1.0 / 1.0) * (
+    dT.ab[Va, Vb, Oa, Ob] = (1.0 / 1.0) * (
             -1.0 * np.einsum('me,AeBmIJ->ABIJ', H.a.ov[oa, va], T.aab.VvVoOO, optimize=True)
             + 1.0 * np.einsum('mE,EABmIJ->ABIJ', H.a.ov[oa, Va], T.aab.VVVoOO, optimize=True)
             + 1.0 * np.einsum('Me,AeBIMJ->ABIJ', H.a.ov[Oa, va], T.aab.VvVOOO, optimize=True)
@@ -162,7 +164,7 @@ def build_1111(T, dT, H, system):
 def build_1011(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[Va, vb, Oa, Ob] += (1.0 / 1.0) * (
+    dT.ab[Va, vb, Oa, Ob] = (1.0 / 1.0) * (
             -1.0 * np.einsum('me,AebmIJ->AbIJ', H.a.ov[oa, va], T.aab.VvvoOO, optimize=True)
             + 1.0 * np.einsum('mE,EAbmIJ->AbIJ', H.a.ov[oa, Va], T.aab.VVvoOO, optimize=True)
             + 1.0 * np.einsum('Me,AebIMJ->AbIJ', H.a.ov[Oa, va], T.aab.VvvOOO, optimize=True)
@@ -248,7 +250,7 @@ def build_1011(T, dT, H, system):
 def build_0111(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[va, Vb, Oa, Ob] += (1.0 / 1.0) * (
+    dT.ab[va, Vb, Oa, Ob] = (1.0 / 1.0) * (
             +1.0 * np.einsum('me,eaBmIJ->aBIJ', H.a.ov[oa, va], T.aab.vvVoOO, optimize=True)
             + 1.0 * np.einsum('mE,EaBmIJ->aBIJ', H.a.ov[oa, Va], T.aab.VvVoOO, optimize=True)
             - 1.0 * np.einsum('Me,eaBIMJ->aBIJ', H.a.ov[Oa, va], T.aab.vvVOOO, optimize=True)
@@ -334,7 +336,7 @@ def build_0111(T, dT, H, system):
 
 def build_1101(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dT.ab[Va, Vb, oa, Ob] += (1.0 / 1.0) * (
+    dT.ab[Va, Vb, oa, Ob] = (1.0 / 1.0) * (
             +1.0 * np.einsum('me,AeBimJ->ABiJ', H.a.ov[oa, va], T.aab.VvVooO, optimize=True)
             - 1.0 * np.einsum('mE,EABimJ->ABiJ', H.a.ov[oa, Va], T.aab.VVVooO, optimize=True)
             + 1.0 * np.einsum('Me,AeBiMJ->ABiJ', H.a.ov[Oa, va], T.aab.VvVoOO, optimize=True)
@@ -421,7 +423,7 @@ def build_1101(T, dT, H, system):
 def build_1110(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[Va, Vb, Oa, ob] += (1.0 / 1.0) * (
+    dT.ab[Va, Vb, Oa, ob] = (1.0 / 1.0) * (
             -1.0 * np.einsum('me,AeBmIj->ABIj', H.a.ov[oa, va], T.aab.VvVoOo, optimize=True)
             + 1.0 * np.einsum('mE,EABmIj->ABIj', H.a.ov[oa, Va], T.aab.VVVoOo, optimize=True)
             + 1.0 * np.einsum('Me,AeBIMj->ABIj', H.a.ov[Oa, va], T.aab.VvVOOo, optimize=True)
@@ -508,7 +510,7 @@ def build_1110(T, dT, H, system):
 def build_1001(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[Va, vb, oa, Ob] += (1.0 / 1.0) * (
+    dT.ab[Va, vb, oa, Ob] = (1.0 / 1.0) * (
             +1.0 * np.einsum('me,AebimJ->AbiJ', H.a.ov[oa, va], T.aab.VvvooO, optimize=True)
             + 1.0 * np.einsum('Me,AebiMJ->AbiJ', H.a.ov[Oa, va], T.aab.VvvoOO, optimize=True)
             - 1.0 * np.einsum('mE,EAbimJ->AbiJ', H.a.ov[oa, Va], T.aab.VVvooO, optimize=True)
@@ -591,7 +593,7 @@ def build_1001(T, dT, H, system):
 def build_1100(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[Va, Vb, oa, ob] += (1.0 / 1.0) * (
+    dT.ab[Va, Vb, oa, ob] = (1.0 / 1.0) * (
             +1.0 * np.einsum('Me,AeBiMj->ABij', H.a.ov[Oa, va], T.aab.VvVoOo, optimize=True)
             - 1.0 * np.einsum('ME,EABiMj->ABij', H.a.ov[Oa, Va], T.aab.VVVoOo, optimize=True)
     )
@@ -654,7 +656,7 @@ def build_1100(T, dT, H, system):
 
 def build_0011(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dT.ab[va, vb, Oa, Ob] += (1.0 / 1.0) * (
+    dT.ab[va, vb, Oa, Ob] = (1.0 / 1.0) * (
             +1.0 * np.einsum('mE,EabmIJ->abIJ', H.a.ov[oa, Va], T.aab.VvvoOO, optimize=True)
             - 1.0 * np.einsum('ME,EabIMJ->abIJ', H.a.ov[Oa, Va], T.aab.VvvOOO, optimize=True)
     )
@@ -719,7 +721,7 @@ def build_0011(T, dT, H, system):
 def build_1010(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[Va, vb, Oa, ob] += (1.0 / 1.0) * (
+    dT.ab[Va, vb, Oa, ob] = (1.0 / 1.0) * (
             -1.0 * np.einsum('me,AebmIj->AbIj', H.a.ov[oa, va], T.aab.VvvoOo, optimize=True)
             + 1.0 * np.einsum('mE,EAbmIj->AbIj', H.a.ov[oa, Va], T.aab.VVvoOo, optimize=True)
             + 1.0 * np.einsum('Me,AebIMj->AbIj', H.a.ov[Oa, va], T.aab.VvvOOo, optimize=True)
@@ -802,7 +804,7 @@ def build_1010(T, dT, H, system):
 def build_0101(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[va, Vb, oa, Ob] += (1.0 / 1.0) * (
+    dT.ab[va, Vb, oa, Ob] = (1.0 / 1.0) * (
             -1.0 * np.einsum('me,eaBimJ->aBiJ', H.a.ov[oa, va], T.aab.vvVooO, optimize=True)
             - 1.0 * np.einsum('Me,eaBiMJ->aBiJ', H.a.ov[Oa, va], T.aab.vvVoOO, optimize=True)
             - 1.0 * np.einsum('mE,EaBimJ->aBiJ', H.a.ov[oa, Va], T.aab.VvVooO, optimize=True)
@@ -885,7 +887,7 @@ def build_0101(T, dT, H, system):
 def build_0110(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[va, Vb, Oa, ob] += (1.0 / 1.0) * (
+    dT.ab[va, Vb, Oa, ob] = (1.0 / 1.0) * (
             +1.0 * np.einsum('me,eaBmIj->aBIj', H.a.ov[oa, va], T.aab.vvVoOo, optimize=True)
             + 1.0 * np.einsum('mE,EaBmIj->aBIj', H.a.ov[oa, Va], T.aab.VvVoOo, optimize=True)
             - 1.0 * np.einsum('Me,eaBIMj->aBIj', H.a.ov[Oa, va], T.aab.vvVOOo, optimize=True)
@@ -966,7 +968,7 @@ def build_0110(T, dT, H, system):
 
 def build_0001(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dT.ab[va, vb, oa, Ob] += (1.0 / 1.0) * (
+    dT.ab[va, vb, oa, Ob] = (1.0 / 1.0) * (
             -1.0 * np.einsum('mE,EabimJ->abiJ', H.a.ov[oa, Va], T.aab.VvvooO, optimize=True)
             - 1.0 * np.einsum('ME,EabiMJ->abiJ', H.a.ov[Oa, Va], T.aab.VvvoOO, optimize=True)
     )
@@ -1029,7 +1031,7 @@ def build_0001(T, dT, H, system):
 def build_0010(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[va, vb, Oa, ob] += (1.0 / 1.0) * (
+    dT.ab[va, vb, Oa, ob] = (1.0 / 1.0) * (
             +1.0 * np.einsum('mE,EabmIj->abIj', H.a.ov[oa, Va], T.aab.VvvoOo, optimize=True)
             - 1.0 * np.einsum('ME,EabIMj->abIj', H.a.ov[Oa, Va], T.aab.VvvOOo, optimize=True)
     )
@@ -1092,7 +1094,7 @@ def build_0010(T, dT, H, system):
 def build_0100(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[va, Vb, oa, ob] += (1.0 / 1.0) * (
+    dT.ab[va, Vb, oa, ob] = (1.0 / 1.0) * (
             -1.0 * np.einsum('Me,eaBiMj->aBij', H.a.ov[Oa, va], T.aab.vvVoOo, optimize=True)
             - 1.0 * np.einsum('ME,EaBiMj->aBij', H.a.ov[Oa, Va], T.aab.VvVoOo, optimize=True)
     )
@@ -1155,7 +1157,7 @@ def build_0100(T, dT, H, system):
 def build_1000(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[Va, vb, oa, ob] += (1.0 / 1.0) * (
+    dT.ab[Va, vb, oa, ob] = (1.0 / 1.0) * (
             +1.0 * np.einsum('Me,AebiMj->Abij', H.a.ov[Oa, va], T.aab.VvvoOo, optimize=True)
             - 1.0 * np.einsum('ME,EAbiMj->Abij', H.a.ov[Oa, Va], T.aab.VVvoOo, optimize=True)
     )
@@ -1218,7 +1220,7 @@ def build_1000(T, dT, H, system):
 def build_0000(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.ab[va, vb, oa, ob] += (1.0 / 1.0) * (
+    dT.ab[va, vb, oa, ob] = (1.0 / 1.0) * (
             -1.0 * np.einsum('ME,EabiMj->abij', H.a.ov[Oa, Va], T.aab.VvvoOo, optimize=True)
     )
     dT.ab[va, vb, oa, ob] += (1.0 / 1.0) * (
@@ -1266,9 +1268,9 @@ def build_0000(T, dT, H, system):
 
 def update(T, dT, H, shift):
 
-    T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
+    T.ab, dT.ab = cc_active_loops.cc_active_loops.update_t2b(
         T.ab,
-        dT.ab + H.ab.vvoo,
+        dT.ab,
         H.a.oo,
         H.a.vv,
         H.b.oo,
