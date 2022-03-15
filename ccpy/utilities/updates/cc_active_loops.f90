@@ -4,6 +4,153 @@ module cc_active_loops
 
   contains
 
+            subroutine update_t1a(t1a,resid,X1A,fA_oo,fA_vv,shift,noa,nua)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua
+              real(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+                                  X1A(1:nua,1:noa), shift
+              real(kind=8), intent(inout) :: t1a(1:nua,1:noa)
+              !f2py intent(in,out) :: t1a(0:nua-1,0:noa-1)
+              real(kind=8), intent(out) :: resid(1:nua,1:noa)
+              integer :: i, a
+              real(kind=8) :: denom, val
+
+              do i = 1,noa
+                do a = 1,nua
+                  denom = fA_oo(i,i) - fA_vv(a,a)
+                  val = X1A(a,i)/(denom-shift)
+                  t1a(a,i) = t1a(a,i) + val
+                  resid(a,i) = val
+                end do
+              end do
+
+      end subroutine update_t1a
+
+      subroutine update_t1b(t1b,resid,X1B,fB_oo,fB_vv,shift,nob,nub)
+
+              implicit none
+
+              integer, intent(in) :: nob, nub
+              real(8), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
+                                  X1B(1:nub,1:nob), shift
+              real(8), intent(inout) :: t1b(1:nub,1:nob)
+              !f2py intent(in,out) :: t1b(0:nub-1,0:nob-1)
+              real(kind=8), intent(out) :: resid(1:nub,1:nob)
+              integer :: i, a
+              real(8) :: denom, val
+
+              do i = 1,nob
+                do a = 1,nub
+                  denom = fB_oo(i,i) - fB_vv(a,a)
+                  val = X1B(a,i)/(denom-shift)
+                  t1b(a,i) = t1b(a,i) + val
+                  resid(a,i) = val
+                end do
+              end do
+
+      end subroutine update_t1b
+
+      subroutine update_t2a(t2a,resid,X2A,fA_oo,fA_vv,shift,noa,nua)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua
+              real(8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+                                  X2A(1:nua,1:nua,1:noa,1:noa), shift
+              real(8), intent(inout) :: t2a(1:nua,1:nua,1:noa,1:noa)
+              !f2py intent(in,out) :: t2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+              real(kind=8), intent(out) :: resid(1:nua,1:nua,1:noa,1:noa)
+              integer :: i, j, a, b
+              real(8) :: denom, val
+
+              do i = 1,noa
+                do j = i+1,noa
+                  do a = 1,nua
+                    do b = a+1,nua
+                      denom = fA_oo(i,i) + fA_oo(j,j) - fA_vv(a,a) - fA_vv(b,b)
+                      val = X2A(b,a,j,i)/(denom-shift)
+                      t2a(b,a,j,i) = t2a(b,a,j,i) + val
+                      t2a(a,b,j,i) = -t2a(b,a,j,i)
+                      t2a(b,a,i,j) = -t2a(b,a,j,i)
+                      t2a(a,b,i,j) = t2a(b,a,j,i)
+
+                      resid(b,a,j,i) = val
+                      resid(a,b,j,i) = -val
+                      resid(b,a,i,j) = -val
+                      resid(a,b,i,j) = val
+                    end do
+                  end do
+                end do
+              end do
+
+      end subroutine update_t2a
+
+      subroutine update_t2b(t2b,resid,X2B,fA_oo,fA_vv,fB_oo,fB_vv,shift,noa,nua,nob,nub)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua, nob, nub
+              real(8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+                                  fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
+                                  X2B(1:nua,1:nub,1:noa,1:nob), shift
+              real(8), intent(inout) :: t2b(1:nua,1:nub,1:noa,1:nob)
+              !f2py intent(in,out) :: t2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+              real(kind=8), intent(out) :: resid(1:nua,1:nub,1:noa,1:nob)
+              integer :: i, j, a, b
+              real(8) :: denom, val
+
+              do j = 1,nob
+                do i = 1,noa
+                  do b = 1,nub
+                    do a = 1,nua
+                      denom = fA_oo(i,i) + fB_oo(j,j) - fA_vv(a,a) - fB_vv(b,b)
+                      val = X2B(a,b,i,j)/(denom-shift)
+                      t2b(a,b,i,j) = t2b(a,b,i,j) + val
+                      resid(a,b,i,j) = val
+                    end do
+                  end do
+                end do
+              end do
+
+      end subroutine update_t2b
+
+      subroutine update_t2c(t2c,resid,X2C,fB_oo,fB_vv,shift,nob,nub)
+
+              implicit none
+
+              integer, intent(in) :: nob, nub
+              real(8), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
+                                  X2C(1:nub,1:nub,1:nob,1:nob), shift
+              real(8), intent(inout) :: t2c(1:nub,1:nub,1:nob,1:nob)
+              !f2py intent(in,out) :: t2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+              real(kind=8), intent(out) :: resid(1:nub,1:nub,1:nob,1:nob)
+              integer :: i, j, a, b
+              real(8) :: denom, val
+
+              do i = 1,nob
+                do j = i+1,nob
+                  do a = 1,nub
+                    do b = a+1,nub
+                      denom = fB_oo(i,i) + fB_oo(j,j) - fB_vv(a,a) - fB_vv(b,b)
+                      val = X2C(b,a,j,i)/(denom-shift)
+                      t2c(b,a,j,i) = t2c(b,a,j,i) + val
+                      t2c(a,b,j,i) = -t2c(b,a,j,i)
+                      t2c(b,a,i,j) = -t2c(b,a,j,i)
+                      t2c(a,b,i,j) = t2c(b,a,j,i)
+
+                      resid(b,a,j,i) = val
+                      resid(a,b,j,i) = -val
+                      resid(b,a,i,j) = -val
+                      resid(a,b,i,j) = val
+                    end do
+                  end do
+                end do
+              end do
+
+      end subroutine update_t2c
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  T3A UPDATES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -13,26 +160,26 @@ subroutine update_t3a_111111(t3a, resid, X3A, &
                              noa_act, nua_act, noa_inact, nua_inact)
 
       integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+      real(kind=8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
                               fA_vv_act(1:nua_act, 1:nua_act), &
                               fA_oo_inact(1:noa_inact, 1:noa_inact), &
                               fA_vv_inact(1:nua_inact, 1:nua_inact)
-      real(8), intent(in)  :: X3A(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_act, 1:noa_act, 1:noa_act)
-      real(8), intent(in)  :: shift
+      real(kind=8), intent(in)  :: X3A(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_act, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(in)  :: shift
 
-      real(8), intent(inout) :: t3a(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_act, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(inout) :: t3a(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_act, 1:noa_act, 1:noa_act)
       !f2py intent(in, out)  :: t3a(0:nua_act-1, 0:nua_act-1, 0:nua_act-1, 0:noa_act-1, 0:noa_act-1, 0:noa_act-1)
-      real(8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_act, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_act, 1:noa_act, 1:noa_act)
 
       integer :: i, j, k, a, b, c
-      real(8) :: denom, val
+      real(kind=8) :: denom, val
 
       do i = 1 , noa_act
          do j = i+1 , noa_act
             do k = j+1 , noa_act
                do a = 1 , nua_act
-                  do b = b+1 , nua_act
-                     do c = c+1 , nua_act
+                  do b = a+1 , nua_act
+                     do c = b+1 , nua_act
 
                         denom = fA_oo_act(i,i) + fA_oo_act(j,j) + fA_oo_act(k,k)&
                                -fA_vv_act(a,a) - fA_vv_act(b,b) - fA_vv_act(c,c)
@@ -122,146 +269,140 @@ subroutine update_t3a_111111(t3a, resid, X3A, &
 
 end subroutine update_t3a_111111
 
+subroutine update_t3a_110111(t3a, resid, X3A, &
+                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
+                             shift, &
+                             noa_act, nua_act, noa_inact, nua_inact)
 
+      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
+      real(kind=8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+                              fA_vv_act(1:nua_act, 1:nua_act), &
+                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
+                              fA_vv_inact(1:nua_inact, 1:nua_inact)
+      real(kind=8), intent(in)  :: X3A(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_act, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(in)  :: shift
 
-      subroutine update_t3a_110111(t3a,resid,X3A,fA_oo_act,fA_vv_act,fA_oo_inact,fA_vv_inact,shift,noa_act,nua_act,noa_inact,nua_inact)
+      real(kind=8), intent(inout) :: t3a(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_act, 1:noa_act, 1:noa_act)
+      !f2py intent(in, out)  :: t3a(0:nua_act-1, 0:nua_act-1, 0:nua_inact-1, 0:noa_act-1, 0:noa_act-1, 0:noa_act-1)
+      real(kind=8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_act, 1:noa_act, 1:noa_act)
 
-              integer, intent(in) :: noa_act, nua_act, noa_inact, nua_inact
-              real(8), intent(in) :: fA_oo_act(1:noa_act,1:noa_act), fA_vv_act(1:nua_act,1:nua_act),&
-                                     fA_oo_inact(1:noa_inact,1:noa_inact), fA_vv_inact(1:nua_inact,1:nua_inact),&
-                                     X3A(1:nua_act,1:nua_act,1:nua_inact,1:noa_act,1:noa_act,1:noa_act), shift               
-              real(8), intent(inout) :: t3a(1:nua_act,1:nua_act,1:nua_inact,1:noa_act,1:noa_act,1:noa_act)
-              !f2py intent(in,out) :: t3a(0:nua_act-1,0:nua_act-1,0:nua_inact-1,0:noa_act-1,0:noa_act-1,0:noa_act-1)
-              real(8), intent(out) :: resid(1:nua_act,1:nua_act,1:nua_inact,1:noa_act,1:noa_act,1:noa_act)
-              integer :: i, j, k, a, b, c
-              real(8) :: denom, val
+      integer :: i, j, k, a, b, c
+      real(kind=8) :: denom, val
 
-              do I = 1,noa_act
-                  do J = I+1,noa_act
-                      do K = J+1,noa_act
-                          do A = 1,nua_act
-                              do B = A+1,nua_act
-                                  do c = 1,nua_inact
-                                      
-                                      denom = fA_oo_act(I,I)+fA_oo_act(J,J)+fA_oo_act(K,K)&
-                                              -fA_vv_act(A,A)-fA_vv_act(B,B)-fA_vv_inact(c,c)
-                                      val = X3A(A, B, c, I, J, K)&
-                                           -X3A(B, A, c, I, J, K)&
-                                           -X3A(A, B, c, J, I, K)&
-                                           +X3A(B, A, c, J, I, K)&
-                                           -X3A(A, B, c, I, K, J)&
-                                           +X3A(B, A, c, I, K, J)&
-                                           -X3A(A, B, c, K, J, I)&
-                                           +X3A(A, B, c, K, J, I)&
-                                           +X3A(A, B, c, J, K, I)&
-                                           -X3A(B, A, c, J, K, I)&
-                                           +X3A(A, B, c, K, I, J)&
-                                           -X3A(B, A, c, K, I, J)
-                                     val = val/(denom - shift)
+      do i = 1 , noa_act
+         do j = i+1 , noa_act
+            do k = j+1 , noa_act
+               do a = 1 , nua_act
+                  do b = a+1 , nua_act
+                     do c = 1 , nua_inact
 
-                                     t3a(A, B, c, I, J, K) = t3a(A, B, c, I, J, K) + val
-                                     t3a(B, A, c, I, J, K) = -1.0*t3a(A, B, c, I, J, K)
-                                     t3a(A, B, c, J, I, K) = -1.0*t3a(A, B, c, I, J, K)
-                                     t3a(B, A, c, J, I, K) = t3a(A, B, c, I, J, K)
-                                     t3a(A, B, c, I, K, J) = -1.0*t3a(A, B, c, I, J, K)
-                                     t3a(B, A, c, I, K, J) = t3a(A, B, c, I, J, K)
-                                     t3a(A, B, c, K, J, I) = -1.0*t3a(A, B, c, I, J, K)
-                                     t3a(A, B, c, K, J, I) = t3a(A, B, c, I, J, K)
-                                     t3a(A, B, c, J, K, I) = t3a(A, B, c, I, J, K)
-                                     t3a(B, A, c, J, K, I) = -1.0*t3a(A, B, c, I, J, K)
-                                     t3a(A, B, c, K, I, J) = t3a(A, B, c, I, J, K)
-                                     t3a(B, A, c, K, I, J) = -1.0*t3a(A, B, c, I, J, k)
+                        denom = fA_oo_act(i,i) + fA_oo_act(j,j) + fA_oo_act(k,k)&
+                               -fA_vv_act(a,a) - fA_vv_act(b,b) - fA_vv_inact(c,c)
 
-                                     resid(A, B, c, I, J, K) = val
-                                     resid(B, A, c, I, J, K) = -1.0*val
-                                     resid(A, B, c, J, I, K) = -1.0*val
-                                     resid(B, A, c, J, I, K) = val
-                                     resid(A, B, c, I, K, J) = -1.0*val
-                                     resid(B, A, c, I, K, J) = val
-                                     resid(A, B, c, K, J, I) = -1.0*val
-                                     resid(A, B, c, K, J, I) = val
-                                     resid(A, B, c, J, K, I) = val
-                                     resid(B, A, c, J, K, I) = -1.0*val
-                                     resid(A, B, c, K, I, J) = val
-                                     resid(B, A, c, K, I, J) = -1.0*val
-                                end do
-                             end do
-                          end do
-                       end do
-                    end do
-                 end do
-          end subroutine update_t3a_110111
+                        val = X3A(a, b, c, i, j, k)/(denom - shift)
 
+                        t3a(a, b, c, i, j, k) = t3a(a, b, c, i, j, k) + val
+                        t3a(a, b, c, i, k, j) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(a, b, c, j, i, k) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(a, b, c, j, k, i) = t3a(a, b, c, i, j, k)
+                        t3a(a, b, c, k, i, j) = t3a(a, b, c, i, j, k)
+                        t3a(a, b, c, k, j, i) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(b, a, c, i, j, k) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(b, a, c, i, k, j) = t3a(a, b, c, i, j, k)
+                        t3a(b, a, c, j, i, k) = t3a(a, b, c, i, j, k)
+                        t3a(b, a, c, j, k, i) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(b, a, c, k, i, j) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(b, a, c, k, j, i) = t3a(a, b, c, i, j, k)
 
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, i, k, j) = -1.0 * val
+                        resid(a, b, c, j, i, k) = -1.0 * val
+                        resid(a, b, c, j, k, i) = val
+                        resid(a, b, c, k, i, j) = val
+                        resid(a, b, c, k, j, i) = -1.0 * val
+                        resid(b, a, c, i, j, k) = -1.0 * val
+                        resid(b, a, c, i, k, j) = val
+                        resid(b, a, c, j, i, k) = val
+                        resid(b, a, c, j, k, i) = -1.0 * val
+                        resid(b, a, c, k, i, j) = -1.0 * val
+                        resid(b, a, c, k, j, i) = val
 
-      subroutine update_t3a_111011(t3a,resid,X3A,fA_oo_act,fA_vv_act,fA_oo_inact,fA_vv_inact,shift,noa_act,nua_act,noa_inact,nua_inact)
-
-              integer, intent(in) :: noa_act, nua_act, noa_inact, nua_inact
-              real(8), intent(in) :: fA_oo_act(1:noa_act,1:noa_act), fA_vv_act(1:nua_act,1:nua_act),&
-                                     fA_oo_inact(1:noa_inact,1:noa_inact), fA_vv_inact(1:nua_inact,1:nua_inact),&
-                                     X3A(1:nua_act,1:nua_act,1:nua_act,1:noa_inact,1:noa_act,1:noa_act), shift               
-              real(8), intent(inout) :: t3a(1:nua_act,1:nua_act,1:nua_act,1:noa_inact,1:noa_act,1:noa_act)
-              !f2py intent(in,out) :: t3a(0:nua_act-1,0:nua_act-1,0:nua_act-1,0:noa_inact-1,0:noa_act-1,0:noa_act-1)
-              real(8), intent(out) :: resid(1:nua_act,1:nua_act,1:nua_act,1:noa_inact,1:noa_act,1:noa_act)
-              integer :: i, j, k, a, b, c 
-              real(8) :: denom, val
-
-              do i = 1,noa_inact
-                  do J = 1,noa_act
-                      do K = J+1,noa_act
-                          do A = 1,nua_act
-                              do B = A+1,nua_act
-                                  do C = B+1,nua_act
-                                      
-                                      denom = fA_oo_inact(i,i)+fA_oo_act(J,J)+fA_oo_act(K,K)&
-                                              -fA_vv_act(A,A)-fA_vv_act(B,B)-fA_vv_act(C,C)
-                                      val = X3A(A, B, C, i, J, K)&
-                                           -X3A(A, B, C, i, K, J)&
-                                           -X3A(B, A, C, i, J, K)&
-                                           +X3A(B, A, C, i, K, J)&
-                                           -X3A(A, C, B, i, J, K)&
-                                           +X3A(A, C, B, i, K, J)&
-                                           -X3A(C, B, A, i, J, K)&
-                                           +X3A(C, B, A, i, K, J)&
-                                           +X3A(B, C, A, i, J, K)&
-                                           -X3A(B, C, A, i, K, J)&
-                                           +X3A(C, A, B, i, J, K)&
-                                           -X3A(C, A, B, i, K, J)
-                                     val = val/(denom - shift)
-
-                                     t3a(A, B, C, i, J, K) = t3a(A, B, C, i, J, K) + val
-                                     t3a(A, B, C, i, K, J) = -1.0*t3a(A, B, C, i, J, K)
-                                     t3a(B, A, C, i, J, K) = -1.0*t3a(A, B, C, i, J, K)
-                                     t3a(B, A, C, i, K, J) = t3a(A, B, C, i, J, K)
-                                     t3a(A, C, B, i, J, K) = -1.0*t3a(A, B, C, i, J, K)
-                                     t3a(A, C, B, i, K, J) = t3a(A, B, C, i, J, K)
-                                     t3a(C, B, A, i, J, K) = -1.0*t3a(A, B, C, i, J, K)
-                                     t3a(C, B, A, i, K, J) = t3a(A, B, C, i, J, K)
-                                     t3a(B, C, A, i, J, K) = t3a(A, B, C, i, J, K)
-                                     t3a(B, C, A, i, K, J) = -1.0*t3a(A, B, C, i, J, K)
-                                     t3a(C, A, B, i, J, K) = t3a(A, B, C, i, J, K)
-                                     t3a(C, A, B, i, K, J) = -1.0*t3a(A, B, C, i, J, K)
-
-                                     resid(A, B, C, i, J, K) = val
-                                     resid(A, B, C, i, K, J) = -1.0*val
-                                     resid(B, A, C, i, J, K) = -1.0*val
-                                     resid(B, A, C, i, K, J) = val
-                                     resid(A, C, B, i, J, K) = -1.0*val
-                                     resid(A, C, B, i, K, J) = val
-                                     resid(C, B, A, i, J, K) = -1.0*val
-                                     resid(C, B, A, i, K, J) = val
-                                     resid(B, C, A, i, J, K) = val
-                                     resid(B, C, A, i, K, J) = -1.0*val
-                                     resid(C, A, B, i, J, K) = val
-                                     resid(C, A, B, i, K, J) = -1.0*val
-
-                               end do
-                           end do
-                        end do
                      end do
                   end do
                end do
-      end subroutine update_t3a_111011
+            end do
+         end do
+      end do
+
+end subroutine update_t3a_110111
+
+subroutine update_t3a_111011(t3a, resid, X3A, &
+                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
+                             shift, &
+                             noa_act, nua_act, noa_inact, nua_inact)
+
+      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
+      real(kind=8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+                              fA_vv_act(1:nua_act, 1:nua_act), &
+                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
+                              fA_vv_inact(1:nua_inact, 1:nua_inact)
+      real(kind=8), intent(in)  :: X3A(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_inact, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(in)  :: shift
+
+      real(kind=8), intent(inout) :: t3a(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_inact, 1:noa_act, 1:noa_act)
+      !f2py intent(in, out)  :: t3a(0:nua_act-1, 0:nua_act-1, 0:nua_act-1, 0:noa_inact-1, 0:noa_act-1, 0:noa_act-1)
+      real(kind=8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_inact, 1:noa_act, 1:noa_act)
+
+      integer :: i, j, k, a, b, c
+      real(kind=8) :: denom, val
+
+      do i = 1 , noa_inact
+         do j = 1 , noa_act
+            do k = j+1 , noa_act
+               do a = 1 , nua_act
+                  do b = a+1 , nua_act
+                     do c = b+1 , nua_act
+
+                        denom = fA_oo_inact(i,i) + fA_oo_act(j,j) + fA_oo_act(k,k)&
+                               -fA_vv_act(a,a) - fA_vv_act(b,b) - fA_vv_act(c,c)
+
+                        val = X3A(a, b, c, i, j, k)/(denom - shift)
+
+                        t3a(a, b, c, i, j, k) = t3a(a, b, c, i, j, k) + val
+                        t3a(a, b, c, i, k, j) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(a, c, b, i, j, k) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(a, c, b, i, k, j) = t3a(a, b, c, i, j, k)
+                        t3a(b, a, c, i, j, k) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(b, a, c, i, k, j) = t3a(a, b, c, i, j, k)
+                        t3a(b, c, a, i, j, k) = t3a(a, b, c, i, j, k)
+                        t3a(b, c, a, i, k, j) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(c, a, b, i, j, k) = t3a(a, b, c, i, j, k)
+                        t3a(c, a, b, i, k, j) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(c, b, a, i, j, k) = -1.0 * t3a(a, b, c, i, j, k)
+                        t3a(c, b, a, i, k, j) = t3a(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, i, k, j) = -1.0 * val
+                        resid(a, c, b, i, j, k) = -1.0 * val
+                        resid(a, c, b, i, k, j) = val
+                        resid(b, a, c, i, j, k) = -1.0 * val
+                        resid(b, a, c, i, k, j) = val
+                        resid(b, c, a, i, j, k) = val
+                        resid(b, c, a, i, k, j) = -1.0 * val
+                        resid(c, a, b, i, j, k) = val
+                        resid(c, a, b, i, k, j) = -1.0 * val
+                        resid(c, b, a, i, j, k) = -1.0 * val
+                        resid(c, b, a, i, k, j) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3a_111011
+
 
     subroutine update_t3a_100111(t3a, resid, X3A, &
                              fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
@@ -269,19 +410,19 @@ end subroutine update_t3a_111111
                              noa_act, nua_act, noa_inact, nua_inact)
 
       integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+      real(kind=8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
                               fA_vv_act(1:nua_act, 1:nua_act), &
                               fA_oo_inact(1:noa_inact, 1:noa_inact), &
                               fA_vv_inact(1:nua_inact, 1:nua_inact)
-      real(8), intent(in)  :: X3A(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_act, 1:noa_act, 1:noa_act)
-      real(8), intent(in)  :: shift
+      real(kind=8), intent(in)  :: X3A(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_act, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(in)  :: shift
 
       real(8), intent(inout) :: t3a(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_act, 1:noa_act, 1:noa_act)
       !f2py intent(in, out)  :: t3a(0:nua_act-1, 0:nua_inact-1, 0:nua_inact-1, 0:noa_act-1, 0:noa_act-1, 0:noa_act-1)
-      real(8), intent(out)   :: resid(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_act, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(out)   :: resid(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_act, 1:noa_act, 1:noa_act)
 
       integer :: i, j, k, a, b, c
-      real(8) :: denom, val
+      real(kind=8) :: denom, val
 
       do i = 1 , noa_act
          do j = i+1 , noa_act
@@ -336,19 +477,19 @@ end subroutine update_t3a_111111
                              noa_act, nua_act, noa_inact, nua_inact)
 
       integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+      real(kind=8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
                               fA_vv_act(1:nua_act, 1:nua_act), &
                               fA_oo_inact(1:noa_inact, 1:noa_inact), &
                               fA_vv_inact(1:nua_inact, 1:nua_inact)
-      real(8), intent(in)  :: X3A(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_inact, 1:noa_inact, 1:noa_act)
-      real(8), intent(in)  :: shift
+      real(kind=8), intent(in)  :: X3A(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_inact, 1:noa_inact, 1:noa_act)
+      real(kind=8), intent(in)  :: shift
 
-      real(8), intent(inout) :: t3a(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_inact, 1:noa_inact, 1:noa_act)
+      real(kind=8), intent(inout) :: t3a(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_inact, 1:noa_inact, 1:noa_act)
       !f2py intent(in, out)  :: t3a(0:nua_act-1, 0:nua_act-1, 0:nua_act-1, 0:noa_inact-1, 0:noa_inact-1, 0:noa_act-1)
-      real(8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_inact, 1:noa_inact, 1:noa_act)
+      real(kind=8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nua_act, 1:noa_inact, 1:noa_inact, 1:noa_act)
 
       integer :: i, j, k, a, b, c
-      real(8) :: denom, val
+      real(kind=8) :: denom, val
 
       do i = 1 , noa_inact
          do j = i+1 , noa_inact
@@ -403,19 +544,19 @@ end subroutine update_t3a_111111
                              noa_act, nua_act, noa_inact, nua_inact)
 
       integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+      real(kind=8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
                               fA_vv_act(1:nua_act, 1:nua_act), &
                               fA_oo_inact(1:noa_inact, 1:noa_inact), &
                               fA_vv_inact(1:nua_inact, 1:nua_inact)
-      real(8), intent(in)  :: X3A(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_act, 1:noa_act)
-      real(8), intent(in)  :: shift
+      real(kind=8), intent(in)  :: X3A(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(in)  :: shift
 
-      real(8), intent(inout) :: t3a(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(inout) :: t3a(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_act, 1:noa_act)
       !f2py intent(in, out)  :: t3a(0:nua_act-1, 0:nua_act-1, 0:nua_inact-1, 0:noa_inact-1, 0:noa_act-1, 0:noa_act-1)
-      real(8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_act, 1:noa_act)
 
       integer :: i, j, k, a, b, c
-      real(8) :: denom, val
+      real(kind=8) :: denom, val
 
       do i = 1 , noa_inact
          do j = 1 , noa_act
@@ -455,19 +596,19 @@ end subroutine update_t3a_111111
                              noa_act, nua_act, noa_inact, nua_inact)
 
       integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+      real(kind=8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
                               fA_vv_act(1:nua_act, 1:nua_act), &
                               fA_oo_inact(1:noa_inact, 1:noa_inact), &
                               fA_vv_inact(1:nua_inact, 1:nua_inact)
-      real(8), intent(in)  :: X3A(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_inact, 1:noa_act, 1:noa_act)
-      real(8), intent(in)  :: shift
+      real(kind=8), intent(in)  :: X3A(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_inact, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(in)  :: shift
 
       real(8), intent(inout) :: t3a(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_inact, 1:noa_act, 1:noa_act)
       !f2py intent(in, out)  :: t3a(0:nua_act-1, 0:nua_inact-1, 0:nua_inact-1, 0:noa_inact-1, 0:noa_act-1, 0:noa_act-1)
-      real(8), intent(out)   :: resid(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_inact, 1:noa_act, 1:noa_act)
+      real(kind=8), intent(out)   :: resid(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_inact, 1:noa_act, 1:noa_act)
 
       integer :: i, j, k, a, b, c
-      real(8) :: denom, val
+      real(kind=8) :: denom, val
 
       do i = 1 , noa_inact
          do j = 1 , noa_act
@@ -506,19 +647,19 @@ end subroutine update_t3a_111111
                              noa_act, nua_act, noa_inact, nua_inact)
 
       integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+      real(kind=8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
                               fA_vv_act(1:nua_act, 1:nua_act), &
                               fA_oo_inact(1:noa_inact, 1:noa_inact), &
                               fA_vv_inact(1:nua_inact, 1:nua_inact)
-      real(8), intent(in)  :: X3A(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
-      real(8), intent(in)  :: shift
+      real(kind=8), intent(in)  :: X3A(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
+      real(kind=8), intent(in)  :: shift
 
-      real(8), intent(inout) :: t3a(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
+      real(kind=8), intent(inout) :: t3a(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
       !f2py intent(in, out)  :: t3a(0:nua_act-1, 0:nua_act-1, 0:nua_inact-1, 0:noa_inact-1, 0:noa_inact-1, 0:noa_act-1)
-      real(8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
+      real(kind=8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
 
       integer :: i, j, k, a, b, c
-      real(8) :: denom, val
+      real(kind=8) :: denom, val
 
       do i = 1 , noa_inact
          do j = i+1 , noa_inact
@@ -558,19 +699,19 @@ end subroutine update_t3a_111111
                              noa_act, nua_act, noa_inact, nua_inact)
 
       integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+      real(kind=8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
                               fA_vv_act(1:nua_act, 1:nua_act), &
                               fA_oo_inact(1:noa_inact, 1:noa_inact), &
                               fA_vv_inact(1:nua_inact, 1:nua_inact)
-      real(8), intent(in)  :: X3A(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
-      real(8), intent(in)  :: shift
+      real(kind=8), intent(in)  :: X3A(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
+      real(kind=8), intent(in)  :: shift
 
-      real(8), intent(inout) :: t3a(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
+      real(kind=8), intent(inout) :: t3a(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
       !f2py intent(in, out)  :: t3a(0:nua_act-1, 0:nua_inact-1, 0:nua_inact-1, 0:noa_inact-1, 0:noa_inact-1, 0:noa_act-1)
-      real(8), intent(out)   :: resid(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
+      real(kind=8), intent(out)   :: resid(1:nua_act, 1:nua_inact, 1:nua_inact, 1:noa_inact, 1:noa_inact, 1:noa_act)
 
       integer :: i, j, k, a, b, c
-      real(8) :: denom, val
+      real(kind=8) :: denom, val
 
       do i = 1 , noa_inact
          do j = i+1 , noa_inact
@@ -1106,6 +1247,115 @@ subroutine update_t3b_101110(t3b, resid, X3B, &
       end do
 
 end subroutine update_t3b_101110
+
+      subroutine update_t3b_101010(t3b, resid, X3B, &
+                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             noa_act, nua_act, noa_inact, nua_inact, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+                              fA_vv_act(1:nua_act, 1:nua_act), &
+                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
+                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
+                              fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3B(1:nua_act, 1:nua_inact, 1:nub_act, 1:noa_inact, 1:noa_act, 1:nob_inact)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3b(1:nua_act, 1:nua_inact, 1:nub_act, 1:noa_inact, 1:noa_act, 1:nob_inact)
+      !f2py intent(in, out)  :: t3b(0:nua_act-1, 0:nua_inact-1, 0:nub_act-1, 0:noa_inact-1, 0:noa_act-1, 0:nob_inact-1)
+      real(8), intent(out)   :: resid(1:nua_act, 1:nua_inact, 1:nub_act, 1:noa_inact, 1:noa_act, 1:nob_inact)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , noa_inact
+         do j = 1 , noa_act
+            do k = 1 , nob_inact
+               do a = 1 , nua_act
+                  do b = 1 , nua_inact
+                     do c = 1 , nub_act
+
+                        denom = fA_oo_inact(i,i) + fA_oo_act(j,j) + fB_oo_inact(k,k)&
+                               -fA_vv_act(a,a) - fA_vv_inact(b,b) - fB_vv_act(c,c)
+
+                        val = X3B(a, b, c, i, j, k)/(denom - shift)
+
+                        t3b(a, b, c, i, j, k) = t3b(a, b, c, i, j, k) + val
+
+                        resid(a, b, c, i, j, k) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3b_101010
+
+
+subroutine update_t3b_111010(t3b, resid, X3B, &
+                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             noa_act, nua_act, noa_inact, nua_inact, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+                              fA_vv_act(1:nua_act, 1:nua_act), &
+                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
+                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
+                              fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3B(1:nua_act, 1:nua_act, 1:nub_act, 1:noa_inact, 1:noa_act, 1:nob_inact)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3b(1:nua_act, 1:nua_act, 1:nub_act, 1:noa_inact, 1:noa_act, 1:nob_inact)
+      !f2py intent(in, out)  :: t3b(0:nua_act-1, 0:nua_act-1, 0:nub_act-1, 0:noa_inact-1, 0:noa_act-1, 0:nob_inact-1)
+      real(8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nub_act, 1:noa_inact, 1:noa_act, 1:nob_inact)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , noa_inact
+         do j = 1 , noa_act
+            do k = 1 , nob_inact
+               do a = 1 , nua_act
+                  do b = a+1 , nua_act
+                     do c = 1 , nub_act
+
+                        denom = fA_oo_inact(i,i) + fA_oo_act(j,j) + fB_oo_inact(k,k)&
+                               -fA_vv_act(a,a) - fA_vv_act(b,b) - fB_vv_act(c,c)
+
+                        val = X3B(a, b, c, i, j, k)/(denom - shift)
+
+                        t3b(a, b, c, i, j, k) = t3b(a, b, c, i, j, k) + val
+                        t3b(b, a, c, i, j, k) = -1.0 * t3b(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(b, a, c, i, j, k) = -1.0 * val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3b_111010
+
+
 subroutine update_t3b_100111(t3b, resid, X3B, &
                              fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
                              fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
@@ -1276,59 +1526,7 @@ subroutine update_t3b_111001(t3b, resid, X3B, &
 
 end subroutine update_t3b_111001
 
-subroutine update_t3b_111100(t3b, resid, X3B, &
-                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
-                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
-                             shift, &
-                             noa_act, nua_act, noa_inact, nua_inact, &
-                             nob_act, nub_act, nob_inact, nub_inact)
 
-      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
-                              fA_vv_act(1:nua_act, 1:nua_act), &
-                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
-                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
-                              fB_oo_act(1:nob_act, 1:nob_act), &
-                              fB_vv_act(1:nub_act, 1:nub_act), &
-                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
-                              fB_vv_inact(1:nub_inact, 1:nub_inact)
-      real(8), intent(in)  :: X3B(1:nua_act, 1:nua_act, 1:nub_act, 1:noa_act, 1:noa_inact, 1:nob_inact)
-      real(8), intent(in)  :: shift
-
-      real(8), intent(inout) :: t3b(1:nua_act, 1:nua_act, 1:nub_act, 1:noa_act, 1:noa_inact, 1:nob_inact)
-      !f2py intent(in, out)  :: t3b(0:nua_act-1, 0:nua_act-1, 0:nub_act-1, 0:noa_act-1, 0:noa_inact-1, 0:nob_inact-1)
-      real(8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nub_act, 1:noa_act, 1:noa_inact, 1:nob_inact)
-
-      integer :: i, j, k, a, b, c
-      real(8) :: denom, val
-
-      do i = 1 , noa_act
-         do j = 1 , noa_inact
-            do k = 1 , nob_inact
-               do a = 1 , nua_act
-                  do b = a+1 , nua_act
-                     do c = 1 , nub_act
-
-                        denom = fA_oo_act(i,i) + fA_oo_inact(j,j) + fB_oo_inact(k,k)&
-                               -fA_vv_act(a,a) - fA_vv_act(b,b) - fB_vv_act(c,c)
-
-                        val = X3B(a, b, c, i, j, k)/(denom - shift)
-
-                        t3b(a, b, c, i, j, k) = t3b(a, b, c, i, j, k) + val
-                        t3b(b, a, c, j, i, k) = -1.0 * t3b(a, b, c, i, j, k)
-
-                        resid(a, b, c, j, i, k) = val
-                        resid(b, a, c, j, i, k) = -1.0 * val
-
-                     end do
-                  end do
-               end do
-            end do
-         end do
-      end do
-
-end subroutine update_t3b_111100
 
 subroutine update_t3b_001011(t3b, resid, X3B, &
                              fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
@@ -1660,111 +1858,9 @@ subroutine update_t3b_101001(t3b, resid, X3B, &
 
 end subroutine update_t3b_101001
 
-subroutine update_t3b_101100(t3b, resid, X3B, &
-                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
-                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
-                             shift, &
-                             noa_act, nua_act, noa_inact, nua_inact, &
-                             nob_act, nub_act, nob_inact, nub_inact)
 
-      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
-                              fA_vv_act(1:nua_act, 1:nua_act), &
-                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
-                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
-                              fB_oo_act(1:nob_act, 1:nob_act), &
-                              fB_vv_act(1:nub_act, 1:nub_act), &
-                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
-                              fB_vv_inact(1:nub_inact, 1:nub_inact)
-      real(8), intent(in)  :: X3B(1:nua_act, 1:nua_inact, 1:nub_act, 1:noa_act, 1:noa_inact, 1:nob_inact)
-      real(8), intent(in)  :: shift
 
-      real(8), intent(inout) :: t3b(1:nua_act, 1:nua_inact, 1:nub_act, 1:noa_act, 1:noa_inact, 1:nob_inact)
-      !f2py intent(in, out)  :: t3b(0:nua_act-1, 0:nua_inact-1, 0:nub_act-1, 0:noa_act-1, 0:noa_inact-1, 0:nob_inact-1)
-      real(8), intent(out)   :: resid(1:nua_act, 1:nua_inact, 1:nub_act, 1:noa_act, 1:noa_inact, 1:nob_inact)
 
-      integer :: i, j, k, a, b, c
-      real(8) :: denom, val
-
-      do i = 1 , noa_act
-         do j = 1 , noa_inact
-            do k = 1 , nob_inact
-               do a = 1 , nua_act
-                  do b = 1 , nua_inact
-                     do c = 1 , nub_act
-
-                        denom = fA_oo_act(i,i) + fA_oo_inact(j,j) + fB_oo_inact(k,k)&
-                               -fA_vv_act(a,a) - fA_vv_inact(b,b) - fB_vv_act(c,c)
-
-                        val = X3B(a, b, c, i, j, k)/(denom - shift)
-
-                        t3b(a, b, c, i, j, k) = t3b(a, b, c, i, j, k) + val
-
-                        resid(a, b, c, j, i, k) = val
-
-                     end do
-                  end do
-               end do
-            end do
-         end do
-      end do
-
-end subroutine update_t3b_101100
-
-subroutine update_t3b_110100(t3b, resid, X3B, &
-                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
-                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
-                             shift, &
-                             noa_act, nua_act, noa_inact, nua_inact, &
-                             nob_act, nub_act, nob_inact, nub_inact)
-
-      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
-                              fA_vv_act(1:nua_act, 1:nua_act), &
-                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
-                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
-                              fB_oo_act(1:nob_act, 1:nob_act), &
-                              fB_vv_act(1:nub_act, 1:nub_act), &
-                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
-                              fB_vv_inact(1:nub_inact, 1:nub_inact)
-      real(8), intent(in)  :: X3B(1:nua_act, 1:nua_act, 1:nub_inact, 1:noa_act, 1:noa_inact, 1:nob_inact)
-      real(8), intent(in)  :: shift
-
-      real(8), intent(inout) :: t3b(1:nua_act, 1:nua_act, 1:nub_inact, 1:noa_act, 1:noa_inact, 1:nob_inact)
-      !f2py intent(in, out)  :: t3b(0:nua_act-1, 0:nua_act-1, 0:nub_inact-1, 0:noa_act-1, 0:noa_inact-1, 0:nob_inact-1)
-      real(8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nub_inact, 1:noa_act, 1:noa_inact, 1:nob_inact)
-
-      integer :: i, j, k, a, b, c
-      real(8) :: denom, val
-
-      do i = 1 , noa_act
-         do j = 1 , noa_inact
-            do k = 1 , nob_inact
-               do a = 1 , nua_act
-                  do b = a+1 , nua_act
-                     do c = 1 , nub_inact
-
-                        denom = fA_oo_act(i,i) + fA_oo_inact(j,j) + fB_oo_inact(k,k)&
-                               -fA_vv_act(a,a) - fA_vv_act(b,b) - fB_vv_inact(c,c)
-
-                        val = X3B(a, b, c, i, j, k)/(denom - shift)
-
-                        t3b(a, b, c, i, j, k) = t3b(a, b, c, i, j, k) + val
-                        t3b(b, a, c, j, i, k) = -1.0 * t3b(a, b, c, i, j, k)
-
-                        resid(a, b, c, j, i, k) = val
-                        resid(b, a, c, j, i, k) = -1.0 * val
-
-                     end do
-                  end do
-               end do
-            end do
-         end do
-      end do
-
-end subroutine update_t3b_110100
 
 subroutine update_t3b_001001(t3b, resid, X3B, &
                              fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
@@ -1824,111 +1920,6 @@ subroutine update_t3b_001001(t3b, resid, X3B, &
 
 end subroutine update_t3b_001001
 
-subroutine update_t3b_001100(t3b, resid, X3B, &
-                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
-                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
-                             shift, &
-                             noa_act, nua_act, noa_inact, nua_inact, &
-                             nob_act, nub_act, nob_inact, nub_inact)
-
-      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
-                              fA_vv_act(1:nua_act, 1:nua_act), &
-                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
-                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
-                              fB_oo_act(1:nob_act, 1:nob_act), &
-                              fB_vv_act(1:nub_act, 1:nub_act), &
-                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
-                              fB_vv_inact(1:nub_inact, 1:nub_inact)
-      real(8), intent(in)  :: X3B(1:nua_inact, 1:nua_inact, 1:nub_act, 1:noa_act, 1:noa_inact, 1:nob_inact)
-      real(8), intent(in)  :: shift
-
-      real(8), intent(inout) :: t3b(1:nua_inact, 1:nua_inact, 1:nub_act, 1:noa_act, 1:noa_inact, 1:nob_inact)
-      !f2py intent(in, out)  :: t3b(0:nua_inact-1, 0:nua_inact-1, 0:nub_act-1, 0:noa_act-1, 0:noa_inact-1, 0:nob_inact-1)
-      real(8), intent(out)   :: resid(1:nua_inact, 1:nua_inact, 1:nub_act, 1:noa_act, 1:noa_inact, 1:nob_inact)
-
-      integer :: i, j, k, a, b, c
-      real(8) :: denom, val
-
-      do i = 1 , noa_act
-         do j = 1 , noa_inact
-            do k = 1 , nob_inact
-               do a = 1 , nua_inact
-                  do b = a+1 , nua_inact
-                     do c = 1 , nub_act
-
-                        denom = fA_oo_act(i,i) + fA_oo_inact(j,j) + fB_oo_inact(k,k)&
-                               -fA_vv_inact(a,a) - fA_vv_inact(b,b) - fB_vv_act(c,c)
-
-                        val = X3B(a, b, c, i, j, k)/(denom - shift)
-
-                        t3b(a, b, c, i, j, k) = t3b(a, b, c, i, j, k) + val
-                        t3b(b, a, c, j, i, k) = -1.0 * t3b(a, b, c, i, j, k)
-
-                        resid(a, b, c, j, i, k) = val
-                        resid(b, a, c, j, i, k) = -1.0 * val
-
-                     end do
-                  end do
-               end do
-            end do
-         end do
-      end do
-
-end subroutine update_t3b_001100
-
-subroutine update_t3b_100100(t3b, resid, X3B, &
-                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
-                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
-                             shift, &
-                             noa_act, nua_act, noa_inact, nua_inact, &
-                             nob_act, nub_act, nob_inact, nub_inact)
-
-      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
-                              fA_vv_act(1:nua_act, 1:nua_act), &
-                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
-                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
-                              fB_oo_act(1:nob_act, 1:nob_act), &
-                              fB_vv_act(1:nub_act, 1:nub_act), &
-                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
-                              fB_vv_inact(1:nub_inact, 1:nub_inact)
-      real(8), intent(in)  :: X3B(1:nua_act, 1:nua_inact, 1:nub_inact, 1:noa_act, 1:noa_inact, 1:nob_inact)
-      real(8), intent(in)  :: shift
-
-      real(8), intent(inout) :: t3b(1:nua_act, 1:nua_inact, 1:nub_inact, 1:noa_act, 1:noa_inact, 1:nob_inact)
-      !f2py intent(in, out)  :: t3b(0:nua_act-1, 0:nua_inact-1, 0:nub_inact-1, 0:noa_act-1, 0:noa_inact-1, 0:nob_inact-1)
-      real(8), intent(out)   :: resid(1:nua_act, 1:nua_inact, 1:nub_inact, 1:noa_act, 1:noa_inact, 1:nob_inact)
-
-      integer :: i, j, k, a, b, c
-      real(8) :: denom, val
-
-      do i = 1 , noa_act
-         do j = 1 , noa_inact
-            do k = 1 , nob_inact
-               do a = 1 , nua_act
-                  do b = 1 , nua_inact
-                     do c = 1 , nub_inact
-
-                        denom = fA_oo_act(i,i) + fA_oo_inact(j,j) + fB_oo_inact(k,k)&
-                               -fA_vv_act(a,a) - fA_vv_inact(b,b) - fB_vv_inact(c,c)
-
-                        val = X3B(a, b, c, i, j, k)/(denom - shift)
-
-                        t3b(a, b, c, i, j, k) = t3b(a, b, c, i, j, k) + val
-
-                        resid(a, b, c, j, i, k) = val
-
-                     end do
-                  end do
-               end do
-            end do
-         end do
-      end do
-
-end subroutine update_t3b_100100
 
 subroutine update_t3b_100001(t3b, resid, X3B, &
                              fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
@@ -1983,6 +1974,168 @@ subroutine update_t3b_100001(t3b, resid, X3B, &
       end do
 
 end subroutine update_t3b_100001
+
+      subroutine update_t3b_110010(t3b, resid, X3B, &
+                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             noa_act, nua_act, noa_inact, nua_inact, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+                              fA_vv_act(1:nua_act, 1:nua_act), &
+                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
+                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
+                              fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3B(1:nua_act, 1:nua_act, 1:nub_inact, 1:noa_inact, 1:noa_act, 1:nob_inact)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3b(1:nua_act, 1:nua_act, 1:nub_inact, 1:noa_inact, 1:noa_act, 1:nob_inact)
+      !f2py intent(in, out)  :: t3b(0:nua_act-1, 0:nua_act-1, 0:nub_inact-1, 0:noa_inact-1, 0:noa_act-1, 0:nob_inact-1)
+      real(8), intent(out)   :: resid(1:nua_act, 1:nua_act, 1:nub_inact, 1:noa_inact, 1:noa_act, 1:nob_inact)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , noa_inact
+         do j = 1 , noa_act
+            do k = 1 , nob_inact
+               do a = 1 , nua_act
+                  do b = a+1 , nua_act
+                     do c = 1 , nub_inact
+
+                        denom = fA_oo_inact(i,i) + fA_oo_act(j,j) + fB_oo_inact(k,k)&
+                               -fA_vv_act(a,a) - fA_vv_act(b,b) - fB_vv_inact(c,c)
+
+                        val = X3B(a, b, c, i, j, k)/(denom - shift)
+
+                        t3b(a, b, c, i, j, k) = t3b(a, b, c, i, j, k) + val
+                        t3b(b, a, c, i, j, k) = -1.0 * t3b(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(b, a, c, i, j, k) = -1.0 * val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3b_110010
+
+      subroutine update_t3b_001010(t3b, resid, X3B, &
+                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             noa_act, nua_act, noa_inact, nua_inact, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+                              fA_vv_act(1:nua_act, 1:nua_act), &
+                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
+                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
+                              fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3B(1:nua_inact, 1:nua_inact, 1:nub_act, 1:noa_inact, 1:noa_act, 1:nob_inact)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3b(1:nua_inact, 1:nua_inact, 1:nub_act, 1:noa_inact, 1:noa_act, 1:nob_inact)
+      !f2py intent(in, out)  :: t3b(0:nua_inact-1, 0:nua_inact-1, 0:nub_act-1, 0:noa_inact-1, 0:noa_act-1, 0:nob_inact-1)
+      real(8), intent(out)   :: resid(1:nua_inact, 1:nua_inact, 1:nub_act, 1:noa_inact, 1:noa_act, 1:nob_inact)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , noa_inact
+         do j = 1 , noa_act
+            do k = 1 , nob_inact
+               do a = 1 , nua_inact
+                  do b = a+1 , nua_inact
+                     do c = 1 , nub_act
+
+                        denom = fA_oo_inact(i,i) + fA_oo_act(j,j) + fB_oo_inact(k,k)&
+                               -fA_vv_inact(a,a) - fA_vv_inact(b,b) - fB_vv_act(c,c)
+
+                        val = X3B(a, b, c, i, j, k)/(denom - shift)
+
+                        t3b(a, b, c, i, j, k) = t3b(a, b, c, i, j, k) + val
+                        t3b(b, a, c, i, j, k) = -1.0 * t3b(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(b, a, c, i, j, k) = -1.0 * val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3b_001010
+
+subroutine update_t3b_100010(t3b, resid, X3B, &
+                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             noa_act, nua_act, noa_inact, nua_inact, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+                              fA_vv_act(1:nua_act, 1:nua_act), &
+                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
+                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
+                              fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3B(1:nua_act, 1:nua_inact, 1:nub_inact, 1:noa_inact, 1:noa_act, 1:nob_inact)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3b(1:nua_act, 1:nua_inact, 1:nub_inact, 1:noa_inact, 1:noa_act, 1:nob_inact)
+      !f2py intent(in, out)  :: t3b(0:nua_act-1, 0:nua_inact-1, 0:nub_inact-1, 0:noa_inact-1, 0:noa_act-1, 0:nob_inact-1)
+      real(8), intent(out)   :: resid(1:nua_act, 1:nua_inact, 1:nub_inact, 1:noa_inact, 1:noa_act, 1:nob_inact)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , noa_inact
+         do j = 1 , noa_act
+            do k = 1 , nob_inact
+               do a = 1 , nua_act
+                  do b = 1 , nua_inact
+                     do c = 1 , nub_inact
+
+                        denom = fA_oo_inact(i,i) + fA_oo_act(j,j) + fB_oo_inact(k,k)&
+                               -fA_vv_act(a,a) - fA_vv_inact(b,b) - fB_vv_inact(c,c)
+
+                        val = X3B(a, b, c, i, j, k)/(denom - shift)
+
+                        t3b(a, b, c, i, j, k) = t3b(a, b, c, i, j, k) + val
+
+                        resid(a, b, c, i, j, k) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3b_100010
+
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  T3C UPDATES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2269,165 +2422,7 @@ subroutine update_t3c_111101(t3c, resid, X3C, &
 
 end subroutine update_t3c_111101
 
-subroutine update_t3c_001111(t3c, resid, X3C, &
-                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
-                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
-                             shift, &
-                             noa_act, nua_act, noa_inact, nua_inact, &
-                             nob_act, nub_act, nob_inact, nub_inact)
 
-      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
-                              fA_vv_act(1:nua_act, 1:nua_act), &
-                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
-                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
-                              fB_oo_act(1:nob_act, 1:nob_act), &
-                              fB_vv_act(1:nub_act, 1:nub_act), &
-                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
-                              fB_vv_inact(1:nub_inact, 1:nub_inact)
-      real(8), intent(in)  :: X3C(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_act, 1:nob_act, 1:nob_act)
-      real(8), intent(in)  :: shift
-
-      real(8), intent(inout) :: t3c(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_act, 1:nob_act, 1:nob_act)
-      !f2py intent(in, out)  :: t3c(0:nua_inact-1, 0:nub_inact-1, 0:nub_act-1, 0:noa_act-1, 0:nob_act-1, 0:nob_act-1)
-      real(8), intent(out)   :: resid(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_act, 1:nob_act, 1:nob_act)
-
-      integer :: i, j, k, a, b, c
-      real(8) :: denom, val
-
-      do i = 1 , noa_act
-         do j = 1 , nob_act
-            do k = j+1 , nob_act
-               do a = 1 , nua_inact
-                  do b = 1 , nub_inact
-                     do c = 1 , nub_act
-
-                        denom = fA_oo_act(i,i) + fB_oo_act(j,j) + fB_oo_act(k,k)&
-                               -fA_vv_inact(a,a) - fB_vv_inact(b,b) - fB_vv_act(c,c)
-
-                        val = X3C(a, b, c, i, j, k)/(denom - shift)
-
-                        t3c(a, b, c, i, j, k) = t3c(a, b, c, i, j, k) + val
-                        t3c(a, c, b, i, k, j) = -1.0 * t3c(a, b, c, i, j, k)
-
-                        resid(a, c, b, i, j, k) = val
-                        resid(a, c, b, i, k, j) = -1.0 * val
-
-                     end do
-                  end do
-               end do
-            end do
-         end do
-      end do
-
-end subroutine update_t3c_001111
-
-subroutine update_t3c_001011(t3c, resid, X3C, &
-                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
-                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
-                             shift, &
-                             noa_act, nua_act, noa_inact, nua_inact, &
-                             nob_act, nub_act, nob_inact, nub_inact)
-
-      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
-                              fA_vv_act(1:nua_act, 1:nua_act), &
-                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
-                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
-                              fB_oo_act(1:nob_act, 1:nob_act), &
-                              fB_vv_act(1:nub_act, 1:nub_act), &
-                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
-                              fB_vv_inact(1:nub_inact, 1:nub_inact)
-      real(8), intent(in)  :: X3C(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_inact, 1:nob_act, 1:nob_act)
-      real(8), intent(in)  :: shift
-
-      real(8), intent(inout) :: t3c(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_inact, 1:nob_act, 1:nob_act)
-      !f2py intent(in, out)  :: t3c(0:nua_inact-1, 0:nub_inact-1, 0:nub_act-1, 0:noa_inact-1, 0:nob_act-1, 0:nob_act-1)
-      real(8), intent(out)   :: resid(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_inact, 1:nob_act, 1:nob_act)
-
-      integer :: i, j, k, a, b, c
-      real(8) :: denom, val
-
-      do i = 1 , noa_inact
-         do j = 1 , nob_act
-            do k = j+1 , nob_act
-               do a = 1 , nua_inact
-                  do b = 1 , nub_inact
-                     do c = 1 , nub_act
-
-                        denom = fA_oo_inact(i,i) + fB_oo_act(j,j) + fB_oo_act(k,k)&
-                               -fA_vv_inact(a,a) - fB_vv_inact(b,b) - fB_vv_act(c,c)
-
-                        val = X3C(a, b, c, i, j, k)/(denom - shift)
-
-                        t3c(a, b, c, i, j, k) = t3c(a, b, c, i, j, k) + val
-                        t3c(a, c, b, i, k, j) = -1.0 * t3c(a, b, c, i, j, k)
-
-                        resid(a, c, b, i, j, k) = val
-                        resid(a, c, b, i, k, j) = -1.0 * val
-
-                     end do
-                  end do
-               end do
-            end do
-         end do
-      end do
-
-end subroutine update_t3c_001011
-
-subroutine update_t3c_001101(t3c, resid, X3C, &
-                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
-                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
-                             shift, &
-                             noa_act, nua_act, noa_inact, nua_inact, &
-                             nob_act, nub_act, nob_inact, nub_inact)
-
-      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
-      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
-      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
-                              fA_vv_act(1:nua_act, 1:nua_act), &
-                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
-                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
-                              fB_oo_act(1:nob_act, 1:nob_act), &
-                              fB_vv_act(1:nub_act, 1:nub_act), &
-                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
-                              fB_vv_inact(1:nub_inact, 1:nub_inact)
-      real(8), intent(in)  :: X3C(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_act, 1:nob_inact, 1:nob_act)
-      real(8), intent(in)  :: shift
-
-      real(8), intent(inout) :: t3c(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_act, 1:nob_inact, 1:nob_act)
-      !f2py intent(in, out)  :: t3c(0:nua_inact-1, 0:nub_inact-1, 0:nub_act-1, 0:noa_act-1, 0:nob_inact-1, 0:nob_act-1)
-      real(8), intent(out)   :: resid(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_act, 1:nob_inact, 1:nob_act)
-
-      integer :: i, j, k, a, b, c
-      real(8) :: denom, val
-
-      do i = 1 , noa_act
-         do j = 1 , nob_inact
-            do k = 1 , nob_act
-               do a = 1 , nua_inact
-                  do b = 1 , nub_inact
-                     do c = 1 , nub_act
-
-                        denom = fA_oo_act(i,i) + fB_oo_inact(j,j) + fB_oo_act(k,k)&
-                               -fA_vv_inact(a,a) - fB_vv_inact(b,b) - fB_vv_act(c,c)
-
-                        val = X3C(a, b, c, i, j, k)/(denom - shift)
-
-                        t3c(a, b, c, i, j, k) = t3c(a, b, c, i, j, k) + val
-
-                        resid(a, c, b, i, j, k) = val
-
-                     end do
-                  end do
-               end do
-            end do
-         end do
-      end do
-
-end subroutine update_t3c_001101
 
 subroutine update_t3c_100111(t3c, resid, X3C, &
                              fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
@@ -3147,7 +3142,7 @@ subroutine update_t3c_110101(t3c, resid, X3C, &
 
 end subroutine update_t3c_110101
 
-subroutine update_t3c_001001(t3c, resid, X3C, &
+      subroutine update_t3c_010111(t3c, resid, X3C, &
                              fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
                              fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
                              shift, &
@@ -3164,31 +3159,33 @@ subroutine update_t3c_001001(t3c, resid, X3C, &
                               fB_vv_act(1:nub_act, 1:nub_act), &
                               fB_oo_inact(1:nob_inact, 1:nob_inact), &
                               fB_vv_inact(1:nub_inact, 1:nub_inact)
-      real(8), intent(in)  :: X3C(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_inact, 1:nob_inact, 1:nob_act)
+      real(8), intent(in)  :: X3C(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_act, 1:nob_act, 1:nob_act)
       real(8), intent(in)  :: shift
 
-      real(8), intent(inout) :: t3c(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_inact, 1:nob_inact, 1:nob_act)
-      !f2py intent(in, out)  :: t3c(0:nua_inact-1, 0:nub_inact-1, 0:nub_act-1, 0:noa_inact-1, 0:nob_inact-1, 0:nob_act-1)
-      real(8), intent(out)   :: resid(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_inact, 1:nob_inact, 1:nob_act)
+      real(8), intent(inout) :: t3c(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_act, 1:nob_act, 1:nob_act)
+      !f2py intent(in, out)  :: t3c(0:nua_inact-1, 0:nub_act-1, 0:nub_inact-1, 0:noa_act-1, 0:nob_act-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_act, 1:nob_act, 1:nob_act)
 
       integer :: i, j, k, a, b, c
       real(8) :: denom, val
 
-      do i = 1 , noa_inact
-         do j = 1 , nob_inact
-            do k = 1 , nob_act
+      do i = 1 , noa_act
+         do j = 1 , nob_act
+            do k = j+1 , nob_act
                do a = 1 , nua_inact
-                  do b = 1 , nub_inact
-                     do c = 1 , nub_act
+                  do b = 1 , nub_act
+                     do c = 1 , nub_inact
 
-                        denom = fA_oo_inact(i,i) + fB_oo_inact(j,j) + fB_oo_act(k,k)&
-                               -fA_vv_inact(a,a) - fB_vv_inact(b,b) - fB_vv_act(c,c)
+                        denom = fA_oo_act(i,i) + fB_oo_act(j,j) + fB_oo_act(k,k)&
+                               -fA_vv_inact(a,a) - fB_vv_act(b,b) - fB_vv_inact(c,c)
 
                         val = X3C(a, b, c, i, j, k)/(denom - shift)
 
                         t3c(a, b, c, i, j, k) = t3c(a, b, c, i, j, k) + val
+                        t3c(a, b, c, i, k, j) = -1.0 * t3c(a, b, c, i, j, k)
 
-                        resid(a, c, b, i, j, k) = val
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, i, k, j) = -1.0 * val
 
                      end do
                   end do
@@ -3197,9 +3194,9 @@ subroutine update_t3c_001001(t3c, resid, X3C, &
          end do
       end do
 
-end subroutine update_t3c_001001
+end subroutine update_t3c_010111
 
-subroutine update_t3c_001100(t3c, resid, X3C, &
+subroutine update_t3c_010011(t3c, resid, X3C, &
                              fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
                              fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
                              shift, &
@@ -3216,12 +3213,118 @@ subroutine update_t3c_001100(t3c, resid, X3C, &
                               fB_vv_act(1:nub_act, 1:nub_act), &
                               fB_oo_inact(1:nob_inact, 1:nob_inact), &
                               fB_vv_inact(1:nub_inact, 1:nub_inact)
-      real(8), intent(in)  :: X3C(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_act, 1:nob_inact, 1:nob_inact)
+      real(8), intent(in)  :: X3C(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_inact, 1:nob_act, 1:nob_act)
       real(8), intent(in)  :: shift
 
-      real(8), intent(inout) :: t3c(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_act, 1:nob_inact, 1:nob_inact)
-      !f2py intent(in, out)  :: t3c(0:nua_inact-1, 0:nub_inact-1, 0:nub_act-1, 0:noa_act-1, 0:nob_inact-1, 0:nob_inact-1)
-      real(8), intent(out)   :: resid(1:nua_inact, 1:nub_inact, 1:nub_act, 1:noa_act, 1:nob_inact, 1:nob_inact)
+      real(8), intent(inout) :: t3c(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_inact, 1:nob_act, 1:nob_act)
+      !f2py intent(in, out)  :: t3c(0:nua_inact-1, 0:nub_act-1, 0:nub_inact-1, 0:noa_inact-1, 0:nob_act-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_inact, 1:nob_act, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , noa_inact
+         do j = 1 , nob_act
+            do k = j+1 , nob_act
+               do a = 1 , nua_inact
+                  do b = 1 , nub_act
+                     do c = 1 , nub_inact
+
+                        denom = fA_oo_inact(i,i) + fB_oo_act(j,j) + fB_oo_act(k,k)&
+                               -fA_vv_inact(a,a) - fB_vv_act(b,b) - fB_vv_inact(c,c)
+
+                        val = X3C(a, b, c, i, j, k)/(denom - shift)
+
+                        t3c(a, b, c, i, j, k) = t3c(a, b, c, i, j, k) + val
+                        t3c(a, b, c, i, k, j) = -1.0 * t3c(a, b, c, i, j, k)
+
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, i, k, j) = -1.0 * val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3c_010011
+
+subroutine update_t3c_010101(t3c, resid, X3C, &
+                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             noa_act, nua_act, noa_inact, nua_inact, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+                              fA_vv_act(1:nua_act, 1:nua_act), &
+                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
+                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
+                              fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3C(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_act, 1:nob_inact, 1:nob_act)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3c(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_act, 1:nob_inact, 1:nob_act)
+      !f2py intent(in, out)  :: t3c(0:nua_inact-1, 0:nub_act-1, 0:nub_inact-1, 0:noa_act-1, 0:nob_inact-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_act, 1:nob_inact, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , noa_act
+         do j = 1 , nob_inact
+            do k = 1 , nob_act
+               do a = 1 , nua_inact
+                  do b = 1 , nub_act
+                     do c = 1 , nub_inact
+
+                        denom = fA_oo_act(i,i) + fB_oo_inact(j,j) + fB_oo_act(k,k)&
+                               -fA_vv_inact(a,a) - fB_vv_act(b,b) - fB_vv_inact(c,c)
+
+                        val = X3C(a, b, c, i, j, k)/(denom - shift)
+
+                        t3c(a, b, c, i, j, k) = t3c(a, b, c, i, j, k) + val
+
+                        resid(a, b, c, i, j, k) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3c_010101
+
+subroutine update_t3c_010100(t3c, resid, X3C, &
+                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             noa_act, nua_act, noa_inact, nua_inact, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+                              fA_vv_act(1:nua_act, 1:nua_act), &
+                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
+                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
+                              fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3C(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_act, 1:nob_inact, 1:nob_inact)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3c(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_act, 1:nob_inact, 1:nob_inact)
+      !f2py intent(in, out)  :: t3c(0:nua_inact-1, 0:nub_act-1, 0:nub_inact-1, 0:noa_act-1, 0:nob_inact-1, 0:nob_inact-1)
+      real(8), intent(out)   :: resid(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_act, 1:nob_inact, 1:nob_inact)
 
       integer :: i, j, k, a, b, c
       real(8) :: denom, val
@@ -3230,19 +3333,19 @@ subroutine update_t3c_001100(t3c, resid, X3C, &
          do j = 1 , nob_inact
             do k = j+1 , nob_inact
                do a = 1 , nua_inact
-                  do b = 1 , nub_inact
-                     do c = 1 , nub_act
+                  do b = 1 , nub_act
+                     do c = 1 , nub_inact
 
                         denom = fA_oo_act(i,i) + fB_oo_inact(j,j) + fB_oo_inact(k,k)&
-                               -fA_vv_inact(a,a) - fB_vv_inact(b,b) - fB_vv_act(c,c)
+                               -fA_vv_inact(a,a) - fB_vv_act(b,b) - fB_vv_inact(c,c)
 
                         val = X3C(a, b, c, i, j, k)/(denom - shift)
 
                         t3c(a, b, c, i, j, k) = t3c(a, b, c, i, j, k) + val
-                        t3c(a, c, b, i, k, j) = -1.0 * t3c(a, b, c, i, j, k)
+                        t3c(a, b, c, i, k, j) = -1.0 * t3c(a, b, c, i, j, k)
 
-                        resid(a, c, b, i, j, k) = val
-                        resid(a, c, b, i, k, j) = -1.0 * val
+                        resid(a, b, c, i, j, k) = val
+                        resid(a, b, c, i, k, j) = -1.0 * val
 
                      end do
                   end do
@@ -3251,7 +3354,61 @@ subroutine update_t3c_001100(t3c, resid, X3C, &
          end do
       end do
 
-end subroutine update_t3c_001100
+end subroutine update_t3c_010100
+
+subroutine update_t3c_010001(t3c, resid, X3C, &
+                             fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &
+                             fB_oo_act, fB_vv_act, fB_oo_inact, fB_vv_inact, &
+                             shift, &
+                             noa_act, nua_act, noa_inact, nua_inact, &
+                             nob_act, nub_act, nob_inact, nub_inact)
+
+      integer, intent(in)  :: noa_act, nua_act, noa_inact, nua_inact
+      integer, intent(in)  :: nob_act, nub_act, nob_inact, nub_inact
+      real(8), intent(in)  :: fA_oo_act(1:noa_act, 1:noa_act), &
+                              fA_vv_act(1:nua_act, 1:nua_act), &
+                              fA_oo_inact(1:noa_inact, 1:noa_inact), &
+                              fA_vv_inact(1:nua_inact, 1:nua_inact), &
+                              fB_oo_act(1:nob_act, 1:nob_act), &
+                              fB_vv_act(1:nub_act, 1:nub_act), &
+                              fB_oo_inact(1:nob_inact, 1:nob_inact), &
+                              fB_vv_inact(1:nub_inact, 1:nub_inact)
+      real(8), intent(in)  :: X3C(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_inact, 1:nob_inact, 1:nob_act)
+      real(8), intent(in)  :: shift
+
+      real(8), intent(inout) :: t3c(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_inact, 1:nob_inact, 1:nob_act)
+      !f2py intent(in, out)  :: t3c(0:nua_inact-1, 0:nub_act-1, 0:nub_inact-1, 0:noa_inact-1, 0:nob_inact-1, 0:nob_act-1)
+      real(8), intent(out)   :: resid(1:nua_inact, 1:nub_act, 1:nub_inact, 1:noa_inact, 1:nob_inact, 1:nob_act)
+
+      integer :: i, j, k, a, b, c
+      real(8) :: denom, val
+
+      do i = 1 , noa_inact
+         do j = 1 , nob_inact
+            do k = 1 , nob_act
+               do a = 1 , nua_inact
+                  do b = 1 , nub_act
+                     do c = 1 , nub_inact
+
+                        denom = fA_oo_inact(i,i) + fB_oo_inact(j,j) + fB_oo_act(k,k)&
+                               -fA_vv_inact(a,a) - fB_vv_act(b,b) - fB_vv_inact(c,c)
+
+                        val = X3C(a, b, c, i, j, k)/(denom - shift)
+
+                        t3c(a, b, c, i, j, k) = t3c(a, b, c, i, j, k) + val
+
+                        resid(a, b, c, i, j, k) = val
+
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+end subroutine update_t3c_010001
+
+
 
 subroutine update_t3c_100100(t3c, resid, X3C, &
                              fA_oo_act, fA_vv_act, fA_oo_inact, fA_vv_inact, &

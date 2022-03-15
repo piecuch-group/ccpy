@@ -308,7 +308,7 @@ def davidson(HR, update_R, B0, E0, maxit, max_dim, tol):
     return Rvec, omega, is_converged
 
 
-def cc_jacobi(update_t, T, dT, H, calculation):
+def cc_jacobi(update_t, T, dT, H, calculation, system):
     import time
 
     from ccpy.drivers.cc_energy import get_cc_energy
@@ -332,7 +332,7 @@ def cc_jacobi(update_t, T, dT, H, calculation):
         t1 = time.time()
 
         # Update the T vector
-        T, dT = update_t(T, dT, H, calculation.energy_shift, calculation.RHF_symmetry)
+        T, dT = update_t(T, dT, H, calculation.energy_shift, calculation.RHF_symmetry, system)
 
         # CC correlation energy
         energy = get_cc_energy(T, H)

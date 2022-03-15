@@ -1245,5 +1245,125 @@ module cc_loops2
               end do
 
       end subroutine update_R_2p1h
+       
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!! FULLY ANTISYMMETRIZED RESIDUAL QUANTITY ON INPUT !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      subroutine update_t3a(t3a,resid,fA_oo,fA_vv,shift,noa,nua)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua
+              real(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), shift
+              real(kind=8), intent(inout) :: t3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              !f2py intent(in,out) :: t3a(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
+              real(kind=8), intent(inout) :: resid(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              !f2py intent(in,out) :: resid(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
+              integer :: i, j, k, a, b, c
+              real(kind=8) :: denom, val
+
+              do i = 1,noa
+                  do j = i+1,noa
+                      do k = j+1,noa
+                          do a = 1,nua
+                              do b = a+1,nua
+                                  do c = b+1,nua
+                                      
+                                      denom = fA_oo(I,I)+fA_oo(J,J)+fA_oo(K,K)-fA_vv(A,A)-fA_vv(B,B)-fA_vv(C,C)
+
+                                      val = resid(a, b, c, i, j, k)/(denom-shift)
+
+                                      t3a(A,B,C,I,J,K) = t3a(A,B,C,I,J,K) + val                            
+                                      t3a(A,B,C,K,I,J) = t3a(A,B,C,I,J,K)
+                                      t3a(A,B,C,J,K,I) = t3a(A,B,C,I,J,K)
+                                      t3a(A,B,C,I,K,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(A,B,C,J,I,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(A,B,C,K,J,I) = -t3a(A,B,C,I,J,K)
+                                      
+                                      t3a(B,A,C,I,J,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(B,A,C,K,I,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(B,A,C,J,K,I) = -t3a(A,B,C,I,J,K)
+                                      t3a(B,A,C,I,K,J) = t3a(A,B,C,I,J,K)
+                                      t3a(B,A,C,J,I,K) = t3a(A,B,C,I,J,K)
+                                      t3a(B,A,C,K,J,I) = t3a(A,B,C,I,J,K)
+                                      
+                                      t3a(A,C,B,I,J,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(A,C,B,K,I,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(A,C,B,J,K,I) = -t3a(A,B,C,I,J,K)
+                                      t3a(A,C,B,I,K,J) = t3a(A,B,C,I,J,K)
+                                      t3a(A,C,B,J,I,K) = t3a(A,B,C,I,J,K)
+                                      t3a(A,C,B,K,J,I) = t3a(A,B,C,I,J,K)
+                                      
+                                      t3a(C,B,A,I,J,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(C,B,A,K,I,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(C,B,A,J,K,I) = -t3a(A,B,C,I,J,K)
+                                      t3a(C,B,A,I,K,J) = t3a(A,B,C,I,J,K)
+                                      t3a(C,B,A,J,I,K) = t3a(A,B,C,I,J,K)
+                                      t3a(C,B,A,K,J,I) = t3a(A,B,C,I,J,K)
+                                      
+                                      t3a(B,C,A,I,J,K) = t3a(A,B,C,I,J,K)
+                                      t3a(B,C,A,K,I,J) = t3a(A,B,C,I,J,K)
+                                      t3a(B,C,A,J,K,I) = t3a(A,B,C,I,J,K)
+                                      t3a(B,C,A,I,K,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(B,C,A,J,I,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(B,C,A,K,J,I) = -t3a(A,B,C,I,J,K)
+                                      
+                                      t3a(C,A,B,I,J,K) = t3a(A,B,C,I,J,K)
+                                      t3a(C,A,B,K,I,J) = t3a(A,B,C,I,J,K)
+                                      t3a(C,A,B,J,K,I) = t3a(A,B,C,I,J,K)
+                                      t3a(C,A,B,I,K,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(C,A,B,J,I,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(C,A,B,K,J,I) = -t3a(A,B,C,I,J,K)
+
+
+                                      resid(A,B,C,I,J,K) = val                            
+                                      resid(A,B,C,K,I,J) = val
+                                      resid(A,B,C,J,K,I) = val
+                                      resid(A,B,C,I,K,J) = -val
+                                      resid(A,B,C,J,I,K) = -val
+                                      resid(A,B,C,K,J,I) = -val
+
+                                      resid(B,C,A,I,J,K) = val                            
+                                      resid(B,C,A,K,I,J) = val
+                                      resid(B,C,A,J,K,I) = val
+                                      resid(B,C,A,I,K,J) = -val
+                                      resid(B,C,A,J,I,K) = -val
+                                      resid(B,C,A,K,J,I) = -val
+
+                                      resid(C,A,B,I,J,K) = val                            
+                                      resid(C,A,B,K,I,J) = val
+                                      resid(C,A,B,J,K,I) = val
+                                      resid(C,A,B,I,K,J) = -val
+                                      resid(C,A,B,J,I,K) = -val
+                                      resid(C,A,B,K,J,I) = -val
+
+                                      resid(A,C,B,I,J,K) = -val                            
+                                      resid(A,C,B,K,I,J) = -val
+                                      resid(A,C,B,J,K,I) = -val
+                                      resid(A,C,B,I,K,J) = val
+                                      resid(A,C,B,J,I,K) = val
+                                      resid(A,C,B,K,J,I) = val
+
+                                      resid(B,A,C,I,J,K) = -val                            
+                                      resid(B,A,C,K,I,J) = -val
+                                      resid(B,A,C,J,K,I) = -val
+                                      resid(B,A,C,I,K,J) = val
+                                      resid(B,A,C,J,I,K) = val
+                                      resid(B,A,C,K,J,I) = val
+
+                                      resid(C,B,A,I,J,K) = -val                            
+                                      resid(C,B,A,K,I,J) = -val
+                                      resid(C,B,A,J,K,I) = -val
+                                      resid(C,B,A,I,K,J) = val
+                                      resid(C,B,A,J,I,K) = val
+                                      resid(C,B,A,K,J,I) = val
+                                  end do
+                              end do
+                          end do
+                      end do
+                  end do
+              end do
+
+      end subroutine update_t3a
+
 
 end module cc_loops2

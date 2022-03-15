@@ -2,8 +2,7 @@ import numpy as np
 
 from ccpy.utilities.active_space import get_active_slices
 
-from ccpy.utilities.updates import cc_loops2
-
+from ccpy.utilities.updates import cc_active_loops
 
 def build_ccsd(T, H):
     """
@@ -45,6 +44,8 @@ def build_ccsd(T, H):
     x2a += 0.125 * np.einsum("abef,efij->abij", H.aa.vvvv, T.aa, optimize=True)
     x2a += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
 
+    x2a += 0.25 * H.aa.vvoo
+
     x2a -= np.transpose(x2a, (1, 0, 2, 3))
     x2a -= np.transpose(x2a, (0, 1, 3, 2))
 
@@ -54,7 +55,7 @@ def build_1111(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.aa[Va, Va, Oa, Oa] += (1.0 / 4.0) * (
+    dT.aa[Va, Va, Oa, Oa] = (1.0 / 4.0) * (
             -1.0 * np.einsum('me,BAemIJ->ABIJ', H.a.ov[oa, va], T.aaa.VVvoOO, optimize=True)
             - 1.0 * np.einsum('Me,BAeIJM->ABIJ', H.a.ov[Oa, va], T.aaa.VVvOOO, optimize=True)
             - 1.0 * np.einsum('mE,EBAmIJ->ABIJ', H.a.ov[oa, Va], T.aaa.VVVoOO, optimize=True)
@@ -109,7 +110,7 @@ def build_1111(T, dT, H, system):
 def build_1101(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dT.aa[Va, Va, oa, Oa] += (1.0 / 2.0) * (
+    dT.aa[Va, Va, oa, Oa] = (1.0 / 2.0) * (
             +1.0 * np.einsum('me,BAeimJ->ABiJ', H.a.ov[oa, va], T.aaa.VVvooO, optimize=True)
             + 1.0 * np.einsum('mE,EBAimJ->ABiJ', H.a.ov[oa, Va], T.aaa.VVVooO, optimize=True)
             - 1.0 * np.einsum('Me,BAeiJM->ABiJ', H.a.ov[Oa, va], T.aaa.VVvoOO, optimize=True)
@@ -178,7 +179,7 @@ def build_1101(T, dT, H, system):
 def build_1011(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dT.aa[Va, va, Oa, Oa] += (1.0 / 2.0) * (
+    dT.aa[Va, va, Oa, Oa] = (1.0 / 2.0) * (
             -1.0 * np.einsum('me,AebmIJ->AbIJ', H.a.ov[oa, va], T.aaa.VvvoOO, optimize=True)
             + 1.0 * np.einsum('mE,EAbmIJ->AbIJ', H.a.ov[oa, Va], T.aaa.VVvoOO, optimize=True)
             - 1.0 * np.einsum('Me,AebIJM->AbIJ', H.a.ov[Oa, va], T.aaa.VvvOOO, optimize=True)
@@ -248,7 +249,7 @@ def build_1011(T, dT, H, system):
 def build_1100(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dT.aa[Va, Va, oa, oa] += (1.0 / 4.0) * (
+    dT.aa[Va, Va, oa, oa] = (1.0 / 4.0) * (
             -1.0 * np.einsum('Me,BAeijM->ABij', H.a.ov[Oa, va], T.aaa.VVvooO, optimize=True)
             - 1.0 * np.einsum('ME,EBAijM->ABij', H.a.ov[Oa, Va], T.aaa.VVVooO, optimize=True)
     )
@@ -289,7 +290,7 @@ def build_1100(T, dT, H, system):
 def build_0011(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dT.aa[va, va, Oa, Oa] += (1.0 / 4.0) * (
+    dT.aa[va, va, Oa, Oa] = (1.0 / 4.0) * (
             -1.0 * np.einsum('mE,EbamIJ->abIJ', H.a.ov[oa, Va], T.aaa.VvvoOO, optimize=True)
             - 1.0 * np.einsum('ME,EbaIJM->abIJ', H.a.ov[Oa, Va], T.aaa.VvvOOO, optimize=True)
     )
@@ -331,7 +332,7 @@ def build_1001(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.aa[Va, va, oa, Oa] += (1.0 / 1.0) * (
+    dT.aa[Va, va, oa, Oa] = (1.0 / 1.0) * (
             +1.0 * np.einsum('me,AebimJ->AbiJ', H.a.ov[oa, va], T.aaa.VvvooO, optimize=True)
             - 1.0 * np.einsum('mE,EAbimJ->AbiJ', H.a.ov[oa, Va], T.aaa.VVvooO, optimize=True)
             - 1.0 * np.einsum('Me,AebiJM->AbiJ', H.a.ov[Oa, va], T.aaa.VvvoOO, optimize=True)
@@ -417,7 +418,7 @@ def build_1000(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dT.aa[Va, va, oa, oa] += (1.0 / 2.0) * (
+    dT.aa[Va, va, oa, oa] = (1.0 / 2.0) * (
             -1.0 * np.einsum('Me,AebijM->Abij', H.a.ov[Oa, va], T.aaa.VvvooO, optimize=True)
             + 1.0 * np.einsum('ME,EAbijM->Abij', H.a.ov[Oa, Va], T.aaa.VVvooO, optimize=True)
     )
@@ -467,7 +468,7 @@ def build_1000(T, dT, H, system):
 def build_0001(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dT.aa[va, va, oa, Oa] += (1.0 / 2.0) * (
+    dT.aa[va, va, oa, Oa] = (1.0 / 2.0) * (
             +1.0 * np.einsum('mE,EbaimJ->abiJ', H.a.ov[oa, Va], T.aaa.VvvooO, optimize=True)
             - 1.0 * np.einsum('ME,EbaiJM->abiJ', H.a.ov[Oa, Va], T.aaa.VvvoOO, optimize=True)
     )
@@ -518,7 +519,7 @@ def build_0001(T, dT, H, system):
 def build_0000(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dT.aa[va, va, oa, oa] += (1.0 / 4.0) * (
+    dT.aa[va, va, oa, oa] = (1.0 / 4.0) * (
             -1.0 * np.einsum('ME,EbaijM->abij', H.a.ov[Oa, Va], T.aaa.VvvooO, optimize=True)
     )
     dT.aa[va, va, oa, oa] += (1.0 / 4.0) * (
@@ -549,9 +550,9 @@ def build_0000(T, dT, H, system):
 
 def update(T, dT, H, shift):
 
-    T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
+    T.aa, dT.aa = cc_active_loops.cc_active_loops.update_t2a(
         T.aa,
-        dT.aa + 0.25 * H.aa.vvoo,
+        dT.aa,
         H.a.oo,
         H.a.vv,
         shift,

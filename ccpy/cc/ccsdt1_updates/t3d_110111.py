@@ -1,7 +1,8 @@
 import numpy as np
 from ccpy.utilities.active_space import get_active_slices
+from ccpy.utilities.updates import cc_active_loops
 
-def build(T, dT, H, H0, shift, system):
+def build(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
     # MM(2,3)
     dT.bbb.VVvOOO = (6.0 / 12.0) * (
@@ -75,3 +76,19 @@ def build(T, dT, H, H0, shift, system):
            - np.transpose(dT.bbb.VVvOOO, (0, 1, 2, 5, 3, 4))
 
     return dT
+
+def update(T, dT, H, shift, system):
+
+    oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
+
+    T.bbb.VVvOOO, dT.bbb.VVvOOO = cc_active_loops.cc_active_loops.update_t3d_110111(
+        T.bbb.VVvOOO,
+        dT.bbb.VVvOOO,
+        H.b.oo[Ob, Ob],
+        H.b.vv[Vb, Vb],
+        H.b.oo[ob, ob],
+        H.b.vv[vb, vb],
+        shift,
+    )
+
+    return T, dT

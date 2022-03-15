@@ -29,10 +29,16 @@ def cc_driver(calculation, system, hamiltonian, T=None):
 
     # initialize the cluster operator anew, or use restart
     if T is None:
-        T = ClusterOperator(system, calculation.order)
+        T = ClusterOperator(system,
+                            order=calculation.order,
+                            active_orders=calculation.active_orders,
+                            num_active=calculation.num_active)
 
     # regardless of restart status, initialize residual anew
-    dT = ClusterOperator(system, calculation.order)
+    dT = ClusterOperator(system,
+                        order=calculation.order,
+                        active_orders=calculation.active_orders,
+                        num_active=calculation.num_active)
 
     T, cc_energy, is_converged = cc_jacobi(
                                            update_function,
@@ -40,6 +46,7 @@ def cc_driver(calculation, system, hamiltonian, T=None):
                                            dT,
                                            hamiltonian,
                                            calculation,
+                                           system,
                                            )
     total_energy = system.reference_energy + cc_energy
 
