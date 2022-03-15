@@ -91,7 +91,6 @@ def update_t1a(T, dT, H, shift):
     dT.a += np.einsum("mnef,aefimn->ai", H.ab.oovv, T.aab, optimize=True)
     dT.a += 0.25 * np.einsum("mnef,aefimn->ai", H.bb.oovv, T.abb, optimize=True)
 
-    # T, update_t1a_loop(T, X1A, fA_oo, fA_vv, shift)
     T.a, dT.a = cc_loops2.cc_loops2.update_t1a(
         T.a,
         dT.a + H.a.vo,
