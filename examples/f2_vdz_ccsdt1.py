@@ -26,11 +26,9 @@ if __name__ == "__main__":
     mf = scf.ROHF(mol)
     mf.kernel()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=2,
-                                     num_act_holes_alpha=5, num_act_particles_alpha=9,
-                                     num_act_holes_beta=5, num_act_particles_beta=9,
-                                     )
+    system, H = load_pyscf_integrals(mf, nfrozen=2)
 
+    system.set_active_space(nact_occupied=5, nact_unoccupied=9)
     calculation = Calculation(
         order=3,
         active_orders=[3],
