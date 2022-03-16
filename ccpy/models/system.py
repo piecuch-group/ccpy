@@ -19,10 +19,8 @@ class System:
         nuclear_repulsion=0,
         mo_energies=None,
         mo_occupation=None,
-        num_act_holes_alpha = 0,
-        num_act_particles_alpha = 0,
-        num_act_holes_beta = 0,
-        num_act_particles_beta = 0,
+        nact_occupied=0,
+        nact_unoccupied=0,
     ):
         # basic information
         self.nelectrons = nelectrons - 2 * nfrozen
@@ -36,14 +34,8 @@ class System:
         self.nunoccupied_alpha = self.norbitals - self.noccupied_alpha
         self.nunoccupied_beta = self.norbitals - self.noccupied_beta
         # active space orbital partitioning
-        self.num_act_occupied_alpha = min(self.noccupied_alpha, num_act_holes_alpha)
-        self.num_core_alpha = max(0, self.noccupied_alpha - self.num_act_occupied_alpha)
-        self.num_act_occupied_beta = min(self.noccupied_beta, num_act_holes_beta)
-        self.num_core_beta = max(0, self.noccupied_beta - self.num_act_occupied_beta)
-        self.num_act_unoccupied_alpha = min(self.nunoccupied_alpha, num_act_particles_alpha)
-        self.num_virt_alpha = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_alpha)
-        self.num_act_unoccupied_beta = min(self.nunoccupied_beta, num_act_particles_beta)
-        self.num_virt_beta = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_beta)
+        # [TODO]: Active-space information should really be in calculation, not system
+        self.set_active_space(nact_unoccupied, nact_unoccupied)
         # symmetry information
         self.point_group = point_group
         self.point_group_irrep_to_number = get_pg_irreps(self.point_group)
@@ -83,6 +75,16 @@ class System:
 
         # once we've found the reference irrep, we don't need the frozen orbital irreps anymore.
         self.orbital_symmetries = self.orbital_symmetries_all[self.nfrozen:]
+
+    def set_active_space(self, nact_occupied, nact_unoccupied):
+        self.num_act_occupied_alpha = min(self.noccupied_alpha, (self.multiplicity - 1) + nact_occupied)
+        self.num_core_alpha = max(0, self.noccupied_alpha - self.num_act_occupied_alpha)
+        self.num_act_occupied_beta = min(self.noccupied_beta, nact_occupied)
+        self.num_core_beta = max(0, self.noccupied_beta - self.num_act_occupied_beta)
+        self.num_act_unoccupied_alpha = min(self.nunoccupied_alpha, nact_unoccupied)
+        self.num_virt_alpha = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_alpha)
+        self.num_act_unoccupied_beta = min(self.nunoccupied_beta, (self.multiplicity - 1) + nact_unoccupied)
+        self.num_virt_beta = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_beta)
 
     def print_info(self):
         SystemPrinter(self).header()

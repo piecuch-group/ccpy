@@ -42,10 +42,6 @@ def load_pyscf_integrals(
         nuclear_repulsion=nuclear_repulsion,
         mo_energies=meanfield.mo_energy,
         mo_occupation=meanfield.mo_occ,
-        num_act_holes_alpha=num_act_holes_alpha,
-        num_act_particles_alpha=num_act_particles_alpha,
-        num_act_holes_beta=num_act_holes_beta,
-        num_act_particles_beta=num_act_particles_beta,
     )
 
     kinetic_aoints = molecule.intor_symmetric("int1e_kin")
