@@ -117,12 +117,16 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
             print('WARNING: omega for ground-state left CC calculation is not identicall 0!')
 
     # initialize the cluster operator anew, or use restart
-    if is_ground:
-        if L is None:
-            L = copy.deepcopy(T)
-    else:
-        if L is None:
-            L = copy.deepcopy(R)
+    if L is None:
+        L = ClusterOperator(system,
+                            calculation.order,
+                            calculation.active_orders,
+                            calculation.num_active,
+                            )
+        if is_ground:
+            L.unflatten(T.flatten()[:L.ndim])
+        else:
+            L.unflatten(R.flatten()[:L.ndim])
 
     # regardless of restart status, initialize residual anew
     LH = ClusterOperator(system, calculation.order)
