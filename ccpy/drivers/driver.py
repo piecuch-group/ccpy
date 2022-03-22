@@ -1,14 +1,16 @@
 """Main calculation driver module of CCpy."""
 
-import copy
 from importlib import import_module
-from copy import deepcopy
 
 import ccpy.cc
 import ccpy.left
-from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi
+import ccpy.eomcc
+
+from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, eomcc_davidson
 from ccpy.models.operators import ClusterOperator
-from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter
+from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter, EOMCCPrinter
+
+from ccpy.eomcc.initial_guess import get_initial_guess
 
 
 def cc_driver(calculation, system, hamiltonian, T=None):
@@ -42,7 +44,7 @@ def cc_driver(calculation, system, hamiltonian, T=None):
                         active_orders=calculation.active_orders,
                         num_active=calculation.num_active)
 
-    T, cc_energy, is_converged = cc_jacobi(
+    T, corr_energy, is_converged = cc_jacobi(
                                            update_function,
                                            T,
                                            dT,
@@ -50,9 +52,9 @@ def cc_driver(calculation, system, hamiltonian, T=None):
                                            calculation,
                                            system,
                                            )
-    total_energy = system.reference_energy + cc_energy
+    total_energy = system.reference_energy + corr_energy
 
-    cc_printer.calculation_summary(system.reference_energy, cc_energy)
+    cc_printer.calculation_summary(system.reference_energy, corr_energy)
 
     return T, total_energy, is_converged
 
@@ -80,16 +82,16 @@ def ccp_driver(calculation, system, hamiltonian, pspace, T=None):
     # regardless of restart status, initialize residual anew
     dT = ClusterOperator(system, calculation.order)
 
-    T, cc_energy, is_converged = cc_jacobi(
+    T, corr_energy, is_converged = cc_jacobi(
                                            update_function,
                                            T,
                                            dT,
                                            hamiltonian,
                                            calculation,
                                            )
-    total_energy = system.reference_energy + cc_energy
+    total_energy = system.reference_energy + corr_energy
 
-    cc_printer.calculation_summary(system.reference_energy, cc_energy)
+    cc_printer.calculation_summary(system.reference_energy, corr_energy)
 
     return T, total_energy, is_converged
 
@@ -133,7 +135,7 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
     # regardless of restart status, initialize residual anew
     LH = ClusterOperator(system, calculation.order)
 
-    L, lcc_energy, is_converged = left_cc_jacobi(update_function,
+    L, left_corr_energy, is_converged = left_cc_jacobi(update_function,
                                          L,
                                          LH,
                                          T,
@@ -142,8 +144,53 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
                                          omega,
                                          calculation,
                                          )
-    total_energy = system.reference_energy + lcc_energy
-
-    #cc_printer.calculation_summary(system.reference_energy, lcc_energy)
+    total_energy = system.reference_energy + left_corr_energy
 
     return L, total_energy, is_converged
+
+def eomcc_driver(calculation, system, hamiltonian, T, R=None):
+    """Performs the EOMCC calculation specified by the user in the input."""
+
+    # check if requested CC calculation is implemented in modules
+    if calculation.calculation_type not in ccpy.eomcc.MODULES:
+        raise NotImplementedError(
+            "{} not implemented".format(calculation.calculation_type)
+        )
+
+    # [TODO]: Check if calculation parameters (e.g, active orbitals) make sense
+
+    # import the specific CC method module and get its update function
+    module = import_module("ccpy.eomcc." + calculation.calculation_type.lower())
+    update_function = getattr(module, 'update')
+
+    cc_printer = EOMCCPrinter(calculation)
+    cc_printer.header()
+
+    # initialize the excitation operator with the initial guess
+    if R is None:
+        R_operators = [ClusterOperator(system,
+                            order=calculation.order,
+                            active_orders=calculation.active_orders,
+                            num_active=calculation.num_active) for i in range(calculation.num_roots)]
+        R_operators = get_initial_guess(calculation, system, hamiltonian, R_operators, guess_order=1)
+
+
+    # regardless of restart status, initialize residual anew
+    dR = ClusterOperator(system,
+                        order=calculation.order,
+                        active_orders=calculation.active_orders,
+                        num_active=calculation.num_active)
+
+    R, omega, is_converged = eomcc_davidson(
+                                           update_function,
+                                           R,
+                                           dR,
+                                           T,
+                                           hamiltonian,
+                                           calculation,
+                                           system,
+                                           )
+
+    cc_printer.calculation_summary(system.reference_energy, omega)
+
+    return R, omega, is_converged

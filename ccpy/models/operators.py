@@ -119,9 +119,16 @@ class ClusterOperator:
             [getattr(self, key).flatten() for key in self.spin_cases]
         )
 
-    def unflatten(self, T_flat):
+    def unflatten(self, T_flat, order=0):
         prev = 0
+
+        # allows unflattening of up to a specified order which may be less than
+        # the order of the cluster operator.
+        if order == 0: order = self.order
+
         for dims, name in zip(self.dimensions, self.spin_cases):
+
+            if len(name) > order: continue
 
             if isinstance(getattr(self, name), ActiveOperator):
                 getattr(self, name).unflatten(T_flat[prev : prev + getattr(self, name).ndim])
@@ -291,8 +298,6 @@ if __name__ == "__main__":
 
     T.unflatten(A)
 
-    T.aaa.VVVOOO
-
 
     print(T.flatten().shape)
     #
@@ -315,3 +320,4 @@ if __name__ == "__main__":
     #     print(key, "->", getattr(R, key).shape)
     # print("Flattened dimension = ", R.ndim)
     # print(R.flatten().shape)
+
