@@ -31,3 +31,14 @@ def get_cc_energy(T, H0):
 
 def get_lcc_energy(L, LH):
     return np.sqrt( np.sum(LH.flatten()**2) ) / np.sqrt( np.sum(L.flatten()**2) )
+
+def get_r0(R, H, omega):
+
+    r0 = 0.0
+    r0 += np.einsum("me,em->", H.a.ov, R.a, optimize=True)
+    r0 += np.einsum("me,em->", H.b.ov, R.b, optimize=True)
+    r0 += 0.25 * np.einsum("mnef,efmn->", H.aa.oovv, R.aa, optimize=True)
+    r0 += np.einsum("mnef,efmn->", H.ab.oovv, R.ab, optimize=True)
+    r0 += 0.25 * np.einsum("mnef,efmn->", H.bb.oovv, R.bb, optimize=True)
+
+    return r0 / omega

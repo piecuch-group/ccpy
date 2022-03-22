@@ -1,4 +1,5 @@
 import datetime
+import numpy as np
 
 from art import tprint
 
@@ -154,3 +155,96 @@ def print_iteration(
             iteration_idx, residuum, delta_energy, correlation_energy, time_str
         )
     )
+
+
+def print_amplitudes(R, system, nprint=5):
+
+    n1a = system.noccupied_alpha * system.nunoccupied_alpha
+    n1b = system.noccupied_beta * system.nunoccupied_beta
+    n2a = system.noccupied_alpha ** 2 * system.nunoccupied_alpha ** 2
+    n2b = system.noccupied_beta * system.noccupied_alpha * system.nunoccupied_beta * system.nunoccupied_alpha
+    n2c = system.noccupied_beta ** 2 * system.nunoccupied_beta ** 2
+
+    R1 = R.flatten()[: n1a + n1b]
+    idx = np.flip(np.argsort(abs(R1)))
+    print("     Largest Singly Excited Amplitudes:")
+    for n in range(nprint):
+        if idx[n] < n1a:
+            a, i = np.unravel_index(idx[n], R.a.shape, order="C")
+            print(
+                "      [{}]     {}A  ->  {}A     {:.6f}".format(
+                    n + 1,
+                    i + system.nfrozen + 1,
+                    a + system.nfrozen + system.noccupied_alpha + 1,
+                    R1[idx[n]],
+                )
+            )
+        else:
+            a, i = np.unravel_index(idx[n] - n1a, R.b.shape, order="C")
+            print(
+                "      [{}]     {}B  ->  {}B     {:.6f}".format(
+                    n + 1,
+                    i + system.nfrozen + 1,
+                    a + system.noccupied_beta + system.nfrozen + 1,
+                    R1[idx[n]],
+                )
+            )
+    if R.order < 2: return
+
+    # Zero out the non-unique R amplitudes related by permutational symmetry
+    for a in range(system.nunoccupied_alpha):
+        for b in range(a + 1, system.nunoccupied_alpha):
+            for i in range(system.noccupied_alpha):
+                for j in range(i + 1, system.noccupied_alpha):
+                    R.aa[b, a, j, i] = 0.0
+                    R.aa[a, b, j, i] = 0.0
+                    R.aa[b, a, i, j] = 0.0
+    for a in range(system.nunoccupied_beta):
+        for b in range(a + 1, system.nunoccupied_beta):
+            for i in range(system.noccupied_beta):
+                for j in range(i + 1, system.noccupied_beta):
+                    R.bb[b, a, j, i] = 0.0
+                    R.bb[a, b, j, i] = 0.0
+                    R.bb[b, a, i, j] = 0.0
+
+    R2 = R.flatten()[n1a + n1b :]
+    idx = np.flip(np.argsort(abs(R2)))
+    print("     Largest Doubly Excited Amplitudes:")
+    for n in range(nprint):
+        if idx[n] < n2a:
+            a, b, i, j = np.unravel_index(idx[n], R.aa.shape, order="C")
+            print(
+                "      [{}]     {}A  {}A  ->  {}A  {}A    {:.6f}".format(
+                    n + 1,
+                    i + system.nfrozen + 1,
+                    j + system.nfrozen + 1,
+                    a + system.noccupied_alpha + system.nfrozen + 1,
+                    b + system.noccupied_alpha + system.nfrozen + 1,
+                    R2[idx[n]],
+                )
+            )
+        elif idx[n] < n2a + n2b:
+            a, b, i, j = np.unravel_index(idx[n] - n2a, R.ab.shape, order="C")
+            print(
+                "      [{}]     {}A  {}B  ->  {}A  {}B    {:.6f}".format(
+                    n + 1,
+                    i + system.nfrozen + 1,
+                    j + system.nfrozen + 1,
+                    a + system.noccupied_alpha + system.nfrozen + 1,
+                    b + system.noccupied_beta + system.nfrozen + 1,
+                    R2[idx[n]],
+                )
+            )
+        else:
+            a, b, i, j = np.unravel_index(idx[n] - n2a - n2b, R.bb.shape, order="C")
+            print(
+                "      [{}]     {}B  {}B  ->  {}B  {}B    {:.6f}".format(
+                    n + 1,
+                    i + system.nfrozen + 1,
+                    j + system.nfrozen + 1,
+                    a + system.noccupied_beta + system.nfrozen + 1,
+                    b + system.noccupied_beta + system.nfrozen + 1,
+                    R2[idx[n]],
+                )
+            )
+    return
