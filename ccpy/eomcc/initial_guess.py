@@ -3,12 +3,16 @@ import numpy as np
 from ccpy.utilities.printing import print_amplitudes
 from ccpy.eomcc.s2matrix import build_s2matrix_cis
 
-def get_initial_guess(calculation, system, H, R, guess_order=2):
+def get_initial_guess(calculation, system, H, noact=0, nuact=0, guess_order=2):
 
     omega, V = spin_adapt_guess(system,
                                 build_cis_hamiltonian(H, system),
                                 calculation.multiplicity)
-    return R.unflatten(V, order=guess_order)
+    return omega, V
+    # for i, R in enumerate(R_operators):
+    #     R.unflatten(V[:, i], order=guess_order)
+    #
+    # return omega, R_operators
 
 def spin_adapt_guess(system, H, multiplicity):
 
