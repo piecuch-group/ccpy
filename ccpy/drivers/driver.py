@@ -148,7 +148,7 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
 
     return L, total_energy, is_converged
 
-def eomcc_driver(calculation, system, hamiltonian, T, R=None):
+def eomcc_driver(calculation, system, hamiltonian, T, R, omega_guess):
     """Performs the EOMCC calculation specified by the user in the input."""
 
     # check if requested CC calculation is implemented in modules
@@ -157,34 +157,19 @@ def eomcc_driver(calculation, system, hamiltonian, T, R=None):
             "{} not implemented".format(calculation.calculation_type)
         )
 
-    # [TODO]: Check if calculation parameters (e.g, active orbitals) make sense
-
     # import the specific CC method module and get its update function
     module = import_module("ccpy.eomcc." + calculation.calculation_type.lower())
+    HR_function = getattr(module, 'HR')
     update_function = getattr(module, 'update')
 
-    cc_printer = EOMCCPrinter(calculation)
+    cc_printer = CCPrinter(calculation)
     cc_printer.header()
 
-    # initialize the excitation operator with the initial guess
-    if R is None:
-        R_operators = [ClusterOperator(system,
-                            order=calculation.order,
-                            active_orders=calculation.active_orders,
-                            num_active=calculation.num_active) for i in range(calculation.num_roots)]
-        R_operators = get_initial_guess(calculation, system, hamiltonian, R_operators, guess_order=1)
-
-
-    # regardless of restart status, initialize residual anew
-    dR = ClusterOperator(system,
-                        order=calculation.order,
-                        active_orders=calculation.active_orders,
-                        num_active=calculation.num_active)
-
     R, omega, is_converged = eomcc_davidson(
+                                           HR_function,
                                            update_function,
                                            R,
-                                           dR,
+                                           omega_guess,
                                            T,
                                            hamiltonian,
                                            calculation,

@@ -3,169 +3,32 @@ energies and linear excitation amplitudes for excited states using
 the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD)."""
 import numpy as np
 from ccpy.utilities.updates import cc_loops
-# from functools import partial
-#
-# import cc_loops
-# import numpy as np
-# from cc_energy import calc_cc_energy
-# from eomcc_initialize import get_eomcc_initial_guess
-# from solvers import davidson_out_of_core
-#
-#
-# def eomccsd(
-#     nroot,
-#     H1A,
-#     H1B,
-#     H2A,
-#     H2B,
-#     H2C,
-#     cc_t,
-#     ints,
-#     sys,
-#     noact=0,
-#     nuact=0,
-#     tol=1.0e-06,
-#     maxit=80,
-#     flag_RHF=False,
-# ):
-#     """Perform the EOMCCSD excited-state calculation.
-#
-#     Parameters
-#     ----------
-#     nroot : int
-#         Number of excited-states to solve for in the EOMCCSD procedure
-#     H1*, H2* : dict
-#         Sliced CCSD similarity-transformed HBar integrals
-#     cc_t : dict
-#         Cluster amplitudes T1, T2 of the ground-state
-#     ints : dict
-#         Sliced F_N and V_N integrals defining the bare Hamiltonian H_N
-#     sys : dict
-#         System information dictionary
-#     noact : int, optional
-#         Number of active occupied orbitals used in EOMCCSd initial guess.
-#         Default is 0, corresponding to CIS.
-#     nuact : int, optional
-#         Number of active unoccupied orbitals used in EOMCCSd initial guess.
-#         Default is 0, corresponding to CIS.
-#     tol : float, optional
-#         Convergence tolerance for the EOMCC calculation. Default is 1.0e-06.
-#     maxit : int, optional
-#         Maximum number of Davidson iterations in the EOMCC procedure.
-#
-#     Returns
-#     -------
-#     cc_t : dict
-#         Updated dictionary of cluster amplitudes with r0, R1, R2 amplitudes for each excited state.
-#     omega : ndarray(dtype=float, shape=(nroot))
-#         Vector of vertical excitation energies (in hartree) for each root
-#     """
-#     print(
-#         "\n==================================++Entering EOM-CCSD Routine++=================================\n"
-#     )
-#
-#     n1a = sys["Nocc_a"] * sys["Nunocc_a"]
-#     n1b = sys["Nocc_b"] * sys["Nunocc_b"]
-#     n2a = sys["Nocc_a"] ** 2 * sys["Nunocc_a"] ** 2
-#     n2b = sys["Nocc_a"] * sys["Nocc_b"] * sys["Nunocc_a"] * sys["Nunocc_b"]
-#     n2c = sys["Nocc_b"] ** 2 * sys["Nunocc_b"] ** 2
-#     ndim = n1a + n1b + n2a + n2b + n2c
-#
-#     # Obtain initial guess using the EOMCCSd method
-#     B0, E0 = get_eomcc_initial_guess(
-#         nroot, noact, nuact, ndim, H1A, H1B, H2A, H2B, H2C, ints, sys
-#     )
-#     # Get the HR function
-#     HR_func = partial(
-#         HR,
-#         cc_t=cc_t,
-#         H1A=H1A,
-#         H1B=H1B,
-#         H2A=H2A,
-#         H2B=H2B,
-#         H2C=H2C,
-#         ints=ints,
-#         sys=sys,
-#         flag_RHF=flag_RHF,
-#     )
-#     # Get the R update function
-#     update_R_func = lambda r, omega: update_R(
-#         r, omega, H1A["oo"], H1A["vv"], H1B["oo"], H1B["vv"], sys
-#     )
-#     # Diagonalize Hamiltonian using Davidson algorithm
-#     # Rvec, omega, is_converged = davidson(HR_func,update_R_func,B0,E0,maxit,80,tol)
-#     Rvec, omega, is_converged = davidson_out_of_core(
-#         HR_func, update_R_func, B0, E0, maxit, tol
-#     )
-#
-#     cc_t["r1a"] = [None] * len(omega)
-#     cc_t["r1b"] = [None] * len(omega)
-#     cc_t["r2a"] = [None] * len(omega)
-#     cc_t["r2b"] = [None] * len(omega)
-#     cc_t["r2c"] = [None] * len(omega)
-#     cc_t["r0"] = [None] * len(omega)
-#
-#     print("Summary of EOMCCSD:")
-#     Eccsd = ints["Escf"] + calc_cc_energy(cc_t, ints)
-#     for i in range(len(omega)):
-#         r1a, r1b, r2a, r2b, r2c = unflatten_R(Rvec[:, i], sys)
-#         r0 = calc_r0(r1a, r1b, r2a, r2b, r2c, H1A, H1B, ints, omega[i])
-#         cc_t["r1a"][i] = r1a
-#         cc_t["r1b"][i] = r1b
-#         cc_t["r2a"][i] = r2a
-#         cc_t["r2b"][i] = r2b
-#         cc_t["r2c"][i] = r2c
-#         cc_t["r0"][i] = r0
-#         if is_converged[i]:
-#             tmp = "CONVERGED"
-#         else:
-#             tmp = "NOT CONVERGED"
-#         print(
-#             "   Root - {}    E = {}    omega = {:.10f}    r0 = {:.10f}    [{}]".format(
-#                 i + 1, omega[i] + Eccsd, omega[i], r0, tmp
-#             )
-#         )
-#
-#     return cc_t, omega
 
+def update(dR, omega, H):
 
-def update_R(r, omega, H1A_oo, H1A_vv, H1B_oo, H1B_vv, sys):
-
-    R.a, R.b, R.aa, R.ab, R.bb = cc_loops.cc_loops.update_r(
-        r1a,
-        r1b,
-        r2a,
-        r2b,
-        r2c,
+    dR.a, dR.b, dR.aa, dR.ab, dR.bb = cc_loops.cc_loops.update_r(
+        dR.a,
+        dR.b,
+        dR.aa,
+        dR.ab,
+        dR.bb,
         omega,
-        H1A_oo,
-        H1A_vv,
-        H1B_oo,
-        H1B_vv,
-        0.0,
-        sys["Nocc_a"],
-        sys["Nunocc_a"],
-        sys["Nocc_b"],
-        sys["Nunocc_b"],
+        H.a.oo,
+        H.a.vv,
+        H.b.oo,
+        H.b.vv,
+        0.0
     )
-    return flatten_R(r1a, r1b, r2a, r2b, r2c)
+    return dR
 
 
-def HR(R, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys, flag_RHF):
+def HR(R, T, H, system, flag_RHF):
 
-    r1a, r1b, r2a, r2b, r2c = unflatten_R(R, sys)
 
     if flag_RHF:
-        X1A = build_HR_1A(
-            r1a, r1b, r2a, r2b, r2c, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys
-        )
-        X2A = build_HR_2A(
-            r1a, r1b, r2a, r2b, r2c, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys
-        )
-        X2B = build_HR_2B(
-            r1a, r1b, r2a, r2b, r2c, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys
-        )
-        Xout = flatten_R(X1A, X1A, X2A, X2B, X2A)
+        X1A = build_HR_1A(R, T, H, system)
+        X2A = build_HR_2A(R, T, H, system)
+        X2B = build_HR_2B(R, T, H, system)
     else:
         X1A = build_HR_1A(
             r1a, r1b, r2a, r2b, r2c, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys
@@ -182,8 +45,7 @@ def HR(R, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys, flag_RHF):
         X2C = build_HR_2C(
             r1a, r1b, r2a, r2b, r2c, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys
         )
-        Xout = flatten_R(X1A, X1B, X2A, X2B, X2C)
-    return Xout
+    return np.concatenate( (X1A.flatten(), X1B.flatten(), X2A.flatten(), X2B.flatten(), X2C.flatten()), axis=0)
 
 
 def build_HR_1A(r1a, r1b, r2a, r2b, r2c, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys):
