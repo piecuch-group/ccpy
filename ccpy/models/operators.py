@@ -139,6 +139,7 @@ class ClusterOperator:
                 prev += ndim
 
 
+
 class FockOperator:
     """Builds generalized particle-nonconserving operators of the EA/IP-type and
     higher-order extensions, such as DEA/DIP, etc.

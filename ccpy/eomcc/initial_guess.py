@@ -2,17 +2,25 @@ import numpy as np
 
 from ccpy.utilities.printing import print_amplitudes
 from ccpy.eomcc.s2matrix import build_s2matrix_cis
+from ccpy.models.operators import ClusterOperator
 
-def get_initial_guess(calculation, system, H, noact=0, nuact=0, guess_order=2):
+def get_initial_guess(calculation, system, H, nroot, noact=0, nuact=0, guess_order=2):
 
     omega, V = spin_adapt_guess(system,
                                 build_cis_hamiltonian(H, system),
                                 calculation.multiplicity)
-    return omega, V
-    # for i, R in enumerate(R_operators):
-    #     R.unflatten(V[:, i], order=guess_order)
-    #
-    # return omega, R_operators
+    R = []
+    for i in range(nroot):
+        print("Guess for root:", i + 1, " E = ", omega[i])
+        R.append(ClusterOperator(system,
+                                order=calculation.order,
+                                active_orders=calculation.active_orders,
+                                num_active=calculation.num_active))
+        R[i].unflatten(V[:, i], order=guess_order)
+
+        print_amplitudes(R[i], system, guess_order, nprint=5)
+
+    return R, omega[:nroot]
 
 def spin_adapt_guess(system, H, multiplicity):
 
@@ -38,7 +46,7 @@ def spin_adapt_guess(system, H, multiplicity):
 
     idx = np.argsort(omega)
 
-    return omega[idx], V[:, idx]
+    return omega[idx[len(idx_s2):]], V[:, idx[len(idx_s2):]]
 
 
 def build_cis_hamiltonian(H, system):

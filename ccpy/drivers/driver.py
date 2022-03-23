@@ -8,7 +8,7 @@ import ccpy.eomcc
 
 from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, eomcc_davidson
 from ccpy.models.operators import ClusterOperator
-from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter, EOMCCPrinter
+from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter
 
 from ccpy.eomcc.initial_guess import get_initial_guess
 
@@ -148,7 +148,7 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
 
     return L, total_energy, is_converged
 
-def eomcc_driver(calculation, system, hamiltonian, T, R, omega_guess):
+def eomcc_driver(calculation, system, hamiltonian, T, R):
     """Performs the EOMCC calculation specified by the user in the input."""
 
     # check if requested CC calculation is implemented in modules
@@ -169,13 +169,12 @@ def eomcc_driver(calculation, system, hamiltonian, T, R, omega_guess):
                                            HR_function,
                                            update_function,
                                            R,
-                                           omega_guess,
                                            T,
                                            hamiltonian,
                                            calculation,
                                            system,
                                            )
 
-    cc_printer.calculation_summary(system.reference_energy, omega)
+    #cc_printer.calculation_summary(system.reference_energy, omega)
 
     return R, omega, is_converged

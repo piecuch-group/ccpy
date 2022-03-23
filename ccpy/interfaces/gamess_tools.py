@@ -6,8 +6,6 @@ def load_from_gamess(
     onebody_file,
     twobody_file,
     nfrozen=0,
-    num_act_holes_alpha=0, num_act_particles_alpha=0,
-    num_act_holes_beta=0, num_act_particles_beta=0,
     normal_ordered=True,
     data_type=np.float64,
 ):
@@ -31,10 +29,6 @@ def load_from_gamess(
         charge=data.charge,
         nuclear_repulsion=getGamessNuclearRepulsion(gamess_logfile),
         mo_energies=[x * constants.eVtohartree for x in data.moenergies[0]],
-        num_act_holes_alpha=num_act_holes_alpha,
-        num_act_particles_alpha=num_act_particles_alpha,
-        num_act_holes_beta=num_act_holes_beta,
-        num_act_particles_beta=num_act_particles_beta,
     )
 
     e1int = loadOnebodyIntegralFile(onebody_file, system, data_type)
