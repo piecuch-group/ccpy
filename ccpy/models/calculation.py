@@ -19,6 +19,7 @@ class Calculation:
     diis_size: int = 6
     diis_out_of_core: bool=False
     RHF_symmetry: bool = False
+    multiplicity: int = 1
 
     # default value list parameters
     active_orders: list = field(default_factory=lambda: [None])

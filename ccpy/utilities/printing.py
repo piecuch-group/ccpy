@@ -105,6 +105,9 @@ class CCPrinter:
         print(WHITESPACE, "Energy shift =", self.calculation.energy_shift)
         print(WHITESPACE, "DIIS size = ", self.calculation.diis_size)
         print(WHITESPACE, "RHF symmetry =", self.calculation.RHF_symmetry)
+        #if self.calculation.active_orders != [None]:
+        #    print(WHITESPACE, "Number active occupied =", calculation.)
+
         print(WHITESPACE, "--------------------------------------------------")
         print("")
         print(
@@ -157,7 +160,7 @@ def print_iteration(
     )
 
 
-def print_amplitudes(R, system, nprint=5):
+def print_amplitudes(R, system, order, nprint=10, thresh_print=1.0e-01):
 
     n1a = system.noccupied_alpha * system.nunoccupied_alpha
     n1b = system.noccupied_beta * system.nunoccupied_beta
@@ -171,6 +174,7 @@ def print_amplitudes(R, system, nprint=5):
     for n in range(nprint):
         if idx[n] < n1a:
             a, i = np.unravel_index(idx[n], R.a.shape, order="C")
+            if abs(R1[idx[n]]) < thresh_print: continue
             print(
                 "      [{}]     {}A  ->  {}A     {:.6f}".format(
                     n + 1,
@@ -181,6 +185,7 @@ def print_amplitudes(R, system, nprint=5):
             )
         else:
             a, i = np.unravel_index(idx[n] - n1a, R.b.shape, order="C")
+            if abs(R1[idx[n]]) < thresh_print: continue
             print(
                 "      [{}]     {}B  ->  {}B     {:.6f}".format(
                     n + 1,
@@ -189,7 +194,7 @@ def print_amplitudes(R, system, nprint=5):
                     R1[idx[n]],
                 )
             )
-    if R.order < 2: return
+    if order < 2: return
 
     # Zero out the non-unique R amplitudes related by permutational symmetry
     for a in range(system.nunoccupied_alpha):
@@ -213,6 +218,7 @@ def print_amplitudes(R, system, nprint=5):
     for n in range(nprint):
         if idx[n] < n2a:
             a, b, i, j = np.unravel_index(idx[n], R.aa.shape, order="C")
+            if abs(R2[idx[n]]) < thresh_print: continue
             print(
                 "      [{}]     {}A  {}A  ->  {}A  {}A    {:.6f}".format(
                     n + 1,
@@ -225,6 +231,7 @@ def print_amplitudes(R, system, nprint=5):
             )
         elif idx[n] < n2a + n2b:
             a, b, i, j = np.unravel_index(idx[n] - n2a, R.ab.shape, order="C")
+            if abs(R2[idx[n]]) < thresh_print: continue
             print(
                 "      [{}]     {}A  {}B  ->  {}A  {}B    {:.6f}".format(
                     n + 1,
@@ -237,6 +244,7 @@ def print_amplitudes(R, system, nprint=5):
             )
         else:
             a, b, i, j = np.unravel_index(idx[n] - n2a - n2b, R.bb.shape, order="C")
+            if abs(R2[idx[n]]) < thresh_print: continue
             print(
                 "      [{}]     {}B  {}B  ->  {}B  {}B    {:.6f}".format(
                     n + 1,

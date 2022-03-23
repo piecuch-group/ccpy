@@ -190,9 +190,17 @@ def eomcc_davidson(HR, update_r, R, T, H, calculation, system):
     is_converged = [False] * nroot
     omega = np.zeros(nroot)
 
-    # orthonormalize the initial trial space
-    # this is important when using doubles in EOMCCSd guess
-    B0, _ = np.linalg.qr(np.asarray([r.flatten() for r in R]).T)
+    # orthonormalize the initial trial space; this is important when using doubles in EOMCCSd guess
+    # We have an issue here using QR decomp!
+    #B0, _ = np.linalg.qr(np.asarray([r.flatten() for r in R]).T)
+    B0 = np.asarray([r.flatten() for r in R]).T
+
+    # Allocate residual R cluster operator
+    dR = ClusterOperator(system,
+                         order=R[0].order,
+                         active_orders=calculation.active_orders,
+                         num_active=calculation.num_active,
+                         data_type=R[0].a.dtype)
 
     for n in range(nroot):
 
@@ -204,23 +212,15 @@ def eomcc_davidson(HR, update_r, R, T, H, calculation, system):
             "--------------------------------------------------------------------------------"
         )
 
-        # Allocate residual R cluster operator
-        dR = ClusterOperator(system,
-                             order=R[n].order,
-                             active_orders=calculation.active_orders,
-                             num_active=calculation.num_active,
-                             data_type=R[n].data_type)
-        dR.unflatten(B0[:, n])
-
         # Allocate the B and sigma matrices
-        sigma = np.zeros((R[n].ndim, calculation.max_iterations))
-        B = np.zeros((R[n].ndim, calculation.max_iterations))
+        sigma = np.zeros((R[n].ndim, calculation.maximum_iterations))
+        B = np.zeros((R[n].ndim, calculation.maximum_iterations))
         # Initial values
         B[:, 0] = B0[:, n]
-        sigma[:, 0] = HR(dR, T, H, system, calculation.flag_RHF)
+        sigma[:, 0] = HR(R[n], T, H, calculation.RHF_symmetry)
 
         curr_size = 1
-        while curr_size <= calculation.max_iterations:
+        while curr_size < calculation.maximum_iterations:
             t1 = time.time()
 
             omega_old = omega[n]
@@ -262,8 +262,8 @@ def eomcc_davidson(HR, update_r, R, T, H, calculation, system):
             q *= 1.0 / np.linalg.norm(q)
             dR.unflatten(q)
 
-            B[:, curr_size] = dR.flatten()
-            sigma[:, curr_size] = HR(dR, T, H, system, calculation.flag_RHF)
+            B[:, curr_size] = q
+            sigma[:, curr_size] = HR(dR, T, H, calculation.RHF_symmetry)
             curr_size += 1
 
         if is_converged[n]:
