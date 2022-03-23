@@ -191,9 +191,7 @@ def eomcc_davidson(HR, update_r, R, T, H, calculation, system):
     omega = np.zeros(nroot)
 
     # orthonormalize the initial trial space; this is important when using doubles in EOMCCSd guess
-    # We have an issue here using QR decomp!
-    #B0, _ = np.linalg.qr(np.asarray([r.flatten() for r in R]).T)
-    B0 = np.asarray([r.flatten() for r in R]).T
+    B0, _ = np.linalg.qr(np.asarray([r.flatten() for r in R]).T)
 
     # Allocate residual R cluster operator
     dR = ClusterOperator(system,
@@ -215,15 +213,19 @@ def eomcc_davidson(HR, update_r, R, T, H, calculation, system):
         # Allocate the B and sigma matrices
         sigma = np.zeros((R[n].ndim, calculation.maximum_iterations))
         B = np.zeros((R[n].ndim, calculation.maximum_iterations))
+
         # Initial values
         B[:, 0] = B0[:, n]
-        sigma[:, 0] = HR(R[n], T, H, calculation.RHF_symmetry)
+        dR.unflatten(B[:, 0])
+        sigma[:, 0] = HR(dR, T, H, calculation.RHF_symmetry)
 
         curr_size = 1
         while curr_size < calculation.maximum_iterations:
             t1 = time.time()
-
+            # store old energy
             omega_old = omega[n]
+
+            # solve projection subspace eigenproblem
             G = np.dot(B[:, :curr_size].T, sigma[:, :curr_size])
             e, alpha = np.linalg.eig(G)
 
@@ -233,6 +235,7 @@ def eomcc_davidson(HR, update_r, R, T, H, calculation, system):
             idx = np.argsort(abs(alpha[0, :]))
             alpha = np.real(alpha[:, idx[-1]])
 
+            # Get the eigenpair of interest
             omega[n] = np.real(e[idx[-1]])
             R[n].unflatten(np.dot(B[:, :curr_size], alpha))
 
@@ -255,7 +258,6 @@ def eomcc_davidson(HR, update_r, R, T, H, calculation, system):
             # update residual vector
             dR = update_r(dR, omega[n], H)
             q = dR.flatten()
-            q *= 1.0 / np.linalg.norm(q)
             for p in range(curr_size):
                 b = B[:, p] / np.linalg.norm(B[:, p])
                 q -= np.dot(b.T, q) * b
