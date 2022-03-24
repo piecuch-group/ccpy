@@ -165,7 +165,7 @@ def eomcc_driver(calculation, system, hamiltonian, T, R, omega):
     cc_printer = CCPrinter(calculation)
     cc_printer.header()
 
-    R, omega, r0, is_converged = eomcc_davidson_lowmem(
+    R, omega, r0, is_converged = eomcc_davidson(
                                            HR_function,
                                            update_function,
                                            R,
