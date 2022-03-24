@@ -4,6 +4,7 @@ from ccpy.interfaces.gamess_tools import load_from_gamess
 from ccpy.drivers.driver import cc_driver, lcc_driver, eomcc_driver
 
 from ccpy.hbar.hbar_ccsdt import build_hbar_ccsdt
+from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
 
 from ccpy.eomcc.initial_guess import get_initial_guess
 
