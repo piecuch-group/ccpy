@@ -148,7 +148,7 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
 
     return L, total_energy, is_converged
 
-def eomcc_driver(calculation, system, hamiltonian, T, R):
+def eomcc_driver(calculation, system, hamiltonian, T, R, omega):
     """Performs the EOMCC calculation specified by the user in the input."""
 
     # check if requested CC calculation is implemented in modules
@@ -165,10 +165,11 @@ def eomcc_driver(calculation, system, hamiltonian, T, R):
     cc_printer = CCPrinter(calculation)
     cc_printer.header()
 
-    R, omega, is_converged = eomcc_davidson(
+    R, omega, r0, is_converged = eomcc_davidson(
                                            HR_function,
                                            update_function,
                                            R,
+                                           omega,
                                            T,
                                            hamiltonian,
                                            calculation,
@@ -177,4 +178,4 @@ def eomcc_driver(calculation, system, hamiltonian, T, R):
 
     #cc_printer.calculation_summary(system.reference_energy, omega)
 
-    return R, omega, is_converged
+    return R, omega, r0, is_converged

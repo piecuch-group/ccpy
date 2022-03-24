@@ -16,8 +16,8 @@ if __name__ == "__main__":
     )
 
     calculation = Calculation(
-        order=2,
-        calculation_type="ccsd",
+        order=3,
+        calculation_type="ccsdt",
         convergence_tolerance=1.0e-08
     )
 
@@ -26,12 +26,12 @@ if __name__ == "__main__":
     Hbar = build_hbar_ccsd(T, H)
 
     calculation = Calculation(
-        order=2,
-        calculation_type="eomccsd",
+        order=3,
+        calculation_type="eomccsdt",
         convergence_tolerance=1.0e-08,
         multiplicity=1,
     )
 
-    R, _ = get_initial_guess(calculation, system, Hbar, 10, noact=0, nuact=0, guess_order=1)
+    R, omega = get_initial_guess(calculation, system, Hbar, 10, noact=0, nuact=0, guess_order=1)
 
-    R, omega, is_converged = eomcc_driver(calculation, system, Hbar, T, R)
+    R, omega, r0, is_converged = eomcc_driver(calculation, system, Hbar, T, R, omega)

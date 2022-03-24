@@ -180,15 +180,17 @@ from ccpy.models.operators import ClusterOperator
 #     return Gmat
 
 
-def eomcc_davidson(HR, update_r, R, T, H, calculation, system):
+def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
     """
     Diagonalize the similarity-transformed Hamiltonian HBar using the
     non-Hermitian Davidson algorithm.
     """
+    from ccpy.drivers.cc_energy import get_r0
+
     nroot = len(R)
 
     is_converged = [False] * nroot
-    omega = np.zeros(nroot)
+    r0 = np.zeros(nroot)
 
     # orthonormalize the initial trial space; this is important when using doubles in EOMCCSd guess
     B0, _ = np.linalg.qr(np.asarray([r.flatten() for r in R]).T)
@@ -202,7 +204,7 @@ def eomcc_davidson(HR, update_r, R, T, H, calculation, system):
 
     for n in range(nroot):
 
-        print("Solving for root - {}".format(n + 1))
+        print("Solving for root - {}    Energy of initial guess = {}".format(n + 1, omega[n]))
         print(
             " Iter        omega                |r|               dE            Wall Time"
         )
@@ -274,7 +276,10 @@ def eomcc_davidson(HR, update_r, R, T, H, calculation, system):
             print("Failed to converge root {}".format(n + 1))
         print("")
 
-    return R, omega, is_converged
+        # Calculate r0 for the root
+        r0[n] = get_r0(R[n], H, omega[n])
+
+    return R, omega, r0, is_converged
 
 
 def cc_jacobi(update_t, T, dT, H, calculation, system):
