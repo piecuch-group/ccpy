@@ -330,8 +330,6 @@ def build_HR_3A(R, T, H):
         "mnef,efcjnk->mcjk", H.aa.oovv, R.aaa, optimize=True
     ) + np.einsum("mnef,ecfjkn->mcjk", H.ab.oovv, R.aab, optimize=True)
     X3A -= 0.25 * np.einsum("mbij,acmk->abcijk", I1 + I2 + I3, T.aa, optimize=True)
-    X3A -= 0.25 * np.einsum("bmji,acmk->abcijk", H.aa.vooo, R.aa, optimize=True)
-
     # additional terms with T3 in <ijkabc|[ H(R1+R2)]_C | 0>
     I1 = (
         -1.0 * np.einsum("me,bm->be", H.a.ov, R.a, optimize=True)
