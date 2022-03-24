@@ -29,6 +29,7 @@ if __name__ == "__main__":
     calculation = Calculation(
         order=3,
         calculation_type="eomccsdt",
+        maximum_iterations=60,
         convergence_tolerance=1.0e-08,
         multiplicity=1,
     )

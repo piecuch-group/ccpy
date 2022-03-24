@@ -6,7 +6,7 @@ import ccpy.cc
 import ccpy.left
 import ccpy.eomcc
 
-from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, eomcc_davidson
+from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, eomcc_davidson, eomcc_davidson_lowmem
 from ccpy.models.operators import ClusterOperator
 from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter
 
@@ -165,7 +165,7 @@ def eomcc_driver(calculation, system, hamiltonian, T, R, omega):
     cc_printer = CCPrinter(calculation)
     cc_printer.header()
 
-    R, omega, r0, is_converged = eomcc_davidson(
+    R, omega, r0, is_converged = eomcc_davidson_lowmem(
                                            HR_function,
                                            update_function,
                                            R,

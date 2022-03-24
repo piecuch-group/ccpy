@@ -119,4 +119,14 @@ def get_eomccsd_intermediates(H, R, system):
             + np.einsum("mnef,ecmk->cnkf", H.bb.oovv, R.bb, optimize=True)
     )
 
+    # Q1 = np.einsum("mnef,fn->me", H.aa.oovv, R.a, optimize=True)
+    # Q1 += np.einsum("mnef,fn->me", H.ab.oovv, R.b, optimize=True)
+    # I1 = np.einsum("amje,bm->abej", H.aa.voov, R.a, optimize=True)
+    # I1 += np.einsum("amfe,bejm->abfj", H.aa.vovv, R.aa, optimize=True)
+    # I1 += np.einsum("amfe,bejm->abfj", H.ab.vovv, R.ab, optimize=True)
+    # I1 -= np.transpose(I1, (1, 0, 2, 3))
+    # I2 = np.einsum("abfe,ej->abfj", H.aa.vvvv, R.a, optimize=True)
+    # I2 += 0.5 * np.einsum("nmje,abmn->abej", H.aa.ooov, R.aa, optimize=True)
+    # I2 -= np.einsum("me,abmj->abej", Q1, T.aa, optimize=True)
+
     return X
