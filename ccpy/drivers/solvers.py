@@ -219,7 +219,7 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
         # Initial values
         B[:, 0] = B0[:, n]
         dR.unflatten(B[:, 0])
-        sigma[:, 0] = HR(dR, T, H, calculation.RHF_symmetry)
+        sigma[:, 0] = HR(dR, T, H, calculation.RHF_symmetry, system)
 
         curr_size = 1
         while curr_size < calculation.maximum_iterations:
@@ -267,7 +267,7 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
             dR.unflatten(q)
 
             B[:, curr_size] = q
-            sigma[:, curr_size] = HR(dR, T, H, calculation.RHF_symmetry)
+            sigma[:, curr_size] = HR(dR, T, H, calculation.RHF_symmetry, system)
             curr_size += 1
 
         if is_converged[n]:

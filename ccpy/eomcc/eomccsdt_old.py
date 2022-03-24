@@ -4,10 +4,8 @@ the equation-of-motion (EOM) CC with singles, doubles, and triples (EOMCCSDT).""
 import numpy as np
 from ccpy.utilities.updates import cc_loops
 
-from ccpy.hbar.eomccsdt_intermediates import get_eomccsd_intermediates
-
-
 def update(dR, omega, H):
+
     dR.a, dR.b, dR.aa, dR.ab, dR.bb, dR.aaa, dR.aab, dR.abb, dR.bbb = cc_loops.cc_loops.update_r_ccsdt(
         dR.a,
         dR.b,
@@ -29,38 +27,34 @@ def update(dR, omega, H):
 
 
 def HR(R, T, H, flag_RHF, system):
+
     if flag_RHF:
         X1A = build_HR_1A(R, T, H)
-
         X2A = build_HR_2A(R, T, H)
         X2B = build_HR_2B(R, T, H)
-
-        HR = get_eomccsd_intermediates(H, R, system)
-        X3A = build_HR_3A(R, T, H, HR)
-        X3B = build_HR_3B(R, T, H, HR)
+        X3A = build_HR_3A(R, T, H)
+        X3B = build_HR_3B(R, T, H)
         Xout = np.concatenate((X1A.flatten(), X1A.flatten(), X2A.flatten(), X2B.flatten(), X2A.flatten(),
-                               X3A.flatten(), X3B.flatten(), np.transpose(X3B, (2, 1, 0, 5, 4, 3)).flatten(),
-                               X3A.flatten()), axis=0)
+                               X3A.flatten(), X3B.flatten(), np.transpose(X3B, (2, 1, 0, 5, 4, 3)).flatten(), X3A.flatten()), axis=0)
     else:
         X1A = build_HR_1A(R, T, H)
         X1B = build_HR_1B(R, T, H)
-
         X2A = build_HR_2A(R, T, H)
         X2B = build_HR_2B(R, T, H)
         X2C = build_HR_2C(R, T, H)
-
-        HR = get_eomccsd_intermediates(H, R, system)
-        X3A = build_HR_3A(R, T, H, HR)
-        X3B = build_HR_3B(R, T, H, HR)
-        X3C = build_HR_3C(R, T, H, HR)
-        X3D = build_HR_3D(R, T, H, HR)
-        Xout = np.concatenate((X1A.flatten(), X1B.flatten(), X2A.flatten(), X2B.flatten(), X2C.flatten(),
-                               X3A.flatten(), X3B.flatten(), X3C.flatten(), X3D.flatten()), axis=0)
+        # [TODO]: Create an HR function to produce one- and two-body components arising from [Hbar * (R1 + R2)]_C
+        X3A = build_HR_3A(R, T, H)
+        X3B = build_HR_3B(R, T, H)
+        X3C = build_HR_3C(R, T, H)
+        X3D = build_HR_3D(R, T, H)
+        Xout = np.concatenate( (X1A.flatten(), X1B.flatten(), X2A.flatten(), X2B.flatten(), X2C.flatten(),
+                                X3A.flatten(), X3B.flatten(), X3C.flatten(), X3D.flatten()), axis=0)
 
     return Xout
 
 
 def build_HR_1A(R, T, H):
+
     X1A = -np.einsum("mi,am->ai", H.a.oo, R.a, optimize=True)
     X1A += np.einsum("ae,ei->ai", H.a.vv, R.a, optimize=True)
     X1A += np.einsum("amie,em->ai", H.aa.voov, R.a, optimize=True)
@@ -79,7 +73,8 @@ def build_HR_1A(R, T, H):
     return X1A
 
 
-def build_HR_1B(R, T, H):
+def build_HR_1B(R, T, H):    
+    
     X1B = -np.einsum("mi,am->ai", H.b.oo, R.b, optimize=True)
     X1B += np.einsum("ae,ei->ai", H.b.vv, R.b, optimize=True)
     X1B += np.einsum("maei,em->ai", H.ab.ovvo, R.a, optimize=True)
@@ -99,6 +94,7 @@ def build_HR_1B(R, T, H):
 
 
 def build_HR_2A(R, T, H):
+
     D1 = -np.einsum("mi,abmj->abij", H.a.oo, R.aa, optimize=True)  # A(ij)
     D2 = np.einsum("ae,ebij->abij", H.a.vv, R.aa, optimize=True)  # A(ab)
     X2A = 0.5 * np.einsum("mnij,abmn->abij", H.aa.oooo, R.aa, optimize=True)
@@ -152,9 +148,9 @@ def build_HR_2A(R, T, H):
     D_ij -= np.einsum("abij->abji", D_ij, optimize=True)
     D_ab -= np.einsum("abij->baij", D_ab, optimize=True)
     D_abij += (
-            -np.einsum("abij->baij", D_abij, optimize=True)
-            - np.einsum("abij->abji", D_abij, optimize=True)
-            + np.einsum("abij->baji", D_abij, optimize=True)
+        -np.einsum("abij->baij", D_abij, optimize=True)
+        - np.einsum("abij->abji", D_abij, optimize=True)
+        + np.einsum("abij->baji", D_abij, optimize=True)
     )
 
     X2A += D_ij + D_ab + D_abij + DR3_1 + DR3_2
@@ -163,6 +159,7 @@ def build_HR_2A(R, T, H):
 
 
 def build_HR_2B(R, T, H):
+    
     X2B = np.einsum("ae,ebij->abij", H.a.vv, R.ab, optimize=True)
     X2B += np.einsum("be,aeij->abij", H.b.vv, R.ab, optimize=True)
     X2B -= np.einsum("mi,abmj->abij", H.a.oo, R.ab, optimize=True)
@@ -242,6 +239,7 @@ def build_HR_2B(R, T, H):
 
 
 def build_HR_2C(R, T, H):
+    
     D1 = -np.einsum("mi,abmj->abij", H.b.oo, R.bb, optimize=True)  # A(ij)
     D2 = np.einsum("ae,ebij->abij", H.b.vv, R.bb, optimize=True)  # A(ab)
     X2C = 0.5 * np.einsum("mnij,abmn->abij", H.bb.oooo, R.bb, optimize=True)
@@ -295,9 +293,9 @@ def build_HR_2C(R, T, H):
     D_ij -= np.einsum("abij->abji", D_ij, optimize=True)
     D_ab -= np.einsum("abij->baij", D_ab, optimize=True)
     D_abij += (
-            -np.einsum("abij->baij", D_abij, optimize=True)
-            - np.einsum("abij->abji", D_abij, optimize=True)
-            + np.einsum("abij->baji", D_abij, optimize=True)
+        -np.einsum("abij->baij", D_abij, optimize=True)
+        - np.einsum("abij->abji", D_abij, optimize=True)
+        + np.einsum("abij->baji", D_abij, optimize=True)
     )
 
     X2C += D_ij + D_ab + D_abij + DR3_1 + DR3_2
@@ -305,7 +303,8 @@ def build_HR_2C(R, T, H):
     return X2C
 
 
-def build_HR_3A(R, T, H, X):
+def build_HR_3A(R, T, H):
+    
     # <ijkabc| [H(R1+R2)]_C | 0 >
     Q1 = np.einsum("mnef,fn->me", H.aa.oovv, R.a, optimize=True)
     Q1 += np.einsum("mnef,fn->me", H.ab.oovv, R.b, optimize=True)
@@ -316,10 +315,9 @@ def build_HR_3A(R, T, H, X):
     I2 = np.einsum("abfe,ej->abfj", H.aa.vvvv, R.a, optimize=True)
     I2 += 0.5 * np.einsum("nmje,abmn->abej", H.aa.ooov, R.aa, optimize=True)
     I2 -= np.einsum("me,abmj->abej", Q1, T.aa, optimize=True)
-    I3 = (
-            -0.5 * np.einsum("mnef,abfimn->baei", H.aa.oovv, R.aaa, optimize=True)
-            - np.einsum("mnef,abfimn->baei", H.ab.oovv, R.aab, optimize=True)
-    )
+    I3 = -0.5 * np.einsum(
+        "mnef,abfimn->baei", H.aa.oovv, R.aaa, optimize=True
+    ) - np.einsum("mnef,abfimn->baei", H.ab.oovv, R.aab, optimize=True)
     X3A = 0.25 * np.einsum("abej,ecik->abcijk", I1 + I2 + I3, T.aa, optimize=True)
     X3A += 0.25 * np.einsum("baje,ecik->abcijk", H.aa.vvov, R.aa, optimize=True)
 
@@ -329,25 +327,79 @@ def build_HR_3A(R, T, H, X):
     I1 -= np.transpose(I1, (0, 1, 3, 2))
     I2 = -1.0 * np.einsum("nmij,bm->nbij", H.aa.oooo, R.a, optimize=True)
     I2 += 0.5 * np.einsum("bmfe,efij->mbij", H.aa.vovv, R.aa, optimize=True)
-    I3 = (
-            0.5 * np.einsum("mnef,efcjnk->mcjk", H.aa.oovv, R.aaa, optimize=True)
-            + np.einsum("mnef,ecfjkn->mcjk", H.ab.oovv, R.aab, optimize=True)
-    )
+    I3 = 0.5 * np.einsum(
+        "mnef,efcjnk->mcjk", H.aa.oovv, R.aaa, optimize=True
+    ) + np.einsum("mnef,ecfjkn->mcjk", H.ab.oovv, R.aab, optimize=True)
     X3A -= 0.25 * np.einsum("mbij,acmk->abcijk", I1 + I2 + I3, T.aa, optimize=True)
 
     # additional terms with T3 in <ijkabc|[ H(R1+R2)]_C | 0>
-    X3A += (1.0 / 12.0) * np.einsum("be,aecijk->abcijk", X.a.vv, T.aaa, optimize=True)
-    X3A -= (1.0 / 12.0) * np.einsum("mj,abcimk->abcijk", X.a.oo, T.aaa, optimize=True)
-    X3A += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", X.aa.oooo, T.aaa, optimize=True)
-    X3A += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", X.aa.vvvv, T.aaa, optimize=True)
-    X3A += 0.25 * np.einsum("bmje,aecimk->abcijk", X.aa.voov, T.aaa, optimize=True)
-    X3A += 0.25 * np.einsum("bmje,aceikm->abcijk", X.ab.voov, T.aab, optimize=True)
+    I1 = (
+        -1.0 * np.einsum("me,bm->be", H.a.ov, R.a, optimize=True)
+        + np.einsum("bnef,fn->be", H.aa.vovv, R.a, optimize=True)
+        + np.einsum("bnef,fn->be", H.ab.vovv, R.b, optimize=True)
+    )
+    I2 = -0.5 * np.einsum("mnef,bfmn->be", H.aa.oovv, R.aa, optimize=True) - np.einsum(
+        "mnef,bfmn->be", H.ab.oovv, R.ab, optimize=True
+    )
+    X3A += (1.0 / 12.0) * np.einsum(
+        "be,aecijk->abcijk", I1 + I2, T.aaa, optimize=True
+    )  # A(b/ac)
+
+    I1 = (
+        np.einsum("me,ej->mj", H.a.ov, R.a, optimize=True)
+        + np.einsum("mnjf,fn->mj", H.aa.ooov, R.a, optimize=True)
+        + np.einsum("mnjf,fn->mj", H.ab.ooov, R.b, optimize=True)
+    )
+    I2 = 0.5 * np.einsum("mnef,efjn->mj", H.aa.oovv, R.aa, optimize=True) + np.einsum(
+        "mnef,efjn->mj", H.ab.oovv, R.ab, optimize=True
+    )
+    X3A -= (1.0 / 12.0) * np.einsum(
+        "mj,abcimk->abcijk", I1 + I2, T.aaa, optimize=True
+    )  # A(j/ik)
+
+    I1 = np.einsum("nmje,ei->mnij", H.aa.ooov, R.a, optimize=True)
+    I1 -= np.transpose(I1, (0, 1, 3, 2))
+    I2 = 0.5 * np.einsum("mnef,efij->mnij", H.aa.oovv, R.aa, optimize=True)
+    X3A += (1.0 / 24.0) * np.einsum(
+        "mnij,abcmnk->abcijk", I1 + I2, T.aaa, optimize=True
+    )  # A(k/ij)
+
+    I1 = -1.0 * np.einsum("amef,bm->abef", H.aa.vovv, R.a, optimize=True)
+    I1 -= np.transpose(I1, (1, 0, 2, 3))
+    I2 = 0.5 * np.einsum("mnef,abmn->abef", H.aa.oovv, R.aa, optimize=True)
+    X3A += (1.0 / 24.0) * np.einsum(
+        "abef,efcijk->abcijk", I1 + I2, T.aaa, optimize=True
+    )  # A(c/ab)
+
+    I1 = -1.0 * np.einsum("nmje,bn->bmje", H.aa.ooov, R.a, optimize=True) + np.einsum(
+        "bmfe,fj->bmje", H.aa.vovv, R.a, optimize=True
+    )
+    I2 = np.einsum("mnef,fcnk->cmke", H.aa.oovv, R.aa, optimize=True) + np.einsum(
+        "mnef,cfkn->cmke", H.ab.oovv, R.ab, optimize=True
+    )
+    X3A += 0.25 * np.einsum(
+        "bmje,aecimk->abcijk", I1 + I2, T.aaa, optimize=True
+    )  # A(j/ik)A(b/ac)
+
+    I1 = -1.0 * np.einsum("nmje,bn->bmje", H.ab.ooov, R.a, optimize=True) + np.einsum(
+        "bmfe,fj->bmje", H.ab.vovv, R.a, optimize=True
+    )
+    I2 = np.einsum("nmfe,fcnk->cmke", H.ab.oovv, R.aa, optimize=True) + np.einsum(
+        "mnef,cfkn->cmke", H.bb.oovv, R.ab, optimize=True
+    )
+    X3A += 0.25 * np.einsum(
+        "bmje,aceikm->abcijk", I1 + I2, T.aab, optimize=True
+    )  # A(j/ik)A(b/ac)
 
     # < ijkabc | (HR3)_C | 0 >
     X3A -= (1.0 / 12.0) * np.einsum("mj,abcimk->abcijk", H.a.oo, R.aaa, optimize=True)
     X3A += (1.0 / 12.0) * np.einsum("be,aecijk->abcijk", H.a.vv, R.aaa, optimize=True)
-    X3A += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, R.aaa, optimize=True)
-    X3A += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, R.aaa, optimize=True)
+    X3A += (1.0 / 24.0) * np.einsum(
+        "mnij,abcmnk->abcijk", H.aa.oooo, R.aaa, optimize=True
+    )
+    X3A += (1.0 / 24.0) * np.einsum(
+        "abef,efcijk->abcijk", H.aa.vvvv, R.aaa, optimize=True
+    )
     X3A += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.aa.voov, R.aaa, optimize=True)
     X3A += 0.25 * np.einsum("amie,bcejkm->abcijk", H.ab.voov, R.aab, optimize=True)
 
@@ -360,7 +412,8 @@ def build_HR_3A(R, T, H, X):
     return X3A
 
 
-def build_HR_3B(R, T, H, X):
+def build_HR_3B(R, T, H):
+
     # < ijk~abc~ | [ H(R1+R2) ]_C | 0 >
     Q1 = np.einsum("mnef,fn->me", H.aa.oovv, R.a, optimize=True) + np.einsum(
         "mnef,fn->me", H.ab.oovv, R.b, optimize=True
@@ -466,20 +519,111 @@ def build_HR_3B(R, T, H, X):
 
     # additional terms with T3 (these contractions mirror the form of
     # the ones with R3 later on)
-    X3B += 0.5 * np.einsum("be,aecijk->abcijk", X.a.vv, T.aab, optimize=True)
-    X3B += 0.25 * np.einsum("ce,abeijk->abcijk", X.b.vv, T.aab, optimize=True)
-    X3B -= 0.5 * np.einsum("mj,abcimk->abcijk", X.a.oo, T.aab, optimize=True)
-    X3B -= 0.25 * np.einsum("mk,abcijm->abcijk", X.b.oo, T.aab, optimize=True)
-    X3B += 0.5 * np.einsum("nmjk,abcinm->abcijk", X.ab.oooo, T.aab, optimize=True)
-    X3B += 0.125 * np.einsum("mnij,abcmnk->abcijk", X.aa.oooo, T.aab, optimize=True)
-    X3B += 0.5 * np.einsum("bcfe,afeijk->abcijk", X.ab.vvvv, T.aab, optimize=True)
-    X3B += 0.125 * np.einsum("abef,efcijk->abcijk", X.aa.vvvv, T.aab, optimize=True)
-    X3B += 0.25 * np.einsum("ncfk,abfijn->abcijk", X.ab.ovvo, T.aaa, optimize=True)
-    X3B += 0.25 * np.einsum("cnkf,abfijn->abcijk", X.bb.voov, T.aab, optimize=True)
-    X3B -= 0.5 * np.einsum("bmfk,afcijm->abcijk", X.ab.vovo, T.aab, optimize=True)
-    X3B -= 0.5 * np.einsum("ncje,abeink->abcijk", X.ab.ovov, T.aab, optimize=True)
-    X3B += np.einsum("bmje,aecimk->abcijk", X.aa.voov, T.aab, optimize=True)
-    X3B += np.einsum("bmje,aecimk->abcijk", X.ab.voov, T.abb, optimize=True)
+    I1 = (
+        -1.0 * np.einsum("me,bm->be", H.a.ov, R.a, optimize=True)
+        + np.einsum("bnef,fn->be", H.aa.vovv, R.a, optimize=True)
+        + np.einsum("bnef,fn->be", H.ab.vovv, R.b, optimize=True)
+    )
+    I2 = -0.5 * np.einsum("mnef,bfmn->be", H.aa.oovv, R.aa, optimize=True) - np.einsum(
+        "mnef,bfmn->be", H.ab.oovv, R.ab, optimize=True
+    )
+    X3B += 0.5 * np.einsum("be,aecijk->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = (
+        -1.0 * np.einsum("me,cm->ce", H.b.ov, R.b, optimize=True)
+        + np.einsum("ncfe,fn->ce", H.ab.ovvv, R.a, optimize=True)
+        + np.einsum("cnef,fn->ce", H.bb.vovv, R.b, optimize=True)
+    )
+    I2 = -1.0 * np.einsum(
+        "nmfe,fcnm->ce", H.ab.oovv, R.ab, optimize=True
+    ) - 0.5 * np.einsum("mnef,fcnm->ce", H.bb.oovv, R.bb, optimize=True)
+    X3B += 0.25 * np.einsum("ce,abeijk->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = (
+        np.einsum("me,ej->mj", H.a.ov, R.a, optimize=True)
+        + np.einsum("mnjf,fn->mj", H.aa.ooov, R.a, optimize=True)
+        + np.einsum("mnjf,fn->mj", H.ab.ooov, R.b, optimize=True)
+    )
+    I2 = 0.5 * np.einsum("mnef,efjn->mj", H.aa.oovv, R.aa, optimize=True) + np.einsum(
+        "mnef,efjn->mj", H.ab.oovv, R.ab, optimize=True
+    )
+    X3B -= 0.5 * np.einsum("mj,abcimk->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = (
+        np.einsum("me,ek->mk", H.b.ov, R.b, optimize=True)
+        + np.einsum("nmfk,fn->mk", H.ab.oovo, R.a, optimize=True)
+        + np.einsum("mnkf,fn->mk", H.bb.ooov, R.b, optimize=True)
+    )
+    I2 = np.einsum("nmfe,fenk->mk", H.ab.oovv, R.ab, optimize=True) + 0.5 * np.einsum(
+        "mnef,efkn->mk", H.bb.oovv, R.bb, optimize=True
+    )
+    X3B -= 0.25 * np.einsum("mk,abcijm->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = np.einsum("nmje,ek->nmjk", H.ab.ooov, R.b, optimize=True) + np.einsum(
+        "nmek,ej->nmjk", H.ab.oovo, R.a, optimize=True
+    )
+    I2 = np.einsum("mnef,efjk->mnjk", H.ab.oovv, R.ab, optimize=True)
+    X3B += 0.5 * np.einsum("nmjk,abcinm->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = np.einsum("mnie,ej->mnij", H.aa.ooov, R.a, optimize=True)
+    I1 -= np.transpose(I1, (0, 1, 3, 2))
+    I2 = 0.5 * np.einsum("mnef,efij->mnij", H.aa.oovv, R.aa, optimize=True)
+    X3B += 0.125 * np.einsum("mnij,abcmnk->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = -1.0 * np.einsum("bmfe,cm->bcfe", H.ab.vovv, R.b, optimize=True) - np.einsum(
+        "mcfe,bm->bcfe", H.ab.ovvv, R.a, optimize=True
+    )
+    I2 = np.einsum("mnef,bcmn->bcef", H.ab.oovv, R.ab, optimize=True)
+    X3B += 0.5 * np.einsum("bcfe,afeijk->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = -1.0 * np.einsum("amef,bm->abef", H.aa.vovv, R.a, optimize=True)
+    I1 -= np.transpose(I1, (1, 0, 2, 3))
+    I2 = 0.5 * np.einsum("mnef,abmn->abef", H.aa.oovv, R.aa, optimize=True)
+    X3B += 0.125 * np.einsum("abef,efcijk->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = -1.0 * np.einsum("nmfk,cm->ncfk", H.ab.oovo, R.b, optimize=True) + np.einsum(
+        "ncfe,ek->ncfk", H.ab.ovvv, R.b, optimize=True
+    )
+    I2 = np.einsum("mnef,ecmk->ncfk", H.aa.oovv, R.ab, optimize=True) + np.einsum(
+        "nmfe,ecmk->ncfk", H.ab.oovv, R.bb, optimize=True
+    )
+    X3B += 0.25 * np.einsum("ncfk,abfijn->abcijk", I1 + I2, T.aaa, optimize=True)
+
+    I1 = -1.0 * np.einsum("mnkf,cm->cnkf", H.bb.ooov, R.b, optimize=True) + np.einsum(
+        "cnef,ek->cnkf", H.bb.vovv, R.b, optimize=True
+    )
+    I2 = np.einsum("mnef,ecmk->cnkf", H.ab.oovv, R.ab, optimize=True) + np.einsum(
+        "mnef,ecmk->cnkf", H.bb.oovv, R.bb, optimize=True
+    )
+    X3B += 0.25 * np.einsum("cnkf,abfijn->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = np.einsum("bmfe,ek->bmfk", H.ab.vovv, R.b, optimize=True) - np.einsum(
+        "nmfk,bn->bmfk", H.ab.oovo, R.a, optimize=True
+    )
+    I2 = -1.0 * np.einsum("mnef,bfmk->bnek", H.ab.oovv, R.ab, optimize=True)
+    X3B -= 0.5 * np.einsum("bmfk,afcijm->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = -1.0 * np.einsum("nmje,cm->ncje", H.ab.ooov, R.b, optimize=True) + np.einsum(
+        "ncfe,fj->ncje", H.ab.ovvv, R.a, optimize=True
+    )
+    I2 = -1.0 * np.einsum("mnef,ecjn->mcjf", H.ab.oovv, R.ab, optimize=True)
+    X3B -= 0.5 * np.einsum("ncje,abeink->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = -1.0 * np.einsum("nmje,bn->bmje", H.aa.ooov, R.a, optimize=True) + np.einsum(
+        "bmfe,fj->bmje", H.aa.vovv, R.a, optimize=True
+    )
+    I2 = np.einsum("mnef,aeim->anif", H.aa.oovv, R.aa, optimize=True) + np.einsum(
+        "nmfe,aeim->anif", H.ab.oovv, R.ab, optimize=True
+    )
+    X3B += np.einsum("bmje,aecimk->abcijk", I1 + I2, T.aab, optimize=True)
+
+    I1 = -1.0 * np.einsum("nmje,bn->bmje", H.ab.ooov, R.a, optimize=True) + np.einsum(
+        "bmfe,fj->bmje", H.ab.vovv, R.a, optimize=True
+    )
+    I2 = np.einsum("mnef,aeim->anif", H.ab.oovv, R.aa, optimize=True) + np.einsum(
+        "mnef,aeim->anif", H.bb.oovv, R.ab, optimize=True
+    )
+    X3B += np.einsum("bmje,aecimk->abcijk", I1 + I2, T.abb, optimize=True)
 
     # < ijk~abc~ | (HR3)_C | 0 >
     X3B -= 0.5 * np.einsum("mj,abcimk->abcijk", H.a.oo, R.aab, optimize=True)
@@ -498,14 +642,15 @@ def build_HR_3B(R, T, H, X):
     X3B -= 0.5 * np.einsum("mcje,abeimk->abcijk", H.ab.ovov, R.aab, optimize=True)
 
     X3B -= (
-            np.transpose(X3B, (0, 1, 2, 4, 3, 5))
-            + np.transpose(X3B, (1, 0, 2, 3, 4, 5))
-            - np.transpose(X3B, (1, 0, 2, 4, 3, 5))
+        np.transpose(X3B, (0, 1, 2, 4, 3, 5))
+        + np.transpose(X3B, (1, 0, 2, 3, 4, 5))
+        - np.transpose(X3B, (1, 0, 2, 4, 3, 5))
     )
     return X3B
 
 
-def build_HR_3C(R, T, H, X):
+def build_HR_3C(R, T, H):
+
     # < ij~k~ab~c~ | [ H(R1+R2) ]_C | 0 >
     Q1 = np.einsum("mnef,fn->me", H.bb.oovv, R.b, optimize=True) + np.einsum(
         "nmfe,fn->me", H.ab.oovv, R.a, optimize=True
@@ -610,20 +755,111 @@ def build_HR_3C(R, T, H, X):
     X3C -= np.einsum("nbkj,cani->cbakji", H.ab.ovoo, R.ab, optimize=True)
 
     # additional terms with T3
-    X3C += 0.5 * np.einsum("be,ceakji->cbakji", X.b.vv, T.abb, optimize=True)
-    X3C += 0.25 * np.einsum("ce,ebakji->cbakji", X.a.vv, T.abb, optimize=True)
-    X3C -= 0.5 * np.einsum("mj,cbakmi->cbakji", X.b.oo, T.abb, optimize=True)
-    X3C -= 0.25 * np.einsum("mk,cbamji->cbakji", X.a.oo, T.abb, optimize=True)
-    X3C += 0.5 * np.einsum("mnkj,cbamni->cbakji", X.ab.oooo, T.abb, optimize=True)
-    X3C += 0.125 * np.einsum("mnij,cbaknm->cbakji", X.bb.oooo, T.abb, optimize=True)
-    X3C += 0.5 * np.einsum("cbef,efakji->cbakji", X.ab.vvvv, T.abb, optimize=True)
-    X3C += 0.125 * np.einsum("abef,cfekji->cbakji", X.bb.vvvv, T.abb, optimize=True)
-    X3C += 0.25 * np.einsum("cnkf,abfijn->cbakji", X.ab.voov, T.bbb, optimize=True)
-    X3C += 0.25 * np.einsum("cnkf,fbanji->cbakji", X.aa.voov, T.abb, optimize=True)
-    X3C -= 0.5 * np.einsum("mbkf,cfamji->cbakji", X.ab.ovov, T.abb, optimize=True)
-    X3C -= 0.5 * np.einsum("cnej,ebakni->cbakji", X.ab.vovo, T.abb, optimize=True)
-    X3C += np.einsum("bmje,ceakmi->cbakji", X.bb.voov, T.abb, optimize=True)
-    X3C += np.einsum("mbej,ceakmi->cbakji", X.ab.ovvo, T.aab, optimize=True)
+    I1 = (
+        -1.0 * np.einsum("me,bm->be", H.b.ov, R.b, optimize=True)
+        + np.einsum("bnef,fn->be", H.bb.vovv, R.b, optimize=True)
+        + np.einsum("nbfe,fn->be", H.ab.ovvv, R.a, optimize=True)
+    )
+    I2 = -0.5 * np.einsum("mnef,bfmn->be", H.bb.oovv, R.bb, optimize=True) - np.einsum(
+        "nmfe,fbnm->be", H.ab.oovv, R.ab, optimize=True
+    )
+    X3C += 0.5 * np.einsum("be,ceakji->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = (
+        -1.0 * np.einsum("me,cm->ce", H.a.ov, R.a, optimize=True)
+        + np.einsum("cnef,fn->ce", H.ab.vovv, R.b, optimize=True)
+        + np.einsum("cnef,fn->ce", H.aa.vovv, R.a, optimize=True)
+    )
+    I2 = -1.0 * np.einsum(
+        "mnef,cfmn->ce", H.ab.oovv, R.ab, optimize=True
+    ) - 0.5 * np.einsum("mnef,fcnm->ce", H.aa.oovv, R.aa, optimize=True)
+    X3C += 0.25 * np.einsum("ce,ebakji->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = (
+        np.einsum("me,ej->mj", H.b.ov, R.b, optimize=True)
+        + np.einsum("mnjf,fn->mj", H.bb.ooov, R.b, optimize=True)
+        + np.einsum("nmfj,fn->mj", H.ab.oovo, R.a, optimize=True)
+    )
+    I2 = 0.5 * np.einsum("mnef,efjn->mj", H.bb.oovv, R.bb, optimize=True) + np.einsum(
+        "nmfe,fenj->mj", H.ab.oovv, R.ab, optimize=True
+    )
+    X3C -= 0.5 * np.einsum("mj,cbakmi->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = (
+        np.einsum("me,ek->mk", H.a.ov, R.a, optimize=True)
+        + np.einsum("mnkf,fn->mk", H.ab.ooov, R.b, optimize=True)
+        + np.einsum("mnkf,fn->mk", H.aa.ooov, R.a, optimize=True)
+    )
+    I2 = np.einsum("mnef,efkn->mk", H.ab.oovv, R.ab, optimize=True) + 0.5 * np.einsum(
+        "mnef,efkn->mk", H.aa.oovv, R.aa, optimize=True
+    )
+    X3C -= 0.25 * np.einsum("mk,cbamji->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = np.einsum("mnej,ek->mnkj", H.ab.oovo, R.a, optimize=True) + np.einsum(
+        "mnke,ej->mnkj", H.ab.ooov, R.b, optimize=True
+    )
+    I2 = np.einsum("nmfe,fekj->nmkj", H.ab.oovv, R.ab, optimize=True)
+    X3C += 0.5 * np.einsum("mnkj,cbamni->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = np.einsum("mnie,ej->mnij", H.bb.ooov, R.b, optimize=True)
+    I1 -= np.transpose(I1, (0, 1, 3, 2))
+    I2 = 0.5 * np.einsum("mnef,efij->mnij", H.bb.oovv, R.bb, optimize=True)
+    X3C += 0.125 * np.einsum("mnij,cbaknm->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = -1.0 * np.einsum("mbef,cm->cbef", H.ab.ovvv, R.a, optimize=True) - np.einsum(
+        "cmef,bm->cbef", H.ab.vovv, R.b, optimize=True
+    )
+    I2 = np.einsum("nmfe,cbnm->cbfe", H.ab.oovv, R.ab, optimize=True)
+    X3C += 0.5 * np.einsum("cbef,efakji->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = -1.0 * np.einsum("amef,bm->abef", H.bb.vovv, R.b, optimize=True)
+    I1 -= np.transpose(I1, (1, 0, 2, 3))
+    I2 = 0.5 * np.einsum("mnef,abmn->abef", H.bb.oovv, R.bb, optimize=True)
+    X3C += 0.125 * np.einsum("abef,cfekji->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = -1.0 * np.einsum("mnkf,cm->cnkf", H.ab.ooov, R.a, optimize=True) + np.einsum(
+        "cnef,ek->cnkf", H.ab.vovv, R.a, optimize=True
+    )
+    I2 = np.einsum("mnef,cekm->cnkf", H.bb.oovv, R.ab, optimize=True) + np.einsum(
+        "mnef,ecmk->cnkf", H.ab.oovv, R.aa, optimize=True
+    )
+    X3C += 0.25 * np.einsum("cnkf,abfijn->cbakji", I1 + I2, T.bbb, optimize=True)
+
+    I1 = -1.0 * np.einsum("mnkf,cm->ncfk", H.aa.ooov, R.a, optimize=True) + np.einsum(
+        "cnef,ek->ncfk", H.aa.vovv, R.a, optimize=True
+    )
+    I2 = np.einsum("nmfe,cekm->ncfk", H.ab.oovv, R.ab, optimize=True) + np.einsum(
+        "mnef,ecmk->ncfk", H.aa.oovv, R.aa, optimize=True
+    )
+    X3C += 0.25 * np.einsum("ncfk,fbanji->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = np.einsum("mbef,ek->mbkf", H.ab.ovvv, R.a, optimize=True) - np.einsum(
+        "mnkf,bn->mbkf", H.ab.ooov, R.b, optimize=True
+    )
+    I2 = -1.0 * np.einsum("nmfe,fbkm->nbke", H.ab.oovv, R.ab, optimize=True)
+    X3C -= 0.5 * np.einsum("mbkf,cfamji->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = -1.0 * np.einsum("mnej,cm->cnej", H.ab.oovo, R.a, optimize=True) + np.einsum(
+        "cnef,fj->cnej", H.ab.vovv, R.b, optimize=True
+    )
+    I2 = -1.0 * np.einsum("nmfe,cenj->cmfj", H.ab.oovv, R.ab, optimize=True)
+    X3C -= 0.5 * np.einsum("cnej,ebakni->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = -1.0 * np.einsum("nmje,bn->mbej", H.bb.ooov, R.b, optimize=True) + np.einsum(
+        "bmfe,fj->mbej", H.bb.vovv, R.b, optimize=True
+    )
+    I2 = np.einsum("mnef,aeim->nafi", H.bb.oovv, R.bb, optimize=True) + np.einsum(
+        "mnef,eami->nafi", H.ab.oovv, R.ab, optimize=True
+    )
+    X3C += np.einsum("mbej,ceakmi->cbakji", I1 + I2, T.abb, optimize=True)
+
+    I1 = -1.0 * np.einsum("mnej,bn->mbej", H.ab.oovo, R.b, optimize=True) + np.einsum(
+        "mbef,fj->mbej", H.ab.ovvv, R.b, optimize=True
+    )
+    I2 = np.einsum("nmfe,aeim->nafi", H.ab.oovv, R.bb, optimize=True) + np.einsum(
+        "mnef,eami->nafi", H.aa.oovv, R.ab, optimize=True
+    )
+    X3C += np.einsum("mbej,ceakmi->cbakji", I1 + I2, T.aab, optimize=True)
 
     # < ijk~abc~ | (HR3)_C | 0 >
     X3C -= 0.5 * np.einsum("mj,cbakmi->cbakji", H.b.oo, R.abb, optimize=True)
@@ -642,14 +878,15 @@ def build_HR_3C(R, T, H, X):
     X3C -= 0.5 * np.einsum("cmej,ebakmi->cbakji", H.ab.vovo, R.abb, optimize=True)
 
     X3C -= (
-            np.transpose(X3C, (0, 1, 2, 3, 5, 4))
-            + np.transpose(X3C, (0, 2, 1, 3, 4, 5))
-            - np.transpose(X3C, (0, 2, 1, 3, 5, 4))
+        np.transpose(X3C, (0, 1, 2, 3, 5, 4))
+        + np.transpose(X3C, (0, 2, 1, 3, 4, 5))
+        - np.transpose(X3C, (0, 2, 1, 3, 5, 4))
     )
     return X3C
 
 
-def build_HR_3D(R, T, H, X):
+def build_HR_3D(R, T, H):
+    
     # <i~j~k~a~b~c~| [H(R1+R2)]_C | 0 >
     Q1 = np.einsum("mnef,fn->me", H.bb.oovv, R.b, optimize=True)
     Q1 += np.einsum("nmfe,fn->me", H.ab.oovv, R.a, optimize=True)
@@ -683,12 +920,63 @@ def build_HR_3D(R, T, H, X):
     X3D -= 0.25 * np.einsum("bmji,acmk->abcijk", H.bb.vooo, R.bb, optimize=True)
 
     # additional terms with T3 in <ijkabc|[ H(R1+R2)]_C | 0>
-    X3D += (1.0 / 12.0) * np.einsum("be,aecijk->abcijk", X.b.vv, T.bbb, optimize=True)
-    X3D -= (1.0 / 12.0) * np.einsum("mj,abcimk->abcijk", X.b.oo, T.bbb, optimize=True)
-    X3D += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", X.bb.oooo, T.bbb, optimize=True)
-    X3D += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", X.bb.vvvv, T.bbb, optimize=True)
-    X3D += 0.25 * np.einsum("bmje,aecimk->abcijk", X.bb.voov, T.bbb, optimize=True)
-    X3D += 0.25 * np.einsum("mbej,ecamki->abcijk", X.ab.ovvo, T.abb, optimize=True)
+    I1 = (
+        -1.0 * np.einsum("me,bm->be", H.b.ov, R.b, optimize=True)
+        + np.einsum("bnef,fn->be", H.bb.vovv, R.b, optimize=True)
+        + np.einsum("nbfe,fn->be", H.ab.ovvv, R.a, optimize=True)
+    )
+    I2 = -0.5 * np.einsum("mnef,bfmn->be", H.bb.oovv, R.bb, optimize=True) - np.einsum(
+        "nmfe,fbnm->be", H.ab.oovv, R.ab, optimize=True
+    )
+    X3D += (1.0 / 12.0) * np.einsum(
+        "be,aecijk->abcijk", I1 + I2, T.bbb, optimize=True
+    )  # A(b/ac)
+
+    I1 = (
+        np.einsum("me,ej->mj", H.b.ov, R.b, optimize=True)
+        + np.einsum("mnjf,fn->mj", H.bb.ooov, R.b, optimize=True)
+        + np.einsum("nmfj,fn->mj", H.ab.oovo, R.a, optimize=True)
+    )
+    I2 = 0.5 * np.einsum("mnef,efjn->mj", H.bb.oovv, R.bb, optimize=True) + np.einsum(
+        "nmfe,fenj->mj", H.ab.oovv, R.ab, optimize=True
+    )
+    X3D -= (1.0 / 12.0) * np.einsum(
+        "mj,abcimk->abcijk", I1 + I2, T.bbb, optimize=True
+    )  # A(j/ik)
+
+    I1 = np.einsum("nmje,ei->mnij", H.bb.ooov, R.b, optimize=True)
+    I1 -= np.transpose(I1, (0, 1, 3, 2))
+    I2 = 0.5 * np.einsum("mnef,efij->mnij", H.bb.oovv, R.bb, optimize=True)
+    X3D += (1.0 / 24.0) * np.einsum(
+        "mnij,abcmnk->abcijk", I1 + I2, T.bbb, optimize=True
+    )  # A(k/ij)
+
+    I1 = -1.0 * np.einsum("amef,bm->abef", H.bb.vovv, R.b, optimize=True)
+    I1 -= np.transpose(I1, (1, 0, 2, 3))
+    I2 = 0.5 * np.einsum("mnef,abmn->abef", H.bb.oovv, R.bb, optimize=True)
+    X3D += (1.0 / 24.0) * np.einsum(
+        "abef,efcijk->abcijk", I1 + I2, T.bbb, optimize=True
+    )  # A(c/ab)
+
+    I1 = -1.0 * np.einsum("nmje,bn->bmje", H.bb.ooov, R.b, optimize=True) + np.einsum(
+        "bmfe,fj->bmje", H.bb.vovv, R.b, optimize=True
+    )
+    I2 = np.einsum("mnef,fcnk->cmke", H.bb.oovv, R.bb, optimize=True) + np.einsum(
+        "nmfe,fcnk->cmke", H.ab.oovv, R.ab, optimize=True
+    )
+    X3D += 0.25 * np.einsum(
+        "bmje,aecimk->abcijk", I1 + I2, T.bbb, optimize=True
+    )  # A(j/ik)A(b/ac)
+
+    I1 = -1.0 * np.einsum("mnej,bn->bmje", H.ab.oovo, R.b, optimize=True) + np.einsum(
+        "mbef,fj->bmje", H.ab.ovvv, R.b, optimize=True
+    )
+    I2 = np.einsum("mnef,fcnk->cmke", H.ab.oovv, R.bb, optimize=True) + np.einsum(
+        "mnef,fcnk->cmke", H.aa.oovv, R.ab, optimize=True
+    )
+    X3D += 0.25 * np.einsum(
+        "bmje,ecamki->abcijk", I1 + I2, T.abb, optimize=True
+    )  # A(j/ik)A(b/ac)
 
     # < i~j~k~a~b~c~ | (HR3)_C | 0 >
     X3D -= (1.0 / 12.0) * np.einsum("mj,abcimk->abcijk", H.b.oo, R.bbb, optimize=True)
