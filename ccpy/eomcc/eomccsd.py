@@ -22,7 +22,7 @@ def update(dR, omega, H):
     return dR
 
 
-def HR(R, T, H, flag_RHF):
+def HR(R, T, H, flag_RHF, system):
 
     if flag_RHF:
         X1A = build_HR_1A(R, T, H)
