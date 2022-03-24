@@ -4,6 +4,7 @@ import time
 import numpy as np
 
 from ccpy.utilities.printing import print_iteration, print_iteration_header
+from ccpy.utilities.utilities import remove_file, print_memory_usage
 from ccpy.models.operators import ClusterOperator
 
 # def davidson_out_of_core(HR, update_R, B0, E0, maxit, tol, flag_lowmem=True):
@@ -178,6 +179,141 @@ from ccpy.models.operators import ClusterOperator
 #     else:
 #         Gmat = np.dot(B[:, :curr_size].T, sigma[:, :curr_size])
 #     return Gmat
+
+def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
+    """
+    Diagonalize the similarity-transformed Hamiltonian HBar using the
+    non-Hermitian Davidson algorithm.
+    """
+    from ccpy.drivers.cc_energy import get_r0
+
+    nroot = len(R)
+
+    is_converged = [False] * nroot
+    r0 = np.zeros(nroot)
+
+    # orthonormalize the initial trial space; this is important when using doubles in EOMCCSd guess
+    B0, _ = np.linalg.qr(np.asarray([r.flatten() for r in R]).T)
+
+    # Allocate residual R cluster operator
+    dR = ClusterOperator(system,
+                         order=R[0].order,
+                         active_orders=calculation.active_orders,
+                         num_active=calculation.num_active,
+                         data_type=R[0].a.dtype)
+
+    # Allocate the B and sigma matrices
+    B = np.memmap("B.npy", dtype=R[0].a.dtype, mode="w+", shape=(R[0].ndim, calculation.maximum_iterations))
+    del B
+    sigma = np.memmap("sigma.npy", dtype=R[0].a.dtype, mode="w+", shape=(R[0].ndim, calculation.maximum_iterations))
+    del sigma
+
+    for n in range(nroot):
+
+        print("Solving for root - {}    Energy of initial guess = {}".format(n + 1, omega[n]))
+        print(
+            " Iter        omega                |r|               dE            Wall Time"
+        )
+        print(
+            "--------------------------------------------------------------------------------"
+        )
+
+        # Initial values
+        B = np.memmap("B.npy", dtype=R[0].a.dtype, mode="r+", shape=(R[0].ndim, calculation.maximum_iterations))
+        B[:, 0] = B0[:, n]
+        del B
+        dR.unflatten(B0[:, 0])
+
+        sigma = np.memmap("sigma.npy", dtype=R[0].a.dtype, mode="r+", shape=(R[0].ndim, calculation.maximum_iterations))
+        sigma[:, 0] = HR(dR, T, H, calculation.RHF_symmetry, system)
+        del sigma
+
+        curr_size = 1
+        while curr_size < calculation.maximum_iterations:
+            t1 = time.time()
+
+            # open the B and sigma files
+            B = np.memmap("B.npy", dtype=R[0].a.dtype, mode="r", shape=(R[0].ndim, calculation.maximum_iterations))
+            sigma = np.memmap("sigma.npy", dtype=R[0].a.dtype, mode="r", shape=(R[0].ndim, calculation.maximum_iterations))
+
+            # store old energy
+            omega_old = omega[n]
+
+            # solve projection subspace eigenproblem
+            G = np.zeros((curr_size, curr_size))
+            for k1 in range(curr_size):
+                for k2 in range(curr_size):
+                    G[k1, k2] = np.dot(B[:, k1].T, sigma[:, k2])
+
+            e, alpha = np.linalg.eig(G)
+
+            # select root based on maximum overlap with initial guess
+            idx = np.argsort(abs(alpha[0, :]))
+            alpha = np.real(alpha[:, idx[-1]])
+            omega[n] = np.real(e[idx[-1]])
+
+            # Calculate the eigenvector and the residual
+            r = np.zeros(R[n].ndim)
+            dr = np.zeros(R[n].ndim)
+
+            for k1 in range(curr_size):
+                r += B[:, k1] * alpha[k1]
+                dr += sigma[:, k1] * alpha[k1]
+            dr -= omega[n] * r
+            R[n].unflatten(r)
+            dR.unflatten(dr)
+
+            residual = np.linalg.norm(dR.flatten())
+            deltaE = omega[n] - omega_old
+
+            t2 = time.time()
+            minutes, seconds = divmod(t2 - t1, 60)
+            print(
+                "   {}      {:.10f}       {:.10f}      {:.10f}      {:.2f}m {:.2f}s".format(
+                    curr_size, omega[n], residual, deltaE, minutes, seconds
+                )
+            )
+            if residual < calculation.convergence_tolerance and abs(deltaE) < calculation.convergence_tolerance:
+                is_converged[n] = True
+                break
+
+            # update residual vector
+            dR = update_r(dR, omega[n], H)
+            q = dR.flatten()
+
+            for k1 in range(curr_size):
+                b = B[:, k1] / np.linalg.norm(B[:, k1])
+                q -= np.dot(b.T, q) * b
+
+            q *= 1.0 / np.linalg.norm(q)
+            dR.unflatten(q)
+
+            # write new vectors to the B and sigma files
+            B = np.memmap("B.npy", dtype=R[0].a.dtype, mode="r+", shape=(R[0].ndim, calculation.maximum_iterations))
+            B[:, curr_size] = q
+            del B
+
+            sigma = np.memmap("sigma.npy", dtype=R[0].a.dtype, mode="r+", shape=(R[0].ndim, calculation.maximum_iterations))
+            sigma[:, curr_size] = HR(dR, T, H, calculation.RHF_symmetry, system)
+            del sigma
+
+            curr_size += 1
+
+        if is_converged[n]:
+            print("Converged root {}".format(n + 1))
+        else:
+            print("Failed to converge root {}".format(n + 1))
+        print("")
+
+        # Calculate r0 for the root
+        r0[n] = get_r0(R[n], H, omega[n])
+
+    # clean up B and sigma npy memory maps
+    remove_file("B.npy")
+    remove_file("sigma.npy")
+
+    return R, omega, r0, is_converged
+
 
 
 def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
