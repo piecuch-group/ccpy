@@ -174,6 +174,114 @@ def update(T, dT, H, shift, flag_RHF, system):
     dT = t3d_110001.build(T, dT, hbar, system)
     dT = t3d_100001.build(T, dT, hbar, system)
 
+    # [TODO]: Separate the update loops by presence of inactive particle/hole alpha/beta indices to allow CCSDt
+    # to work with full active spaces, reproducing CCSDT.
+
+    # # perform all T3 update loops
+    #
+    # # no inactive
+    # T, dT = t3a_111111.update(T, dT, H, shift, system)
+    # T, dT = t3b_111111.update(T, dT, H, shift, system)
+    # T, dT = t3c_111111.update(T, dT, H, shift, system)
+    # T, dT = t3d_111111.update(T, dT, H, shift, system)
+    #
+    # # only alpha hole inactive
+    # T, dT = t3a_111011.update(T, dT, H, shift, system)
+    # T, dT = t3a_111001.update(T, dT, H, shift, system)
+    # T, dT = t3b_111011.update(T, dT, H, shift, system)
+    # T, dT = t3b_111001.update(T, dT, H, shift, system)
+    # T, dT = t3c_111011.update(T, dT, H, shift, system)
+    #
+    # # only beta hole inactive
+    # T, dT = t3b_111110.update(T, dT, H, shift, system)
+    # T, dT = t3c_111101.update(T, dT, H, shift, system)
+    # T, dT = t3c_111100.update(T, dT, H, shift, system)
+    # T, dT = t3d_111011.update(T, dT, H, shift, system)
+    # T, dT = t3d_111001.update(T, dT, H, shift, system)
+    #
+    # # only beta particle inactive
+    # T, dT = t3b_110111.update(T, dT, H, shift, system)
+    # T, dT = t3c_110111.update(T, dT, H, shift, system)
+    # T, dT = t3c_100111.update(T, dT, H, shift, system)
+    # T, dT = t3d_110111.update(T, dT, H, shift, system)
+    # T, dT = t3d_100111.update(T, dT, H, shift, system)
+    #
+    # # only alpha particle inactive
+    # T, dT = t3a_110111.update(T, dT, H, shift, system)
+    # T, dT = t3a_100111.update(T, dT, H, shift, system)
+    # T, dT = t3b_101111.update(T, dT, H, shift, system)
+    # T, dT = t3b_001111.update(T, dT, H, shift, system)
+    # T, dT = t3c_011111.update(T, dT, H, shift, system)
+    #
+    # # only alpha particle and hole inactive
+    # T, dT = t3a_110011.update(T, dT, H, shift, system)
+    # T, dT = t3a_100011.update(T, dT, H, shift, system)
+    # T, dT = t3a_110001.update(T, dT, H, shift, system)
+    # T, dT = t3a_100001.update(T, dT, H, shift, system)
+    # T, dT = t3b_101011.update(T, dT, H, shift, system)
+    # T, dT = t3b_001001.update(T, dT, H, shift, system)
+    # T, dT = t3b_001011.update(T, dT, H, shift, system)
+    # T, dT = t3b_101001.update(T, dT, H, shift, system)
+    #
+    # # only beta particle and hole inactive
+    # T, dT = t3b_110110.update(T, dT, H, shift, system)
+    # T, dT = t3d_110011.update(T, dT, H, shift, system)
+    # T, dT = t3d_100011.update(T, dT, H, shift, system)
+    # T, dT = t3d_110001.update(T, dT, H, shift, system)
+    # T, dT = t3d_100001.update(T, dT, H, shift, system)
+    # T, dT = t3c_110101.update(T, dT, H, shift, system)
+    # T, dT = t3c_110100.update(T, dT, H, shift, system)
+    # T, dT = t3c_100101.update(T, dT, H, shift, system)
+    # T, dT = t3c_100100.update(T, dT, H, shift, system)
+    #
+    # # only alpha hole and beta hole
+    # T, dT = t3b_111010.update(T, dT, H, shift, system)
+    # T, dT = t3c_111001.update(T, dT, H, shift, system)
+    #
+    # # only alpha particle and beta particle
+    # T, dT = t3b_100111.update(T, dT, H, shift, system)
+    # T, dT = t3c_010111.update(T, dT, H, shift, system)
+    #
+    # # only alpha hole, beta particle
+    # T, dT = t3b_110011.update(T, dT, H, shift, system)
+    # T, dT = t3b_110001.update(T, dT, H, shift, system)
+    # T, dT = t3c_110011.update(T, dT, H, shift, system)
+    # T, dT = t3c_100011.update(T, dT, H, shift, system)
+    #
+    # # only alpha particle, beta hole
+    # T, dT = t3b_101110.update(T, dT, H, shift, system)
+    # T, dT = t3b_100110.update(T, dT, H, shift, system)
+    # T, dT = t3c_011101.update(T, dT, H, shift, system)
+    # T, dT = t3c_011100.update(T, dT, H, shift, system)
+    #
+    # # only alpha hole, beta hole, alpha particle
+    # T, dT = t3b_101010.update(T, dT, H, shift, system)
+    # T, dT = t3b_001010.update(T, dT, H, shift, system)
+    # T, dT = t3c_011001.update(T, dT, H, shift, system)
+    #
+    # # only alpha hole, beta hole, beta particle
+    # T, dT = t3b_110010.update(T, dT, H, shift, system)
+    # T, dT = t3c_110001.update(T, dT, H, shift, system)
+    # T, dT = t3c_100001.update(T, dT, H, shift, system)
+    #
+    # # only alpha hole, alpha particle, beta particle
+    #
+    #
+    #
+    # T, dT = t3b_100010.update(T, dT, H, shift, system)
+    # T, dT = t3b_001110.update(T, dT, H, shift, system)
+    # T, dT = t3b_100011.update(T, dT, H, shift, system)
+    # T, dT = t3b_100001.update(T, dT, H, shift, system)
+    #
+    # # update t3c
+    # T, dT = t3c_011011.update(T, dT, H, shift, system)
+    # T, dT = t3c_010011.update(T, dT, H, shift, system)
+    # T, dT = t3c_010101.update(T, dT, H, shift, system)
+    # T, dT = t3c_010100.update(T, dT, H, shift, system)
+    # T, dT = t3c_010001.update(T, dT, H, shift, system)
+
+
+
     # perform all T3 update loops
     # update t3a
     T, dT = t3a_111111.update(T, dT, H, shift, system)
