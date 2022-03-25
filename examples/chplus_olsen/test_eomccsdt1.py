@@ -305,10 +305,40 @@ def calc_full_HR3C(R, T, H, X):
     )
     return X3C
 
+def calc_full_HR3D(R, T, H, X):
+    # <i~j~k~a~b~c~| [H(R1+R2)]_C | 0 >
+    X3D = 0.25 * np.einsum("baje,ecik->abcijk", X.bb.vvov, T.bb, optimize=True)
+    X3D += 0.25 * np.einsum("baje,ecik->abcijk", H.bb.vvov, R.bb, optimize=True)
+
+    X3D -= 0.25 * np.einsum("bmji,acmk->abcijk", X.bb.vooo, T.bb, optimize=True)
+    X3D -= 0.25 * np.einsum("bmji,acmk->abcijk", H.bb.vooo, R.bb, optimize=True)
+
+    # additional terms with T3 in <ijkabc|[ H(R1+R2)]_C | 0>
+    X3D += (1.0 / 12.0) * np.einsum("be,aecijk->abcijk", X.b.vv, T.bbb, optimize=True)
+    X3D -= (1.0 / 12.0) * np.einsum("mj,abcimk->abcijk", X.b.oo, T.bbb, optimize=True)
+    X3D += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", X.bb.oooo, T.bbb, optimize=True)
+    X3D += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", X.bb.vvvv, T.bbb, optimize=True)
+    X3D += 0.25 * np.einsum("bmje,aecimk->abcijk", X.bb.voov, T.bbb, optimize=True)
+    X3D += 0.25 * np.einsum("mbej,ecamki->abcijk", X.ab.ovvo, T.abb, optimize=True)
+
+    # < i~j~k~a~b~c~ | (HR3)_C | 0 >
+    X3D -= (1.0 / 12.0) * np.einsum("mj,abcimk->abcijk", H.b.oo, R.bbb, optimize=True)
+    X3D += (1.0 / 12.0) * np.einsum("be,aecijk->abcijk", H.b.vv, R.bbb, optimize=True)
+    X3D += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.bb.oooo, R.bbb, optimize=True)
+    X3D += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.bb.vvvv, R.bbb, optimize=True)
+    X3D += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.bb.voov, R.bbb, optimize=True)
+    X3D += 0.25 * np.einsum("maei,ecbmkj->abcijk", H.ab.ovvo, R.abb, optimize=True)
+
+    # antisymmetrize terms and add up: A(abc)A(ijk) = A(a/bc)A(bc)A(i/jk)A(jk)
+    X3D -= np.transpose(X3D, (0, 1, 2, 3, 5, 4))
+    X3D -= np.transpose(X3D, (0, 1, 2, 4, 3, 5)) + np.transpose(X3D, (0, 1, 2, 5, 4, 3))
+    X3D -= np.transpose(X3D, (0, 2, 1, 3, 4, 5))
+    X3D -= np.transpose(X3D, (1, 0, 2, 3, 4, 5)) + np.transpose(X3D, (2, 1, 0, 3, 4, 5))
+    return X3D
 
 if __name__ == "__main__":
 
-    case = 'CH+'
+    case = 'F2'
 
     if case == 'CH+':
         system, H = load_from_gamess(
@@ -384,6 +414,7 @@ if __name__ == "__main__":
     dR.aaa = calc_full_HR3A(R, T, Hbar, HR)
     dR.aab = calc_full_HR3B(R, T, Hbar, HR)
     dR.abb = calc_full_HR3C(R, T, Hbar, HR)
+    dR.bbb = calc_full_HR3D(R, T, Hbar, HR)
 
 
     # create acitve-space cluster operator and excitation operator
@@ -455,28 +486,38 @@ if __name__ == "__main__":
     dR_act.abb.VVVOOO = r3c_111111.build(R_act, T_act, Hbar, HR_act, system)
     dR_act.abb.VVVOoO = r3c_111101.build(R_act, T_act, Hbar, HR_act, system)
     dR_act.abb.VVVoOO = r3c_111011.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VVvOOO = r3c_110111.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.vVVOOO = r3c_011111.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VVVOoo = r3c_111100.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VVVooO = r3c_111001.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.vVvOOO = r3c_010111.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VvvOOO = r3c_100111.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VVvoOO = r3c_110011.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.vVVOoO = r3c_011101.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.vVVoOO = r3c_011011.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VVvOoO = r3c_110101.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VVvOoo = r3c_110100.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VVvooO = r3c_110001.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.vVVOoo = r3c_011100.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.vVVooO = r3c_011001.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VvvoOO = r3c_100011.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VvvOoO = r3c_100101.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.vVvoOO = r3c_010011.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.vVvOoO = r3c_010101.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.vVvOoo = r3c_010100.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.vVvooO = r3c_010001.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VvvOoo = r3c_100100.build(R_act, T_act, Hbar, HR_act, system)
-    # dR_act.abb.VvvooO = r3c_100001.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VVvOOO = r3c_110111.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.vVVOOO = r3c_011111.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VVVOoo = r3c_111100.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VVVooO = r3c_111001.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.vVvOOO = r3c_010111.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VvvOOO = r3c_100111.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VVvoOO = r3c_110011.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.vVVOoO = r3c_011101.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.vVVoOO = r3c_011011.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VVvOoO = r3c_110101.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VVvOoo = r3c_110100.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VVvooO = r3c_110001.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.vVVOoo = r3c_011100.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.vVVooO = r3c_011001.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VvvoOO = r3c_100011.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VvvOoO = r3c_100101.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.vVvoOO = r3c_010011.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.vVvOoO = r3c_010101.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.vVvOoo = r3c_010100.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.vVvooO = r3c_010001.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VvvOoo = r3c_100100.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.abb.VvvooO = r3c_100001.build(R_act, T_act, Hbar, HR_act, system)
+    # bbb updates
+    dR_act.bbb.VVVOOO = r3d_111111.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.bbb.VVVoOO = r3d_111011.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.bbb.VVvOOO = r3d_110111.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.bbb.VVvoOO = r3d_110011.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.bbb.VvvOOO = r3d_100111.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.bbb.VVVooO = r3d_111001.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.bbb.VvvoOO = r3d_100011.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.bbb.VVvooO = r3d_110001.build(R_act, T_act, Hbar, HR_act, system)
+    dR_act.bbb.VvvooO = r3d_100001.build(R_act, T_act, Hbar, HR_act, system)
 
     # Get the error
     calc_error(dR_act, dR, system)
