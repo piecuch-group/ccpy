@@ -19,7 +19,8 @@ if __name__ == "__main__":
     calculation = Calculation(
         order=3,
         calculation_type="ccsdt",
-        convergence_tolerance=1.0e-08
+        convergence_tolerance=1.0e-08,
+        RHF_symmetry=False,
     )
 
     T, total_energy, is_converged = cc_driver(calculation, system, H)
@@ -32,6 +33,8 @@ if __name__ == "__main__":
         maximum_iterations=60,
         convergence_tolerance=1.0e-08,
         multiplicity=1,
+        RHF_symmetry=False,
+        low_memory=False,
     )
 
     R, omega = get_initial_guess(calculation, system, Hbar, 10, noact=0, nuact=0, guess_order=1)
