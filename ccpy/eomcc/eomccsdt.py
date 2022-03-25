@@ -7,17 +7,17 @@ from ccpy.utilities.updates import cc_loops
 from ccpy.hbar.eomccsdt_intermediates import get_eomccsd_intermediates, add_R3_terms
 
 
-def update(dR, omega, H):
-    dR.a, dR.b, dR.aa, dR.ab, dR.bb, dR.aaa, dR.aab, dR.abb, dR.bbb = cc_loops.cc_loops.update_r_ccsdt(
-        dR.a,
-        dR.b,
-        dR.aa,
-        dR.ab,
-        dR.bb,
-        dR.aaa,
-        dR.aab,
-        dR.abb,
-        dR.bbb,
+def update(R, omega, H):
+    R.a, R.b, R.aa, R.ab, R.bb, R.aaa, R.aab, R.abb, R.bbb = cc_loops.cc_loops.update_r_ccsdt(
+        R.a,
+        R.b,
+        R.aa,
+        R.ab,
+        R.bb,
+        R.aaa,
+        R.aab,
+        R.abb,
+        R.bbb,
         omega,
         H.a.oo,
         H.a.vv,
@@ -25,45 +25,37 @@ def update(dR, omega, H):
         H.b.vv,
         0.0,
     )
-    return dR
+    return R
 
 
-def HR(R, T, H, flag_RHF, system):
+def HR(dR, R, T, H, flag_RHF, system):
+
+    HR = get_eomccsd_intermediates(H, R, T, system)
+    HR = add_R3_terms(HR, H, R)
+
+    dR.a = build_HR_1A(R, T, H)
     if flag_RHF:
-        HR = get_eomccsd_intermediates(H, R, T, system)
-        HR = add_R3_terms(HR, H, R)
-
-        X1A = build_HR_1A(R, T, H)
-
-        X2A = build_HR_2A(R, T, H, HR)
-        X2B = build_HR_2B(R, T, H, HR)
-
-        X3A = build_HR_3A(R, T, H, HR)
-        X3B = build_HR_3B(R, T, H, HR)
-
-        Xout = np.concatenate((X1A.flatten(), X1A.flatten(), X2A.flatten(), X2B.flatten(), X2A.flatten(),
-                               X3A.flatten(), X3B.flatten(), np.transpose(X3B, (2, 1, 0, 5, 4, 3)).flatten(),
-                               X3A.flatten()), axis=0)
+        dR.b = dR.a.copy()
     else:
-        HR = get_eomccsd_intermediates(H, R, T, system)
-        HR = add_R3_terms(HR, H, R)
+        dR.b = build_HR_1B(R, T, H)
 
-        X1A = build_HR_1A(R, T, H)
-        X1B = build_HR_1B(R, T, H)
+    dR.aa = build_HR_2A(R, T, H, HR)
+    dR.ab = build_HR_2B(R, T, H, HR)
+    if flag_RHF:
+        dR.bb = dR.aa.copy()
+    else:
+        dR.bb = build_HR_2C(R, T, H, HR)
 
-        X2A = build_HR_2A(R, T, H, HR)
-        X2B = build_HR_2B(R, T, H, HR)
-        X2C = build_HR_2C(R, T, H, HR)
+    dR.aaa = build_HR_3A(R, T, H, HR)
+    dR.aab = build_HR_3B(R, T, H, HR)
+    if flag_RHF:
+        dR.abb = np.transpose(dR.aab, (2, 1, 0, 5, 4, 3))
+        dR.bbb = dR.aaa.copy()
+    else:
+        dR.abb = build_HR_3C(R, T, H, HR)
+        dR.bbb = build_HR_3D(R, T, H, HR)
 
-        X3A = build_HR_3A(R, T, H, HR)
-        X3B = build_HR_3B(R, T, H, HR)
-        X3C = build_HR_3C(R, T, H, HR)
-        X3D = build_HR_3D(R, T, H, HR)
-
-        Xout = np.concatenate((X1A.flatten(), X1B.flatten(), X2A.flatten(), X2B.flatten(), X2C.flatten(),
-                               X3A.flatten(), X3B.flatten(), X3C.flatten(), X3D.flatten()), axis=0)
-
-    return Xout
+    return dR.flatten()
 
 
 def build_HR_1A(R, T, H):

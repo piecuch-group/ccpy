@@ -4,14 +4,14 @@ the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD)."""
 import numpy as np
 from ccpy.utilities.updates import cc_loops
 
-def update(dR, omega, H):
+def update(R, omega, H):
 
-    dR.a, dR.b, dR.aa, dR.ab, dR.bb = cc_loops.cc_loops.update_r(
-        dR.a,
-        dR.b,
-        dR.aa,
-        dR.ab,
-        dR.bb,
+    R.a, R.b, R.aa, R.ab, R.bb = cc_loops.cc_loops.update_r(
+        R.a,
+        R.b,
+        R.aa,
+        R.ab,
+        R.bb,
         omega,
         H.a.oo,
         H.a.vv,
@@ -19,25 +19,28 @@ def update(dR, omega, H):
         H.b.vv,
         0.0,
     )
-    return dR
+    return R
 
 
-def HR(R, T, H, flag_RHF, system):
+def HR(dR, R, T, H, flag_RHF, system):
 
+    # update R1
+    dR.a = build_HR_1A(R, T, H)
     if flag_RHF:
-        X1A = build_HR_1A(R, T, H)
-        X2A = build_HR_2A(R, T, H)
-        X2B = build_HR_2B(R, T, H)
-        Xout = np.concatenate((X1A.flatten(), X1A.flatten(), X2A.flatten(), X2B.flatten(), X2A.flatten()), axis=0)
+        # TODO: Maybe copy isn't needed. Reference should suffice
+        dR.b = dR.a.copy()
     else:
-        X1A = build_HR_1A(R, T, H)
-        X1B = build_HR_1B(R, T, H)
-        X2A = build_HR_2A(R, T, H)
-        X2B = build_HR_2B(R, T, H)
-        X2C = build_HR_2C(R, T, H)
-        Xout = np.concatenate( (X1A.flatten(), X1B.flatten(), X2A.flatten(), X2B.flatten(), X2C.flatten()), axis=0)
+        dR.b = build_HR_1B(R, T, H)
 
-    return Xout
+    # update R2
+    dR.aa = build_HR_2A(R, T, H)
+    dR.ab = build_HR_2B(R, T, H)
+    if flag_RHF:
+        dR.bb = dR.aa.copy()
+    else:
+        dR.bb = build_HR_2C(R, T, H)
+
+    return dR.flatten()
 
 
 def build_HR_1A(R, T, H):

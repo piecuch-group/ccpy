@@ -57,10 +57,10 @@ def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
         B = np.memmap("B.npy", dtype=R[0].a.dtype, mode="w+", shape=(R[0].ndim, calculation.maximum_iterations))
         B[:, 0] = B0[:, n]
         del B
-        dR.unflatten(B0[:, 0])
+        R.unflatten(B0[:, 0])
 
         sigma = np.memmap("sigma.npy", dtype=R[0].a.dtype, mode="w+", shape=(R[0].ndim, calculation.maximum_iterations))
-        sigma[:, 0] = HR(dR, T, H, calculation.RHF_symmetry, system)
+        sigma[:, 0] = HR(dR, R, T, H, calculation.RHF_symmetry, system)
         del sigma
 
         curr_size = 1
@@ -95,10 +95,9 @@ def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
                 r += B[:, k1] * alpha[k1]
                 dr += sigma[:, k1] * alpha[k1]
             dr -= omega[n] * r
-            R[n].unflatten(r)
-            dR.unflatten(dr)
+            R.unflatten(dr)
 
-            residual = np.linalg.norm(dR.flatten())
+            residual = np.linalg.norm(dr)
             deltaE = omega[n] - omega_old
 
             minutes, seconds = divmod(time.time() - t1, 60)
@@ -112,15 +111,15 @@ def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
                 break
 
             # update residual vector
-            dR = update_r(dR, omega[n], H)
-            q = dR.flatten()
+            R = update_r(R, omega[n], H)
+            q = R.flatten()
 
             for k1 in range(curr_size):
                 b = B[:, k1] / np.linalg.norm(B[:, k1])
                 q -= np.dot(b.T, q) * b
 
             q *= 1.0 / np.linalg.norm(q)
-            dR.unflatten(q)
+            R.unflatten(q)
 
             # write new vectors to the B and sigma files
             B = np.memmap("B.npy", dtype=R[0].a.dtype, mode="r+", shape=(R[0].ndim, calculation.maximum_iterations))
@@ -128,7 +127,7 @@ def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
             del B
 
             sigma = np.memmap("sigma.npy", dtype=R[0].a.dtype, mode="r+", shape=(R[0].ndim, calculation.maximum_iterations))
-            sigma[:, curr_size] = HR(dR, T, H, calculation.RHF_symmetry, system)
+            sigma[:, curr_size] = HR(dR, R, T, H, calculation.RHF_symmetry, system)
             del sigma
 
             curr_size += 1
@@ -137,9 +136,14 @@ def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
             print("Converged root {}".format(n + 1))
         else:
             print("Failed to converge root {}".format(n + 1))
+
+        # get the time for the root
         minutes, seconds = divmod(time.time() - t0_root, 60)
         print('Total time: {:.2f}m {:.2f}s'.format(minutes, seconds))
         print("")
+
+        # store the actual root you've solved for
+        R[n].unflatten(r)
 
         # Calculate r0 for the root
         r0[n] = get_r0(R[n], H, omega[n])
@@ -194,8 +198,8 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
 
         # Initial values
         B[:, 0] = B0[:, n]
-        dR.unflatten(B[:, 0])
-        sigma[:, 0] = HR(dR, T, H, calculation.RHF_symmetry, system)
+        R[n].unflatten(B[:, 0])
+        sigma[:, 0] = HR(dR, R[n], T, H, calculation.RHF_symmetry, system)
 
         curr_size = 1
         while curr_size < calculation.maximum_iterations:
@@ -215,11 +219,11 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
 
             # Get the eigenpair of interest
             omega[n] = np.real(e[idx[-1]])
-            R[n].unflatten(np.dot(B[:, :curr_size], alpha))
+            r = np.dot(B[:, :curr_size], alpha)
 
             # calculate residual vector
-            dR.unflatten(np.dot(sigma[:, :curr_size], alpha) - omega[n] * R[n].flatten())
-            residual = np.linalg.norm(dR.flatten())
+            R[n].unflatten(np.dot(sigma[:, :curr_size], alpha) - omega[n] * r)
+            residual = np.linalg.norm(R[n].flatten())
             deltaE = omega[n] - omega_old
 
             minutes, seconds = divmod(time.time() - t1, 60)
@@ -233,16 +237,16 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
                 break
 
             # update residual vector
-            dR = update_r(dR, omega[n], H)
-            q = dR.flatten()
+            R[n] = update_r(R[n], omega[n], H)
+            q = R[n].flatten()
             for p in range(curr_size):
                 b = B[:, p] / np.linalg.norm(B[:, p])
                 q -= np.dot(b.T, q) * b
             q *= 1.0 / np.linalg.norm(q)
-            dR.unflatten(q)
+            R[n].unflatten(q)
 
             B[:, curr_size] = q
-            sigma[:, curr_size] = HR(dR, T, H, calculation.RHF_symmetry, system)
+            sigma[:, curr_size] = HR(dR, R[n], T, H, calculation.RHF_symmetry, system)
             curr_size += 1
 
         if is_converged[n]:
@@ -252,6 +256,9 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
         minutes, seconds = divmod(time.time() - t0_root, 60)
         print('Total time: {:.2f}m {:.2f}s'.format(minutes, seconds))
         print("")
+
+        # store the actual root you've solved for
+        R[n].unflatten(r)
 
         # Calculate r0 for the root
         r0[n] = get_r0(R[n], H, omega[n])
