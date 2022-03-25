@@ -7,6 +7,7 @@ from ccpy.utilities.printing import print_iteration, print_iteration_header
 from ccpy.utilities.utilities import remove_file
 from ccpy.models.operators import ClusterOperator
 
+# [TODO]: There is an error here. All roots beyond the first are 0 for some reason...
 def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
     """
     Diagonalize the similarity-transformed Hamiltonian HBar using the
@@ -31,15 +32,20 @@ def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
                          num_active=calculation.num_active,
                          data_type=R[0].a.dtype)
 
-    # Allocate the B and sigma matrices
-    B = np.memmap("B.npy", dtype=R[0].a.dtype, mode="w+", shape=(R[0].ndim, calculation.maximum_iterations))
-    del B
-    sigma = np.memmap("sigma.npy", dtype=R[0].a.dtype, mode="w+", shape=(R[0].ndim, calculation.maximum_iterations))
-    del sigma
+    # # Allocate the B and sigma matrices
+    # B = np.memmap("B.npy", dtype=R[0].a.dtype, mode="w+", shape=(R[0].ndim, calculation.maximum_iterations))
+    # del B
+    # sigma = np.memmap("sigma.npy", dtype=R[0].a.dtype, mode="w+", shape=(R[0].ndim, calculation.maximum_iterations))
+    # del sigma
 
     for n in range(nroot):
+        t0_root = time.time()
 
-        print("Solving for root - {}    Energy of initial guess = {}".format(n + 1, omega[n]))
+        print("=======================================")
+        print("Solving for root - ", n + 1)
+        print("Energy of initial guess = {:>10.10f}".format(omega[n]))
+        print("=======================================")
+
         print(
             " Iter        omega                |r|               dE            Wall Time"
         )
@@ -48,12 +54,12 @@ def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
         )
 
         # Initial values
-        B = np.memmap("B.npy", dtype=R[0].a.dtype, mode="r+", shape=(R[0].ndim, calculation.maximum_iterations))
+        B = np.memmap("B.npy", dtype=R[0].a.dtype, mode="w+", shape=(R[0].ndim, calculation.maximum_iterations))
         B[:, 0] = B0[:, n]
         del B
         dR.unflatten(B0[:, 0])
 
-        sigma = np.memmap("sigma.npy", dtype=R[0].a.dtype, mode="r+", shape=(R[0].ndim, calculation.maximum_iterations))
+        sigma = np.memmap("sigma.npy", dtype=R[0].a.dtype, mode="w+", shape=(R[0].ndim, calculation.maximum_iterations))
         sigma[:, 0] = HR(dR, T, H, calculation.RHF_symmetry, system)
         del sigma
 
@@ -95,8 +101,7 @@ def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
             residual = np.linalg.norm(dR.flatten())
             deltaE = omega[n] - omega_old
 
-            t2 = time.time()
-            minutes, seconds = divmod(t2 - t1, 60)
+            minutes, seconds = divmod(time.time() - t1, 60)
             print(
                 "   {}      {:.10f}       {:.10f}      {:.10f}      {:.2f}m {:.2f}s".format(
                     curr_size, omega[n], residual, deltaE, minutes, seconds
@@ -132,6 +137,8 @@ def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
             print("Converged root {}".format(n + 1))
         else:
             print("Failed to converge root {}".format(n + 1))
+        minutes, seconds = divmod(time.time() - t0_root, 60)
+        print('Total time: {:.2f}m {:.2f}s'.format(minutes, seconds))
         print("")
 
         # Calculate r0 for the root
@@ -168,8 +175,12 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
                          data_type=R[0].a.dtype)
 
     for n in range(nroot):
+        t0_root = time.time()
 
-        print("Solving for root - {}    Energy of initial guess = {}".format(n + 1, omega[n]))
+        print("=======================================")
+        print("Solving for root - ", n + 1)
+        print("Energy of initial guess = {:>10.10f}".format(omega[n]))
+        print("=======================================")
         print(
             " Iter        omega                |r|               dE            Wall Time"
         )
@@ -211,8 +222,7 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
             residual = np.linalg.norm(dR.flatten())
             deltaE = omega[n] - omega_old
 
-            t2 = time.time()
-            minutes, seconds = divmod(t2 - t1, 60)
+            minutes, seconds = divmod(time.time() - t1, 60)
             print(
                 "   {}      {:.10f}       {:.10f}      {:.10f}      {:.2f}m {:.2f}s".format(
                     curr_size, omega[n], residual, deltaE, minutes, seconds
@@ -239,6 +249,8 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
             print("Converged root {}".format(n + 1))
         else:
             print("Failed to converge root {}".format(n + 1))
+        minutes, seconds = divmod(time.time() - t0_root, 60)
+        print('Total time: {:.2f}m {:.2f}s'.format(minutes, seconds))
         print("")
 
         # Calculate r0 for the root
@@ -255,7 +267,7 @@ def cc_jacobi(update_t, T, dT, H, calculation, system):
     from ccpy.drivers.diis import DIIS
 
     # instantiate the DIIS accelerator object
-    diis_engine = DIIS(T, calculation.diis_size, calculation.diis_out_of_core)
+    diis_engine = DIIS(T, calculation.diis_size, calculation.low_memory)
 
     # Jacobi/DIIS iterations
     ndiis_cycle = 0
@@ -333,7 +345,7 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation):
         is_ground = False
 
     # instantiate the DIIS accelerator object
-    diis_engine = DIIS(L, calculation.diis_size, calculation.diis_out_of_core)
+    diis_engine = DIIS(L, calculation.diis_size, calculation.low_memory)
 
     # Jacobi/DIIS iterations
     ndiis_cycle = 0

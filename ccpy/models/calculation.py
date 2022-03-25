@@ -17,7 +17,7 @@ class Calculation:
     convergence_tolerance: float = 1.0e-07
     energy_shift: float = 0.0
     diis_size: int = 6
-    diis_out_of_core: bool=False
+    low_memory: bool=False
     RHF_symmetry: bool = False
     multiplicity: int = 1
 

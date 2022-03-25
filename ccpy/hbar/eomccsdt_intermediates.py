@@ -3,7 +3,7 @@ import numpy as np
 from ccpy.models.integrals import Integral
 
 
-def get_eomccsd_intermediates(H, R, system):
+def get_eomccsd_intermediates(H, R, T, system):
     """Calculate the CCSD-like intermediates for CCSDT. This routine
     should only calculate terms with T2 and any remaining terms outside of the CCS intermediate
     routine."""
@@ -135,6 +135,7 @@ def get_eomccsd_intermediates(H, R, system):
         + np.einsum("amfe,bejm->bajf", H.ab.vovv, R.ab, optimize=True)
         + 0.5 * np.einsum("abfe,ej->bajf", H.aa.vvvv, R.a, optimize=True)
         + 0.25 * np.einsum("nmje,abmn->baje", H.aa.ooov, R.aa, optimize=True)
+        - 0.5 * np.einsum("me,abmj->baje", X.a.ov, T.aa, optimize=True) # counterterm, similar to CR-CC(2,3)
     )
     X.aa.vvov -= np.transpose(X.aa.vvov, (1, 0, 2, 3))
 
@@ -155,6 +156,7 @@ def get_eomccsd_intermediates(H, R, system):
         + np.einsum("bmfe,ecmk->bcfk", H.aa.vovv, R.ab, optimize=True)
         + np.einsum("bmfe,ecmk->bcfk", H.ab.vovv, R.bb, optimize=True)
         - np.einsum("mcfe,bemk->bcfk", H.ab.ovvv, R.ab, optimize=True)
+        - np.einsum("me,bcmk->bcek", X.a.ov, T.ab, optimize=True) # counterterm, similar to CR-CC(2,3)
     )
 
     X.ab.ovoo = (
@@ -175,6 +177,7 @@ def get_eomccsd_intermediates(H, R, system):
         + np.einsum("mcef,bejm->bcjf", H.ab.ovvv, R.aa, optimize=True)
         + np.einsum("cmfe,bejm->bcjf", H.bb.vovv, R.ab, optimize=True)
         - np.einsum("bmef,ecjm->bcjf", H.ab.vovv, R.ab, optimize=True)
+        - np.einsum("me,bcjm->bcje", X.b.ov, T.ab, optimize=True) # counterterm, similar to CR-CC(2,3)
     )
 
     X.ab.vooo = (
@@ -193,6 +196,7 @@ def get_eomccsd_intermediates(H, R, system):
         + 0.25 * np.einsum("nmje,abmn->baje", H.bb.ooov, R.bb, optimize=True)
         + np.einsum("amfe,bejm->bajf", H.bb.vovv, R.bb, optimize=True)
         + np.einsum("maef,ebmj->bajf", H.ab.ovvv, R.ab, optimize=True)
+        - 0.5 * np.einsum("me,abmj->baje", X.b.ov, T.bb, optimize=True) # counterterm, similar to CR-CC(2,3)
     )
     X.bb.vvov -= np.transpose(X.bb.vvov, (1, 0, 2, 3))
 
@@ -206,5 +210,49 @@ def get_eomccsd_intermediates(H, R, system):
     X.bb.vooo -= np.transpose(X.bb.vooo, (0, 1, 3, 2))
 
 
+
+    return X
+
+def add_R3_terms(X, H, R):
+
+    X.aa.vvov += (
+            -0.5 * np.einsum("mnef,abfimn->abie", H.aa.oovv, R.aaa, optimize=True)
+            - np.einsum("mnef,abfimn->abie", H.ab.oovv, R.aab, optimize=True)
+    )
+
+    X.aa.vooo += (
+            0.5 * np.einsum("mnef,efcjnk->cmkj", H.aa.oovv, R.aaa, optimize=True)
+            + np.einsum("mnef,ecfjkn->cmkj", H.ab.oovv, R.aab, optimize=True)
+    )
+
+    X.ab.vvvo += (
+            -0.5 * np.einsum("mnef,bfcmnk->bcek", H.aa.oovv, R.aab, optimize=True)
+            - np.einsum("mnef,bfcmnk->bcek", H.ab.oovv, R.abb, optimize=True)
+    )
+
+    X.ab.ovoo += (
+            0.5 * np.einsum("mnef,efcjnk->mcjk", H.aa.oovv, R.aab, optimize=True)
+            + np.einsum("mnef,efcjnk->mcjk", H.ab.oovv, R.abb, optimize=True)
+    )
+
+    X.ab.vvov += (
+            -np.einsum("nmfe,bfcjnm->bcje", H.ab.oovv, R.aab, optimize=True)
+            - 0.5 * np.einsum("mnef,bfcjnm->bcje", H.bb.oovv, R.abb, optimize=True)
+    )
+
+    X.ab.vooo += (
+            np.einsum("nmfe,bfejnk->bmjk", H.ab.oovv, R.aab, optimize=True)
+            + 0.5 * np.einsum("mnef,befjkn->bmjk", H.bb.oovv, R.abb, optimize=True)
+    )
+
+    X.bb.vvov += (
+            -0.5 * np.einsum("mnef,abfmjn->baje", H.bb.oovv, R.bbb, optimize=True)
+            - np.einsum("nmfe,fbanjm->baje", H.ab.oovv, R.abb, optimize=True)
+    )
+
+    X.bb.vooo += (
+            0.5 * np.einsum("mnef,aefijn->amij", H.bb.oovv, R.bbb, optimize=True)
+            + np.einsum("nmfe,feanji->amij", H.ab.oovv, R.abb, optimize=True)
+    )
 
     return X
