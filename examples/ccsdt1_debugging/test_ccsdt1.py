@@ -15,11 +15,8 @@ from ccpy.hbar.hbar_ccs import get_ccs_intermediates
 from ccpy.utilities.active_space import fill_t3aaa, fill_t3aab, fill_t3abb, fill_t3bbb, get_active_slices,\
     zero_t3aaa_outside_active_space, zero_t3bbb_outside_active_space, zero_t3aab_outside_active_space, zero_t3abb_outside_active_space
 
-from ccpy.cc.ccsdt1 import update
+from ccpy.cc.ccsdt1_updates.intermediates import build_VT3_intermediates
 from ccpy.cc.ccsdt1_updates import *
-from ccpy.utilities.updates import cc_loops2
-from testing_updates import *
-
 
 def print_error(x, y):
     error = x - y
@@ -633,6 +630,165 @@ def calc_full_update_t3d(T, dT, H, H0, shift, system):
 
     return T, dT
 
+
+def active_update(T, dT, H, shift, flag_RHF, system):
+
+    ####### T1 updates #######
+    # t1a update
+    dT = update_t1a.build_ccsd(T, dT, H)   # base CCSD part
+    # Add on T3 parts
+    dT = update_t1a.build_11(T, dT, H, system)
+    dT = update_t1a.build_10(T, dT, H, system)
+    dT = update_t1a.build_01(T, dT, H, system)
+    dT = update_t1a.build_00(T, dT, H, system)
+    if flag_RHF:
+        # TODO: Maybe copy isn't needed. Reference should suffice
+        T.b = T.a.copy()
+        dT.b = dT.a.copy()
+    else:
+        dT = update_t1b.build_ccsd(T, dT, H)
+        # Add on T3 parts
+        dT = update_t1b.build_11(T, dT, H, system)
+        dT = update_t1b.build_10(T, dT, H, system)
+        dT = update_t1b.build_01(T, dT, H, system)
+        dT = update_t1b.build_00(T, dT, H, system)
+
+    # CCS intermediates
+    hbar = get_ccs_intermediates(T, H)
+
+    ####### T2 updates #######
+    # t2a update
+    x2 = update_t2a.build_ccsd(T, hbar)   # base CCSD part (separately antisymmetrized)
+    # Add on T3 parts
+    dT = update_t2a.build_1111(T, dT, hbar, system)
+    dT = update_t2a.build_1101(T, dT, hbar, system)
+    dT = update_t2a.build_1011(T, dT, hbar, system)
+    dT = update_t2a.build_1100(T, dT, hbar, system)
+    dT = update_t2a.build_0011(T, dT, hbar, system)
+    dT = update_t2a.build_1001(T, dT, hbar, system)
+    dT = update_t2a.build_1000(T, dT, hbar, system)
+    dT = update_t2a.build_0001(T, dT, hbar, system)
+    dT = update_t2a.build_0000(T, dT, hbar, system)
+    dT.aa += x2
+
+    x2 = update_t2b.build_ccsd(T, hbar)   # base CCSD part
+    # Add on T3 parts
+    dT = update_t2b.build_1111(T, dT, hbar, system)
+    dT = update_t2b.build_1101(T, dT, hbar, system)
+    dT = update_t2b.build_1110(T, dT, hbar, system)
+    dT = update_t2b.build_1011(T, dT, hbar, system)
+    dT = update_t2b.build_0111(T, dT, hbar, system)
+    dT = update_t2b.build_1100(T, dT, hbar, system)
+    dT = update_t2b.build_0011(T, dT, hbar, system)
+    dT = update_t2b.build_1001(T, dT, hbar, system)
+    dT = update_t2b.build_0101(T, dT, hbar, system)
+    dT = update_t2b.build_1010(T, dT, hbar, system)
+    dT = update_t2b.build_0110(T, dT, hbar, system)
+    dT = update_t2b.build_1000(T, dT, hbar, system)
+    dT = update_t2b.build_0100(T, dT, hbar, system)
+    dT = update_t2b.build_0001(T, dT, hbar, system)
+    dT = update_t2b.build_0010(T, dT, hbar, system)
+    dT = update_t2b.build_0000(T, dT, hbar, system)
+    dT.ab += x2
+
+    if flag_RHF:
+        T.bb = T.aa.copy()
+        dT.bb = dT.aa.copy()
+    else:
+        x2 = update_t2c.build_ccsd(T, hbar)   # base CCSD part (separately antisymmetrized)
+        # Add on T3 parts
+        dT = update_t2c.build_1111(T, dT, hbar, system)
+        dT = update_t2c.build_1101(T, dT, hbar, system)
+        dT = update_t2c.build_1011(T, dT, hbar, system)
+        dT = update_t2c.build_1100(T, dT, hbar, system)
+        dT = update_t2c.build_0011(T, dT, hbar, system)
+        dT = update_t2c.build_1001(T, dT, hbar, system)
+        dT = update_t2c.build_1000(T, dT, hbar, system)
+        dT = update_t2c.build_0001(T, dT, hbar, system)
+        dT = update_t2c.build_0000(T, dT, hbar, system)
+        dT.bb += x2
+
+    # CCSD intermediates
+    hbar = get_ccsd_intermediates(T, H)
+    # add on (V * T3)_C intermediates
+    hbar = intermediates.build_VT3_intermediates(T, hbar, system)
+
+    # ####### T3 updates #######
+    # update t3a
+    dT = t3a_111111.build(T, dT, hbar, system)
+    dT = t3a_110111.build(T, dT, hbar, system)
+    dT = t3a_111011.build(T, dT, hbar, system)
+    dT = t3a_110011.build(T, dT, hbar, system)
+    dT = t3a_100111.build(T, dT, hbar, system)
+    dT = t3a_111001.build(T, dT, hbar, system)
+    dT = t3a_100011.build(T, dT, hbar, system)
+    dT = t3a_110001.build(T, dT, hbar, system)
+    dT = t3a_100001.build(T, dT, hbar, system)
+    # update t3b
+    dT = t3b_111111.build(T, dT, hbar, system)
+    dT = t3b_111110.build(T, dT, hbar, system)
+    dT = t3b_111011.build(T, dT, hbar, system)
+    dT = t3b_110111.build(T, dT, hbar, system)
+    dT = t3b_101111.build(T, dT, hbar, system)
+    dT = t3b_111001.build(T, dT, hbar, system)
+    dT = t3b_111010.build(T, dT, hbar, system)
+    dT = t3b_001111.build(T, dT, hbar, system)
+    dT = t3b_100111.build(T, dT, hbar, system)
+    dT = t3b_110011.build(T, dT, hbar, system)
+    dT = t3b_101110.build(T, dT, hbar, system)
+    dT = t3b_101011.build(T, dT, hbar, system)
+    dT = t3b_110110.build(T, dT, hbar, system)
+    dT = t3b_101001.build(T, dT, hbar, system)
+    dT = t3b_101010.build(T, dT, hbar, system)
+    dT = t3b_110001.build(T, dT, hbar, system)
+    dT = t3b_110010.build(T, dT, hbar, system)
+    dT = t3b_001011.build(T, dT, hbar, system)
+    dT = t3b_001110.build(T, dT, hbar, system)
+    dT = t3b_100011.build(T, dT, hbar, system)
+    dT = t3b_100110.build(T, dT, hbar, system)
+    dT = t3b_001001.build(T, dT, hbar, system)
+    dT = t3b_001010.build(T, dT, hbar, system)
+    dT = t3b_100001.build(T, dT, hbar, system)
+    dT = t3b_100010.build(T, dT, hbar, system)
+    # update t3c
+    dT = t3c_111111.build(T, dT, hbar, system)
+    dT = t3c_111101.build(T, dT, hbar, system)
+    dT = t3c_111011.build(T, dT, hbar, system)
+    dT = t3c_110111.build(T, dT, hbar, system)
+    dT = t3c_011111.build(T, dT, hbar, system)
+    dT = t3c_111100.build(T, dT, hbar, system)
+    dT = t3c_111001.build(T, dT, hbar, system)
+    dT = t3c_010111.build(T, dT, hbar, system)
+    dT = t3c_100111.build(T, dT, hbar, system)
+    dT = t3c_110011.build(T, dT, hbar, system)
+    dT = t3c_011101.build(T, dT, hbar, system)
+    dT = t3c_011011.build(T, dT, hbar, system)
+    dT = t3c_110101.build(T, dT, hbar, system)
+    dT = t3c_110100.build(T, dT, hbar, system)
+    dT = t3c_110001.build(T, dT, hbar, system)
+    dT = t3c_011100.build(T, dT, hbar, system)
+    dT = t3c_011001.build(T, dT, hbar, system)
+    dT = t3c_100011.build(T, dT, hbar, system)
+    dT = t3c_100101.build(T, dT, hbar, system)
+    dT = t3c_010011.build(T, dT, hbar, system)
+    dT = t3c_010101.build(T, dT, hbar, system)
+    dT = t3c_010100.build(T, dT, hbar, system)
+    dT = t3c_010001.build(T, dT, hbar, system)
+    dT = t3c_100100.build(T, dT, hbar, system)
+    dT = t3c_100001.build(T, dT, hbar, system)
+    # update t3d
+    dT = t3d_111111.build(T, dT, hbar, system)
+    dT = t3d_110111.build(T, dT, hbar, system)
+    dT = t3d_111011.build(T, dT, hbar, system)
+    dT = t3d_110011.build(T, dT, hbar, system)
+    dT = t3d_100111.build(T, dT, hbar, system)
+    dT = t3d_111001.build(T, dT, hbar, system)
+    dT = t3d_100011.build(T, dT, hbar, system)
+    dT = t3d_110001.build(T, dT, hbar, system)
+    dT = t3d_100001.build(T, dT, hbar, system)
+
+    return dT
+
 if __name__ == "__main__":
 
     mol = gto.Mole()
@@ -670,21 +826,24 @@ if __name__ == "__main__":
 
 
 
-    system, H = load_pyscf_integrals(mf, nfrozen=2,
-                                     num_act_holes_alpha=5, num_act_particles_alpha=9,
-                                     num_act_holes_beta=5, num_act_particles_beta=9,
-                                     )
+    system, H = load_pyscf_integrals(mf, nfrozen=2)
+    system.set_active_space(nact_occupied=7, nact_unoccupied=23)
+
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
     calculation = Calculation(
         order=3,
-        active_orders=[None],
-        num_active=[None],
         calculation_type="ccsdt",
         convergence_tolerance=1.0e-08,
         maximum_iterations=5,
     )
     T, total_energy, is_converged = cc_driver(calculation, system, H)
+
+    # zero amplitudes outside active space
+    T = zero_t3aaa_outside_active_space(T, system, 1)
+    T = zero_t3aab_outside_active_space(T, system, 1)
+    T = zero_t3abb_outside_active_space(T, system, 1)
+    T = zero_t3bbb_outside_active_space(T, system, 1)
 
     # create full residual container
     dT = ClusterOperator(system, order=3)
@@ -692,12 +851,6 @@ if __name__ == "__main__":
     # create acitve-space cluster operator and residual container
     T_act = ClusterOperator(system, order=3, active_orders=[3], num_active=[1])
     dT_act = ClusterOperator(system, order=3, active_orders=[3], num_active=[1])
-
-    # zero amplitudes outside active space
-    T = zero_t3aaa_outside_active_space(T, system, 1)
-    T = zero_t3aab_outside_active_space(T, system, 1)
-    T = zero_t3abb_outside_active_space(T, system, 1)
-    T = zero_t3bbb_outside_active_space(T, system, 1)
 
     # fill in the active-space cluster operator
     T_act.a = T.a.copy()
@@ -712,57 +865,23 @@ if __name__ == "__main__":
 
     HBar1 = get_ccs_intermediates(T, H)
     HBar2 = get_ccsd_intermediates(T, H)
-    # # get the full update
-    # _, dT = calc_full_update_t1a(T, dT, H, 0.0, system)
-    # _, dT = calc_full_update_t1b(T, dT, H, 0.0, system)
-    # #HBar1 = get_ccs_intermediates(T1b, H)
-    # _, dT = calc_full_update_t2a(T, dT, HBar1, H, 0.0, system)
-    # _, dT = calc_full_update_t2b(T, dT, HBar1, H, 0.0, system)
-    # _, dT = calc_full_update_t2c(T, dT, HBar1, H, 0.0, system)
-    #HBar2 = build_hbar_ccsd(T2c, H)
+    # get the full update
+    _, dT = calc_full_update_t1a(T, dT, H, 0.0, system)
+    _, dT = calc_full_update_t1b(T, dT, H, 0.0, system)
+    _, dT = calc_full_update_t2a(T, dT, HBar1, H, 0.0, system)
+    _, dT = calc_full_update_t2b(T, dT, HBar1, H, 0.0, system)
+    _, dT = calc_full_update_t2c(T, dT, HBar1, H, 0.0, system)
     _, dT = calc_full_update_t3a(T, dT, HBar2, H, 0.0, system)
-    # _, dT = calc_full_update_t3b(T, dT, HBar2, H, 0.0, system)
-    # _, dT = calc_full_update_t3c(T, dT, HBar2, H, 0.0, system)
-    # _, dT = calc_full_update_t3d(T, dT, HBar2, H, 0.0, system)
+    _, dT = calc_full_update_t3b(T, dT, HBar2, H, 0.0, system)
+    _, dT = calc_full_update_t3c(T, dT, HBar2, H, 0.0, system)
+    _, dT = calc_full_update_t3d(T, dT, HBar2, H, 0.0, system)
 
     # active-space update
     # CCSD intermediates
     hbar = get_ccsd_intermediates(T_act, H)
     # add on (V * T3)_C intermediates
-    hbar = intermediates.build_VT3_intermediates(T_act, hbar, system)
-    T_act, dT_act = update(T_act, dT_act, H, 0.0, False, system)
-
-    T, dT = update_t3a_full(T, dT, H, system)
-
-
-    print('VVVOOO')
-    print_error(dT_act.aaa.VVVOOO, dT.aaa[Va, Va, Va, Oa, Oa, Oa])
-    print_error(T_act.aaa.VVVOOO, T.aaa[Va, Va, Va, Oa, Oa, Oa])
-    print('VVvOOO')
-    print_error(dT_act.aaa.VVvOOO, dT.aaa[Va, Va, va, Oa, Oa, Oa])
-    print_error(T_act.aaa.VVvOOO, T.aaa[Va, Va, va, Oa, Oa, Oa])
-    print('VVVoOO')
-    print_error(dT_act.aaa.VVVoOO, dT.aaa[Va, Va, Va, oa, Oa, Oa])
-    print_error(T_act.aaa.VVVoOO, T.aaa[Va, Va, Va, oa, Oa, Oa])
-    print('VVvoOO')
-    print_error(dT_act.aaa.VVvoOO, dT.aaa[Va, Va, va, oa, Oa, Oa])
-    print_error(T_act.aaa.VVvoOO, T.aaa[Va, Va, va, oa, Oa, Oa])
-    print('VvvOOO')
-    print_error(dT_act.aaa.VvvOOO, dT.aaa[Va, va, va, Oa, Oa, Oa])
-    print_error(T_act.aaa.VvvOOO, T.aaa[Va, va, va, Oa, Oa, Oa])
-    print('VVVooO')
-    print_error(dT_act.aaa.VVVooO, dT.aaa[Va, Va, Va, oa, oa, Oa])
-    print_error(T_act.aaa.VVVooO, T.aaa[Va, Va, Va, oa, oa, Oa])
-    print('VVvooO')
-    print_error(dT_act.aaa.VVvooO, dT.aaa[Va, Va, va, oa, oa, Oa])
-    print_error(T_act.aaa.VVvooO, T.aaa[Va, Va, va, oa, oa, Oa])
-    print('VvvoOO')
-    print_error(dT_act.aaa.VvvoOO, dT.aaa[Va, va, va, oa, Oa, Oa])
-    print_error(T_act.aaa.VvvoOO, T.aaa[Va, va, va, oa, Oa, Oa])
-    print('VvvooO')
-    print_error(dT_act.aaa.VvvooO, dT.aaa[Va, va, va, oa, oa, Oa])
-    print_error(T_act.aaa.VvvooO, T.aaa[Va, va, va, oa, oa, Oa])
-
+    hbar = build_VT3_intermediates(T_act, hbar, system)
+    dT_act = active_update(T_act, dT_act, H, 0.0, False, system)
 
     # Get the error
-    #calc_error(T_act, T, system)
+    calc_error(dT_act, dT, system)
