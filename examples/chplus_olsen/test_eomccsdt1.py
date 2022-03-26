@@ -13,7 +13,7 @@ from ccpy.interfaces.gamess_tools import load_from_gamess
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.drivers.driver import cc_driver, eomcc_driver
 
-from ccpy.hbar.hbar_ccsdt import build_hbar_ccsdt
+from ccpy.hbar.hbar_ccsdt import build_hbar_ccsdt, build_hbar_ccsdt1
 from ccpy.hbar.eomccsdt_intermediates import get_eomccsd_intermediates, add_R3_terms
 from ccpy.eomcc.eomccsdt import build_HR_3A, build_HR_3B, build_HR_3C, build_HR_3D, build_HR_1A, build_HR_1B, build_HR_2A, build_HR_2B, build_HR_2C
 
@@ -671,7 +671,10 @@ if __name__ == "__main__":
     R_act = fill_t3abb(R_act, R, system)
     R_act = fill_t3bbb(R_act, R, system)
 
-    dR_act = eomccsdt1.HR(dR_act, R_act, T_act, Hbar, False, system)
+    Hbar1 = build_hbar_ccsdt1(T_act, H, system)
+    check_intermediates(Hbar1, Hbar)
+
+    dR_act = eomccsdt1.HR(dR_act, R_act, T_act, Hbar1, False, system)
 
     # HR_act = get_eomccsd_intermediates(Hbar, R_act, T_act, system)
     # HR_act = add_HR3_intermediates(HR_act, Hbar, R_act, system)

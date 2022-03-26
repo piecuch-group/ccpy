@@ -41,7 +41,7 @@ def build_eomccsd(R, H):
 def build_11(dR, R, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.a[Va, Oa] += (1.0 / 1.0) * (
+    dR.a[Va, Oa] = (1.0 / 1.0) * (
             -0.25 * np.einsum('mnef,AfemnI->AI', H.aa.oovv[oa, oa, va, va], R.aaa.VvvooO, optimize=True)
             - 0.5 * np.einsum('Mnef,AfenIM->AI', H.aa.oovv[Oa, oa, va, va], R.aaa.VvvoOO, optimize=True)
             - 0.25 * np.einsum('MNef,AfeIMN->AI', H.aa.oovv[Oa, Oa, va, va], R.aaa.VvvOOO, optimize=True)
@@ -88,7 +88,7 @@ def build_11(dR, R, H, system):
 def build_10(dR, R, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.a[Va, oa] += (1.0 / 1.0) * (
+    dR.a[Va, oa] = (1.0 / 1.0) * (
             +0.5 * np.einsum('Mnef,AfeinM->Ai', H.aa.oovv[Oa, oa, va, va], R.aaa.VvvooO, optimize=True)
             - 0.25 * np.einsum('MNef,AfeiMN->Ai', H.aa.oovv[Oa, Oa, va, va], R.aaa.VvvoOO, optimize=True)
             - 1.0 * np.einsum('MneF,FAeinM->Ai', H.aa.oovv[Oa, oa, va, Va], R.aaa.VVvooO, optimize=True)
@@ -125,7 +125,7 @@ def build_10(dR, R, H, system):
 def build_01(dR, R, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.a[va, Oa] += (1.0 / 1.0) * (
+    dR.a[va, Oa] = (1.0 / 1.0) * (
             +0.5 * np.einsum('mnEf,EfamnI->aI', H.aa.oovv[oa, oa, Va, va], R.aaa.VvvooO, optimize=True)
             - 0.25 * np.einsum('mnEF,FEamnI->aI', H.aa.oovv[oa, oa, Va, Va], R.aaa.VVvooO, optimize=True)
             + 1.0 * np.einsum('MnEf,EfanIM->aI', H.aa.oovv[Oa, oa, Va, va], R.aaa.VvvoOO, optimize=True)
@@ -162,7 +162,7 @@ def build_01(dR, R, H, system):
 def build_00(dR, R, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.a[va, oa] += (1.0 / 1.0) * (
+    dR.a[va, oa] = (1.0 / 1.0) * (
             +1.0 * np.einsum('mNEf,EfaimN->ai', H.aa.oovv[oa, Oa, Va, va], R.aaa.VvvooO, optimize=True)
             - 0.5 * np.einsum('mNEF,FEaimN->ai', H.aa.oovv[oa, Oa, Va, Va], R.aaa.VVvooO, optimize=True)
             + 0.5 * np.einsum('MNEf,EfaiMN->ai', H.aa.oovv[Oa, Oa, Va, va], R.aaa.VvvoOO, optimize=True)

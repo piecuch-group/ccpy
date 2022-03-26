@@ -2546,7 +2546,7 @@ subroutine update_r3c_110011(r3c, omega, &
 
 end subroutine update_r3c_110011
 
-    subroutine update_r3c_110110(r3c, omega, &
+    subroutine update_r3c_110100(r3c, omega, &
                              H1A_oo_act, H1A_vv_act, H1A_oo_inact, H1A_vv_inact, &
                              H1B_oo_act, H1B_vv_act, H1B_oo_inact, H1B_vv_inact, &
                              shift, &
@@ -2565,20 +2565,20 @@ end subroutine update_r3c_110011
                               H1B_vv_inact(1:nub_inact, 1:nub_inact)
       real(8), intent(in)  :: shift, omega
 
-      real(8), intent(inout) :: r3c(1:nua_act, 1:nub_act, 1:nub_inact, 1:noa_act, 1:nob_act, 1:nob_inact)
-      !f2py intent(in, out)  :: r3c(0:nua_act-1, 0:nub_act-1, 0:nub_inact-1, 0:noa_act-1, 0:nob_act-1, 0:nob_inact-1)
+      real(8), intent(inout) :: r3c(1:nua_act, 1:nub_act, 1:nub_inact, 1:noa_act, 1:nob_inact, 1:nob_inact)
+      !f2py intent(in, out)  :: r3c(0:nua_act-1, 0:nub_act-1, 0:nub_inact-1, 0:noa_act-1, 0:nob_inact-1, 0:nob_inact-1)
 
       integer :: i, j, k, a, b, c
       real(8) :: denom
 
       do i = 1 , noa_act
-         do j = 1 , nob_act
+         do j = 1 , nob_inact
             do k = 1 , nob_inact
                do a = 1 , nua_act
                   do b = 1 , nub_act
                      do c = 1 , nub_inact
 
-                        denom = H1A_oo_act(i,i) + H1B_oo_act(j,j) + H1B_oo_inact(k,k)&
+                        denom = H1A_oo_act(i,i) + H1B_oo_inact(j,j) + H1B_oo_inact(k,k)&
                                -H1A_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
@@ -2592,7 +2592,7 @@ end subroutine update_r3c_110011
          end do
       end do
 
-end subroutine update_r3c_110110
+end subroutine update_r3c_110100
 
 
     subroutine update_r3c_110101(r3c, omega, &

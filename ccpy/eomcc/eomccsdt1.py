@@ -185,4 +185,4 @@ def HR(dR, R, T, H, flag_RHF, system):
     dR = r3d_110001.build(dR, R, T, H, HR, system)
     dR = r3d_100001.build(dR, R, T, H, HR, system)
 
-    return dR
+    return dR.flatten()
