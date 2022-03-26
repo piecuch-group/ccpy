@@ -2,32 +2,95 @@
 energies and linear excitation amplitudes for excited states using
 the equation-of-motion (EOM) CC with singles, doubles, and triples (EOMCCSDT)."""
 import numpy as np
-from ccpy.utilities.updates import cc_active_loops
 
 from ccpy.hbar.eomccsdt_intermediates import get_eomccsd_intermediates
 from ccpy.eomcc.eomccsdt1_updates.intermediates import add_HR3_intermediates
 
 from ccpy.eomcc.eomccsdt1_updates import *
 
-# def update(R, omega, H):
-#     R.a, R.b, R.aa, R.ab, R.bb, R.aaa, R.aab, R.abb, R.bbb = cc_loops.cc_loops.update_r_ccsdt(
-#         R.a,
-#         R.b,
-#         R.aa,
-#         R.ab,
-#         R.bb,
-#         R.aaa,
-#         R.aab,
-#         R.abb,
-#         R.bbb,
-#         omega,
-#         H.a.oo,
-#         H.a.vv,
-#         H.b.oo,
-#         H.b.vv,
-#         0.0,
-#     )
-#     return R
+def update(R, omega, H, system):
+    
+    # update R1
+    R = r1a_update.update(R, omega, H)
+    R = r1b_update.update(R, omega, H)
+    # update R2
+    R = r2a_update.update(R, omega, H)
+    R = r2b_update.update(R, omega, H)
+    R = r2c_update.update(R, omega, H)
+    # update R3aaa
+    R = r3a_111111.update(R, omega, H, system)
+    R = r3a_110111.update(R, omega, H, system)
+    R = r3a_111011.update(R, omega, H, system)
+    R = r3a_110011.update(R, omega, H, system)
+    R = r3a_100111.update(R, omega, H, system)
+    R = r3a_111001.update(R, omega, H, system)
+    R = r3a_100011.update(R, omega, H, system)
+    R = r3a_110001.update(R, omega, H, system)
+    R = r3a_100001.update(R, omega, H, system)
+    # Update R3aab
+    R = r3b_111111.update(R, omega, H, system)
+    R = r3b_111110.update(R, omega, H, system)
+    R = r3b_111011.update(R, omega, H, system)
+    R = r3b_110111.update(R, omega, H, system)
+    R = r3b_101111.update(R, omega, H, system)
+    R = r3b_111001.update(R, omega, H, system)
+    R = r3b_111010.update(R, omega, H, system)
+    R = r3b_001111.update(R, omega, H, system)
+    R = r3b_100111.update(R, omega, H, system)
+    R = r3b_110011.update(R, omega, H, system)
+    R = r3b_101110.update(R, omega, H, system)
+    R = r3b_101011.update(R, omega, H, system)
+    R = r3b_110110.update(R, omega, H, system)
+    R = r3b_101001.update(R, omega, H, system)
+    R = r3b_101010.update(R, omega, H, system)
+    R = r3b_110001.update(R, omega, H, system)
+    R = r3b_110010.update(R, omega, H, system)
+    R = r3b_001011.update(R, omega, H, system)
+    R = r3b_001110.update(R, omega, H, system)
+    R = r3b_100011.update(R, omega, H, system)
+    R = r3b_100110.update(R, omega, H, system)
+    R = r3b_001001.update(R, omega, H, system)
+    R = r3b_001010.update(R, omega, H, system)
+    R = r3b_100001.update(R, omega, H, system)
+    R = r3b_100010.update(R, omega, H, system)
+    # Update R3abb
+    R = r3c_111111.update(R, omega, H, system)
+    R = r3c_111101.update(R, omega, H, system)
+    R = r3c_111011.update(R, omega, H, system)
+    R = r3c_110111.update(R, omega, H, system)
+    R = r3c_011111.update(R, omega, H, system)
+    R = r3c_111100.update(R, omega, H, system)
+    R = r3c_111001.update(R, omega, H, system)
+    R = r3c_010111.update(R, omega, H, system)
+    R = r3c_100111.update(R, omega, H, system)
+    R = r3c_110011.update(R, omega, H, system)
+    R = r3c_011101.update(R, omega, H, system)
+    R = r3c_011011.update(R, omega, H, system)
+    R = r3c_110101.update(R, omega, H, system)
+    R = r3c_110100.update(R, omega, H, system)
+    R = r3c_110001.update(R, omega, H, system)
+    R = r3c_011100.update(R, omega, H, system)
+    R = r3c_011001.update(R, omega, H, system)
+    R = r3c_100011.update(R, omega, H, system)
+    R = r3c_100101.update(R, omega, H, system)
+    R = r3c_010011.update(R, omega, H, system)
+    R = r3c_010101.update(R, omega, H, system)
+    R = r3c_010100.update(R, omega, H, system)
+    R = r3c_010001.update(R, omega, H, system)
+    R = r3c_100100.update(R, omega, H, system)
+    R = r3c_100001.update(R, omega, H, system)
+    # Update R3bbb
+    R = r3d_111111.update(R, omega, H, system)
+    R = r3d_110111.update(R, omega, H, system)
+    R = r3d_111011.update(R, omega, H, system)
+    R = r3d_110011.update(R, omega, H, system)
+    R = r3d_100111.update(R, omega, H, system)
+    R = r3d_111001.update(R, omega, H, system)
+    R = r3d_100011.update(R, omega, H, system)
+    R = r3d_110001.update(R, omega, H, system)
+    R = r3d_100001.update(R, omega, H, system)
+    
+    return R
 
 
 def HR(dR, R, T, H, flag_RHF, system):

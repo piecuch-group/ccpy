@@ -1,6 +1,14 @@
 import numpy as np
 
 from ccpy.utilities.active_space import get_active_slices
+from ccpy.utilities.updates import eomcc_active_loops
+
+def update(R, omega, H):
+
+    R.aa = eomcc_active_loops.eomcc_active_loops.update_r2a(R.aa, omega, H.a.oo, H.a.vv, H.b.oo, H.b.vv, 0.0)
+
+    return R
+
 
 def build(dR, R, T, H, X, system):
     

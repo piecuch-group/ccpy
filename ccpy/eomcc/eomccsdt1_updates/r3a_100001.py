@@ -1,5 +1,6 @@
 import numpy as np
 from ccpy.utilities.active_space import get_active_slices
+from ccpy.utilities.updates import eomcc_active_loops
 
 def build(dR, R, T, H, X, system):
 
@@ -191,3 +192,19 @@ def build(dR, R, T, H, X, system):
     dR.aaa.VvvooO -= np.transpose(dR.aaa.VvvooO, (0, 1, 2, 4, 3, 5))
 
     return dR
+
+def update(R, omega, H, system):
+
+    oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
+
+    R.aaa.VvvooO = eomcc_active_loops.eomcc_active_loops.update_r3a_100001(
+        R.aaa.VvvooO,
+        omega,
+        H.a.oo[Oa, Oa],
+        H.a.vv[Va, Va],
+        H.a.oo[oa, oa],
+        H.a.vv[va, va],
+        0.0,
+    )
+
+    return R
