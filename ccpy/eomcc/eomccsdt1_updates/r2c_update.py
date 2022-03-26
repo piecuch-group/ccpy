@@ -78,7 +78,7 @@ def build_eomccsd(R, T, H, X):
 
 def build_1111(dR, R, T, H, X, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.bb[Vb, Vb, Ob, Ob] += (1.0 / 4.0) * (
+    dR.bb[Vb, Vb, Ob, Ob] = (1.0 / 4.0) * (
             -1.0 * np.einsum('me,eBAmIJ->ABIJ', X.a.ov[oa, va], T.abb.vVVoOO, optimize=True)
             - 1.0 * np.einsum('Me,eBAMIJ->ABIJ', X.a.ov[Oa, va], T.abb.vVVOOO, optimize=True)
             - 1.0 * np.einsum('mE,EBAmIJ->ABIJ', X.a.ov[oa, Va], T.abb.VVVoOO, optimize=True)
@@ -147,7 +147,7 @@ def build_1111(dR, R, T, H, X, system):
 
 def build_1101(dR, R, T, H, X, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.bb[Vb, Vb, ob, Ob] += (1.0 / 2.0) * (
+    dR.bb[Vb, Vb, ob, Ob] = (1.0 / 2.0) * (
             -1.0 * np.einsum('me,eBAmiJ->ABiJ', X.a.ov[oa, va], T.abb.vVVooO, optimize=True)
             - 1.0 * np.einsum('mE,EBAmiJ->ABiJ', X.a.ov[oa, Va], T.abb.VVVooO, optimize=True)
             - 1.0 * np.einsum('Me,eBAMiJ->ABiJ', X.a.ov[Oa, va], T.abb.vVVOoO, optimize=True)
@@ -229,7 +229,7 @@ def build_1101(dR, R, T, H, X, system):
 
 def build_1011(dR, R, T, H, X, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.bb[Vb, vb, Ob, Ob] += (1.0 / 2.0) * (
+    dR.bb[Vb, vb, Ob, Ob] = (1.0 / 2.0) * (
             +1.0 * np.einsum('me,eAbmIJ->AbIJ', X.a.ov[oa, va], T.abb.vVvoOO, optimize=True)
             + 1.0 * np.einsum('mE,EAbmIJ->AbIJ', X.a.ov[oa, Va], T.abb.VVvoOO, optimize=True)
             + 1.0 * np.einsum('Me,eAbMIJ->AbIJ', X.a.ov[Oa, va], T.abb.vVvOOO, optimize=True)
@@ -311,7 +311,7 @@ def build_1011(dR, R, T, H, X, system):
 
 def build_1100(dR, R, T, H, X, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.bb[Vb, Vb, ob, ob] += (1.0 / 4.0) * (
+    dR.bb[Vb, Vb, ob, ob] = (1.0 / 4.0) * (
             -1.0 * np.einsum('Me,eBAMij->ABij', X.a.ov[Oa, va], T.abb.vVVOoo, optimize=True)
             - 1.0 * np.einsum('ME,EBAMij->ABij', X.a.ov[Oa, Va], T.abb.VVVOoo, optimize=True)
     )
@@ -361,7 +361,7 @@ def build_1100(dR, R, T, H, X, system):
 
 def build_0011(dR, R, T, H, X, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.bb[vb, vb, Ob, Ob] += (1.0 / 4.0) * (
+    dR.bb[vb, vb, Ob, Ob] = (1.0 / 4.0) * (
             -1.0 * np.einsum('mE,EbamIJ->abIJ', X.a.ov[oa, Va], T.abb.VvvoOO, optimize=True)
             - 1.0 * np.einsum('ME,EbaMIJ->abIJ', X.a.ov[Oa, Va], T.abb.VvvOOO, optimize=True)
     )
@@ -412,7 +412,7 @@ def build_0011(dR, R, T, H, X, system):
 def build_1001(dR, R, T, H, X, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    dR.bb[Vb, vb, ob, Ob] += (1.0 / 1.0) * (
+    dR.bb[Vb, vb, ob, Ob] = (1.0 / 1.0) * (
             +1.0 * np.einsum('me,eAbmiJ->AbiJ', X.a.ov[oa, va], T.abb.vVvooO, optimize=True)
             + 1.0 * np.einsum('mE,EAbmiJ->AbiJ', X.a.ov[oa, Va], T.abb.VVvooO, optimize=True)
             + 1.0 * np.einsum('Me,eAbMiJ->AbiJ', X.a.ov[Oa, va], T.abb.vVvOoO, optimize=True)
@@ -509,7 +509,7 @@ def build_1001(dR, R, T, H, X, system):
 
 def build_1000(dR, R, T, H, X, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.bb[Vb, vb, ob, ob] += (1.0 / 2.0) * (
+    dR.bb[Vb, vb, ob, ob] = (1.0 / 2.0) * (
             +1.0 * np.einsum('Me,eAbMij->Abij', X.a.ov[Oa, va], T.abb.vVvOoo, optimize=True)
             + 1.0 * np.einsum('ME,EAbMij->Abij', X.a.ov[Oa, Va], T.abb.VVvOoo, optimize=True)
     )
@@ -567,7 +567,7 @@ def build_1000(dR, R, T, H, X, system):
 
 def build_0001(dR, R, T, H, X, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.bb[vb, vb, ob, Ob] += (1.0 / 2.0) * (
+    dR.bb[vb, vb, ob, Ob] = (1.0 / 2.0) * (
             -1.0 * np.einsum('mE,EbamiJ->abiJ', X.a.ov[oa, Va], T.abb.VvvooO, optimize=True)
             - 1.0 * np.einsum('ME,EbaMiJ->abiJ', X.a.ov[Oa, Va], T.abb.VvvOoO, optimize=True)
     )
@@ -625,7 +625,7 @@ def build_0001(dR, R, T, H, X, system):
 
 def build_0000(dR, R, T, H, X, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
-    dR.bb[vb, vb, ob, ob] += (1.0 / 4.0) * (
+    dR.bb[vb, vb, ob, ob] = (1.0 / 4.0) * (
             -1.0 * np.einsum('ME,EbaMij->abij', X.a.ov[Oa, Va], T.abb.VvvOoo, optimize=True)
     )
     dR.bb[vb, vb, ob, ob] += (1.0 / 4.0) * (
