@@ -127,6 +127,11 @@ module eomcc_active_loops
 
       end subroutine update_r2c
 
+
+
+
+
+
 subroutine update_r3a_100001(r3a, omega, &
                              H1A_oo_act, H1A_vv_act, H1A_oo_inact, H1A_vv_inact, &
                              shift, &
@@ -156,7 +161,7 @@ subroutine update_r3a_100001(r3a, omega, &
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1A_vv_inact(c,c)
 
 
-                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega - denom + shift)
+                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega + denom + shift)
 
 
                      end do
@@ -197,7 +202,7 @@ subroutine update_r3a_100011(r3a, omega, &
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1A_vv_inact(c,c)
 
 
-                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega - denom + shift)
+                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega + denom + shift)
 
 
                      end do
@@ -238,7 +243,7 @@ end subroutine update_r3a_100011
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1A_vv_inact(c,c)
 
 
-                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega - denom + shift)
+                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega + denom + shift)
 
 
                      end do
@@ -279,7 +284,7 @@ end subroutine update_r3a_100111
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1A_vv_inact(c,c)
 
 
-                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega - denom + shift)
+                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega + denom + shift)
 
 
                      end do
@@ -320,7 +325,7 @@ end subroutine update_r3a_110001
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1A_vv_inact(c,c)
 
 
-                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega - denom + shift)
+                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega + denom + shift)
 
 
                      end do
@@ -361,7 +366,7 @@ end subroutine update_r3a_110011
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1A_vv_inact(c,c)
 
 
-                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega - denom + shift)
+                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega + denom + shift)
 
 
                      end do
@@ -402,7 +407,7 @@ end subroutine update_r3a_110111
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1A_vv_act(c,c)
 
 
-                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega - denom + shift)
+                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega + denom + shift)
 
 
                      end do
@@ -443,7 +448,7 @@ subroutine update_r3a_111011(r3a, omega, &
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1A_vv_act(c,c)
 
 
-                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega - denom + shift)
+                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega + denom + shift)
 
 
                      end do
@@ -484,7 +489,7 @@ subroutine update_r3a_111111(r3a, omega, &
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1A_vv_act(c,c)
 
 
-                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega - denom + shift)
+                        r3a(a, b, c, i, j, k) = r3a(a, b, c, i, j, k) /(omega + denom + shift)
 
 
                      end do
@@ -533,7 +538,7 @@ subroutine update_r3b_001001(r3b, omega, &
                                -H1A_vv_inact(a,a) - H1A_vv_inact(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -581,7 +586,7 @@ end subroutine update_r3b_001001
                                -H1A_vv_inact(a,a) - H1A_vv_inact(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -629,7 +634,7 @@ subroutine update_r3b_001011(r3b, omega, &
                                -H1A_vv_inact(a,a) - H1A_vv_inact(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -678,7 +683,7 @@ end subroutine update_r3b_001011
                                -H1A_vv_inact(a,a) - H1A_vv_inact(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -727,7 +732,7 @@ end subroutine update_r3b_001110
                                -H1A_vv_inact(a,a) - H1A_vv_inact(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -776,7 +781,7 @@ end subroutine update_r3b_001111
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -825,7 +830,7 @@ subroutine update_r3b_100010(r3b, omega, &
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -874,7 +879,7 @@ end subroutine update_r3b_100010
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -923,7 +928,7 @@ end subroutine update_r3b_100011
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -972,7 +977,7 @@ end subroutine update_r3b_100110
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1020,7 +1025,7 @@ end subroutine update_r3b_100111
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1069,7 +1074,7 @@ end subroutine update_r3b_101001
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1118,7 +1123,7 @@ end subroutine update_r3b_101010
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1167,7 +1172,7 @@ end subroutine update_r3b_101011
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1216,7 +1221,7 @@ end subroutine update_r3b_101110
                                -H1A_vv_act(a,a) - H1A_vv_inact(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1265,7 +1270,7 @@ end subroutine update_r3b_101111
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1314,7 +1319,7 @@ end subroutine update_r3b_110001
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1363,7 +1368,7 @@ end subroutine update_r3b_110010
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1412,7 +1417,7 @@ end subroutine update_r3b_110011
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1461,7 +1466,7 @@ end subroutine update_r3b_110110
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1510,7 +1515,7 @@ end subroutine update_r3b_110111
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1559,7 +1564,7 @@ end subroutine update_r3b_111001
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1608,7 +1613,7 @@ end subroutine update_r3b_111010
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1657,7 +1662,7 @@ end subroutine update_r3b_111011
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1706,7 +1711,7 @@ end subroutine update_r3b_111110
                                -H1A_vv_act(a,a) - H1A_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3b(a, b, c, i, j, k) = r3b(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1755,7 +1760,7 @@ end subroutine update_r3b_111111
                                -H1A_vv_inact(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1804,7 +1809,7 @@ end subroutine update_r3c_010001
                                -H1A_vv_inact(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1853,7 +1858,7 @@ end subroutine update_r3c_010011
                                -H1A_vv_inact(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1902,7 +1907,7 @@ end subroutine update_r3c_010100
                                -H1A_vv_inact(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -1951,7 +1956,7 @@ end subroutine update_r3c_010101
                                -H1A_vv_inact(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2000,7 +2005,7 @@ end subroutine update_r3c_010111
                                -H1A_vv_inact(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2048,7 +2053,7 @@ end subroutine update_r3c_011001
                                -H1A_vv_inact(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2096,7 +2101,7 @@ subroutine update_r3c_011100(r3c, omega, &
                                -H1A_vv_inact(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2144,7 +2149,7 @@ end subroutine update_r3c_011100
                                -H1A_vv_inact(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2192,7 +2197,7 @@ subroutine update_r3c_011111(r3c, omega, &
                                -H1A_vv_inact(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2241,7 +2246,7 @@ end subroutine update_r3c_011111
                                -H1A_vv_act(a,a) - H1B_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2290,7 +2295,7 @@ end subroutine update_r3c_100001
                                -H1A_vv_act(a,a) - H1B_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2339,7 +2344,7 @@ end subroutine update_r3c_100011
                                -H1A_vv_act(a,a) - H1B_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2388,7 +2393,7 @@ end subroutine update_r3c_100100
                                -H1A_vv_act(a,a) - H1B_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2437,7 +2442,7 @@ end subroutine update_r3c_100101
                                -H1A_vv_act(a,a) - H1B_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2486,7 +2491,7 @@ end subroutine update_r3c_100111
                                -H1A_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2534,7 +2539,7 @@ subroutine update_r3c_110011(r3c, omega, &
                                -H1A_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2582,7 +2587,7 @@ end subroutine update_r3c_110011
                                -H1A_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2631,7 +2636,7 @@ end subroutine update_r3c_110100
                                -H1A_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2680,7 +2685,7 @@ end subroutine update_r3c_110101
                                -H1A_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2729,7 +2734,7 @@ end subroutine update_r3c_110111
                                -H1A_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2778,7 +2783,7 @@ end subroutine update_r3c_111001
                                -H1A_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2827,7 +2832,7 @@ end subroutine update_r3c_111011
                                -H1A_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2876,7 +2881,7 @@ end subroutine update_r3c_111100
                                -H1A_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2925,7 +2930,7 @@ end subroutine update_r3c_111101
                                -H1A_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3c(a, b, c, i, j, k) = r3c(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -2967,7 +2972,7 @@ end subroutine update_r3c_111111
                                -H1B_vv_act(a,a) - H1B_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -3009,7 +3014,7 @@ end subroutine update_r3d_100001
                                -H1B_vv_act(a,a) - H1B_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -3051,7 +3056,7 @@ end subroutine update_r3d_100011
                                -H1B_vv_act(a,a) - H1B_vv_inact(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -3093,7 +3098,7 @@ end subroutine update_r3d_100111
                                -H1B_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -3135,7 +3140,7 @@ end subroutine update_r3d_110001
                                -H1B_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -3177,7 +3182,7 @@ end subroutine update_r3d_110011
                                -H1B_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_inact(c,c)
 
 
-                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -3219,7 +3224,7 @@ end subroutine update_r3d_110111
                                -H1B_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -3262,7 +3267,7 @@ end subroutine update_r3d_111001
                                -H1B_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
@@ -3305,7 +3310,7 @@ end subroutine update_r3d_111011
                                -H1B_vv_act(a,a) - H1B_vv_act(b,b) - H1B_vv_act(c,c)
 
 
-                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega - denom + shift)
+                        r3d(a, b, c, i, j, k) = r3d(a, b, c, i, j, k)/(omega + denom + shift)
 
 
                      end do
