@@ -19,8 +19,7 @@ from ccpy.eomcc.eomccsdt import build_HR_3A, build_HR_3B, build_HR_3C, build_HR_
 
 from ccpy.eomcc.initial_guess import get_initial_guess
 
-from ccpy.eomcc.eomccsdt1_updates.intermediates import add_HR3_intermediates
-from ccpy.eomcc.eomccsdt1_updates import *
+from ccpy.eomcc import eomccsdt1
 
 def check_intermediates(HR_act, HR):
 
@@ -151,6 +150,230 @@ def calc_error(dT_act, dT, system):
     print("Error in VVvooO = ", _get_error(dT_act.bbb.VVvooO, dT.bbb[Vb, Vb, vb, ob, ob, Ob]))
     print("Error in VvvoOO = ", _get_error(dT_act.bbb.VvvoOO, dT.bbb[Vb, vb, vb, ob, Ob, Ob]))
     print("Error in VvvooO = ", _get_error(dT_act.bbb.VvvooO, dT.bbb[Vb, vb, vb, ob, ob, Ob]))
+
+def calc_full_HR1A(R, T, H):
+    X1A = -np.einsum("mi,am->ai", H.a.oo, R.a, optimize=True)
+    X1A += np.einsum("ae,ei->ai", H.a.vv, R.a, optimize=True)
+    X1A += np.einsum("amie,em->ai", H.aa.voov, R.a, optimize=True)
+    X1A += np.einsum("amie,em->ai", H.ab.voov, R.b, optimize=True)
+    X1A -= 0.5 * np.einsum("mnif,afmn->ai", H.aa.ooov, R.aa, optimize=True)
+    X1A -= np.einsum("mnif,afmn->ai", H.ab.ooov, R.ab, optimize=True)
+    X1A += 0.5 * np.einsum("anef,efin->ai", H.aa.vovv, R.aa, optimize=True)
+    X1A += np.einsum("anef,efin->ai", H.ab.vovv, R.ab, optimize=True)
+    X1A += np.einsum("me,aeim->ai", H.a.ov, R.aa, optimize=True)
+    X1A += np.einsum("me,aeim->ai", H.b.ov, R.ab, optimize=True)
+
+    X1A += 0.25 * np.einsum("mnef,aefimn->ai", H.aa.oovv, R.aaa, optimize=True)
+    X1A += np.einsum("mnef,aefimn->ai", H.ab.oovv, R.aab, optimize=True)
+    X1A += 0.25 * np.einsum("mnef,aefimn->ai", H.bb.oovv, R.abb, optimize=True)
+
+    return X1A
+
+def calc_full_HR1B(R, T, H):
+    X1B = -np.einsum("mi,am->ai", H.b.oo, R.b, optimize=True)
+    X1B += np.einsum("ae,ei->ai", H.b.vv, R.b, optimize=True)
+    X1B += np.einsum("maei,em->ai", H.ab.ovvo, R.a, optimize=True)
+    X1B += np.einsum("amie,em->ai", H.bb.voov, R.b, optimize=True)
+    X1B -= np.einsum("nmfi,fanm->ai", H.ab.oovo, R.ab, optimize=True)
+    X1B -= 0.5 * np.einsum("mnif,afmn->ai", H.bb.ooov, R.bb, optimize=True)
+    X1B += np.einsum("nafe,feni->ai", H.ab.ovvv, R.ab, optimize=True)
+    X1B += 0.5 * np.einsum("anef,efin->ai", H.bb.vovv, R.bb, optimize=True)
+    X1B += np.einsum("me,eami->ai", H.a.ov, R.ab, optimize=True)
+    X1B += np.einsum("me,aeim->ai", H.b.ov, R.bb, optimize=True)
+
+    X1B += 0.25 * np.einsum("mnef,efamni->ai", H.aa.oovv, R.aab, optimize=True)
+    X1B += np.einsum("mnef,efamni->ai", H.ab.oovv, R.abb, optimize=True)
+    X1B += 0.25 * np.einsum("mnef,aefimn->ai", H.bb.oovv, R.bbb, optimize=True)
+
+    return X1B
+
+def calc_full_HR2A(R, T, H, X):
+    D1 = -np.einsum("mi,abmj->abij", H.a.oo, R.aa, optimize=True)  # A(ij)
+    D2 = np.einsum("ae,ebij->abij", H.a.vv, R.aa, optimize=True)  # A(ab)
+    X2A = 0.5 * np.einsum("mnij,abmn->abij", H.aa.oooo, R.aa, optimize=True)
+    X2A += 0.5 * np.einsum("abef,efij->abij", H.aa.vvvv, R.aa, optimize=True)
+    D3 = np.einsum("amie,ebmj->abij", H.aa.voov, R.aa, optimize=True)  # A(ij)A(ab)
+    D4 = np.einsum("amie,bejm->abij", H.ab.voov, R.ab, optimize=True)  # A(ij)A(ab)
+    D5 = -np.einsum("bmji,am->abij", H.aa.vooo, R.a, optimize=True)  # A(ab)
+    D6 = np.einsum("baje,ei->abij", H.aa.vvov, R.a, optimize=True)  # A(ij)
+
+    Q1 = -0.5 * np.einsum("mnef,bfmn->eb", H.aa.oovv, R.aa, optimize=True)
+    D7 = np.einsum("eb,aeij->abij", Q1, T.aa, optimize=True)  # A(ab)
+    Q2 = -np.einsum("mnef,bfmn->eb", H.ab.oovv, R.ab, optimize=True)
+    D8 = np.einsum("eb,aeij->abij", Q2, T.aa, optimize=True)  # A(ab)
+
+    Q1 = 0.5 * np.einsum("mnef,efjn->mj", H.aa.oovv, R.aa, optimize=True)
+    D9 = -np.einsum("mj,abim->abij", Q1, T.aa, optimize=True)  # A(ij)
+    Q2 = np.einsum("mnef,efjn->mj", H.ab.oovv, R.ab, optimize=True)
+    D10 = -np.einsum("mj,abim->abij", Q2, T.aa, optimize=True)  # A(ij)
+
+    Q1 = np.einsum("amfe,em->af", H.aa.vovv, R.a, optimize=True)
+    D11 = np.einsum("af,fbij->abij", Q1, T.aa, optimize=True)  # A(ab)
+    Q2 = np.einsum("nmie,em->ni", H.aa.ooov, R.a, optimize=True)
+    D12 = -np.einsum("ni,abnj->abij", Q2, T.aa, optimize=True)  # A(ij)
+
+    Q1 = np.einsum("amfe,em->af", H.ab.vovv, R.b, optimize=True)
+    D13 = np.einsum("af,fbij->abij", Q1, T.aa, optimize=True)  # A(ab)
+    Q2 = np.einsum("nmie,em->ni", H.ab.ooov, R.b, optimize=True)
+    D14 = -np.einsum("ni,abnj->abij", Q2, T.aa, optimize=True)  # A(ij)
+
+    # Parts contracted with T3
+    X2A += np.einsum("me,abeijm->abij", X.a.ov, T.aaa, optimize=True)
+    X2A += np.einsum("me,abeijm->abij", X.b.ov, T.aab, optimize=True)
+
+    DR3_1 = np.einsum("me,abeijm->abij", H.a.ov, R.aaa, optimize=True)
+    DR3_2 = np.einsum("me,abeijm->abij", H.b.ov, R.aab, optimize=True)
+    DR3_3 = -0.5 * np.einsum("mnjf,abfimn->abij", H.aa.ooov, R.aaa, optimize=True)
+    DR3_4 = -1.0 * np.einsum("mnjf,abfimn->abij", H.ab.ooov, R.aab, optimize=True)
+    DR3_5 = 0.5 * np.einsum("bnef,aefijn->abij", H.aa.vovv, R.aaa, optimize=True)
+    DR3_6 = np.einsum("bnef,aefijn->abij", H.ab.vovv, R.aab, optimize=True)
+
+    D_ij = D1 + D6 + D9 + D10 + D12 + D14 + DR3_3 + DR3_4
+    D_ab = D2 + D5 + D7 + D8 + D11 + D13 + DR3_5 + DR3_6
+    D_abij = D3 + D4
+
+    D_ij -= np.einsum("abij->abji", D_ij, optimize=True)
+    D_ab -= np.einsum("abij->baij", D_ab, optimize=True)
+    D_abij += (
+            -np.einsum("abij->baij", D_abij, optimize=True)
+            - np.einsum("abij->abji", D_abij, optimize=True)
+            + np.einsum("abij->baji", D_abij, optimize=True)
+    )
+
+    X2A += D_ij + D_ab + D_abij + DR3_1 + DR3_2
+
+    return X2A
+
+
+def calc_full_HR2B(R, T, H, X):
+    X2B = np.einsum("ae,ebij->abij", H.a.vv, R.ab, optimize=True)
+    X2B += np.einsum("be,aeij->abij", H.b.vv, R.ab, optimize=True)
+    X2B -= np.einsum("mi,abmj->abij", H.a.oo, R.ab, optimize=True)
+    X2B -= np.einsum("mj,abim->abij", H.b.oo, R.ab, optimize=True)
+    X2B += np.einsum("mnij,abmn->abij", H.ab.oooo, R.ab, optimize=True)
+    X2B += np.einsum("abef,efij->abij", H.ab.vvvv, R.ab, optimize=True)
+    X2B += np.einsum("amie,ebmj->abij", H.aa.voov, R.ab, optimize=True)
+    X2B += np.einsum("amie,ebmj->abij", H.ab.voov, R.bb, optimize=True)
+    X2B += np.einsum("mbej,aeim->abij", H.ab.ovvo, R.aa, optimize=True)
+    X2B += np.einsum("bmje,aeim->abij", H.bb.voov, R.ab, optimize=True)
+    X2B -= np.einsum("mbie,aemj->abij", H.ab.ovov, R.ab, optimize=True)
+    X2B -= np.einsum("amej,ebim->abij", H.ab.vovo, R.ab, optimize=True)
+    X2B += np.einsum("abej,ei->abij", H.ab.vvvo, R.a, optimize=True)
+    X2B += np.einsum("abie,ej->abij", H.ab.vvov, R.b, optimize=True)
+    X2B -= np.einsum("mbij,am->abij", H.ab.ovoo, R.a, optimize=True)
+    X2B -= np.einsum("amij,bm->abij", H.ab.vooo, R.b, optimize=True)
+
+    Q1 = -0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, R.aa, optimize=True)
+    X2B += np.einsum("ae,ebij->abij", Q1, T.ab, optimize=True)
+    Q2 = 0.5 * np.einsum("mnef,efin->mi", H.aa.oovv, R.aa, optimize=True)
+    X2B -= np.einsum("mi,abmj->abij", Q2, T.ab, optimize=True)
+
+    Q1 = -np.einsum("nmfe,fbnm->be", H.ab.oovv, R.ab, optimize=True)
+    X2B += np.einsum("be,aeij->abij", Q1, T.ab, optimize=True)
+    Q2 = -np.einsum("mnef,afmn->ae", H.ab.oovv, R.ab, optimize=True)
+    X2B += np.einsum("ae,ebij->abij", Q2, T.ab, optimize=True)
+    Q3 = np.einsum("nmfe,fenj->mj", H.ab.oovv, R.ab, optimize=True)
+    X2B -= np.einsum("mj,abim->abij", Q3, T.ab, optimize=True)
+    Q4 = np.einsum("mnef,efin->mi", H.ab.oovv, R.ab, optimize=True)
+    X2B -= np.einsum("mi,abmj->abij", Q4, T.ab, optimize=True)
+
+    Q1 = -0.5 * np.einsum("mnef,bfmn->be", H.bb.oovv, R.bb, optimize=True)
+    X2B += np.einsum("be,aeij->abij", Q1, T.ab, optimize=True)
+    Q2 = 0.5 * np.einsum("mnef,efjn->mj", H.bb.oovv, R.bb, optimize=True)
+    X2B -= np.einsum("mj,abim->abij", Q2, T.ab, optimize=True)
+
+    Q1 = np.einsum("mbef,em->bf", H.ab.ovvv, R.a, optimize=True)
+    X2B += np.einsum("bf,afij->abij", Q1, T.ab, optimize=True)
+    Q2 = np.einsum("mnej,em->nj", H.ab.oovo, R.a, optimize=True)
+    X2B -= np.einsum("nj,abin->abij", Q2, T.ab, optimize=True)
+    Q3 = np.einsum("amfe,em->af", H.aa.vovv, R.a, optimize=True)
+    X2B += np.einsum("af,fbij->abij", Q3, T.ab, optimize=True)
+    Q4 = np.einsum("nmie,em->ni", H.aa.ooov, R.a, optimize=True)
+    X2B -= np.einsum("ni,abnj->abij", Q4, T.ab, optimize=True)
+
+    Q1 = np.einsum("amfe,em->af", H.ab.vovv, R.b, optimize=True)
+    X2B += np.einsum("af,fbij->abij", Q1, T.ab, optimize=True)
+    Q2 = np.einsum("nmie,em->ni", H.ab.ooov, R.b, optimize=True)
+    X2B -= np.einsum("ni,abnj->abij", Q2, T.ab, optimize=True)
+    Q3 = np.einsum("bmfe,em->bf", H.bb.vovv, R.b, optimize=True)
+    X2B += np.einsum("bf,afij->abij", Q3, T.ab, optimize=True)
+    Q4 = np.einsum("nmje,em->nj", H.bb.ooov, R.b, optimize=True)
+    X2B -= np.einsum("nj,abin->abij", Q4, T.ab, optimize=True)
+
+    # Parts contracted with T3
+    X2B += np.einsum("me,aebimj->abij", X.a.ov, T.aab, optimize=True)
+    X2B += np.einsum("me,aebimj->abij", X.b.ov, T.abb, optimize=True)
+
+    X2B += np.einsum("me,aebimj->abij", H.a.ov, R.aab, optimize=True)
+    X2B += np.einsum("me,aebimj->abij", H.b.ov, R.abb, optimize=True)
+    X2B -= np.einsum("nmfj,afbinm->abij", H.ab.oovo, R.aab, optimize=True)
+    X2B -= 0.5 * np.einsum("mnjf,abfimn->abij", H.bb.ooov, R.abb, optimize=True)
+    X2B -= 0.5 * np.einsum("mnif,afbmnj->abij", H.aa.ooov, R.aab, optimize=True)
+    X2B -= np.einsum("mnif,abfmjn->abij", H.ab.ooov, R.abb, optimize=True)
+    X2B += np.einsum("nbfe,afeinj->abij", H.ab.ovvv, R.aab, optimize=True)
+    X2B += 0.5 * np.einsum("bnef,aefijn->abij", H.bb.vovv, R.abb, optimize=True)
+    X2B += 0.5 * np.einsum("anef,efbinj->abij", H.aa.vovv, R.aab, optimize=True)
+    X2B += np.einsum("anef,efbinj->abij", H.ab.vovv, R.abb, optimize=True)
+
+    return X2B
+
+
+def calc_full_HR2C(R, T, H, X):
+    D1 = -np.einsum("mi,abmj->abij", H.b.oo, R.bb, optimize=True)  # A(ij)
+    D2 = np.einsum("ae,ebij->abij", H.b.vv, R.bb, optimize=True)  # A(ab)
+    X2C = 0.5 * np.einsum("mnij,abmn->abij", H.bb.oooo, R.bb, optimize=True)
+    X2C += 0.5 * np.einsum("abef,efij->abij", H.bb.vvvv, R.bb, optimize=True)
+    D3 = np.einsum("amie,ebmj->abij", H.bb.voov, R.bb, optimize=True)  # A(ij)A(ab)
+    D4 = np.einsum("maei,ebmj->abij", H.ab.ovvo, R.ab, optimize=True)  # A(ij)A(ab)
+    D5 = -np.einsum("bmji,am->abij", H.bb.vooo, R.b, optimize=True)  # A(ab)
+    D6 = np.einsum("baje,ei->abij", H.bb.vvov, R.b, optimize=True)  # A(ij)
+
+    Q1 = -0.5 * np.einsum("mnef,bfmn->eb", H.bb.oovv, R.bb, optimize=True)
+    D7 = np.einsum("eb,aeij->abij", Q1, T.bb, optimize=True)  # A(ab)
+    Q2 = -np.einsum("nmfe,fbnm->eb", H.ab.oovv, R.ab, optimize=True)
+    D8 = np.einsum("eb,aeij->abij", Q2, T.bb, optimize=True)  # A(ab)
+
+    Q1 = 0.5 * np.einsum("mnef,efjn->mj", H.bb.oovv, R.bb, optimize=True)
+    D9 = -np.einsum("mj,abim->abij", Q1, T.bb, optimize=True)  # A(ij)
+    Q2 = np.einsum("nmfe,fenj->mj", H.ab.oovv, R.ab, optimize=True)
+    D10 = -np.einsum("mj,abim->abij", Q2, T.bb, optimize=True)  # A(ij)
+
+    Q1 = np.einsum("amfe,em->af", H.bb.vovv, R.b, optimize=True)
+    D11 = np.einsum("af,fbij->abij", Q1, T.bb, optimize=True)  # A(ab)
+    Q2 = np.einsum("nmie,em->ni", H.bb.ooov, R.b, optimize=True)
+    D12 = -np.einsum("ni,abnj->abij", Q2, T.bb, optimize=True)  # A(ij)
+
+    Q1 = np.einsum("maef,em->af", H.ab.ovvv, R.a, optimize=True)
+    D13 = np.einsum("af,fbij->abij", Q1, T.bb, optimize=True)  # A(ab)
+    Q2 = np.einsum("mnei,em->ni", H.ab.oovo, R.a, optimize=True)
+    D14 = -np.einsum("ni,abnj->abij", Q2, T.bb, optimize=True)  # A(ij)
+
+    # Parts contracted with T3
+    X2C += np.einsum("me,eabmij->abij", X.a.ov, T.abb, optimize=True)
+    X2C += np.einsum("me,abeijm->abij", X.b.ov, T.bbb, optimize=True)
+
+    DR3_1 = np.einsum("me,eabmij->abij", H.a.ov, R.abb, optimize=True)
+    DR3_2 = np.einsum("me,abeijm->abij", H.b.ov, R.bbb, optimize=True)
+    DR3_3 = -0.5 * np.einsum("mnjf,abfimn->abij", H.bb.ooov, R.bbb, optimize=True)
+    DR3_4 = -1.0 * np.einsum("nmfj,fabnim->abij", H.ab.oovo, R.abb, optimize=True)
+    DR3_5 = 0.5 * np.einsum("bnef,aefijn->abij", H.bb.vovv, R.bbb, optimize=True)
+    DR3_6 = np.einsum("nbfe,faenij->abij", H.ab.ovvv, R.abb, optimize=True)
+
+    D_ij = D1 + D6 + D9 + D10 + D12 + D14 + DR3_3 + DR3_4
+    D_ab = D2 + D5 + D7 + D8 + D11 + D13 + DR3_5 + DR3_6
+    D_abij = D3 + D4
+
+    D_ij -= np.einsum("abij->abji", D_ij, optimize=True)
+    D_ab -= np.einsum("abij->baij", D_ab, optimize=True)
+    D_abij += (
+            -np.einsum("abij->baij", D_abij, optimize=True)
+            - np.einsum("abij->abji", D_abij, optimize=True)
+            + np.einsum("abij->baji", D_abij, optimize=True)
+    )
+
+    X2C += D_ij + D_ab + D_abij + DR3_1 + DR3_2
+
+    return X2C
 
 def calc_full_HR3A(R, T, H, X):
     # <ijkabc| [H(R1+R2)]_C | 0 >
@@ -411,6 +634,11 @@ if __name__ == "__main__":
     HR = get_eomccsd_intermediates(Hbar, R, T, system)
     HR = add_R3_terms(HR, Hbar, R)
 
+    dR.a = calc_full_HR1A(R, T, Hbar)
+    dR.b = calc_full_HR1B(R, T, Hbar)
+    dR.aa = calc_full_HR2A(R, T, Hbar, HR)
+    dR.ab = calc_full_HR2B(R, T, Hbar, HR)
+    dR.bb = calc_full_HR2C(R, T, Hbar, HR)
     dR.aaa = calc_full_HR3A(R, T, Hbar, HR)
     dR.aab = calc_full_HR3B(R, T, Hbar, HR)
     dR.abb = calc_full_HR3C(R, T, Hbar, HR)
@@ -443,81 +671,83 @@ if __name__ == "__main__":
     R_act = fill_t3abb(R_act, R, system)
     R_act = fill_t3bbb(R_act, R, system)
 
-    HR_act = get_eomccsd_intermediates(Hbar, R_act, T_act, system)
-    HR_act = add_HR3_intermediates(HR_act, Hbar, R_act, system)
+    dR_act = eomccsdt1.HR(dR_act, R_act, T_act, Hbar, False, system)
 
-    # aaa updates
-    dR_act.aaa.VVVOOO = r3a_111111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aaa.VVVoOO = r3a_111011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aaa.VVvOOO = r3a_110111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aaa.VVvoOO = r3a_110011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aaa.VvvOOO = r3a_100111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aaa.VVVooO = r3a_111001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aaa.VvvoOO = r3a_100011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aaa.VVvooO = r3a_110001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aaa.VvvooO = r3a_100001.build(R_act, T_act, Hbar, HR_act, system)
-    # aab updates
-    dR_act.aab.VVVOOO = r3b_111111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VVVOOo = r3b_111110.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VVvOOO = r3b_110111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VvVOOO = r3b_101111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VVVoOO = r3b_111011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VVVooO = r3b_111001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VVVoOo = r3b_111010.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.vvVOOO = r3b_001111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VvvOOO = r3b_100111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VVvoOO = r3b_110011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VvVOOo = r3b_101110.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VvVoOO = r3b_101011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VVvOOo = r3b_110110.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VvVooO = r3b_101001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VvVoOo = r3b_101010.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VVvooO = r3b_110001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VVvoOo = r3b_110010.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.vvVoOO = r3b_001011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.vvVOOo = r3b_001110.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VvvoOO = r3b_100011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VvvOOo = r3b_100110.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.vvVooO = r3b_001001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.vvVoOo = r3b_001010.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VvvooO = r3b_100001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.aab.VvvoOo = r3b_100010.build(R_act, T_act, Hbar, HR_act, system)
-    # abb updates
-    dR_act.abb.VVVOOO = r3c_111111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VVVOoO = r3c_111101.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VVVoOO = r3c_111011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VVvOOO = r3c_110111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.vVVOOO = r3c_011111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VVVOoo = r3c_111100.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VVVooO = r3c_111001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.vVvOOO = r3c_010111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VvvOOO = r3c_100111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VVvoOO = r3c_110011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.vVVOoO = r3c_011101.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.vVVoOO = r3c_011011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VVvOoO = r3c_110101.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VVvOoo = r3c_110100.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VVvooO = r3c_110001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.vVVOoo = r3c_011100.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.vVVooO = r3c_011001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VvvoOO = r3c_100011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VvvOoO = r3c_100101.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.vVvoOO = r3c_010011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.vVvOoO = r3c_010101.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.vVvOoo = r3c_010100.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.vVvooO = r3c_010001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VvvOoo = r3c_100100.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.abb.VvvooO = r3c_100001.build(R_act, T_act, Hbar, HR_act, system)
-    # bbb updates
-    dR_act.bbb.VVVOOO = r3d_111111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.bbb.VVVoOO = r3d_111011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.bbb.VVvOOO = r3d_110111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.bbb.VVvoOO = r3d_110011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.bbb.VvvOOO = r3d_100111.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.bbb.VVVooO = r3d_111001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.bbb.VvvoOO = r3d_100011.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.bbb.VVvooO = r3d_110001.build(R_act, T_act, Hbar, HR_act, system)
-    dR_act.bbb.VvvooO = r3d_100001.build(R_act, T_act, Hbar, HR_act, system)
+    # HR_act = get_eomccsd_intermediates(Hbar, R_act, T_act, system)
+    # HR_act = add_HR3_intermediates(HR_act, Hbar, R_act, system)
+
+    # # aaa updates
+    # dR_act.aaa.VVVOOO = r3a_111111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aaa.VVVoOO = r3a_111011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aaa.VVvOOO = r3a_110111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aaa.VVvoOO = r3a_110011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aaa.VvvOOO = r3a_100111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aaa.VVVooO = r3a_111001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aaa.VvvoOO = r3a_100011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aaa.VVvooO = r3a_110001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aaa.VvvooO = r3a_100001.build(R_act, T_act, Hbar, HR_act, system)
+    # # aab updates
+    # dR_act.aab.VVVOOO = r3b_111111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VVVOOo = r3b_111110.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VVvOOO = r3b_110111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VvVOOO = r3b_101111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VVVoOO = r3b_111011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VVVooO = r3b_111001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VVVoOo = r3b_111010.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.vvVOOO = r3b_001111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VvvOOO = r3b_100111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VVvoOO = r3b_110011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VvVOOo = r3b_101110.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VvVoOO = r3b_101011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VVvOOo = r3b_110110.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VvVooO = r3b_101001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VvVoOo = r3b_101010.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VVvooO = r3b_110001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VVvoOo = r3b_110010.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.vvVoOO = r3b_001011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.vvVOOo = r3b_001110.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VvvoOO = r3b_100011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VvvOOo = r3b_100110.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.vvVooO = r3b_001001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.vvVoOo = r3b_001010.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VvvooO = r3b_100001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.aab.VvvoOo = r3b_100010.build(R_act, T_act, Hbar, HR_act, system)
+    # # abb updates
+    # dR_act.abb.VVVOOO = r3c_111111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VVVOoO = r3c_111101.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VVVoOO = r3c_111011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VVvOOO = r3c_110111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.vVVOOO = r3c_011111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VVVOoo = r3c_111100.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VVVooO = r3c_111001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.vVvOOO = r3c_010111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VvvOOO = r3c_100111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VVvoOO = r3c_110011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.vVVOoO = r3c_011101.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.vVVoOO = r3c_011011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VVvOoO = r3c_110101.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VVvOoo = r3c_110100.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VVvooO = r3c_110001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.vVVOoo = r3c_011100.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.vVVooO = r3c_011001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VvvoOO = r3c_100011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VvvOoO = r3c_100101.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.vVvoOO = r3c_010011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.vVvOoO = r3c_010101.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.vVvOoo = r3c_010100.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.vVvooO = r3c_010001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VvvOoo = r3c_100100.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.abb.VvvooO = r3c_100001.build(R_act, T_act, Hbar, HR_act, system)
+    # # bbb updates
+    # dR_act.bbb.VVVOOO = r3d_111111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.bbb.VVVoOO = r3d_111011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.bbb.VVvOOO = r3d_110111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.bbb.VVvoOO = r3d_110011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.bbb.VvvOOO = r3d_100111.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.bbb.VVVooO = r3d_111001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.bbb.VvvoOO = r3d_100011.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.bbb.VVvooO = r3d_110001.build(R_act, T_act, Hbar, HR_act, system)
+    # dR_act.bbb.VvvooO = r3d_100001.build(R_act, T_act, Hbar, HR_act, system)
 
     # Get the error
     calc_error(dR_act, dR, system)
