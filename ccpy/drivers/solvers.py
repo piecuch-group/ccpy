@@ -111,7 +111,7 @@ def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
                 break
 
             # update residual vector
-            R = update_r(R, omega[n], H)
+            R = update_r(R, omega[n], H, system)
             q = R.flatten()
 
             for k1 in range(curr_size):
@@ -237,7 +237,7 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
                 break
 
             # update residual vector
-            R[n] = update_r(R[n], omega[n], H)
+            R[n] = update_r(R[n], omega[n], H, system)
             q = R[n].flatten()
             for p in range(curr_size):
                 b = B[:, p] / np.linalg.norm(B[:, p])
