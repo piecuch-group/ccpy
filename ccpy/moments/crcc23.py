@@ -95,7 +95,6 @@ def calc_crcc23(T, L, H, H0, system, use_RHF=False):
 
     t_end = time.time()
     minutes, seconds = divmod(t_end - t_start, 60)
-    print("finished in ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
 
     # print the results
     cc_energy = get_cc_energy(T, H0)
@@ -110,24 +109,27 @@ def calc_crcc23(T, L, H, H0, system, use_RHF=False):
     total_energy_C = system.reference_energy + energy_C
     total_energy_D = system.reference_energy + energy_D
 
-    print("CCSD = {}".format(system.reference_energy + cc_energy))
+    print('   CR-CC(2,3) Calculation Summary')
+    print('   -------------------------------------')
+    print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
+    print("   CCSD = {:>10.10f}".format(system.reference_energy + cc_energy))
     print(
-        "CR-CC(2,3)_A = {}     Ecorr_A = {}     Delta_A = {}".format(
+        "   CR-CC(2,3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A
         )
     )
     print(
-        "CR-CC(2,3)_B = {}     Ecorr_B = {}     Delta_B = {}".format(
+        "   CR-CC(2,3)_B = {:>10.10f}     ΔE_B = {:>10.10f}     δ_B = {:>10.10f}".format(
             total_energy_B, energy_B, correction_B
         )
     )
     print(
-        "CR-CC(2,3)_C = {}     Ecorr_C = {}     Delta_C = {}".format(
+        "   CR-CC(2,3)_C = {:>10.10f}     ΔE_C = {:>10.10f}     δ_C = {:>10.10f}".format(
             total_energy_C, energy_C, correction_C
         )
     )
     print(
-        "CR-CC(2,3)_D = {}     Ecorr_D = {}     Delta_D = {}".format(
+        "   CR-CC(2,3)_D = {:>10.10f}     ΔE_D = {:>10.10f}     δ_D = {:>10.10f}\n".format(
             total_energy_D, energy_D, correction_D
         )
     )

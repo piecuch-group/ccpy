@@ -24,7 +24,7 @@ mf = scf.ROHF(mol)
 mf.kernel()
 
 system, H = load_pyscf_integrals(mf, nfrozen=2)
-system.set_active_space(nact_occupied=7, nact_unoccupied=9)
+system.set_active_space(nact_occupied=5, nact_unoccupied=9)
 system.print_info()
 
 calculation = Calculation(
