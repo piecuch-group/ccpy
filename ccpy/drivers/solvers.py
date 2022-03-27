@@ -3,7 +3,9 @@ import time
 
 import numpy as np
 
-from ccpy.utilities.printing import print_iteration, print_iteration_header
+from ccpy.utilities.printing import print_cc_iteration, print_cc_iteration_header,\
+                                    print_eomcc_iteration, print_eomcc_iteration_header,\
+                                    print_amplitudes
 from ccpy.utilities.utilities import remove_file
 from ccpy.models.operators import ClusterOperator
 
@@ -180,17 +182,12 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
 
     for n in range(nroot):
         t0_root = time.time()
-
         print("=======================================")
         print("Solving for root - ", n + 1)
         print("Energy of initial guess = {:>10.10f}".format(omega[n]))
+        print_amplitudes(R[n], system, 2, nprint=5)
         print("=======================================")
-        print(
-            " Iter        omega                |r|               dE            Wall Time"
-        )
-        print(
-            "--------------------------------------------------------------------------------"
-        )
+        print_eomcc_iteration_header(n + 1)
 
         # Allocate the B and sigma matrices
         sigma = np.zeros((R[n].ndim, calculation.maximum_iterations))
@@ -226,12 +223,16 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
             residual = np.linalg.norm(R[n].flatten())
             deltaE = omega[n] - omega_old
 
-            minutes, seconds = divmod(time.time() - t1, 60)
-            print(
-                "   {}      {:.10f}       {:.10f}      {:.10f}      {:.2f}m {:.2f}s".format(
-                    curr_size, omega[n], residual, deltaE, minutes, seconds
-                )
-            )
+            # print the iteration of convergence
+            elapsed_time = time.time() - t1
+            print_eomcc_iteration(curr_size, omega[n], residual, deltaE, elapsed_time)
+
+            # minutes, seconds = divmod(time.time() - t1, 60)
+            # print(
+            #     "   {}      {:.10f}       {:.10f}      {:.10f}      {:.2f}m {:.2f}s".format(
+            #         curr_size, omega[n], residual, deltaE, minutes, seconds
+            #     )
+            # )
             if residual < calculation.convergence_tolerance and abs(deltaE) < calculation.convergence_tolerance:
                 is_converged[n] = True
                 break
@@ -285,7 +286,7 @@ def cc_jacobi(update_t, T, dT, H, calculation, system):
     print("   Energy of initial guess = {:>20.10f}".format(energy_old))
 
     t_start = time.time()
-    print_iteration_header()
+    print_cc_iteration_header()
     for niter in range(calculation.maximum_iterations):
         # get iteration start time
         t1 = time.time()
@@ -307,7 +308,7 @@ def cc_jacobi(update_t, T, dT, H, calculation, system):
         ):
             # print the iteration of convergence
             elapsed_time = time.time() - t1
-            print_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+            print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
 
             t_end = time.time()
             minutes, seconds = divmod(t_end - t_start, 60)
@@ -332,24 +333,18 @@ def cc_jacobi(update_t, T, dT, H, calculation, system):
         energy_old = energy
 
         elapsed_time = time.time() - t1
-        print_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+        print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
     else:
         print("CC calculation did not converge.")
 
     return T, energy, is_converged
 
 
-# [TODO]: extend this routine to excited-state left CC in a natural way
-def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation):
+def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground):
     import time
 
     from ccpy.drivers.cc_energy import get_lcc_energy
     from ccpy.drivers.diis import DIIS
-
-    # decide whether this is an excited-state left CC calc based on R
-    is_ground = True
-    if R is not None:
-        is_ground = False
 
     # instantiate the DIIS accelerator object
     diis_engine = DIIS(L, calculation.diis_size, calculation.low_memory)
@@ -363,7 +358,7 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation):
     print("   Energy of initial guess = {:>20.10f}".format(energy_old))
 
     t_start = time.time()
-    print_iteration_header()
+    print_cc_iteration_header()
     for niter in range(calculation.maximum_iterations):
         # get iteration start time
         t1 = time.time()
@@ -379,7 +374,7 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation):
                          calculation.RHF_symmetry)
 
         # left CC correlation energy
-        energy = get_lcc_energy(L, LH)
+        energy = get_lcc_energy(L, LH) + omega
 
         # change in energy
         delta_energy = energy - energy_old
@@ -392,7 +387,7 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation):
         ):
             # print the iteration of convergence
             elapsed_time = time.time() - t1
-            print_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+            print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
 
             t_end = time.time()
             minutes, seconds = divmod(t_end - t_start, 60)
@@ -418,11 +413,11 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation):
 
         # biorthogonalize to R for excited states
         if not is_ground:
-            LR = np.dot(L.flatten().T, R.flatten())
+            LR = np.dot(L.flatten().T, R.flatten()[:L.ndim])
             L.unflatten(1.0/LR * L.flatten())
 
         elapsed_time = time.time() - t1
-        print_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+        print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
     else:
         print("Left CC calculation did not converge.")
 

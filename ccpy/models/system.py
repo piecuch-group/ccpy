@@ -34,7 +34,6 @@ class System:
         self.nunoccupied_alpha = self.norbitals - self.noccupied_alpha
         self.nunoccupied_beta = self.norbitals - self.noccupied_beta
         # active space orbital partitioning
-        # [TODO]: Active-space information should really be in calculation, not system
         self.set_active_space(nact_unoccupied, nact_unoccupied)
         # symmetry information
         self.point_group = point_group

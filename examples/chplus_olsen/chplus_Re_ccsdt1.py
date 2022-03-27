@@ -41,7 +41,7 @@ if __name__ == "__main__":
         low_memory=False,
     )
 
-    R, omega = get_initial_guess(calculation, system, Hbar, 10, noact=0, nuact=0, guess_order=1)
+    R, omega = get_initial_guess(calculation, system, Hbar, 5, noact=0, nuact=0, guess_order=1)
 
     R, omega, r0, is_converged = eomcc_driver(calculation, system, Hbar, T, R, omega)
 

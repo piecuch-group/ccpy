@@ -59,8 +59,6 @@ class DIIS:
 
         return x_xtrap
 
-
-# TODO: Is this really needed? scipy/numpy does it better
 def solve_gauss(A, b):
     """DIIS helper function. Solves the linear system Ax=b using
     Gaussian elimination"""

@@ -29,7 +29,7 @@ def cc_driver(calculation, system, hamiltonian, T=None):
     update_function = getattr(cc_mod, 'update')
 
     cc_printer = CCPrinter(calculation)
-    cc_printer.header()
+    cc_printer.cc_header()
 
     # initialize the cluster operator anew, or use restart
     if T is None:
@@ -54,7 +54,7 @@ def cc_driver(calculation, system, hamiltonian, T=None):
                                            )
     total_energy = system.reference_energy + corr_energy
 
-    cc_printer.calculation_summary(system.reference_energy, corr_energy)
+    cc_printer.cc_calculation_summary(system.reference_energy, corr_energy)
 
     return T, total_energy, is_converged
 
@@ -73,7 +73,7 @@ def ccp_driver(calculation, system, hamiltonian, pspace, T=None):
     update_function = getattr(cc_mod, 'update')
 
     cc_printer = CCPrinter(calculation)
-    cc_printer.header()
+    cc_printer.cc_header()
 
     # initialize the cluster operator anew, or use restart
     if T is None:
@@ -91,7 +91,7 @@ def ccp_driver(calculation, system, hamiltonian, pspace, T=None):
                                            )
     total_energy = system.reference_energy + corr_energy
 
-    cc_printer.calculation_summary(system.reference_energy, corr_energy)
+    cc_printer.cc_calculation_summary(system.reference_energy, corr_energy)
 
     return T, total_energy, is_converged
 
@@ -110,15 +110,12 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
     update_function = getattr(lcc_mod, 'update')
 
     cc_printer = CCPrinter(calculation)
-    cc_printer.header()
+    cc_printer.cc_header()
 
     # decide whether this is a ground-state calculation
     is_ground = True
     if R is not None:
-        if omega == 0.0:
-            is_ground = False
-        else:
-            print('WARNING: omega for ground-state left CC calculation is not identicall 0!')
+        is_ground = False
 
     # initialize the cluster operator anew, or use restart
     if L is None:
@@ -143,6 +140,7 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
                                          hamiltonian,
                                          omega,
                                          calculation,
+                                         is_ground,
                                          )
     total_energy = system.reference_energy + left_corr_energy
 
@@ -163,7 +161,7 @@ def eomcc_driver(calculation, system, hamiltonian, T, R, omega):
     update_function = getattr(module, 'update')
 
     cc_printer = CCPrinter(calculation)
-    cc_printer.header()
+    cc_printer.eomcc_header()
 
     if calculation.low_memory:
         R, omega, r0, is_converged = eomcc_davidson_lowmem(
@@ -188,6 +186,6 @@ def eomcc_driver(calculation, system, hamiltonian, T, R, omega):
                                            system,
                                            )
 
-    #cc_printer.calculation_summary(system.reference_energy, omega)
+    cc_printer.eomcc_calculation_summary(omega, r0, is_converged)
 
     return R, omega, r0, is_converged

@@ -42,7 +42,6 @@ def HR(R, T, H, flag_RHF, system):
         X2A = build_HR_2A(R, T, H)
         X2B = build_HR_2B(R, T, H)
         X2C = build_HR_2C(R, T, H)
-        # [TODO]: Create an HR function to produce one- and two-body components arising from [Hbar * (R1 + R2)]_C
         X3A = build_HR_3A(R, T, H)
         X3B = build_HR_3B(R, T, H)
         X3C = build_HR_3C(R, T, H)

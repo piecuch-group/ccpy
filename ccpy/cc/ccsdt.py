@@ -12,7 +12,6 @@ def update(T, dT, H, shift, flag_RHF, system):
     # update T1
     T, dT = update_t1a(T, dT, H, shift)
     if flag_RHF:
-        # TODO: Maybe copy isn't needed. Reference should suffice
         T.b = T.a.copy()
         dT.b = dT.a.copy()
     else:
