@@ -7,6 +7,7 @@ from ccpy.hbar.hbar_ccsdt import build_hbar_ccsdt
 from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
 
 from ccpy.moments.crcc23 import calc_crcc23
+from ccpy.moments.creomcc23 import calc_creomcc23
 
 from ccpy.eomcc.initial_guess import get_initial_guess
 
@@ -71,7 +72,7 @@ if __name__ == "__main__":
             maximum_iterations=200,
         )
 
-        L[i], _, _ = lcc_driver(calculation, system, T, Hbar, omega=omega[i], R=R[i])
-
+        L[i + 1], _, _ = lcc_driver(calculation, system, T, Hbar, omega=omega[i], R=R[i])
+        Ecrcc23[i + 1], delta23[i + 1] = calc_creomcc23(T, R[i], L[i + 1], r0[i], omega[i], Hbar, H, system)
 
     #Ecrcc23, delta23 = calc_crcc23(T, L, Hbar, H, system, use_RHF=False)
