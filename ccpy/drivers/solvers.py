@@ -187,7 +187,7 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
         print("Energy of initial guess = {:>10.10f}".format(omega[n]))
         print_amplitudes(R[n], system, 2, nprint=5)
         print("=======================================")
-        print_eomcc_iteration_header(n + 1)
+        print_eomcc_iteration_header()
 
         # Allocate the B and sigma matrices
         sigma = np.zeros((R[n].ndim, calculation.maximum_iterations))
@@ -358,7 +358,7 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground):
     print("   Energy of initial guess = {:>20.10f}".format(energy_old))
 
     t_start = time.time()
-    print_cc_iteration_header()
+    print_eomcc_iteration_header()
     for niter in range(calculation.maximum_iterations):
         # get iteration start time
         t1 = time.time()
@@ -387,7 +387,7 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground):
         ):
             # print the iteration of convergence
             elapsed_time = time.time() - t1
-            print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+            print_eomcc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
 
             t_end = time.time()
             minutes, seconds = divmod(t_end - t_start, 60)
@@ -417,7 +417,7 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground):
             L.unflatten(1.0/LR * L.flatten())
 
         elapsed_time = time.time() - t1
-        print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+        print_eomcc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
     else:
         print("Left CC calculation did not converge.")
 
@@ -429,5 +429,7 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground):
         LR += np.einsum("efmn,efmn->", R.ab, L.ab, optimize=True)
         LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
         L.unflatten(1.0/LR * L.flatten())
+    else:
+        LR = 0.0
 
-    return L, energy, is_converged
+    return L, energy, LR, is_converged

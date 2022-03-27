@@ -132,7 +132,7 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
     # regardless of restart status, initialize residual anew
     LH = ClusterOperator(system, calculation.order)
 
-    L, left_corr_energy, is_converged = left_cc_jacobi(update_function,
+    L, omega, LR, is_converged = left_cc_jacobi(update_function,
                                          L,
                                          LH,
                                          T,
@@ -142,7 +142,9 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
                                          calculation,
                                          is_ground,
                                          )
-    total_energy = system.reference_energy + left_corr_energy
+    total_energy = system.reference_energy + omega
+
+    cc_printer.leftcc_calculation_summary(omega, LR, is_converged)
 
     return L, total_energy, is_converged
 
