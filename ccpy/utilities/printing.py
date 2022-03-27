@@ -289,7 +289,7 @@ def print_amplitudes(R, system, order, nprint=10, thresh_print=1.0e-01):
                     R.bb[a, b, j, i] = 0.0
                     R.bb[b, a, i, j] = 0.0
 
-    R2 = R.flatten()[n1a + n1b :]
+    R2 = R.flatten()[n1a + n1b : n1a + n1b + n2a + n2b + n2c]
     idx = np.flip(np.argsort(abs(R2)))
     print("     Largest Doubly Excited Amplitudes:")
     for n in range(nprint):
