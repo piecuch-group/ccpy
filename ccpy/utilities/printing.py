@@ -194,8 +194,8 @@ class CCPrinter:
         print("")
 
 
-ITERATION_HEADER_FMT = "{:>21} {:>16} {:>17} {:>20} {:>24}"
-ITERATION_FMT = "{:>20} {:>20.10f} {:>20.10f} {:>20.10f} {:>20}"
+ITERATION_HEADER_FMT = "{:>10} {:>12} {:>14} {:>17} {:>19}"
+ITERATION_FMT = "{:>8} {:>17.10f} {:>17.10f} {:>17.10f} {:>15}"
 
 CC_ITERATION_HEADER = ITERATION_HEADER_FMT.format(
     "Iter.", "Residuum", "δE", "ΔE", "Wall time"
@@ -207,11 +207,11 @@ EOMCC_ITERATION_HEADER = ITERATION_HEADER_FMT.format(
 
 def print_cc_iteration_header():
     print("\n", CC_ITERATION_HEADER)
-    print('     '+(len(CC_ITERATION_HEADER) + 3) * "-")
+    print('    '+(len(CC_ITERATION_HEADER)) * "-")
 
 def print_eomcc_iteration_header():
     print("\n", EOMCC_ITERATION_HEADER)
-    print('     '+(len(EOMCC_ITERATION_HEADER) + 3) * "-")
+    print('    '+(len(EOMCC_ITERATION_HEADER)) * "-")
 
 
 def print_cc_iteration(

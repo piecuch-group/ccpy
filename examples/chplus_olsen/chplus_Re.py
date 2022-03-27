@@ -35,7 +35,7 @@ if __name__ == "__main__":
         RHF_symmetry=False,
     )
 
-    T, total_energy, is_converged = cc_driver(calculation, system, H)
+    T, total_energy, _ = cc_driver(calculation, system, H)
 
     Hbar = build_hbar_ccsd(T, H)
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         maximum_iterations=200,
     )
 
-    L[0], total_energy, is_converged = lcc_driver(calculation, system, T, Hbar)
+    L[0], _, _ = lcc_driver(calculation, system, T, Hbar)
     Ecrcc23[0], delta23[0] = calc_crcc23(T, L[0], Hbar, H, system, use_RHF=False)
 
     calculation = Calculation(
@@ -73,6 +73,5 @@ if __name__ == "__main__":
         )
 
         L[i + 1], _, _ = lcc_driver(calculation, system, T, Hbar, omega=omega[i], R=R[i])
-        Ecrcc23[i + 1], delta23[i + 1] = calc_creomcc23(T, R[i], L[i + 1], r0[i], omega[i], Hbar, H, system)
 
-    #Ecrcc23, delta23 = calc_crcc23(T, L, Hbar, H, system, use_RHF=False)
+    Ecrcc23[1:], delta23[1:] = calc_creomcc23(T, R, L, r0, omega, Hbar, H, system, use_RHF=False)
