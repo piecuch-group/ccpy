@@ -1,25 +1,16 @@
 import datetime
 import numpy as np
 
-from art import tprint
-
-CCPY_TITLE = """
-   _____    _____     __ __     __  __  
-  /\ __/\  /\ __/\  /_/\__/\  /\  /\  /\
-  ) )__\/  ) )__\/  ) ) ) ) ) \ \ \/ / /
-  / / /    / / /    /_/ /_/ /   \ \__/ / 
-  \ \ \_   \ \ \_   \ \ \_\/     \__/ /  
-   ) )__/\  ) )__/\  )_) )       / / /   
-   \/___\/  \/___\/  \_\/        \/_/
-"""
 
 WHITESPACE = "  "
 
+# [TODO]: Make EOMCC printer
+# [TODO]: Make left-CC printer
+
 
 def ccpy_header():
-    # twisted, sub-zero, swampland, starwars
-    tprint("   ccpy", "twisted")
-    # print(whitespace, ccpy_title)
+
+    print("CCpy: Coupled-Cluster Package for Electronic Structure Calculations")
     print(WHITESPACE, "Authors:")
     print(WHITESPACE, " Karthik Gururangan (gururang@msu.edu)")
     print(WHITESPACE, " J. Emiliano Deustua (edeustua@caltech.edu)")
@@ -91,7 +82,7 @@ class CCPrinter:
     def __init__(self, calculation):
         self.calculation = calculation
 
-    def header(self):
+    def cc_header(self):
         print(WHITESPACE, "--------------------------------------------------")
         print(
             WHITESPACE, "Calculation type = ", self.calculation.calculation_type.upper()
@@ -119,8 +110,35 @@ class CCPrinter:
             "\n",
         )
 
+    def eomcc_header(self):
+        print(WHITESPACE, "--------------------------------------------------")
+        print(
+            WHITESPACE, "Calculation type = ", self.calculation.calculation_type.upper()
+        )
+        print(WHITESPACE, "Maximum iterations =", self.calculation.maximum_iterations)
+        print(
+            WHITESPACE,
+            "Convergence tolerance =",
+            self.calculation.convergence_tolerance,
+        )
+        print(WHITESPACE, "State target multiplicity =", self.calculation.multiplicity)
+        print(WHITESPACE, "RHF symmetry =", self.calculation.RHF_symmetry)
+        #if self.calculation.active_orders != [None]:
+        #    print(WHITESPACE, "Number active occupied =", calculation.)
+
+        print(WHITESPACE, "--------------------------------------------------")
+        print("")
+        print(
+            WHITESPACE,
+            "EOMCC calculation started at",
+            datetime.datetime.strptime(
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "%Y-%m-%d %H:%M"
+            ),
+            "\n",
+        )
+
     @staticmethod
-    def calculation_summary(reference_energy, cc_energy):
+    def cc_calculation_summary(reference_energy, cc_energy):
         DATA_FMT = "{:<30} {:>20.8f}"
         print("\n   CC Calculation Summary")
         print("  --------------------------------------------------")
@@ -128,27 +146,56 @@ class CCPrinter:
         print(DATA_FMT.format("   CC correlation energy", cc_energy))
         print(DATA_FMT.format("   Total CC energy", reference_energy + cc_energy))
         print(
-            "\nCC calculation ended at",
+            "\n   CC calculation ended at",
             datetime.datetime.strptime(
                 datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "%Y-%m-%d %H:%M:%S",
             ),
         )
+        print("")
+
+    @staticmethod
+    def eomcc_calculation_summary(omega, r0, is_converged):
+        DATA_FMT = "{:>7} {:<6} {} {:.8f} {:>6} {:.8f}     {}"
+        print("\n   EOMCC Calculation Summary")
+        print("  --------------------------------------------------")
+        for n in range(len(omega)):
+            if is_converged[n]:
+                convergence_label = 'converged'
+            else:
+                convergence_label = 'not converged'
+            print(DATA_FMT.format("State", n + 1, "ω =", omega[n], "r0 =", r0[n], convergence_label))
+        print(
+            "\n   EOMCC calculation ended at",
+            datetime.datetime.strptime(
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "%Y-%m-%d %H:%M:%S",
+            ),
+        )
+        print("")
 
 
 ITERATION_HEADER_FMT = "{:>21} {:>16} {:>18} {:>19} {:>23}"
 ITERATION_FMT = "{:>20} {:>20.10f} {:>20.10f} {:>20.10f} {:>20}"
-ITERATION_HEADER = ITERATION_HEADER_FMT.format(
+
+CC_ITERATION_HEADER = ITERATION_HEADER_FMT.format(
     "Iter.", "Residuum", "δE", "ΔE", "Wall time"
+)
+EOMCC_ITERATION_HEADER = ITERATION_HEADER_FMT.format(
+    "Iter.", "Residuum", "ω", "δω", "Wall time"
 )
 
 
-def print_iteration_header():
-    print("\n", ITERATION_HEADER)
-    print(len(ITERATION_HEADER) * "-")
+def print_cc_iteration_header():
+    print("\n", CC_ITERATION_HEADER)
+    print(len(CC_ITERATION_HEADER) * "-")
+
+def print_eomcc_iteration_header(nroot):
+    print("\n", EOMCC_ITERATION_HEADER)
+    print(len(EOMCC_ITERATION_HEADER) * "-")
 
 
-def print_iteration(
+def print_cc_iteration(
     iteration_idx, residuum, delta_energy, correlation_energy, elapsed_time
 ):
     minutes, seconds = divmod(elapsed_time, 60)
@@ -156,6 +203,17 @@ def print_iteration(
     print(
         ITERATION_FMT.format(
             iteration_idx, residuum, delta_energy, correlation_energy, time_str
+        )
+    )
+
+def print_eomcc_iteration(
+    iteration_idx, omega, residuum, delta_energy, elapsed_time
+):
+    minutes, seconds = divmod(elapsed_time, 60)
+    time_str = f"({minutes:.1f}m {seconds:.1f}s)"
+    print(
+        ITERATION_FMT.format(
+            iteration_idx, residuum, omega, delta_energy, time_str
         )
     )
 

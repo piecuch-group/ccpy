@@ -642,7 +642,6 @@ def active_update(T, dT, H, shift, flag_RHF, system):
     dT = update_t1a.build_01(T, dT, H, system)
     dT = update_t1a.build_00(T, dT, H, system)
     if flag_RHF:
-        # TODO: Maybe copy isn't needed. Reference should suffice
         T.b = T.a.copy()
         dT.b = dT.a.copy()
     else:

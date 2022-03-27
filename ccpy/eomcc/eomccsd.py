@@ -27,7 +27,6 @@ def HR(dR, R, T, H, flag_RHF, system):
     # update R1
     dR.a = build_HR_1A(R, T, H)
     if flag_RHF:
-        # TODO: Maybe copy isn't needed. Reference should suffice
         dR.b = dR.a.copy()
     else:
         dR.b = build_HR_1B(R, T, H)
