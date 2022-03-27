@@ -14,7 +14,7 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
 
     nroot = len(R)
     assert(len(omega) == nroot)
-    assert(len(omega) == r0)
+    assert(len(r0) == nroot)
 
     correction_A = [0.0] * nroot
     correction_B = [0.0] * nroot
