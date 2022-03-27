@@ -156,12 +156,12 @@ class CCPrinter:
 
     @staticmethod
     def eomcc_calculation_summary(omega, r0, is_converged):
-        DATA_FMT = "{:>7} {:<6} {} {:.8f} {:>6} {:.8f}     {}"
+        DATA_FMT = "{:>7} {:<10} {} {:.8f} {:>10} {:.8f}     {}"
         print("\n   EOMCC Calculation Summary")
-        print("  --------------------------------------------------")
+        print("  --------------------------------------------------------")
         for n in range(len(omega)):
             if is_converged[n]:
-                convergence_label = 'converged'
+                convergence_label = ''
             else:
                 convergence_label = 'not converged'
             print(DATA_FMT.format("State", n + 1, "ω =", omega[n], "r0 =", r0[n], convergence_label))
@@ -174,8 +174,27 @@ class CCPrinter:
         )
         print("")
 
+    @staticmethod
+    def leftcc_calculation_summary(omega, LR, is_converged):
+        DATA_FMT = "{:>12} {:>10} {:.8f} {:>10} {:.8f}"
+        print("\n   Left-CC Calculation Summary")
+        print("  --------------------------------------------------")
+        if is_converged:
+            convergence_label = 'Converged'
+        else:
+            convergence_label = 'Not converged'
+        print(DATA_FMT.format(convergence_label, "ω =", omega, "LR =", LR))
+        print(
+            "\n   Left CC calculation ended at",
+            datetime.datetime.strptime(
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "%Y-%m-%d %H:%M:%S",
+            ),
+        )
+        print("")
 
-ITERATION_HEADER_FMT = "{:>21} {:>16} {:>18} {:>19} {:>23}"
+
+ITERATION_HEADER_FMT = "{:>21} {:>16} {:>17} {:>20} {:>24}"
 ITERATION_FMT = "{:>20} {:>20.10f} {:>20.10f} {:>20.10f} {:>20}"
 
 CC_ITERATION_HEADER = ITERATION_HEADER_FMT.format(
@@ -188,11 +207,11 @@ EOMCC_ITERATION_HEADER = ITERATION_HEADER_FMT.format(
 
 def print_cc_iteration_header():
     print("\n", CC_ITERATION_HEADER)
-    print(len(CC_ITERATION_HEADER) * "-")
+    print('     '+(len(CC_ITERATION_HEADER) + 3) * "-")
 
-def print_eomcc_iteration_header(nroot):
+def print_eomcc_iteration_header():
     print("\n", EOMCC_ITERATION_HEADER)
-    print(len(EOMCC_ITERATION_HEADER) * "-")
+    print('     '+(len(EOMCC_ITERATION_HEADER) + 3) * "-")
 
 
 def print_cc_iteration(
