@@ -387,7 +387,7 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground):
         ):
             # print the iteration of convergence
             elapsed_time = time.time() - t1
-            print_eomcc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+            print_eomcc_iteration(niter, omega, residuum, delta_energy, elapsed_time)
 
             t_end = time.time()
             minutes, seconds = divmod(t_end - t_start, 60)
@@ -417,7 +417,7 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground):
             L.unflatten(1.0/LR * L.flatten())
 
         elapsed_time = time.time() - t1
-        print_eomcc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+        print_eomcc_iteration(niter, omega, residuum, delta_energy, elapsed_time)
     else:
         print("Left CC calculation did not converge.")
 
