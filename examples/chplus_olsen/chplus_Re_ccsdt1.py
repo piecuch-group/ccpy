@@ -7,6 +7,8 @@ from ccpy.hbar.hbar_ccsdt import build_hbar_ccsdt1
 
 from ccpy.eomcc.initial_guess import get_initial_guess
 
+from ccpy.moments.cct3 import calc_cct3, calc_eomcct3
+
 if __name__ == "__main__":
     system, H = load_from_gamess(
             "chplus_re.log",
@@ -41,7 +43,21 @@ if __name__ == "__main__":
         low_memory=False,
     )
 
-    R, omega = get_initial_guess(calculation, system, Hbar, 3, noact=0, nuact=0, guess_order=1)
+    R, omega = get_initial_guess(calculation, system, Hbar, 1, noact=0, nuact=0, guess_order=1)
 
     R, omega, r0, is_converged = eomcc_driver(calculation, system, Hbar, T, R, omega)
 
+    L = [None] * len(R)
+
+    calculation = Calculation(
+       order=2,
+       calculation_type="left_ccsd",
+       convergence_tolerance=1.0e-08,
+        maximum_iterations=200,
+    )
+
+    for i in range(len(R)):
+
+        L[i], _, _ = lcc_driver(calculation, system, T, Hbar, omega=omega[i], R=R[i])
+
+    Ecct3, delta23 = calc_eomcct3(T, R, L, r0, omega, Hbar, H, system, use_RHF=False)
