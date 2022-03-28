@@ -142,7 +142,7 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
     for n in range(nroot):
         print("   State", n + 1)
         print("   ---------")
-        print("   EOMCCSD = {:>10.10f}".format(system.reference_energy + cc_energy + omega[n]))
+        print("   EOMCCSD = {:>10.10f}    ω = {:>10.10f}".format(system.reference_energy + cc_energy + omega[n], omega[n]))
         print(
             "   CR-EOMCC(2,3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
                 total_energy_A[n], energy_A[n], correction_A[n]
