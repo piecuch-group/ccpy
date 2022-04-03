@@ -155,13 +155,17 @@ def update_t2a(T, dT, H, H0, shift):
         "mnef,afin->amie", H.bb.oovv, T.ab, optimize=True
     )
 
-    dT.aa = -0.5 * np.einsum("amij,bm->abij", H.aa.vooo, T.a, optimize=True)
+    I2A_vooo = H.aa.vooo + 0.5*np.einsum('anef,efij->anij', H.aa.vovv, T.aa, optimize=True)
+
+    tau = 0.5 * T.aa + np.einsum('ai,bj->abij', T.a, T.a, optimize=True)
+
+    dT.aa = -0.5 * np.einsum("amij,bm->abij", I2A_vooo, T.a, optimize=True)
     dT.aa += 0.5 * np.einsum("abie,ej->abij", H.aa.vvov, T.a, optimize=True)
     dT.aa += 0.5 * np.einsum("ae,ebij->abij", I1A_vv, T.aa, optimize=True)
     dT.aa -= 0.5 * np.einsum("mi,abmj->abij", I1A_oo, T.aa, optimize=True)
     dT.aa += np.einsum("amie,ebmj->abij", I2A_voov, T.aa, optimize=True)
     dT.aa += np.einsum("amie,bejm->abij", I2B_voov, T.ab, optimize=True)
-    dT.aa += 0.125 * np.einsum("abef,efij->abij", H.aa.vvvv, T.aa, optimize=True)
+    dT.aa += 0.25 * np.einsum("abef,efij->abij", H.aa.vvvv, tau, optimize=True)
     dT.aa += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
 
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
@@ -216,8 +220,13 @@ def update_t2b(T, dT, H, H0, shift):
 
     I2B_vovo = H.ab.vovo - np.einsum("mnef,afmj->anej", H.ab.oovv, T.ab, optimize=True)
 
-    dT.ab = -np.einsum("mbij,am->abij", H.ab.ovoo, T.a, optimize=True)
-    dT.ab -= np.einsum("amij,bm->abij", H.ab.vooo, T.b, optimize=True)
+    I2B_ovoo = H.ab.ovoo + np.einsum("maef,efij->maij", H.ab.ovvv, T.ab, optimize=True)
+    I2B_vooo = H.ab.vooo + np.einsum("amef,efij->amij", H.ab.vovv, T.ab, optimize=True)
+
+    tau = T.ab + np.einsum('ai,bj->abij', T.a, T.b, optimize=True)
+
+    dT.ab = -np.einsum("mbij,am->abij", I2B_ovoo, T.a, optimize=True)
+    dT.ab -= np.einsum("amij,bm->abij", I2B_vooo, T.b, optimize=True)
     dT.ab += np.einsum("abej,ei->abij", H.ab.vvvo, T.a, optimize=True)
     dT.ab += np.einsum("abie,ej->abij", H.ab.vvov, T.b, optimize=True)
     dT.ab += np.einsum("ae,ebij->abij", I1A_vv, T.ab, optimize=True)
@@ -231,7 +240,7 @@ def update_t2b(T, dT, H, H0, shift):
     dT.ab -= np.einsum("mbie,aemj->abij", H.ab.ovov, T.ab, optimize=True)
     dT.ab -= np.einsum("amej,ebim->abij", I2B_vovo, T.ab, optimize=True)
     dT.ab += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
-    dT.ab += np.einsum("abef,efij->abij", H.ab.vvvv, T.ab, optimize=True)
+    dT.ab += np.einsum("abef,efij->abij", H.ab.vvvv, tau, optimize=True)
 
     T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
         T.ab, dT.ab + H0.ab.vvoo, H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv, shift
@@ -271,13 +280,17 @@ def update_t2c(T, dT, H, H0, shift):
         "mnef,afin->amie", H.bb.oovv, T.bb, optimize=True
     )
 
-    dT.bb = -0.5 * np.einsum("amij,bm->abij", H.bb.vooo, T.b, optimize=True)
+    I2C_vooo = H.bb.vooo + 0.5*np.einsum('anef,efij->anij', H.bb.vovv, T.bb, optimize=True)
+
+    tau = 0.5 * T.aa + np.einsum('ai,bj->abij', T.a, T.a, optimize=True)
+
+    dT.bb = -0.5 * np.einsum("amij,bm->abij", I2C_vooo, T.b, optimize=True)
     dT.bb += 0.5 * np.einsum("abie,ej->abij", H.bb.vvov, T.b, optimize=True)
     dT.bb += 0.5 * np.einsum("ae,ebij->abij", I1B_vv, T.bb, optimize=True)
     dT.bb -= 0.5 * np.einsum("mi,abmj->abij", I1B_oo, T.bb, optimize=True)
     dT.bb += np.einsum("amie,ebmj->abij", I2C_voov, T.bb, optimize=True)
     dT.bb += np.einsum("maei,ebmj->abij", I2B_ovvo, T.ab, optimize=True)
-    dT.bb += 0.125 * np.einsum("abef,efij->abij", H.bb.vvvv, T.bb, optimize=True)
+    dT.bb += 0.25 * np.einsum("abef,efij->abij", H.bb.vvvv, tau, optimize=True)
     dT.bb += 0.125 * np.einsum("mnij,abmn->abij", I2C_oooo, T.bb, optimize=True)
 
     T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
