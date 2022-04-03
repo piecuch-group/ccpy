@@ -4,7 +4,7 @@ and triples (CCSDT) calculation for a molecular system."""
 import numpy as np
 import time
 
-from ccpy.hbar.hbar_ccs import get_ccs_intermediates
+from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.cc.ccsdt1_updates import *
 
@@ -34,7 +34,7 @@ def update(T, dT, H, shift, flag_RHF, system):
         T, dT = update_t1b.update(T, dT, H, shift)
 
     # CCS intermediates
-    hbar = get_ccs_intermediates(T, H)
+    hbar = get_ccs_intermediates_opt(T, H)
 
     ####### T2 updates #######
     # t2a update
