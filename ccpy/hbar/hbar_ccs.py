@@ -1,9 +1,5 @@
 import numpy as np
 
-# [TODO]: The vvov terms for aa and bb and the vvvo term for ab is inefficient! We are contracting with a vvvv
-# terms to construct this intermediate. This vvvv contraction should be lumped in with the v(abef) * t(efij) term
-# in the T2 update.
-
 def get_ccs_intermediates(T, H0):
     """
     Calculate the CCS-like similarity-transformed HBar intermediates (H_N e^T1)_C.
