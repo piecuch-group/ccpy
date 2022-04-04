@@ -32,9 +32,16 @@ def main(args):
     #system.set_active_space(nact_occupied=5, nact_unoccupied=9)
     system.print_info()
 
+    if args.method == 'ccsd':
+        order = 2
+    elif args.method == 'ccsdt' or args.method == 'ccsdt1':
+        order = 3
+    else:
+        print('Undefined method order!')
+
     calculation = Calculation(
-        order=2,
-        calculation_type="ccsd",
+        order=order,
+        calculation_type=args.method,
         convergence_tolerance=1.0e-08,
         diis_size=6,
     )
@@ -58,6 +65,7 @@ def main(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run F2 calculation at certain separation in units of Re (Re = 2.66816 a.u.).")
+    parser.add_argument("-method", type=str, help="CC method to run (default is 'ccsd').", default="ccsd")
     parser.add_argument("-re", type=float, help="Separation in units of Re (default is 2).", default=2.0)
     parser.add_argument("-basis", type=str, help="Basis set (default is ccpvdz).", default="ccpvdz")
 
