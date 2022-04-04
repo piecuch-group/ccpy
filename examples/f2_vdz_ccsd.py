@@ -10,11 +10,17 @@ def main(args):
 
     from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
 
-    from ccpy.moments.cct3 import calc_cct3
+    from ccpy.moments.crcc23 import calc_crcc23
 
     mol = gto.Mole()
 
     Re = 2.66816 # a.u.
+
+    use_cartesian = False
+
+    # for consistency with our papers on F2, cc-pVDZ basis uses Cartesian basis functions
+    if args.basis == 'ccpvdz':
+        use_cartesian = True
 
     mol.build(
         atom=[['F', (0, 0, -0.5 * args.re * Re)], ['F', (0, 0, 0.5 * args.re * Re)]],
@@ -22,7 +28,7 @@ def main(args):
         charge=0,
         spin=0,
         symmetry="D2H",
-        cart=True,
+        cart=use_cartesian,
         unit='Bohr',
     )
     mf = scf.ROHF(mol)
@@ -48,18 +54,18 @@ def main(args):
 
     T, total_energy, is_converged = cc_driver(calculation, system, H)
 
-    # calculation = Calculation(
-    #     order=2,
-    #     calculation_type="left_ccsd",
-    #     convergence_tolerance=1.0e-08
-    # )
-    #
-    # Hbar = build_hbar_ccsd(T, H)
-    #
-    # L, total_energy, is_converged = lcc_driver(calculation, system, T, Hbar, omega=0.0, L=None, R=None)
-    #
-    # Ecct3, delta23 = calc_cct3(T, L, Hbar, H, system, use_RHF=False)
-    #
+    calculation = Calculation(
+        order=2,
+        calculation_type="left_ccsd",
+        convergence_tolerance=1.0e-08
+    )
+
+    Hbar = build_hbar_ccsd(T, H)
+
+    L, total_energy, is_converged = lcc_driver(calculation, system, T, Hbar, omega=0.0, L=None, R=None)
+
+    Ecrcc23, delta23 = calc_crcc23(T, L, Hbar, H, system, use_RHF=False)
+
 
 
 if __name__ == "__main__":
