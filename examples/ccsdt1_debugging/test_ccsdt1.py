@@ -10,7 +10,7 @@ from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.drivers.driver import cc_driver
 
 from ccpy.hbar.hbar_ccsd import build_hbar_ccsd, get_ccsd_intermediates
-from ccpy.hbar.hbar_ccs import get_ccs_intermediates
+from ccpy.hbar.hbar_ccs import get_ccs_intermediates, get_ccs_intermediates_opt
 
 from ccpy.utilities.active_space import fill_t3aaa, fill_t3aab, fill_t3abb, fill_t3bbb, get_active_slices,\
     zero_t3aaa_outside_active_space, zero_t3bbb_outside_active_space, zero_t3aab_outside_active_space, zero_t3abb_outside_active_space
@@ -653,11 +653,21 @@ def active_update(T, dT, H, shift, flag_RHF, system):
         dT = update_t1b.build_00(T, dT, H, system)
 
     # CCS intermediates
-    hbar = get_ccs_intermediates(T, H)
+    #hbar = get_ccs_intermediates(T, H)
+    hbar = get_ccs_intermediates_opt(T, H)
+    # adjust intermediates to CCSDT case
+    hbar.aa.ooov += H.aa.ooov
+    hbar.aa.vovv += H.aa.vovv
+    hbar.ab.ooov += H.ab.ooov
+    hbar.ab.oovo += H.ab.oovo
+    hbar.ab.vovv += H.ab.vovv
+    hbar.ab.ovvv += H.ab.ovvv
+    hbar.bb.ooov += H.bb.ooov
+    hbar.bb.vovv += H.bb.vovv
 
     ####### T2 updates #######
     # t2a update
-    x2 = update_t2a.build_ccsd(T, hbar)   # base CCSD part (separately antisymmetrized)
+    x2 = update_t2a.build_ccsd(T, hbar, H)   # base CCSD part (separately antisymmetrized)
     # Add on T3 parts
     dT = update_t2a.build_1111(T, dT, hbar, system)
     dT = update_t2a.build_1101(T, dT, hbar, system)
@@ -670,7 +680,7 @@ def active_update(T, dT, H, shift, flag_RHF, system):
     dT = update_t2a.build_0000(T, dT, hbar, system)
     dT.aa += x2
 
-    x2 = update_t2b.build_ccsd(T, hbar)   # base CCSD part
+    x2 = update_t2b.build_ccsd(T, hbar, H)   # base CCSD part
     # Add on T3 parts
     dT = update_t2b.build_1111(T, dT, hbar, system)
     dT = update_t2b.build_1101(T, dT, hbar, system)
@@ -694,7 +704,7 @@ def active_update(T, dT, H, shift, flag_RHF, system):
         T.bb = T.aa.copy()
         dT.bb = dT.aa.copy()
     else:
-        x2 = update_t2c.build_ccsd(T, hbar)   # base CCSD part (separately antisymmetrized)
+        x2 = update_t2c.build_ccsd(T, hbar, H)   # base CCSD part (separately antisymmetrized)
         # Add on T3 parts
         dT = update_t2c.build_1111(T, dT, hbar, system)
         dT = update_t2c.build_1101(T, dT, hbar, system)
@@ -826,7 +836,7 @@ if __name__ == "__main__":
 
 
     system, H = load_pyscf_integrals(mf, nfrozen=2)
-    system.set_active_space(nact_occupied=7, nact_unoccupied=23)
+    system.set_active_space(nact_occupied=5, nact_unoccupied=9)
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 

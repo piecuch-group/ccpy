@@ -282,7 +282,7 @@ def update_t2c(T, dT, H, H0, shift):
 
     I2C_vooo = H.bb.vooo + 0.5*np.einsum('anef,efij->anij', H0.bb.vovv + 0.5 * H.bb.vovv, T.bb, optimize=True)
 
-    tau = 0.5 * T.aa + np.einsum('ai,bj->abij', T.a, T.a, optimize=True)
+    tau = 0.5 * T.bb + np.einsum('ai,bj->abij', T.b, T.b, optimize=True)
 
     dT.bb = -0.5 * np.einsum("amij,bm->abij", I2C_vooo, T.b, optimize=True)
     dT.bb += 0.5 * np.einsum("abie,ej->abij", H.bb.vvov, T.b, optimize=True)
