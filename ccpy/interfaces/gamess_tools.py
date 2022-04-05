@@ -24,15 +24,15 @@ def load_from_gamess(
         data.nmo,
         data.mult,
         nfrozen,
-        point_group=getGamessPointGroup(gamess_logfile),
+        point_group=get_point_group(gamess_logfile),
         orbital_symmetries=[x.upper() for x in data.mosyms[0]],
         charge=data.charge,
-        nuclear_repulsion=getGamessNuclearRepulsion(gamess_logfile),
+        nuclear_repulsion=get_nuclear_repulsion(gamess_logfile),
         mo_energies=[x * constants.eVtohartree for x in data.moenergies[0]],
     )
 
-    e1int = loadOnebodyIntegralFile(onebody_file, system, data_type)
-    nuclear_repulsion, e2int = loadTwobodyIntegralFile(twobody_file, system, data_type)
+    e1int = load_onebody_integrals(onebody_file, system, data_type)
+    nuclear_repulsion, e2int = load_twobody_integrals(twobody_file, system, data_type)
 
     assert np.allclose(
         nuclear_repulsion, system.nuclear_repulsion, atol=1.0e-06, rtol=0.0
@@ -43,14 +43,14 @@ def load_from_gamess(
     hf_energy = calc_hf_energy(e1int, e2int, system)
     hf_energy += system.nuclear_repulsion
     assert np.allclose(
-        hf_energy, getGamessSCFEnergy(gamess_logfile), atol=1.0e-06, rtol=0.0
+        hf_energy, get_reference_energy(gamess_logfile), atol=1.0e-06, rtol=0.0
     )
     system.reference_energy = hf_energy
 
     return system, getHamiltonian(e1int, e2int, system, normal_ordered)
 
 
-def getGamessSCFEnergy(gamess_logfile):
+def get_reference_energy(gamess_logfile):
 
     with open(gamess_logfile, "r") as f:
         for line in f.readlines():
@@ -62,7 +62,7 @@ def getGamessSCFEnergy(gamess_logfile):
     return hf_energy
 
 
-def getGamessNuclearRepulsion(gamess_logfile):
+def get_nuclear_repulsion(gamess_logfile):
 
     with open(gamess_logfile, "r") as f:
         for line in f.readlines():
@@ -75,7 +75,7 @@ def getGamessNuclearRepulsion(gamess_logfile):
     return e_nuclear
 
 
-def getGamessPointGroup(gamess_logfile):
+def get_point_group(gamess_logfile):
     """Dumb way of getting the point group from GAMESS log files.
 
     Arguments:
@@ -103,7 +103,7 @@ def getGamessPointGroup(gamess_logfile):
     return point_group
 
 
-def getNumberTotalOrbitals(onebody_file):
+def get_number_orbitals(onebody_file):
     with open(onebody_file) as f_in:
         lines = f_in.readlines()
         ct = 0
@@ -112,7 +112,7 @@ def getNumberTotalOrbitals(onebody_file):
     return int(-0.5 + np.sqrt(0.25 + 2 * x))
 
 
-def loadOnebodyIntegralFile(onebody_file, system, data_type):
+def load_onebody_integrals(onebody_file, system, data_type):
     """This function reads the onebody.inp file from GAMESS
     and returns a numpy matrix.
 
@@ -145,7 +145,7 @@ def loadOnebodyIntegralFile(onebody_file, system, data_type):
     return e1int
 
 
-def loadTwobodyIntegralFile(twobody_file, system, data_type):
+def load_twobody_integrals(twobody_file, system, data_type):
     """This function reads the twobody.inp file from GAMESS
     and returns a numpy matrix.
 

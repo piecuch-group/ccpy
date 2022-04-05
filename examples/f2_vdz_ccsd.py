@@ -35,19 +35,29 @@ def main(args):
     mf.kernel()
 
     system, H = load_pyscf_integrals(mf, nfrozen=2)
-    #system.set_active_space(nact_occupied=5, nact_unoccupied=9)
+    system.set_active_space(nact_occupied=5, nact_unoccupied=9)
     system.print_info()
 
     if args.method == 'ccsd':
         order = 2
-    elif args.method == 'ccsdt' or args.method == 'ccsdt1':
+        num_active = [None]
+        active_orders = [None]
+    elif args.method == 'ccsdt':
         order = 3
+        num_active = [None]
+        active_orders = [None]
+    elif args.method == 'ccsdt1':
+        order = 3
+        num_active = [1]
+        active_orders = [3]
     else:
         print('Undefined method order!')
 
     calculation = Calculation(
         order=order,
         calculation_type=args.method,
+        active_orders=active_orders,
+        num_active=num_active,
         convergence_tolerance=1.0e-08,
         diis_size=6,
     )

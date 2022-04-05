@@ -4,72 +4,142 @@ from ccpy.utilities.active_space import get_active_slices
 
 from ccpy.utilities.updates import cc_active_loops
 
-
-def build_ccsd(T, H):
+def build_ccsd(T, H, H0):
     """
-    Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2))_C|0>.
     """
     # intermediates
     I1A_vv = (
-            H.a.vv
-            - 0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, T.aa, optimize=True)
-            - np.einsum("mnef,afmn->ae", H.ab.oovv, T.ab, optimize=True)
+        H.a.vv
+        - 0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, T.aa, optimize=True)
+        - np.einsum("mnef,afmn->ae", H.ab.oovv, T.ab, optimize=True)
     )
 
     I1B_vv = (
-            H.b.vv
-            - np.einsum("nmfe,fbnm->be", H.ab.oovv, T.ab, optimize=True)
-            - 0.5 * np.einsum("mnef,fbnm->be", H.bb.oovv, T.bb, optimize=True)
+        H.b.vv
+        - np.einsum("nmfe,fbnm->be", H.ab.oovv, T.ab, optimize=True)
+        - 0.5 * np.einsum("mnef,fbnm->be", H.bb.oovv, T.bb, optimize=True)
     )
 
     I1A_oo = (
-            H.a.oo
-            + 0.5 * np.einsum("mnef,efin->mi", H.aa.oovv, T.aa, optimize=True)
-            + np.einsum("mnef,efin->mi", H.ab.oovv, T.ab, optimize=True)
+        H.a.oo
+        + 0.5 * np.einsum("mnef,efin->mi", H.aa.oovv, T.aa, optimize=True)
+        + np.einsum("mnef,efin->mi", H.ab.oovv, T.ab, optimize=True)
     )
 
     I1B_oo = (
-            H.b.oo
-            + np.einsum("nmfe,fenj->mj", H.ab.oovv, T.ab, optimize=True)
-            + 0.5 * np.einsum("mnef,efjn->mj", H.bb.oovv, T.bb, optimize=True)
+        H.b.oo
+        + np.einsum("nmfe,fenj->mj", H.ab.oovv, T.ab, optimize=True)
+        + 0.5 * np.einsum("mnef,efjn->mj", H.bb.oovv, T.bb, optimize=True)
     )
 
     I2A_voov = (
-            H.aa.voov
-            + np.einsum("mnef,aeim->anif", H.aa.oovv, T.aa, optimize=True)
-            + np.einsum("nmfe,aeim->anif", H.ab.oovv, T.ab, optimize=True)
+        H.aa.voov
+        + np.einsum("mnef,aeim->anif", H.aa.oovv, T.aa, optimize=True)
+        + np.einsum("nmfe,aeim->anif", H.ab.oovv, T.ab, optimize=True)
     )
 
     I2B_voov = (
-            H.ab.voov
-            + np.einsum("mnef,aeim->anif", H.ab.oovv, T.aa, optimize=True)
-            + np.einsum("mnef,aeim->anif", H.bb.oovv, T.ab, optimize=True)
+        H.ab.voov
+        + np.einsum("mnef,aeim->anif", H.ab.oovv, T.aa, optimize=True)
+        + np.einsum("mnef,aeim->anif", H.bb.oovv, T.ab, optimize=True)
     )
 
     I2B_oooo = H.ab.oooo + np.einsum("mnef,efij->mnij", H.ab.oovv, T.ab, optimize=True)
 
     I2B_vovo = H.ab.vovo - np.einsum("mnef,afmj->anej", H.ab.oovv, T.ab, optimize=True)
 
-    x2 = -np.einsum("mbij,am->abij", H.ab.ovoo, T.a, optimize=True)
-    x2 -= np.einsum("amij,bm->abij", H.ab.vooo, T.b, optimize=True)
-    x2 += np.einsum("abej,ei->abij", H.ab.vvvo, T.a, optimize=True)
-    x2 += np.einsum("abie,ej->abij", H.ab.vvov, T.b, optimize=True)
-    x2 += np.einsum("ae,ebij->abij", I1A_vv, T.ab, optimize=True)
-    x2 += np.einsum("be,aeij->abij", I1B_vv, T.ab, optimize=True)
-    x2 -= np.einsum("mi,abmj->abij", I1A_oo, T.ab, optimize=True)
-    x2 -= np.einsum("mj,abim->abij", I1B_oo, T.ab, optimize=True)
-    x2 += np.einsum("amie,ebmj->abij", I2A_voov, T.ab, optimize=True)
-    x2 += np.einsum("amie,ebmj->abij", I2B_voov, T.bb, optimize=True)
-    x2 += np.einsum("mbej,aeim->abij", H.ab.ovvo, T.aa, optimize=True)
-    x2 += np.einsum("bmje,aeim->abij", H.bb.voov, T.ab, optimize=True)
-    x2 -= np.einsum("mbie,aemj->abij", H.ab.ovov, T.ab, optimize=True)
-    x2 -= np.einsum("amej,ebim->abij", I2B_vovo, T.ab, optimize=True)
-    x2 += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
-    x2 += np.einsum("abef,efij->abij", H.ab.vvvv, T.ab, optimize=True)
+    I2B_ovoo = H.ab.ovoo + 0.5 * np.einsum("maef,efij->maij", H0.ab.ovvv + H.ab.ovvv, T.ab, optimize=True)
+    I2B_vooo = H.ab.vooo + 0.5 * np.einsum("amef,efij->amij", H0.ab.vovv + H.ab.vovv, T.ab, optimize=True)
 
-    x2 += H.ab.vvoo
+    tau = T.ab + np.einsum('ai,bj->abij', T.a, T.b, optimize=True)
 
-    return x2
+    x2b = -np.einsum("mbij,am->abij", I2B_ovoo, T.a, optimize=True)
+    x2b -= np.einsum("amij,bm->abij", I2B_vooo, T.b, optimize=True)
+    x2b += np.einsum("abej,ei->abij", H.ab.vvvo, T.a, optimize=True)
+    x2b += np.einsum("abie,ej->abij", H.ab.vvov, T.b, optimize=True)
+    x2b += np.einsum("ae,ebij->abij", I1A_vv, T.ab, optimize=True)
+    x2b += np.einsum("be,aeij->abij", I1B_vv, T.ab, optimize=True)
+    x2b -= np.einsum("mi,abmj->abij", I1A_oo, T.ab, optimize=True)
+    x2b -= np.einsum("mj,abim->abij", I1B_oo, T.ab, optimize=True)
+    x2b += np.einsum("amie,ebmj->abij", I2A_voov, T.ab, optimize=True)
+    x2b += np.einsum("amie,ebmj->abij", I2B_voov, T.bb, optimize=True)
+    x2b += np.einsum("mbej,aeim->abij", H.ab.ovvo, T.aa, optimize=True)
+    x2b += np.einsum("bmje,aeim->abij", H.bb.voov, T.ab, optimize=True)
+    x2b -= np.einsum("mbie,aemj->abij", H.ab.ovov, T.ab, optimize=True)
+    x2b -= np.einsum("amej,ebim->abij", I2B_vovo, T.ab, optimize=True)
+    x2b += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
+    x2b += np.einsum("abef,efij->abij", H.ab.vvvv, tau, optimize=True)
+
+    x2b += H.ab.vvoo
+
+    return x2b
+
+# def build_ccsd(T, H, H0):
+#     """
+#     Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2+T3))_C|0>.
+#     """
+#     # intermediates
+#     I1A_vv = (
+#             H.a.vv
+#             - 0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, T.aa, optimize=True)
+#             - np.einsum("mnef,afmn->ae", H.ab.oovv, T.ab, optimize=True)
+#     )
+#
+#     I1B_vv = (
+#             H.b.vv
+#             - np.einsum("nmfe,fbnm->be", H.ab.oovv, T.ab, optimize=True)
+#             - 0.5 * np.einsum("mnef,fbnm->be", H.bb.oovv, T.bb, optimize=True)
+#     )
+#
+#     I1A_oo = (
+#             H.a.oo
+#             + 0.5 * np.einsum("mnef,efin->mi", H.aa.oovv, T.aa, optimize=True)
+#             + np.einsum("mnef,efin->mi", H.ab.oovv, T.ab, optimize=True)
+#     )
+#
+#     I1B_oo = (
+#             H.b.oo
+#             + np.einsum("nmfe,fenj->mj", H.ab.oovv, T.ab, optimize=True)
+#             + 0.5 * np.einsum("mnef,efjn->mj", H.bb.oovv, T.bb, optimize=True)
+#     )
+#
+#     I2A_voov = (
+#             H.aa.voov
+#             + np.einsum("mnef,aeim->anif", H.aa.oovv, T.aa, optimize=True)
+#             + np.einsum("nmfe,aeim->anif", H.ab.oovv, T.ab, optimize=True)
+#     )
+#
+#     I2B_voov = (
+#             H.ab.voov
+#             + np.einsum("mnef,aeim->anif", H.ab.oovv, T.aa, optimize=True)
+#             + np.einsum("mnef,aeim->anif", H.bb.oovv, T.ab, optimize=True)
+#     )
+#
+#     I2B_oooo = H.ab.oooo + np.einsum("mnef,efij->mnij", H.ab.oovv, T.ab, optimize=True)
+#
+#     I2B_vovo = H.ab.vovo - np.einsum("mnef,afmj->anej", H.ab.oovv, T.ab, optimize=True)
+#
+#     x2 = -np.einsum("mbij,am->abij", H.ab.ovoo, T.a, optimize=True)
+#     x2 -= np.einsum("amij,bm->abij", H.ab.vooo, T.b, optimize=True)
+#     x2 += np.einsum("abej,ei->abij", H.ab.vvvo, T.a, optimize=True)
+#     x2 += np.einsum("abie,ej->abij", H.ab.vvov, T.b, optimize=True)
+#     x2 += np.einsum("ae,ebij->abij", I1A_vv, T.ab, optimize=True)
+#     x2 += np.einsum("be,aeij->abij", I1B_vv, T.ab, optimize=True)
+#     x2 -= np.einsum("mi,abmj->abij", I1A_oo, T.ab, optimize=True)
+#     x2 -= np.einsum("mj,abim->abij", I1B_oo, T.ab, optimize=True)
+#     x2 += np.einsum("amie,ebmj->abij", I2A_voov, T.ab, optimize=True)
+#     x2 += np.einsum("amie,ebmj->abij", I2B_voov, T.bb, optimize=True)
+#     x2 += np.einsum("mbej,aeim->abij", H.ab.ovvo, T.aa, optimize=True)
+#     x2 += np.einsum("bmje,aeim->abij", H.bb.voov, T.ab, optimize=True)
+#     x2 -= np.einsum("mbie,aemj->abij", H.ab.ovov, T.ab, optimize=True)
+#     x2 -= np.einsum("amej,ebim->abij", I2B_vovo, T.ab, optimize=True)
+#     x2 += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
+#     x2 += np.einsum("abef,efij->abij", H.ab.vvvv, T.ab, optimize=True)
+#
+#     x2 += H.ab.vvoo
+#
+#     return x2
 
 
 def build_1111(T, dT, H, system):

@@ -4,7 +4,7 @@ and triples (CCSDT) calculation for a molecular system."""
 import numpy as np
 import time
 
-from ccpy.hbar.hbar_ccs import get_ccs_intermediates
+from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.cc.ccsdt1_updates import *
 
@@ -34,11 +34,20 @@ def update(T, dT, H, shift, flag_RHF, system):
         T, dT = update_t1b.update(T, dT, H, shift)
 
     # CCS intermediates
-    hbar = get_ccs_intermediates(T, H)
+    hbar = get_ccs_intermediates_opt(T, H)
+    # adjust intermediates to CCSDT case
+    hbar.aa.ooov += H.aa.ooov
+    hbar.aa.vovv += H.aa.vovv
+    hbar.ab.ooov += H.ab.ooov
+    hbar.ab.oovo += H.ab.oovo
+    hbar.ab.vovv += H.ab.vovv
+    hbar.ab.ovvv += H.ab.ovvv
+    hbar.bb.ooov += H.bb.ooov
+    hbar.bb.vovv += H.bb.vovv
 
     ####### T2 updates #######
     # t2a update
-    x2 = update_t2a.build_ccsd(T, hbar)   # base CCSD part (separately antisymmetrized)
+    x2 = update_t2a.build_ccsd(T, hbar, H)   # base CCSD part (separately antisymmetrized)
     # Add on T3 parts
     dT = update_t2a.build_1111(T, dT, hbar, system)
     dT = update_t2a.build_1101(T, dT, hbar, system)
@@ -53,7 +62,7 @@ def update(T, dT, H, shift, flag_RHF, system):
     # update loop
     T, dT = update_t2a.update(T, dT, H, shift)
 
-    x2 = update_t2b.build_ccsd(T, hbar)   # base CCSD part
+    x2 = update_t2b.build_ccsd(T, hbar, H)   # base CCSD part
     # Add on T3 parts
     dT = update_t2b.build_1111(T, dT, hbar, system)
     dT = update_t2b.build_1101(T, dT, hbar, system)
@@ -79,7 +88,7 @@ def update(T, dT, H, shift, flag_RHF, system):
         T.bb = T.aa.copy()
         dT.bb = dT.aa.copy()
     else:
-        x2 = update_t2c.build_ccsd(T, hbar)   # base CCSD part (separately antisymmetrized)
+        x2 = update_t2c.build_ccsd(T, hbar, H)   # base CCSD part (separately antisymmetrized)
         # Add on T3 parts
         dT = update_t2c.build_1111(T, dT, hbar, system)
         dT = update_t2c.build_1101(T, dT, hbar, system)
