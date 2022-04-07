@@ -264,6 +264,7 @@ def get_ccsd_intermediates(T, H0):
     """Calculate the CCSD-like intermediates for CCSDT. This routine
     should only calculate terms with T2 and any remaining terms outside of the CCS intermediate
     routine."""
+    t0 = time.time()
     from copy import deepcopy
 
     # Copy the Bare Hamiltonian object for T1/T2-similarity transformed HBar
@@ -343,19 +344,25 @@ def get_ccsd_intermediates(T, H0):
     I2C_ooov = H0.bb.ooov + 0.5 * Q1
     H.bb.ooov = I2C_ooov + 0.5 * Q1
 
+    t1 = time.time()
     Q1 = -np.einsum("bmfe,am->abef", I2A_vovv, T.a, optimize=True)
     Q1 -= np.transpose(Q1, (1, 0, 2, 3))
     H.aa.vvvv += 0.5 * np.einsum("mnef,abmn->abef", H0.aa.oovv, T.aa, optimize=True) + Q1
+    print('H.aa.vvvv = ', time.time() - t1)
 
+    t1 = time.time()
     H.ab.vvvv += (
             - np.einsum("mbef,am->abef", I2B_ovvv, T.a, optimize=True)
             - np.einsum("amef,bm->abef", I2B_vovv, T.b, optimize=True)
             + np.einsum("mnef,abmn->abef", H0.ab.oovv, T.ab, optimize=True)
     )
+    print('H.ab.vvvv = ', time.time() - t1)
 
+    t1 = time.time()
     Q1 = -np.einsum("bmfe,am->abef", I2C_vovv, T.b, optimize=True)
     Q1 -= np.transpose(Q1, (1, 0, 2, 3))
     H.bb.vvvv += 0.5 * np.einsum("mnef,abmn->abef", H0.bb.oovv, T.bb, optimize=True) + Q1
+    print('H.bb.vvvv = ', time.time() - t1)
 
     Q1 = +np.einsum("nmje,ei->mnij", I2A_ooov, T.a, optimize=True)
     Q1 -= np.transpose(Q1, (0, 1, 3, 2))
@@ -463,6 +470,7 @@ def get_ccsd_intermediates(T, H0):
             + 0.5 * np.einsum("amef,efij->amij", H0.bb.vovv, T.bb, optimize=True)
     )
 
+    t1 = time.time()
     Q1 = (
             np.einsum("bnef,afin->abie", H.aa.vovv, T.aa, optimize=True)
             + np.einsum("bnef,afin->abie", H.ab.vovv, T.ab, optimize=True)
@@ -476,7 +484,9 @@ def get_ccsd_intermediates(T, H0):
             + np.einsum("abfe,fi->abie", H.aa.vvvv, T.a, optimize=True)
             + 0.5 * np.einsum("mnie,abmn->abie", H0.aa.ooov, T.aa, optimize=True)
     )
+    print('H.aa.vvov = ', time.time() - t1)
 
+    t1 = time.time()
     Q1 = H0.ab.ovov - np.einsum("mnie,bn->mbie", H0.ab.ooov, T.b, optimize=True)
     Q1 = -np.einsum("mbie,am->abie", Q1, T.a, optimize=True)
     H.ab.vvov += Q1 + (
@@ -488,7 +498,9 @@ def get_ccsd_intermediates(T, H0):
             - np.einsum("amie,bm->abie", H0.ab.voov, T.b, optimize=True)
             + np.einsum("nmie,abnm->abie", H0.ab.ooov, T.ab, optimize=True)
     )
+    print('H.ab.vvov = ', time.time() - t1)
 
+    t1 = time.time()
     Q1 = H0.ab.vovo - np.einsum("nmei,bn->bmei", H0.ab.oovo, T.a, optimize=True)
     Q1 = -np.einsum("bmei,am->baei", Q1, T.b, optimize=True)
     H.ab.vvvo += Q1 + (
@@ -500,7 +512,9 @@ def get_ccsd_intermediates(T, H0):
             - np.einsum("naei,bn->baei", H0.ab.ovvo, T.a, optimize=True)
             + np.einsum("nmei,banm->baei", H0.ab.oovo, T.ab, optimize=True)
     )
+    print('H.ab.vvvo = ', time.time() - t1)
 
+    t1 = time.time()
     Q1 = (
             np.einsum("bnef,afin->abie", H.bb.vovv, T.bb, optimize=True)
             + np.einsum("nbfe,fani->abie", H.ab.ovvv, T.ab, optimize=True)
@@ -514,5 +528,8 @@ def get_ccsd_intermediates(T, H0):
             + np.einsum("abfe,fi->abie", H.bb.vvvv, T.b, optimize=True)
             + 0.5 * np.einsum("mnie,abmn->abie", H0.bb.ooov, T.bb, optimize=True)
     )
+    print('H.bb.vvov = ', time.time() - t1)
+
+    print('Hbar CCSD total time = ', time.time() - t0)
 
     return H

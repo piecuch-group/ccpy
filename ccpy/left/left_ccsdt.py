@@ -1,28 +1,38 @@
 import numpy as np
 
 from ccpy.utilities.updates import cc_loops
-#from ccpy.left.left_cc_intermediates import build_left_ccsd_intermediates
+from ccpy.left.left_cc_intermediates import build_left_ccsdt_intermediates
 
-def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
+def update(L, LH, T, H, omega, shift, is_ground, flag_RHF):
 
     # get LT intermediates
-    #X = build_left_ccsd_intermediates(L, T, system)
+    X = build_left_ccsdt_intermediates(L, T, system)
 
     # build L1
-    LH = build_LH_1A(L, LH, T, H)
+    LH = build_LH_1A(L, LH, T, H, X)
 
     if flag_RHF:
         LH.b = LH.a.copy()
     else:
-        LH = build_LH_1B(L, LH, T, H)
+        LH = build_LH_1B(L, LH, T, H, X)
 
     # build L2
-    LH = build_LH_2A(L, LH, T, H)
-    LH = build_LH_2B(L, LH, T, H)
+    LH = build_LH_2A(L, LH, T, H, X)
+    LH = build_LH_2B(L, LH, T, H, X)
     if flag_RHF:
         LH.bb = LH.aa.copy()
     else:
-        LH = build_LH_2C(L, LH, T, H)
+        LH = build_LH_2C(L, LH, T, H, X)
+
+    # build L3
+    LH = build_LH_3A(L, LH, T, H, X)
+    LH = build_LH_3B(L, LH, T, H, X)
+    if flag_RHF:
+        LH.abb = np.transpose(LH.aab, (2, 1, 0, 5, 4, 3))
+        LH.bbb = LH.aaa.copy()
+    else:
+        LH = build_LH_3C(L, LH, T, H, X)
+        LH = build_LH_3D(L, LH, T, H, X)
 
     # Add Hamiltonian if ground-state calculation
     if is_ground:
@@ -35,11 +45,13 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
     # [TODO]: update L; this function takes in LH and builds residual LH - omega * L
     # should make this so that it computes residual and returns in, just like in
     # ground-state CC functions
-    L.a, L.b, L.aa, L.ab, L.bb = cc_loops.cc_loops.update_l(L.a, L.b, L.aa, L.ab, L.bb,
-                                                            LH.a, LH.b, LH.aa, LH.ab, LH.bb,
-                                                            omega,
-                                                            H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                                                            shift,
+    L.a, L.b, L.aa, L.ab, L.bb, L.aaa, L.aab, L.abb, L.bbb = cc_loops.cc_loops.update_l(L.a, L.b, L.aa, L.ab, L.bb,
+                                                                                        L.aaa, L.aab, L.abb, L.bbb,
+                                                                                        LH.a, LH.b, LH.aa, LH.ab, LH.bb,
+                                                                                        LH.aaa, LH.aab, LH.abb, LH.bbb,
+                                                                                        omega,
+                                                                                        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                                                        shift,
     )
 
     # build residual LH - omega * L
@@ -48,10 +60,14 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
     LH.aa -= omega * L.aa
     LH.ab -= omega * L.ab
     LH.bb -= omega * L.bb
+    LH.aaa -= omega * L.aaa
+    LH.aab -= omega * L.aab
+    LH.abb -= omega * L.abb
+    LH.bbb -= omega * L.bbb
 
     return L, LH
 
-def build_LH_1A(L, LH, T, H):
+def build_LH_1A(L, LH, T, H, X):
 
     LH.a = np.einsum("ea,ei->ai", H.a.vv, L.a, optimize=True)
     LH.a -= np.einsum("im,am->ai", H.a.oo, L.a, optimize=True)
@@ -66,7 +82,6 @@ def build_LH_1A(L, LH, T, H):
     I2 = -0.25 * np.einsum("efmn,egnm->gf", L.aa, T.aa, optimize=True)
     I3 = -0.25 * np.einsum("efmo,efno->mn", L.aa, T.aa, optimize=True)
     I4 = 0.25 * np.einsum("efmo,efnm->on", L.aa, T.aa, optimize=True)
-
     LH.a += np.einsum("ge,eiga->ai", I1, H.aa.vovv, optimize=True)
     LH.a += np.einsum("gf,figa->ai", I2, H.aa.vovv, optimize=True)
     LH.a += np.einsum("mn,nima->ai", I3, H.aa.ooov, optimize=True)
@@ -76,7 +91,6 @@ def build_LH_1A(L, LH, T, H):
     I2 = np.einsum("abij,afij->fb", L.ab, T.ab, optimize=True)
     I3 = np.einsum("abij,fbij->fa", L.ab, T.ab, optimize=True)
     I4 = -np.einsum("abij,abnj->in", L.ab, T.ab, optimize=True)
-
     LH.a += np.einsum("jn,mnej->em", I1, H.ab.oovo, optimize=True)
     LH.a += np.einsum("fb,mbef->em", I2, H.ab.ovvv, optimize=True)
     LH.a += np.einsum("fa,amfe->em", I3, H.aa.vovv, optimize=True)
@@ -86,16 +100,18 @@ def build_LH_1A(L, LH, T, H):
     I2 = -0.25 * np.einsum("abij,faij->fb", L.bb, T.bb, optimize=True)
     I3 = -0.25 * np.einsum("abij,abnj->in", L.bb, T.bb, optimize=True)
     I4 = 0.25 * np.einsum("abij,abni->jn", L.bb, T.bb, optimize=True)
-
     LH.a += np.einsum("fa,maef->em", I1, H.ab.ovvv, optimize=True)
     LH.a += np.einsum("fb,mbef->em", I2, H.ab.ovvv, optimize=True)
     LH.a += np.einsum("in,mnei->em", I3, H.ab.oovo, optimize=True)
     LH.a += np.einsum("jn,mnej->em", I4, H.ab.oovo, optimize=True)
 
+    # < 0 | L3 * H(2) | ia >
+
+
     return LH
 
 
-def build_LH_1B(L, LH, T, H):
+def build_LH_1B(L, LH, T, H, X):
 
     LH.b = np.einsum("ea,ei->ai", H.b.vv, L.b, optimize=True)
     LH.b -= np.einsum("im,am->ai", H.b.oo, L.b, optimize=True)
@@ -142,7 +158,7 @@ def build_LH_1B(L, LH, T, H):
     return LH
 
 
-def build_LH_2A(L, LH, T, H):
+def build_LH_2A(L, LH, T, H, X):
 
     LH.aa = np.einsum("ea,ebij->abij", H.a.vv, L.aa, optimize=True) - np.einsum(
         "eb,eaij->abij", H.a.vv, L.aa, optimize=True
@@ -207,7 +223,7 @@ def build_LH_2A(L, LH, T, H):
     return LH
 
 
-def build_LH_2B(L, LH, T, H):
+def build_LH_2B(L, LH, T, H, X):
 
     LH.ab = -np.einsum("ijmb,am->abij", H.ab.ooov, L.a, optimize=True)
     LH.ab -= np.einsum("ijam,bm->abij", H.ab.oovo, L.b, optimize=True)
@@ -253,7 +269,7 @@ def build_LH_2B(L, LH, T, H):
     return LH
 
 
-def build_LH_2C(L, LH, T, H):
+def build_LH_2C(L, LH, T, H, X):
 
     LH.bb = np.einsum("ea,ebij->abij", H.b.vv, L.bb, optimize=True)
     LH.bb -= np.einsum("eb,eaij->abij", H.b.vv, L.bb, optimize=True)

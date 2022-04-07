@@ -20,7 +20,7 @@ from ccpy.models.operators import get_operator_name
 
 
 class SortedIntegral:
-    def __init__(self, system, name, matrix):
+    def __init__(self, system, name, matrix, use_none=False):
 
         order = len(name)
         double_spin_string = list(name) * 2
@@ -44,7 +44,10 @@ class SortedIntegral:
                 slicearr = [slice(None)] * (2 * order)
                 for k in range(2 * order):
                     slicearr[k] = slice_table[double_spin_string[k]][attr[k]]
-                self.__dict__["".join(attr)] = matrix[tuple(slicearr)]
+                if use_none:
+                    self.__dict__["".join(attr)] = None
+                else:
+                    self.__dict__["".join(attr)] = matrix[tuple(slicearr)]
                 # self.slices.append(''.join(attr))
 
 class Integral:

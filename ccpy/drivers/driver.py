@@ -141,6 +141,7 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
                                          omega,
                                          calculation,
                                          is_ground,
+                                         system
                                          )
     total_energy = system.reference_energy + omega
 
