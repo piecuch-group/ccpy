@@ -340,7 +340,7 @@ def cc_jacobi(update_t, T, dT, H, calculation, system):
     return T, energy, is_converged
 
 
-def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground):
+def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, system):
     import time
 
     from ccpy.drivers.cc_energy import get_lcc_energy
@@ -371,7 +371,8 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground):
                          omega,
                          calculation.energy_shift,
                          is_ground,
-                         calculation.RHF_symmetry)
+                         calculation.RHF_symmetry,
+                         system)
 
         # left CC correlation energy
         energy = get_lcc_energy(L, LH) + omega
