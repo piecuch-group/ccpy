@@ -275,6 +275,50 @@ def build_hbar_ccsdt(T, H0):
 
     return H
 
+def add_VT3_intermediates(T, H):
+
+    H.aa.vooo += (
+            0.5 * np.einsum("mnef,aefijn->amij", H.aa.oovv, T.aaa, optimize=True)
+            + np.einsum("mnef,aefijn->amij", H.ab.oovv, T.aab, optimize=True)
+    )
+
+    H.ab.vooo += (
+            np.einsum("nmfe,afeinj->amij", H.ab.oovv, T.aab, optimize=True)
+            + 0.5 * np.einsum("mnef,aefijn->amij", H.bb.oovv, T.abb, optimize=True)
+    )
+
+    H.ab.ovoo += (
+            0.5 * np.einsum("mnef,efajni->maji", H.aa.oovv, T.aab, optimize=True)
+            + np.einsum("mnef,efajni->maji", H.ab.oovv, T.abb, optimize=True)
+    )
+
+    H.bb.vooo += (
+            0.5 * np.einsum("mnef,aefijn->amij", H.bb.oovv, T.bbb, optimize=True)
+            + np.einsum("nmfe,faenij->amij", H.ab.oovv, T.abb, optimize=True)
+    )
+
+    H.aa.vvov += (
+            - 0.5 * np.einsum("mnef,abfimn->abie", H.aa.oovv, T.aaa, optimize=True)
+            - np.einsum("mnef,abfimn->abie", H.ab.oovv, T.aab, optimize=True)
+    )
+
+    H.ab.vvov += (
+            - np.einsum("nmfe,afbinm->abie", H.ab.oovv, T.aab, optimize=True)
+            - 0.5 * np.einsum("mnef,afbinm->abie", H.bb.oovv, T.abb, optimize=True)
+    )
+
+    H.ab.vvvo += (
+            - 0.5 * np.einsum("mnef,bfamni->baei", H.aa.oovv, T.aab, optimize=True)
+            - np.einsum("mnef,bfamni->baei", H.ab.oovv, T.abb, optimize=True)
+    )
+
+    H.bb.vvov += (
+            - 0.5 * np.einsum("mnef,abfimn->abie", H.bb.oovv, T.bbb, optimize=True)
+            - np.einsum("nmfe,fabnim->abie", H.ab.oovv, T.abb, optimize=True)
+    )
+
+    return H
+
 
 def build_hbar_ccsdt1(T, H0, system):
     """Calculate the CCSDt similarity-transformed Hamiltonian (H_N e^(T1+T2))_C."""
