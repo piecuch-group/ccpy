@@ -638,10 +638,7 @@ def update_t4a(T, dT, H, H0, shift):
 
     I3A_vooooo = np.einsum("nmle,bejk->bmnjkl", H.aa.ooov, T.aa, optimize=True)
     I3A_vooooo -= np.transpose(I3A_vooooo, (0, 1, 2, 5, 4, 3)) + np.transpose(I3A_vooooo, (0, 1, 2, 3, 5, 4))
-    #### Note: This term, after contraction with another T3, gets double-counted if included in the I3A_vvvovv intermediates
-    # It is also possible we need an additional factor of 1/2 here to compenstate for the over-antisymmetrization in the final contraction with T3
     I3A_vooooo += 0.5 * np.einsum("mnef,befjkl->bmnjkl", H.aa.oovv, T.aaa, optimize=True)
-    ###
     dT.aaaa += 0.5 * (16.0 / 576.0) * np.einsum("bmnjkl,acdinm->abcdijkl", I3A_vooooo, T.aaa, optimize=True) # (b/acd)(i/jkl) = 4 * 4 = 16
 
     I3A_vvvovv = -np.einsum("dmfe,bcjm->bcdjef", H.aa.vovv, T.aa, optimize=True)
@@ -653,7 +650,7 @@ def update_t4a(T, dT, H, H0, shift):
     I3A_vvooov -= np.transpose(I3A_vvooov, (1, 0, 2, 3, 4, 5))
     I3A_vvooov -= np.transpose(I3A_vvooov, (0, 1, 2, 4, 3, 5))
     I3A_vvooov += (
-                    np.einsum("mnef,cdfkln->cdmkle", H.aa.oovv, T.aaa, optimize=True)
+                    0.5 * np.einsum("mnef,cdfkln->cdmkle", H.aa.oovv, T.aaa, optimize=True) # (ij/kl)(c/ab), compensate by factor of 1/2 !!!
                    +np.einsum("mnef,cdfkln->cdmkle", H.ab.oovv, T.aab, optimize=True)
     )
     dT.aaaa += (36.0 / 576.0) * np.einsum("cdmkle,abeijm->abcdijkl", I3A_vvooov, T.aaa, optimize=True) # (cd/ab)(kl/ij) = 6 * 6 = 36
@@ -663,8 +660,8 @@ def update_t4a(T, dT, H, H0, shift):
     I3B_vvooov -= np.transpose(I3B_vvooov, (1, 0, 2, 3, 4, 5))
     I3B_vvooov -= np.transpose(I3B_vvooov, (0, 1, 2, 4, 3, 5))
     I3B_vvooov += (
-                    np.einsum("mnef,cdfkln->cdmkle", H.ab.oovv, T.aaa, optimize=True)
-                   +np.einsum("mnef,cdfkln->cdmkle", H.bb.oovv, T.aab, optimize=True)
+                    #np.einsum("mnef,cdfkln->cdmkle", H.ab.oovv, T.aaa, optimize=True) this is redundant!
+                   + 0.5 * np.einsum("mnef,cdfkln->cdmkle", H.bb.oovv, T.aab, optimize=True) # (ij/kl)(c/ab), compensate by factor of 1/2 !!!
     )
     dT.aaaa += (36.0 / 576.0) * np.einsum("cdmkle,abeijm->abcdijkl", I3B_vvooov, T.aab, optimize=True) # (cd/ab)(kl/ij) = 6 * 6 = 36
 
