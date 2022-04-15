@@ -637,7 +637,10 @@ def update_t4a(T, dT, H, H0, shift):
 
     I3A_vooooo = np.einsum("nmle,bejk->bmnjkl", H.aa.ooov, T.aa, optimize=True)
     I3A_vooooo -= np.transpose(I3A_vooooo, (0, 1, 2, 5, 4, 3)) + np.transpose(I3A_vooooo, (0, 1, 2, 3, 5, 4))
+    #### Note: This term, after contraction with another T3, gets double-counted if included in the I3A_vvvovv intermediates
+    # It is also possible we need a factor of 1/2 here to compenstate for the over-antisymmetrization in the final contraction with T3
     I3A_vooooo += 0.5 * np.einsum("mnef,befjkl->bmnjkl", H.aa.oovv, T.aaa, optimize=True)
+    ###
     dT.aaaa += 0.5 * (16.0 / 576.0) * np.einsum("bmnjkl,acdinm->abcdijkl", I3A_vooooo, T.aaa, optimize=True) # (b/acd)(i/jkl) = 4 * 4 = 16
 
     I3A_vvvovv = -np.einsum("dmfe,bcjm->bcdjef", H.aa.vovv, T.aa, optimize=True)
