@@ -7,6 +7,7 @@ from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.hbar.hbar_ccsdt import add_VT3_intermediates
 from ccpy.utilities.updates import cc_loops2
+from ccpy.utilities.updates import cc_loops_t4
 
 
 def update(T, dT, H, shift, flag_RHF, system):
@@ -688,7 +689,7 @@ def update_t4a(T, dT, H, H0, shift):
     dT.aaaa -= (24.0 / 576.0) * np.einsum("bcmjkl,adim->abcdijkl", I3A_vvoooo, T.aa, optimize=True) # (bc/ad)(i/jkl) = 6 * 4 = 24
 
 
-    T.aaaa, dT.aaaa = cc_loops2.cc_loops2.update_t4a(
+    T.aaaa, dT.aaaa = cc_loops_t4.cc_loops_t4.update_t4a(
         T.aaaa,
         dT.aaaa,
         H0.a.oo,
@@ -717,7 +718,7 @@ def update_t4b(T, dT, H, H0, shift):
     # <ijklabcd | (H(2)*T4)_C | 0 >
 
 
-    T.aaab, dT.aaab = cc_loops2.cc_loops2.update_t4b(
+    T.aaab, dT.aaab = cc_loops_t4.cc_loops_t4.update_t4b(
         T.aaab,
         dT.aaab,
         H0.a.oo,
@@ -755,7 +756,7 @@ def update_t4c(T, dT, H, H0, shift):
 
     # <ijklabcd | (H(2)*T4)_C | 0 >
 
-    T.aabb, dT.aabb = cc_loops2.cc_loops2.update_t4c(
+    T.aabb, dT.aabb = cc_loops_t4.cc_loops_t4.update_t4c(
         T.aabb,
         dT.aabb,
         H0.a.oo,
