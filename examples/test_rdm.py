@@ -16,8 +16,8 @@ def main():
     mol = gto.Mole()
 
     mol.build(
-        atom=[['H', (0, 0, -0.5)], ['H', (0, 0, 0.5)]],
-        basis="ccpvtz",
+        atom=[['F', (0, 0, -0.5)], ['F', (0, 0, 0.5)]],
+        basis="ccpvdz",
         charge=0,
         spin=0,
         symmetry="D2H",
@@ -62,12 +62,7 @@ def main():
     T, total_energy, is_converged = cc_driver(calculation, system, H)
 
 
-    #Ecrcc23, delta23 = calc_crcc23(T, L, Hbar, H, system, use_RHF=False)
-
-
-
 if __name__ == "__main__":
-
 
     main()
 

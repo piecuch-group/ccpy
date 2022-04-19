@@ -103,6 +103,10 @@ class Integral:
     #             matrices[name] = None
     #     return cls(system, order, matrices, use_none=True)
 
+    @classmethod
+    def from_none(cls, system, order):
+        return cls(system, order, matrix=None, use_none=True)
+
 
 def getHamiltonian(e1int, e2int, system, normal_ordered):
 
