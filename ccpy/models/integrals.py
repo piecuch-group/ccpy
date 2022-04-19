@@ -52,8 +52,24 @@ class SortedIntegral:
 
     # def to_full(self):
     #     dimension = (system.norbitals) * (2 * self.order)
+    #
     #     full_matrix = np.zeros(dimension, dtype=np.float64)
-    #     pass
+    #
+    #     slice_table = {
+    #         "a": {
+    #             "o": slice(0, system.noccupied_alpha),
+    #             "v": slice(system.noccupied_alpha, system.norbitals),
+    #         },
+    #         "b": {
+    #             "o": slice(0, system.noccupied_beta),
+    #             "v": slice(system.noccupied_beta, system.norbitals),
+    #         },
+    #     }
+    #
+    #     for s in self.slices:
+
+
+        pass
 
 class Integral:
     def __init__(self, system, order, matrices, use_none=False):
