@@ -35,7 +35,7 @@ class SortedIntegral:
             },
         }
 
-        # self.slices = []
+        self.slices = []
         for i in range(2 * order + 1):
             for combs in combinations(range(2 * order), i):
                 attr = ["o"] * (2 * order)
@@ -48,7 +48,12 @@ class SortedIntegral:
                     self.__dict__["".join(attr)] = None
                 else:
                     self.__dict__["".join(attr)] = matrix[tuple(slicearr)]
-                # self.slices.append(''.join(attr))
+                self.slices.append(''.join(attr))
+
+    # def to_full(self):
+    #     dimension = (system.norbitals) * (2 * self.order)
+    #     full_matrix = np.zeros(dimension, dtype=np.float64)
+    #     pass
 
 class Integral:
     def __init__(self, system, order, matrices):
