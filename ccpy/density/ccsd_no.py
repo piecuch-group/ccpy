@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.linalg import eig
 
-from ccpy.drivers.hf_energy import calc_g_matrix
+from ccpy.drivers.hf_energy import calc_g_matrix, calc_hf_energy
+from ccpy.models.integrals import Integral
 from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 
 
@@ -20,6 +21,7 @@ def convert_to_ccsd_no(rdm1, H, system):
 
     # Compute the HF-based G part of the Fock matrix
     G = calc_g_matrix(H, system)
+    Z = Integral.from_empty(system, 1, use_none=True)
 
     rdm1a_matrix = np.concatenate( (np.concatenate( (rdm1.a.oo, rdm1.a.ov), axis=1),
                                     np.concatenate( (rdm1.a.vo, rdm1.a.vv), axis=1)), axis=0)
@@ -46,7 +48,6 @@ def convert_to_ccsd_no(rdm1, H, system):
     print("   ----------------------------")
     for i in range(system.norbitals):
         print("     {}          {}".format(i+1, nocc_vals_a[i] + nocc_vals_b[i]))
-
 
     # Transform twobody integrals
     temp = np.zeros((system.norbitals, system.norbitals, system.norbitals, system.norbitals))
@@ -133,10 +134,11 @@ def convert_to_ccsd_no(rdm1, H, system):
     temp[slice_table["a"]["o"], slice_table["a"]["v"]] = H.a.ov - G.a.ov
     temp[slice_table["a"]["v"], slice_table["a"]["o"]] = H.a.vo - G.a.vo
     temp[slice_table["a"]["v"], slice_table["a"]["v"]] = H.a.vv - G.a.vv
-    #temp -= G_a # subtract off G to get Z
     for s in H.a.slices:
         x1 = Wa[:, slice_table['a'][s[0]]]
         x2 = Va[:, slice_table['a'][s[1]]]
+
+        setattr(Z.a, s, np.real(np.einsum("pi,ij,jq->pq", x1.conj().T, temp, x2)))
 
         setattr(H.a,
                 s,
@@ -152,7 +154,6 @@ def convert_to_ccsd_no(rdm1, H, system):
     temp[slice_table["b"]["o"], slice_table["b"]["v"]] = H.b.ov - G.b.ov
     temp[slice_table["b"]["v"], slice_table["b"]["o"]] = H.b.vo - G.b.vo
     temp[slice_table["b"]["v"], slice_table["b"]["v"]] = H.b.vv - G.b.vv
-    #temp -= G_b # subtract off G to get Z
     for s in H.b.slices:
         x1 = Wb[:, slice_table['b'][s[0]]]
         x2 = Vb[:, slice_table['b'][s[1]]]
@@ -166,32 +167,31 @@ def convert_to_ccsd_no(rdm1, H, system):
                 )
                 )
 
+    # save Za integrals as e1int
+    e1int_no = np.zeros((system.norbitals, system.norbitals))
+    e1int_no[slice_table["a"]["o"], slice_table["a"]["o"]] = Z.a.oo
+    e1int_no[slice_table["a"]["o"], slice_table["a"]["v"]] = Z.a.ov
+    e1int_no[slice_table["a"]["v"], slice_table["a"]["o"]] = Z.a.vo
+    e1int_no[slice_table["a"]["v"], slice_table["a"]["v"]] = Z.a.vv
 
-    # # save Fa integrals as e1int
-    # e1int_no = np.zeros((system.norbitals, system.norbitals))
-    # e1int_no[slice_table["a"]["o"], slice_table["a"]["o"]] = H.a.oo
-    # e1int_no[slice_table["a"]["o"], slice_table["a"]["v"]] = H.a.ov
-    # e1int_no[slice_table["a"]["v"], slice_table["a"]["o"]] = H.a.vo
-    # e1int_no[slice_table["a"]["v"], slice_table["a"]["v"]] = H.a.vv
-
-    # # save Vab integrals as e2int
-    # e2int_no = np.zeros((system.norbitals, system.norbitals, system.norbitals, system.norbitals))
-    # e2int_no[slice_table["a"]["o"], slice_table["b"]["o"], slice_table["a"]["o"], slice_table["b"]["o"]] = H.ab.oooo
-    # e2int_no[slice_table["a"]["o"], slice_table["b"]["o"], slice_table["a"]["o"], slice_table["b"]["v"]] = H.ab.ooov
-    # e2int_no[slice_table["a"]["o"], slice_table["b"]["o"], slice_table["a"]["v"], slice_table["b"]["o"]] = H.ab.oovo
-    # e2int_no[slice_table["a"]["o"], slice_table["b"]["v"], slice_table["a"]["o"], slice_table["b"]["o"]] = H.ab.ovoo
-    # e2int_no[slice_table["a"]["v"], slice_table["b"]["o"], slice_table["a"]["o"], slice_table["b"]["o"]] = H.ab.vooo
-    # e2int_no[slice_table["a"]["o"], slice_table["b"]["o"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.oovv
-    # e2int_no[slice_table["a"]["v"], slice_table["b"]["v"], slice_table["a"]["o"], slice_table["b"]["o"]] = H.ab.vvoo
-    # e2int_no[slice_table["a"]["o"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["o"]] = H.ab.ovvo
-    # e2int_no[slice_table["a"]["v"], slice_table["b"]["o"], slice_table["a"]["o"], slice_table["b"]["v"]] = H.ab.voov
-    # e2int_no[slice_table["a"]["v"], slice_table["b"]["o"], slice_table["a"]["v"], slice_table["b"]["o"]] = H.ab.vovo
-    # e2int_no[slice_table["a"]["o"], slice_table["b"]["v"], slice_table["a"]["o"], slice_table["b"]["v"]] = H.ab.ovov
-    # e2int_no[slice_table["a"]["v"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["o"]] = H.ab.vvvo
-    # e2int_no[slice_table["a"]["v"], slice_table["b"]["v"], slice_table["a"]["o"], slice_table["b"]["v"]] = H.ab.vvov
-    # e2int_no[slice_table["a"]["v"], slice_table["b"]["o"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.vovv
-    # e2int_no[slice_table["a"]["o"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.ovvv
-    # e2int_no[slice_table["a"]["v"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.vvvv
+    # save Vab integrals as e2int
+    e2int_no = np.zeros((system.norbitals, system.norbitals, system.norbitals, system.norbitals))
+    e2int_no[slice_table["a"]["o"], slice_table["b"]["o"], slice_table["a"]["o"], slice_table["b"]["o"]] = H.ab.oooo
+    e2int_no[slice_table["a"]["o"], slice_table["b"]["o"], slice_table["a"]["o"], slice_table["b"]["v"]] = H.ab.ooov
+    e2int_no[slice_table["a"]["o"], slice_table["b"]["o"], slice_table["a"]["v"], slice_table["b"]["o"]] = H.ab.oovo
+    e2int_no[slice_table["a"]["o"], slice_table["b"]["v"], slice_table["a"]["o"], slice_table["b"]["o"]] = H.ab.ovoo
+    e2int_no[slice_table["a"]["v"], slice_table["b"]["o"], slice_table["a"]["o"], slice_table["b"]["o"]] = H.ab.vooo
+    e2int_no[slice_table["a"]["o"], slice_table["b"]["o"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.oovv
+    e2int_no[slice_table["a"]["v"], slice_table["b"]["v"], slice_table["a"]["o"], slice_table["b"]["o"]] = H.ab.vvoo
+    e2int_no[slice_table["a"]["o"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["o"]] = H.ab.ovvo
+    e2int_no[slice_table["a"]["v"], slice_table["b"]["o"], slice_table["a"]["o"], slice_table["b"]["v"]] = H.ab.voov
+    e2int_no[slice_table["a"]["v"], slice_table["b"]["o"], slice_table["a"]["v"], slice_table["b"]["o"]] = H.ab.vovo
+    e2int_no[slice_table["a"]["o"], slice_table["b"]["v"], slice_table["a"]["o"], slice_table["b"]["v"]] = H.ab.ovov
+    e2int_no[slice_table["a"]["v"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["o"]] = H.ab.vvvo
+    e2int_no[slice_table["a"]["v"], slice_table["b"]["v"], slice_table["a"]["o"], slice_table["b"]["v"]] = H.ab.vvov
+    e2int_no[slice_table["a"]["v"], slice_table["b"]["o"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.vovv
+    e2int_no[slice_table["a"]["o"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.ovvv
+    e2int_no[slice_table["a"]["v"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.vvvv
 
     # dumpIntegralstoPGFiles(e1int_no, e2int_no, system)
 
@@ -215,14 +215,14 @@ def convert_to_ccsd_no(rdm1, H, system):
     # Escf -= np.einsum('abab,a,b->', H.ab.vvvv, nocc_vals_a[system.noccupied_alpha:], nocc_vals_b[system.noccupied_beta:])
 
 
-    Escf = system.nuclear_repulsion
-    Escf += np.einsum('ii->', H.a.oo, optimize=True)
-    Escf += np.einsum('ii->', H.b.oo, optimize=True)
-    Escf -= 0.5 * np.einsum('ijij->', H.aa.oooo, optimize=True)
-    Escf -= 0.5 * np.einsum('ijij->', H.bb.oooo, optimize=True)
-    Escf -= np.einsum('ijij->', H.ab.oooo, optimize=True)
+    # Escf = system.nuclear_repulsion
+    # Escf += np.einsum('ii->', H.a.oo, optimize=True)
+    # Escf += np.einsum('ii->', H.b.oo, optimize=True)
+    # Escf -= 0.5 * np.einsum('ijij->', H.aa.oooo, optimize=True)
+    # Escf -= 0.5 * np.einsum('ijij->', H.bb.oooo, optimize=True)
+    # Escf -= np.einsum('ijij->', H.ab.oooo, optimize=True)
 
-    system.reference_energy = Escf
+    system.reference_energy = calc_hf_energy(e1int_no, e2int_no, system, nfrozen=0) + system.nuclear_repulsion
 
     return H, system
 

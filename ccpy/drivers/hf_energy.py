@@ -42,62 +42,13 @@ def calc_g_matrix(H, system):
 
     return G
 
-    # slice_table = {
-    #     "a": {
-    #         "o": slice(0, system.noccupied_alpha),
-    #         "v": slice(system.noccupied_alpha, system.norbitals),
-    #     },
-    #     "b": {
-    #         "o": slice(0, system.noccupied_beta),
-    #         "v": slice(system.noccupied_beta, system.norbitals),
-    #     },
-    # }
-    #
-    # # Compute the HF-based G part of the Fock matrix
-    # G_a = np.zeros((system.norbitals, system.norbitals))
-    # G_b = np.zeros((system.norbitals, system.norbitals))
-    # # <p|g|q> = <pi|v|qi> + <pi~|v|qi~>
-    # G_a[slice_table["a"]["o"], slice_table["a"]["o"]] = (
-    #     + np.einsum("piqi->pq", H.aa.oooo)
-    #     + np.einsum("piqi->pq", H.ab.oooo)
-    # )
-    # G_a[slice_table["a"]["o"], slice_table["a"]["v"]] = (
-    #     + np.einsum("piqi->pq", H.aa.oovo)
-    #     + np.einsum("piqi->pq", H.ab.oovo)
-    # )
-    # G_a[slice_table["a"]["v"], slice_table["a"]["o"]] = (
-    #     + np.einsum("piqi->pq", H.aa.vooo)
-    #     + np.einsum("piqi->pq", H.ab.vooo)
-    # )
-    # G_a[slice_table["a"]["v"], slice_table["a"]["v"]] = (
-    #     + np.einsum("piqi->pq", H.aa.vovo)
-    #     + np.einsum("piqi->pq", H.ab.vovo)
-    # )
-    # # <p~|g|q~> = <p~i~|v|q~i~> + <ip~|v|iq~>
-    # G_b[slice_table["b"]["o"], slice_table["b"]["o"]] = (
-    #     + np.einsum("piqi->pq", H.bb.oooo)
-    #     + np.einsum("ipiq->pq", H.ab.oooo)
-    # )
-    # G_b[slice_table["b"]["o"], slice_table["b"]["v"]] = (
-    #     + np.einsum("piqi->pq", H.bb.oovo)
-    #     + np.einsum("ipiq->pq", H.ab.ooov)
-    # )
-    # G_b[slice_table["b"]["v"], slice_table["b"]["o"]] = (
-    #     + np.einsum("piqi->pq", H.bb.vooo)
-    #     + np.einsum("ipiq->pq", H.ab.ovoo)
-    # )
-    # G_b[slice_table["b"]["v"], slice_table["b"]["v"]] = (
-    #     + np.einsum("piqi->pq", H.bb.vovo)
-    #     + np.einsum("ipiq->pq", H.ab.ovov)
-    # )
-    #
-    # return G_a, G_b
+def calc_hf_energy(e1int, e2int, system, nfrozen=-1):
 
+    if nfrozen == -1:
+        nfrozen = system.nfrozen
 
-def calc_hf_energy(e1int, e2int, system):
-
-    occ_a = slice(0, system.noccupied_alpha + system.nfrozen)
-    occ_b = slice(0, system.noccupied_beta + system.nfrozen)
+    occ_a = slice(0, system.noccupied_alpha + nfrozen)
+    occ_b = slice(0, system.noccupied_beta + nfrozen)
 
     e1a = np.einsum("ii->", e1int[occ_a, occ_a])
     e1b = np.einsum("ii->", e1int[occ_b, occ_b])
