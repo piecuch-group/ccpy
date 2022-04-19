@@ -56,23 +56,36 @@ class SortedIntegral:
     #     pass
 
 class Integral:
-    def __init__(self, system, order, matrices):
+    def __init__(self, system, order, matrices, use_none=False):
         self.order = order
         for i in range(1, order + 1):  # Loop over many-body ranks
             for j in range(i + 1):  # Loop over distinct spin cases per rank
                 name = get_operator_name(i, j)
-                sorted_integral = SortedIntegral(system, name, matrices[name])
+                sorted_integral = SortedIntegral(system, name, matrices[name], use_none)
                 self.__dict__[name] = sorted_integral
 
     @classmethod
-    def from_empty(cls, system, order, data_type=np.float64):
+    def from_empty(cls, system, order, data_type=np.float64, use_none=False):
         matrices = {}
         for i in range(1, order + 1):  # Loop over many-body ranks
             for j in range(i + 1):  # Loop over distinct spin cases per rank
                 name = get_operator_name(i, j)
                 dimension = [system.norbitals] * (2 * order)
-                matrices[name] = np.zeros(dimension, dtype=data_type)
-        return cls(system, order, matrices)
+                if use_none:
+                    matrices[name] = None
+                else:
+                    matrices[name] = np.zeros(dimension, dtype=data_type)
+        return cls(system, order, matrices, use_none=use_none)
+
+    # @classmethod
+    # def from_none(cls, system, order):
+    #     matrices = {}
+    #     for i in range(1, order + 1):  # Loop over many-body ranks
+    #         for j in range(i + 1):  # Loop over distinct spin cases per rank
+    #             name = get_operator_name(i, j)
+    #             dimension = [system.norbitals] * (2 * order)
+    #             matrices[name] = None
+    #     return cls(system, order, matrices, use_none=True)
 
 
 def getHamiltonian(e1int, e2int, system, normal_ordered):
