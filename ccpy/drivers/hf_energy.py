@@ -5,6 +5,7 @@ def calc_g_matrix(H, system):
     from ccpy.models.integrals import Integral
 
     G = Integral.from_empty(system, 1, data_type=H.a.oo.dtype, use_none=True)
+
     # <p|g|q> = <pi|v|qi> + <pi~|v|qi~>
     G.a.oo = (
         + np.einsum("piqi->pq", H.aa.oooo)
