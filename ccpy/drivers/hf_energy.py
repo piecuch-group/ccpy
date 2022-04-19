@@ -1,5 +1,98 @@
 import numpy as np
 
+def calc_g_matrix(H, system):
+
+    from ccpy.models.integrals import Integral
+
+    G = Integral.from_empty(system, 1, data_type=H.a.oo.dtype, use_none=True)
+    # <p|g|q> = <pi|v|qi> + <pi~|v|qi~>
+    G.a.oo = (
+        + np.einsum("piqi->pq", H.aa.oooo)
+        + np.einsum("piqi->pq", H.ab.oooo)
+    )
+    G.a.ov = (
+        + np.einsum("piqi->pq", H.aa.oovo)
+        + np.einsum("piqi->pq", H.ab.oovo)
+    )
+    G.a.vo = (
+        + np.einsum("piqi->pq", H.aa.vooo)
+        + np.einsum("piqi->pq", H.ab.vooo)
+    )
+    G.a.vv = (
+        + np.einsum("piqi->pq", H.aa.vovo)
+        + np.einsum("piqi->pq", H.ab.vovo)
+    )
+    # <p~|g|q~> = <p~i~|v|q~i~> + <ip~|v|iq~>
+    G.b.oo = (
+        + np.einsum("piqi->pq", H.bb.oooo)
+        + np.einsum("ipiq->pq", H.ab.oooo)
+    )
+    G.b.ov = (
+        + np.einsum("piqi->pq", H.bb.oovo)
+        + np.einsum("ipiq->pq", H.ab.ooov)
+    )
+    G.b.vo = (
+        + np.einsum("piqi->pq", H.bb.vooo)
+        + np.einsum("ipiq->pq", H.ab.ovoo)
+    )
+    G.b.vv = (
+        + np.einsum("piqi->pq", H.bb.vovo)
+        + np.einsum("ipiq->pq", H.ab.ovov)
+    )
+
+    return G
+
+    # slice_table = {
+    #     "a": {
+    #         "o": slice(0, system.noccupied_alpha),
+    #         "v": slice(system.noccupied_alpha, system.norbitals),
+    #     },
+    #     "b": {
+    #         "o": slice(0, system.noccupied_beta),
+    #         "v": slice(system.noccupied_beta, system.norbitals),
+    #     },
+    # }
+    #
+    # # Compute the HF-based G part of the Fock matrix
+    # G_a = np.zeros((system.norbitals, system.norbitals))
+    # G_b = np.zeros((system.norbitals, system.norbitals))
+    # # <p|g|q> = <pi|v|qi> + <pi~|v|qi~>
+    # G_a[slice_table["a"]["o"], slice_table["a"]["o"]] = (
+    #     + np.einsum("piqi->pq", H.aa.oooo)
+    #     + np.einsum("piqi->pq", H.ab.oooo)
+    # )
+    # G_a[slice_table["a"]["o"], slice_table["a"]["v"]] = (
+    #     + np.einsum("piqi->pq", H.aa.oovo)
+    #     + np.einsum("piqi->pq", H.ab.oovo)
+    # )
+    # G_a[slice_table["a"]["v"], slice_table["a"]["o"]] = (
+    #     + np.einsum("piqi->pq", H.aa.vooo)
+    #     + np.einsum("piqi->pq", H.ab.vooo)
+    # )
+    # G_a[slice_table["a"]["v"], slice_table["a"]["v"]] = (
+    #     + np.einsum("piqi->pq", H.aa.vovo)
+    #     + np.einsum("piqi->pq", H.ab.vovo)
+    # )
+    # # <p~|g|q~> = <p~i~|v|q~i~> + <ip~|v|iq~>
+    # G_b[slice_table["b"]["o"], slice_table["b"]["o"]] = (
+    #     + np.einsum("piqi->pq", H.bb.oooo)
+    #     + np.einsum("ipiq->pq", H.ab.oooo)
+    # )
+    # G_b[slice_table["b"]["o"], slice_table["b"]["v"]] = (
+    #     + np.einsum("piqi->pq", H.bb.oovo)
+    #     + np.einsum("ipiq->pq", H.ab.ooov)
+    # )
+    # G_b[slice_table["b"]["v"], slice_table["b"]["o"]] = (
+    #     + np.einsum("piqi->pq", H.bb.vooo)
+    #     + np.einsum("ipiq->pq", H.ab.ovoo)
+    # )
+    # G_b[slice_table["b"]["v"], slice_table["b"]["v"]] = (
+    #     + np.einsum("piqi->pq", H.bb.vovo)
+    #     + np.einsum("ipiq->pq", H.ab.ovov)
+    # )
+    #
+    # return G_a, G_b
+
 
 def calc_hf_energy(e1int, e2int, system):
 
