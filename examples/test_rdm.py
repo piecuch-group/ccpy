@@ -16,11 +16,11 @@ def main():
     mol = gto.Mole()
 
     mol.build(
-        atom=[['F', (0, 0, -2.66816)], ['F', (0, 0, 2.66816)]],
+        atom=[['H', (0, 0, -2.66816/2.0)], ['F', (0, 0, 2.66816/2.0)]],
         basis="ccpvdz",
         charge=0,
         spin=0,
-        symmetry="D2H",
+        symmetry="C2V",
         unit='Bohr',
         cart=True
     )
@@ -38,7 +38,7 @@ def main():
         maximum_iterations=80,
     )
 
-    T, total_energy, is_converged = cc_driver(calculation, system, H)
+    T, total_energy_canonical, is_converged = cc_driver(calculation, system, H)
 
     calculation = Calculation(
         order=2,
@@ -60,7 +60,16 @@ def main():
         diis_size=6,
         maximum_iterations=80,
     )
-    T, total_energy, is_converged = cc_driver(calculation, system, H)
+    T, total_energy_natorb, is_converged = cc_driver(calculation, system, H)
+
+    if abs(total_energy_natorb - total_energy_canonical) < 1.0e-06:
+        print('Passed!')
+        print('Canonical CC energy = ', total_energy_canonical)
+        print('Natural Orbital CC energy = ', total_energy_natorb)
+    else:
+        print('Failed!')
+        print('Canonical CC energy = ', total_energy_canonical)
+        print('Natural Orbital CC energy = ', total_energy_natorb)
 
 
 
