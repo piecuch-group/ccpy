@@ -59,10 +59,11 @@ def convert_to_ccsd_no(rdm1, H, system, dump_integrals=False):
     R = R[:, idx]
 
     print("   CCSD Natural Orbitals:")
-    print("   orbital        occupation")
-    print("   ----------------------------")
+    print("   Orbital        Occupation       Importance Score")
+    print("   ------------------------------------------------")
     for i in range(system.norbitals):
-        print("     {:>2}          {:>10f}".format(i + 1, nocc_vals[i]))
+        importance_indicator = 100.0 * (-1.0 * nocc_vals[i]**2 + 2.0 * nocc_vals[i])
+        print("     {:>2}          {:>10f}          {:>10f}".format(i + 1, nocc_vals[i], importance_indicator))
 
     # Biorthogonalize the left and right NO vectors
     for i in range(system.norbitals):

@@ -37,7 +37,7 @@ def test_ccsdt1(nact_occ_canonical, nact_unocc_canonical, nact_occ_natorb, nact_
         num_active=[1],
         convergence_tolerance=1.0e-08,
         diis_size=6,
-        maximum_iterations=80,
+        maximum_iterations=300,
     )
     T, total_energy_canonical, is_converged = cc_driver(calculation, system, H)
 
@@ -91,7 +91,7 @@ def test_ccsdt1(nact_occ_canonical, nact_unocc_canonical, nact_occ_natorb, nact_
         num_active=[1],
         convergence_tolerance=1.0e-08,
         diis_size=6,
-        maximum_iterations=80,
+        maximum_iterations=300,
     )
     T, total_energy_natorb, is_converged = cc_driver(calculation, system, H)
 
@@ -106,10 +106,8 @@ def test_ccsdt1(nact_occ_canonical, nact_unocc_canonical, nact_occ_natorb, nact_
 
 if __name__ == "__main__":
 
-    #test_natural_orbitals()
-
-    test_ccsdt1(nact_occ_canonical = 5,
+    test_ccsdt1(nact_occ_canonical = 1,
                  nact_unocc_canonical = 1,
-                 nact_occ_natorb = 5,
+                 nact_occ_natorb = 1,
                  nact_unocc_natorb = 1)
 

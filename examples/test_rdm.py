@@ -15,13 +15,13 @@ def test_natural_orbitals():
     mol = gto.Mole()
 
     mol.build(
-        atom=[['F', (0, 0, -2.66816/2)], ['F', (0, 0, 2.66816/2)]],
-        basis="ccpvdz",
-        charge=0,
+        atom=[['C', (0, 0, -1.0)], ['N', (0, 0, 1.0)]],
+        basis="augccpvdz",
+        charge=-1,
         spin=0,
-        symmetry="D2H",
+        symmetry="C2V",
         unit='Bohr',
-        cart=True
+        cart=False
     )
     mf = scf.ROHF(mol)
     mf.kernel()
