@@ -16,6 +16,7 @@ class System:
         charge=0,
         nkpts=0,
         reference_energy=0,
+        frozen_energy=0,
         nuclear_repulsion=0,
         mo_energies=None,
         mo_occupation=None,
@@ -57,6 +58,7 @@ class System:
         self.mo_energies = mo_energies
         # reference energies
         self.reference_energy = reference_energy
+        self.frozen_energy = frozen_energy
         self.nuclear_repulsion = nuclear_repulsion
         # periodic system information
         self.nkpts = nkpts

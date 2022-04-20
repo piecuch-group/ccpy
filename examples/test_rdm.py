@@ -1,6 +1,5 @@
-import numpy as np
 
-def main():
+def test_natural_orbitals():
 
     from pyscf import gto, scf
 
@@ -16,17 +15,18 @@ def main():
     mol = gto.Mole()
 
     mol.build(
-        atom=[['N', (0, 0, -1)], ['N', (0, 0, 1)]],
+        atom=[['F', (0, 0, -2.66816/2)], ['F', (0, 0, 2.66816/2)]],
         basis="ccpvdz",
         charge=0,
         spin=0,
         symmetry="D2H",
         unit='Bohr',
+        cart=True
     )
     mf = scf.ROHF(mol)
     mf.kernel()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=0)
+    system, H = load_pyscf_integrals(mf, nfrozen=2)
     system.print_info()
 
     calculation = Calculation(
@@ -70,9 +70,7 @@ def main():
         print('Canonical CC energy = ', total_energy_canonical)
         print('Natural Orbital CC energy = ', total_energy_natorb)
 
-
-
 if __name__ == "__main__":
 
-    main()
+    test_natural_orbitals()
 

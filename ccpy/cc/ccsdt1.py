@@ -1,27 +1,12 @@
 """Module with functions that perform the CC with singles, doubles,
 and triples (CCSDT) calculation for a molecular system."""
 
+import numpy as np
 import time
 
 from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.cc.ccsdt1_updates import *
-
-# Thoughts on speed:
-# (1) The contraction of H_vvvv * t3 consumes most (e.g, at least 50%) of the entire T3 update time. In particular,
-#     the expensive all-inactive vvvv term contracted with t3 occurs in almost every t3 build function, for each of
-#     t3a, t3b, t3c, and t3d. Can these be all pulled out and performed once in a loop (or with blocks), reusing both
-#     the loops and vvvv-type blocks for contraction? This will certainly reduce memory costs, but I'm not sure about
-#     reducing computational cost, which is controlled by FLOPs. The number of FLOPs seems to remain the same...
-#
-# (2) On the above point, consolidating all of the expensive vvvv-type updates and devectorizing them over one loop
-#     variable would allow for a very useful parallelization, which may then provide (ideally) linear speedups. The
-#     FLOP counts for H2A(vvvv)- and H2C(vvvv)-type integrals can be cut down using permutational symmetry.
-#
-# (3) It seems to me that there's no point in de-factorizing the H(vvvv)-type intermediate into its individual
-#     components. The bottleneck is in the contraction of H(vvvv) * t3, not in the construction of H itself. Since the
-#     leading order term in H(vvvv) is H0(vvvv), and since there is no way to avoid the expensive contraction of
-#     H0(vvvv) *t3, I do not expect that the costs will change much.
 
 def update(T, dT, H, shift, flag_RHF, system):
 
@@ -135,7 +120,6 @@ def update(T, dT, H, shift, flag_RHF, system):
     dT = t3a_110001.build(T, dT, hbar, system)
     dT = t3a_100001.build(T, dT, hbar, system)
     # update t3b
-    #t1 = time.time()
     dT = t3b_111111.build(T, dT, hbar, system)
     dT = t3b_111110.build(T, dT, hbar, system)
     dT = t3b_111011.build(T, dT, hbar, system)
@@ -161,7 +145,6 @@ def update(T, dT, H, shift, flag_RHF, system):
     dT = t3b_001010.build(T, dT, hbar, system)
     dT = t3b_100001.build(T, dT, hbar, system)
     dT = t3b_100010.build(T, dT, hbar, system)
-    #print('total time for t3b = ', time.time() - t1)
     # update t3c
     dT = t3c_111111.build(T, dT, hbar, system)
     dT = t3c_111101.build(T, dT, hbar, system)
