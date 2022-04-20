@@ -21,10 +21,14 @@ def convert_to_ccsd_no(rdm1, H, system):
     # Compute the HF-based G part of the Fock matrix
     G = calc_g_matrix(H, system)
 
-    rdm1a_matrix = np.concatenate( (np.concatenate( (rdm1.a.oo, rdm1.a.ov), axis=1),
-                                    np.concatenate( (rdm1.a.vo, rdm1.a.vv), axis=1)), axis=0)
-    rdm1b_matrix = np.concatenate( (np.concatenate( (rdm1.b.oo, rdm1.b.ov), axis=1),
-                                    np.concatenate( (rdm1.b.vo, rdm1.b.vv), axis=1)), axis=0)
+    # rdm1a_matrix = np.concatenate( (np.concatenate( (rdm1.a.oo, rdm1.a.ov), axis=1),
+    #                                 np.concatenate( (rdm1.a.vo, rdm1.a.vv), axis=1)), axis=0)
+    # rdm1b_matrix = np.concatenate( (np.concatenate( (rdm1.b.oo, rdm1.b.ov), axis=1),
+    #                                 np.concatenate( (rdm1.b.vo, rdm1.b.vv), axis=1)), axis=0)
+    rdm1a_matrix = np.concatenate( (np.concatenate( (rdm1.a.oo, rdm1.a.ov * 0.0), axis=1),
+                                    np.concatenate( (rdm1.a.vo * 0.0, rdm1.a.vv), axis=1)), axis=0)
+    rdm1b_matrix = np.concatenate( (np.concatenate( (rdm1.b.oo, rdm1.b.ov * 0.0), axis=1),
+                                    np.concatenate( (rdm1.b.vo * 0.0, rdm1.b.vv), axis=1)), axis=0)
     rdm_matrix = rdm1a_matrix + rdm1b_matrix
 
     # # symmetry-block diagonalize
@@ -74,10 +78,12 @@ def convert_to_ccsd_no(rdm1, H, system):
     # Biorthogonalize the left and right NO vectors
     for i in range(system.norbitals):
         L[:, i] /= abs(np.dot(L[:, i].conj(), R[:, i]))
-    LR = np.dot(L.conj().T, R)
+    LR = L.conj().T @ R
     print("   Biorthogonality = ", np.linalg.norm(LR - np.eye(system.norbitals)))
     print("   |imag(R)| = ", np.linalg.norm(np.imag(R)))
     print("   |imag(L)| = ", np.linalg.norm(np.imag(L)))
+
+    #print(LR)
 
     # Transform twobody integrals
     temp = np.zeros((system.norbitals, system.norbitals, system.norbitals, system.norbitals))
