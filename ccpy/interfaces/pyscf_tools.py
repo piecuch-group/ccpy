@@ -8,10 +8,10 @@ from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 
 
 def load_pyscf_integrals(
-    meanfield, nfrozen=0,
-    num_act_holes_alpha=0, num_act_particles_alpha=0,
-    num_act_holes_beta=0, num_act_particles_beta=0,
-    normal_ordered=True, dump_integrals=False
+        meanfield, nfrozen=0,
+        num_act_holes_alpha=0, num_act_particles_alpha=0,
+        num_act_holes_beta=0, num_act_particles_beta=0,
+        normal_ordered=True, dump_integrals=False
 ):
     """Builds the System and Integral objects using the information contained within a PySCF
     mean-field object for a molecular system.
@@ -69,8 +69,8 @@ def load_pyscf_integrals(
     return system, getHamiltonian(e1int, e2int, system, normal_ordered)
 
 
-def get_kconserv1(a, kpts, thresh=1.0e-07):
 
+def get_kconserv1(a, kpts, thresh=1.0e-07):
     nkpts = len(kpts)
     kconserv = np.zeros(nkpts, dtype=np.int32)
     for p, kp in enumerate(kpts):
@@ -83,7 +83,6 @@ def get_kconserv1(a, kpts, thresh=1.0e-07):
 
 
 def get_kconserv2(a, kpts, thresh=1.0e-07):
-
     nkpts = len(kpts)
     kconserv = np.zeros((nkpts, nkpts, nkpts), dtype=np.int32)
     for p, kp in enumerate(kpts):
@@ -98,7 +97,6 @@ def get_kconserv2(a, kpts, thresh=1.0e-07):
 
 
 def get_kpoints(cell, nk, G):
-
     kpts = cell.make_kpts(nk)
     nkpts = len(kpts)
     for i in range(nkpts):
@@ -152,7 +150,7 @@ def get_pbc_mo_integrals(cell, kmf, kpts, notation="chemist"):
                     )
                     # Store the integrals. Don't forget the 1/Nkpt scaling of 2-body ints!
                     V[kp, kq, kr, ks, :, :, :, :] = (
-                        1.0 / nkpts * np.reshape(eri_kpt, (nmo, nmo, nmo, nmo))
+                            1.0 / nkpts * np.reshape(eri_kpt, (nmo, nmo, nmo, nmo))
                     )
                 else:  # physics notation
                     ks = kconserv2[kp, kr, kq]
@@ -164,11 +162,11 @@ def get_pbc_mo_integrals(cell, kmf, kpts, notation="chemist"):
                     )
                     # Store the integrals. Don't forget the 1/Nkpt scaling of 2-body ints!
                     V[kp, kr, kq, ks, :, :, :, :] = (
-                        1.0
-                        / nkpts
-                        * np.transpose(
-                            np.reshape(eri_kpt, (nmo, nmo, nmo, nmo)), (0, 2, 1, 3)
-                        )
+                            1.0
+                            / nkpts
+                            * np.transpose(
+                        np.reshape(eri_kpt, (nmo, nmo, nmo, nmo)), (0, 2, 1, 3)
+                    )
                     )
 
     # Calculate reference energy using extracted MO integrals
@@ -189,7 +187,6 @@ def get_pbc_mo_integrals(cell, kmf, kpts, notation="chemist"):
 
 
 def calc_khf_energy(e1int, e2int, Nelec, Nkpts, notation):
-
     # Note that any V must have a factor of 1/Nkpts!
     e1a = 0.0
     e1b = 0.0
@@ -212,25 +209,25 @@ def calc_khf_energy(e1int, e2int, Nelec, Nkpts, notation):
         e1a = np.einsum("uuii->", e1int[:, :, oa, oa])
         e1b = np.einsum("uuii->", e1int[:, :, ob, ob])
         e2a = 0.5 * (
-            np.einsum("uuvviijj->", e2int[:, :, :, :, oa, oa, oa, oa])
-            - np.einsum("uvvuijji->", e2int[:, :, :, :, oa, oa, oa, oa])
+                np.einsum("uuvviijj->", e2int[:, :, :, :, oa, oa, oa, oa])
+                - np.einsum("uvvuijji->", e2int[:, :, :, :, oa, oa, oa, oa])
         )
         e2b = 1.0 * (np.einsum("uuvviijj->", e2int[:, :, :, :, oa, ob, oa, ob]))
         e2c = 0.5 * (
-            np.einsum("uuvviijj->", e2int[:, :, :, :, ob, ob, ob, ob])
-            - np.einsum("uvvuijji->", e2int[:, :, :, :, ob, ob, ob, ob])
+                np.einsum("uuvviijj->", e2int[:, :, :, :, ob, ob, ob, ob])
+                - np.einsum("uvvuijji->", e2int[:, :, :, :, ob, ob, ob, ob])
         )
     else:  # physicist notation
         e1a = np.einsum("uuii->", e1int[:, :, oa, oa])
         e1b = np.einsum("uuii->", e1int[:, :, ob, ob])
         e2a = 0.5 * (
-            np.einsum("uvuvijij->", e2int[:, :, :, :, oa, oa, oa, oa])
-            - np.einsum("uvvuijji->", e2int[:, :, :, :, oa, oa, oa, oa])
+                np.einsum("uvuvijij->", e2int[:, :, :, :, oa, oa, oa, oa])
+                - np.einsum("uvvuijji->", e2int[:, :, :, :, oa, oa, oa, oa])
         )
         e2b = 1.0 * (np.einsum("uvuvijij->", e2int[:, :, :, :, oa, ob, oa, ob]))
         e2c = 0.5 * (
-            np.einsum("uvuvijij->", e2int[:, :, :, :, ob, ob, ob, ob])
-            - np.einsum("uvvuijji->", e2int[:, :, :, :, ob, ob, ob, ob])
+                np.einsum("uvuvijij->", e2int[:, :, :, :, ob, ob, ob, ob])
+                - np.einsum("uvvuijji->", e2int[:, :, :, :, ob, ob, ob, ob])
         )
 
     Escf = e1a + e1b + e2a + e2b + e2c
@@ -304,7 +301,6 @@ def get_mo_integrals(mol, mf, notation="chemist"):
 
 
 def get_hf_energy(e1int, e2int, system, notation="chemist"):
-
     oa = slice(0, system.nfrozen + system.noccupied_alpha)
     ob = slice(0, system.nfrozen + system.noccupied_beta)
 
@@ -312,26 +308,26 @@ def get_hf_energy(e1int, e2int, system, notation="chemist"):
         e1a = np.einsum("ii->", e1int[oa, oa])
         e1b = np.einsum("ii->", e1int[ob, ob])
         e2a = 0.5 * (
-            np.einsum("iijj->", e2int[oa, oa, oa, oa])
-            - np.einsum("ijji->", e2int[oa, oa, oa, oa])
+                np.einsum("iijj->", e2int[oa, oa, oa, oa])
+                - np.einsum("ijji->", e2int[oa, oa, oa, oa])
         )
         e2b = 1.0 * (np.einsum("iijj->", e2int[oa, ob, oa, ob]))
         e2c = 0.5 * (
-            np.einsum("iijj->", e2int[ob, ob, ob, ob])
-            - np.einsum("ijji->", e2int[ob, ob, ob, ob])
+                np.einsum("iijj->", e2int[ob, ob, ob, ob])
+                - np.einsum("ijji->", e2int[ob, ob, ob, ob])
         )
 
     elif notation == "physics":
         e1a = np.einsum("ii->", e1int[oa, oa])
         e1b = np.einsum("ii->", e1int[ob, ob])
         e2a = 0.5 * (
-            np.einsum("ijij->", e2int[oa, oa, oa, oa])
-            - np.einsum("ijji->", e2int[oa, oa, oa, oa])
+                np.einsum("ijij->", e2int[oa, oa, oa, oa])
+                - np.einsum("ijji->", e2int[oa, oa, oa, oa])
         )
         e2b = 1.0 * (np.einsum("ijij->", e2int[oa, ob, oa, ob]))
         e2c = 0.5 * (
-            np.einsum("ijij->", e2int[ob, ob, ob, ob])
-            - np.einsum("ijji->", e2int[ob, ob, ob, ob])
+                np.einsum("ijij->", e2int[ob, ob, ob, ob])
+                - np.einsum("ijji->", e2int[ob, ob, ob, ob])
         )
 
     else:
@@ -343,7 +339,6 @@ def get_hf_energy(e1int, e2int, system, notation="chemist"):
 
 
 def write_onebody_pbc_integrals(Z):
-
     Nkpts = Z.shape[0]
     Norb = Z.shape[2]
     with open("onebody.inp", "w") as f:
@@ -383,7 +378,6 @@ def write_twobody_pbc_integrals(V, e_nuc):
 
 
 def write_onebody_integrals(Z):
-
     Norb = Z.shape[0]
     with open("onebody.inp", "w") as f:
         ct = 1
@@ -394,7 +388,6 @@ def write_onebody_integrals(Z):
 
 
 def write_twobody_integrals(V, e_nuc):
-
     Norb = V.shape[0]
     with open("twobody.inp", "w") as f:
         for i in range(Norb):
