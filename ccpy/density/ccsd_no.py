@@ -5,7 +5,6 @@ from ccpy.drivers.hf_energy import calc_g_matrix, calc_hf_energy
 from ccpy.models.integrals import getHamiltonian
 from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 
-
 def convert_to_ccsd_no(rdm1, H, system):
 
     slice_table = {
@@ -26,24 +25,59 @@ def convert_to_ccsd_no(rdm1, H, system):
                                     np.concatenate( (rdm1.a.vo, rdm1.a.vv), axis=1)), axis=0)
     rdm1b_matrix = np.concatenate( (np.concatenate( (rdm1.b.oo, rdm1.b.ov), axis=1),
                                     np.concatenate( (rdm1.b.vo, rdm1.b.vv), axis=1)), axis=0)
+    rdm_matrix = rdm1a_matrix + rdm1b_matrix
 
-    nocc_vals, V_left, V_right = eig(rdm1a_matrix + rdm1b_matrix, left=True, right=True)
+    # # symmetry-block diagonalize
+    # nocc_vals = np.zeros(system.norbitals)
+    # L = np.zeros((system.norbitals, system.norbitals))
+    # R = np.zeros((system.norbitals, system.norbitals))
+    #
+    # mo_syms = system.orbital_symmetries_all[system.nfrozen:]
+    # idx = [[] for i in range(8)]
+    # for p in range(system.norbitals):
+    #     irrep_number = system.point_group_irrep_to_number[mo_syms[p]]
+    #     idx[irrep_number].append(p)
+    #
+    # for sym in range(8):
+    #     n = len(idx[sym])
+    #
+    #     rdm_sym_block = np.zeros((n, n))
+    #     for p in range(n):
+    #         for q in range(n):
+    #             rdm_sym_block[p, q] = rdm_matrix[idx[sym][p], idx[sym][q]]
+    #     nval, left, right = eig(rdm_sym_block, left=True, right=True)
+    #
+    #     for p in range(n):
+    #         nocc_vals[idx[sym][p]] = np.real(nval[p])
+    #         for q in range(n):
+    #             L[idx[sym][q], idx[sym][p]] = left[q, p]
+    #             R[idx[sym][q], idx[sym][p]] = right[q, p]
+    # idx = np.flip(np.argsort(nocc_vals))
+    # nocc_vals = nocc_vals[idx]
+    # L = L[:, idx]
+    # R = R[:, idx]
+
+    # no symmetry blocking
+    nocc_vals, L, R = eig(rdm_matrix, left=True, right=True)
     nocc_vals = np.real(nocc_vals)
     idx = np.flip(np.argsort(nocc_vals))
     nocc_vals = nocc_vals[idx]
-    V_left = V_left[:, idx]
-    V_right = V_right[:, idx]
+    L = L[:, idx]
+    R = R[:, idx]
 
-    print("   Occupation numbers")
-    print("   orbital       occupation #")
+    print("   CCSD Natural Orbitals:")
+    print("   orbital        occupation")
     print("   ----------------------------")
     for i in range(system.norbitals):
-        print("     {}          {}".format(i + 1, nocc_vals[i]))
+        print("     {:>2}          {:>10f}".format(i + 1, nocc_vals[i]))
 
+    # Biorthogonalize the left and right NO vectors
     for i in range(system.norbitals):
-        V_left[:, i] /= np.dot(V_left[:, i].conj(), V_right[:, i])
-    LR = V_left.conj().T @ V_right
+        L[:, i] /= abs(np.dot(L[:, i].conj(), R[:, i]))
+    LR = np.dot(L.conj().T, R)
     print("   Biorthogonality = ", np.linalg.norm(LR - np.eye(system.norbitals)))
+    print("   |imag(R)| = ", np.linalg.norm(np.imag(R)))
+    print("   |imag(L)| = ", np.linalg.norm(np.imag(L)))
 
     # Transform twobody integrals
     temp = np.zeros((system.norbitals, system.norbitals, system.norbitals, system.norbitals))
@@ -63,7 +97,7 @@ def convert_to_ccsd_no(rdm1, H, system):
     temp[slice_table["a"]["v"], slice_table["b"]["o"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.vovv
     temp[slice_table["a"]["o"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.ovvv
     temp[slice_table["a"]["v"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.vvvv
-    e2int_no = np.einsum("ip,jq,ijkl,kr,ls->pqrs", V_left.conj(), V_left.conj(), temp, V_right, V_right, optimize=True)
+    e2int_no = np.real(np.einsum("ip,jq,ijkl,kr,ls->pqrs", L.conj(), L.conj(), temp, R, R, optimize=True))
 
     # transform onebody integrals
     temp = np.zeros((system.norbitals, system.norbitals))
@@ -71,9 +105,12 @@ def convert_to_ccsd_no(rdm1, H, system):
     temp[slice_table["a"]["o"], slice_table["a"]["v"]] = H.a.ov - G.a.ov
     temp[slice_table["a"]["v"], slice_table["a"]["o"]] = H.a.vo - G.a.vo
     temp[slice_table["a"]["v"], slice_table["a"]["v"]] = H.a.vv - G.a.vv
-    e1int_no = np.einsum("ip,ij,jq->pq", V_left.conj(), temp, V_right)
+    e1int_no = np.real(np.einsum("ip,ij,jq->pq", L.conj(), temp, R))
 
     #dumpIntegralstoPGFiles(e1int_no, e2int_no, system)
+
+    print("   |imag(e1int)| = ", np.linalg.norm(np.imag(e1int_no)))
+    print("   |imag(e2int)| = ", np.linalg.norm(np.imag(e2int_no.flatten())))
 
     system.reference_energy = calc_hf_energy(e1int_no, e2int_no, system) + system.nuclear_repulsion
     H = getHamiltonian(e1int_no, e2int_no, system, normal_ordered=True)

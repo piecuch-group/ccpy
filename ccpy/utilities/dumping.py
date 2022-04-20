@@ -5,7 +5,7 @@ def dumpIntegralstoPGFiles(e1int, e2int, system):
         ct = 1
         for i in range(norbitals):
             for j in range(i + 1):
-                f.write("   {:.11f}    {}\n".format(e1int[i, j], ct))
+                f.write("   {:>.11f}    {}\n".format(e1int[i, j], ct))
                 ct += 1
     with open("twobody.inp", "w") as f:
         for i in range(norbitals):
