@@ -22,6 +22,7 @@ def main():
         spin=0,
         symmetry="D2H",
         unit='Bohr',
+        cart=True
     )
     mf = scf.ROHF(mol)
     mf.kernel()
