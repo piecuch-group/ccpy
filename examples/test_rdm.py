@@ -16,13 +16,12 @@ def main():
     mol = gto.Mole()
 
     mol.build(
-        atom=[['H', (0, 0, -2.66816/2.0)], ['F', (0, 0, 2.66816/2.0)]],
+        atom=[['N', (0, 0, -1)], ['N', (0, 0, 1)]],
         basis="ccpvdz",
         charge=0,
         spin=0,
-        symmetry="C2V",
+        symmetry="D2H",
         unit='Bohr',
-        cart=True
     )
     mf = scf.ROHF(mol)
     mf.kernel()
