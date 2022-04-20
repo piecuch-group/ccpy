@@ -84,8 +84,6 @@ def convert_to_ccsd_no(rdm1, H, system):
     print("   |imag(R)| = ", np.linalg.norm(np.imag(R)))
     print("   |imag(L)| = ", np.linalg.norm(np.imag(L)))
 
-    #print(LR)
-
     # Transform twobody integrals
     temp = np.zeros((system.norbitals, system.norbitals, system.norbitals, system.norbitals))
     temp[slice_table["a"]["o"], slice_table["b"]["o"], slice_table["a"]["o"], slice_table["b"]["o"]] = H.ab.oooo
