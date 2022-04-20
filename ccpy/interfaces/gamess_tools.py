@@ -13,7 +13,7 @@ def load_from_gamess(
     from cclib.io import ccread
 
     from ccpy.constants import constants
-    from ccpy.drivers.hf_energy import calc_hf_energy
+    from ccpy.drivers.hf_energy import calc_hf_energy, calc_hf_frozen_core_energy
     from ccpy.models.integrals import getHamiltonian
     from ccpy.models.system import System
 
@@ -46,6 +46,7 @@ def load_from_gamess(
         hf_energy, get_reference_energy(gamess_logfile), atol=1.0e-06, rtol=0.0
     )
     system.reference_energy = hf_energy
+    system.frozen_energy = calc_hf_frozen_core_energy(e1int, e2int, system)
 
     return system, getHamiltonian(e1int, e2int, system, normal_ordered)
 

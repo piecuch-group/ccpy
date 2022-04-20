@@ -5,7 +5,7 @@ from ccpy.drivers.hf_energy import calc_g_matrix, calc_hf_energy
 from ccpy.models.integrals import getHamiltonian
 from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 
-def convert_to_ccsd_no(rdm1, H, system):
+def convert_to_ccsd_no(rdm1, H, system, dump_integrals=False):
 
     slice_table = {
         "a": {
@@ -21,10 +21,6 @@ def convert_to_ccsd_no(rdm1, H, system):
     # Compute the HF-based G part of the Fock matrix
     G = calc_g_matrix(H, system)
 
-    # rdm1a_matrix = np.concatenate( (np.concatenate( (rdm1.a.oo, rdm1.a.ov), axis=1),
-    #                                 np.concatenate( (rdm1.a.vo, rdm1.a.vv), axis=1)), axis=0)
-    # rdm1b_matrix = np.concatenate( (np.concatenate( (rdm1.b.oo, rdm1.b.ov), axis=1),
-    #                                 np.concatenate( (rdm1.b.vo, rdm1.b.vv), axis=1)), axis=0)
     rdm1a_matrix = np.concatenate( (np.concatenate( (rdm1.a.oo, rdm1.a.ov * 0.0), axis=1),
                                     np.concatenate( (rdm1.a.vo * 0.0, rdm1.a.vv), axis=1)), axis=0)
     rdm1b_matrix = np.concatenate( (np.concatenate( (rdm1.b.oo, rdm1.b.ov * 0.0), axis=1),
@@ -62,14 +58,6 @@ def convert_to_ccsd_no(rdm1, H, system):
     L = L[:, idx]
     R = R[:, idx]
 
-    # # no symmetry blocking
-    # nocc_vals, L, R = eig(rdm_matrix, left=True, right=True)
-    # nocc_vals = np.real(nocc_vals)
-    # idx = np.flip(np.argsort(nocc_vals))
-    # nocc_vals = nocc_vals[idx]
-    # L = L[:, idx]
-    # R = R[:, idx]
-
     print("   CCSD Natural Orbitals:")
     print("   orbital        occupation")
     print("   ----------------------------")
@@ -102,7 +90,8 @@ def convert_to_ccsd_no(rdm1, H, system):
     temp[slice_table["a"]["v"], slice_table["b"]["o"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.vovv
     temp[slice_table["a"]["o"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.ovvv
     temp[slice_table["a"]["v"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.vvvv
-    e2int_no = np.real(np.einsum("ip,jq,ijkl,kr,ls->pqrs", L.conj(), L.conj(), temp, R, R, optimize=True))
+    e2int_no = np.einsum("ip,jq,ijkl,kr,ls->pqrs", L.conj(), L.conj(), temp, R, R, optimize=True)
+    e2int_no = np.pad(e2int_no, ((system.nfrozen, 0), (system.nfrozen, 0), (system.nfrozen, 0), (system.nfrozen, 0)))
 
     # transform onebody integrals
     temp = np.zeros((system.norbitals, system.norbitals))
@@ -110,14 +99,20 @@ def convert_to_ccsd_no(rdm1, H, system):
     temp[slice_table["a"]["o"], slice_table["a"]["v"]] = H.a.ov - G.a.ov
     temp[slice_table["a"]["v"], slice_table["a"]["o"]] = H.a.vo - G.a.vo
     temp[slice_table["a"]["v"], slice_table["a"]["v"]] = H.a.vv - G.a.vv
-    e1int_no = np.real(np.einsum("ip,ij,jq->pq", L.conj(), temp, R))
+    e1int_no = np.einsum("ip,ij,jq->pq", L.conj(), temp, R)
+    e1int_no = np.pad(e1int_no, ((system.nfrozen, 0), (system.nfrozen, 0)))
 
-    #dumpIntegralstoPGFiles(e1int_no, e2int_no, system)
+    if dump_integrals:
+        dumpIntegralstoPGFiles(e1int_no, e2int_no, system)
 
     print("   |imag(e1int)| = ", np.linalg.norm(np.imag(e1int_no)))
     print("   |imag(e2int)| = ", np.linalg.norm(np.imag(e2int_no.flatten())))
 
-    system.reference_energy = calc_hf_energy(e1int_no, e2int_no, system) + system.nuclear_repulsion
+    system.reference_energy = (
+                                calc_hf_energy(e1int_no, e2int_no, system)
+                                + system.nuclear_repulsion
+                                + system.frozen_energy
+    )
     H = getHamiltonian(e1int_no, e2int_no, system, normal_ordered=True)
 
     return H, system

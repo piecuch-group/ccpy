@@ -1,10 +1,11 @@
 import numpy as np
 from pyscf import ao2mo
 
-from ccpy.drivers.hf_energy import calc_hf_energy
 from ccpy.models.integrals import getHamiltonian
 from ccpy.models.system import System
 from ccpy.utilities.dumping import dumpIntegralstoPGFiles
+
+from ccpy.drivers.hf_energy import calc_hf_frozen_core_energy
 
 
 def load_pyscf_integrals(
@@ -62,6 +63,7 @@ def load_pyscf_integrals(
         raise RuntimeError("Integrals don't match mean field energy")
 
     system.reference_energy = hf_energy
+    system.frozen_energy = calc_hf_frozen_core_energy(e1int, e2int, system)
 
     if dump_integrals:
         dumpIntegralstoPGFiles(e1int, e2int, system)

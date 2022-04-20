@@ -2,6 +2,8 @@ import numpy as np
 from ccpy.utilities.active_space import get_active_slices
 from ccpy.utilities.updates import cc_active_loops
 
+import time
+
 def build(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
@@ -54,6 +56,7 @@ def build(T, dT, H, system):
             +1.0 * np.einsum('MnKj,AcbniM->AbcijK', H.aa.oooo[Oa, oa, Oa, oa], T.aaa.VvvooO, optimize=True)
             + 0.5 * np.einsum('MNKj,AcbiMN->AbcijK', H.aa.oooo[Oa, Oa, Oa, oa], T.aaa.VvvoOO, optimize=True)
     )
+    #t1 = time.time()
     dT.aaa.VvvooO += (2.0 / 4.0) * (
             +1.0 * np.einsum('AbeF,FceijK->AbcijK', H.aa.vvvv[Va, va, va, Va], T.aaa.VvvooO, optimize=True)
             - 0.5 * np.einsum('AbEF,FEcijK->AbcijK', H.aa.vvvv[Va, va, Va, Va], T.aaa.VVvooO, optimize=True)
@@ -63,6 +66,7 @@ def build(T, dT, H, system):
             + 1.0 * np.einsum('cbeF,AFeijK->AbcijK', H.aa.vvvv[va, va, va, Va], T.aaa.VVvooO, optimize=True)
             + 0.5 * np.einsum('cbEF,AFEijK->AbcijK', H.aa.vvvv[va, va, Va, Va], T.aaa.VVVooO, optimize=True)
     )
+    #print('Time for t3a vvvv =', time.time() - t1)
     dT.aaa.VvvooO += (2.0 / 4.0) * (
             -1.0 * np.einsum('AmiE,EcbmjK->AbcijK', H.aa.voov[Va, oa, oa, Va], T.aaa.VvvooO, optimize=True)
             + 1.0 * np.einsum('AMiE,EcbjMK->AbcijK', H.aa.voov[Va, Oa, oa, Va], T.aaa.VvvoOO, optimize=True)
