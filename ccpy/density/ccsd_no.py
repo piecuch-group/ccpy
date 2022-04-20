@@ -31,43 +31,44 @@ def convert_to_ccsd_no(rdm1, H, system):
                                     np.concatenate( (rdm1.b.vo * 0.0, rdm1.b.vv), axis=1)), axis=0)
     rdm_matrix = rdm1a_matrix + rdm1b_matrix
 
-    # # symmetry-block diagonalize
-    # nocc_vals = np.zeros(system.norbitals)
-    # L = np.zeros((system.norbitals, system.norbitals))
-    # R = np.zeros((system.norbitals, system.norbitals))
-    #
-    # mo_syms = system.orbital_symmetries_all[system.nfrozen:]
-    # idx = [[] for i in range(8)]
-    # for p in range(system.norbitals):
-    #     irrep_number = system.point_group_irrep_to_number[mo_syms[p]]
-    #     idx[irrep_number].append(p)
-    #
-    # for sym in range(8):
-    #     n = len(idx[sym])
-    #
-    #     rdm_sym_block = np.zeros((n, n))
-    #     for p in range(n):
-    #         for q in range(n):
-    #             rdm_sym_block[p, q] = rdm_matrix[idx[sym][p], idx[sym][q]]
-    #     nval, left, right = eig(rdm_sym_block, left=True, right=True)
-    #
-    #     for p in range(n):
-    #         nocc_vals[idx[sym][p]] = np.real(nval[p])
-    #         for q in range(n):
-    #             L[idx[sym][q], idx[sym][p]] = left[q, p]
-    #             R[idx[sym][q], idx[sym][p]] = right[q, p]
-    # idx = np.flip(np.argsort(nocc_vals))
-    # nocc_vals = nocc_vals[idx]
-    # L = L[:, idx]
-    # R = R[:, idx]
+    # symmetry-block diagonalize
+    nocc_vals = np.zeros(system.norbitals)
+    L = np.zeros((system.norbitals, system.norbitals))
+    R = np.zeros((system.norbitals, system.norbitals))
 
-    # no symmetry blocking
-    nocc_vals, L, R = eig(rdm_matrix, left=True, right=True)
-    nocc_vals = np.real(nocc_vals)
+    pg_order = len(system.point_group_irrep_to_number)
+    mo_syms = system.orbital_symmetries_all[system.nfrozen:]
+    idx = [[] for i in range(pg_order)]
+    for p in range(system.norbitals):
+        irrep_number = system.point_group_irrep_to_number[mo_syms[p]]
+        idx[irrep_number].append(p)
+
+    for sym in range(pg_order):
+        n = len(idx[sym])
+
+        rdm_sym_block = np.zeros((n, n))
+        for p in range(n):
+            for q in range(n):
+                rdm_sym_block[p, q] = rdm_matrix[idx[sym][p], idx[sym][q]]
+        nval, left, right = eig(rdm_sym_block, left=True, right=True)
+
+        for p in range(n):
+            nocc_vals[idx[sym][p]] = np.real(nval[p])
+            for q in range(n):
+                L[idx[sym][q], idx[sym][p]] = left[q, p]
+                R[idx[sym][q], idx[sym][p]] = right[q, p]
     idx = np.flip(np.argsort(nocc_vals))
     nocc_vals = nocc_vals[idx]
     L = L[:, idx]
     R = R[:, idx]
+
+    # # no symmetry blocking
+    # nocc_vals, L, R = eig(rdm_matrix, left=True, right=True)
+    # nocc_vals = np.real(nocc_vals)
+    # idx = np.flip(np.argsort(nocc_vals))
+    # nocc_vals = nocc_vals[idx]
+    # L = L[:, idx]
+    # R = R[:, idx]
 
     print("   CCSD Natural Orbitals:")
     print("   orbital        occupation")
