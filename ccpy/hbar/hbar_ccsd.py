@@ -260,8 +260,8 @@ def build_hbar_ccsd(T, H0):
                 + 0.5 * np.einsum("mnie,abmn->abie", H0.bb.ooov, T.bb, optimize=True)
     )
 
-    minutes, seconds = divmod(time.time() - t0, 60)
-    print("HBar CCSD construction finished in {:.2f}m {:.2f}s".format(minues, seconds)) 
+    minutes, seconds = divmod(time.time() - t1, 60)
+    print("HBar CCSD construction finished in {:.2f}m {:.2f}s".format(minutes, seconds))
     return H
 
 #@profile

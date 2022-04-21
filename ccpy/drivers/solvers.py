@@ -278,6 +278,7 @@ def cc_jacobi(update_t, T, dT, H, calculation, system):
     diis_engine = DIIS(T, calculation.diis_size, calculation.low_memory)
 
     # Jacobi/DIIS iterations
+    num_throw_away = 3
     ndiis_cycle = 0
     energy = 0.0
     energy_old = get_cc_energy(T, H)
@@ -321,12 +322,13 @@ def cc_jacobi(update_t, T, dT, H, calculation, system):
             break
 
         # Save T and dT vectors to disk for DIIS
-        diis_engine.push(T, dT, niter)
+        if niter >= num_throw_away:
+            diis_engine.push(T, dT, niter)
 
         # Do DIIS extrapolation
-        if niter % calculation.diis_size == 0 and niter > 1:
+        if niter >= calculation.diis_size + num_throw_away:
             ndiis_cycle += 1
-            print("   DIIS Cycle - {}".format(ndiis_cycle))
+            #print("   DIIS Cycle - {}".format(ndiis_cycle))
             T.unflatten(diis_engine.extrapolate())
 
         # Update old energy
@@ -404,9 +406,9 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, syst
         diis_engine.push(L, LH, niter)
 
         # Do DIIS extrapolation
-        if niter % calculation.diis_size == 0 and niter > 1:
+        if niter >= calculation.diis_size:
             ndiis_cycle += 1
-            print("   DIIS Cycle - {}".format(ndiis_cycle))
+            #print("   DIIS Cycle - {}".format(ndiis_cycle))
             L.unflatten(diis_engine.extrapolate())
 
         # Update old energy
