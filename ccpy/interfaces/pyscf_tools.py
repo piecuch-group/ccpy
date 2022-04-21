@@ -32,6 +32,9 @@ def load_pyscf_integrals(
     norbitals = mo_coeff.shape[1]
     nuclear_repulsion = molecule.energy_nuc()
 
+    if not hasattr(meanfield, "orbsym"):
+        setattr(meanfield, "orbsym", [0] * norbitals)
+
     system = System(
         nelectrons,
         norbitals,
