@@ -35,7 +35,7 @@ class System:
         self.nunoccupied_alpha = self.norbitals - self.noccupied_alpha
         self.nunoccupied_beta = self.norbitals - self.noccupied_beta
         # active space orbital partitioning
-        self.set_active_space(nact_unoccupied, nact_unoccupied)
+        self.set_active_space(nact_occupied, nact_unoccupied)
         # symmetry information
         self.point_group = point_group
         self.point_group_irrep_to_number = get_pg_irreps(self.point_group)
