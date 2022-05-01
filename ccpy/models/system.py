@@ -15,9 +15,9 @@ class System:
         orbital_symmetries=None,
         charge=0,
         nkpts=0,
-        reference_energy=0,
-        frozen_energy=0,
-        nuclear_repulsion=0,
+        reference_energy=0.0,
+        frozen_energy=0.0,
+        nuclear_repulsion=0.0,
         mo_energies=None,
         mo_occupation=None,
         nact_occupied=0,
@@ -65,12 +65,12 @@ class System:
 
         # Get the point group symmetry of the reference state by exploiting
         # homomorphism between Abelian groups and binary vector spaces
-        # sym(irrep1, irrep2) = xor( irrep1, irrep2 ), where irrep's are numbered
-        # in the convention (for D2H):
+        # sym( irrep1, irrep2 ) = xor( irrep1, irrep2 ), where irreps are
+        # numbered in the convention (for D2H):
         # Ag = 0, B1g = 1, B2g = 2, B3g = 3, Au = 4, B1u = 5, B2u = 6, B3u = 7
         sym = 0
         for i in range(self.nfrozen + self.noccupied_alpha):
-            for j in range(int(self.mo_occupation[i])):
+            for j in range(int(self.mo_occupation[i])): # does this extend to fractional occupation numbers (e.g., NOs)?
                sym = sym ^ self.point_group_irrep_to_number[self.orbital_symmetries_all[i]]
         self.reference_symmetry = self.point_group_number_to_irrep[sym]
 
