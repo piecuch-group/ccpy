@@ -44,6 +44,11 @@ def main(args):
 
     T, total_energy, is_converged = cc_driver(calculation, system, H)
 
+    print("   Expected Answers")
+    print("   -----------------")
+    print("   E(CCSDTQ) / Re = {}".format(-76.157866 + 0.015 / 1000))
+    print("   E(CCSDTQ) / 2Re = {}".format(-75.905138210299))
+
 
 
 if __name__ == "__main__":

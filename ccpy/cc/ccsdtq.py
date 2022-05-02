@@ -11,6 +11,7 @@ from ccpy.utilities.updates import cc_loops_t4
 
 
 def update(T, dT, H, shift, flag_RHF, system):
+
     # update T1
     T, dT = update_t1a(T, dT, H, shift)
     if flag_RHF:
@@ -54,21 +55,14 @@ def update(T, dT, H, shift, flag_RHF, system):
     T, dT = update_t4a(T, dT, hbar, H, shift)
     T, dT = update_t4b(T, dT, hbar, H, shift)
     T, dT = update_t4c(T, dT, hbar, H, shift)
-
-    # for now, we are only doing RHF case
-    T.abbb = np.transpose(T.aaab, (3, 2, 1, 0, 7, 6, 5, 4))
-    dT.abbb = np.transpose(dT.aaab, (3, 2, 1, 0, 7, 6, 5, 4))
-    T.bbbb = T.aaaa.copy()
-    dT.bbbb = dT.aaaa.copy()
-
-    # if flag_RHF:
-    #     T.abbb = np.transpose(T.aaab, (3, 2, 1, 0, 7, 6, 5, 4))
-    #     dT.abbb = np.transpose(dT.aaab, (3, 2, 1, 0, 7, 6, 5, 4))
-    #     T.bbbb = T.aaaa.copy()
-    #     dT.bbbb = dT.aaaa.copy()
-    # else:
-    #     T, dT = update_t4d(T, dT, hbar, H, shift)
-    #     T, dT = update_t4e(T, dT, hbar, H, shift)
+    if flag_RHF:
+        T.abbb = np.transpose(T.aaab, (3, 2, 1, 0, 7, 6, 5, 4))
+        dT.abbb = np.transpose(dT.aaab, (3, 2, 1, 0, 7, 6, 5, 4))
+        T.bbbb = T.aaaa.copy()
+        dT.bbbb = dT.aaaa.copy()
+    else:
+        T, dT = update_t4d(T, dT, hbar, H, shift)
+        T, dT = update_t4e(T, dT, hbar, H, shift)
 
     return T, dT
 
@@ -231,12 +225,16 @@ def update_t2a(T, dT, H, H0, shift):
     dT.aa += 0.25 * np.einsum("anef,ebfijn->abij", H0.aa.vovv + H.aa.vovv, T.aaa, optimize=True)
     dT.aa += 0.5 * np.einsum("anef,ebfijn->abij", H0.ab.vovv + H.ab.vovv, T.aab, optimize=True)
     # T4 parts
-    dT.aa += 0.0625 * np.einsum("mnef,abefijmn->abij", H0.aa.oovv, T.aaaa, optimize=True)
+    dT.aa += (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", H0.aa.oovv, T.aaaa, optimize=True)
     dT.aa += 0.25 * np.einsum("mnef,abefijmn->abij", H0.ab.oovv, T.aaab, optimize=True)
-    dT.aa += 0.0625 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T.aabb, optimize=True)
+    dT.aa += (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T.aabb, optimize=True)
 
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
-        T.aa, dT.aa + 0.25 * H0.aa.vvoo, H0.a.oo, H0.a.vv, shift
+        T.aa,
+        dT.aa + 0.25 * H0.aa.vvoo,
+        H0.a.oo,
+        H0.a.vv,
+        shift
     )
     return T, dT
 
@@ -325,7 +323,13 @@ def update_t2b(T, dT, H, H0, shift):
     dT.ab += 0.25 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T.abbb, optimize=True)
 
     T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
-        T.ab, dT.ab + H0.ab.vvoo, H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv, shift
+        T.ab,
+        dT.ab + H0.ab.vvoo,
+        H0.a.oo,
+        H0.a.vv,
+        H0.b.oo,
+        H0.b.vv,
+        shift
     )
     return T, dT
 
@@ -387,7 +391,11 @@ def update_t2c(T, dT, H, H0, shift):
     dT.bb += 0.0625 * np.einsum("mnef,febanmji->abij", H0.aa.oovv, T.aabb, optimize=True)
 
     T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
-        T.bb, dT.bb + 0.25 * H0.bb.vvoo, H0.b.oo, H0.b.vv, shift
+        T.bb,
+        dT.bb + 0.25 * H0.bb.vvoo,
+        H0.b.oo,
+        H0.b.vv,
+        shift
     )
     return T, dT
 
@@ -1123,4 +1131,10 @@ def update_t4c(T, dT, H, H0, shift):
         H0.b.vv,
         shift,
     )
+    return T, dT
+
+def update_t4d(T, dT, hbar, H, shift):
+    return T, dT
+
+def update_t4e(T, dT, hbar, H, shift):
     return T, dT
