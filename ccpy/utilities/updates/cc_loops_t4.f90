@@ -289,7 +289,9 @@ subroutine update_t4a(t4a, resid, X4A, &
                         -1.0 * X4A(b, d, a, c, j, l, k, i)&
                         -1.0 * X4A(b, d, a, c, k, i, j, l)&
                         +X4A(b, d, a, c, k, i, l, j)&
-                        +X4A(b, d, a, c, k, j, i, l)&
+                        +X4A(b, d, a, c, k, j, i, l)
+
+                        val = val &
                         -1.0 * X4A(b, d, a, c, k, j, l, i)&
                         -1.0 * X4A(b, d, a, c, k, l, i, j)&
                         +X4A(b, d, a, c, k, l, j, i)&
@@ -544,7 +546,9 @@ subroutine update_t4a(t4a, resid, X4A, &
                         +X4A(d, b, c, a, i, k, j, l)&
                         -1.0 * X4A(d, b, c, a, i, k, l, j)&
                         -1.0 * X4A(d, b, c, a, i, l, j, k)&
-                        +X4A(d, b, c, a, i, l, k, j)&
+                        +X4A(d, b, c, a, i, l, k, j)
+
+                        val = val &
                         +X4A(d, b, c, a, j, i, k, l)&
                         -1.0 * X4A(d, b, c, a, j, i, l, k)&
                         -1.0 * X4A(d, b, c, a, j, k, i, l)&
@@ -2027,6 +2031,8 @@ subroutine update_t4c(t4c, resid, X4C, &
    end do
 
 end subroutine update_t4c
+
+
 
 
 end module cc_loops_t4
