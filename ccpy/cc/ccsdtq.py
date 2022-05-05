@@ -684,12 +684,12 @@ def update_t4a(T, dT, H, H0, shift):
     dT.aaaa += (36.0 / 576.0) * np.einsum("cdmkle,abeijm->abcdijkl", I3B_vvooov, T.aab, optimize=True) # (cd/ab)(kl/ij) = 6 * 6 = 36
 
     # <ijklabcd | (H(2)*T4)_C | 0 >
-    dT.aaaa -= (4.0 / 576.0) * np.einsum("ml,abcdijkm->abcdijkl", H.a.oo, T.aaaa, optimize=True) # (l/ijk) = 4
-    dT.aaaa += (4.0 / 576.0) * np.einsum("de,abceijkl->abcdijkl", H.a.vv, T.aaaa, optimize=True) # (d/abc) = 4
-    dT.aaaa += (6.0 / 576.0) * 0.5 * np.einsum("mnkl,abcdijmn->abcdijkl", H.aa.oooo, T.aaaa, optimize=True) # (kl/ij) = 6
-    dT.aaaa += (6.0 / 576.0) * 0.5 * np.einsum("cdef,abefijkl->abcdijkl", H.aa.vvvv, T.aaaa, optimize=True) # (cd/ab) = 6
-    dT.aaaa += (16.0 / 576.0) * np.einsum("dmle,abceijkm->abcdijkl", H.aa.voov, T.aaaa, optimize=True) # (d/abc)(l/ijk) = 16
-    dT.aaaa += (16.0 / 576.0) * np.einsum("dmle,abceijkm->abcdijkl", H.ab.voov, T.aaab, optimize=True) # (d/abc)(l/ijk) = 16
+    dT.aaaa -= (4.0 / 576.0) * np.einsum("mi,abcdmjkl->abcdijkl", H.a.oo, T.aaaa, optimize=True) # (l/ijk) = 4
+    dT.aaaa += (4.0 / 576.0) * np.einsum("ae,ebcdijkl->abcdijkl", H.a.vv, T.aaaa, optimize=True) # (d/abc) = 4
+    dT.aaaa += (6.0 / 576.0) * 0.5 * np.einsum("mnij,abcdmnkl->abcdijkl", H.aa.oooo, T.aaaa, optimize=True) # (kl/ij) = 6
+    dT.aaaa += (6.0 / 576.0) * 0.5 * np.einsum("abef,efcdijkl->abcdijkl", H.aa.vvvv, T.aaaa, optimize=True) # (cd/ab) = 6
+    dT.aaaa += (16.0 / 576.0) * np.einsum("amie,ebcdmjkl->abcdijkl", H.aa.voov, T.aaaa, optimize=True) # (d/abc)(l/ijk) = 16
+    dT.aaaa += (16.0 / 576.0) * np.einsum("amie,bcdejklm->abcdijkl", H.ab.voov, T.aaab, optimize=True) # (d/abc)(l/ijk) = 16
 
     I3A_vvvoov = (
                     -0.5 * np.einsum("mnef,bcdfjkmn->bcdjke", H0.aa.oovv, T.aaaa, optimize=True)
@@ -1011,7 +1011,7 @@ def update_t4c(T, dT, H, H0, shift):
     dT.aabb += (1.0 / 16.0) * np.einsum("cdmkle,abeijm->abcdijkl", I3D_vvooov, T.aab, optimize=True)  # [20]  (1) = 1
 
     I3B_vovovo = (
-                -np.einsum("nmel,adin->amdiel", H.ab.oovo, T.ab, optimize=True)
+                -np.einsum("mnel,adin->amdiel", H.ab.oovo, T.ab, optimize=True)
                 +np.einsum("mdef,afil->amdiel", H.ab.ovvv, T.ab, optimize=True)
                 +0.5 * np.einsum("mnef,afdinl->amdiel", H.aa.oovv, T.aab, optimize=True) # !!! factor 1/2 to compensate asym
                 +np.einsum("mnef,afdinl->amdiel", H.ab.oovv, T.abb, optimize=True)
@@ -1022,7 +1022,7 @@ def update_t4c(T, dT, H, H0, shift):
 
     I3C_vovovo = (
                 -np.einsum("nmie,adnl->amdiel", H.ab.ooov, T.ab, optimize=True)
-                +np.einsum("amfe,fdil->amdiel", H.aa.vovv, T.ab, optimize=True)
+                +np.einsum("amfe,fdil->amdiel", H.ab.vovv, T.ab, optimize=True)
                 -np.einsum("nmle,adin->amdiel", H.bb.ooov, T.ab, optimize=True)
                 +np.einsum("dmfe,afil->amdiel", H.bb.vovv, T.ab, optimize=True)
                 +0.5 * np.einsum("mnef,afdinl->amdiel", H.bb.oovv, T.abb, optimize=True) # !!! factor 1/2 to compensate asym

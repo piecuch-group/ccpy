@@ -16,6 +16,13 @@ def main(args):
     elif args.re == 3:
         geom = [['H', (0, 4.545789, -3.176694)], ['H', (0, -4.545789, -3.176694)], ['O', (0.0, 0.0, -0.0270)]]
 
+    if args.method == 'ccsd':
+        order = 2
+    if args.method == 'ccsdt':
+        order = 3
+    if args.method == 'ccsdtq':
+        order = 4
+
     mol = gto.Mole()
 
     mol.build(
@@ -34,8 +41,8 @@ def main(args):
     system.print_info()
 
     calculation = Calculation(
-        order=4,
-        calculation_type="ccsdtq",
+        order=order,
+        calculation_type=args.method,
         convergence_tolerance=1.0e-08,
         diis_size=6,
         maximum_iterations=80,
