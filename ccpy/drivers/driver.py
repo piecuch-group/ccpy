@@ -6,7 +6,7 @@ import ccpy.cc
 import ccpy.left
 import ccpy.eomcc
 
-from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, eomcc_davidson, eomcc_davidson_lowmem
+from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, eomcc_davidson, eomcc_davidson_lowmem
 from ccpy.models.operators import ClusterOperator
 from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter
 
@@ -58,7 +58,6 @@ def cc_driver(calculation, system, hamiltonian, T=None):
 
     return T, total_energy, is_converged
 
-# [TODO]: The form of the update function would change in CC(P) as lists of triples will need to be passed in
 def ccp_driver(calculation, system, hamiltonian, pspace, T=None):
     """Performs the calculation specified by the user in the input."""
 
@@ -67,6 +66,8 @@ def ccp_driver(calculation, system, hamiltonian, pspace, T=None):
         raise NotImplementedError(
             "{} not implemented".format(calculation.calculation_type)
         )
+
+    # [TODO]: Check if calculation parameters (e.g, active orbitals) make sense
 
     # import the specific CC method module and get its update function
     cc_mod = import_module("ccpy.cc." + calculation.calculation_type.lower())
@@ -77,17 +78,25 @@ def ccp_driver(calculation, system, hamiltonian, pspace, T=None):
 
     # initialize the cluster operator anew, or use restart
     if T is None:
-        T = ClusterOperator(system, calculation.order)
+        T = ClusterOperator(system,
+                            order=calculation.order,
+                            active_orders=calculation.active_orders,
+                            num_active=calculation.num_active)
 
     # regardless of restart status, initialize residual anew
-    dT = ClusterOperator(system, calculation.order)
+    dT = ClusterOperator(system,
+                        order=calculation.order,
+                        active_orders=calculation.active_orders,
+                        num_active=calculation.num_active)
 
-    T, corr_energy, is_converged = cc_jacobi(
+    T, corr_energy, is_converged = ccp_jacobi(
                                            update_function,
                                            T,
                                            dT,
                                            hamiltonian,
                                            calculation,
+                                           system,
+                                           pspace
                                            )
     total_energy = system.reference_energy + corr_energy
 
