@@ -9,12 +9,10 @@ def main(args):
     from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
     from ccpy.drivers.driver import cc_driver
 
-    if args.re== 1:
-        geom = [['H', (0, 1.515263, -1.058898)], ['H', (0, -1.515263, -1.058898)], ['O', (0.0, 0.0, -0.0090)]]
-    elif args.re == 2:
-        geom = [['H', (0, 3.030526, -2.117796)], ['H', (0, -3.030526, -2.117796)], ['O', (0.0, 0.0, -0.0180)]]
-    elif args.re == 3:
-        geom = [['H', (0, 4.545789, -3.176694)], ['H', (0, -4.545789, -3.176694)], ['O', (0.0, 0.0, -0.0270)]]
+    geom = [['H', (1.9021130326, 1.6180339887, 0.0)], 
+            ['H', (0.000, 1.000, 0.000)], 
+            ['H', (0.000, -1.000, 0.000)], 
+            ['H', (1.9021130326, -1.6180339887, 0.0)]]
 
     if args.method == 'ccsd':
         order = 2
@@ -30,14 +28,14 @@ def main(args):
         basis=args.basis,
         charge=0,
         spin=0,
-        symmetry="C2V",
+        symmetry="C1",
         cart=False,
         unit='Bohr',
     )
     mf = scf.ROHF(mol)
     mf.kernel()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=1)
+    system, H = load_pyscf_integrals(mf, nfrozen=0)
     system.print_info()
 
     calculation = Calculation(
@@ -52,11 +50,11 @@ def main(args):
     T, total_energy, is_converged = cc_driver(calculation, system, H)
 
 
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run all-electron H2O calculation for geometries from Bartlett & Balkova.")
     parser.add_argument("method", type=str, help="CC method to run (default is 'ccsd').", default="ccsd")
-    parser.add_argument("-re", type=float, help="Geometry defined in terms of equlibrium value of R_OH (default is 1).", default=1.0)
     parser.add_argument("-basis", type=str, help="Basis set (default is DZ).", default="dz")
 
     args = parser.parse_args()
