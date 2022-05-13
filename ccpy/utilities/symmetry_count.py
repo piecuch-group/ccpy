@@ -48,7 +48,7 @@ def count_singles(system):
     for i in range(system.noccupied_alpha):
         symi = system.orbital_symmetries[i]
         ni = system.point_group_irrep_to_number[symi]
-        for a in range(system.nunoccupied_alpha):
+        for a in range(system.noccupied_alpha, system.norbitals):
             syma = system.orbital_symmetries[a]
             na = system.point_group_irrep_to_number[syma]
             sym = na ^ ni
@@ -58,7 +58,7 @@ def count_singles(system):
     for i in range(system.noccupied_beta):
         symi = system.orbital_symmetries[i]
         ni = system.point_group_irrep_to_number[symi]
-        for a in range(system.nunoccupied_alpha):
+        for a in range(system.noccupied_beta, system.norbitals):
             syma = system.orbital_symmetries[a]
             na = system.point_group_irrep_to_number[syma]
             sym = na ^ ni
@@ -82,10 +82,10 @@ def count_doubles(system):
         for j in range(i + 1, system.noccupied_alpha):
             symj = system.orbital_symmetries[j]
             nj = system.point_group_irrep_to_number[symj]
-            for a in range(system.nunoccupied_alpha):
+            for a in range(system.noccupied_alpha, system.norbitals):
                 syma = system.orbital_symmetries[a]
                 na = system.point_group_irrep_to_number[syma]
-                for b in range(a + 1, system.nunoccupied_alpha):
+                for b in range(a + 1, system.norbitals):
                     symb = system.orbital_symmetries[b]
                     nb = system.point_group_irrep_to_number[symb]
 
@@ -99,10 +99,10 @@ def count_doubles(system):
         for j in range(system.noccupied_beta):
             symj = system.orbital_symmetries[j]
             nj = system.point_group_irrep_to_number[symj]
-            for a in range(system.nunoccupied_alpha):
+            for a in range(system.noccupied_alpha, system.norbitals):
                 syma = system.orbital_symmetries[a]
                 na = system.point_group_irrep_to_number[syma]
-                for b in range(system.nunoccupied_beta):
+                for b in range(system.noccupied_beta, system.norbitals):
                     symb = system.orbital_symmetries[b]
                     nb = system.point_group_irrep_to_number[symb]
 
@@ -116,10 +116,10 @@ def count_doubles(system):
         for j in range(i + 1, system.noccupied_beta):
             symj = system.orbital_symmetries[j]
             nj = system.point_group_irrep_to_number[symj]
-            for a in range(system.nunoccupied_beta):
+            for a in range(system.noccupied_beta, system.norbitals):
                 syma = system.orbital_symmetries[a]
                 na = system.point_group_irrep_to_number[syma]
-                for b in range(a + 1, system.nunoccupied_beta):
+                for b in range(a + 1, system.norbitals):
                     symb = system.orbital_symmetries[b]
                     nb = system.point_group_irrep_to_number[symb]
 
