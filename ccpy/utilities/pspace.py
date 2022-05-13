@@ -39,6 +39,7 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                                     system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
                   'bbb' : np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
                                     system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}]
+        excitation_count = [{'aaa' : 0, 'aab' : 0, 'abb' : 0, 'bbb' : 0}]
     if nexcit == 4:
         pspace = [ {'aaa' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
                                     system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
@@ -56,6 +57,8 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                                     system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
                    'bbbb' : np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
                                     system.noccupied_beta, system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))} ]
+        excitation_count = [{'aaa' : 0, 'aab' : 0, 'abb' : 0, 'bbb' : 0},
+                            {'aaaa' : 0, 'aaab' : 0, 'aabb' : 0, 'abbb' : 0, 'bbbb' : 0}]
 
     HF = list(range(1, system.nelectrons + 1))
     occupied_lower_bound = 1
@@ -64,11 +67,6 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
     unoccupied_upper_bound = system.nunoccupied_beta
 
     orb_table = {'a' : system.noccupied_alpha, 'b' : system.noccupied_beta}
-    spincase_idx_triples = {'aaa' : 0, 'aab' : 1, 'abb' : 2, 'bbb' : 3}
-
-    excitation_count = [0 for i in range(nexcit-2)]
-
-    triples_count_spincase = [0, 0, 0, 0]
 
     with open(pspace_file) as f:
    
@@ -109,13 +107,12 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 break
 
             n = excit_rank - 3
-    
-            excitation_count[n] += 1
-            triples_count_spincase[spincase_idx_triples[spincase]] += 1
+
+            excitation_count[n][spincase] += 1
 
             if excit_rank == 3:
                 pspace[n][spincase][idx_unocc[0]-1, idx_unocc[1]-1, idx_unocc[2]-1, idx_occ[0]-1, idx_occ[1]-1, idx_occ[2]-1] = 1
             if excit_rank == 4:
                 pspace[n][spincase][idx_unocc[0]-1, idx_unocc[1]-1, idx_unocc[2]-1, idx_unocc[3]-1, idx_occ[0]-1, idx_occ[1]-1, idx_occ[2]-1, idx_occ[3]-1] = 1
 
-    return pspace, excitation_count, triples_count_spincase
+    return pspace, excitation_count
