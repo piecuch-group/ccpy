@@ -12,9 +12,9 @@ def main(args):
     from ccpy.moments.ccp3 import calc_ccp3
 
     system, H = load_from_gamess(
-            "f2-1.5Re/f2-15re-for-karthik.log",
-            "f2-1.5Re/onebody.inp",
-            "f2-1.5Re/twobody.inp",
+            "f2-2Re-pvtz/F2-2.0-VTZ-D2h.log",
+            "f2-2Re-pvtz/onebody.inp",
+            "f2-2Re-pvtz/twobody.inp",
             nfrozen=2,
     )
 

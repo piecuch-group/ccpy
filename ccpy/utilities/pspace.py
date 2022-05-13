@@ -1,5 +1,34 @@
 import numpy as np
 
+def get_empty_pspace(system, nexcit):
+    if nexcit == 3:
+        pspace = [{'aaa' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
+                  'aab' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
+                  'abb' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
+                  'bbb' : np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}]
+    if nexcit == 4:
+        pspace = [ {'aaa' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
+                   'aab' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
+                   'abb' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
+                   'bbb' : np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))},
+                   {'aaaa' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
+                   'aaab' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
+                   'aabb' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
+                   'bbbb' : np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))} ]
+    return pspace
+
 def get_excit_rank(D, D0):
     return len( set(D) - set(D0) )
 
@@ -30,32 +59,7 @@ def get_spincase(excits_from, excits_to):
 
 def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
 
-    if nexcit == 3:
-        pspace = [{'aaa' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
-                  'aab' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
-                  'abb' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
-                  'bbb' : np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}]
-    if nexcit == 4:
-        pspace = [ {'aaa' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
-                   'aab' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
-                   'abb' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
-                   'bbb' : np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))},
-                   {'aaaa' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
-                   'aaab' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
-                   'aabb' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
-                   'bbbb' : np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))} ]
+    pspace = get_empty_pspace(system, nexcit)
 
     HF = list(range(1, system.nelectrons + 1))
     occupied_lower_bound = 1
