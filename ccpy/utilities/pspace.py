@@ -68,11 +68,9 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
     unoccupied_upper_bound = system.nunoccupied_beta
 
     orb_table = {'a' : system.noccupied_alpha, 'b' : system.noccupied_beta}
-    spincase_idx_triples = {'aaa' : 0, 'aab' : 1, 'abb' : 2, 'bbb' : 3}
 
-    excitation_count = [0 for i in range(nexcit-2)]
-
-    triples_count_spincase = [0, 0, 0, 0]
+    excitation_count = [{'aaa' : 0, 'aab' : 0, 'abb' : 0, 'bbb' : 0},
+                        {'aaaa' : 0, 'aaab' : 0, 'aabb' : 0, 'abbb' : 0, 'bbbb' : 0}]
 
     with open(pspace_file) as f:
    
@@ -113,13 +111,59 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 break
 
             n = excit_rank - 3
-    
-            excitation_count[n] += 1
-            triples_count_spincase[spincase_idx_triples[spincase]] += 1
+
+            excitation_count[n][spincase] += 1
 
             if excit_rank == 3:
                 pspace[n][spincase][idx_unocc[0]-1, idx_unocc[1]-1, idx_unocc[2]-1, idx_occ[0]-1, idx_occ[1]-1, idx_occ[2]-1] = 1
             if excit_rank == 4:
                 pspace[n][spincase][idx_unocc[0]-1, idx_unocc[1]-1, idx_unocc[2]-1, idx_unocc[3]-1, idx_occ[0]-1, idx_occ[1]-1, idx_occ[2]-1, idx_occ[3]-1] = 1
 
-    return pspace, excitation_count, triples_count_spincase
+    return pspace, excitation_count
+
+def count_excitations_in_pspace(pspace, system):
+
+    excitation_count = [{'aaa' : 0, 'aab' : 0, 'abb' : 0, 'bbb' : 0},
+                        {'aaaa' : 0, 'aaab' : 0, 'aabb' : 0, 'abbb' : 0, 'bbbb' : 0}]
+
+    for n, p in enumerate(pspace):
+
+        if n == 0:
+
+            for a in range(system.nunoccupied_alpha):
+                for b in range(a + 1, system.nunoccupied_alpha):
+                    for c in range(b + 1, system.nunoccupied_alpha):
+                        for i in range(system.noccupied_alpha):
+                            for j in range(i + 1, system.noccupied_alpha):
+                                for k in range(j + 1, system.noccupied_alpha):
+                                    if p['aaa'][a, b, c, i, j, k] == 1:
+                                        excitation_count[n]['aaa'] += 1
+            for a in range(system.nunoccupied_alpha):
+                for b in range(a + 1, system.nunoccupied_alpha):
+                    for c in range(system.nunoccupied_beta):
+                        for i in range(system.noccupied_alpha):
+                            for j in range(i + 1, system.noccupied_alpha):
+                                for k in range(system.noccupied_beta):
+                                    if p['aab'][a, b, c, i, j, k] == 1:
+                                        excitation_count[n]['aab'] += 1
+            for a in range(system.nunoccupied_alpha):
+                for b in range(system.nunoccupied_beta):
+                    for c in range(b + 1, system.nunoccupied_beta):
+                        for i in range(system.noccupied_alpha):
+                            for j in range(system.noccupied_beta):
+                                for k in range(j + 1, system.noccupied_beta):
+                                    if p['abb'][a, b, c, i, j, k] == 1:
+                                        excitation_count[n]['abb'] += 1
+            for a in range(system.nunoccupied_beta):
+                for b in range(a + 1, system.nunoccupied_beta):
+                    for c in range(b + 1, system.nunoccupied_beta):
+                        for i in range(system.noccupied_beta):
+                            for j in range(i + 1, system.noccupied_beta):
+                                for k in range(j + 1, system.noccupied_beta):
+                                    if p['bbb'][a, b, c, i, j, k] == 1:
+                                        excitation_count[n]['bbb'] += 1
+
+    return excitation_count
+
+
+
