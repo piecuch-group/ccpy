@@ -646,12 +646,12 @@ def update_t3d(T, dT, H, H0, shift):
 
 def update_t4a(T, dT, H, H0, shift):
 
-    # <ijklabcd | H(2) | 0 >
+    # <ijklabcd | H(2) | 0 > -> Jun has 218 diagrams in CCSDTQ but 216 in CCSDTQPH. We have 216 here.
     dT.aaaa = -(144.0 / 576.0) * np.einsum("amie,bcmk,edjl->abcdijkl", H.aa.voov, T.aa, T.aa, optimize=True)  # (jl/i/k)(bc/a/d) = 12 * 12 = 144
     dT.aaaa += (36.0 / 576.0) * np.einsum("mnij,adml,bcnk->abcdijkl", H.aa.oooo, T.aa, T.aa, optimize=True)   # (ij/kl)(bc/ad) = 6 * 6 = 36
     dT.aaaa += (36.0 / 576.0) * np.einsum("abef,fcjk,edil->abcdijkl", H.aa.vvvv, T.aa, T.aa, optimize=True)   # (jk/il)(ab/cd) = 6 * 6 = 36
 
-    # <ijklabcd | (H(2)*T3)_C + 1/2*(H(2)*T3^2)_C | 0 >
+    # <ijklabcd | (H(2)*T3)_C + 1/2*(H(2)*T3^2)_C | 0 > -> 48 (H * T3)_C and 144 (H * T1 * T3)_C diagrams, confirmed with Jun
     dT.aaaa += (24.0 / 576.0) * np.einsum("cdke,abeijl->abcdijkl", H.aa.vvov, T.aaa, optimize=True) # (cd/ab)(k/ijl) = 6 * 4 = 24
     dT.aaaa -= (24.0 / 576.0) * np.einsum("cmkl,abdijm->abcdijkl", H.aa.vooo, T.aaa, optimize=True) # (c/abd)(kl/ij) = 6 * 4 = 24
 

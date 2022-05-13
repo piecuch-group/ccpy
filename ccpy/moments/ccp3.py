@@ -7,7 +7,7 @@ from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_
 from ccpy.utilities.updates import ccp3_loops
 
 
-def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moments=False):
+def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moment=False):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
@@ -23,7 +23,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moments=False):
     # calculate intermediates
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
-    if not return_moments:
+    if not return_moment:
         dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_loops.ccp3_loops.crcc23a_p(
             pspace[0]['aaa'],
             T.aa, L.a, L.aa,

@@ -1,6 +1,6 @@
 import numpy as np
 
-def select_triples_by_moments(momets_aaa, moments_aab, moments_abb, moments_bbb, pspace, num_add, system):
+def select_triples_by_moments(moments_aaa, moments_aab, moments_abb, moments_bbb, pspace, num_add, system):
 
     n3_aaa = system.noccupied_alpha**3 * system.nunoccupied_alpha**3
     n3_aab = system.noccupied_alpha**2 * system.noccupied_beta * system.nunoccupied_alpha**2 * system.nunoccupied_beta

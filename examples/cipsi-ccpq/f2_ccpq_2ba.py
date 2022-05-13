@@ -3,7 +3,7 @@ import argparse
 def main(args):
 
     from ccpy.models.calculation import Calculation
-    from ccpy.drivers.driver import cc_driver, ccp_driver, lcc_driver
+    from ccpy.drivers.driver import cc_driver, lcc_driver
     from ccpy.interfaces.gamess_tools import load_from_gamess
 
     from ccpy.utilities.pspace import get_pspace_from_cipsi
@@ -21,13 +21,16 @@ def main(args):
     system.print_info()
 
     print("   Using P space file: ", args.civecs)
-    pspace, excitation_count, count_by_spincase = get_pspace_from_cipsi(args.civecs, system, nexcit=3)
-
-    print("   Number of triples in P space = ", excitation_count[0])
-    print("   Number of aaa = ", count_by_spincase[0])
-    print("   Number of aab = ", count_by_spincase[1])
-    print("   Number of abb = ", count_by_spincase[2])
-    print("   Number of bbb = ", count_by_spincase[3])
+    pspace, excitation_count = get_pspace_from_cipsi(args.civecs, system, nexcit=3)
+    print("   P space composition:")
+    print("   ----------------------")
+    for n in range(len(pspace)):
+        print("      Excitation rank", n + 3)
+        num_excits = 0
+        for spincase, num in pspace[n].items():
+            print("      Number of {} = {}".format(spincase, num))
+            num_excits += num
+        print("      Total number of rank {} = {}".format(n + 3, num_excits))
 
     calculation = Calculation(
             order=3,
@@ -39,7 +42,7 @@ def main(args):
             low_memory=False 
     )   
 
-    T, total_energy, is_converged = ccp_driver(calculation, system, H, pspace)
+    T, total_energy, is_converged = cc_driver(calculation, system, H, pspace=pspace)
 
     calculation = Calculation(
             order=2,
