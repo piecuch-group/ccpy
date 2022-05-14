@@ -644,25 +644,6 @@ module ccp3_loops
 
               end subroutine crcc23D_p
 
-
-              subroutine argmin(idx, x, n)
-                
-                        integer, intent(in) :: n
-                        real(kind=8), intent(in) :: x(n)
-
-                        integer, intent(out) :: idx
-
-                        integer :: i
-
-                        idx = 1
-                        do i = 1 , n
-                           if ( x(i) < x(idx) ) then
-                              idx = i
-                           end if
-                        end do
-                           
-              end subroutine argmin
-
               subroutine crcc23A_p_with_selection(deltaA,deltaB,deltaC,deltaD,&
                               moments,&
                               triples_list,&
@@ -708,8 +689,7 @@ module ccp3_loops
                         deltaC = 0.0d0
                         deltaD = 0.0d0
 
-                        !idx_min = minloc(abs(moments), dim=1)
-                        call argmin(idx_min, abs(moments), num_add)
+                        idx_min = minloc(abs(moments), dim=1)
 
                         nua2 = nua*nua
                         do i = 1 , noa
@@ -803,9 +783,8 @@ module ccp3_loops
 
                                                 if ( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a-1, 2*b-1, 2*c-1, 2*i-1, 2*j-1, 2*k-1/)
-                                                    !idx_min = minloc(abs(moments), dim=1)
                                                     moments(idx_min) = LM/D
-                                                    call argmin(idx_min, abs(moments), num_add)
+                                                    idx_min = minloc(abs(moments), dim=1)
                                                 end if
 
                                             end do
@@ -904,8 +883,7 @@ module ccp3_loops
                         deltaC = 0.0d0
                         deltaD = 0.0d0
 
-                        !idx_min = minloc(abs(moments), dim=1)
-                        call argmin(idx_min, abs(moments), num_add)
+                        idx_min = minloc(abs(moments), dim=1)
 
                         nuanub = nua*nub
                         nua2 = nua*nua
@@ -1002,9 +980,8 @@ module ccp3_loops
 
                                                 if( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a-1, 2*b-1, 2*c, 2*i-1, 2*j-1, 2*k/)
-                                                    !idx_min = minloc(abs(moments), dim=1)
                                                     moments(idx_min) = LM/D
-                                                    call argmin(idx_min, abs(moments), num_add)
+                                                    idx_min = minloc(abs(moments), dim=1)
                                                 end if
 
                                             end do
@@ -1111,8 +1088,7 @@ module ccp3_loops
                         call reorder1243(l2b,l2b_1243)
                         call reorder3412(H2B_ooov,H2B_ooov_3412)
 
-                        !idx_min = minloc(abs(moments), dim=1)
-                        call argmin(idx_min, abs(moments), num_add)
+                        idx_min = minloc(abs(moments), dim=1)
 
                         do i = 1 , noa
                             do j = 1, nob
@@ -1208,9 +1184,8 @@ module ccp3_loops
 
                                                 if( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a-1, 2*b, 2*c, 2*i-1, 2*j, 2*k/)
-                                                    !idx_min = minloc(abs(moments), dim=1)
                                                     moments(idx_min) = LM/D
-                                                    call argmin(idx_min, abs(moments), num_add)
+                                                    idx_min = minloc(abs(moments), dim=1)
                                                 end if
 
                                             end do
@@ -1267,8 +1242,7 @@ module ccp3_loops
                         deltaC = 0.0d0
                         deltaD = 0.0d0
 
-                        !idx_min = minloc(abs(moments), dim=1)
-                        call argmin(idx_min, abs(moments), num_add)
+                        idx_min = minloc(abs(moments), dim=1)
 
                         nub2 = nub*nub
                         do i = 1 , nob
@@ -1360,9 +1334,8 @@ module ccp3_loops
 
                                                 if( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a, 2*b, 2*c, 2*i, 2*j, 2*k/)
-                                                    !idx_min = minloc(abs(moments), dim=1)
                                                     moments(idx_min) = LM/D
-                                                    call argmin(idx_min, abs(moments), num_add)
+                                                    idx_min = minloc(abs(moments), dim=1)
                                                 end if
 
                                             end do

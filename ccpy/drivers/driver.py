@@ -32,6 +32,9 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None):
     cc_printer.cc_header()
 
     # initialize the cluster operator anew, or use restart
+    #[TODO]: This is not compatible if the initial T is a lower order than the
+    # one used in the calculation. For example, we could not start a CCSDT
+    # calculation using the CCSD cluster amplitudes.
     if T is None:
         T = ClusterOperator(system,
                             order=calculation.order,

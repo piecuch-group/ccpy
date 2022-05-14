@@ -208,7 +208,7 @@ def add_spinorbital_quadruples_to_pspace(quadruples_list, pspace):
         "aaaa": pspace["aaaa"],
         "aaab": pspace["aaab"],
         "aabb": pspace["aabb"],
-        "abbb": pspace["abbb"]
+        "abbb": pspace["abbb"],
         "bbbb": pspace["bbbb"],
     }
 
