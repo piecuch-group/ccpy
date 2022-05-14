@@ -17,3 +17,4 @@ class Calculation:
     # default value list parameters
     active_orders: list = field(default_factory=lambda: [None])
     num_active : list = field(default_factory=lambda: [None])
+    adaptive_percentages : list = field(default_factory=lambda: [None])

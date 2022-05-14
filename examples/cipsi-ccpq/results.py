@@ -1,21 +1,24 @@
 import numpy as np
 
-def print_table(result, E_parent):
+def print_table(result, E_parent, total_num_triples):
 
-    print("  N_det(in)     CC(P)     CC(P;Q)_2BA")
-    print("--------------------------------------")
+    print("  N_det(in)   % T      CC(P)     CC(P;Q)_2BA")
+    print("--------------------------------------------")
     for i in range(len(result['CCP'])):
             ndet = result['Ndet(in)'][i]
+            perc_triples = result['num_triples'][i] / total_num_triples * 100
             error_ccp = (result['CCP'][i] - E_parent) * 1000
             error_ccpq = (result['CCPQ'][i] - E_parent) * 1000
-            print(f'{ndet:9d}    {error_ccp:9.6f}    {error_ccpq:9.6f}')
+            print(f'{ndet:9d}    {perc_triples:4.2f}    {error_ccp:9.6f}    {error_ccpq:9.6f}')
 
 def main():
 
-    results = {'1Re' : {}, '1.5Re' : {}, '2Re' : {}, '5Re' : {}}
+    results = {'1Re' : {}, '1.5Re' : {}, '2Re' : {}, '5Re' : {}, '2Re-pVTZ' : {}}
 
     ### F2-1.0 Re / cc-pVDZ ###
     results['1Re']['Ndet(in)'] = [1, 10, 100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
+
+    results['1Re']['num_triples'] = [0, 0, 0, 0, 662, 2038, 13722, 25210, 59822, 73608]
 
     results['1Re']['CCP'] = np.array([-199.0933112154,
                                       -199.0933112154,
@@ -44,6 +47,8 @@ def main():
     ### F2-1.5 Re / cc-pVDZ ###
     results['1.5Re']['Ndet(in)'] = [1, 10, 100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
 
+    results['1.5Re']['num_triples'] = [0, 0, 0, 132, 1232, 2544, 15282, 24264, 53508, 64464]
+
     results['1.5Re']['CCP'] = np.array([-199.0334578015,
                                         -199.0334578015,
                                         -199.0334578015,
@@ -68,6 +73,8 @@ def main():
 
     ### F2-2.0 Re / cc-pVDZ ###
     results['2Re']['Ndet(in)'] = [1, 10, 100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
+
+    results['2Re']['num_triples'] = [0, 0, 24, 124, 1824, 3678, 9046, 14652, 34452, 48660]
 
     results['2Re']['CCP'] = np.array([-199.0125625527,
                                       -199.0125625527,
@@ -94,6 +101,8 @@ def main():
     ### F2-5.0 Re / cc-pVDZ ###
     results['5Re']['Ndet(in)'] = [1, 10, 100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
 
+    results['5Re']['num_triples'] = [0, 0, 36, 296, 2078, 3922, 7996, 13300, 31408, 38412]
+
     results['5Re']['CCP'] = np.array([-199.0087700486,
                                       -199.0087700486,
                                       -199.0210619329,
@@ -116,35 +125,69 @@ def main():
                                        -199.0586414144,
                                        -199.0586321056])
 
+    
+    ### F2-2.0 Re / cc-pVTZ ###
+    results['2Re-pVTZ']['Ndet(in)'] = [1, 10, 100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
+
+    results['2Re-pVTZ']['num_triples'] = [0, 0, 24, 188, 858, 1550, 21692, 40564, 96580, 143530]
+
+    results['2Re-pVTZ']['CCP'] = np.array([-199.1755250174,
+                                           -199.1755250174,
+                                           -199.1794528927,
+                                           -199.1957796030,
+                                           -199.2203079934,
+                                           -199.2269053192,
+                                           -199.2334457879,
+                                           -199.2341870649,
+                                           -199.2352332599,
+                                           -199.2356053762])
+
+    results['2Re-pVTZ']['CCPQ'] = np.array([-199.2340905420,
+                                            -199.2340905420,
+                                            -199.2341069171,
+                                            -199.2350876432,
+                                            -199.2368162782,
+                                            -199.2377949089,
+                                            -199.2388045240,
+                                            -199.2388216713,
+                                            -199.2387784677,
+                                            -199.2386776600])
+
 
     # print the results table
     whitespace = ' ' * 10
     print(whitespace+"===================")
     print(whitespace+"F2 1.0 Re / cc-pVDZ")
     print(whitespace+"===================")
-    print_table(results['1Re'], -199.102796)
+    print_table(results['1Re'], -199.102796, 173960)
 
     print("")
 
     print(whitespace+"================")
     print(whitespace+"F2 1.5 Re / cc-pVDZ")
     print(whitespace+"================")
-    print_table(results['1.5Re'], -199.065882)
+    print_table(results['1.5Re'], -199.065882, 173960)
     
     print("")
 
     print(whitespace+"================")
     print(whitespace+"F2 2.0 Re / cc-pVDZ")
     print(whitespace+"================")
-    print_table(results['2Re'], -199.058201)
+    print_table(results['2Re'], -199.058201, 173960)
 
     print("")
 
     print(whitespace+"================")
     print(whitespace+"F2 5 Re / cc-pVDZ")
     print(whitespace+"================")
-    print_table(results['5Re'], -199.058586)
+    print_table(results['5Re'], -199.058586, 173960)
 
+    print("")
+
+    print(whitespace+"================")
+    print(whitespace+"F2 2 Re / cc-pVTZ")
+    print(whitespace+"================")
+    print_table(results['2Re-pVTZ'], -199.238344, 2573132)
 
 
 if __name__ == "__main__":
