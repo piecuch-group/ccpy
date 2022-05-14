@@ -6,10 +6,10 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
     from ccpy.models.calculation import Calculation
     from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace
     from ccpy.utilities.symmetry_count import count_triples
-    from ccpy.adaptive.selection import select_triples_by_moments 
+    from ccpy.adaptive.selection import select_triples_from_moments
     from ccpy.drivers.driver import cc_driver, lcc_driver
     from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
-    from ccpy.moments.ccp3 import calc_ccp3
+    from ccpy.moments.ccp3 import calc_ccp3, calc_ccp3_with_selection
 
     # check if requested CC(P) calculation is implemented in modules
     # assuming the underlying CC(P) follows in the * in the calculation_type
@@ -73,22 +73,32 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
         assert(is_converged)
     
         # Compute the CC(P;3) moment correction used the 2BA and return the moments
-        Eccp3, deltap3, moments_aaa, moments_aab, moments_abb, moments_bbb = calc_ccp3(T, L, 
-                                                                                       Hbar, hamiltonian, 
-                                                                                       system, 
-                                                                                       pspace, 
-                                                                                       use_RHF=calculation.RHF_symmetry, 
-                                                                                       return_moment=True)
+        # Eccp3, deltap3, moments_aaa, moments_aab, moments_abb, moments_bbb = calc_ccp3(T, L,
+        #                                                                                Hbar, hamiltonian,
+        #                                                                                system,
+        #                                                                                pspace,
+        #                                                                                use_RHF=calculation.RHF_symmetry,
+        #                                                                                return_moment=True)
+        Eccp3, deltap3, moments, triples_list = calc_ccp3_with_selection(T, L,
+                                                                         Hbar, hamiltonian,
+                                                                         system,
+                                                                         pspace,
+                                                                         num_dets_to_add[n],
+                                                                         use_RHF=calculation.RHF_symmetry)
         ccpq_energy[n] = Eccp3["D"]
 
+        # if n < num_calcs - 1:
+        #     # Select the leading triples from the moment correction
+        #     pspace[0], num_added_dets = select_triples_by_moments(moments_aaa, moments_aab, moments_abb, moments_bbb,
+        #                                                           pspace[0],
+        #                                                           num_dets_to_add[n],
+        #                                                           system)
+        #     assert(num_added_dets == num_dets_to_add[n])
+        #     print("   Added", num_added_dets, "triples to the P space")
         if n < num_calcs - 1:
             # Select the leading triples from the moment correction
-            pspace[0], num_added_dets = select_triples_by_moments(moments_aaa, moments_aab, moments_abb, moments_bbb, 
-                                                                  pspace[0], 
-                                                                  num_dets_to_add[n], 
-                                                                  system)
-            assert(num_added_dets == num_dets_to_add[n])
-            print("   Added", num_added_dets, "triples to the P space")
+            pspace[0] = select_triples_from_moments(triples_list, pspace[0])
+            print("   Added", triples_list.shape[0], "triples to the P space")
 
 
     return T, ccp_energy, ccpq_energy

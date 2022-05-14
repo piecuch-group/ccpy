@@ -1,6 +1,6 @@
 import numpy as np
 
-def select_triples_by_moments(moments_aaa, moments_aab, moments_abb, moments_bbb, pspace, num_add, system):
+def select_triples_from_full_moments(moments_aaa, moments_aab, moments_abb, moments_bbb, pspace, num_add, system):
 
     n3_aaa = system.noccupied_alpha**3 * system.nunoccupied_alpha**3
     n3_aab = system.noccupied_alpha**2 * system.noccupied_beta * system.nunoccupied_alpha**2 * system.nunoccupied_beta
@@ -58,3 +58,33 @@ def select_triples_by_moments(moments_aaa, moments_aab, moments_abb, moments_bbb
                 new_pspace["bbb"][a, b, c, i, j, k] = 1
 
     return new_pspace, ct
+
+def select_triples_from_moments(triples_list, pspace):
+    """Expand the size of the previous P space using the determinants contained in the list
+    of triples (stored as a, b, c, i, j, k) in triples_list. The variable triples_list stores
+    triples in spinorbital form, where all orbital indices start from 1 and odd indices
+    correspond to alpha orbitals while even indices corresopnd to beta orbitals."""
+
+    # should these be copied?
+    new_pspace = {
+        "aaa": pspace["aaa"],
+        "aab": pspace["aab"],
+        "abb": pspace["abb"],
+        "bbb": pspace["bbb"],
+    }
+
+    num_add = triples_list.shape[0]
+    for n in range(num_add):
+        num_beta = sum([x % 2 for x in triples_list[n, :]])
+        a, b, c, i, j, k = triples_list[n, :]
+        if num_beta == 3:
+            new_pspace['bbb'][a, b, c, i, j, k] = 1
+        elif num_beta == 2:
+            new_pspace['abb'][a, b, c, i, j, k] = 1
+        elif num_beta == 1:
+            new_pspace['aab'][a, b, c, i, j, k] = 1
+        else:
+            new_pspace['aaa'][a, b, c, i, j, k] = 1
+
+    return new_pspace
+
