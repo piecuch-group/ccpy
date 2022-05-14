@@ -13,10 +13,11 @@ Working directory $(pwd).
 
 
 #STORAGE_DIR="/storage/gururang/for_storage_from_coupled/calculations/f2-pvdz-gms/f2-1.0-v3/ndet_"
-STORAGE_DIR="/storage/gururang/for_storage_from_coupled/calculations/f2-pvdz-gms/f2-1.5-v3/ndet_"
+#STORAGE_DIR="/storage/gururang/for_storage_from_coupled/calculations/f2-pvdz-gms/f2-1.5-v3/ndet_"
 #STORAGE_DIR="/storage/gururang/for_storage_from_coupled/calculations/f2-pvdz-gms/f2-2.0-v3/ndet_"
 #STORAGE_DIR="/storage/gururang/for_storage_from_coupled/calculations/f2-pvdz-gms/f2-5.0-v3/ndet_"
 
+STORAGE_DIR="/storage/gururang/for_storage_from_coupled/calculations/f2-pvtz-gms/f2-2.0/pt2_1e-6/ndet_"
 CI_FILE_DIR="/scratch/gururang/test_ccpq_2ba/"
 N_DET=(10 100 1000 5000 10000 50000 100000 500000 1000000)
 
