@@ -166,4 +166,67 @@ def count_excitations_in_pspace(pspace, system):
     return excitation_count
 
 
+def add_spinorbital_triples_to_pspace(triples_list, pspace):
+    """Expand the size of the previous P space using the determinants contained in the list
+    of triples (stored as a, b, c, i, j, k) in triples_list. The variable triples_list stores
+    triples in spinorbital form, where all orbital indices start from 1 and odd indices
+    correspond to alpha orbitals while even indices corresopnd to beta orbitals."""
+
+    # should these be copied?
+    new_pspace = {
+        "aaa": pspace["aaa"],
+        "aab": pspace["aab"],
+        "abb": pspace["abb"],
+        "bbb": pspace["bbb"],
+    }
+
+    num_add = triples_list.shape[0]
+    for n in range(num_add):
+        num_alpha = int(sum([x % 2 for x in triples_list[n, :]]) / 2)
+        idx = [spatial_orb_idx(p) - 1 for p in triples_list[n, :]]
+        a, b, c, i, j, k = idx
+        if num_alpha == 3:
+            new_pspace['aaa'][a, b, c, i, j, k] = 1
+        elif num_alpha == 2:
+            new_pspace['aab'][a, b, c, i, j, k] = 1
+        elif num_alpha == 1:
+            new_pspace['abb'][a, b, c, i, j, k] = 1
+        else:
+            new_pspace['bbb'][a, b, c, i, j, k] = 1
+
+    return new_pspace
+
+
+def add_spinorbital_quadruples_to_pspace(quadruples_list, pspace):
+    """Expand the size of the previous P space using the determinants contained in the list
+    of quadruples (stored as a, b, c, d, i, j, k, l) in quadruples_list. The variable quadruples_list stores
+    quadruples in spinorbital form, where all orbital indices start from 1 and odd indices
+    correspond to alpha orbitals while even indices corresopnd to beta orbitals."""
+
+    # should these be copied?
+    new_pspace = {
+        "aaaa": pspace["aaaa"],
+        "aaab": pspace["aaab"],
+        "aabb": pspace["aabb"],
+        "abbb": pspace["abbb"]
+        "bbbb": pspace["bbbb"],
+    }
+
+    num_add = quadruples_list.shape[0]
+    for n in range(num_add):
+        num_alpha = int(sum([x % 2 for x in quadruples_list[n, :]]) / 2)
+        idx = [spatial_orb_idx(p) - 1 for p in quadruples_list[n, :]]
+        a, b, c, d, i, j, k, l = idx
+        if num_alpha == 4:
+            new_pspace['aaaa'][a, b, c, d, i, j, k, l] = 1
+        elif num_alpha == 3:
+            new_pspace['aaab'][a, b, c, d, i, j, k, l] = 1
+        elif num_alpha == 2:
+            new_pspace['aabb'][a, b, c, d, i, j, k, l] = 1
+        elif num_alpha == 1:
+            new_pspace['abbb'][a, b, c, d, i, j, k, l] = 1
+        else:
+            new_pspace['bbbb'][a, b, c, d, i, j, k, l] = 1
+
+    return new_pspace
 

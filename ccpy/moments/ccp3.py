@@ -7,7 +7,7 @@ from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_
 from ccpy.utilities.updates import ccp3_loops
 
 
-def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moment=False):
+def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
@@ -23,8 +23,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moment=False):
     # calculate intermediates
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
-    if not return_moment:
-        dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_loops.ccp3_loops.crcc23a_p(
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_loops.ccp3_loops.crcc23a_p(
             pspace[0]['aaa'],
             T.aa, L.a, L.aa,
             H.aa.vooo, I2A_vvov, H0.aa.oovv, H.a.ov,
@@ -33,18 +32,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moment=False):
             H.aa.vvvv,
             d3aaa_o, d3aaa_v,
             system.noccupied_alpha, system.nunoccupied_alpha,
-        )
-    else:
-        dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments_aaa = ccp3_loops.ccp3_loops.crcc23a_p_return_moment(
-            pspace[0]['aaa'],
-            T.aa, L.a, L.aa,
-            H.aa.vooo, I2A_vvov, H0.aa.oovv, H.a.ov,
-            H.aa.vovv, H.aa.ooov, H0.a.oo, H0.a.vv,
-            H.a.oo, H.a.vv, H.aa.voov, H.aa.oooo,
-            H.aa.vvvv,
-            d3aaa_o, d3aaa_v,
-            system.noccupied_alpha, system.nunoccupied_alpha,
-        )
+    )
 
     #### aab correction ####
     # calculate intermediates
@@ -52,8 +40,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moment=False):
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
 
-    if not return_moment:
-        dA_aab, dB_aab, dC_aab, dD_aab = ccp3_loops.ccp3_loops.crcc23b_p(
+    dA_aab, dB_aab, dC_aab, dD_aab = ccp3_loops.ccp3_loops.crcc23b_p(
             pspace[0]['aab'],
             T.aa, T.ab, L.a, L.b, L.aa, L.ab,
             I2B_ovoo, I2B_vooo, I2A_vooo,
@@ -68,24 +55,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moment=False):
             d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
             system.noccupied_alpha, system.nunoccupied_alpha,
             system.noccupied_beta, system.nunoccupied_beta,
-        )
-    else:
-        dA_aab, dB_aab, dC_aab, dD_aab, moments_aab = ccp3_loops.ccp3_loops.crcc23b_p_return_moment(
-            pspace[0]['aab'],
-            T.aa, T.ab, L.a, L.b, L.aa, L.ab,
-            I2B_ovoo, I2B_vooo, I2A_vooo,
-            H.ab.vvvo, H.ab.vvov, H.aa.vvov,
-            H.ab.vovv, H.ab.ovvv, H.aa.vovv,
-            H.ab.ooov, H.ab.oovo, H.aa.ooov,
-            H.a.ov, H.b.ov, H0.aa.oovv, H0.ab.oovv,
-            H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-            H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-            H.aa.voov, H.aa.oooo, H.aa.vvvv, H.ab.ovov,
-            H.ab.vovo, H.ab.oooo, H.ab.vvvv, H.bb.voov,
-            d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
-            system.noccupied_alpha, system.nunoccupied_alpha,
-            system.noccupied_beta, system.nunoccupied_beta,
-        )
+    )
 
     if use_RHF:
         correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
@@ -97,8 +67,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moment=False):
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
 
-        if not return_moment:
-            dA_abb, dB_abb, dC_abb, dD_abb = ccp3_loops.ccp3_loops.crcc23c_p(
+        dA_abb, dB_abb, dC_abb, dD_abb = ccp3_loops.ccp3_loops.crcc23c_p(
                 pspace[0]['abb'],
                 T.ab, T.bb, L.a, L.b, L.ab, L.bb,
                 I2B_vooo, I2C_vooo, I2B_ovoo,
@@ -114,30 +83,11 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moment=False):
                 d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
                 system.noccupied_alpha, system.nunoccupied_alpha,
                 system.noccupied_beta, system.nunoccupied_beta,
-            )   
-        else:
-            dA_abb, dB_abb, dC_abb, dD_abb, moments_abb = ccp3_loops.ccp3_loops.crcc23c_p_return_moment(
-                pspace[0]['abb'],
-                T.ab, T.bb, L.a, L.b, L.ab, L.bb,
-                I2B_vooo, I2C_vooo, I2B_ovoo,
-                H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
-                H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
-                H.bb.ooov,
-                H.a.ov, H.b.ov,
-                H0.ab.oovv, H0.bb.oovv,
-                H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-                H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                H.aa.voov, H.ab.ovov, H.ab.vovo, H.ab.oooo,
-                H.ab.vvvv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
-                d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
-                system.noccupied_alpha, system.nunoccupied_alpha,
-                system.noccupied_beta, system.nunoccupied_beta,
-            )   
+        )   
 
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
 
-        if not return_moment:
-            dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_loops.ccp3_loops.crcc23d_p(
+        dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_loops.ccp3_loops.crcc23d_p(
                 pspace[0]['bbb'],
                 T.bb, L.b, L.bb,
                 H.bb.vooo, I2C_vvov, H0.bb.oovv, H.b.ov,
@@ -145,18 +95,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moment=False):
                 H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
                 d3bbb_o, d3bbb_v,
                 system.noccupied_beta, system.nunoccupied_beta,
-            )
-        else:
-            dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments_bbb = ccp3_loops.ccp3_loops.crcc23d_p_return_moment(
-                pspace[0]['bbb'],
-                T.bb, L.b, L.bb,
-                H.bb.vooo, I2C_vvov, H0.bb.oovv, H.b.ov,
-                H.bb.vovv, H.bb.ooov, H0.b.oo, H0.b.vv,
-                H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
-                d3bbb_o, d3bbb_v,
-                system.noccupied_beta, system.nunoccupied_beta,
-            )
-
+        )
 
         correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
         correction_B = dB_aaa + dB_aab + dB_abb + dB_bbb
@@ -207,10 +146,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False, return_moment=False):
     Eccp3 = {"A": total_energy_A, "B": total_energy_B, "C": total_energy_C, "D": total_energy_D}
     deltap3 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
 
-    if not return_moment:
-        return Eccp3, deltap3
-    else:
-        return Eccp3, deltap3, moments_aaa, moments_aab, moments_abb, moments_bbb
+    return Eccp3, deltap3
 
 def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False):
     """
@@ -225,8 +161,9 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
     d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
 
     # initialize empty moments vector and triples list
+    num_add = int(num_add)
     moments = np.zeros(num_add)
-    triples_list = np.zeros(num_add, 6)
+    triples_list = np.zeros((num_add, 6), dtype=np.int8)
 
     #### aaa correction ####
     # calculate intermediates
@@ -235,7 +172,6 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
     dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list = ccp3_loops.ccp3_loops.crcc23a_p_with_selection(
         moments,
         triples_list,
-        num_add,
         pspace[0]['aaa'],
         T.aa, L.a, L.aa,
         H.aa.vooo, I2A_vvov, H0.aa.oovv, H.a.ov,
@@ -243,7 +179,7 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
         H.a.oo, H.a.vv, H.aa.voov, H.aa.oooo,
         H.aa.vvvv,
         d3aaa_o, d3aaa_v,
-        system.noccupied_alpha, system.nunoccupied_alpha,
+        system.noccupied_alpha, system.nunoccupied_alpha, num_add,
         )
 
     #### aab correction ####
@@ -254,7 +190,6 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
     dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list = ccp3_loops.ccp3_loops.crcc23b_p_with_selection(
         moments,
         triples_list,
-        num_add,
         pspace[0]['aab'],
         T.aa, T.ab, L.a, L.b, L.aa, L.ab,
         I2B_ovoo, I2B_vooo, I2A_vooo,
@@ -269,6 +204,7 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
         d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
         system.noccupied_alpha, system.nunoccupied_alpha,
         system.noccupied_beta, system.nunoccupied_beta,
+        num_add,
     )
 
     if use_RHF:
@@ -283,7 +219,6 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
         dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list = ccp3_loops.ccp3_loops.crcc23c_p_with_selection(
             moments,
             triples_list,
-            num_add,
             pspace[0]['abb'],
             T.ab, T.bb, L.a, L.b, L.ab, L.bb,
             I2B_vooo, I2C_vooo, I2B_ovoo,
@@ -299,20 +234,20 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
             d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
             system.noccupied_alpha, system.nunoccupied_alpha,
             system.noccupied_beta, system.nunoccupied_beta,
+            num_add,
         )
 
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
         dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list = ccp3_loops.ccp3_loops.crcc23d_p_with_selection(
             moments,
             triples_list,
-            num_add,
             pspace[0]['bbb'],
             T.bb, L.b, L.bb,
             H.bb.vooo, I2C_vvov, H0.bb.oovv, H.b.ov,
             H.bb.vovv, H.bb.ooov, H0.b.oo, H0.b.vv,
             H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
             d3bbb_o, d3bbb_v,
-            system.noccupied_beta, system.nunoccupied_beta,
+            system.noccupied_beta, system.nunoccupied_beta, num_add,
         )
 
 
@@ -362,7 +297,7 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
         )
     )
     print(
-        "   Selected moments account for {}% of the total CC(P;3)_D correction\n".format(
+        "   Selected moments account for {:>5.2f}% of the total CC(P;3)_D correction\n".format(
             sum(moments) / correction_D * 100
         )
     )
