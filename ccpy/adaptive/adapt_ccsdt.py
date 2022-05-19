@@ -5,18 +5,18 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
     """Performs the adaptive CC(P;Q) calculation specified by the user in the input."""
     from ccpy.models.calculation import Calculation
     from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace
-    from ccpy.utilities.symmetry_count import count_triples
+    from ccpy.utilities.symmetry_count import count_triples, count_quadruples
     from ccpy.adaptive.selection import select_triples_from_moments
     from ccpy.drivers.driver import cc_driver, lcc_driver
     from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
-    from ccpy.moments.ccp3 import calc_ccp3, calc_ccp3_with_selection
+    from ccpy.moments.ccp3 import calc_ccp3_with_selection
 
     # check if requested CC(P) calculation is implemented in modules
     # assuming the underlying CC(P) follows in the * in the calculation_type
     # input adapt_*, as in adapt_ccsdt -> "ccsdt_p:
     setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p")
 
-    # make the left-CC calculation
+    # make the left-CC calculation using the CC(P) parameters (maybe this isn't the best way)
     calculation_left = Calculation(
                             order=2,
                             calculation_type='left_ccsd',
@@ -36,6 +36,16 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
         n1 = int(0.01 * num_total)
         print("   The total number of triples of ground-state symmetry ({}) is {}".format(system.reference_symmetry, num_total))
         print("   The increment of 1% is {}".format(n1))
+    elif calculation.order == 4:
+        count_sym_t3, _ = count_triples(system)
+        count_sym_t4, _ = count_quadruples(system)
+        num_t3 = count_sym_t3[system.point_group_irrep_to_number[system.reference_symmetry]]
+        num_t4 = count_sym_t4[system.point_group_irrep_to_number[system.reference_symmetry]]
+        num_total = num_t3 + num_t4
+        n1 = int(0.01 * num_total)
+        print("   The total number of triples of ground-state symmetry ({}) is {}".format(system.reference_symmetry, num_t3))
+        print("   The total number of quadruples of ground-state symmetry ({}) is {}".format(system.reference_symmetry, num_t4))
+        print("   The increment of 1% is {}".format(n1))
 
     calculation.adaptive_percentages.insert(0, 0.0)
     num_calcs = len(calculation.adaptive_percentages)
@@ -48,7 +58,7 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
     for n in range(num_calcs):
 
         percentage = calculation.adaptive_percentages[n]
-        print("   Performing CC(P;Q) calculation with", percentage, "% triples (", n1 * percentage, "triples )")
+        print("   \nPerforming CC(P;Q) calculation with", percentage, "% triples (", n1 * percentage, "triples )")
         print("   ===========================================================================================\n")
 
         # Count the excitations in the current P space
@@ -66,19 +76,15 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
         else:
             T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace)
         assert(is_converged)
+
         # Build CCSD-like Hbar from CC(P) 
         Hbar = build_hbar_ccsd(T, hamiltonian)
+
         # Perform left-CCSD calculation
         L, _, is_converged = lcc_driver(calculation_left, system, T, Hbar)
         assert(is_converged)
     
         # Compute the CC(P;3) moment correction used the 2BA and return the moments
-        # Eccp3, deltap3, moments_aaa, moments_aab, moments_abb, moments_bbb = calc_ccp3(T, L,
-        #                                                                                Hbar, hamiltonian,
-        #                                                                                system,
-        #                                                                                pspace,
-        #                                                                                use_RHF=calculation.RHF_symmetry,
-        #                                                                                return_moment=True)
         Eccp3, deltap3, moments, triples_list = calc_ccp3_with_selection(T, L,
                                                                          Hbar, hamiltonian,
                                                                          system,
@@ -87,19 +93,10 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
                                                                          use_RHF=calculation.RHF_symmetry)
         ccpq_energy[n] = Eccp3["D"]
 
-        # if n < num_calcs - 1:
-        #     # Select the leading triples from the moment correction
-        #     pspace[0], num_added_dets = select_triples_by_moments(moments_aaa, moments_aab, moments_abb, moments_bbb,
-        #                                                           pspace[0],
-        #                                                           num_dets_to_add[n],
-        #                                                           system)
-        #     assert(num_added_dets == num_dets_to_add[n])
-        #     print("   Added", num_added_dets, "triples to the P space")
+        # Select the leading triples from the moment correction
         if n < num_calcs - 1:
-            # Select the leading triples from the moment correction
             pspace[0] = select_triples_from_moments(triples_list, pspace[0])
             print("   Added", triples_list.shape[0], "triples to the P space")
-
 
     return T, ccp_energy, ccpq_energy
 
