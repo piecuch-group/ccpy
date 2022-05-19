@@ -261,7 +261,7 @@ def build_hbar_ccsd(T, H0):
     )
 
     minutes, seconds = divmod(time.time() - t1, 60)
-    print("HBar CCSD construction finished in {:.2f}m {:.2f}s".format(minutes, seconds))
+    print("   HBar CCSD construction finished in {:.2f}m {:.2f}s".format(minutes, seconds))
     return H
 
 #@profile
