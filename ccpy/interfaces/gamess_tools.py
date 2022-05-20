@@ -101,6 +101,8 @@ def get_point_group(gamess_logfile):
             if "THE POINT GROUP OF THE MOLECULE IS" in line:
                 point_group = line.split()[-1]
                 flag_found = True
+    if point_group == 'C0':
+        point_group = 'C1'
     return point_group
 
 

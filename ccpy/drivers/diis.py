@@ -1,25 +1,34 @@
 import numpy as np
 
+from ccpy.utilities.utilities import remove_file
+
 
 class DIIS:
-    def __init__(self, T, diis_size, out_of_core):
+    def __init__(self, T, diis_size, out_of_core, vecfile="t.npy", residfile="dt.npy"):
 
         self.diis_size = diis_size
         self.out_of_core = out_of_core
         self.ndim = T.ndim
+        self.vecfile = vecfile
+        self.residfile = residfile
 
         if self.out_of_core:
             self.T_list = np.memmap(
-                "t.npy", mode="w+", dtype=T.a.dtype, shape=(self.ndim, self.diis_size)
+                self.vecfile, mode="w+", dtype=T.a.dtype, shape=(self.ndim, self.diis_size)
             )
             self.T_residuum_list = np.memmap(
-                "dt.npy", mode="w+", dtype=T.a.dtype, shape=(self.ndim, self.diis_size)
+                self.residfile, mode="w+", dtype=T.a.dtype, shape=(self.ndim, self.diis_size)
             )
             self.flush()
         else:
             self.T_list = np.zeros((self.ndim, diis_size))
             self.T_residuum_list = np.zeros((self.ndim, diis_size))
 
+    def cleanup(self):
+        if self.out_of_core:
+            remove_file(self.vecfile)
+            remove_file(self.residfile)
+            
     def push(self, T, T_residuum, iteration):
         self.T_list[:, iteration % self.diis_size] = T.flatten()
         self.T_residuum_list[:, iteration % self.diis_size] = T_residuum.flatten()

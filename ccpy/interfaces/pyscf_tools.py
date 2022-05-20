@@ -1,5 +1,5 @@
 import numpy as np
-from pyscf import ao2mo
+from pyscf import ao2mo, symm
 
 from ccpy.models.integrals import getHamiltonian
 from ccpy.models.system import System
@@ -38,7 +38,7 @@ def load_pyscf_integrals(
         molecule.spin + 1,  # PySCF mol.spin returns 2S, not S
         nfrozen,
         point_group=molecule.symmetry,
-        orbital_symmetries=[molecule.irrep_name[x].upper() for x in meanfield.orbsym],
+        orbital_symmetries = [x.upper() for x in symm.label_orb_symm(molecule, molecule.irrep_name, molecule.symm_orb, mo_coeff)],
         charge=molecule.charge,
         nuclear_repulsion=nuclear_repulsion,
         mo_energies=meanfield.mo_energy,

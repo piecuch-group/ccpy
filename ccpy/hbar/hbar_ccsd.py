@@ -7,9 +7,12 @@ def build_hbar_ccsd(T, H0):
     """Calculate the CCSD similarity-transformed Hamiltonian (H_N e^(T1+T2))_C.
     Copied as-is from original CCpy implementation."""
     from copy import deepcopy
+    #from ccpy.models.integrals import Integral
 
+    t1 = time.time()
     # Copy the Bare Hamiltonian object for T1/T2-similarity transformed HBar
     H = deepcopy(H0)
+    #H = Integral.from_empty(system, 2, use_none=True)
     
     H.a.ov += (
                 np.einsum("imae,em->ia", H0.aa.oovv, T.a, optimize=True)
@@ -257,6 +260,8 @@ def build_hbar_ccsd(T, H0):
                 + 0.5 * np.einsum("mnie,abmn->abie", H0.bb.ooov, T.bb, optimize=True)
     )
 
+    minutes, seconds = divmod(time.time() - t1, 60)
+    print("   HBar CCSD construction finished in {:.2f}m {:.2f}s".format(minutes, seconds))
     return H
 
 #@profile

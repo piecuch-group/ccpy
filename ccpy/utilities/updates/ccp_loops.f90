@@ -2279,6 +2279,414 @@ module ccp_loops
             !end function ddot
 
 
+      subroutine update_t3a_p(t3a,resid,X3A,pspace,fA_oo,fA_vv,shift,noa,nua)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua
+              integer, intent(in) :: pspace(nua, nua, nua, noa, noa, noa)
+              real(8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+                                  X3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa), shift               
+              real(8), intent(inout) :: t3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              !f2py intent(in,out) :: t3a(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
+              real(8), intent(out) :: resid(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
+              real(8) :: denom, val
+
+              do ii = 1,noa
+                  do jj = ii+1,noa
+                      do kk = jj+1,noa
+                          do aa = 1,nua
+                              do bb = aa+1,nua
+                                  do cc = bb+1,nua
+
+                                      A = cc; B = bb; C = aa;
+                                      I = kk; J = jj; K = ii;
+
+                                      if (pspace(aa, bb, cc, ii, jj, kk) /= 1) cycle
+                                      
+                                      denom = fA_oo(I,I)+fA_oo(J,J)+fA_oo(K,K)-fA_vv(A,A)-fA_vv(B,B)-fA_vv(C,C)
+
+                                      val = X3A(a,b,c,i,j,k)&
+                                              -X3A(b,a,c,i,j,k)&
+                                              -X3A(a,c,b,i,j,k)&
+                                              +X3A(b,c,a,i,j,k)&
+                                              -X3A(c,b,a,i,j,k)&
+                                              +X3A(c,a,b,i,j,k)&
+                                              -X3A(a,b,c,j,i,k)&
+                                              +X3A(b,a,c,j,i,k)&
+                                              +X3A(a,c,b,j,i,k)&
+                                              -X3A(b,c,a,j,i,k)&
+                                              +X3A(c,b,a,j,i,k)&
+                                              -X3A(c,a,b,j,i,k)&
+                                              -X3A(a,b,c,i,k,j)&
+                                              +X3A(b,a,c,i,k,j)&
+                                              +X3A(a,c,b,i,k,j)&
+                                              -X3A(b,c,a,i,k,j)&
+                                              +X3A(c,b,a,i,k,j)&
+                                              -X3A(c,a,b,i,k,j)&
+                                              -X3A(a,b,c,k,j,i)&
+                                              +X3A(b,a,c,k,j,i)&
+                                              +X3A(a,c,b,k,j,i)&
+                                              -X3A(b,c,a,k,j,i)&
+                                              +X3A(c,b,a,k,j,i)&
+                                              -X3A(c,a,b,k,j,i)&
+                                              +X3A(a,b,c,j,k,i)&
+                                              -X3A(b,a,c,j,k,i)&
+                                              -X3A(a,c,b,j,k,i)&
+                                              +X3A(b,c,a,j,k,i)&
+                                              -X3A(c,b,a,j,k,i)&
+                                              +X3A(c,a,b,j,k,i)&
+                                              +X3A(a,b,c,k,i,j)&
+                                              -X3A(b,a,c,k,i,j)&
+                                              -X3A(a,c,b,k,i,j)&
+                                              +X3A(b,c,a,k,i,j)&
+                                              -X3A(c,b,a,k,i,j)&
+                                              +X3A(c,a,b,k,i,j)
+
+                                      val = val/(denom-shift)
+
+                                      t3a(A,B,C,I,J,K) = t3a(A,B,C,I,J,K) + val                            
+                                      t3a(A,B,C,K,I,J) = t3a(A,B,C,I,J,K)
+                                      t3a(A,B,C,J,K,I) = t3a(A,B,C,I,J,K)
+                                      t3a(A,B,C,I,K,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(A,B,C,J,I,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(A,B,C,K,J,I) = -t3a(A,B,C,I,J,K)
+                                      
+                                      t3a(B,A,C,I,J,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(B,A,C,K,I,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(B,A,C,J,K,I) = -t3a(A,B,C,I,J,K)
+                                      t3a(B,A,C,I,K,J) = t3a(A,B,C,I,J,K)
+                                      t3a(B,A,C,J,I,K) = t3a(A,B,C,I,J,K)
+                                      t3a(B,A,C,K,J,I) = t3a(A,B,C,I,J,K)
+                                      
+                                      t3a(A,C,B,I,J,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(A,C,B,K,I,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(A,C,B,J,K,I) = -t3a(A,B,C,I,J,K)
+                                      t3a(A,C,B,I,K,J) = t3a(A,B,C,I,J,K)
+                                      t3a(A,C,B,J,I,K) = t3a(A,B,C,I,J,K)
+                                      t3a(A,C,B,K,J,I) = t3a(A,B,C,I,J,K)
+                                      
+                                      t3a(C,B,A,I,J,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(C,B,A,K,I,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(C,B,A,J,K,I) = -t3a(A,B,C,I,J,K)
+                                      t3a(C,B,A,I,K,J) = t3a(A,B,C,I,J,K)
+                                      t3a(C,B,A,J,I,K) = t3a(A,B,C,I,J,K)
+                                      t3a(C,B,A,K,J,I) = t3a(A,B,C,I,J,K)
+                                      
+                                      t3a(B,C,A,I,J,K) = t3a(A,B,C,I,J,K)
+                                      t3a(B,C,A,K,I,J) = t3a(A,B,C,I,J,K)
+                                      t3a(B,C,A,J,K,I) = t3a(A,B,C,I,J,K)
+                                      t3a(B,C,A,I,K,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(B,C,A,J,I,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(B,C,A,K,J,I) = -t3a(A,B,C,I,J,K)
+                                      
+                                      t3a(C,A,B,I,J,K) = t3a(A,B,C,I,J,K)
+                                      t3a(C,A,B,K,I,J) = t3a(A,B,C,I,J,K)
+                                      t3a(C,A,B,J,K,I) = t3a(A,B,C,I,J,K)
+                                      t3a(C,A,B,I,K,J) = -t3a(A,B,C,I,J,K)
+                                      t3a(C,A,B,J,I,K) = -t3a(A,B,C,I,J,K)
+                                      t3a(C,A,B,K,J,I) = -t3a(A,B,C,I,J,K)
+
+
+                                      resid(A,B,C,I,J,K) = val                            
+                                      resid(A,B,C,K,I,J) = val
+                                      resid(A,B,C,J,K,I) = val
+                                      resid(A,B,C,I,K,J) = -val
+                                      resid(A,B,C,J,I,K) = -val
+                                      resid(A,B,C,K,J,I) = -val
+                                      resid(B,C,A,I,J,K) = val                            
+                                      resid(B,C,A,K,I,J) = val
+                                      resid(B,C,A,J,K,I) = val
+                                      resid(B,C,A,I,K,J) = -val
+                                      resid(B,C,A,J,I,K) = -val
+                                      resid(B,C,A,K,J,I) = -val
+                                      resid(C,A,B,I,J,K) = val                            
+                                      resid(C,A,B,K,I,J) = val
+                                      resid(C,A,B,J,K,I) = val
+                                      resid(C,A,B,I,K,J) = -val
+                                      resid(C,A,B,J,I,K) = -val
+                                      resid(C,A,B,K,J,I) = -val
+                                      resid(A,C,B,I,J,K) = -val                            
+                                      resid(A,C,B,K,I,J) = -val
+                                      resid(A,C,B,J,K,I) = -val
+                                      resid(A,C,B,I,K,J) = val
+                                      resid(A,C,B,J,I,K) = val
+                                      resid(A,C,B,K,J,I) = val
+                                      resid(B,A,C,I,J,K) = -val                            
+                                      resid(B,A,C,K,I,J) = -val
+                                      resid(B,A,C,J,K,I) = -val
+                                      resid(B,A,C,I,K,J) = val
+                                      resid(B,A,C,J,I,K) = val
+                                      resid(B,A,C,K,J,I) = val
+                                      resid(C,B,A,I,J,K) = -val                            
+                                      resid(C,B,A,K,I,J) = -val
+                                      resid(C,B,A,J,K,I) = -val
+                                      resid(C,B,A,I,K,J) = val
+                                      resid(C,B,A,J,I,K) = val
+                                      resid(C,B,A,K,J,I) = val
+                                  end do
+                              end do
+                          end do
+                      end do
+                  end do
+              end do
+
+      end subroutine update_t3a_p
+
+
+      subroutine update_t3b_p(t3b,resid,X3B,pspace,fA_oo,fA_vv,fB_oo,fB_vv,shift,noa,nua,nob,nub)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua, nob, nub
+              integer, intent(in) :: pspace(nua, nua, nub, noa, noa, nob)
+              real(8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+                                  fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
+                                  X3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob), shift               
+              real(8), intent(inout) :: t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              !f2py intent(in,out) :: t3b(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:nob-1)
+              real(8), intent(out) :: resid(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
+              real(8) :: denom, val
+
+              do ii = 1,noa
+                  do jj = ii+1,noa
+                      do kk = 1,nob
+                          do aa = 1,nua
+                              do bb = aa+1,nua
+                                  do cc = 1,nub
+                  
+                                      a = bb; b = aa; c = cc;
+                                      i = jj; j = ii; k = kk;
+
+                                      if (pspace(aa, bb, cc, ii, jj, kk) /= 1) cycle
+
+                                      denom = fA_oo(i,i)+fA_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fA_vv(b,b)-fB_vv(c,c)
+                                      val = X3B(a,b,c,i,j,k) - X3B(b,a,c,i,j,k) - X3B(a,b,c,j,i,k) + X3B(b,a,c,j,i,k)
+                                      val = val/(denom-shift)
+                                      t3b(a,b,c,i,j,k) = t3b(a,b,c,i,j,k) + val
+                                      t3b(b,a,c,i,j,k) = -t3b(a,b,c,i,j,k)
+                                      t3b(a,b,c,j,i,k) = -t3b(a,b,c,i,j,k)
+                                      t3b(b,a,c,j,i,k) = t3b(a,b,c,i,j,k)
+
+                                      resid(a,b,c,i,j,k) = val
+                                      resid(b,a,c,i,j,k) = -val
+                                      resid(a,b,c,j,i,k) = -val
+                                      resid(b,a,c,j,i,k) = val
+
+                                  end do
+                              end do
+                          end do
+                      end do
+                  end do
+              end do
+
+      end subroutine update_t3b_p
+
+      subroutine update_t3c_p(t3c,resid,X3C,pspace,fA_oo,fA_vv,fB_oo,fB_vv,shift,noa,nua,nob,nub)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua, nob, nub
+              integer, intent(in) :: pspace(nua, nub, nub, noa, nob, nob)
+              real(8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+                                  fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
+                                  X3C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob), shift               
+              real(8), intent(inout) :: t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              !f2py intent(in,out) :: t3c(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:nob-1)
+              real(8), intent(out) :: resid(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
+              real(8) :: denom, val
+
+              do ii = 1,noa
+                  do jj = 1,nob
+                      do kk = jj+1,nob
+                          do aa = 1,nua
+                              do bb = 1,nub
+                                  do cc = bb+1,nub
+                  
+                                      a = aa; b = cc; c = bb;
+                                      i = ii; j = kk; k = jj;
+
+                                      if (pspace(aa, bb, cc, ii, jj, kk) /= 1) cycle
+
+                                      denom = fA_oo(i,i)+fB_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fB_vv(b,b)-fB_vv(c,c)
+                                      val = X3C(a,b,c,i,j,k) - X3C(a,c,b,i,j,k) - X3C(a,b,c,i,k,j) + X3C(a,c,b,i,k,j)
+                                      val = val/(denom-shift)
+                                      t3c(a,b,c,i,j,k) = t3c(a,b,c,i,j,k) + val
+                                      t3c(a,c,b,i,j,k) = -t3c(a,b,c,i,j,k)
+                                      t3c(a,b,c,i,k,j) = -t3c(a,b,c,i,j,k)
+                                      t3c(a,c,b,i,k,j) = t3c(a,b,c,i,j,k)
+
+                                      resid(a,b,c,i,j,k) = val
+                                      resid(a,c,b,i,j,k) = -val
+                                      resid(a,b,c,i,k,j) = -val
+                                      resid(a,c,b,i,k,j) = val
+
+                                  end do
+                              end do
+                          end do
+                      end do
+                  end do
+              end do
+
+      end subroutine update_t3c_p
+
+      subroutine update_t3d_p(t3d,resid,X3D,pspace,fB_oo,fB_vv,shift,nob,nub)
+
+              implicit none
+
+              integer, intent(in) :: nob, nub
+              integer, intent(in) :: pspace(nub, nub, nub, nob, nob, nob)
+              real(8), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
+                                  X3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob), shift               
+              real(8), intent(inout) :: t3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+              !f2py intent(in,out) :: t3d(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:nob-1)
+              real(8), intent(out) :: resid(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+              integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
+              real(8) :: denom, val
+
+              do ii = 1,nob
+                  do jj = ii+1,nob
+                      do kk = jj+1,nob
+                          do aa = 1,nub
+                              do bb = aa+1,nub
+                                  do cc = bb+1,nub
+
+                                      A = cc; B = bb; C = aa;
+                                      I = kk; J = jj; K = ii;
+
+                                      if (pspace(aa, bb, cc, ii, jj, kk) /= 1) cycle
+                                      
+                                      denom = fB_oo(I,I)+fB_oo(J,J)+fB_oo(K,K)-fB_vv(A,A)-fB_vv(B,B)-fB_vv(C,C)
+
+                                      val = X3D(a,b,c,i,j,k)&
+                                              -X3D(b,a,c,i,j,k)&
+                                              -X3D(a,c,b,i,j,k)&
+                                              +X3D(b,c,a,i,j,k)&
+                                              -X3D(c,b,a,i,j,k)&
+                                              +X3D(c,a,b,i,j,k)&
+                                              -X3D(a,b,c,j,i,k)&
+                                              +X3D(b,a,c,j,i,k)&
+                                              +X3D(a,c,b,j,i,k)&
+                                              -X3D(b,c,a,j,i,k)&
+                                              +X3D(c,b,a,j,i,k)&
+                                              -X3D(c,a,b,j,i,k)&
+                                              -X3D(a,b,c,i,k,j)&
+                                              +X3D(b,a,c,i,k,j)&
+                                              +X3D(a,c,b,i,k,j)&
+                                              -X3D(b,c,a,i,k,j)&
+                                              +X3D(c,b,a,i,k,j)&
+                                              -X3D(c,a,b,i,k,j)&
+                                              -X3D(a,b,c,k,j,i)&
+                                              +X3D(b,a,c,k,j,i)&
+                                              +X3D(a,c,b,k,j,i)&
+                                              -X3D(b,c,a,k,j,i)&
+                                              +X3D(c,b,a,k,j,i)&
+                                              -X3D(c,a,b,k,j,i)&
+                                              +X3D(a,b,c,j,k,i)&
+                                              -X3D(b,a,c,j,k,i)&
+                                              -X3D(a,c,b,j,k,i)&
+                                              +X3D(b,c,a,j,k,i)&
+                                              -X3D(c,b,a,j,k,i)&
+                                              +X3D(c,a,b,j,k,i)&
+                                              +X3D(a,b,c,k,i,j)&
+                                              -X3D(b,a,c,k,i,j)&
+                                              -X3D(a,c,b,k,i,j)&
+                                              +X3D(b,c,a,k,i,j)&
+                                              -X3D(c,b,a,k,i,j)&
+                                              +X3D(c,a,b,k,i,j)
+                                      val = val/(denom-shift)
+
+                                      t3d(A,B,C,I,J,K) = t3d(A,B,C,I,J,K) + val                           
+                                      t3d(A,B,C,K,I,J) = t3d(A,B,C,I,J,K)
+                                      t3d(A,B,C,J,K,I) = t3d(A,B,C,I,J,K)
+                                      t3d(A,B,C,I,K,J) = -t3d(A,B,C,I,J,K)
+                                      t3d(A,B,C,J,I,K) = -t3d(A,B,C,I,J,K)
+                                      t3d(A,B,C,K,J,I) = -t3d(A,B,C,I,J,K)
+                                      
+                                      t3d(B,A,C,I,J,K) = -t3d(A,B,C,I,J,K)
+                                      t3d(B,A,C,K,I,J) = -t3d(A,B,C,I,J,K)
+                                      t3d(B,A,C,J,K,I) = -t3d(A,B,C,I,J,K)
+                                      t3d(B,A,C,I,K,J) = t3d(A,B,C,I,J,K)
+                                      t3d(B,A,C,J,I,K) = t3d(A,B,C,I,J,K)
+                                      t3d(B,A,C,K,J,I) = t3d(A,B,C,I,J,K)
+                                      
+                                      t3d(A,C,B,I,J,K) = -t3d(A,B,C,I,J,K)
+                                      t3d(A,C,B,K,I,J) = -t3d(A,B,C,I,J,K)
+                                      t3d(A,C,B,J,K,I) = -t3d(A,B,C,I,J,K)
+                                      t3d(A,C,B,I,K,J) = t3d(A,B,C,I,J,K)
+                                      t3d(A,C,B,J,I,K) = t3d(A,B,C,I,J,K)
+                                      t3d(A,C,B,K,J,I) = t3d(A,B,C,I,J,K)
+                                      
+                                      t3d(C,B,A,I,J,K) = -t3d(A,B,C,I,J,K)
+                                      t3d(C,B,A,K,I,J) = -t3d(A,B,C,I,J,K)
+                                      t3d(C,B,A,J,K,I) = -t3d(A,B,C,I,J,K)
+                                      t3d(C,B,A,I,K,J) = t3d(A,B,C,I,J,K)
+                                      t3d(C,B,A,J,I,K) = t3d(A,B,C,I,J,K)
+                                      t3d(C,B,A,K,J,I) = t3d(A,B,C,I,J,K)
+                                      
+                                      t3d(B,C,A,I,J,K) = t3d(A,B,C,I,J,K)
+                                      t3d(B,C,A,K,I,J) = t3d(A,B,C,I,J,K)
+                                      t3d(B,C,A,J,K,I) = t3d(A,B,C,I,J,K)
+                                      t3d(B,C,A,I,K,J) = -t3d(A,B,C,I,J,K)
+                                      t3d(B,C,A,J,I,K) = -t3d(A,B,C,I,J,K)
+                                      t3d(B,C,A,K,J,I) = -t3d(A,B,C,I,J,K)
+                                      
+                                      t3d(C,A,B,I,J,K) = t3d(A,B,C,I,J,K)
+                                      t3d(C,A,B,K,I,J) = t3d(A,B,C,I,J,K)
+                                      t3d(C,A,B,J,K,I) = t3d(A,B,C,I,J,K)
+                                      t3d(C,A,B,I,K,J) = -t3d(A,B,C,I,J,K)
+                                      t3d(C,A,B,J,I,K) = -t3d(A,B,C,I,J,K)
+                                      t3d(C,A,B,K,J,I) = -t3d(A,B,C,I,J,K)
+
+                                      resid(A,B,C,I,J,K) = val                            
+                                      resid(A,B,C,K,I,J) = val
+                                      resid(A,B,C,J,K,I) = val
+                                      resid(A,B,C,I,K,J) = -val
+                                      resid(A,B,C,J,I,K) = -val
+                                      resid(A,B,C,K,J,I) = -val
+                                      resid(B,C,A,I,J,K) = val                            
+                                      resid(B,C,A,K,I,J) = val
+                                      resid(B,C,A,J,K,I) = val
+                                      resid(B,C,A,I,K,J) = -val
+                                      resid(B,C,A,J,I,K) = -val
+                                      resid(B,C,A,K,J,I) = -val
+                                      resid(C,A,B,I,J,K) = val                            
+                                      resid(C,A,B,K,I,J) = val
+                                      resid(C,A,B,J,K,I) = val
+                                      resid(C,A,B,I,K,J) = -val
+                                      resid(C,A,B,J,I,K) = -val
+                                      resid(C,A,B,K,J,I) = -val
+                                      resid(A,C,B,I,J,K) = -val                            
+                                      resid(A,C,B,K,I,J) = -val
+                                      resid(A,C,B,J,K,I) = -val
+                                      resid(A,C,B,I,K,J) = val
+                                      resid(A,C,B,J,I,K) = val
+                                      resid(A,C,B,K,J,I) = val
+                                      resid(B,A,C,I,J,K) = -val                            
+                                      resid(B,A,C,K,I,J) = -val
+                                      resid(B,A,C,J,K,I) = -val
+                                      resid(B,A,C,I,K,J) = val
+                                      resid(B,A,C,J,I,K) = val
+                                      resid(B,A,C,K,J,I) = val
+                                      resid(C,B,A,I,J,K) = -val                            
+                                      resid(C,B,A,K,I,J) = -val
+                                      resid(C,B,A,J,K,I) = -val
+                                      resid(C,B,A,I,K,J) = val
+                                      resid(C,B,A,J,I,K) = val
+                                      resid(C,B,A,K,J,I) = val
+                                  end do
+                              end do
+                          end do
+                      end do
+                  end do
+              end do
+
+      end subroutine update_t3d_p
+            
+
 
 end module ccp_loops
                                              

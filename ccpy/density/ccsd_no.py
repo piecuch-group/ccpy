@@ -27,16 +27,15 @@ def convert_to_ccsd_no(rdm1, H, system, dump_integrals=False):
                                     np.concatenate( (rdm1.b.vo * 0.0, rdm1.b.vv), axis=1)), axis=0)
     rdm_matrix = rdm1a_matrix + rdm1b_matrix
 
-    # symmetry-block diagonalize
+    # symmetry block-diagonalize
     nocc_vals = np.zeros(system.norbitals)
     L = np.zeros((system.norbitals, system.norbitals))
     R = np.zeros((system.norbitals, system.norbitals))
 
     pg_order = len(system.point_group_irrep_to_number)
-    mo_syms = system.orbital_symmetries_all[system.nfrozen:]
     idx = [[] for i in range(pg_order)]
     for p in range(system.norbitals):
-        irrep_number = system.point_group_irrep_to_number[mo_syms[p]]
+        irrep_number = system.point_group_irrep_to_number[system.orbital_symmetries[p]]
         idx[irrep_number].append(p)
 
     for sym in range(pg_order):
