@@ -9,8 +9,13 @@ from ccpy.hbar.hbar_ccsdt import add_VT3_intermediates
 from ccpy.utilities.updates import cc_loops2
 from ccpy.utilities.updates import cc_loops_t4
 
+# Possible things that went wrong:
+#  (1) Diagrams..
+#  (2) Perhaps the t4 update loops themselves have wrong permutation signs
+
 
 def update(T, dT, H, shift, flag_RHF, system):
+
     # update T1
     T, dT = update_t1a(T, dT, H, shift)
     if flag_RHF:
@@ -56,7 +61,7 @@ def update(T, dT, H, shift, flag_RHF, system):
     T, dT = update_t4c(T, dT, hbar, H, shift)
     if flag_RHF:
         T.abbb = np.transpose(T.aaab, (3, 2, 1, 0, 7, 6, 5, 4))
-        dT.abb = np.transpose(dT.aaab, (3, 2, 1, 0, 7, 6, 5, 4))
+        dT.abbb = np.transpose(dT.aaab, (3, 2, 1, 0, 7, 6, 5, 4))
         T.bbbb = T.aaaa.copy()
         dT.bbbb = dT.aaaa.copy()
     else:
@@ -224,12 +229,16 @@ def update_t2a(T, dT, H, H0, shift):
     dT.aa += 0.25 * np.einsum("anef,ebfijn->abij", H0.aa.vovv + H.aa.vovv, T.aaa, optimize=True)
     dT.aa += 0.5 * np.einsum("anef,ebfijn->abij", H0.ab.vovv + H.ab.vovv, T.aab, optimize=True)
     # T4 parts
-    dT.aa += 0.0625 * np.einsum("mnef,abefijmn->abij", H0.aa.oovv, T.aaaa, optimize=True)
-    dT.aa += 0.25 * np.einsum("mnef,abefijmn->abij", H0.ab.oovv, T.aaab, optimize=True)
-    dT.aa += 0.0625 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T.aabb, optimize=True)
+    dT.aa += (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", H0.aa.oovv, T.aaaa, optimize=True)
+    dT.aa += (1.0 / 4.0) * np.einsum("mnef,abefijmn->abij", H0.ab.oovv, T.aaab, optimize=True)
+    dT.aa += (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T.aabb, optimize=True)
 
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
-        T.aa, dT.aa + 0.25 * H0.aa.vvoo, H0.a.oo, H0.a.vv, shift
+        T.aa,
+        dT.aa + 0.25 * H0.aa.vvoo,
+        H0.a.oo,
+        H0.a.vv,
+        shift
     )
     return T, dT
 
@@ -318,7 +327,13 @@ def update_t2b(T, dT, H, H0, shift):
     dT.ab += 0.25 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T.abbb, optimize=True)
 
     T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
-        T.ab, dT.ab + H0.ab.vvoo, H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv, shift
+        T.ab,
+        dT.ab + H0.ab.vvoo,
+        H0.a.oo,
+        H0.a.vv,
+        H0.b.oo,
+        H0.b.vv,
+        shift
     )
     return T, dT
 
@@ -380,7 +395,11 @@ def update_t2c(T, dT, H, H0, shift):
     dT.bb += 0.0625 * np.einsum("mnef,febanmji->abij", H0.aa.oovv, T.aabb, optimize=True)
 
     T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
-        T.bb, dT.bb + 0.25 * H0.bb.vvoo, H0.b.oo, H0.b.vv, shift
+        T.bb,
+        dT.bb + 0.25 * H0.bb.vvoo,
+        H0.b.oo,
+        H0.b.vv,
+        shift
     )
     return T, dT
 
@@ -627,60 +646,59 @@ def update_t3d(T, dT, H, H0, shift):
 
 def update_t4a(T, dT, H, H0, shift):
 
-    # <ijklabcd | H(2) | 0 >
+    # <ijklabcd | H(2) | 0 > -> Jun has 218 diagrams in CCSDTQ but 216 in CCSDTQPH. We have 216 here.
     dT.aaaa = -(144.0 / 576.0) * np.einsum("amie,bcmk,edjl->abcdijkl", H.aa.voov, T.aa, T.aa, optimize=True)  # (jl/i/k)(bc/a/d) = 12 * 12 = 144
     dT.aaaa += (36.0 / 576.0) * np.einsum("mnij,adml,bcnk->abcdijkl", H.aa.oooo, T.aa, T.aa, optimize=True)   # (ij/kl)(bc/ad) = 6 * 6 = 36
     dT.aaaa += (36.0 / 576.0) * np.einsum("abef,fcjk,edil->abcdijkl", H.aa.vvvv, T.aa, T.aa, optimize=True)   # (jk/il)(ab/cd) = 6 * 6 = 36
 
-    # <ijklabcd | (H(2)*T3)_C + 1/2*(H(2)*T3^2)_C | 0 >
+    # <ijklabcd | (H(2)*T3)_C + 1/2*(H(2)*T3^2)_C | 0 > -> 48 (H * T3)_C and 144 (H * T1 * T3)_C diagrams, confirmed with Jun
     dT.aaaa += (24.0 / 576.0) * np.einsum("cdke,abeijl->abcdijkl", H.aa.vvov, T.aaa, optimize=True) # (cd/ab)(k/ijl) = 6 * 4 = 24
     dT.aaaa -= (24.0 / 576.0) * np.einsum("cmkl,abdijm->abcdijkl", H.aa.vooo, T.aaa, optimize=True) # (c/abd)(kl/ij) = 6 * 4 = 24
 
     I3A_vooooo = np.einsum("nmle,bejk->bmnjkl", H.aa.ooov, T.aa, optimize=True)
     I3A_vooooo -= np.transpose(I3A_vooooo, (0, 1, 2, 5, 4, 3)) + np.transpose(I3A_vooooo, (0, 1, 2, 3, 5, 4))
     I3A_vooooo += 0.5 * np.einsum("mnef,befjkl->bmnjkl", H.aa.oovv, T.aaa, optimize=True)
-    dT.aaaa += 0.5 * (16.0 / 576.0) * np.einsum("bmnjkl,acdinm->abcdijkl", I3A_vooooo, T.aaa, optimize=True) # (b/acd)(i/jkl) = 4 * 4 = 16
+    dT.aaaa += 0.5 * (16.0 / 576.0) * np.einsum("bmnjkl,acdimn->abcdijkl", I3A_vooooo, T.aaa, optimize=True) # (b/acd)(i/jkl) = 4 * 4 = 16
 
     I3A_vvvovv = -np.einsum("dmfe,bcjm->bcdjef", H.aa.vovv, T.aa, optimize=True)
     I3A_vvvovv -= np.transpose(I3A_vvvovv, (2, 1, 0, 3, 4, 5)) + np.transpose(I3A_vvvovv, (0, 2, 1, 3, 4, 5))
     dT.aaaa += 0.5 * (16.0 / 576.0) * np.einsum("bcdjef,aefikl->abcdijkl", I3A_vvvovv, T.aaa, optimize=True) # (a/bcd)(j/ikl) = 4 * 4 = 16
 
-    I3A_vvooov = -0.5 * np.einsum("nmke,cdnl->cdmkle", H.aa.ooov, T.aa, optimize=True)
-    I3A_vvooov += 0.5 * np.einsum("cmfe,fdkl->cdmkle", H.aa.vovv, T.aa, optimize=True)
-    I3A_vvooov -= np.transpose(I3A_vvooov, (1, 0, 2, 3, 4, 5))
-    I3A_vvooov -= np.transpose(I3A_vvooov, (0, 1, 2, 4, 3, 5))
-    I3A_vvooov += (
-                    0.5 * np.einsum("mnef,cdfkln->cdmkle", H.aa.oovv, T.aaa, optimize=True) # (ij/kl)(c/ab), compensate by factor of 1/2 !!!
-                   +np.einsum("mnef,cdfkln->cdmkle", H.ab.oovv, T.aab, optimize=True)
+    I3A_vvooov = (
+                    -0.5 * np.einsum("nmke,cdnl->cdmkle", H.aa.ooov, T.aa, optimize=True)
+                    +0.5 * np.einsum("cmfe,fdkl->cdmkle", H.aa.vovv, T.aa, optimize=True)
+                    +0.125 * np.einsum("mnef,cdfkln->cdmkle", H0.aa.oovv, T.aaa, optimize=True) # (ij/kl)(c/ab), compensate by factor of 1/2 !!!
+                    +0.25 * np.einsum("mnef,cdfkln->cdmkle", H0.ab.oovv, T.aab, optimize=True)
     )
+    I3A_vvooov -= np.transpose(I3A_vvooov, (0, 1, 2, 4, 3, 5))
+    I3A_vvooov -= np.transpose(I3A_vvooov, (1, 0, 2, 3, 4, 5))
     dT.aaaa += (36.0 / 576.0) * np.einsum("cdmkle,abeijm->abcdijkl", I3A_vvooov, T.aaa, optimize=True) # (cd/ab)(kl/ij) = 6 * 6 = 36
 
-    I3B_vvooov = -0.5 * np.einsum("nmke,cdnl->cdmkle", H.ab.ooov, T.aa, optimize=True)
-    I3B_vvooov += 0.5 * np.einsum("cmfe,fdkl->cdmkle", H.ab.vovv, T.aa, optimize=True)
+    I3B_vvooov = (
+                    -0.5 * np.einsum("nmke,cdnl->cdmkle", H.ab.ooov, T.aa, optimize=True)
+                    +0.5 * np.einsum("cmfe,fdkl->cdmkle", H.ab.vovv, T.aa, optimize=True)
+                    +0.125 * np.einsum("mnef,cdfkln->cdmkle", H0.bb.oovv, T.aab, optimize=True) # (ij/kl)(c/ab), compensate by factor of 1/2 !!!
+    )
     I3B_vvooov -= np.transpose(I3B_vvooov, (1, 0, 2, 3, 4, 5))
     I3B_vvooov -= np.transpose(I3B_vvooov, (0, 1, 2, 4, 3, 5))
-    I3B_vvooov += (
-                    #np.einsum("mnef,cdfkln->cdmkle", H.ab.oovv, T.aaa, optimize=True) this is redundant!
-                   + 0.5 * np.einsum("mnef,cdfkln->cdmkle", H.bb.oovv, T.aab, optimize=True) # (ij/kl)(c/ab), compensate by factor of 1/2 !!!
-    )
     dT.aaaa += (36.0 / 576.0) * np.einsum("cdmkle,abeijm->abcdijkl", I3B_vvooov, T.aab, optimize=True) # (cd/ab)(kl/ij) = 6 * 6 = 36
 
     # <ijklabcd | (H(2)*T4)_C | 0 >
-    dT.aaaa -= (4.0 / 576.0) * np.einsum("ml,abcdijkm->abcdijkl", H.a.oo, T.aaaa, optimize=True) # (l/ijk) = 4
-    dT.aaaa += (4.0 / 576.0) * np.einsum("de,abceijkl->abcdijkl", H.a.vv, T.aaaa, optimize=True) # (d/abc) = 4
-    dT.aaaa += 0.5 * (6.0 / 576.0) * np.einsum("mnkl,abcdijmn->abcdijkl", H.aa.oooo, T.aaaa, optimize=True) # (kl/ij) = 6
-    dT.aaaa += 0.5 * (6.0 / 576.0) * np.einsum("cdef,abefijkl->abcdijkl", H.aa.vvvv, T.aaaa, optimize=True) # (cd/ab) = 6
-    dT.aaaa += (16.0 / 576.0) * np.einsum("dmle,abceijkm->abcdijkl", H.aa.voov, T.aaaa, optimize=True) # (d/abc)(l/ijk) = 16
-    dT.aaaa += (16.0 / 576.0) * np.einsum("dmle,abceijkm->abcdijkl", H.ab.voov, T.aaab, optimize=True) # (d/abc)(l/ijk) = 16
+    dT.aaaa -= (4.0 / 576.0) * np.einsum("mi,abcdmjkl->abcdijkl", H.a.oo, T.aaaa, optimize=True) # (l/ijk) = 4
+    dT.aaaa += (4.0 / 576.0) * np.einsum("ae,ebcdijkl->abcdijkl", H.a.vv, T.aaaa, optimize=True) # (d/abc) = 4
+    dT.aaaa += (6.0 / 576.0) * 0.5 * np.einsum("mnij,abcdmnkl->abcdijkl", H.aa.oooo, T.aaaa, optimize=True) # (kl/ij) = 6
+    dT.aaaa += (6.0 / 576.0) * 0.5 * np.einsum("abef,efcdijkl->abcdijkl", H.aa.vvvv, T.aaaa, optimize=True) # (cd/ab) = 6
+    dT.aaaa += (16.0 / 576.0) * np.einsum("amie,ebcdmjkl->abcdijkl", H.aa.voov, T.aaaa, optimize=True) # (d/abc)(l/ijk) = 16
+    dT.aaaa += (16.0 / 576.0) * np.einsum("amie,bcdejklm->abcdijkl", H.ab.voov, T.aaab, optimize=True) # (d/abc)(l/ijk) = 16
 
     I3A_vvvoov = (
-                    -0.5 * np.einsum("mnef,bcdfjkmn->bcdjke", H.aa.oovv, T.aaaa, optimize=True)
-                    -np.einsum("mnef,bcdfjkmn->bcdjke", H.ab.oovv, T.aaab, optimize=True)
+                    -0.5 * np.einsum("mnef,bcdfjkmn->bcdjke", H0.aa.oovv, T.aaaa, optimize=True)
+                    -np.einsum("mnef,bcdfjkmn->bcdjke", H0.ab.oovv, T.aaab, optimize=True)
     )
     dT.aaaa += (24.0 / 576.0) * np.einsum("bcdjke,aeil->abcdijkl", I3A_vvvoov, T.aa, optimize=True) # (a/bcd)(jk/il) = 4 * 6 = 24
 
     I3A_vvoooo = (
-                    0.5 * np.einsum("mnef,bcefjkln->bcmjkl", H.aa.oovv, T.aaaa, optimize=True)
+                    0.5 * np.einsum("mnef,bcefjkln->bcmjkl", H0.aa.oovv, T.aaaa, optimize=True)
                     +np.einsum("mnef,bcefjkln->bcmjkl", H.ab.oovv, T.aaab, optimize=True)
     )
     dT.aaaa -= (24.0 / 576.0) * np.einsum("bcmjkl,adim->abcdijkl", I3A_vvoooo, T.aa, optimize=True) # (bc/ad)(i/jkl) = 6 * 4 = 24
@@ -699,37 +717,37 @@ def update_t4a(T, dT, H, H0, shift):
 def update_t4b(T, dT, H, H0, shift):
 
     # <ijklabcd | H(2) | 0 >
-    dT.aaab = -(9.0 / 36.0) * np.einsum("mdel,abim,ecjk->abcdijkl", H.ab.ovvo, T.aa, T.aa, optimize=True)   # (i/jk)(c/ab) = 9
-    dT.aaab += (9.0 / 36.0) * np.einsum("mnij,bcnk,adml->abcdijkl", H.aa.oooo, T.aa, T.ab, optimize=True)   # (k/ij)(a/bc) = 9
+    dT.aaab = -(9.0 / 36.0) * np.einsum("mdel,abim,ecjk->abcdijkl", H.ab.ovvo, T.aa, T.aa, optimize=True)    # (i/jk)(c/ab) = 9
+    dT.aaab += (9.0 / 36.0) * np.einsum("mnij,bcnk,adml->abcdijkl", H.aa.oooo, T.aa, T.ab, optimize=True)    # (k/ij)(a/bc) = 9
     dT.aaab -= (18.0 / 36.0) * np.einsum("mdjf,abim,cfkl->abcdijkl", H.ab.ovov, T.aa, T.ab, optimize=True)   # (ijk)(c/ab) = (i/jk)(c/ab)(jk) = 18
-    dT.aaab -= np.einsum("amie,bejl,cdkm->abcdijkl", H.ab.voov, T.ab, T.ab, optimize=True)   # (ijk)(abc) = (i/jk)(a/bc)(jk)(bc) = 36
+    dT.aaab -= np.einsum("amie,bejl,cdkm->abcdijkl", H.ab.voov, T.ab, T.ab, optimize=True)                   # (ijk)(abc) = (i/jk)(a/bc)(jk)(bc) = 36
     dT.aaab += (18.0 / 36.0) * np.einsum("mnjl,bcmk,adin->abcdijkl", H.ab.oooo, T.aa, T.ab, optimize=True)   # (ijk)(a/bc) = (i/jk)(a/bc)(jk) = 18
     dT.aaab -= (18.0 / 36.0) * np.einsum("bmel,ecjk,adim->abcdijkl", H.ab.vovo, T.aa, T.ab, optimize=True)   # (i/jk)(abc) = (i/jk)(a/bc)(bc) = 18
     dT.aaab -= (18.0 / 36.0) * np.einsum("amie,ecjk,bdml->abcdijkl", H.aa.voov, T.aa, T.ab, optimize=True)   # (i/kj)(abc) = (i/kj)(a/bc)(bc) = 18
-    dT.aaab += (9.0 / 36.0) * np.einsum("abef,fcjk,edil->abcdijkl", H.aa.vvvv, T.aa, T.ab, optimize=True)   # (i/jk)(c/ab) = (i/jk)(c/ab) = 9
+    dT.aaab += (9.0 / 36.0) * np.einsum("abef,fcjk,edil->abcdijkl", H.aa.vvvv, T.aa, T.ab, optimize=True)    # (i/jk)(c/ab) = (i/jk)(c/ab) = 9
     dT.aaab -= (18.0 / 36.0) * np.einsum("amie,bcmk,edjl->abcdijkl", H.aa.voov, T.aa, T.ab, optimize=True)   # (ijk)(a/bc) = (i/jk)(a/bc)(jk) = 18
-    dT.aaab += (18.0 / 36.0) * np.einsum("adef,ebij,cfkl->abcdijkl", H.ab.vvvv, T.aa, T.ab, optimize=True)  # (k/ij)(abc) = (k/ij)(a/bc)(bc) = 18
+    dT.aaab += (18.0 / 36.0) * np.einsum("adef,ebij,cfkl->abcdijkl", H.ab.vvvv, T.aa, T.ab, optimize=True)   # (k/ij)(abc) = (k/ij)(a/bc)(bc) = 18
 
     # <ijklabcd | (H(2)*T3)_C + 1/2*(H(2)*T3^2)_C | 0 >
-    dT.aaab -= np.einsum("mdkl,abcijm->abcdijkl", H.ab.ovoo, T.aaa, optimize=True)
-    dT.aaab -= np.einsum("amik,bcdjml->abcdijkl", H.aa.vooo, T.aab, optimize=True)
-    dT.aaab -= np.einsum("amil,bcdjkm->abcdijkl", H.ab.vooo, T.aab, optimize=True)
+    dT.aaab -= (1.0 / 12.0) * np.einsum("mdkl,abcijm->abcdijkl", H.ab.ovoo, T.aaa, optimize=True)  # (k/ij) = 3
+    dT.aaab -= (9.0 / 36.0) * np.einsum("amik,bcdjml->abcdijkl", H.aa.vooo, T.aab, optimize=True)  # (j/ik)(a/bc) = 9
+    dT.aaab -= (9.0 / 36.0) * np.einsum("amil,bcdjkm->abcdijkl", H.ab.vooo, T.aab, optimize=True)  # (a/bc)(i/jk) = 9
 
-    dT.aaab += np.einsum("cdel,abeijk->abcdijkl", H.ab.vvvo, T.aaa, optimize=True)
-    dT.aaab += np.einsum("acie,bedjkl->abcdijkl", H.aa.vvov, T.aab, optimize=True)
-    dT.aaab += np.einsum("adie,bcejkl->abcdijkl", H.ab.vvov, T.aab, optimize=True)
+    dT.aaab += (1.0 / 12.0) * np.einsum("cdel,abeijk->abcdijkl", H.ab.vvvo, T.aaa, optimize=True)  # (c/ab) = 3
+    dT.aaab += (9.0 / 36.0) * np.einsum("acie,bedjkl->abcdijkl", H.aa.vvov, T.aab, optimize=True)  # (b/ac)(i/jk) = 9
+    dT.aaab += (9.0 / 36.0) * np.einsum("adie,bcejkl->abcdijkl", H.ab.vvov, T.aab, optimize=True)  # (a/bc)(i/jk) = 9
 
     I3B_oovooo = (
                     np.einsum("mnie,edjl->mndijl", H.aa.ooov, T.ab, optimize=True)
                    +0.25 * np.einsum("mnef,efdijl->mndijl", H.aa.oovv, T.aab, optimize=True)
     )
     I3B_oovooo -= np.transpose(I3B_oovooo, (0, 1, 2, 4, 3, 5))
-    dT.aaab += 0.5 * np.einsum("mndijl,abcmnk->abcdijkl", I3B_oovooo, T.aaa, optimize=True)
+    dT.aaab += (1.0 / 12.0) * 0.5 * np.einsum("mndijl,abcmnk->abcdijkl", I3B_oovooo, T.aaa, optimize=True)  # (k/ij) = 3
 
     I3A_vooooo = np.einsum("mnie,delj->dmnlij", H.aa.ooov, T.aa, optimize=True)
     I3A_vooooo -= np.transpose(I3A_vooooo, (0, 1, 2, 4, 3, 5)) + np.transpose(I3A_vooooo, (0, 1, 2, 5, 4, 3))
     I3A_vooooo += 0.5 * np.einsum("mnef,efdijl->dmnlij", H.aa.oovv, T.aaa, optimize=True)
-    dT.aaab += 0.5 * np.einsum("cmnkij,abdmnl->abcdijkl", I3A_vooooo, T.aab, optimize=True)
+    dT.aaab += (1.0 / 12.0) * 0.5 * np.einsum("cmnkij,abdmnl->abcdijkl", I3A_vooooo, T.aab, optimize=True)  # (c/ab) = 3
 
     I3B_vooooo = (
                     0.5 * np.einsum("mnel,aeik->amnikl", H.ab.oovo, T.aa, optimize=True)
@@ -737,42 +755,41 @@ def update_t4b(T, dT, H, H0, shift):
                   + 0.5 * np.einsum("mnef,aefikl->amnikl", H.ab.oovv, T.aab, optimize=True)
     )
     I3B_vooooo -= np.transpose(I3B_vooooo, (0, 1, 2, 4, 3, 5))
-    dT.aaab += np.einsum("amnikl,bcdjmn->abcdijkl", I3B_vooooo, T.aab, optimize=True)
+    dT.aaab += (9.0 / 36.0) * np.einsum("amnikl,bcdjmn->abcdijkl", I3B_vooooo, T.aab, optimize=True)  # (a/bc)(j/ik) = 9
 
     I3B_vvvvvo = -np.einsum("amef,bdml->abdefl", H.aa.vovv, T.ab, optimize=True)
     I3B_vvvvvo -= np.transpose(I3B_vvvvvo, (1, 0, 2, 3, 4, 5))
-    dT.aaab += 0.5 * np.einsum("abdefl,efcijk->abcdijkl", I3B_vvvvvo, T.aaa, optimize=True)
+    dT.aaab += (1.0 / 12.0) * 0.5 * np.einsum("abdefl,efcijk->abcdijkl", I3B_vvvvvo, T.aaa, optimize=True)  # (c/ab) = 3
 
     I3A_vvvvvo = -np.einsum("amef,bcmk->abcefk", H.aa.vovv, T.aa, optimize=True)
     I3A_vvvvvo -= np.transpose(I3A_vvvvvo, (1, 0, 2, 3, 4, 5)) + np.transpose(I3A_vvvvvo, (2, 1, 0, 3, 4, 5))
-    dT.aaab += 0.5 * np.einsum("abcefk,efdijl->abcdijkl", I3A_vvvvvo, T.aab, optimize=True)
+    dT.aaab += (1.0 / 12.0) * 0.5 * np.einsum("abcefk,efdijl->abcdijkl", I3A_vvvvvo, T.aab, optimize=True)  # (k/ij) = 3
 
     I3B_vvvovv = (
                     -0.5 * np.einsum("mdef,acim->acdief", H.ab.ovvv, T.aa, optimize=True)
                     - np.einsum("cmef,adim->acdief", H.ab.vovv, T.ab, optimize=True)
     )
     I3B_vvvovv -= np.transpose(I3B_vvvovv, (1, 0, 2, 3, 4, 5))
-    dT.aaab += np.einsum("acdief,befjkl->abcdijkl", I3B_vvvovv, T.aab, optimize=True)
+    dT.aaab += (9.0 / 36.0) * np.einsum("acdief,befjkl->abcdijkl", I3B_vvvovv, T.aab, optimize=True)  # (b/ac)(i/jk) = 9
 
     I3B_vovovo = (
                     -np.einsum("nmie,adnl->amdiel", H.aa.ooov, T.ab, optimize=True)
                     +np.einsum("amfe,fdil->amdiel", H.aa.vovv, T.ab, optimize=True)
                     -np.einsum("mnel,adin->amdiel", H.ab.oovo, T.ab, optimize=True)
                     +np.einsum("mdef,afil->amdiel", H.ab.ovvv, T.ab, optimize=True)
-                    +np.einsum("mnef,afdinl->amdiel", H.aa.ooov, T.aab, optimize=True)
+                    +np.einsum("mnef,afdinl->amdiel", H.aa.oovv, T.aab, optimize=True)
                     +np.einsum("mnef,afdinl->amdiel", H.ab.oovv, T.abb, optimize=True)
     )
-    dT.aaab += np.einsum("amdiel,bcejkm->abcdijkl", I3B_vovovo, T.aaa, optimize=True)
+    dT.aaab += (9.0 / 36.0) * np.einsum("amdiel,bcejkm->abcdijkl", I3B_vovovo, T.aaa, optimize=True)  # (a/bc)(i/jk) = 9
 
     I3A_vvooov = (
                 -0.5 * np.einsum("nmje,abin->abmije", H.aa.ooov, T.aa, optimize=True)
                 +0.5 * np.einsum("bmfe,afij->abmije", H.aa.vovv, T.aa, optimize=True)
-                +0.25 * np.einsum("mnef,abfijn->abmije", H.aa.oovv, T.aaa, optimize=True)
                 +0.25 * np.einsum("mnef,abfijn->abmije", H.ab.oovv, T.aab, optimize=True)
     )
     I3A_vvooov -= np.transpose(I3A_vvooov, (1, 0, 2, 3, 4, 5))
-    I3A_vvooov -= np.transpose(I3A_vvooov, (0, 1, 2, 4, 3, 4))
-    dT.aaab += np.einsum("abmije,cedkml->abcdijkl", I3A_vvooov, T.aab, optimize=True)
+    I3A_vvooov -= np.transpose(I3A_vvooov, (0, 1, 2, 4, 3, 5))
+    dT.aaab += (9.0 / 36.0) * np.einsum("abmije,cedkml->abcdijkl", I3A_vvooov, T.aab, optimize=True)  # (c/ab)(k/ij) = 9
 
     I3B_vvoovo = (
                 -0.5 * np.einsum("nmel,acin->acmiel", H.ab.oovo, T.aa, optimize=True)
@@ -780,22 +797,23 @@ def update_t4b(T, dT, H, H0, shift):
                 - 0.5 * np.einsum("nmef,acfinl->acmiel", H.ab.oovv, T.aab, optimize=True)
     )
     I3B_vvoovo -= np.transpose(I3B_vvoovo, (1, 0, 2, 3, 4, 5))
-    dT.aaab -= np.einsum("acmiel,ebdkjm->abcdijkl", I3B_vvoovo, T.aab, optimize=True)
+    dT.aaab -= (9.0 / 36.0) * np.einsum("acmiel,ebdkjm->abcdijkl", I3B_vvoovo, T.aab, optimize=True)  # (b/ac)(i/jk) = 9
 
     I3B_vovoov = (
                 0.5 * np.einsum("mdfe,afik->amdike", H.ab.ovvv, T.aa, optimize=True)
-                - np.einsum("mnke,adin->amdike", H.ab.ooov, T.ab, optimize=True)
+                -np.einsum("mnke,adin->amdike", H.ab.ooov, T.ab, optimize=True)
     )
     I3B_vovoov -= np.transpose(I3B_vovoov, (0, 1, 2, 4, 3, 5))
-    dT.aaab -= np.einsum("amdike,bcejml->abcdijkl", I3B_vovoov, T.aab, optimize=True)
+    dT.aaab -= (9.0 / 36.0) * np.einsum("amdike,bcejml->abcdijkl", I3B_vovoov, T.aab, optimize=True)  # (a/bc)(j/ik) = 9
 
     I3C_vvooov = (
                 -np.einsum("nmie,adnl->admile", H.ab.ooov, T.ab, optimize=True)
                 -np.einsum("nmle,adin->admile", H.bb.ooov, T.ab, optimize=True)
                 +np.einsum("amfe,fdil->admile", H.ab.vovv, T.ab, optimize=True)
                 +np.einsum("dmfe,afil->admile", H.bb.vovv, T.ab, optimize=True)
+                +np.einsum("mnef,afdinl->admile", H.bb.oovv, T.abb, optimize=True)  # added 5/2/22
     )
-    dT.aaab += np.einsum("admile,bcejkm->abcdijkl", I3C_vvooov, T.aab, optimize=True)
+    dT.aaab += (9.0 / 36.0) * np.einsum("admile,bcejkm->abcdijkl", I3C_vvooov, T.aab, optimize=True)  # (a/bc)(i/jk) = 9
 
     I3B_vvooov = (
                 -0.5 * np.einsum("nmje,abin->abmije", H.ab.ooov, T.aa, optimize=True)
@@ -803,9 +821,61 @@ def update_t4b(T, dT, H, H0, shift):
     )
     I3B_vvooov -= np.transpose(I3B_vvooov, (1, 0, 2, 3, 4, 5))
     I3B_vvooov -= np.transpose(I3B_vvooov, (0, 1, 2, 4, 3, 5))
-    dT.aaab += np.einsum("abmije,cdeklm->abcdijkl", I3B_vvooov, T.abb, optimize=True)
+    dT.aaab += (9.0 / 36.0) * np.einsum("abmije,cdeklm->abcdijkl", I3B_vvooov, T.abb, optimize=True)  # (c/ab)(k/ij) = 9
 
     # <ijklabcd | (H(2)*T4)_C | 0 >
+    dT.aaab -= (1.0 / 12.0) * np.einsum("mi,abcdmjkl->abcdijkl", H.a.oo, T.aaab, optimize=True)  # (i/jk) = 3
+    dT.aaab -= (1.0 / 36.0) * np.einsum("ml,abcdijkm->abcdijkl", H.b.oo, T.aaab, optimize=True)  # (1) = 1
+    dT.aaab += (1.0 / 12.0) * np.einsum("ae,ebcdijkl->abcdijkl", H.a.vv, T.aaab, optimize=True)  # (a/bc) = 3
+    dT.aaab += (1.0 / 36.0) * np.einsum("de,abceijkl->abcdijkl", H.b.vv, T.aaab, optimize=True)  # (1) = 1
+
+    dT.aaab += (1.0 / 12.0) * 0.5 * np.einsum("mnij,abcdmnkl->abcdijkl", H.aa.oooo, T.aaab, optimize=True)  # (k/ij) = 3
+    dT.aaab += (1.0 / 12.0) * np.einsum("mnil,abcdmjkn->abcdijkl", H.ab.oooo, T.aaab, optimize=True)  # (i/jk) = 3
+    dT.aaab += (1.0 / 12.0) * 0.5 * np.einsum("abef,efcdijkl->abcdijkl", H.aa.vvvv, T.aaab, optimize=True)  # (c/ab) = 3
+    dT.aaab += (1.0 / 12.0) * np.einsum("adef,ebcfijkl->abcdijkl", H.ab.vvvv, T.aaab, optimize=True)  # (a/bc) = 3
+
+    dT.aaab += (9.0 / 36.0) * np.einsum("amie,ebcdmjkl->abcdijkl", H.aa.voov, T.aaab, optimize=True)  # (a/bc)(i/jk) = 9
+    dT.aaab += (9.0 / 36.0) * np.einsum("amie,bcedjkml->abcdijkl", H.ab.voov, T.aabb, optimize=True)  # (a/bc)(i/jk) = 9
+    dT.aaab += (1.0 / 36.0) * np.einsum("mdel,abceijkm->abcdijkl", H.ab.ovvo, T.aaaa, optimize=True)  # (1) = 1
+    dT.aaab += (1.0 / 36.0) * np.einsum("dmle,abceijkm->abcdijkl", H.bb.voov, T.aaab, optimize=True)  # (1) = 1
+    dT.aaab -= (1.0 / 12.0) * np.einsum("amel,ebcdijkm->abcdijkl", H.ab.vovo, T.aaab, optimize=True)  # (a/bc) = 3
+    dT.aaab -= (1.0 / 12.0) * np.einsum("mdie,abcemjkl->abcdijkl", H.ab.ovov, T.aaab, optimize=True)  # (i/jk) = 3
+
+    I3B_vvvvoo = (
+        -0.5 * np.einsum("mnef,acfdmknl->acdekl", H.aa.oovv, T.aaab, optimize=True)
+        - np.einsum("mnef,acfdmknl->acdekl", H.ab.oovv, T.aabb, optimize=True)
+    )
+    dT.aaab += (9.0 / 36.0) * np.einsum("acdekl,ebij->abcdijkl", I3B_vvvvoo, T.aa, optimize=True)  # (b/ac)(k/ij) = 9
+
+    I3A_vvvvoo = (
+        -0.5 * np.einsum("mnef,abcfmjkn->abcejk", H.aa.oovv, T.aaaa, optimize=True)
+        - np.einsum("mnef,abcfmjkn->abcejk", H.ab.oovv, T.aaab, optimize=True)
+    )
+    dT.aaab += (1.0 / 12.0) * np.einsum("abcejk,edil->abcdijkl", I3A_vvvvoo, T.ab, optimize=True)  # (i/jk) = 3
+
+    I3B_vvvoov = (
+        - np.einsum("nmfe,abfdijnm->abdije", H.ab.oovv, T.aaab, optimize=True)
+        - 0.5 * np.einsum("nmfe,abfdijnm->abdije", H.bb.oovv, T.aabb, optimize=True)
+    )
+    dT.aaab += (9.0 / 36.0) * np.einsum("abdije,cekl->abcdijkl", I3B_vvvoov, T.ab, optimize=True)  # (c/ab)(k/ij) = 9
+
+    I3B_vovooo = (
+        0.5 * np.einsum("mnef,cefdkinl->cmdkil", H.aa.oovv, T.aaab, optimize=True)
+        + np.einsum("mnef,cefdkinl->cmdkil", H.ab.oovv, T.aabb, optimize=True)
+    )
+    dT.aaab -= (9.0 / 36.0) * np.einsum("cmdkil,abmj->abcdijkl", I3B_vovooo, T.aa, optimize=True)  # (c/ab)(j/ik) = 9
+
+    I3A_vovooo = (
+        0.5 * np.einsum("mnef,bcefjkin->bmcjik", H.aa.oovv, T.aaaa, optimize=True)
+        + np.einsum("mnef,bcefjkin->bmcjik", H.ab.oovv, T.aaab, optimize=True)
+    )
+    dT.aaab -= (1.0 / 12.0) * np.einsum("bmcjik,adml->abcdijkl", I3A_vovooo, T.ab, optimize=True)  # (a/bc) = 3
+
+    I3B_vvoooo = (
+        np.einsum("nmfe,bcfejknl->bcmjkl", H.ab.oovv, T.aaab, optimize=True)
+        + 0.5 * np.einsum("nmfe,bcfejknl->bcmjkl", H.bb.oovv, T.aabb, optimize=True)
+    )
+    dT.aaab -= (9.0 / 36.0) * np.einsum("bcmjkl,adim->abcdijkl", I3B_vvoooo, T.ab, optimize=True)  # (a/bc)(i/jk) = 9
 
 
     T.aaab, dT.aaab = cc_loops_t4.cc_loops_t4.update_t4b(
@@ -823,28 +893,237 @@ def update_t4b(T, dT, H, H0, shift):
 def update_t4c(T, dT, H, H0, shift):
 
     # <ijklabcd | H(2) | 0 >
-    dT.aabb = -np.einsum("cmke,adim,bejl->abcdijkl", H.bb.voov, T.ab, T.ab, optimize=True)   # (ij)(kl)(ab)(cd) = 16
-    dT.aabb -= np.einsum("amie,bcmk,edjl->abcdijkl", H.aa.voov, T.ab, T.ab, optimize=True)   # (ij)(kl)(ab)(cd) = 16
-    dT.aabb -= 0.5 * np.einsum("mcek,aeij,bdml->abcdijkl", H.ab.ovvo, T.aa, T.ab, optimize=True)   # (kl)(ab)(cd) = 8
-    dT.aabb -= 0.5 * np.einsum("amie,bdjm,cekl->abcdijkl", H.ab.voov, T.ab, T.bb, optimize=True)   # (ij)(ab)(cd) = 8
-    dT.aabb -= 0.5 * np.einsum("mcek,abim,edjl->abcdijkl", H.ab.ovvo, T.aa, T.ab, optimize=True)   # (ij)(kl)(cd) = 8
-    dT.aabb -= 0.5 * np.einsum("amie,cdkm,bejl->abcdijkl", H.ab.voov, T.bb, T.ab, optimize=True)   # (ij)(kl)(ab) = 8
-    dT.aabb -= np.einsum("bmel,adim,ecjk->abcdijkl", H.ab.vovo, T.ab, T.ab, optimize=True)   # (ij)(kl)(ab)(cd) = 16
-    dT.aabb -= np.einsum("mdje,bcmk,aeil->abcdijkl", H.ab.ovov, T.ab, T.ab, optimize=True)   # (ij)(kl)(ab)(cd) = 16
+    dT.aabb = -np.einsum("cmke,adim,bejl->abcdijkl", H.bb.voov, T.ab, T.ab, optimize=True)          # (ij)(kl)(ab)(cd) = 16
+    dT.aabb -= np.einsum("amie,bcmk,edjl->abcdijkl", H.aa.voov, T.ab, T.ab, optimize=True)          # (ij)(kl)(ab)(cd) = 16
+    dT.aabb -= 0.5 * np.einsum("mcek,aeij,bdml->abcdijkl", H.ab.ovvo, T.aa, T.ab, optimize=True)    # (kl)(ab)(cd) = 8
+    dT.aabb -= 0.5 * np.einsum("amie,bdjm,cekl->abcdijkl", H.ab.voov, T.ab, T.bb, optimize=True)    # (ij)(ab)(cd) = 8
+    dT.aabb -= 0.5 * np.einsum("mcek,abim,edjl->abcdijkl", H.ab.ovvo, T.aa, T.ab, optimize=True)    # (ij)(kl)(cd) = 8
+    dT.aabb -= 0.5 * np.einsum("amie,cdkm,bejl->abcdijkl", H.ab.voov, T.bb, T.ab, optimize=True)    # (ij)(kl)(ab) = 8
+    dT.aabb -= np.einsum("bmel,adim,ecjk->abcdijkl", H.ab.vovo, T.ab, T.ab, optimize=True)          # (ij)(kl)(ab)(cd) = 16
+    dT.aabb -= np.einsum("mdje,bcmk,aeil->abcdijkl", H.ab.ovov, T.ab, T.ab, optimize=True)          # (ij)(kl)(ab)(cd) = 16
     dT.aabb -= 0.25 * np.einsum("mdje,abim,cekl->abcdijkl", H.ab.ovov, T.aa, T.bb, optimize=True)   # (ij)(cd) = 4
-    dT.aabb -= 0.25 * np.einsum("bmel,cdkm,aeij->abcdijkl", H.ab.vovo, T.bb, T.aa, optimize=True)  # (kl)(ab) = 4
+    dT.aabb -= 0.25 * np.einsum("bmel,cdkm,aeij->abcdijkl", H.ab.vovo, T.bb, T.aa, optimize=True)   # (kl)(ab) = 4
     dT.aabb += 0.25 * np.einsum("mnij,acmk,bdnl->abcdijkl", H.aa.oooo, T.ab, T.ab, optimize=True)   # (kl)(ab) = 4 !!! (tricky asym)
     dT.aabb += 0.25 * np.einsum("abef,ecik,fdjl->abcdijkl", H.aa.vvvv, T.ab, T.ab, optimize=True)   # (ij)(kl) = 4 !!! (tricky asym)
     dT.aabb += 0.25 * np.einsum("mnik,abmj,cdnl->abcdijkl", H.ab.oooo, T.aa, T.bb, optimize=True)   # (ij)(kl) = 4
     dT.aabb += 0.25 * np.einsum("acef,ebij,fdkl->abcdijkl", H.ab.vvvv, T.aa, T.bb, optimize=True)   # (ab)(cd) = 4
-    dT.aabb += np.einsum("mnik,adml,bcjn->abcdijkl", H.ab.oooo, T.ab, T.ab, optimize=True)   # (ij)(kl)(ab)(cd) = 16
-    dT.aabb += np.einsum("acef,edil,bfjk->abcdijkl", H.ab.vvvv, T.ab, T.ab, optimize=True)   # (ij)(kl)(ab)(cd) = 16
+    dT.aabb += np.einsum("mnik,adml,bcjn->abcdijkl", H.ab.oooo, T.ab, T.ab, optimize=True)          # (ij)(kl)(ab)(cd) = 16
+    dT.aabb += np.einsum("acef,edil,bfjk->abcdijkl", H.ab.vvvv, T.ab, T.ab, optimize=True)          # (ij)(kl)(ab)(cd) = 16
     dT.aabb += 0.25 * np.einsum("mnkl,adin,bcjm->abcdijkl", H.bb.oooo, T.ab, T.ab, optimize=True)   # (ij)(cd) = 4 !!! (tricky asym)
     dT.aabb += 0.25 * np.einsum("cdef,afil,bejk->abcdijkl", H.bb.vvvv, T.ab, T.ab, optimize=True)   # (ij)(kl) = 4 !!! (tricky asym)
 
     # <ijklabcd | (H(2)*T3)_C + 1/2*(H(2)*T3^2)_C | 0 >
+    dT.aabb -= (8.0 / 16.0) * np.einsum("mdil,abcmjk->abcdijkl", H.ab.ovoo, T.aab, optimize=True)  # [1]  (ij)(kl)(cd) = 8
+    dT.aabb -= (2.0 / 16.0) * np.einsum("bmji,acdmkl->abcdijkl", H.aa.vooo, T.abb, optimize=True)  # [2]  (ab) = 2
+    dT.aabb -= (2.0 / 16.0) * np.einsum("cmkl,abdijm->abcdijkl", H.bb.vooo, T.aab, optimize=True)  # [3]  (cd) = 2
+    dT.aabb -= (8.0 / 16.0) * np.einsum("amil,bcdjkm->abcdijkl", H.ab.vooo, T.abb, optimize=True)  # [4]  (ij)(ab)(kl) = 8
+    dT.aabb += (8.0 / 16.0) * np.einsum("adel,becjik->abcdijkl", H.ab.vvvo, T.aab, optimize=True)  # [5]  (ab)(kl)(cd) = 8
+    dT.aabb += (2.0 / 16.0) * np.einsum("baje,ecdikl->abcdijkl", H.aa.vvov, T.abb, optimize=True)  # [6]  (ij) = 2
+    dT.aabb += (8.0 / 16.0) * np.einsum("adie,bcejkl->abcdijkl", H.ab.vvov, T.abb, optimize=True)  # [7]  (ij)(ab)(cd) = 8
+    dT.aabb += (2.0 / 16.0) * np.einsum("cdke,abeijl->abcdijkl", H.bb.vvov, T.aab, optimize=True)  # [8]  (kl) = 2
+
+    I3B_oovooo = (
+                np.einsum("mnif,fdjl->mndijl", H.aa.ooov, T.ab, optimize=True)
+               + 0.25 * np.einsum("mnef,efdijl->mndijl", H.aa.oovv, T.aab, optimize=True)
+    )
+    I3B_oovooo -= np.transpose(I3B_oovooo, (0, 1, 2, 4, 3, 5))
+    dT.aabb += (4.0 / 16.0) * 0.5 * np.einsum("mndijl,abcmnk->abcdijkl", I3B_oovooo, T.aab, optimize=True)  # [9]  (kl)(cd) = 4
+
+    I3B_ovoooo = (
+                np.einsum("mnif,bfjl->mbnijl", H.ab.ooov, T.ab, optimize=True)
+                + 0.5 * np.einsum("mnfl,bfji->mbnijl", H.ab.oovo, T.aa, optimize=True)
+                + 0.5 * np.einsum("mnef,befjil->mbnijl", H.ab.oovv, T.aab, optimize=True)
+    )
+    I3B_ovoooo -= np.transpose(I3B_ovoooo, (0, 1, 2, 4, 3, 5))
+    dT.aabb += (4.0 / 16.0) * np.einsum("mbnijl,acdmkn->abcdijkl", I3B_ovoooo, T.abb, optimize=True)  # [10]  (kl)(ab) = 4
+
+    I3C_vooooo = (
+                np.einsum("nmlf,afik->amnikl", H.bb.ooov, T.ab, optimize=True)
+                + 0.25 * np.einsum("mnef,aefikl->amnikl", H.bb.oovv, T.abb, optimize=True)
+    )
+    I3C_vooooo -= np.transpose(I3C_vooooo, (0, 1, 2, 3, 5, 4))
+    dT.aabb += (4.0 / 16.0) * 0.5 * np.einsum("amnikl,bcdjmn->abcdijkl", I3C_vooooo, T.abb, optimize=True)  # [11]  (ij)(ab) = 4
+
+    I3C_oovooo = (
+                0.5 * np.einsum("mnif,cfkl->mncilk", H.ab.ooov, T.bb, optimize=True)
+                + np.einsum("mnfl,fcik->mncilk", H.ab.oovo, T.ab, optimize=True)
+                + 0.5 * np.einsum("mnef,efcilk->mncilk", H.ab.oovv, T.abb, optimize=True)
+    )
+    I3C_oovooo -= np.transpose(I3C_oovooo, (0, 1, 2, 3, 5, 4))
+    dT.aabb += (4.0 / 16.0) * np.einsum("mncilk,abdmjn->abcdijkl", I3C_oovooo, T.aab, optimize=True)  # [12]  (ij)(cd) = 4
+
+    I3B_vvvvvo = -np.einsum("bmfe,acmk->abcefk", H.aa.vovv, T.ab, optimize=True)
+    I3B_vvvvvo -= np.transpose(I3B_vvvvvo, (1, 0, 2, 3, 4, 5))
+    dT.aabb += (4.0 / 16.0) * 0.5 * np.einsum("abcefk,efdijl->abcdijkl", I3B_vvvvvo, T.aab, optimize=True)  # [13]  (kl)(cd) = 4
+
+    I3C_vvvvov = (
+                -np.einsum("mdef,acmk->acdekf", H.ab.ovvv, T.ab, optimize=True)
+                - 0.5 * np.einsum("amef,cdkm->acdekf", H.ab.vovv, T.bb, optimize=True)
+    )
+    I3C_vvvvov -= np.transpose(I3C_vvvvov, (0, 2, 1, 3, 4, 5))
+    dT.aabb += (4.0 / 16.0) * np.einsum("acdekf,ebfijl->abcdijkl", I3C_vvvvov, T.aab, optimize=True)  # [14]  (kl)(ab) = 4
+
+    I3B_vvvvov = (
+                -0.5 * np.einsum("mdef,abmj->abdejf", H.ab.ovvv, T.aa, optimize=True)
+                -np.einsum("amef,bdjm->abdejf", H.ab.vovv, T.ab, optimize=True)
+    )
+    I3B_vvvvov -= np.transpose(I3B_vvvvov, (1, 0, 2, 3, 4, 5))
+    dT.aabb += (4.0 / 16.0) * np.einsum("abdejf,efcilk->abcdijkl", I3B_vvvvov, T.abb, optimize=True)  # [15]  (ij)(cd) = 4
+
+    I3C_vvvovv = -np.einsum("cmef,adim->acdief", H.bb.vovv, T.ab, optimize=True)
+    I3C_vvvovv -= np.transpose(I3C_vvvovv, (0, 2, 1, 3, 4, 5))
+    dT.aabb += (4.0 / 16.0) * 0.5 * np.einsum("acdief,befjkl->abcdijkl", I3C_vvvovv, T.abb, optimize=True)  # [16]  (ij)(ab) = 4
+
+    I3A_vvooov = (
+                -0.5 * np.einsum("nmje,abin->abmije", H.aa.ooov, T.aa, optimize=True)
+                +0.5 * np.einsum("bmfe,afij->abmije", H.aa.vovv, T.aa, optimize=True)
+                +0.25 * np.einsum("mnef,abfijn->abmije", H.aa.oovv, T.aaa, optimize=True)
+                +0.25 * np.einsum("mnef,abfijn->abmije", H.ab.oovv, T.aab, optimize=True)
+    )
+    I3A_vvooov -= np.transpose(I3A_vvooov, (1, 0, 2, 3, 4, 5))
+    I3A_vvooov -= np.transpose(I3A_vvooov, (0, 1, 2, 4, 3, 5))
+    dT.aabb += (1.0 / 16.0) * np.einsum("abmije,ecdmkl->abcdijkl", I3A_vvooov, T.abb, optimize=True)  # [17]  (1) = 1
+
+    I3B_vvooov = (
+                -0.5 * np.einsum("nmje,abin->abmije", H.ab.ooov, T.aa, optimize=True)
+                +0.5 * np.einsum("bmfe,afij->abmije", H.ab.vovv, T.aa, optimize=True)
+                +0.25 * np.einsum("nmfe,abfijn->abmije", H.ab.oovv, T.aaa, optimize=True)
+                +0.25 * np.einsum("nmfe,abfijn->abmije", H.bb.oovv, T.aab, optimize=True)
+    )
+    I3B_vvooov -= np.transpose(I3B_vvooov, (1, 0, 2, 3, 4, 5))
+    I3B_vvooov -= np.transpose(I3B_vvooov, (0, 1, 2, 4, 3, 5))
+    dT.aabb += (1.0 / 16.0) * np.einsum("abmije,ecdmkl->abcdijkl", I3B_vvooov, T.bbb, optimize=True)  # [18]  (1) = 1
+
+    I3C_ovvvoo = (
+                -0.5 * np.einsum("mnek,cdnl->mcdekl", H.ab.oovo, T.bb, optimize=True)
+                +0.5 * np.einsum("mcef,fdkl->mcdekl", H.ab.ovvv, T.bb, optimize=True)
+    )
+    I3C_ovvvoo -= np.transpose(I3C_ovvvoo, (0, 2, 1, 3, 4, 5))
+    I3C_ovvvoo -= np.transpose(I3C_ovvvoo, (0, 1, 2, 3, 5, 4))
+    dT.aabb += (1.0 / 16.0) * np.einsum("mcdekl,abeijm->abcdijkl", I3C_ovvvoo, T.aaa, optimize=True)  # [19]  (1) = 1
+
+    I3D_vvooov = (
+                -0.5 * np.einsum("nmke,cdnl->cdmkle", H.bb.ooov, T.bb, optimize=True)
+                +0.5 * np.einsum("cmfe,fdkl->cdmkle", H.bb.vovv, T.bb, optimize=True)
+    )
+    I3D_vvooov -= np.transpose(I3D_vvooov, (1, 0, 2, 3, 4, 5))
+    I3D_vvooov -= np.transpose(I3D_vvooov, (0, 1, 2, 4, 3, 5))
+    dT.aabb += (1.0 / 16.0) * np.einsum("cdmkle,abeijm->abcdijkl", I3D_vvooov, T.aab, optimize=True)  # [20]  (1) = 1
+
+    I3B_vovovo = (
+                -np.einsum("mnel,adin->amdiel", H.ab.oovo, T.ab, optimize=True)
+                +np.einsum("mdef,afil->amdiel", H.ab.ovvv, T.ab, optimize=True)
+                +0.5 * np.einsum("mnef,afdinl->amdiel", H.aa.oovv, T.aab, optimize=True) # !!! factor 1/2 to compensate asym
+                +np.einsum("mnef,afdinl->amdiel", H.ab.oovv, T.abb, optimize=True)
+                -np.einsum("nmie,adnl->amdiel", H.aa.ooov, T.ab, optimize=True)
+                +np.einsum("amfe,fdil->amdiel", H.aa.vovv, T.ab, optimize=True)
+    )
+    dT.aabb += np.einsum("amdiel,becjmk->abcdijkl", I3B_vovovo, T.aab, optimize=True)  # [21]  (ij)(kl)(ab)(cd) = 16
+
+    I3C_vovovo = (
+                -np.einsum("nmie,adnl->amdiel", H.ab.ooov, T.ab, optimize=True)
+                +np.einsum("amfe,fdil->amdiel", H.ab.vovv, T.ab, optimize=True)
+                -np.einsum("nmle,adin->amdiel", H.bb.ooov, T.ab, optimize=True)
+                +np.einsum("dmfe,afil->amdiel", H.bb.vovv, T.ab, optimize=True)
+                +0.5 * np.einsum("mnef,afdinl->amdiel", H.bb.oovv, T.abb, optimize=True) # !!! factor 1/2 to compensate asym
+    )
+    dT.aabb += np.einsum("amdiel,becjmk->abcdijkl", I3C_vovovo, T.abb, optimize=True)  # [22]  (ij)(kl)(ab)(cd) = 16
+
+    I3B_vovoov = (
+                -np.einsum("mnie,bdjn->bmdjie", H.ab.ooov, T.ab, optimize=True)
+                +0.5 * np.einsum("mdfe,bfji->bmdjie", H.ab.ovvv, T.aa, optimize=True)
+                -0.5 * np.einsum("mnfe,bfdjin->bmdjie", H.ab.oovv, T.aab, optimize=True)
+    )
+    I3B_vovoov -= np.transpose(I3B_vovoov, (0, 1, 2, 4, 3, 5))
+    dT.aabb -= (4.0 / 16.0) * np.einsum("bmdjie,aecmlk->abcdijkl", I3B_vovoov, T.abb, optimize=True)  # [23]  (ab)(cd) = 4
+
+    I3C_ovvoov = (
+                -0.5 * np.einsum("mnie,cdkn->mcdike", H.ab.ooov, T.bb, optimize=True)
+                +np.einsum("mdfe,fcik->mcdike", H.ab.ovvv, T.ab, optimize=True)
+                -0.5 * np.einsum("mnfe,fcdikn->mcdike", H.ab.oovv, T.abb, optimize=True)
+    )
+    I3C_ovvoov -= np.transpose(I3C_ovvoov, (0, 2, 1, 3, 4, 5))
+    dT.aabb -= (4.0 / 16.0) * np.einsum("mcdike,abemjl->abcdijkl", I3C_ovvoov, T.aab, optimize=True)  # [24]  (ij)(kl) = 4
+
+    I3B_vvovoo = (
+                -0.5 * np.einsum("nmel,abnj->abmejl", H.ab.oovo, T.aa, optimize=True)
+                +np.einsum("amef,bfjl->abmejl", H.ab.vovv, T.ab, optimize=True)
+    )
+    I3B_vvovoo -= np.transpose(I3B_vvovoo, (1, 0, 2, 3, 4, 5))
+    dT.aabb -= (4.0 / 16.0) * np.einsum("abmejl,ecdikm->abcdijkl", I3B_vvovoo, T.abb, optimize=True)  # [25]  (ij)(kl) = 4
+
+    I3C_vovvoo = (
+                -np.einsum("nmel,acnk->amcelk", H.ab.oovo, T.ab, optimize=True)
+                +0.5 * np.einsum("amef,fclk->amcelk", H.ab.vovv, T.bb, optimize=True)
+    )
+    I3C_vovvoo -= np.transpose(I3C_vovvoo, (0, 1, 2, 3, 5, 4))
+    dT.aabb -= (4.0 / 16.0) * np.einsum("amcelk,bedjim->abcdijkl", I3C_vovvoo, T.aab, optimize=True)  # [26]  (ab)(cd) = 4
 
     # <ijklabcd | (H(2)*T4)_C | 0 >
+    dT.aabb -= (2.0 / 16.0) * np.einsum("mi,abcdmjkl->abcdijkl", H.a.oo, T.aabb, optimize=True)  # [1]  (ij) = 2
+    dT.aabb -= (2.0 / 16.0) * np.einsum("ml,abcdijkm->abcdijkl", H.b.oo, T.aabb, optimize=True)  # [2]  (kl) = 2
+    dT.aabb += (2.0 / 16.0) * np.einsum("ae,ebcdijkl->abcdijkl", H.a.vv, T.aabb, optimize=True)  # [3]  (ab) = 2
+    dT.aabb += (2.0 / 16.0) * np.einsum("de,abceijkl->abcdijkl", H.b.vv, T.aabb, optimize=True)  # [4]  (cd) = 2
+    dT.aabb += (1.0 / 16.0) * 0.5 * np.einsum("mnij,abcdmnkl->abcdijkl", H.aa.oooo, T.aabb, optimize=True)  # [5]  (1) = 1
+    dT.aabb += (4.0 / 16.0) * np.einsum("mnil,abcdmjkn->abcdijkl", H.ab.oooo, T.aabb, optimize=True)  # [6]  (ij)(kl) = 4
+    dT.aabb += (1.0 / 16.0) * 0.5 * np.einsum("mnkl,abcdijmn->abcdijkl", H.bb.oooo, T.aabb, optimize=True)  #  [7]  (1) = 1
+    dT.aabb += (1.0 / 16.0) * 0.5 * np.einsum("abef,efcdijkl->abcdijkl", H.aa.vvvv, T.aabb, optimize=True)  #  [8]  (1) = 1
+    dT.aabb += (4.0 / 16.0) * np.einsum("adef,ebcfijkl->abcdijkl", H.ab.vvvv, T.aabb, optimize=True)  #  [9]  (ab)(cd) = 4
+    dT.aabb += (1.0 / 16.0) * 0.5 * np.einsum("cdef,abefijkl->abcdijkl", H.bb.vvvv, T.aabb, optimize=True)  #  [10]  (1) = 1
+    dT.aabb += (4.0 / 16.0) * np.einsum("amie,ebcdmjkl->abcdijkl", H.aa.voov, T.aabb, optimize=True)  #  [11]  (ij)(ab) = 4
+    dT.aabb += (4.0 / 16.0) * np.einsum("amie,becdjmkl->abcdijkl", H.ab.voov, T.abbb, optimize=True)  #  [12]  (ij)(ab) = 4
+    dT.aabb += (4.0 / 16.0) * np.einsum("mdel,aebcimjk->abcdijkl", H.ab.ovvo, T.aaab, optimize=True)  #  [13]  (kl)(cd) = 4
+    dT.aabb += (4.0 / 16.0) * np.einsum("dmle,abceijkm->abcdijkl", H.bb.voov, T.aabb, optimize=True)  #  [14]  (kl)(cd) = 4
+    dT.aabb -= (4.0 / 16.0) * np.einsum("mdie,abcemjkl->abcdijkl", H.ab.ovov, T.aabb, optimize=True)  #  [15]  (ij)(cd) = 4
+    dT.aabb -= (4.0 / 16.0) * np.einsum("amel,ebcdijkm->abcdijkl", H.ab.vovo, T.aabb, optimize=True)  #  [16]  (kl)(ab) = 4
+
+    I3C_vvvvoo = (
+                -0.5 * np.einsum("mnef,afcdmnkl->acdekl", H.aa.oovv, T.aabb, optimize=True)
+                -np.einsum("mnef,afcdmnkl->acdekl", H.ab.oovv, T.abbb, optimize=True)
+    )
+    dT.aabb += (2.0 / 16.0) * np.einsum("acdekl,beji->abcdijkl", I3C_vvvvoo, T.aa, optimize=True)  #  [17]  (ab) = 2
+
+    I3B_vvvvoo = (
+                -0.5 * np.einsum("mnef,abfcmjnk->abcejk", H.aa.oovv, T.aaab, optimize=True)
+                -np.einsum("mnef,abfcmjnk->abcejk", H.ab.oovv, T.aabb, optimize=True)
+    )
+    dT.aabb += (8.0 / 16.0) * np.einsum("abcejk,edil->abcdijkl", I3B_vvvvoo, T.ab, optimize=True)  #  [18]  (ij)(kl)(cd) = 8
+
+    I3C_vvvoov = (
+                -np.einsum("nmfe,bfcdjnkm->bcdjke", H.ab.oovv, T.aabb, optimize=True)
+                -0.5 * np.einsum("mnef,bcdfjkmn->bcdjke", H.bb.oovv, T.abbb, optimize=True)
+    )
+    dT.aabb += (8.0 / 16.0) * np.einsum("bcdjke,aeil->abcdijkl", I3C_vvvoov, T.ab, optimize=True)  #  [19]  (ij)(kl)(ab) = 8
+
+    I3B_vvvoov = (
+                -np.einsum("nmfe,abfdijnm->abdije", H.ab.oovv, T.aaab, optimize=True)
+                -0.5 * np.einsum("mnef,abfdijnm->abdije", H.bb.oovv, T.aabb, optimize=True)
+    )
+    dT.aabb += (2.0 / 16.0) * np.einsum("abdije,eclk->abcdijkl", I3B_vvvoov, T.bb, optimize=True)  #  [20]  (cd) = 2
+
+    I3C_ovvooo = (
+                0.5 * np.einsum("mnef,efcdinkl->mcdikl", H.aa.oovv, T.aabb, optimize=True)
+                +np.einsum("mnef,efcdinkl->mcdikl", H.ab.oovv, T.abbb, optimize=True)
+    )
+    dT.aabb -= (2.0 / 16.0) * np.einsum("mcdikl,abmj->abcdijkl", I3C_ovvooo, T.aa, optimize=True)  #  [21]  (ij) = 2
+
+    I3B_vovooo = (
+                0.5 * np.einsum("mnef,befcjink->bmcjik", H.aa.oovv, T.aaab, optimize=True)
+                +np.einsum("mnef,befcjink->bmcjik", H.ab.oovv, T.aabb, optimize=True)
+    )
+    dT.aabb -= (8.0 / 16.0) * np.einsum("bmcjik,adml->abcdijkl", I3B_vovooo, T.ab, optimize=True)  #  [22]  (ab)(kl)(cd) = 8
+
+    I3C_vovooo = (
+                np.einsum("nmfe,bfecjnlk->bmcjlk", H.ab.oovv, T.aabb, optimize=True)
+                +0.5 * np.einsum("mnef,bfecjnlk->bmcjlk", H.bb.oovv, T.abbb, optimize=True)
+    )
+    dT.aabb -= (8.0 / 16.0) * np.einsum("bmcjlk,adim->abcdijkl", I3C_vovooo, T.ab, optimize=True)  #  [23]  (ij)(ab)(cd) = 8
+
+    I3B_vvoooo = (
+                np.einsum("nmfe,abfeijnl->abmijl", H.ab.oovv, T.aaab, optimize=True)
+                +0.5 * np.einsum("mnef,abfeijnl->abmijl", H.bb.oovv, T.aabb, optimize=True)
+    )
+    dT.aabb -= (2.0 / 16.0) * np.einsum("abmijl,cdkm->abcdijkl", I3B_vvoooo, T.bb, optimize=True)  #  [24]  (kl) = 2
 
     T.aabb, dT.aabb = cc_loops_t4.cc_loops_t4.update_t4c(
         T.aabb,
@@ -855,4 +1134,183 @@ def update_t4c(T, dT, H, H0, shift):
         H0.b.vv,
         shift,
     )
+    return T, dT
+
+def update_t4d(T, dT, hbar, H, shift):
+    # <ijklabcd | H(2) | 0 >
+    dT.abbb = -(9.0 / 36.0) * np.einsum("dmle,abim,ecjk->dcbalkji", H.ab.voov, T.bb, T.bb, optimize=True)    # (i/jk)(c/ab) = 9
+    dT.abbb += (9.0 / 36.0) * np.einsum("mnij,bcnk,dalm->dcbalkji", H.bb.oooo, T.bb, T.ab, optimize=True)    # (k/ij)(a/bc) = 9
+    dT.abbb -= (18.0 / 36.0) * np.einsum("dmfj,abim,fclk->dcbalkji", H.ab.vovo, T.bb, T.ab, optimize=True)   # (ijk)(c/ab) = (i/jk)(c/ab)(jk) = 18
+    dT.abbb -= np.einsum("maei,eblj,dcmk->dcbalkji", H.ab.ovvo, T.ab, T.ab, optimize=True)                   # (ijk)(abc) = (i/jk)(a/bc)(jk)(bc) = 36
+    dT.abbb += (18.0 / 36.0) * np.einsum("nmlj,bcmk,dani->dcbalkji", H.ab.oooo, T.bb, T.ab, optimize=True)   # (ijk)(a/bc) = (i/jk)(a/bc)(jk) = 18
+    dT.abbb -= (18.0 / 36.0) * np.einsum("mble,ecjk,dami->dcbalkji", H.ab.ovov, T.bb, T.ab, optimize=True)   # (i/jk)(abc) = (i/jk)(a/bc)(bc) = 18
+    dT.abbb -= (18.0 / 36.0) * np.einsum("amie,ecjk,dblm->dcbalkji", H.bb.voov, T.bb, T.ab, optimize=True)   # (i/kj)(abc) = (i/kj)(a/bc)(bc) = 18
+    dT.abbb += (9.0 / 36.0) * np.einsum("abef,fcjk,deli->dcbalkji", H.bb.vvvv, T.bb, T.ab, optimize=True)    # (i/jk)(c/ab) = (i/jk)(c/ab) = 9
+    dT.abbb -= (18.0 / 36.0) * np.einsum("amie,bcmk,delj->dcbalkji", H.bb.voov, T.bb, T.ab, optimize=True)   # (ijk)(a/bc) = (i/jk)(a/bc)(jk) = 18
+    dT.abbb += (18.0 / 36.0) * np.einsum("dafe,ebij,fclk->dcbalkji", H.ab.vvvv, T.bb, T.ab, optimize=True)   # (k/ij)(abc) = (k/ij)(a/bc)(bc) = 18
+
+    # <ijklabcd | (H(2)*T3)_C + 1/2*(H(2)*T3^2)_C | 0 >
+    dT.abbb -= (1.0 / 12.0) * np.einsum("dmlk,abcijm->dcbalkji", H.ab.vooo, T.bbb, optimize=True)  # (k/ij) = 3
+    dT.abbb -= (9.0 / 36.0) * np.einsum("amik,dcblmj->dcbalkji", H.bb.vooo, T.abb, optimize=True)  # (j/ik)(a/bc) = 9
+    dT.abbb -= (9.0 / 36.0) * np.einsum("mali,dcbmkj->dcbalkji", H.ab.ovoo, T.abb, optimize=True)  # (a/bc)(i/jk) = 9
+
+    dT.abbb += (1.0 / 12.0) * np.einsum("dcle,abeijk->dcbalkji", H.ab.vvov, T.bbb, optimize=True)  # (c/ab) = 3
+    dT.abbb += (9.0 / 36.0) * np.einsum("acie,deblkj->dcbalkji", H.bb.vvov, T.abb, optimize=True)  # (b/ac)(i/jk) = 9
+    dT.abbb += (9.0 / 36.0) * np.einsum("daei,ecblkj->dcbalkji", H.ab.vvvo, T.abb, optimize=True)  # (a/bc)(i/jk) = 9
+
+    I3C_vooooo = (
+                    np.einsum("mnie,delj->dnmlji", H.bb.ooov, T.ab, optimize=True)
+                   +0.25 * np.einsum("mnef,dfelji->dnmlji", H.bb.oovv, T.abb, optimize=True)
+    )
+    I3C_vooooo -= np.transpose(I3C_vooooo, (0, 1, 2, 3, 5, 4))
+    dT.abbb += (1.0 / 12.0) * 0.5 * np.einsum("dnmlji,abcmnk->dcbalkji", I3C_vooooo, T.bbb, optimize=True)  # (k/ij) = 3
+    # have converted up to here...
+    I3A_vooooo = np.einsum("mnie,delj->dmnlij", H.aa.ooov, T.aa, optimize=True)
+    I3A_vooooo -= np.transpose(I3A_vooooo, (0, 1, 2, 4, 3, 5)) + np.transpose(I3A_vooooo, (0, 1, 2, 5, 4, 3))
+    I3A_vooooo += 0.5 * np.einsum("mnef,efdijl->dmnlij", H.aa.oovv, T.aaa, optimize=True)
+    dT.aaab += (1.0 / 12.0) * 0.5 * np.einsum("cmnkij,abdmnl->abcdijkl", I3A_vooooo, T.aab, optimize=True)  # (c/ab) = 3
+
+    I3B_vooooo = (
+                    0.5 * np.einsum("mnel,aeik->amnikl", H.ab.oovo, T.aa, optimize=True)
+                  + np.einsum("mnke,aeil->amnikl", H.ab.ooov, T.ab, optimize=True)
+                  + 0.5 * np.einsum("mnef,aefikl->amnikl", H.ab.oovv, T.aab, optimize=True)
+    )
+    I3B_vooooo -= np.transpose(I3B_vooooo, (0, 1, 2, 4, 3, 5))
+    dT.aaab += (9.0 / 36.0) * np.einsum("amnikl,bcdjmn->abcdijkl", I3B_vooooo, T.aab, optimize=True)  # (a/bc)(j/ik) = 9
+
+    I3B_vvvvvo = -np.einsum("amef,bdml->abdefl", H.aa.vovv, T.ab, optimize=True)
+    I3B_vvvvvo -= np.transpose(I3B_vvvvvo, (1, 0, 2, 3, 4, 5))
+    dT.aaab += (1.0 / 12.0) * 0.5 * np.einsum("abdefl,efcijk->abcdijkl", I3B_vvvvvo, T.aaa, optimize=True)  # (c/ab) = 3
+
+    I3A_vvvvvo = -np.einsum("amef,bcmk->abcefk", H.aa.vovv, T.aa, optimize=True)
+    I3A_vvvvvo -= np.transpose(I3A_vvvvvo, (1, 0, 2, 3, 4, 5)) + np.transpose(I3A_vvvvvo, (2, 1, 0, 3, 4, 5))
+    dT.aaab += (1.0 / 12.0) * 0.5 * np.einsum("abcefk,efdijl->abcdijkl", I3A_vvvvvo, T.aab, optimize=True)  # (k/ij) = 3
+
+    I3B_vvvovv = (
+                    -0.5 * np.einsum("mdef,acim->acdief", H.ab.ovvv, T.aa, optimize=True)
+                    - np.einsum("cmef,adim->acdief", H.ab.vovv, T.ab, optimize=True)
+    )
+    I3B_vvvovv -= np.transpose(I3B_vvvovv, (1, 0, 2, 3, 4, 5))
+    dT.aaab += (9.0 / 36.0) * np.einsum("acdief,befjkl->abcdijkl", I3B_vvvovv, T.aab, optimize=True)  # (b/ac)(i/jk) = 9
+
+    I3B_vovovo = (
+                    -np.einsum("nmie,adnl->amdiel", H.aa.ooov, T.ab, optimize=True)
+                    +np.einsum("amfe,fdil->amdiel", H.aa.vovv, T.ab, optimize=True)
+                    -np.einsum("mnel,adin->amdiel", H.ab.oovo, T.ab, optimize=True)
+                    +np.einsum("mdef,afil->amdiel", H.ab.ovvv, T.ab, optimize=True)
+                    +np.einsum("mnef,afdinl->amdiel", H.aa.oovv, T.aab, optimize=True)
+                    +np.einsum("mnef,afdinl->amdiel", H.ab.oovv, T.abb, optimize=True)
+    )
+    dT.aaab += (9.0 / 36.0) * np.einsum("amdiel,bcejkm->abcdijkl", I3B_vovovo, T.aaa, optimize=True)  # (a/bc)(i/jk) = 9
+
+    I3A_vvooov = (
+                -0.5 * np.einsum("nmje,abin->abmije", H.aa.ooov, T.aa, optimize=True)
+                +0.5 * np.einsum("bmfe,afij->abmije", H.aa.vovv, T.aa, optimize=True)
+                +0.25 * np.einsum("mnef,abfijn->abmije", H.ab.oovv, T.aab, optimize=True)
+    )
+    I3A_vvooov -= np.transpose(I3A_vvooov, (1, 0, 2, 3, 4, 5))
+    I3A_vvooov -= np.transpose(I3A_vvooov, (0, 1, 2, 4, 3, 5))
+    dT.aaab += (9.0 / 36.0) * np.einsum("abmije,cedkml->abcdijkl", I3A_vvooov, T.aab, optimize=True)  # (c/ab)(k/ij) = 9
+
+    I3B_vvoovo = (
+                -0.5 * np.einsum("nmel,acin->acmiel", H.ab.oovo, T.aa, optimize=True)
+                + np.einsum("cmef,afil->acmiel", H.ab.vovv, T.ab, optimize=True)
+                - 0.5 * np.einsum("nmef,acfinl->acmiel", H.ab.oovv, T.aab, optimize=True)
+    )
+    I3B_vvoovo -= np.transpose(I3B_vvoovo, (1, 0, 2, 3, 4, 5))
+    dT.aaab -= (9.0 / 36.0) * np.einsum("acmiel,ebdkjm->abcdijkl", I3B_vvoovo, T.aab, optimize=True)  # (b/ac)(i/jk) = 9
+
+    I3B_vovoov = (
+                0.5 * np.einsum("mdfe,afik->amdike", H.ab.ovvv, T.aa, optimize=True)
+                -np.einsum("mnke,adin->amdike", H.ab.ooov, T.ab, optimize=True)
+    )
+    I3B_vovoov -= np.transpose(I3B_vovoov, (0, 1, 2, 4, 3, 5))
+    dT.aaab -= (9.0 / 36.0) * np.einsum("amdike,bcejml->abcdijkl", I3B_vovoov, T.aab, optimize=True)  # (a/bc)(j/ik) = 9
+
+    I3C_vvooov = (
+                -np.einsum("nmie,adnl->admile", H.ab.ooov, T.ab, optimize=True)
+                -np.einsum("nmle,adin->admile", H.bb.ooov, T.ab, optimize=True)
+                +np.einsum("amfe,fdil->admile", H.ab.vovv, T.ab, optimize=True)
+                +np.einsum("dmfe,afil->admile", H.bb.vovv, T.ab, optimize=True)
+                +np.einsum("mnef,afdinl->admile", H.bb.oovv, T.abb, optimize=True)  # added 5/2/22
+    )
+    dT.aaab += (9.0 / 36.0) * np.einsum("admile,bcejkm->abcdijkl", I3C_vvooov, T.aab, optimize=True)  # (a/bc)(i/jk) = 9
+
+    I3B_vvooov = (
+                -0.5 * np.einsum("nmje,abin->abmije", H.ab.ooov, T.aa, optimize=True)
+                +0.5 * np.einsum("bmfe,afij->abmije", H.ab.vovv, T.aa, optimize=True)
+    )
+    I3B_vvooov -= np.transpose(I3B_vvooov, (1, 0, 2, 3, 4, 5))
+    I3B_vvooov -= np.transpose(I3B_vvooov, (0, 1, 2, 4, 3, 5))
+    dT.aaab += (9.0 / 36.0) * np.einsum("abmije,cdeklm->abcdijkl", I3B_vvooov, T.abb, optimize=True)  # (c/ab)(k/ij) = 9
+
+    # <ijklabcd | (H(2)*T4)_C | 0 >
+    dT.aaab -= (1.0 / 12.0) * np.einsum("mi,abcdmjkl->abcdijkl", H.a.oo, T.aaab, optimize=True)  # (i/jk) = 3
+    dT.aaab -= (1.0 / 36.0) * np.einsum("ml,abcdijkm->abcdijkl", H.b.oo, T.aaab, optimize=True)  # (1) = 1
+    dT.aaab += (1.0 / 12.0) * np.einsum("ae,ebcdijkl->abcdijkl", H.a.vv, T.aaab, optimize=True)  # (a/bc) = 3
+    dT.aaab += (1.0 / 36.0) * np.einsum("de,abceijkl->abcdijkl", H.b.vv, T.aaab, optimize=True)  # (1) = 1
+
+    dT.aaab += (1.0 / 12.0) * 0.5 * np.einsum("mnij,abcdmnkl->abcdijkl", H.aa.oooo, T.aaab, optimize=True)  # (k/ij) = 3
+    dT.aaab += (1.0 / 12.0) * np.einsum("mnil,abcdmjkn->abcdijkl", H.ab.oooo, T.aaab, optimize=True)  # (i/jk) = 3
+    dT.aaab += (1.0 / 12.0) * 0.5 * np.einsum("abef,efcdijkl->abcdijkl", H.aa.vvvv, T.aaab, optimize=True)  # (c/ab) = 3
+    dT.aaab += (1.0 / 12.0) * np.einsum("adef,ebcfijkl->abcdijkl", H.ab.vvvv, T.aaab, optimize=True)  # (a/bc) = 3
+
+    dT.aaab += (9.0 / 36.0) * np.einsum("amie,ebcdmjkl->abcdijkl", H.aa.voov, T.aaab, optimize=True)  # (a/bc)(i/jk) = 9
+    dT.aaab += (9.0 / 36.0) * np.einsum("amie,bcedjkml->abcdijkl", H.ab.voov, T.aabb, optimize=True)  # (a/bc)(i/jk) = 9
+    dT.aaab += (1.0 / 36.0) * np.einsum("mdel,abceijkm->abcdijkl", H.ab.ovvo, T.aaaa, optimize=True)  # (1) = 1
+    dT.aaab += (1.0 / 36.0) * np.einsum("dmle,abceijkm->abcdijkl", H.bb.voov, T.aaab, optimize=True)  # (1) = 1
+    dT.aaab -= (1.0 / 12.0) * np.einsum("amel,ebcdijkm->abcdijkl", H.ab.vovo, T.aaab, optimize=True)  # (a/bc) = 3
+    dT.aaab -= (1.0 / 12.0) * np.einsum("mdie,abcemjkl->abcdijkl", H.ab.ovov, T.aaab, optimize=True)  # (i/jk) = 3
+
+    I3B_vvvvoo = (
+        -0.5 * np.einsum("mnef,acfdmknl->acdekl", H.aa.oovv, T.aaab, optimize=True)
+        - np.einsum("mnef,acfdmknl->acdekl", H.ab.oovv, T.aabb, optimize=True)
+    )
+    dT.aaab += (9.0 / 36.0) * np.einsum("acdekl,ebij->abcdijkl", I3B_vvvvoo, T.aa, optimize=True)  # (b/ac)(k/ij) = 9
+
+    I3A_vvvvoo = (
+        -0.5 * np.einsum("mnef,abcfmjkn->abcejk", H.aa.oovv, T.aaaa, optimize=True)
+        - np.einsum("mnef,abcfmjkn->abcejk", H.ab.oovv, T.aaab, optimize=True)
+    )
+    dT.aaab += (1.0 / 12.0) * np.einsum("abcejk,edil->abcdijkl", I3A_vvvvoo, T.ab, optimize=True)  # (i/jk) = 3
+
+    I3B_vvvoov = (
+        - np.einsum("nmfe,abfdijnm->abdije", H.ab.oovv, T.aaab, optimize=True)
+        - 0.5 * np.einsum("nmfe,abfdijnm->abdije", H.bb.oovv, T.aabb, optimize=True)
+    )
+    dT.aaab += (9.0 / 36.0) * np.einsum("abdije,cekl->abcdijkl", I3B_vvvoov, T.ab, optimize=True)  # (c/ab)(k/ij) = 9
+
+    I3B_vovooo = (
+        0.5 * np.einsum("mnef,cefdkinl->cmdkil", H.aa.oovv, T.aaab, optimize=True)
+        + np.einsum("mnef,cefdkinl->cmdkil", H.ab.oovv, T.aabb, optimize=True)
+    )
+    dT.aaab -= (9.0 / 36.0) * np.einsum("cmdkil,abmj->abcdijkl", I3B_vovooo, T.aa, optimize=True)  # (c/ab)(j/ik) = 9
+
+    I3A_vovooo = (
+        0.5 * np.einsum("mnef,bcefjkin->bmcjik", H.aa.oovv, T.aaaa, optimize=True)
+        + np.einsum("mnef,bcefjkin->bmcjik", H.ab.oovv, T.aaab, optimize=True)
+    )
+    dT.aaab -= (1.0 / 12.0) * np.einsum("bmcjik,adml->abcdijkl", I3A_vovooo, T.ab, optimize=True)  # (a/bc) = 3
+
+    I3B_vvoooo = (
+        np.einsum("nmfe,bcfejknl->bcmjkl", H.ab.oovv, T.aaab, optimize=True)
+        + 0.5 * np.einsum("nmfe,bcfejknl->bcmjkl", H.bb.oovv, T.aabb, optimize=True)
+    )
+    dT.aaab -= (9.0 / 36.0) * np.einsum("bcmjkl,adim->abcdijkl", I3B_vvoooo, T.ab, optimize=True)  # (a/bc)(i/jk) = 9
+
+
+    T.aaab, dT.aaab = cc_loops_t4.cc_loops_t4.update_t4b(
+        T.aaab,
+        dT.aaab,
+        H0.a.oo,
+        H0.a.vv,
+        H0.b.oo,
+        H0.b.vv,
+        shift,
+    )
+    return T, dT
+
+    return T, dT
+
+def update_t4e(T, dT, hbar, H, shift):
     return T, dT
