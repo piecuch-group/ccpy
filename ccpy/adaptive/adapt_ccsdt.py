@@ -4,9 +4,8 @@ import numpy as np
 def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
     """Performs the adaptive CC(P;Q) calculation specified by the user in the input."""
     from ccpy.models.calculation import Calculation
-    from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace
+    from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace, add_spinorbital_triples_to_pspace
     from ccpy.utilities.symmetry_count import count_triples, count_quadruples
-    from ccpy.adaptive.selection import select_triples_from_moments
     from ccpy.drivers.driver import cc_driver, lcc_driver
     from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
     from ccpy.moments.ccp3 import calc_ccp3_with_selection
@@ -95,8 +94,7 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
 
         # Select the leading triples from the moment correction
         if n < num_calcs - 1:
-            pspace[0] = select_triples_from_moments(triples_list, pspace[0])
-            print("   Added", triples_list.shape[0], "triples to the P space")
+            pspace[0] = add_spinorbital_triples_to_pspace(triples_list, pspace[0])
 
     return T, ccp_energy, ccpq_energy
 
