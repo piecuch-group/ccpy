@@ -13,7 +13,7 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
     # check if requested CC(P) calculation is implemented in modules
     # assuming the underlying CC(P) follows in the * in the calculation_type
     # input adapt_*, as in adapt_ccsdt -> "ccsdt_p:
-    setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p")
+    setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_v2")
 
     # make the left-CC calculation using the CC(P) parameters (maybe this isn't the best way)
     calculation_left = Calculation(

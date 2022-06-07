@@ -63,7 +63,7 @@ def test_ccsdt1(nact_occ_canonical, nact_unocc_canonical, nact_occ_natorb, nact_
     L, _, _ = lcc_driver(calculation, system, T, Hbar, omega=0.0, L=None, R=None)
 
     rdm1 = calc_rdm1(T, L, system)
-    H, system = convert_to_ccsd_no(rdm1, H, system)
+    H, system = convert_to_ccsd_no(rdm1, H, system, print_diagnostics=True)
 
     ### Check that the NO transformation was successful ###
     calculation = Calculation(
@@ -80,6 +80,7 @@ def test_ccsdt1(nact_occ_canonical, nact_unocc_canonical, nact_occ_natorb, nact_
     else:
         flag_pass = False
 
+    # Stop the program if the NO transformation is not successful
     assert(flag_pass)
 
     ### CCSD NO-based CCSDt Calculation ###
