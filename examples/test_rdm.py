@@ -50,7 +50,7 @@ def test_natural_orbitals():
     L, total_energy, is_converged = lcc_driver(calculation, system, T, Hbar, omega=0.0, L=None, R=None)
 
     rdm1 = calc_rdm1(T, L, system)
-    H, system = convert_to_ccsd_no(rdm1, H, system)
+    H, system = convert_to_ccsd_no(rdm1, H, system, print_diagnostics=True)
 
     calculation = Calculation(
         order=2,

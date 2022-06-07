@@ -6,11 +6,9 @@ def main(args):
 
     from ccpy.models.calculation import Calculation
     from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
-    from ccpy.drivers.driver import cc_driver, lcc_driver
+    from ccpy.drivers.driver import cc_driver
 
-    from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
-
-    from ccpy.moments.crcc23 import calc_crcc23
+    from ccpy.utilities.pspace import get_full_pspace
 
     mol = gto.Mole()
 
@@ -35,53 +33,23 @@ def main(args):
     mf.kernel()
 
     system, H = load_pyscf_integrals(mf, nfrozen=2)
-    system.set_active_space(nact_occupied=5, nact_unoccupied=9)
     system.print_info()
 
-    if args.method == 'ccsd':
-        order = 2
-        num_active = [None]
-        active_orders = [None]
-    elif args.method == 'ccsdt':
-        order = 3
-        num_active = [None]
-        active_orders = [None]
-    elif args.method == 'ccsdt1':
-        order = 3
-        num_active = [1]
-        active_orders = [3]
-    else:
-        print('Undefined method order!')
-
     calculation = Calculation(
-        order=order,
-        calculation_type=args.method,
-        active_orders=active_orders,
-        num_active=num_active,
+        order=3,
+        calculation_type="ccsdt_p_v2",
         convergence_tolerance=1.0e-08,
         diis_size=6,
     )
 
-    T, total_energy, is_converged = cc_driver(calculation, system, H)
+    pspace = get_full_pspace(system, 3)
 
-    calculation = Calculation(
-        order=2,
-        calculation_type="left_ccsd",
-        convergence_tolerance=1.0e-08
-    )
-
-    Hbar = build_hbar_ccsd(T, H)
-
-    L, total_energy, is_converged = lcc_driver(calculation, system, T, Hbar, omega=0.0, L=None, R=None)
-
-    Ecrcc23, delta23 = calc_crcc23(T, L, Hbar, H, system, use_RHF=False)
-
+    T, total_energy, is_converged = cc_driver(calculation, system, H, pspace=pspace)
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run F2 calculation at certain separation in units of Re (Re = 2.66816 a.u.).")
-    parser.add_argument("method", type=str, help="CC method to run (default is 'ccsd').", default="ccsd")
     parser.add_argument("-re", type=float, help="Separation in units of Re (default is 2).", default=2.0)
     parser.add_argument("-basis", type=str, help="Basis set (default is ccpvdz).", default="ccpvdz")
 

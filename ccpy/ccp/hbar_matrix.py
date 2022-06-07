@@ -1,5 +1,32 @@
 import numpy as np
 
+# Thoughts on how to do this "efficiently":
+#
+#   1. We cannot have a double loop over triples in the P space; even CIPSI people do not do this.
+#      The most efficient way to operate is to have a single loop over the P space and then, for every
+#      determinant in the P space, try to efficiently generate all other connected determinants by,
+#      for example, applying all allowed single, double, and triple excitations that keep you in the P space.
+#
+#   2. In lieu of this complicated scheme, we use one expensive operation to precompute the connected determinants
+#      for each diagrammatic term. This incurs a large storage cost. How to get around this?
+#
+#      E.g.,:
+#      X3A(abcijk) = 1/2 * A(c/ab) h2a(abef) * t3a(efcijk)
+#
+#      -> First, define a hashing function that maps a tuple (a, b, c, i, j, k) into the index of t3 in the P space
+#     def hash(a, b, c, i, j, k):
+#           return idx
+#
+#     for a, b, c, i, j, k in triples_P_space:
+#         idet = hash(a, b, c, i, j, k)
+#          for e, f in connected_dets_dgm4[idet]:
+#              idx1 = hash(e, f, c, i, j, k)
+#              idx2 = hash(e, f, a, i, j, k)
+#              idx3 = hash(e, f, b, i, j, k)
+#              X3A[idet] += 0.5 * h2a[a, b, e, f] * t3a[idx1]
+#              X3A[idet] -= 0.5 * h2a[c, b, e, f] * t3a[idx2]
+#              X3A[idet] -= 0.5 * h2a[a, c, e, f] * t3a[idx3]
+
 def update_hbar_t3a(t3_aaa, list_aaa, idx3A, idx3B, H, H0, shift, system):
 
     n3a_p = len(idx3A)

@@ -29,6 +29,35 @@ def get_empty_pspace(system, nexcit):
                                     system.noccupied_beta, system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))} ]
     return pspace
 
+def get_full_pspace(system, nexcit):
+    if nexcit == 3:
+        pspace = [{'aaa' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
+                  'aab' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
+                  'abb' : np.ones((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
+                  'bbb' : np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}]
+    if nexcit == 4:
+        pspace = [ {'aaa' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
+                   'aab' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
+                   'abb' : np.ones((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
+                   'bbb' : np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))},
+                   {'aaaa' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
+                   'aaab' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
+                   'aabb' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
+                   'bbbb' : np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))} ]
+    return pspace
+
 def get_excit_rank(D, D0):
     return len( set(D) - set(D0) )
 

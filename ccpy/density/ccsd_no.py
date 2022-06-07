@@ -5,7 +5,19 @@ from ccpy.drivers.hf_energy import calc_g_matrix, calc_hf_energy
 from ccpy.models.integrals import getHamiltonian
 from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 
-def convert_to_ccsd_no(rdm1, H, system, dump_integrals=False):
+# The traditional CC/EOMCC methods are invariant with respect to independent
+# occ-occ and virt-virt rotations. They are NOT invariant with respect to
+# occ-virt rotations (this, by Thouless Theorem, generates new non-orthogonal references).
+#
+# Due to the presence of T1, there is a weaker dependence on occ-virt rotations
+# of the MOs, but it's not strictly invariant. As a result, to get the same answers,
+# you can only apply occ-occ and virt-virt rotations.
+#
+# You can play with this idea by, say, only applying a virt-virt rotations to clean
+# up the HF-based virtual orbitals, which are of low quality anyway, and retain the
+# original HF orbitals. This may give you better behaviors?
+
+def convert_to_ccsd_no(rdm1, H, system, dump_integrals=False, print_diagnostics=False):
 
     slice_table = {
         "a": {
@@ -61,16 +73,13 @@ def convert_to_ccsd_no(rdm1, H, system, dump_integrals=False):
     print("   Orbital        Occupation       Importance Score")
     print("   ------------------------------------------------")
     for i in range(system.norbitals):
-        importance_indicator = 100.0 * (-1.0 * nocc_vals[i]**2 + 2.0 * nocc_vals[i])
-        print("     {:>2}          {:>10f}          {:>10f}".format(i + 1, nocc_vals[i], importance_indicator))
+        score = 100.0 * ( 2.0 * nocc_vals[i] - nocc_vals[i]**2 )
+        print("     {:>2}          {:>10f}          {:>10f}".format(i + 1, nocc_vals[i], score))
 
     # Biorthogonalize the left and right NO vectors
     for i in range(system.norbitals):
         L[:, i] /= abs(np.dot(L[:, i].conj(), R[:, i]))
     LR = L.conj().T @ R
-    print("   Biorthogonality = ", np.linalg.norm(LR - np.eye(system.norbitals)))
-    print("   |imag(R)| = ", np.linalg.norm(np.imag(R)))
-    print("   |imag(L)| = ", np.linalg.norm(np.imag(L)))
 
     # Transform twobody integrals
     temp = np.zeros((system.norbitals, system.norbitals, system.norbitals, system.norbitals))
@@ -105,14 +114,21 @@ def convert_to_ccsd_no(rdm1, H, system, dump_integrals=False):
     if dump_integrals:
         dumpIntegralstoPGFiles(e1int_no, e2int_no, system)
 
-    print("   |imag(e1int)| = ", np.linalg.norm(np.imag(e1int_no)))
-    print("   |imag(e2int)| = ", np.linalg.norm(np.imag(e2int_no.flatten())))
-
     system.reference_energy = (
                                 calc_hf_energy(e1int_no, e2int_no, system)
                                 + system.nuclear_repulsion
                                 + system.frozen_energy
     )
     H = getHamiltonian(e1int_no, e2int_no, system, normal_ordered=True)
+
+    if print_diagnostics:
+        print("   Diagnostics:")
+        print("   -------------")
+        print("   Biorthogonality = ", np.linalg.norm(LR - np.eye(system.norbitals)))
+        print("   |imag(R)| = ", np.linalg.norm(np.imag(R)))
+        print("   |imag(L)| = ", np.linalg.norm(np.imag(L)))
+        print("   |imag(e1int)| = ", np.linalg.norm(np.imag(e1int_no)))
+        print("   |imag(e2int)| = ", np.linalg.norm(np.imag(e2int_no.flatten())))
+        print("   -------------\n")
 
     return H, system
