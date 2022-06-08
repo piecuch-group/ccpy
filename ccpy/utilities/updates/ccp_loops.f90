@@ -39,13 +39,14 @@ module ccp_loops
                   real(kind=8), intent(out) :: t3a_new(nua, nua, nua, noa, noa, noa),&
                                                resid(nua, nua, nua, noa, noa, noa)
 
-                  real(kind=8) :: vt3a(nua, nua, noa, nua), val, denom
+                  real(kind=8) :: I2A_vvov(nua, nua, noa, nua), val, denom
                   real(kind=8) :: res1, res2, res3, res4, res5
                   integer :: idx, a, b, c, i, j, k, e, f, m, n
 
-                  vt3a = 0.0d0
                   t3a_new = 0.0d0
                   resid = 0.0d0
+
+                  I2A_vvov = H2A_vvov
 
                   ! loop over projection determinants in P space
                   do a = 1, nua; do b = a + 1, nua; do c = b + 1, nua;
@@ -84,6 +85,7 @@ module ccp_loops
                               res3 = res3 - H2A_voov(c, m, i, e) * t3a(e, b, a, m, j, k)
                               res3 = res3 + H2A_voov(c, m, j, e) * t3a(e, b, a, m, i, k)
                               res3 = res3 + H2A_voov(c, m, k, e) * t3a(e, b, a, m, j, i)
+
                           end do
 
                           do m = 1, nob
@@ -99,17 +101,18 @@ module ccp_loops
                               res5 = res5 + H2B_voov(c, m, k, e) * t3b(b, a, e, j, i, m)
                           end do
 
-                          ! A(i/jk)(c/ab) h2a(abie) * t2a(ecjk)
-                          res4 = res4 + (H2A_vvov(a, b, i, e) + vt3a(a, b, i, e)) * t2a(e, c, j, k)
-                          res4 = res4 - (H2A_vvov(c, b, i, e) + vt3a(c, b, i, e)) * t2a(e, a, j, k)
-                          res4 = res4 - (H2A_vvov(a, c, i, e) + vt3a(a, c, i, e)) * t2a(e, b, j, k)
-                          res4 = res4 - (H2A_vvov(a, b, j, e) + vt3a(a, b, j, e)) * t2a(e, c, i, k)
-                          res4 = res4 + (H2A_vvov(c, b, j, e) + vt3a(c, b, j, e)) * t2a(e, a, i, k)
-                          res4 = res4 + (H2A_vvov(a, c, j, e) + vt3a(a, c, j, e)) * t2a(e, b, i, k)
-                          res4 = res4 - (H2A_vvov(a, b, k, e) + vt3a(a, b, k, e)) * t2a(e, c, j, i)
-                          res4 = res4 + (H2A_vvov(c, b, k, e) + vt3a(c, b, k, e)) * t2a(e, a, j, i)
-                          res4 = res4 + (H2A_vvov(a, c, k, e) + vt3a(a, c, k, e)) * t2a(e, b, j, i)
 
+
+                          ! A(i/jk)(c/ab) h2a(abie) * t2a(ecjk)
+                          res4 = res4 + I2A_vvov(a, b, i, e) * t2a(e, c, j, k)
+                          res4 = res4 - I2A_vvov(c, b, i, e) * t2a(e, a, j, k)
+                          res4 = res4 - I2A_vvov(a, c, i, e) * t2a(e, b, j, k)
+                          res4 = res4 - I2A_vvov(a, b, j, e) * t2a(e, c, i, k)
+                          res4 = res4 + I2A_vvov(c, b, j, e) * t2a(e, a, i, k)
+                          res4 = res4 + I2A_vvov(a, c, j, e) * t2a(e, b, i, k)
+                          res4 = res4 - I2A_vvov(a, b, k, e) * t2a(e, c, j, i)
+                          res4 = res4 + I2A_vvov(c, b, k, e) * t2a(e, a, j, i)
+                          res4 = res4 + I2A_vvov(a, c, k, e) * t2a(e, b, j, i)
 
                       end do
 
