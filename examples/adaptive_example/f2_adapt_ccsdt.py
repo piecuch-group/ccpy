@@ -28,7 +28,7 @@ def test_gamess():
 
     T, total_energy, is_converged = adapt_ccsdt(calculation, system, H, relaxed=True)
 
-def test_pyscf(stretch):
+def test_pyscf(stretch, basis):
 
     from pyscf import gto, scf
 
@@ -38,14 +38,19 @@ def test_pyscf(stretch):
 
     mol = gto.Mole()
 
+    if basis == "ccpvdz":
+        cartesian = True
+    else:
+        cartesian = False
+
     Re = 2.66816 # a.u.
     mol.build(
         atom=[['F', (0, 0, -0.5 * Re * stretch)], ['F', (0, 0, 0.5 * Re * stretch)]],
-        basis="ccpvdz",
+        basis=basis,
         charge=0,
         spin=0,
         symmetry="D2H",
-        cart=True,
+        cart=cartesian,
         unit='Bohr',
     )
     mf = scf.ROHF(mol)
@@ -71,6 +76,6 @@ def test_pyscf(stretch):
 if __name__ == "__main__":
 
     #test_gamess()
-    test_pyscf(2.0)
+    test_pyscf(2.0, "ccpvtz")
 
 

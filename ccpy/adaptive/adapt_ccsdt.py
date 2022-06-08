@@ -8,7 +8,7 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
     from ccpy.utilities.symmetry_count import count_triples, count_quadruples
     from ccpy.drivers.driver import cc_driver, lcc_driver
     from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
-    from ccpy.moments.ccp3 import calc_ccp3_with_selection
+    from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccp3
 
     # check if requested CC(P) calculation is implemented in modules
     # assuming the underlying CC(P) follows in the * in the calculation_type
@@ -57,7 +57,7 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
     for n in range(num_calcs):
 
         percentage = calculation.adaptive_percentages[n]
-        print("   \nPerforming CC(P;Q) calculation with", percentage, "% triples (", n1 * percentage, "triples )")
+        print("\n   Performing CC(P;Q) calculation with", percentage, "% triples (", n1 * percentage, "triples )")
         print("   ===========================================================================================\n")
 
         # Count the excitations in the current P space
@@ -82,19 +82,23 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
         # Perform left-CCSD calculation
         L, _, is_converged = lcc_driver(calculation_left, system, T, Hbar)
         assert(is_converged)
-    
-        # Compute the CC(P;3) moment correction used the 2BA and return the moments
-        Eccp3, deltap3, moments, triples_list = calc_ccp3_with_selection(T, L,
-                                                                         Hbar, hamiltonian,
-                                                                         system,
-                                                                         pspace,
-                                                                         num_dets_to_add[n],
-                                                                         use_RHF=calculation.RHF_symmetry)
-        ccpq_energy[n] = Eccp3["D"]
 
-        # Select the leading triples from the moment correction
+        # Compute the moment correction
         if n < num_calcs - 1:
+            # Compute the correction and return the moments as well as selected triples
+            Eccp3, deltap3, moments, triples_list = calc_ccp3_with_selection(T, L,
+                                                                             Hbar, hamiltonian,
+                                                                             system,
+                                                                             pspace,
+                                                                             num_dets_to_add[n],
+                                                                             use_RHF=calculation.RHF_symmetry)
+            # add the triples
             pspace[0] = add_spinorbital_triples_to_pspace(triples_list, pspace[0])
+
+        else:
+            Eccp3, deltap3 = calc_ccp3(T, L, Hbar, hamiltonian, system, pspace, use_RHF=calculation.RHF_symmetry)
+
+        ccpq_energy[n] = Eccp3["D"]
 
     return T, ccp_energy, ccpq_energy
 
