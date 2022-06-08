@@ -1,14 +1,23 @@
 import numpy as np
 
-#[TODO]: Generalize this function to at least handling singles through quadruples, not just triples
+from ccpy.models.calculation import Calculation
+from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace, add_spinorbital_triples_to_pspace
+from ccpy.utilities.symmetry_count import count_triples, count_quadruples
+from ccpy.drivers.driver import cc_driver, lcc_driver
+from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
+from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccp3
+
 def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
+
+    if relaxed:
+        T, ccp_energy, ccpq_energy = adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None)
+
+
+    return T, ccp_energy, ccpq_energy
+
+#[TODO]: Generalize this function to at least handling singles through quadruples, not just triples
+def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
     """Performs the adaptive CC(P;Q) calculation specified by the user in the input."""
-    from ccpy.models.calculation import Calculation
-    from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace, add_spinorbital_triples_to_pspace
-    from ccpy.utilities.symmetry_count import count_triples, count_quadruples
-    from ccpy.drivers.driver import cc_driver, lcc_driver
-    from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
-    from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccp3
 
     # check if requested CC(P) calculation is implemented in modules
     # assuming the underlying CC(P) follows in the * in the calculation_type
@@ -101,5 +110,3 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
         ccpq_energy[n] = Eccp3["D"]
 
     return T, ccp_energy, ccpq_energy
-
-

@@ -7,6 +7,7 @@ from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.utilities.updates import cc_loops2
 from ccpy.utilities.updates import ccp_loops
+from ccpy.utilities.updates import ccp_opt_loops
 
 def update(T, dT, H, shift, flag_RHF, system, pspace):
 
@@ -35,16 +36,16 @@ def update(T, dT, H, shift, flag_RHF, system, pspace):
     hbar = get_ccsd_intermediates(T, H)
 
     # update T3
-    T, dT = update_t3a(T, dT, hbar, H, shift, pspace[0]['aaa'])
-    T, dT = update_t3b(T, dT, hbar, H, shift, pspace[0]['aab'])
+    T, dT = update_t3a(T, dT, hbar, H, shift, pspace[0]['aaa'], pspace[0]['aab'])
+    T, dT = update_t3b(T, dT, hbar, H, shift, pspace[0]['aaa'], pspace[0]['aab'], pspace[0]['abb'])
     if flag_RHF:
         T.abb = np.transpose(T.aab, (2, 1, 0, 5, 4, 3))
         dT.abb = np.transpose(dT.abb, (2, 1, 0, 5, 4, 3))
         T.bbb = T.aaa.copy()
         dT.bbb = dT.aaa.copy()
     else:
-        T, dT = update_t3c(T, dT, hbar, H, shift, pspace[0]['abb'])
-        T, dT = update_t3d(T, dT, hbar, H, shift, pspace[0]['bbb'])
+        T, dT = update_t3c(T, dT, hbar, H, shift, pspace[0]['aab'], pspace[0]['abb'], pspace[0]['bbb'])
+        T, dT = update_t3d(T, dT, hbar, H, shift, pspace[0]['abb'], pspace[0]['bbb'])
 
     return T, dT
 
@@ -353,7 +354,7 @@ def update_t2c(T, dT, H, H0, shift):
     return T, dT
 
 # @profile
-def update_t3a(T, dT, H, H0, shift, pspace):
+def update_t3a(T, dT, H, H0, shift, pspace_aaa, pspace_aab):
     """
     Update t3a amplitudes by calculating the projection <ijkabc|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -371,19 +372,28 @@ def update_t3a(T, dT, H, H0, shift, pspace):
     dT.aaa -= (1.0 / 12.0) * np.einsum("mk,abcijm->abcijk", H.a.oo, T.aaa, optimize=True)
     dT.aaa += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aaa, optimize=True)
 
-    T.aaa, dT.aaa = ccp_loops.ccp_loops.update_t3a_p_opt1(
+    T.aaa, dT.aaa = ccp_opt_loops.ccp_opt_loops.update_t3a_p_opt2(
         dT.aaa, T.aa, T.aaa, T.aab,
-        pspace,
+        pspace_aaa, pspace_aab,
         H.a.vv,
         H.aa.oovv, I2A_vvov, H.aa.voov, H.aa.vvvv,
         H.ab.oovv, H.ab.voov,
         H0.a.oo, H0.a.vv,
         shift
     )
+    # T.aaa, dT.aaa = ccp_loops.ccp_loops.update_t3a_p_opt1(
+    #     dT.aaa, T.aa, T.aaa, T.aab,
+    #     pspace,
+    #     H.a.vv,
+    #     H.aa.oovv, I2A_vvov, H.aa.voov, H.aa.vvvv,
+    #     H.ab.oovv, H.ab.voov,
+    #     H0.a.oo, H0.a.vv,
+    #     shift
+    # )
     return T, dT
 
 # @profile
-def update_t3b(T, dT, H, H0, shift, pspace):
+def update_t3b(T, dT, H, H0, shift, pspace_aaa, pspace_aab, pspace_abb):
     """
     Update t3b amplitudes by calculating the projection <ijk~abc~|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -439,9 +449,9 @@ def update_t3b(T, dT, H, H0, shift, pspace):
     #dT.aab -= 0.5 * np.einsum("amek,ebcijm->abcijk", H.ab.vovo, T.aab, optimize=True)
     #dT.aab -= 0.5 * np.einsum("mcie,abemjk->abcijk", H.ab.ovov, T.aab, optimize=True)
 
-    T.aab, dT.aab = ccp_loops.ccp_loops.update_t3b_p_opt1(
+    T.aab, dT.aab = ccp_opt_loops.ccp_opt_loops.update_t3b_p_opt2(
         dT.aab, T.aa, T.ab, T.aaa, T.aab, T.abb,
-        pspace,
+        pspace_aaa, pspace_aab, pspace_abb,
         H.a.vv, H.b.vv,
         H.aa.oovv, I2A_vvov, H.aa.voov, H.aa.vvvv,
         H.ab.oovv, I2B_vvov, I2B_vvvo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
@@ -449,10 +459,20 @@ def update_t3b(T, dT, H, H0, shift, pspace):
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
         shift
     )
+    # T.aab, dT.aab = ccp_loops.ccp_loops.update_t3b_p_opt1(
+    #     dT.aab, T.aa, T.ab, T.aaa, T.aab, T.abb,
+    #     pspace,
+    #     H.a.vv, H.b.vv,
+    #     H.aa.oovv, I2A_vvov, H.aa.voov, H.aa.vvvv,
+    #     H.ab.oovv, I2B_vvov, I2B_vvvo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
+    #     H.bb.voov,
+    #     H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+    #     shift
+    # )
     return T, dT
 
 # @profile
-def update_t3c(T, dT, H, H0, shift, pspace):
+def update_t3c(T, dT, H, H0, shift, pspace_aab, pspace_abb, pspace_bbb):
     """
     Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -508,9 +528,9 @@ def update_t3c(T, dT, H, H0, shift, pspace):
     #dT.abb -= 0.5 * np.einsum("mbie,aecmjk->abcijk", H.ab.ovov, T.abb, optimize=True)
     #dT.abb -= 0.5 * np.einsum("amej,ebcimk->abcijk", H.ab.vovo, T.abb, optimize=True)
 
-    T.abb, dT.abb = ccp_loops.ccp_loops.update_t3c_p_opt1(
+    T.abb, dT.abb = ccp_opt_loops.ccp_opt_loops.update_t3c_p_opt2(
         dT.abb, T.ab, T.bb, T.aab, T.abb, T.bbb,
-        pspace,
+        pspace_aab, pspace_abb, pspace_bbb,
         H.a.vv, H.b.vv,
         H.aa.voov,
         H.ab.oovv, I2B_vvov, I2B_vvvo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
@@ -518,11 +538,21 @@ def update_t3c(T, dT, H, H0, shift, pspace):
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
         shift
     )
+    # T.abb, dT.abb = ccp_loops.ccp_loops.update_t3c_p_opt1(
+    #     dT.abb, T.ab, T.bb, T.aab, T.abb, T.bbb,
+    #     pspace,
+    #     H.a.vv, H.b.vv,
+    #     H.aa.voov,
+    #     H.ab.oovv, I2B_vvov, I2B_vvvo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
+    #     H.bb.oovv, I2C_vvov, H.bb.voov, H.bb.vvvv,
+    #     H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+    #     shift
+    # )
     return T, dT
 
 
 # @profile
-def update_t3d(T, dT, H, H0, shift, pspace):
+def update_t3d(T, dT, H, H0, shift, pspace_abb, pspace_bbb):
     """
     Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -547,13 +577,22 @@ def update_t3d(T, dT, H, H0, shift, pspace):
     #dT.bbb += 0.25 * np.einsum("maei,ebcmjk->abcijk", H.ab.ovvo, T.abb, optimize=True)
     #dT.bbb += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.bb.voov, T.bbb, optimize=True)
 
-    T.bbb, dT.bbb = ccp_loops.ccp_loops.update_t3d_p_opt1(
+    T.bbb, dT.bbb = ccp_opt_loops.ccp_opt_loops.update_t3d_p_opt2(
         dT.bbb, T.bb, T.abb, T.bbb,
-        pspace,
+        pspace_abb, pspace_bbb,
         H.b.vv,
         H.ab.oovv, H.ab.ovvo,
         H.bb.oovv, I2C_vvov, H.bb.voov, H.bb.vvvv,
         H0.b.oo, H0.b.vv,
         shift
     )
+    # T.bbb, dT.bbb = ccp_loops.ccp_loops.update_t3d_p_opt1(
+    #     dT.bbb, T.bb, T.abb, T.bbb,
+    #     pspace,
+    #     H.b.vv,
+    #     H.ab.oovv, H.ab.ovvo,
+    #     H.bb.oovv, I2C_vvov, H.bb.voov, H.bb.vvvv,
+    #     H0.b.oo, H0.b.vv,
+    #     shift
+    # )
     return T, dT

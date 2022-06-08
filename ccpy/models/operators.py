@@ -76,9 +76,8 @@ class ActiveOperator:
             setattr(self, name, np.reshape(T_flat[prev : ndim + prev], dims))
             prev += ndim
 
-
 class ClusterOperator:
-    def __init__(self, system, order, active_orders=[None], num_active=[None], data_type=np.float64):
+    def __init__(self, system, order, pspace_orders=[None], active_orders=[None], num_active=[None], data_type=np.float64):
         self.order = order
         self.spin_cases = []
         self.dimensions = []
@@ -97,15 +96,18 @@ class ClusterOperator:
                 dimensions = get_operator_dimension(i, j, system)
 
                 if i in active_orders:
-
                     active_t = ActiveOperator(system, i, name, nact, data_type=data_type)
                     setattr(self, name, active_t)
                     for dim in active_t.dimensions:
                         self.dimensions.append(dim)
                     ndim += active_t.ndim
 
-                else:
+                elif i in pspace_orders:
+                    setattr(self, name, np.zeros(0, dtype=data_type))
+                    self.dimensions.append((0,))
+                    ndim += 0
 
+                else:
                     setattr(self, name, np.zeros(dimensions, dtype=data_type))
                     self.dimensions.append(dimensions)
                     ndim += np.prod(dimensions)
