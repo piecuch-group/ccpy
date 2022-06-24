@@ -1,0 +1,18 @@
+ GAMESS output: f2-2Re/f2-2re-for-karthik.log
+ # of alpha occ   :   9
+ # of beta  occ   :   9
+ # of orbitals    :  30
+ # of frozen core :   2
+ Symmetry: D2H
+ Irrep of reference state: 0  (AG)
+ Triples obtained from counting:
+ AG           173960
+ B1G          173360
+ B2G          173720
+ B3G          173720
+ AU           173360
+ B1U          174080
+ B2U          173720
+ B3U          173720
+ Total =     1389640
+
