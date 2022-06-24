@@ -353,7 +353,7 @@ def update_t2c(T, dT, H, H0, shift):
     )
     return T, dT
 
-# @profile
+#@profile
 def update_t3a(T, dT, H, H0, shift, pspace_aaa, pspace_aab):
     """
     Update t3a amplitudes by calculating the projection <ijkabc|(H_N e^(T1+T2+T3))_C|0>.
@@ -392,7 +392,7 @@ def update_t3a(T, dT, H, H0, shift, pspace_aaa, pspace_aab):
     # )
     return T, dT
 
-# @profile
+#@profile
 def update_t3b(T, dT, H, H0, shift, pspace_aaa, pspace_aab, pspace_abb):
     """
     Update t3b amplitudes by calculating the projection <ijk~abc~|(H_N e^(T1+T2+T3))_C|0>.
@@ -471,7 +471,7 @@ def update_t3b(T, dT, H, H0, shift, pspace_aaa, pspace_aab, pspace_abb):
     # )
     return T, dT
 
-# @profile
+#@profile
 def update_t3c(T, dT, H, H0, shift, pspace_aab, pspace_abb, pspace_bbb):
     """
     Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N e^(T1+T2+T3))_C|0>.
@@ -551,7 +551,7 @@ def update_t3c(T, dT, H, H0, shift, pspace_aab, pspace_abb, pspace_bbb):
     return T, dT
 
 
-# @profile
+#@profile
 def update_t3d(T, dT, H, H0, shift, pspace_abb, pspace_bbb):
     """
     Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N e^(T1+T2+T3))_C|0>.
