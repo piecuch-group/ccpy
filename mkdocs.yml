@@ -1,0 +1,20 @@
+site_name: ccpy
+theme:
+  name: material
+
+markdown_extensions:
+  - markdown.extensions.codehilite:
+      guess_lang: false
+  - markdown_include.include:
+      base_path: docs
+  - admonition
+  - codehilite
+  - extra
+  - pymdownx.extra
+  - pymdownx.arithmatex:
+      generic: true
+
+nav:
+ - Home: 'index.md'
+ - Overview: 'overview.md'
+ - Quick Start: 'quick_start.md'
