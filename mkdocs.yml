@@ -16,5 +16,5 @@ markdown_extensions:
 
 nav:
  - Home: 'index.md'
- - Overview: 'overview.md'
- - Quick Start: 'quick_start.md'
+ - Quickstart: 'quickstart.md'
+ - Installation: 'installation.md'
