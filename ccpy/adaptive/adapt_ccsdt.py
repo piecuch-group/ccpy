@@ -83,14 +83,14 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
             T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace, T=T)
         else:
             T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace)
-        assert(is_converged)
+        #assert(is_converged)
 
         # Build CCSD-like Hbar from CC(P) 
         Hbar = build_hbar_ccsd(T, hamiltonian)
 
         # Perform left-CCSD calculation
         L, _, is_converged = lcc_driver(calculation_left, system, T, Hbar)
-        assert(is_converged)
+        #assert(is_converged)
 
         # Compute the moment correction
         if n < num_calcs - 1:
