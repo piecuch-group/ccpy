@@ -12,7 +12,7 @@ def load_pyscf_integrals(
         meanfield, nfrozen=0,
         num_act_holes_alpha=0, num_act_particles_alpha=0,
         num_act_holes_beta=0, num_act_particles_beta=0,
-        normal_ordered=True, dump_integrals=False
+        normal_ordered=True, dump_integrals=False, sorted=True
 ):
     """Builds the System and Integral objects using the information contained within a PySCF
     mean-field object for a molecular system.
@@ -68,7 +68,7 @@ def load_pyscf_integrals(
     if dump_integrals:
         dumpIntegralstoPGFiles(e1int, e2int, system)
 
-    return system, getHamiltonian(e1int, e2int, system, normal_ordered)
+    return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
 
 
 

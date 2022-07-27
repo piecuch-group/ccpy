@@ -72,13 +72,16 @@ class SortedIntegral:
         pass
 
 class Integral:
-    def __init__(self, system, order, matrices, use_none=False):
+    def __init__(self, system, order, matrices, sorted=True, use_none=False):
         self.order = order
         for i in range(1, order + 1):  # Loop over many-body ranks
             for j in range(i + 1):  # Loop over distinct spin cases per rank
                 name = get_operator_name(i, j)
-                sorted_integral = SortedIntegral(system, name, matrices[name], use_none)
-                self.__dict__[name] = sorted_integral
+                if sorted:
+                    sorted_integral = SortedIntegral(system, name, matrices[name], use_none)
+                    self.__dict__[name] = sorted_integral
+                else:
+                    self.__dict__[name] = matrices[name]
 
     @classmethod
     def from_empty(cls, system, order, data_type=np.float64, use_none=False):
@@ -91,7 +94,7 @@ class Integral:
                     matrices[name] = None
                 else:
                     matrices[name] = np.zeros(dimension, dtype=data_type)
-        return cls(system, order, matrices, use_none=use_none)
+        return cls(system, order, matrices, sorted=True, use_none=use_none)
 
     # @classmethod
     # def from_none(cls, system, order):
@@ -105,10 +108,10 @@ class Integral:
 
     @classmethod
     def from_none(cls, system, order):
-        return cls(system, order, matrix=None, use_none=True)
+        return cls(system, order, matrix=None, sorted=True, use_none=True)
 
 
-def getHamiltonian(e1int, e2int, system, normal_ordered):
+def getHamiltonian(e1int, e2int, system, normal_ordered, sorted=True):
 
     corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
 
@@ -124,7 +127,7 @@ def getHamiltonian(e1int, e2int, system, normal_ordered):
     twobody["ab"] = twobody["ab"][corr_slice, corr_slice, corr_slice, corr_slice]
     twobody["bb"] = twobody["bb"][corr_slice, corr_slice, corr_slice, corr_slice]
 
-    return Integral(system, 2, {**onebody, **twobody})
+    return Integral(system, 2, {**onebody, **twobody}, sorted=sorted)
 
 
 def build_v(e2int):

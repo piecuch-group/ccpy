@@ -3,10 +3,42 @@ module ccp_opt_loops
 !!!!      USE OMP_LIB
 !!!!      USE MKL_SERVICE
 
+
+![TODO]:
+!    1. Fully devectorize the T3 updates as well as the terms in T1 and T2 updates that involve T3.
+!    2. Remove tensor structure of T3 and use linear vector with indices addressed consistently using pspace arrays.
+!       E.g., pspace[a, b, c, i, j, k] = idx, where t3[idx] = t3[a, b, c, i, j, k]. So keep storage in terms of pspace,
+!             but remove storage from t3. This will reduce current storage requirements as well as speed up DIIS and flatten operations.
+!    3. Is there a way to build the Hbar matrix directly using this same loop structure?
+!    4. Remove inner if statements using pre-ordering. Define idx_dgm_x[a, b, c, i, j, k, :] = idx,
+!       where idx[p] is the linearized index referring to the tuple of contracted t3. For example, if we want to compute
+!       0.5 * h2a(abef) * t3a(efcijk), then we would compute this as
+!
+!       do a, b, c, i, j, k in pspace:
+!            do idx in idx_dgm_vvvv[a, b, c, i, j, k, :]:
+!                 residual = residual + h2a[a, b, e, f] * t3a[idx] (how to we get e, f ??)
+!
+!       Using linear indexing, we can define a 2D addressing array A_dgm[idx, idx], where A_dgm[idx, :] enumerates all
+!       linear indices in t3 used in the contraction. Associated with A_dgm, we can define B_dgm[idx, idx], where
+!       B_dgm[idx, :] defines a linearized index for the Hbar slice used in the contraction.
+!       For instance, using the above vvvv-type contraction as an example,
+!
+!       do idet in pspace:
+!            do jdet in A_dgm[idx, :]:
+!                 residual = residual + h2a[B_dgm[idet, jdet]] * t3a[A_dgm[idet, jdet]]
+!
+!       This is likely the best way to do the optimized CC(P)!!!
+
+
       implicit none
 
 
       contains
+
+
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !!!!!!!!!!!!!!!!!!!!!!!! OPT 1 !!!!!!!!!!!!!!!!!!!
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !                subroutine update_t1a_opt1(t1a, resid, X1A,&
 !                                           t3a, t3b, t3c,&
@@ -1161,6 +1193,11 @@ module ccp_opt_loops
                   end do; end do; end do;
 
               end subroutine update_t3d_p_opt1
+
+
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !!!!!!!!!!!!!!!!!!!!!!!! OPT 2 !!!!!!!!!!!!!!!!!!!
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
               subroutine update_t3a_p_opt2(t3a_new, resid,&
                                            X3A,&
