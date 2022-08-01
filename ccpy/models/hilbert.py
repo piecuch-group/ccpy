@@ -85,7 +85,6 @@ class Determinant:
 
         self.spinorbital_occupation = sorted(spinorb_occ)
 
-
     def get_orbital_partitioning(self, system):
         # Numpy arrays can be used to slice!
         occ_a = [i for i in range(system.noccupied_alpha)]
@@ -113,6 +112,34 @@ class Determinant:
             unocc_b[idx] = i
 
         return np.array(sorted(occ_a)), np.array(sorted(unocc_a)), np.array(sorted(occ_b)), np.array(sorted(unocc_b))
+
+    def get_relative_excitation(self, other_det, system):
+        # returns the spatial orbital excitation E (with spincase) such that
+        # | phi_p > = E_q^p | phi _q >
+
+        holes = []
+        particles = []
+        for p in self.spinorbital_occupation:
+            if p not in other_det.spinorbital_occupation:
+                particles.append(p)
+        for q in other_det.spinorbital_occupation:
+            if q not in self.spinorbital_occupation:
+                holes.append(q)
+
+        holes_spinint = [[self.spin_to_spatial(i)for i in holes if i % 2 == 1],
+                         [self.spin_to_spatial(i) for i in holes if i % 2 == 0]]
+
+        particles_spinint = [[self.spin_to_spatial(a) - system.noccupied_alpha for a in particles if a % 2 == 1],
+                             [self.spin_to_spatial(a) - system.noccupied_beta for a in particles if a % 2 == 0]]
+
+        return holes_spinint, particles_spinint
+
+    @staticmethod
+    def spin_to_spatial(x):
+        if x % 2 == 1:
+            return x // 2 + 1
+        else:
+            return x // 2
 
 class DeterminantalSubspace:
 

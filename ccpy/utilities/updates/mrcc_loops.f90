@@ -16,16 +16,19 @@ module mrcc_loops
 
           integer :: i, a
           integer :: i_sp, a_sp
+          real(kind=8) :: heffc
+
+          heffc = heff * cpq
 
           do i = 1, noa
               do a = 1, nua
-                  X1A(a, i) = X1A(a, i) - t1a_p(a, i)
+                  X1A(a, i) = X1A(a, i) - heffc * t1a_p(a, i)
 
                   i_sp = 2 * i - 1
                   a_sp = 2 * a - 1
 
                   if ( any(det_q == i_sp) .and. all(det_q /= a_sp) ) then
-                      X1A(a, i) = X1A(a, i) + t1a_q(a, i)
+                      X1A(a, i) = X1A(a, i) + heffc * t1a_q(a, i)
                   end if
 
               end do
@@ -45,16 +48,19 @@ module mrcc_loops
 
           integer :: i, a
           integer :: i_sp, a_sp
+          real(kind=8) :: heffc
+
+          heffc = heff * cpq
 
           do i = 1, nob
               do a = 1, nub
-                  X1B(a, i) = X1B(a, i) - t1b_p(a, i)
+                  X1B(a, i) = X1B(a, i) - heffc * t1b_p(a, i)
 
                   i_sp = 2 * i
                   a_sp = 2 * a
 
                   if ( any(det_q == i_sp) .and. all(det_q /= a_sp) ) then
-                      X1B(a, i) = X1B(a, i) + t1b_q(a, i)
+                      X1B(a, i) = X1B(a, i) + heffc * t1b_q(a, i)
                   end if
 
               end do
@@ -74,14 +80,17 @@ module mrcc_loops
 
           integer :: i, j, a, b
           integer :: i_sp, j_sp, a_sp, b_sp
+          real(kind=8) :: heffc
+
+          heffc = heff * cpq
 
           do i = 1, noa
               do j = 1, noa
                   do a = 1, nua
                       do b = 1, nua
 
-                          X2A(a, b, i, j) = X2A(a, b, i, j) - 0.25 * t2a_p(a, b, i, j)
-                          X2A(a, b, i, j) = X2A(a, b, i, j) - 0.5 * t1a_p(a, i) * t1a_p(b, j)
+                          X2A(a, b, i, j) = X2A(a, b, i, j) - heffc * 0.25 * t2a_p(a, b, i, j)
+                          X2A(a, b, i, j) = X2A(a, b, i, j) - heffc * 0.5 * t1a_p(a, i) * t1a_p(b, j)
 
                           i_sp = 2 * i - 1
                           j_sp = 2 * j - 1
@@ -90,9 +99,9 @@ module mrcc_loops
 
                           if ( any(det_q == i_sp) .and. all(det_q /= a_sp)&
                               .and. any(det_q == j_sp) .and. all(det_q /= b_sp) ) then
-                              X2A(a, b, i, j) = X2A(a, b, i, j) + 0.25 * t2a_q(a, b, i, j)
-                              X2A(a, b, i, j) = X2A(a, b, i, j) + 0.5 * t1a_q(a, i) * t1a_q(b, j)
-                              X2A(a, b, i, j) = X2A(a, b, i, j) - t1a_p(a, i) * t1a_q(b, j)
+                              X2A(a, b, i, j) = X2A(a, b, i, j) + heffc * 0.25 * t2a_q(a, b, i, j)
+                              X2A(a, b, i, j) = X2A(a, b, i, j) + heffc * 0.5 * t1a_q(a, i) * t1a_q(b, j)
+                              X2A(a, b, i, j) = X2A(a, b, i, j) - heffc * t1a_p(a, i) * t1a_q(b, j)
                           end if
 
                       end do
@@ -115,14 +124,17 @@ module mrcc_loops
 
           integer :: i, j, a, b
           integer :: i_sp, j_sp, a_sp, b_sp
+          real(kind=8) :: heffc
+
+          heffc = heff * cpq
 
           do i = 1, noa
               do j = 1, nob
                   do a = 1, nua
                       do b = 1, nub
 
-                          X2B(a, b, i, j) = X2B(a, b, i, j) - t2b_p(a, b, i, j)
-                          X2B(a, b, i, j) = X2B(a, b, i, j) - t1a_p(a, i) * t1a_p(b, j)
+                          X2B(a, b, i, j) = X2B(a, b, i, j) - heffc * t2b_p(a, b, i, j)
+                          X2B(a, b, i, j) = X2B(a, b, i, j) - heffc * t1a_p(a, i) * t1a_p(b, j)
 
                           i_sp = 2 * i - 1
                           j_sp = 2 * j
@@ -131,10 +143,10 @@ module mrcc_loops
 
                           if ( any(det_q == i_sp) .and. all(det_q /= a_sp)&
                               .and. any(det_q == j_sp) .and. all(det_q /= b_sp) ) then
-                              X2B(a, b, i, j) = X2B(a, b, i, j) + t2b_q(a, b, i, j)
-                              X2B(a, b, i, j) = X2B(a, b, i, j) + t1a_q(a, i) * t1b_q(b, j)
-                              X2B(a, b, i, j) = X2B(a, b, i, j) - t1a_p(a, i) * t1b_q(b, j)
-                              X2B(a, b, i, j) = X2B(a, b, i, j) - t1b_p(b, j) * t1a_q(a, i)
+                              X2B(a, b, i, j) = X2B(a, b, i, j) + heffc * t2b_q(a, b, i, j)
+                              X2B(a, b, i, j) = X2B(a, b, i, j) + heffc * t1a_q(a, i) * t1b_q(b, j)
+                              X2B(a, b, i, j) = X2B(a, b, i, j) - heffc * t1a_p(a, i) * t1b_q(b, j)
+                              X2B(a, b, i, j) = X2B(a, b, i, j) - heffc * t1b_p(b, j) * t1a_q(a, i)
                           end if
 
                       end do
@@ -156,14 +168,17 @@ module mrcc_loops
 
           integer :: i, j, a, b
           integer :: i_sp, j_sp, a_sp, b_sp
+          real(kind=8) :: heffc
+
+          heffc = heff * cpq
 
           do i = 1, nob
               do j = 1, nob
                   do a = 1, nub
                       do b = 1, nub
 
-                          X2C(a, b, i, j) = X2C(a, b, i, j) - 0.25 * t2c_p(a, b, i, j)
-                          X2C(a, b, i, j) = X2C(a, b, i, j) - 0.5 * t1b_p(a, i) * t1b_p(b, j)
+                          X2C(a, b, i, j) = X2C(a, b, i, j) - heffc * 0.25 * t2c_p(a, b, i, j)
+                          X2C(a, b, i, j) = X2C(a, b, i, j) - heffc * 0.5 * t1b_p(a, i) * t1b_p(b, j)
 
                           i_sp = 2 * i
                           j_sp = 2 * j
@@ -172,9 +187,9 @@ module mrcc_loops
 
                           if ( any(det_q == i_sp) .and. all(det_q /= a_sp)&
                               .and. any(det_q == j_sp) .and. all(det_q /= b_sp) ) then
-                              X2C(a, b, i, j) = X2C(a, b, i, j) + 0.25 * t2c_q(a, b, i, j)
-                              X2C(a, b, i, j) = X2C(a, b, i, j) + 0.5 * t1b_q(a, i) * t1b_q(b, j)
-                              X2C(a, b, i, j) = X2C(a, b, i, j) - t1b_p(a, i) * t1b_q(b, j)
+                              X2C(a, b, i, j) = X2C(a, b, i, j) + heffc * 0.25 * t2c_q(a, b, i, j)
+                              X2C(a, b, i, j) = X2C(a, b, i, j) + heffc * 0.5 * t1b_q(a, i) * t1b_q(b, j)
+                              X2C(a, b, i, j) = X2C(a, b, i, j) - heffc * t1b_p(a, i) * t1b_q(b, j)
                           end if
 
                       end do
