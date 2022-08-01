@@ -1,4 +1,5 @@
 import argparse
+import numpy as np
 
 
 def main(args):
@@ -37,11 +38,19 @@ def main(args):
     mf = scf.ROHF(mol)
     mf.kernel()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=1, normal_ordered=False, sorted=False)
+    system, H = load_pyscf_integrals(mf, nfrozen=0, normal_ordered=False, sorted=False)
     system.print_info()
 
-    print(H.aa)
-    print(H.aa.shape)
+    occ = slice(0, 5)
+    unocc = slice(5, 13)
+
+    Escf = system.nuclear_repulsion
+    Escf += np.einsum("ii->", H.a[occ, occ]) + np.einsum("ii->", H.b[occ, occ])
+    Escf += (  0.5 * np.einsum("ijij->", H.aa[occ, occ, occ, occ])
+             + 0.5 * np.einsum("ijij->", H.bb[occ, occ, occ, occ])
+             + np.einsum("ijij->", H.ab[occ, occ, occ, occ])
+               )
+    print(Escf)
 
     # calculation = Calculation(
     #     order=order,

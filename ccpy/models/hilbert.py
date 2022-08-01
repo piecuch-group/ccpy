@@ -5,10 +5,16 @@ from ccpy.models.operators import get_operator_name
 class Determinant:
 
     def __init__(self, spatial_excitation, spincase, system, bit_length=32):
-        self.excitation = spatial_excitation
+
+        self.excitation = spatial_excitation # [vir, occ], vir indices range from 0 - system.nunoccupied
         self.spincase = spincase
         self.excitation_degree = int(len(spatial_excitation) / 2)
+
+        self.symmetry = 'C1'
         self.get_symmetry(system)
+
+        self.spinorbital_occupation = [i for i in range(1, system.nelectrons + 1)]
+        self.get_spinorbital_occupation(system)
 
         self.N_int = int(np.floor((system.norbitals - 1) / bit_length) + 1)
         self.bitstring = tuple(([0 for i in range(self.N_int)],  # hole alpha
@@ -38,7 +44,7 @@ class Determinant:
             orb_sym_val = system.point_group_irrep_to_number[system.orbital_symmetries[a]]
             sym_val = sym_val ^ orb_sym_val
 
-        setattr(self, 'symmetry', system.point_group_number_to_irrep[sym_val])
+        self.symmetry = system.point_group_number_to_irrep[sym_val]
 
     def get_bitstring(self, bit_length):
 
@@ -58,6 +64,55 @@ class Determinant:
             self.bitstring[1][_get_int_index(i)] += 2 ** (i % bit_length)  # hole beta
             self.bitstring[3][_get_int_index(a)] += 2 ** (a % bit_length)  # particle beta
 
+    def get_spinorbital_occupation(self, system):
+
+        num_alpha = self.spincase.count('a')
+        num_beta = self.spincase.count('b')
+
+        spinorb_occ = [i for i in range(1, system.nelectrons + 1)]
+
+        for n in range(num_alpha):
+            a = self.excitation[n] + system.noccupied_alpha
+            i = self.excitation[n + self.excitation_degree]
+            idx = spinorb_occ.index(2 * i - 1)
+            spinorb_occ[idx] = 2 * a - 1
+
+        for n in range(num_beta):
+            a = self.excitation[self.excitation_degree - n - 1] + system.noccupied_beta
+            i = self.excitation[self.excitation_degree - n + self.excitation_degree - 1]
+            idx = spinorb_occ.index(2 * i)
+            spinorb_occ[idx] = 2 * a
+
+        self.spinorbital_occupation = sorted(spinorb_occ)
+
+
+    def get_orbital_partitioning(self, system):
+        # Numpy arrays can be used to slice!
+        occ_a = [i for i in range(system.noccupied_alpha)]
+        unocc_a = [i for i in range(system.noccupied_alpha, system.norbitals)]
+        occ_b = [i for i in range(system.noccupied_beta)]
+        unocc_b = [i for i in range(system.noccupied_beta, system.norbitals)]
+
+        num_alpha = self.spincase.count('a')
+        num_beta = self.spincase.count('b')
+
+        for n in range(num_alpha):
+            a = self.excitation[n] - 1
+            i = self.excitation[n + self.excitation_degree] - 1
+            idx = occ_a.index(i)
+            occ_a[idx] = a + system.noccupied_alpha
+            idx = unocc_a.index(a + system.noccupied_alpha)
+            unocc_a[idx] = i
+
+        for n in range(num_beta):
+            a = self.excitation[self.excitation_degree - n - 1] - 1
+            i = self.excitation[self.excitation_degree - n + self.excitation_degree - 1] - 1
+            idx = occ_b.index(i)
+            occ_b[idx] = a + system.noccupied_beta
+            idx = unocc_b.index(a + system.noccupied_beta)
+            unocc_b[idx] = i
+
+        return np.array(sorted(occ_a)), np.array(sorted(unocc_a)), np.array(sorted(occ_b)), np.array(sorted(unocc_b))
 
 class DeterminantalSubspace:
 
@@ -146,7 +201,7 @@ if __name__ == "__main__":
     mol.build(
         atom="""F 0.0 0.0 -1.2491088779
                 F 0.0 0.0  1.2491088779""",
-        basis="ccpvtz",
+        basis="ccpvdz",
         charge=1,
         spin=1,
         symmetry="D2H",
@@ -161,15 +216,23 @@ if __name__ == "__main__":
 
     system.print_info()
 
-    pspace = DeterminantalSubspace(system, 3, fill_level=2)
+    d = Determinant([2, 3, 1, 2], 'ab', system)
+    print(d.spinorbital_occupation)
+    occ_a, unocc_a, occ_b, unocc_b = d.get_orbital_partitioning(system)
+    print(occ_a)
+    print(unocc_a)
+    print(occ_b)
+    print(unocc_b)
 
-    pspace.add_determinant(Determinant([4, 5, 6, 1, 2, 3], 'abb', system))
-
-    print(pspace.abb[0].excitation)
-    print(pspace.abb[0].spincase)
-    print(pspace.abb[0].symmetry)
-    print(pspace.abb[0].bitstring)
-
-    # pspace.remove_determinant(Determinant([4, 5, 6, 1, 2, 3], 'abb', system))
-
-    print(pspace.abb)
+    # pspace = DeterminantalSubspace(system, 3, fill_level=2)
+    #
+    # pspace.add_determinant(Determinant([4, 5, 6, 1, 2, 3], 'abb', system))
+    #
+    # print(pspace.abb[0].excitation)
+    # print(pspace.abb[0].spincase)
+    # print(pspace.abb[0].symmetry)
+    # print(pspace.abb[0].bitstring)
+    #
+    # # pspace.remove_determinant(Determinant([4, 5, 6, 1, 2, 3], 'abb', system))
+    #
+    # print(pspace.abb)

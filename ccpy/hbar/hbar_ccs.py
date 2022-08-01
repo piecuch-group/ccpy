@@ -342,3 +342,160 @@ def get_ccs_intermediates_opt(T, H0):
 
 
     return H
+
+def get_ccs_intermediates_unsorted(T, H0, occ_a, unocc_a, occ_b, unocc_b):
+    """
+    Calculate the CCS-like similarity-transformed HBar intermediates (H_N e^T1)_C.
+    This routine operates has input/output based on unsorted Hamiltonian operators (e.g., no o/v slicing).
+    """
+
+    # [TODO]: Copying large arrays is slow! We should pass in Hbar and simply update its elements.
+    from copy import deepcopy
+    # Copy the Bare Hamiltonian object for T1-transforemd HBar
+    H = deepcopy(H0)
+
+    # 1-body components
+    # -------------------#
+    H.a[occ_a, unocc_a] = H0.a[occ_a, unocc_a] + (
+        np.einsum("mnef,fn->me", H0.aa[occ_a, occ_a, unocc_a, unocc_a], T.a, optimize=True)
+        + np.einsum("mnef,fn->me", H0.ab[occ_a, occ_b, unocc_a, unocc_b], T.b, optimize=True)
+    ) # no(2)nu(2)
+
+    H.b[occ_b, unocc_b] = H0.b[occ_b, unocc_b] + (
+            np.einsum("nmfe,fn->me", H0.ab[occ_a, occ_b, unocc_a, unocc_b], T.a, optimize=True)
+            + np.einsum("mnef,fn->me", H0.bb[occ_b, occ_b, unocc_b, unocc_b], T.b, optimize=True)
+    ) # no(2)nu(2)
+
+    H.a[unocc_a, unocc_a] = H0.a[unocc_a, unocc_a] + (
+        np.einsum("anef,fn->ae", H0.aa[unocc_a, occ_a, unocc_a, unocc_a], T.a, optimize=True)
+        + np.einsum("anef,fn->ae", H0.ab[unocc_a, occ_b, unocc_a, unocc_b], T.b, optimize=True)
+        - np.einsum("me,am->ae", H.a[occ_a, unocc_a], T.a, optimize=True)
+    ) # no(1)nu(3)
+
+    H.a[occ_a, occ_a] = H0.a[occ_a, occ_a] + (
+        np.einsum("mnif,fn->mi", H0.aa[occ_a, occ_a, occ_a, unocc_a], T.a, optimize=True)
+        + np.einsum("mnif,fn->mi", H0.ab[occ_a, occ_b, occ_a, unocc_b], T.b, optimize=True)
+        + np.einsum("me,ei->mi", H.a[occ_a, unocc_a], T.a, optimize=True)
+    ) # no(3)nu(1)
+
+    H.b[unocc_b, unocc_b] = H0.b[unocc_b, unocc_b] + (
+        np.einsum("anef,fn->ae", H0.bb[unocc_b, occ_b, unocc_b, unocc_b], T.b, optimize=True)
+        + np.einsum("nafe,fn->ae", H0.ab[occ_a, unocc_b, unocc_a, unocc_b], T.a, optimize=True)
+        - np.einsum("me,am->ae", H.b[occ_b, unocc_b], T.b, optimize=True)
+    ) # no(1)nu(3)
+
+    H.b[occ_b, occ_b] = H0.b[occ_b, occ_b] + (
+        np.einsum("mnif,fn->mi", H0.bb[occ_b, occ_b, occ_b, unocc_b], T.b, optimize=True)
+        + np.einsum("nmfi,fn->mi", H0.ab[occ_a, occ_b, unocc_a, occ_b], T.a, optimize=True)
+        + np.einsum("me,ei->mi", H.b[occ_b, unocc_b], T.b, optimize=True)
+    ) # no(3)nu(1)
+
+    # 2-body components
+    # -------------------#
+    # AA parts
+    # -------------------#
+    H.aa[occ_a, occ_a, occ_a, unocc_a] = np.einsum("mnfe,fi->mnie", H0.aa[occ_a, occ_a, unocc_a, unocc_a], T.a, optimize=True) # no(3)nu(2)
+
+    H.aa[occ_a, occ_a, occ_a, occ_a] = 0.5 * H0.aa[occ_a, occ_a, occ_a, occ_a] + np.einsum("nmje,ei->mnij", H0.aa[occ_a, occ_a, occ_a, unocc_a] + 0.5 * H.aa[occ_a, occ_a, occ_a, unocc_a], T.a, optimize=True) # no(4)nu(1)
+    H.aa[occ_a, occ_a, occ_a, occ_a] -= np.transpose(H.aa[occ_a, occ_a, occ_a, occ_a], (0, 1, 3, 2))
+
+    H.aa[unocc_a, occ_a, unocc_a, unocc_a] = -np.einsum("mnfe,an->amef", H0.aa[occ_a, occ_a, unocc_a, unocc_a], T.a, optimize=True) # no(2)nu(3)
+
+    H.aa[unocc_a, occ_a, occ_a, unocc_a] = H0.aa[unocc_a, occ_a, occ_a, unocc_a] + (
+            np.einsum("amfe,fi->amie", H0.aa[unocc_a, occ_a, unocc_a, unocc_a] + 0.5 * H.aa[unocc_a, occ_a, unocc_a, unocc_a], T.a, optimize=True)
+            - np.einsum("nmie,an->amie", H0.aa[occ_a, occ_a, occ_a, unocc_a] + 0.5 * H.aa[occ_a, occ_a, occ_a, unocc_a], T.a, optimize=True)
+    ) # no(2)nu(3)
+
+    L_amie = H0.aa[unocc_a, occ_a, occ_a, unocc_a] + 0.5 * np.einsum('amef,ei->amif', H0.aa[unocc_a, occ_a, unocc_a, unocc_a], T.a, optimize=True) # no(2)nu(3)
+    X_mnij = H0.aa[occ_a, occ_a, occ_a, occ_a] + np.einsum('mnie,ej->mnij', H.aa[occ_a, occ_a, occ_a, unocc_a], T.a, optimize=True) # no(4)nu(1)
+    H.aa[unocc_a, occ_a, occ_a, occ_a] = 0.5 * H0.aa[unocc_a, occ_a, occ_a, occ_a] + (
+        np.einsum('amie,ej->amij', L_amie, T.a, optimize=True)
+       -0.25 * np.einsum('mnij,am->anij', X_mnij, T.a, optimize=True)
+    ) # no(3)nu(2)
+    H.aa[unocc_a, occ_a, occ_a, occ_a] -= np.transpose(H.aa[unocc_a, occ_a, occ_a, occ_a], (0, 1, 3, 2))
+
+    L_amie = np.einsum('mnie,am->anie', H0.aa[occ_a, occ_a, occ_a, unocc_a], T.a, optimize=True)
+    H.aa[unocc_a, unocc_a, occ_a, unocc_a] = H0.aa[unocc_a, unocc_a, occ_a, unocc_a] + np.einsum("anie,bn->abie", L_amie, T.a, optimize=True) # no(1)nu(4)
+    #H.aa[unocc_a, unocc_a, occ_a, unocc_a] -= np.transpose(H.aa[unocc_a, unocc_a, occ_a, unocc_a], (1, 0, 2, 3)) # WHY IS THIS NOT NEEDED???
+
+    # -------------------#
+    # AB parts
+    # -------------------#
+    H.ab[occ_a, occ_b, occ_a, unocc_b] = np.einsum("mnfe,fi->mnie", H0.ab[occ_a, occ_b, unocc_a, unocc_b], T.a, optimize=True)
+
+    H.ab[occ_a, occ_b, unocc_a, occ_b] = np.einsum("nmef,fi->nmei", H0.ab[occ_a, occ_b, unocc_a, unocc_b], T.b, optimize=True)
+
+    H.ab[occ_a, occ_b, occ_a, occ_b] = H0.ab[occ_a, occ_b, occ_a, occ_b] + (
+        np.einsum("mnej,ei->mnij", H0.ab[occ_a, occ_b, unocc_a, occ_b] + 0.5 * H.ab[occ_a, occ_b, unocc_a, occ_b], T.a, optimize=True)
+        + np.einsum("mnie,ej->mnij", H0.ab[occ_a, occ_b, occ_a, unocc_b] + 0.5 * H.ab[occ_a, occ_b, occ_a, unocc_b], T.b, optimize=True)
+    )
+
+    H.ab[unocc_a, occ_b, unocc_a, unocc_b] = -np.einsum("nmef,an->amef", H0.ab[occ_a, occ_b, unocc_a, unocc_b], T.a, optimize=True)
+
+    H.ab[occ_a, unocc_b, unocc_a, unocc_b] = -np.einsum("mnef,an->maef", H0.ab[occ_a, occ_b, unocc_a, unocc_b], T.b, optimize=True)
+
+    H.ab[unocc_a, occ_b, occ_a, unocc_b] = H0.ab[unocc_a, occ_b, occ_a, unocc_b] + (
+        np.einsum("amfe,fi->amie", H0.ab[unocc_a, occ_b, unocc_a, unocc_b] + 0.5 * H.ab[unocc_a, occ_b, unocc_a, unocc_b], T.a, optimize=True)
+        - np.einsum("nmie,an->amie", H0.ab[occ_a, occ_b, occ_a, unocc_b] + 0.5 * H.ab[occ_a, occ_b, occ_a, unocc_b], T.a, optimize=True)
+    )
+
+    H.ab[occ_a, unocc_b, unocc_a, occ_b] = H0.ab[occ_a, unocc_b, unocc_a, occ_b] + (
+        np.einsum("maef,fi->maei", H0.ab[occ_a, unocc_b, unocc_a, unocc_b] + 0.5 * H.ab[occ_a, unocc_b, unocc_a, unocc_b], T.b, optimize=True)
+        - np.einsum("mnei,an->maei", H0.ab[occ_a, occ_b, unocc_a, occ_b] + 0.5 * H.ab[occ_a, occ_b, unocc_a, occ_b], T.b, optimize=True)
+    )
+
+    H.ab[occ_a, unocc_b, occ_a, unocc_b] = H0.ab[occ_a, unocc_b, occ_a, unocc_b] + (
+        np.einsum("mafe,fi->maie", H0.ab[occ_a, unocc_b, unocc_a, unocc_b] + 0.5 * H.ab[occ_a, unocc_b, unocc_a, unocc_b], T.a, optimize=True)
+        - np.einsum("mnie,an->maie", H0.ab[occ_a, occ_b, occ_a, unocc_b] + 0.5 * H.ab[occ_a, occ_b, occ_a, unocc_b], T.b, optimize=True)
+    )
+
+    H.ab[unocc_a, occ_b, unocc_a, occ_b] = H0.ab[unocc_a, occ_b, unocc_a, occ_b] - (
+        np.einsum("nmei,an->amei", H0.ab[occ_a, occ_b, unocc_a, occ_b] + 0.5 * H.ab[occ_a, occ_b, unocc_a, occ_b], T.a, optimize=True)
+        - np.einsum("amef,fi->amei", H0.ab[unocc_a, occ_b, unocc_a, unocc_b] + 0.5 * H.ab[unocc_a, occ_b, unocc_a, unocc_b], T.b, optimize=True)
+    )
+
+    X_mnij = H0.ab[occ_a, occ_b, occ_a, occ_b] + (
+        np.einsum("mnif,fj->mnij", H0.ab[occ_a, occ_b, occ_a, unocc_b], T.b, optimize=True)
+        +np.einsum("mnej,ei->mnij", H0.ab[occ_a, occ_b, unocc_a, occ_b], T.a, optimize=True)
+    )
+    L_mbej = H0.ab[occ_a, unocc_b, unocc_a, occ_b] + np.einsum("mbef,fj->mbej", H0.ab[occ_a, unocc_b, unocc_a, unocc_b], T.b, optimize=True)
+    H.ab[occ_a, unocc_b, occ_a, occ_b] = H0.ab[occ_a, unocc_b, occ_a, occ_b] + (
+        np.einsum("mbej,ei->mbij", L_mbej, T.a, optimize=True)
+        -np.einsum("mnij,bn->mbij", X_mnij, T.b, optimize=True)
+    )
+
+    L_amie = np.einsum("amef,ei->amif", H0.ab[unocc_a, occ_b, unocc_a, unocc_b] + H.ab[unocc_a, occ_b, unocc_a, unocc_b], T.a, optimize=True)
+    H.ab[unocc_a, occ_b, occ_a, occ_b] = H0.ab[unocc_a, occ_b, occ_a, occ_b] + np.einsum("amif,fj->amij", H0.ab[unocc_a, occ_b, occ_a, unocc_b] + L_amie, T.b, optimize=True)
+
+    H.ab[unocc_a, unocc_b, unocc_a, occ_b] = H0.ab[unocc_a, unocc_b, unocc_a, occ_b] - np.einsum("anej,bn->abej", H0.ab[unocc_a, occ_b, unocc_a, occ_b], T.b, optimize=True)
+
+    H.ab[unocc_a, unocc_b, occ_a, unocc_b] = H0.ab[unocc_a, unocc_b, occ_a, unocc_b] - np.einsum("mbie,am->abie", H0.ab[occ_a, unocc_b, occ_a, unocc_b], T.a, optimize=True)
+    # -------------------#
+    # BB parts
+    # -------------------#
+    H.bb[occ_b, occ_b, occ_b, unocc_b] = np.einsum("mnfe,fi->mnie", H0.bb[occ_b, occ_b, unocc_b, unocc_b], T.b, optimize=True)
+
+    H.bb[occ_b, occ_b, occ_b, occ_b] = 0.5 * H0.bb[occ_b, occ_b, occ_b, occ_b] + np.einsum("nmje,ei->mnij", H0.bb[occ_b, occ_b, occ_b, unocc_b] + 0.5 * H.bb[occ_b, occ_b, occ_b, unocc_b], T.b, optimize=True)
+    H.bb[occ_b, occ_b, occ_b, occ_b] -= np.transpose(H.bb[occ_b, occ_b, occ_b, occ_b], (0, 1, 3, 2))
+
+    H.bb[unocc_b, occ_b, unocc_b, unocc_b] = -np.einsum("mnfe,an->amef", H0.bb[occ_b, occ_b, unocc_b, unocc_b], T.b, optimize=True)
+
+    H.bb[unocc_b, occ_b, occ_b, unocc_b] = H0.bb[unocc_b, occ_b, occ_b, unocc_b] + (
+        np.einsum("amfe,fi->amie", H0.bb[unocc_b, occ_b, unocc_b, unocc_b] + 0.5 * H.bb[unocc_b, occ_b, unocc_b, unocc_b], T.b, optimize=True)
+        - np.einsum("nmie,an->amie", H0.bb[occ_b, occ_b, occ_b, unocc_b] + 0.5 * H.bb[occ_b, occ_b, occ_b, unocc_b], T.b, optimize=True)
+    )
+
+    L_amie = H0.bb[unocc_b, occ_b, occ_b, unocc_b] + 0.5 * np.einsum('amef,ei->amif', H0.bb[unocc_b, occ_b, unocc_b, unocc_b], T.b, optimize=True)
+    X_mnij = H0.bb[occ_b, occ_b, occ_b, occ_b] + np.einsum('mnie,ej->mnij', H.bb[occ_b, occ_b, occ_b, unocc_b], T.b, optimize=True)
+    H.bb[unocc_b, occ_b, occ_b, occ_b] = 0.5 * H0.bb[unocc_b, occ_b, occ_b, occ_b] + (
+        np.einsum('amie,ej->amij', L_amie, T.b, optimize=True)
+       -0.25 * np.einsum('mnij,am->anij', X_mnij, T.b, optimize=True)
+    )
+    H.bb[unocc_b, occ_b, occ_b, occ_b] -= np.transpose(H.bb[unocc_b, occ_b, occ_b, occ_b], (0, 1, 3, 2))
+
+    L_amie = np.einsum('mnie,am->anie', H0.bb[occ_b, occ_b, occ_b, unocc_b], T.b, optimize=True)
+    H.bb[unocc_b, unocc_b, occ_b, unocc_b] = H0.bb[unocc_b, unocc_b, occ_b, unocc_b] + + np.einsum("anie,bn->abie", L_amie, T.b, optimize=True)
+    #H.bb[unocc_b, unocc_b, occ_b, unocc_b] -= np.transpose(H.bb[unocc_b, unocc_b, occ_b, unocc_b], (1, 0, 2, 3))
+
+
+    return H
