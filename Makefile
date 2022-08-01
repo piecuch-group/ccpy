@@ -41,7 +41,7 @@ mypy:
 
 .PHONY: test
 test:
-	pytest -v ccpy
+	pytest
 
 .PHONY: docs
 docs:
