@@ -27,7 +27,49 @@ module ccp_opt_loops
 !            do jdet in A_dgm[idx, :]:
 !                 residual = residual + h2a[B_dgm[idet, jdet]] * t3a[A_dgm[idet, jdet]]
 !
-!       This is likely the best way to do the optimized CC(P)!!!
+!       This is likely the best way to do the optimized CC(P)!!!!
+!
+! Update 8/01/2022:
+!  (1) What we can also do is a preparatory pre-run using p_space array in the following way:
+    ! For each diagram and each unique permutation, we have a dry run looping over, e.g., A(c/ab) h(abef) * t3(ebcijk).
+    ! We use a hashing function to map tuples (a, b, c, i, j, k) into a unique linear index in t3 and another hashing
+    ! function to map tuples (p, q, r, s) into a unique Hbar. Note that this dry run has CPU cost that scales linearly
+    ! with the size of the P space since the hashing function is likely a few FLOPs and it is done for all determinants
+    ! in the P space (and all potentially connecting determinants).
+    ! cnt = 0
+    ! do idx in pspace:
+    !
+    !     do e = 1, nua
+    !        do f = e + 1, nua
+    !           if (pspace(hash_fcn(e, f, c, i, j, k)) == 1) then
+    !               cnt = cnt + 1
+    !           end if
+    !        end do
+    !     end do
+    !
+    !end do
+    !
+    ! allocate(A(ndet_p, cnt, 2))
+    ! do idx in pspace:
+    !
+    !     do e = 1, nua
+    !        do f = e + 1, nua
+    !           if (pspace(hash_fcn(e, f, c, i, j, k) == 1) then
+    !               A(idx, cnt) = hash_fcn(e, f, c, i, j, k) <- for T
+    !               B(idx, cnt) = hash_fcn(a, b, e, f) <- for H
+    !           end if
+    !        end do
+    !     end do
+    !
+    !end do
+    !
+    ! Afterwards, the iterative steps can be done as
+    !
+    !    do idet = 1, ndim_p
+    !       do jdet = 1, size(A, 2)
+    !          X3(idet) = X3(idet) + H(B(idet, jdet)) * t3(jdet)
+    !       end do
+    !    end do
 
 
       implicit none
