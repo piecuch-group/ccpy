@@ -244,8 +244,8 @@ if __name__ == "__main__":
         atom="""F 0.0 0.0 -2.66816
                 F 0.0 0.0  2.66816""",
         basis="ccpvdz",
-        charge=1,
-        spin=1,
+        charge=0,
+        spin=0,
         symmetry="D2H",
         cart=True,
         unit="Bohr",
@@ -306,7 +306,7 @@ if __name__ == "__main__":
     print(T.flatten().shape)
 
     num_particles = 1
-    num_holes = 3
+    num_holes = 2
     R = FockOperator(system, num_particles, num_holes)
     print("IP operator", num_particles, 'p-', num_holes, 'h')
     print("---------------------------")

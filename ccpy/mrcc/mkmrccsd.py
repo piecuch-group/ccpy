@@ -52,32 +52,6 @@ def update(T, dT, H, model_space, Heff, C, shift, flag_RHF, system):
 
     return T, dT
 
-def compute_Heff(H, T, model_space, system):
-
-    d = len(model_space)
-    Heff = np.zeros((d, d))
-
-    occ_prev_a = []
-    occ_prev_b = []
-
-    for q in range(d):
-
-        occ_a, unocc_a, occ_b, unocc_b = model_space[q].get_orbital_partitioning(system)
-
-        H, e_ref = shift_normal_order(H, occ_a, occ_b, occ_prev_a, occ_prev_b)
-
-        occ_prev_a = occ_a.copy()
-        occ_prev_b = occ_b.copy()
-
-        for p in range(d):
-
-            if p == q:
-                Heff[p, q] = get_cc_energy_unsorted(T[p], H, occ_a, unocc_a, occ_b, unocc_b) + e_ref
-            else:
-                holes, particles = model_space[p].get_relative_excitation(model_space[q], system)
-
-    return Heff
-
 def calc_direct_t1a(T, dT, H, occ_a, unocc_a, occ_b, unocc_b):
 
     chi1A_vv = H.a[unocc_a, unocc_a].copy()

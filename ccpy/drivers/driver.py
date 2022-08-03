@@ -173,11 +173,11 @@ def eomcc_driver(calculation, system, hamiltonian, T, R, omega):
 
     return R, omega, r0, is_converged
 
-def mrcc_driver(calculation, system, hamiltonian, model_space):
+def mrcc_driver(calculation, system, hamiltonian, model_space, two_body_approximation=True):
     """Performs the calculation specified by the user in the input."""
 
     # check if requested CC calculation is implemented in modules
-    if calculation.calculation_type not in ccpy.cc.MODULES:
+    if calculation.calculation_type not in ccpy.mrcc.MODULES:
         raise NotImplementedError(
             "{} not implemented".format(calculation.calculation_type)
         )
@@ -186,8 +186,13 @@ def mrcc_driver(calculation, system, hamiltonian, model_space):
 
     # import the specific CC method module and get its update function
     cc_mod = import_module("ccpy.mrcc." + calculation.calculation_type.lower())
+    heff_mod = import_module("ccpy.mrcc.effective_hamiltonian")
     update_function = getattr(cc_mod, 'update')
-    compute_Heff_function = getattr(cc_mod, 'compute_Heff')
+
+    if two_body_approximation: # use the Heff matrix elements computed using T(p) = T1(p) + T2(p)
+        compute_Heff_function = getattr(heff_mod, 'compute_Heff_mkmrccsd')
+    else:
+        compute_Heff_function = getattr(heff_mod, 'compute_Heff_' + calculation.calculation_type.lower())
 
     cc_printer = CCPrinter(calculation)
     cc_printer.cc_header()
