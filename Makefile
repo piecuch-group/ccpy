@@ -47,3 +47,8 @@ test:
 docs:
 	black -l 80 docs/examples
 	mkdocs build
+
+.PHONY: bootstrap
+bootstrap:
+	pip install -r requirements-dev.txt
+	pip install -r requirements.txt
