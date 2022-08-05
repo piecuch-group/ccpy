@@ -1,5 +1,9 @@
 import numpy as np
 
+# NOTE:
+# In order to get the expected behavior for submatrix slicing, use H.aa[np.ix_(arr1, arr2, arr3, arr4)]
+# if you are using singleton dimensions and arbitrary slices, those singletons must be converted to arrays
+
 from ccpy.drivers.cc_energy import get_cc_energy_unsorted
 from ccpy.drivers.hf_energy import calc_hf_energy_unsorted
 from ccpy.mrcc.normal_order import shift_normal_order
@@ -13,41 +17,40 @@ def update(T, dT, H, model_space, Heff, C, shift, flag_RHF, system):
 
     for p, det_p in enumerate(model_space):
 
-        occ_a, unocc_a, occ_b, unocc_b = det_p.get_orbital_partitioning(system)
         H, _ = shift_normal_order(H, occ_a, occ_b, occ_prev_a, occ_prev_b)
         occ_prev_a = occ_a.copy()
         occ_prev_b = occ_b.copy()
 
         # update T1
-        dT[p] = calc_direct_t1a(T[p], dT[p], H, occ_a, unocc_a, occ_b, unocc_b)
+        dT[p] = calc_direct_t1a(T[p], dT[p], H, det_p)
         dT[p] = calc_coupling_t1a(T, dT, Heff, C, model_space, p)
-        T[p], dT[p] = update_t1a(T[p], dT[p], H, occ_a, unocc_a, shift)
+        T[p], dT[p] = update_t1a(T[p], dT[p], H, det_p, shift)
         if flag_RHF:
             T[p].b = T[p].a.copy()
             dT[p].b = dT[p].a.copy()
         else:
-            dT[p] = calc_direct_t1b(T[p], dT[p], H, occ_a, unocc_a, occ_b, unocc_b)
+            dT[p] = calc_direct_t1b(T[p], dT[p], H, det_p)
             dT[p] = calc_coupling_t1b(T, dT, Heff, C, model_space, p)
-            T[p], dT[p] = update_t1b(T[p], dT[p], H, occ_b, unocc_b, shift)
+            T[p], dT[p] = update_t1b(T[p], dT[p], H, det_p, shift)
 
         # CCS intermediates
-        hbar = get_ccs_intermediates_unsorted(T[p], H, occ_a, unocc_a, occ_b, unocc_b)
+        hbar = get_ccs_intermediates_unsorted(T[p], H, det_p)
 
         # update T2
-        dT[p] = calc_direct_t2a(T[p], dT[p], hbar, H, occ_a, unocc_a, occ_b, unocc_b)
+        dT[p] = calc_direct_t2a(T[p], dT[p], hbar, H, det_p)
         dT[p] = calc_coupling_t2a(T, dT, Heff, C, model_space, p)
-        T[p], dT[p] = update_t2a(T[p], dT[p], H, occ_a, unocc_a, shift)
+        T[p], dT[p] = update_t2a(T[p], dT[p], H, det_p, shift)
 
-        dT[p] = calc_direct_t2b(T[p], dT[p], H, occ_a, unocc_a, occ_b, unocc_b)
+        dT[p] = calc_direct_t2b(T[p], dT[p], H, det_p)
         dT[p] = calc_coupling_t2b(T, dT, Heff, C, model_space, p)
-        T[p], dT[p] = update_t2b(T[p], dT[p], H, occ_a, unocc_a, occ_b, unocc_b, shift)
+        T[p], dT[p] = update_t2b(T[p], dT[p], H, det_p, shift)
         if flag_RHF:
             T[p].bb = T[p].aa.copy()
             dT[p].bb = dT[p].aa.copy()
         else:
-            dT[p] = calc_direct_t2c(T[p], dT[p], H, occ_a, unocc_a, occ_b, unocc_b)
+            dT[p] = calc_direct_t2c(T[p], dT[p], H, det_p)
             dT[p] = calc_coupling_t2c(T, dT, Heff, C, model_space, p)
-            T[p], dT[p] = update_t2c(T[p], dT[p], H, occ_b, unocc_b, shift)
+            T[p], dT[p] = update_t2c(T[p], dT[p], H, det_p, shift)
 
 
     return T, dT

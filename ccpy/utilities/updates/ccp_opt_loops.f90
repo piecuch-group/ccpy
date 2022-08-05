@@ -3,6 +3,8 @@ module ccp_opt_loops
 !!!!      USE OMP_LIB
 !!!!      USE MKL_SERVICE
 
+    !!! THIS IS NOT WORKING FOR OPEN-SHELLS !!!
+
 
 ![TODO]:
 !    1. Fully devectorize the T3 updates as well as the terms in T1 and T2 updates that involve T3.
@@ -1296,15 +1298,15 @@ module ccp_opt_loops
 
                       do e = 1, nua
 
-                          ! A(a/bc) h1a(ae) * t3a(ebcijk)
-                          if (pspace_aaa(e, b, c, i, j, k) == 1) then
-                            res1 = res1 + H1A_vv(a, e) * t3a(e, b, c, i, j, k)
+                          ! A(c/ab) h1a(ce) * t3a(abeijk)
+                          if (pspace_aaa(a, b, e, i, j, k) == 1) then
+                            res1 = res1 + H1A_vv(c, e) * t3a(a, b, e, i, j, k)
                           end if
-                          if (pspace_aaa(e, a, c, i, j, k) == 1) then
-                            res1 = res1 - H1A_vv(b, e) * t3a(e, a, c, i, j, k)
+                          if (pspace_aaa(c, b, e, i, j, k) == 1) then
+                            res1 = res1 - H1A_vv(a, e) * t3a(c, b, e, i, j, k)
                           end if
-                          if (pspace_aaa(e, b, a, i, j, k) == 1) then
-                            res1 = res1 - H1A_vv(c, e) * t3a(e, b, a, i, j, k)
+                          if (pspace_aaa(a, c, e, i, j, k) == 1) then
+                            res1 = res1 - H1A_vv(b, e) * t3a(a, c, e, i, j, k)
                           end if
 
                           ! 1/2 A(c/ab) h2a(abef) * t3a(efcijk)
@@ -1593,7 +1595,7 @@ module ccp_opt_loops
                                          H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
                                          H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
                                          H2B_ovvo(1:noa,1:nub,1:nua,1:nob),&
-                                         H2B_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                                         H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
                                          H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                                          fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
                                          fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
@@ -1842,7 +1844,7 @@ module ccp_opt_loops
                                          H2B_ovvo(1:noa,1:nub,1:nua,1:nob),&
                                          H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
                                          H2C_vvov(1:nub,1:nub,1:nob,1:nub),&
-                                         H2B_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                                         H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
                                          H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                                          H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
                                          fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
@@ -1895,11 +1897,13 @@ module ccp_opt_loops
 
                           ! diagram 3: 0.5 * h2C(bcef) * t3c(aefijk)
                           ! diagram 4: A(bc) h2C(abef) * t3c(efcijk)
-                          do f = 1, nua
+                          do f = e + 1, nua
                               if (pspace_abb(a, e, f, i, j, k) == 1) then
-                                res3 = res3 + 0.5d0 * H2C_vvvv(b, c, e, f) * t3c(a, e, f, i, j, k)
+                                res3 = res3 + H2C_vvvv(b, c, e, f) * t3c(a, e, f, i, j, k)
                               end if
+                          end do
 
+                          do f = 1, nua
                               if (pspace_abb(e, f, c, i, j, k) == 1) then
                                 res4 = res4 + H2B_vvvv(a, b, e, f) * t3c(e, f, c, i, j, k)
                               end if
@@ -1999,7 +2003,12 @@ module ccp_opt_loops
                           end if
 
                           ! diagram 3: 0.5 * h2C(bcef) * t3c(aefijk)
-                          do f = 1, nua - nub
+                          do f = 1, nua
+                              if (pspace_abb(a, e + nua, f, i, j, k) == 1) then
+                                res3 = res3 + H2C_vvvv(b, c, e + nua, f) * t3c(a, e + nua, f, i, j, k)
+                              end if
+                          end do
+                          do f = 1, nub - nua
                               if (pspace_abb(a, e + nua, f + nua, i, j, k) == 1) then
                                 res3 = res3 + 0.5d0 * H2C_vvvv(b, c, e + nua, f + nua) * t3c(a, e + nua, f + nua, i, j, k)
                               end if
@@ -2050,6 +2059,9 @@ module ccp_opt_loops
                       val = X3C(a, b, c, i, j, k) - X3C(a, c, b, i, j, k) - X3C(a, b, c, i, k, j) + X3C(a, c, b, i, k, j)
                       val = val&
                         + res1 + res2 + res3 + res4 + res5 + res6 + res7 + res8 + res9 + res10 + res11 + res12 + res13
+
+                      !val = val + res1 + res2 + res3 + res4 + res11 + res12 + res13
+
                       val = val/(denom - shift)
 
                       t3c_new(a, b, c, i, j, k) = t3c(a, b, c, i, j, k) + val
@@ -2327,6 +2339,7 @@ module ccp_opt_loops
                                   +X3D(c,a,b,k,i,j)
 
                           val = val + res1 + res2 + res3 + res4 + res5
+
                           val = val/(denom - shift)
 
                           t3d_new(A,B,C,I,J,K) = t3d(A,B,C,I,J,K) + val

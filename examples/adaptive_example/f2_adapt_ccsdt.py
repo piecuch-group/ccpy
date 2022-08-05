@@ -65,7 +65,7 @@ def test_pyscf(stretch, basis):
             convergence_tolerance=1.0e-08,
             diis_size=6,
             energy_shift=0.0,
-            maximum_iterations=5,
+            maximum_iterations=500,
             RHF_symmetry=False,
             low_memory=False,
             adaptive_percentages=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
@@ -76,6 +76,6 @@ def test_pyscf(stretch, basis):
 if __name__ == "__main__":
 
     #test_gamess()
-    test_pyscf(2.0, "augccpvtz")
+    test_pyscf(2.0, "ccpvdz")
 
 

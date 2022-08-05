@@ -66,11 +66,11 @@ def calc_hf_energy(e1int, e2int, system):
 
 def calc_hf_energy_unsorted(H, occ_a, occ_b):
 
-    e1a = np.einsum("ii->", H.a[occ_a, occ_a])
-    e1b = np.einsum("ii->", H.b[occ_b, occ_b])
-    e2a = 0.5 * np.einsum("ijij->", H.aa[occ_a, occ_a, occ_a, occ_a])
-    e2b = np.einsum("ijij->", H.ab[occ_a, occ_b, occ_a, occ_b])
-    e2c = 0.5 * np.einsum("ijij->", H.bb[occ_b, occ_b, occ_b, occ_b])
+    e1a = np.einsum("ii->", H.a[np.ix_(occ_a, occ_a)])
+    e1b = np.einsum("ii->", H.b[np.ix_(occ_b, occ_b)])
+    e2a = 0.5 * np.einsum("ijij->", H.aa[np.ix_(occ_a, occ_a, occ_a, occ_a)])
+    e2b = np.einsum("ijij->", H.ab[np.ix_(occ_a, occ_b, occ_a, occ_b)])
+    e2c = 0.5 * np.einsum("ijij->", H.bb[np.ix_(occ_b, occ_b, occ_b, occ_b)])
 
     hf_energy = e1a + e1b + e2a + e2b + e2c
 
@@ -124,6 +124,6 @@ def calc_khf_energy(e1int, e2int, system):
         - np.einsum("uvvuijji->", e2int[:, :, :, :, occ_b, occ_b, occ_b, occ_b])
     )
 
-    e1a + e1b + e2a + e2b + e2c
+    Escf = e1a + e1b + e2a + e2b + e2c
 
     return np.real(Escf) / system.nkpts

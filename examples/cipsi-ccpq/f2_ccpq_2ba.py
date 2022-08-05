@@ -12,9 +12,9 @@ def main(args):
     from ccpy.moments.ccp3 import calc_ccp3
 
     system, H = load_from_gamess(
-            "f2-2Re-pvtz/F2-2.0-VTZ-D2h.log",
-            "f2-2Re-pvtz/onebody.inp",
-            "f2-2Re-pvtz/twobody.inp",
+            "f2-2Re/F2-2.0-VTZ-D2h.log",
+            "f2-2Re/onebody.inp",
+            "f2-2Re/twobody.inp",
             nfrozen=2,
     )
 
@@ -27,7 +27,7 @@ def main(args):
     for n in range(len(pspace)):
         print("      Excitation rank", n + 3)
         num_excits = 0
-        for spincase, num in pspace[n].items():
+        for spincase, num in excitation_count[n].items():
             print("      Number of {} = {}".format(spincase, num))
             num_excits += num
         print("      Total number of rank {} = {}".format(n + 3, num_excits))

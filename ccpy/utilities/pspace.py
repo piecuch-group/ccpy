@@ -1,5 +1,7 @@
 import numpy as np
 
+from itertools import permutations
+
 def get_empty_pspace(system, nexcit):
     if nexcit == 3:
         pspace = [{'aaa' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
@@ -74,7 +76,7 @@ def spatial_orb_idx(x):
 			return int( x/2 )
 
 def get_spincase(excits_from, excits_to):
-    
+
     assert(len(excits_from) == len(excits_to))
 
     num_alpha_occ = sum([i % 2 for i in excits_from])
@@ -90,7 +92,12 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
 
     pspace = get_empty_pspace(system, nexcit)
 
-    HF = list(range(1, system.nelectrons + 1))
+    HF = sorted(
+            [2 * i - 1 for i in range(1, system.noccupied_alpha + 1)]
+           +[2 * i for i in range(1, system.noccupied_beta + 1)]
+    )
+    print(HF)
+    #HF = list(range(1, system.nelectrons + 1))
     occupied_lower_bound = 1
     occupied_upper_bound = system.noccupied_alpha
     unoccupied_lower_bound = 1
@@ -144,7 +151,31 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
             excitation_count[n][spincase] += 1
 
             if excit_rank == 3:
-                pspace[n][spincase][idx_unocc[0]-1, idx_unocc[1]-1, idx_unocc[2]-1, idx_occ[0]-1, idx_occ[1]-1, idx_occ[2]-1] = 1
+                if spincase == 'aaa':
+                    for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
+                        for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
+                            a, b, c = perms_unocc
+                            i, j, k = perms_occ
+                            pspace[n][spincase][a-1, b-1, c-1, i-1, j-1, k-1] = 1
+                if spincase == 'aab':
+                    for perms_unocc in permutations((idx_unocc[0], idx_unocc[1])):
+                        for perms_occ in permutations((idx_occ[0], idx_occ[1])):
+                            a, b = perms_unocc
+                            i, j = perms_occ
+                            pspace[n][spincase][a-1, b-1, idx_unocc[2]-1, i-1, j-1, idx_occ[2]-1] = 1
+                if spincase == 'abb':
+                    for perms_unocc in permutations((idx_unocc[1], idx_unocc[2])):
+                        for perms_occ in permutations((idx_occ[1], idx_occ[2])):
+                            b, c = perms_unocc
+                            j, k = perms_occ
+                            pspace[n][spincase][idx_unocc[0]-1, b-1, c-1, idx_occ[0]-1, j-1, k-1] = 1
+                if spincase == 'bbb':
+                    for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
+                        for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
+                            a, b, c = perms_unocc
+                            i, j, k = perms_occ
+                            pspace[n][spincase][a-1, b-1, c-1, i-1, j-1, k-1] = 1
+                #pspace[n][spincase][idx_unocc[0]-1, idx_unocc[1]-1, idx_unocc[2]-1, idx_occ[0]-1, idx_occ[1]-1, idx_occ[2]-1] = 1
             if excit_rank == 4:
                 pspace[n][spincase][idx_unocc[0]-1, idx_unocc[1]-1, idx_unocc[2]-1, idx_unocc[3]-1, idx_occ[0]-1, idx_occ[1]-1, idx_occ[2]-1, idx_occ[3]-1] = 1
 
@@ -214,14 +245,40 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace):
         num_alpha = int(sum([x % 2 for x in triples_list[n, :]]) / 2)
         idx = [spatial_orb_idx(p) - 1 for p in triples_list[n, :]]
         a, b, c, i, j, k = idx
+
+        # if num_alpha == 3:
+        #     new_pspace['aaa'][a, b, c, i, j, k] = 1
+        # elif num_alpha == 2:
+        #     new_pspace['aab'][a, b, c, i, j, k] = 1
+        # elif num_alpha == 1:
+        #     new_pspace['abb'][a, b, c, i, j, k] = 1
+        # else:
+        #     new_pspace['bbb'][a, b, c, i, j, k] = 1
+
         if num_alpha == 3:
-            new_pspace['aaa'][a, b, c, i, j, k] = 1
-        elif num_alpha == 2:
-            new_pspace['aab'][a, b, c, i, j, k] = 1
-        elif num_alpha == 1:
-            new_pspace['abb'][a, b, c, i, j, k] = 1
-        else:
-            new_pspace['bbb'][a, b, c, i, j, k] = 1
+            for perms_unocc in permutations((a, b, c)):
+                for perms_occ in permutations((i, j, k)):
+                    a, b, c = perms_unocc
+                    i, j, k = perms_occ
+                    new_pspace['aaa'][a, b, c, i, j, k] = 1
+        if num_alpha == 2:
+            for perms_unocc in permutations((a, b)):
+                for perms_occ in permutations((i, j)):
+                    a, b = perms_unocc
+                    i, j = perms_occ
+                    new_pspace['aab'][a, b, c, i, j, k] = 1
+        if num_alpha == 1:
+            for perms_unocc in permutations((b, c)):
+                for perms_occ in permutations((j, k)):
+                    b, c = perms_unocc
+                    j, k = perms_occ
+                    new_pspace['abb'][a, b, c, i, j, k] = 1
+        if num_alpha == 0:
+            for perms_unocc in permutations((a, b, c)):
+                for perms_occ in permutations((i, j, k)):
+                    a, b, c = perms_unocc
+                    i, j, k = perms_occ
+                    new_pspace['bbb'][a, b, c, i, j, k] = 1
 
     return new_pspace
 
