@@ -246,15 +246,6 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace):
         idx = [spatial_orb_idx(p) - 1 for p in triples_list[n, :]]
         a, b, c, i, j, k = idx
 
-        # if num_alpha == 3:
-        #     new_pspace['aaa'][a, b, c, i, j, k] = 1
-        # elif num_alpha == 2:
-        #     new_pspace['aab'][a, b, c, i, j, k] = 1
-        # elif num_alpha == 1:
-        #     new_pspace['abb'][a, b, c, i, j, k] = 1
-        # else:
-        #     new_pspace['bbb'][a, b, c, i, j, k] = 1
-
         if num_alpha == 3:
             for perms_unocc in permutations((a, b, c)):
                 for perms_occ in permutations((i, j, k)):
