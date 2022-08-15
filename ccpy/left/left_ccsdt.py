@@ -105,9 +105,53 @@ def build_LH_1A(L, LH, T, H, X):
     LH.a += np.einsum("in,mnei->em", I3, H.ab.oovo, optimize=True)
     LH.a += np.einsum("jn,mnej->em", I4, H.ab.oovo, optimize=True)
 
+    # < 0 | L2 * (H(2) * T3)_C | ia >
+    LH.a += np.einsum("em,imae->ai", X.a.vo, H.aa.oovv, optimize=True)
+    LH.a += np.einsum("em,imae->ai", X.b.vo, H.ab.oovv, optimize=True)
+
+    LH.a += 0.5 * np.einsum("efin,fena->ai", L.aa, H.aa.vvov, optimize=True) 
+    LH.a += np.einsum("efin,efna->ai", L.ab, H.ab.vvvo, optimize=True) 
+    LH.a -= 0.5 * np.einsum("afmn,finm->ai", L.aa, H.aa.vooo, optimize=True)
+    LH.a -= np.einsum("afmn,ifmn->ai", L.ab, H.ab.ovoo, optimize=True)
+
     # < 0 | L3 * H(2) | ia >
+    I1A_vo = (
+          -0.5 * np.einsum("nomg,egno->em", X.aa.ooov, T.aa, optimize=True)
+          - np.einsum("nomg,egno->em", X.ab.ooov, T.ab, optimize=True)
+    )
+    I1B_vo = (
+          -0.5 * np.einsum("nomg,egno->em", X.bb.ooov, T.bb, optimize=True)
+          - np.einsum("ongm,geon->em", X.ab.oovo, T.ab, optimize=True)
+    )
+    LH.a += np.einsum("em,imae->ai", I1A_vo, H.aa.oovv, optimize=True)
+    LH.a += np.einsum("em,imae->ai", I1B_vo, H.ab.oovv, optimize=True)
 
+    LH.a -= 0.5 * np.einsum("igef,efag->ai", X.aa.ovvv, H.aa.vvvv, optimize=True)
+    LH.a -= np.einsum("igef,efag->ai", X.ab.ovvv, H.ab.vvvv, optimize=True)
+    LH.a += 0.5 * np.einsum("nmoa,iomn->ai", X.aa.ooov, H.aa.oooo, optimize=True)
+    LH.a += np.einsum("mnao,iomn->ai", X.ab.oovo, H.ab.oooo, optimize=True)
 
+    LH.a -= np.einsum("imne,enma->ai", X.aa.ooov, H.aa.voov, optimize=True)
+    LH.a -= np.einsum("imne,neam->ai", X.ab.ooov, H.ab.ovvo, optimize=True)
+    LH.a += np.einsum("mfea,eimf->ai", X.aa.ovvv, H.aa.voov, optimize=True)
+    LH.a += np.einsum("fmae,iefm->ai", X.ab.vovv, H.ab.ovvo, optimize=True)
+    
+    # < 0 | L3 * (H(2) * T3)_C | ia >
+    LH.a -= np.einsum("nm,iman->ai", X.a.oo, H.aa.ooov, optimize=True)
+    LH.a -= np.einsum("nm,iman->ai", X.b.oo, H.ab.ooov, optimize=True)
+    LH.a += np.einsum("ef,fiea->ai", X.a.vv, H.aa.vovv, optimize=True)
+    LH.a += np.einsum("ef,ifae->ai", X.b.vv, H.ab.vovv, optimize=True)
+
+    LH.a -= np.einsum("imne,enma->ai", H.aa.ooov, X.aa.voov, optimize=True)
+    LH.a -= np.einsum("imne,neam->ai", H.ab.ooov, X.ab.ovvo, optimize=True)
+    LH.a += np.einsum("mfea,eimf->ai", H.aa.ovvv, X.aa.voov, optimize=True)
+    LH.a += np.einsum("fmae,iefm->ai", H.ab.vovv, X.ab.ovvo, optimize=True)
+
+    LH.a -= 0.5 * np.einsum("igef,efag->ai", H.aa.ovvv, X.aa.vvvv, optimize=True)
+    LH.a -= np.einsum("igef,efag->ai", H.ab.ovvv, X.ab.vvvv, optimize=True)
+    LH.a += 0.5 * np.einsum("nmoa,iomn->ai", H.aa.ooov, X.aa.oooo, optimize=True)
+    LH.a += np.einsum("mnao,iomn->ai", H.ab.oovo, X.ab.oooo, optimize=True)
+    
     return LH
 
 
@@ -219,6 +263,11 @@ def build_LH_2A(L, LH, T, H, X):
     LH.aa += -np.einsum("ijmb,am->abij", H.aa.ooov, L.a, optimize=True) + np.einsum(
         "ijma,bm->abij", H.aa.ooov, L.a, optimize=True
     )
+
+    # < 0 | L3 * H(2) | ijab >
+
+    # < 0 | L3 * (H(2)*T3)_C | ijab >
+
 
     return LH
 
