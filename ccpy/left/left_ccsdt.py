@@ -42,29 +42,14 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF):
         LH.ab += np.transpose(H.ab.oovv, (2, 3, 0, 1))
         LH.bb += np.transpose(H.bb.oovv, (2, 3, 0, 1))
 
-    # [TODO]: update L; this function takes in LH and builds residual LH - omega * L
-    # should make this so that it computes residual and returns in, just like in
-    # ground-state CC functions
-    L.a, L.b, L.aa, L.ab, L.bb, L.aaa, L.aab, L.abb, L.bbb = cc_loops.cc_loops.update_l(L.a, L.b, L.aa, L.ab, L.bb,
-                                                                                        L.aaa, L.aab, L.abb, L.bbb,
-                                                                                        LH.a, LH.b, LH.aa, LH.ab, LH.bb,
-                                                                                        LH.aaa, LH.aab, LH.abb, LH.bbb,
-                                                                                        omega,
-                                                                                        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                                                                                        shift,
-    )
-
-    # build residual LH - omega * L
-    LH.a -= omega * L.a
-    LH.b -= omega * L.b
-    LH.aa -= omega * L.aa
-    LH.ab -= omega * L.ab
-    LH.bb -= omega * L.bb
-    LH.aaa -= omega * L.aaa
-    LH.aab -= omega * L.aab
-    LH.abb -= omega * L.abb
-    LH.bbb -= omega * L.bbb
-
+    L.a, L.b, L.aa, L.ab, L.bb, L.aaa, L.aab, L.abb, L.bbb,\
+    LH.a, LH.b, LH.aa, LH.ab. LH.bb, LH.aaa, LH.aab, LH.abb, LH.bbb = cc_loops.cc_loops.update_l_ccsdt(L.a, L.b, L.aa, L.ab, L.bb,
+                                                                                                       L.aaa, L.aab, L.abb, L.bbb,
+                                                                                                       LH.a, LH.b, LH.aa, LH.ab, LH.bb,
+                                                                                                       LH.aaa, LH.aab, LH.abb, LH.bbb,
+                                                                                                       omega,
+                                                                                                       H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                                                                       shift)
     return L, LH
 
 def build_LH_1A(L, LH, T, H, X):
