@@ -175,7 +175,6 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                             a, b, c = perms_unocc
                             i, j, k = perms_occ
                             pspace[n][spincase][a-1, b-1, c-1, i-1, j-1, k-1] = 1
-                #pspace[n][spincase][idx_unocc[0]-1, idx_unocc[1]-1, idx_unocc[2]-1, idx_occ[0]-1, idx_occ[1]-1, idx_occ[2]-1] = 1
             if excit_rank == 4:
                 pspace[n][spincase][idx_unocc[0]-1, idx_unocc[1]-1, idx_unocc[2]-1, idx_unocc[3]-1, idx_occ[0]-1, idx_occ[1]-1, idx_occ[2]-1, idx_occ[3]-1] = 1
 

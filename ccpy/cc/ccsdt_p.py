@@ -1,7 +1,6 @@
 """Module with functions that perform the CC with singles, doubles,
 and triples (CCSDT) calculation for a molecular system."""
 
-#-39.0434195065
 
 import numpy as np
 

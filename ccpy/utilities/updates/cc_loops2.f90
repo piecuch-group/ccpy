@@ -767,13 +767,14 @@ module cc_loops2
 
       end subroutine update_R_ccsdt
 
-      subroutine update_L(l1a,l1b,l2a,l2b,l2c,X1A,X1B,X2A,X2B,X2C,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
+      subroutine update_L_ccsd(l1a,l1b,l2a,l2b,l2c,X1A,X1B,X2A,X2B,X2C,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
 
               implicit none
 
               integer, intent(in) :: noa, nua, nob, nub
               real(8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
-                                  H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega  
+                                     H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega
+
               real(8), intent(inout) :: l1a(1:nua,1:noa)
               !f2py intent(in,out) :: l1a(0:nua-1,0:noa-1) 
               real(8), intent(inout) :: l1b(1:nub,1:nob)
@@ -784,23 +785,26 @@ module cc_loops2
               !f2py intent(in,out) :: l2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
               real(8), intent(inout) :: l2c(1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in,out) :: l2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
-              real(8), intent(in) :: X1A(1:nua,1:noa)
-              !f2py intent(in) :: X1A(0:nua-1,0:noa-1) 
-              real(8), intent(in) :: X1B(1:nub,1:nob)
-              !f2py intent(in) :: X1B(0:nub-1,0:nob-1)   
-              real(8), intent(in) :: X2A(1:nua,1:nua,1:noa,1:noa)
-              !f2py intent(in) :: X2A(0:nua-1,0:nua-1,0:noa-1,0:noa-1)        
-              real(8), intent(in) :: X2B(1:nua,1:nub,1:noa,1:nob)
-              !f2py intent(in) :: X2B(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              real(8), intent(in) :: X2C(1:nub,1:nub,1:nob,1:nob)
-              !f2py intent(in) :: X2C(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+
+              real(8), intent(inout) :: X1A(1:nua,1:noa)
+              !f2py intent(in,out) :: X1A(0:nua-1,0:noa-1)
+              real(8), intent(inout) :: X1B(1:nub,1:nob)
+              !f2py intent(in,out) :: X1B(0:nub-1,0:nob-1)
+              real(8), intent(inout) :: X2A(1:nua,1:nua,1:noa,1:noa)
+              !f2py intent(in,out) :: X2A(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+              real(8), intent(inout) :: X2B(1:nua,1:nub,1:noa,1:nob)
+              !f2py intent(in,out) :: X2B(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+              real(8), intent(inout) :: X2C(1:nub,1:nub,1:nob,1:nob)
+              !f2py intent(in,out) :: X2C(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+
               integer :: i, j, a, b
-              real(8) :: denom
+              real(8) :: denom, val
 
               do i = 1,noa
                 do a = 1,nua
                   denom = H1A_vv(a,a) - H1A_oo(i,i)
-                  l1a(a,i) = l1a(a,i) - (X1A(a,i)-omega*l1a(a,i))/(denom-omega+shift)
+                  l1a(a,i) = l1a(a,i) - (X1A(a,i)-omega*l1a(a,i)) / (denom - omega + shift)
+                  X1A(a, i) = X1A(a, i) - omega * l1a(a, i)
                 end do
               end do
 
@@ -808,6 +812,7 @@ module cc_loops2
                 do a = 1,nub
                   denom = H1B_vv(a,a) - H1B_oo(i,i)
                   l1b(a,i) = l1b(a,i) - (X1B(a,i)-omega*l1b(a,i))/(denom-omega+shift)
+                  X1B(a, i) = X1B(a, i) - omega * l1b(a, i)
                 end do
               end do
 
@@ -816,11 +821,18 @@ module cc_loops2
                   do a = 1,nua
                     do b = a+1,nua
                       denom = H1A_vv(a,a) + H1A_vv(b,b) - H1A_oo(i,i) - H1A_oo(j,j)
-                      l2a(b,a,j,i) = l2a(b,a,j,i) - &
-                                     (X2A(b,a,j,i)-omega*l2a(b,a,j,i))/(denom-omega+shift)
-                      l2a(a,b,j,i) = -l2a(b,a,j,i)
-                      l2a(b,a,i,j) = -l2a(b,a,j,i)
-                      l2a(a,b,i,j) = l2a(b,a,j,i)
+
+                      val = X2A(a, b, i, j)
+
+                      l2a(a, b, i, j) = l2a(a, b, i, j) - (val - omega * l2a(a, b, i, j))/(denom - omega + shift)
+                      l2a(b, a, i, j) = -1.0 * l2a(a, b, i, j)
+                      l2a(a, b, j, i) = -1.0 * l2a(a, b, i, j)
+                      l2a(b, a, j, i) = l2a(a, b, i, j)
+
+                      X2A(a, b, i, j)= val - omega * l2a(a, b, i, j)
+                      X2A(a, b, j, i) = -1.0 * X2A(a, b, i, j)
+                      X2A(b, a, i, j) = -1.0 * X2A(a, b, i, j)
+                      X2A(b, a, j, i) = X2A(a, b, i, j)
                     end do
                   end do
                 end do
@@ -833,6 +845,7 @@ module cc_loops2
                       denom = H1A_vv(a,a) + H1B_vv(b,b) - H1A_oo(i,i) - H1B_oo(j,j)
                       l2b(a,b,i,j) = l2b(a,b,i,j) - &
                                      (X2B(a,b,i,j)-omega*l2b(a,b,i,j))/(denom-omega+shift)
+                      X2B(a, b, i, j) = X2B(a, b, i, j) - omega * l2b(a, b, i, j)
                     end do
                   end do
                 end do
@@ -842,18 +855,26 @@ module cc_loops2
                 do j = i+1,nob
                   do a = 1,nub
                     do b = a+1,nub
+
                       denom = H1B_vv(a,a) + H1B_vv(b,b) - H1B_oo(i,i) - H1B_oo(j,j)
-                      l2c(b,a,j,i) = l2c(b,a,j,i) - &
-                                     (X2C(b,a,j,i)-omega*l2c(b,a,j,i))/(denom-omega+shift)
-                      l2c(a,b,j,i) = -l2c(b,a,j,i)
-                      l2c(b,a,i,j) = -l2c(b,a,j,i)
-                      l2c(a,b,i,j) = l2c(b,a,j,i)
+
+                      val = X2C(a, b, i, j)
+
+                      l2c(a, b, i, j) = l2c(a, b, i, j) - (val - omega * l2c(a, b, i, j))/(denom - omega + shift)
+                      l2c(a, b, j, i) = -l2c(a, b, i, j)
+                      l2c(b, a, i, j) = -l2c(a, b, i, j)
+                      l2c(b, a, j, i) = l2c(a, b, i, j)
+
+                      X2C(a, b, i, j) = val - omega * l2c(a, b, i, j)
+                      X2C(a, b, j, i) = -1.0 * X2C(a, b, i, j)
+                      X2C(b, a, i, j) = -1.0 * X2C(a, b, i, j)
+                      X2C(b, a, j, i) = X2C(a, b, i, j)
                     end do
                   end do
                 end do
               end do
 
-      end subroutine update_L
+      end subroutine update_L_ccsd
 
 
 
@@ -1120,7 +1141,8 @@ module cc_loops2
                   end do
               end do
 
-      end subroutine update_t3a
+      end subroutine
+
 
 
 end module cc_loops2

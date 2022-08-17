@@ -905,7 +905,7 @@ module cc_loops
               real(8), intent(in) :: X2C(1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in) :: X2C(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
               integer :: i, j, a, b
-              real(8) :: denom
+              real(8) :: denom, val
 
               do i = 1,noa
                 do a = 1,nua
@@ -926,8 +926,7 @@ module cc_loops
                   do a = 1,nua
                     do b = a+1,nua
                       denom = H1A_vv(a,a) + H1A_vv(b,b) - H1A_oo(i,i) - H1A_oo(j,j)
-                      l2a(b,a,j,i) = l2a(b,a,j,i) - &
-                                     (X2A(b,a,j,i)-omega*l2a(b,a,j,i))/(denom-omega+shift)
+                      l2a(b,a,j,i) = l2a(b,a,j,i) - (X2A(b,a,j,i) - omega*l2a(b,a,j,i))/(denom-omega+shift)
                       l2a(a,b,j,i) = -l2a(b,a,j,i)
                       l2a(b,a,i,j) = -l2a(b,a,j,i)
                       l2a(a,b,i,j) = l2a(b,a,j,i)

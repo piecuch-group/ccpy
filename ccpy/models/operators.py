@@ -1,6 +1,14 @@
 import numpy as np
 from itertools import combinations_with_replacement
 
+# class PSpaceVector:
+#
+#     def __init__(self, order, pspace, vector=None, data_type=np.float64):
+#
+#         PSpaceVector.order = order
+
+
+
 class ActiveOperator:
 
     def __init__(self, system, order, spincase, num_active, matrix=None, data_type=np.float64):
@@ -77,7 +85,7 @@ class ActiveOperator:
             prev += ndim
 
 class ClusterOperator:
-    def __init__(self, system, order, pspace_orders=[None], active_orders=[None], num_active=[None], data_type=np.float64):
+    def __init__(self, system, order, p_orders=[None], pspace=[None], active_orders=[None], num_active=[None], data_type=np.float64):
         self.order = order
         self.spin_cases = []
         self.dimensions = []
@@ -102,7 +110,7 @@ class ClusterOperator:
                         self.dimensions.append(dim)
                     ndim += active_t.ndim
 
-                elif i in pspace_orders:
+                elif i in p_orders:
                     setattr(self, name, np.zeros(0, dtype=data_type))
                     self.dimensions.append((0,))
                     ndim += 0

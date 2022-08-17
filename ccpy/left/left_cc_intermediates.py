@@ -104,7 +104,7 @@ def build_left_ccsdt_intermediates(L, T, system):
     )
     X.ab.oooo = (
                 0.5 * np.einsum("egfmon,egfioj->mnij", L.aab, T.aab, optimize=True)
-              + 0.5 * np.einsum("egfmon,egfioj->mnij", L.abb, T.abb, optimize=True
+              + 0.5 * np.einsum("egfmon,egfioj->mnij", L.abb, T.abb, optimize=True)
     )
     X.bb.oooo = (
                 (1.0 / 6.0) * np.einsum("efgmno,efgijo->mnij", L.bbb, T.bbb, optimize=True)
