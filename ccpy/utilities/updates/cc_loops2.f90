@@ -1282,8 +1282,6 @@ module cc_loops2
       end subroutine update_L_ccsdt
 
 
-
-
       subroutine update_R_2h1p(r1a,r1b,r2a,r2b,r2c,r2d,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
 
               implicit none

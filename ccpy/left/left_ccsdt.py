@@ -245,7 +245,7 @@ def build_LH_2A(L, LH, T, H, X):
     return LH
 
 
-def build_LH_2B(L, LH, T, H, X):
+def build_LH_2B(L, LH, T, H):
 
     LH.ab = -np.einsum("ijmb,am->abij", H.ab.ooov, L.a, optimize=True)
     LH.ab -= np.einsum("ijam,bm->abij", H.ab.oovo, L.b, optimize=True)
@@ -263,23 +263,29 @@ def build_LH_2B(L, LH, T, H, X):
     LH.ab -= np.einsum("iemb,aemj->abij", H.ab.ovov, L.ab, optimize=True)
     LH.ab -= np.einsum("ejam,ebim->abij", H.ab.vovo, L.ab, optimize=True)
 
-    I1 = -0.5 * np.einsum("abij,fbij->fa", L.aa, T.aa, optimize=True)
-    I2 = -np.einsum("afmn,efmn->ea", L.ab, T.ab, optimize=True)
-    I3 = -np.einsum("fbnm,fenm->eb", L.ab, T.ab, optimize=True)
-    I4 = -0.5 * np.einsum("bfmn,efmn->eb", L.bb, T.bb, optimize=True)
-    LH.ab += np.einsum("fa,nmfe->aenm", I1, H.ab.oovv, optimize=True)
-    LH.ab += np.einsum("ea,ijeb->abij", I2, H.ab.oovv, optimize=True)
-    LH.ab += np.einsum("eb,ijae->abij", I3, H.ab.oovv, optimize=True)
-    LH.ab += np.einsum("eb,ijae->abij", I4, H.ab.oovv, optimize=True)
+    I1 = (
+          -0.5 * np.einsum("afmn,efmn->ea", L.aa, T.aa, optimize=True)
+          - np.einsum("afmn,efmn->ea", L.ab, T.ab, optimize=True)
+    )
+    LH.ab += np.einsum("ea,ijeb->abij", I1, H.ab.oovv, optimize=True)
 
-    I1 = -0.5 * np.einsum("efin,efmn->im", L.aa, T.aa, optimize=True)
-    I2 = -np.einsum("efin,efmn->im", L.ab, T.ab, optimize=True)
-    I3 = -np.einsum("fenj,fenm->jm", L.ab, T.ab, optimize=True)
-    I4 = -0.5 * np.einsum("efjn,efmn->jm", L.bb, T.bb, optimize=True)
-    LH.ab += np.einsum("im,mjab->abij", I1, H.ab.oovv, optimize=True)
-    LH.ab += np.einsum("im,mjab->abij", I2, H.ab.oovv, optimize=True)
-    LH.ab += np.einsum("jm,imab->abij", I3, H.ab.oovv, optimize=True)
-    LH.ab += np.einsum("jm,imab->abij", I4, H.ab.oovv, optimize=True)
+    I1 = (
+          0.5 * np.einsum("efin,efmn->im", L.aa, T.aa, optimize=True)
+          + np.einsum("efin,efmn->im", L.ab, T.ab, optimize=True)
+    )
+    LH.ab -= np.einsum("im,mjab->abij", I1, H.ab.oovv, optimize=True)
+
+    I1 = (
+          -0.5 * np.einsum("afmn,efmn->ea", L.bb, T.bb, optimize=True)
+          - np.einsum("fanm,fenm->ea", L.ab, T.ab, optimize=True)
+    )
+    LH.ab += np.einsum("ea,jibe->baji", I1, H.ab.oovv, optimize=True)
+
+    I1 = (
+          0.5 * np.einsum("efin,efmn->im", L.bb, T.bb, optimize=True)
+          + np.einsum("feni,fenm->im", L.ab, T.ab, optimize=True)
+    )
+    LH.ab -= np.einsum("im,jmba->baji", I1, H.ab.oovv, optimize=True)
 
     LH.ab += np.einsum("ea,ebij->abij", H.a.vv, L.ab, optimize=True)
     LH.ab += np.einsum("eb,aeij->abij", H.b.vv, L.ab, optimize=True)
