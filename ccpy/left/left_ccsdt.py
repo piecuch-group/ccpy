@@ -3,7 +3,7 @@ import numpy as np
 from ccpy.utilities.updates import cc_loops
 from ccpy.left.left_cc_intermediates import build_left_ccsdt_intermediates
 
-def update(L, LH, T, H, omega, shift, is_ground, flag_RHF):
+def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
 
     # get LT intermediates
     X = build_left_ccsdt_intermediates(L, T, system)
@@ -229,7 +229,7 @@ def build_LH_2A(L, LH, T, H, X):
     LH.aa -= np.einsum("jebf,ifae->abij", X.ab.ovvv, H.ab.ovvv, optimize=True)
     LH.aa -= np.einsum("jnbm,iman->abij", X.ab.oovo, H.ab.oovo, optimize=True)
 
-    # < 0 | L3 * (H(2) * T3) |
+    # < 0 | L3 * (H(2) * T3) | ijab >
     LH.aa += np.einsum("ejmb,imae->abij", X.aa.voov, H.aa.oovv, optimize=True)
     LH.aa += np.einsum("jebm,imae->abij", X.ab.ovvo, H.ab.oovv, optimize=True)
     LH.aa += 0.125 * np.einsum("efab,ijef->abij", X.aa.vvvv, H.aa.oovv, optimize=True)
@@ -245,7 +245,7 @@ def build_LH_2A(L, LH, T, H, X):
     return LH
 
 
-def build_LH_2B(L, LH, T, H):
+def build_LH_2B(L, LH, T, H, X):
 
     LH.ab = -np.einsum("ijmb,am->abij", H.ab.ooov, L.a, optimize=True)
     LH.ab -= np.einsum("ijam,bm->abij", H.ab.oovo, L.b, optimize=True)
@@ -294,10 +294,30 @@ def build_LH_2B(L, LH, T, H):
     LH.ab += np.einsum("jb,ai->abij", H.b.ov, L.a, optimize=True)
     LH.ab += np.einsum("ia,bj->abij", H.a.ov, L.b, optimize=True)
 
+    # < 0 | L3 * H(2) | ij~ab~ >
+    LH.ab -= np.einsum("ejfb,fiea->abij", X.ab.vovv, H.aa.vovv, optimize=True) # 1
+    LH.ab -= np.einsum("ejfb,ifae->abij", X.bb.vovv, H.ab.ovvv, optimize=True) # 2
+    LH.ab -= np.einsum("eifa,fjeb->abij", X.aa.vovv, H.ab.vovv, optimize=True) # 3
+    LH.ab -= np.einsum("ieaf,fjeb->abij", X.ab.ovvv, H.bb.vovv, optimize=True) # 4
+    LH.ab -= np.einsum("njmb,mina->abij", X.ab.ooov, H.aa.ooov, optimize=True) # 5
+    LH.ab -= np.einsum("njmb,iman->abij", X.bb.ooov, H.ab.oovo, optimize=True) # 6
+    LH.ab -= np.einsum("nima,mjnb->abij", X.aa.ooov, H.ab.ooov, optimize=True) # 7
+    LH.ab -= np.einsum("inam,mjnb->abij", X.ab.oovo, H.bb.ooov, optimize=True) # 8
+    LH.ab += np.einsum("inmb,mjan->abij", X.ab.ooov, H.ab.oovo, optimize=True) # 9
+    LH.ab += np.einsum("ifeb,ejaf->abij", X.ab.ovvv, H.ab.vovv, optimize=True) # 10
+    LH.ab += np.einsum("ejaf,ifeb->abij", X.ab.vovv, H.ab.ovvv, optimize=True) # 11
+    LH.ab += np.einsum("mjan,inmb->abij", X.ab.oovo, H.ab.ooov, optimize=True) # 12
+    LH.ab -= np.einsum("enab,ijen->abij", X.ab.vovv, H.ab.oovo, optimize=True) # 13
+    LH.ab -= np.einsum("mfab,ijmf->abij", X.ab.ovvv, H.ab.ooov, optimize=True) # 14
+    LH.ab -= np.einsum("ijmf,mfab->abij", X.ab.ooov, H.ab.ovvv, optimize=True) # 15
+    LH.ab -= np.einsum("ijen,enab->abij", X.ab.oovo, H.ab.vovv, optimize=True) # 16
+
+    # < 0 | L3 * (H(2) * T3)_C | ij~ab~ >
+
     return LH
 
 
-def build_LH_2C(L, LH, T, H):
+def build_LH_2C(L, LH, T, H, X):
 
     LH.bb = 0.5 * np.einsum("ea,ebij->abij", H.b.vv, L.bb, optimize=True)
     LH.bb -= 0.5 * np.einsum("im,abmj->abij", H.b.oo, L.bb, optimize=True)
