@@ -63,7 +63,7 @@ def calc_rdm1(T, L, system):
     rdm1.b.vo += T.b
 
     # CCSDT parts
-    if hasattr(T, 'aaa') and hasattr(L, 'aaa'):
+    if T.order == 3 and L.order == 3:
         
         # oo block: <j|gamma|i> => i->-.->-j
         rdm1.a.oo += (

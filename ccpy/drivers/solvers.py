@@ -419,21 +419,40 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, syst
 
         # biorthogonalize to R for excited states
         if not is_ground:
-            LR = np.dot(L.flatten().T, R.flatten()[:L.ndim])
+            LR = np.dot(L.flatten().T, R.flatten())
+            #LR =  np.einsum("em,em->", R.a, L.a, optimize=True)
+            #LR += np.einsum("em,em->", R.b, L.b, optimize=True)
+            #LR += 0.25 * np.einsum("efmn,efmn->", R.aa, L.aa, optimize=True)
+            #LR += np.einsum("efmn,efmn->", R.ab, L.ab, optimize=True)
+            #LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
+
+            #if L.order == 3 and R.order == 3:
+            #    LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.aaa, L.aaa, optimize=True)
+            #    LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.aab, L.aab, optimize=True)
+            #    LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
+            #    LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
+
             L.unflatten(1.0/LR * L.flatten())
 
         elapsed_time = time.time() - t1
-        print_eomcc_iteration(niter, omega, residuum, delta_energy, elapsed_time)
+        print_eomcc_iteration(niter, energy, residuum, delta_energy, elapsed_time)
     else:
         print("Left CC calculation did not converge.")
 
     # explicitly enforce biorthonormality
     if not is_ground:
-        LR = np.einsum("em,em->", R.a, L.a, optimize=True)
+        LR =  np.einsum("em,em->", R.a, L.a, optimize=True)
         LR += np.einsum("em,em->", R.b, L.b, optimize=True)
         LR += 0.25 * np.einsum("efmn,efmn->", R.aa, L.aa, optimize=True)
         LR += np.einsum("efmn,efmn->", R.ab, L.ab, optimize=True)
         LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
+
+        if L.order == 3 and R.order == 3:
+            LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.aaa, L.aaa, optimize=True)
+            LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.aab, L.aab, optimize=True)
+            LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
+            LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
+
         L.unflatten(1.0/LR * L.flatten())
     else:
         LR = 0.0

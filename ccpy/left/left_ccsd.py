@@ -34,18 +34,14 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
         LH.ab += np.transpose(H.ab.oovv, (2, 3, 0, 1))
         LH.bb += np.transpose(H.bb.oovv, (2, 3, 0, 1))
 
-    L.a, L.b, L.aa, L.ab, L.bb, \
-    LH.a, LH.b, LH.aa, LH.ab, LH.bb = cc_loops2.cc_loops2.update_l_ccsd(L.a, L.b, L.aa, L.ab, L.bb,
-                                                                        LH.a, LH.b, LH.aa, LH.ab, LH.bb,
-                                                                        omega,
-                                                                        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                                                                        shift)
-    # # build residual LH - omega * L
-    # LH.a -= omega * L.a
-    # LH.b -= omega * L.b
-    # LH.aa -= omega * L.aa
-    # LH.ab -= omega * L.ab
-    # LH.bb -= omega * L.bb
+    L.a, L.b, LH.a, LH.b = cc_loops2.cc_loops2.update_l1(L.a, L.b, LH.a, LH.b,
+                                                         omega,
+                                                         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                         shift)
+    L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb = cc_loops2.cc_loops2.update_l2(L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb,
+                                                         omega,
+                                                         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                         shift)
 
     return L, LH
 
