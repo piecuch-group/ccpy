@@ -876,12 +876,11 @@ module cc_loops2
 
       end subroutine update_L_ccsd
 
-      subroutine update_L_ccsdt(l1a,l1b,l2a,l2b,l2c,l3a,l3b,l3c,l3d,&
-                                X1A,X1B,X2A,X2B,X2C,X3A,X3B,X3C,X3D,&
-                                omega,&
-                                H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
-                                shift,&
-                                noa,nua,nob,nub)
+      subroutine update_L1(l1a, l1b, X1A, X1B,&
+                           omega,&
+                           H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
+                           shift,&
+                           noa, nua, nob, nub)
 
               implicit none
 
@@ -893,41 +892,13 @@ module cc_loops2
               !f2py intent(in,out) :: l1a(0:nua-1,0:noa-1)
               real(8), intent(inout) :: l1b(1:nub,1:nob)
               !f2py intent(in,out) :: l1b(0:nub-1,0:nob-1)
-              real(8), intent(inout) :: l2a(1:nua,1:nua,1:noa,1:noa)
-              !f2py intent(in,out) :: l2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
-              real(8), intent(inout) :: l2b(1:nua,1:nub,1:noa,1:nob)
-              !f2py intent(in,out) :: l2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              real(8), intent(inout) :: l2c(1:nub,1:nub,1:nob,1:nob)
-              !f2py intent(in,out) :: l2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
-              real(8), intent(inout) :: l3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
-              !f2py intent(in,out) :: l3a(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
-              real(8), intent(inout) :: l3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
-              !f2py intent(in,out) :: l3b(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:nob-1)
-              real(8), intent(inout) :: l3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
-              !f2py intent(in,out) :: l3c(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:nob-1)
-              real(8), intent(inout) :: l3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
-              !f2py intent(in,out) :: l3d(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:nob-1)
 
               real(8), intent(inout) :: X1A(1:nua,1:noa)
               !f2py intent(in,out) :: X1A(0:nua-1,0:noa-1)
               real(8), intent(inout) :: X1B(1:nub,1:nob)
               !f2py intent(in,out) :: X1B(0:nub-1,0:nob-1)
-              real(8), intent(inout) :: X2A(1:nua,1:nua,1:noa,1:noa)
-              !f2py intent(in,out) :: X2A(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
-              real(8), intent(inout) :: X2B(1:nua,1:nub,1:noa,1:nob)
-              !f2py intent(in,out) :: X2B(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              real(8), intent(inout) :: X2C(1:nub,1:nub,1:nob,1:nob)
-              !f2py intent(in,out) :: X2C(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
-              real(8), intent(inout) :: X3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
-              !f2py intent(in,out) :: X3A(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
-              real(8), intent(inout) :: X3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
-              !f2py intent(in,out) :: X3B(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:nob-1)
-              real(8), intent(inout) :: X3C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
-              !f2py intent(in,out) :: X3C(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:nob-1)
-              real(8), intent(inout) :: X3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
-              !f2py intent(in,out) :: X3D(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:nob-1)
 
-              integer :: i, j, k, a, b, c
+              integer :: i, a
               real(8) :: denom, val
 
               do i = 1,noa
@@ -945,6 +916,38 @@ module cc_loops2
                   X1B(a, i) = X1B(a, i) - omega * l1b(a, i)
                 end do
               end do
+
+      end subroutine update_L1
+
+      subroutine update_L2(l2a, l2b, l2c, X2A, X2B, X2C,&
+                           omega,&
+                           H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
+                           shift,&
+                           noa, nua, nob, nub)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua, nob, nub
+              real(8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+                                     H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega
+
+              real(8), intent(inout) :: l2a(1:nua,1:nua,1:noa,1:noa)
+              !f2py intent(in,out) :: l2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+              real(8), intent(inout) :: l2b(1:nua,1:nub,1:noa,1:nob)
+              !f2py intent(in,out) :: l2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+              real(8), intent(inout) :: l2c(1:nub,1:nub,1:nob,1:nob)
+              !f2py intent(in,out) :: l2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+
+              real(8), intent(inout) :: X2A(1:nua,1:nua,1:noa,1:noa)
+              !f2py intent(in,out) :: X2A(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+              real(8), intent(inout) :: X2B(1:nua,1:nub,1:noa,1:nob)
+              !f2py intent(in,out) :: X2B(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+              real(8), intent(inout) :: X2C(1:nub,1:nub,1:nob,1:nob)
+              !f2py intent(in,out) :: X2C(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+
+              integer :: i, j, a, b
+              real(8) :: denom, val
+
 
               do i = 1,noa
                 do j = i+1,noa
@@ -1003,6 +1006,42 @@ module cc_loops2
                   end do
                 end do
               end do
+
+      end subroutine update_L2
+
+      subroutine update_L3(l3a,l3b,l3c,l3d,X3A,X3B,X3C,X3D,&
+                           omega,&
+                           H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                           shift,&
+                           noa,nua,nob,nub)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua, nob, nub
+              real(8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+                                     H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega
+
+              real(8), intent(inout) :: l3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              !f2py intent(in,out) :: l3a(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
+              real(8), intent(inout) :: l3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              !f2py intent(in,out) :: l3b(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:nob-1)
+              real(8), intent(inout) :: l3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              !f2py intent(in,out) :: l3c(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:nob-1)
+              real(8), intent(inout) :: l3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+              !f2py intent(in,out) :: l3d(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:nob-1)
+
+              real(8), intent(inout) :: X3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              !f2py intent(in,out) :: X3A(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
+              real(8), intent(inout) :: X3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              !f2py intent(in,out) :: X3B(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:nob-1)
+              real(8), intent(inout) :: X3C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              !f2py intent(in,out) :: X3C(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:nob-1)
+              real(8), intent(inout) :: X3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+              !f2py intent(in,out) :: X3D(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:nob-1)
+
+              integer :: i, j, k, a, b, c
+              real(8) :: denom, val
+
 
               do i = 1,noa
                   do j = i+1,noa
@@ -1279,7 +1318,7 @@ module cc_loops2
               end do
 
 
-      end subroutine update_L_ccsdt
+      end subroutine update_L3
 
 
       subroutine update_R_2h1p(r1a,r1b,r2a,r2b,r2c,r2d,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)

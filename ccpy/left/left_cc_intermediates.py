@@ -6,7 +6,7 @@ def build_left_ccsd_intermediates(L, T, system):
     """Calculate the L*T intermediates used in the left-CCSD equations"""
 
     # Create new 2-body integral object
-    X = Integral.from_empty(system, 1, data_type=T.a.oo.dtype, use_none=True)
+    X = Integral.from_empty(system, 1, data_type=T.a.dtype, use_none=True)
 
     # (L2 * T3)_C
 
@@ -18,7 +18,7 @@ def build_left_ccsdt_intermediates(L, T, system):
     """Calculate the L*T intermediates used in the left-CCSDT equations"""
 
     # Create new 2-body integral object
-    X = Integral.from_empty(system, 2, data_type=T.a.oo.dtype, use_none=True)
+    X = Integral.from_empty(system, 2, data_type=T.a.dtype, use_none=True)
 
     # (L2 * T2)_C
 
@@ -56,9 +56,9 @@ def build_left_ccsdt_intermediates(L, T, system):
                 + np.einsum('efanji,fenm->jima', L.abb, T.bb, optimize=True)
     )
 
-    X.aa.ovvv = (
-                -0.5 * np.einsum('abfimn,efmn->ieab', L.aaa, T.aa, optimize=True)
-                - np.einsum('abfimn,efmn->ieab', L.aab, T.ab, optimize=True)
+    X.aa.vovv = (
+                -0.5 * np.einsum('abfimn,efmn->eiba', L.aaa, T.aa, optimize=True)
+                - np.einsum('abfimn,efmn->eiba', L.aab, T.ab, optimize=True)
     )
 
     X.ab.vovv = (
@@ -71,9 +71,9 @@ def build_left_ccsdt_intermediates(L, T, system):
                 -0.5 * np.einsum('afbinm,fenm->ieab', L.abb, T.bb, optimize=True)
     )
 
-    X.bb.ovvv = (
-                -0.5 * np.einsum('abfimn,efmn->ieab', L.bbb, T.bb, optimize=True)
-                - np.einsum('fbanmi,fenm->ieab', L.abb, T.ab, optimize=True)
+    X.bb.vovv = (
+                -0.5 * np.einsum('abfimn,efmn->eiba', L.bbb, T.bb, optimize=True)
+                - np.einsum('fbanmi,fenm->eiba', L.abb, T.ab, optimize=True)
     )
 
     # (L3 * T3)_C
@@ -143,9 +143,9 @@ def build_left_ccsdt_intermediates(L, T, system):
             -0.5 * np.einsum("fgemon,fgaion->maie", L.abb, T.abb, optimize=True)
     )
     X.ab.ovvo = (
-            0.25 * np.einsum("efgmno,fganoi->amie", L.aaa, T.aab, optimize=True)
-            + np.einsum("efgmno,fganoi->amie", L.aab, T.abb, optimize=True)
-            + 0.25 * np.einsum("efgmno,fganoi->amie", L.abb, T.bbb, optimize=True)
+            0.25 * np.einsum("efgmno,fganoi->maei", L.aaa, T.aab, optimize=True)
+            + np.einsum("efgmno,fganoi->maei", L.aab, T.abb, optimize=True)
+            + 0.25 * np.einsum("efgmno,fganoi->maei", L.abb, T.bbb, optimize=True)
     )
     X.bb.voov = (
             0.25 * np.einsum("efgmno,afgino->amie", L.bbb, T.bbb, optimize=True)

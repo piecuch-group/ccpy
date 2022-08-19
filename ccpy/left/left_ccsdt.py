@@ -1,6 +1,6 @@
 import numpy as np
 
-from ccpy.utilities.updates import cc_loops
+from ccpy.utilities.updates import cc_loops2
 from ccpy.left.left_cc_intermediates import build_left_ccsdt_intermediates
 
 def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
@@ -30,7 +30,7 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
     if flag_RHF:
         LH.abb = np.transpose(LH.aab, (2, 1, 0, 5, 4, 3))
         LH.bbb = LH.aaa.copy()
-    else:
+    #else:
         #LH = build_LH_3C(L, LH, T, H, X)
         #LH = build_LH_3D(L, LH, T, H, X)
 
@@ -42,14 +42,20 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
         LH.ab += np.transpose(H.ab.oovv, (2, 3, 0, 1))
         LH.bb += np.transpose(H.bb.oovv, (2, 3, 0, 1))
 
-    L.a, L.b, L.aa, L.ab, L.bb, L.aaa, L.aab, L.abb, L.bbb,\
-    LH.a, LH.b, LH.aa, LH.ab. LH.bb, LH.aaa, LH.aab, LH.abb, LH.bbb = cc_loops.cc_loops.update_l_ccsdt(L.a, L.b, L.aa, L.ab, L.bb,
-                                                                                                       L.aaa, L.aab, L.abb, L.bbb,
-                                                                                                       LH.a, LH.b, LH.aa, LH.ab, LH.bb,
-                                                                                                       LH.aaa, LH.aab, LH.abb, LH.bbb,
-                                                                                                       omega,
-                                                                                                       H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                                                                                                       shift)
+
+    L.a, L.b, LH.a, LH.b = cc_loops2.cc_loops2.update_l1(L.a, L.b, LH.a, LH.b,
+                                                         omega,
+                                                         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                         shift)
+    L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb = cc_loops2.cc_loops2.update_l2(L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb,
+                                                         omega,
+                                                         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                         shift)
+    L.aaa, L.aab, L.abb, L.bbb, LH.aaa, LH.aab, LH.abb, LH.bbb = cc_loops2.cc_loops2.update_l3(L.aaa, L.aab, L.abb, L.bbb, LH.aaa, LH.aab, LH.abb, LH.bbb,
+                                                         omega,
+                                                         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                         shift)
+
     return L, LH
 
 def build_LH_1A(L, LH, T, H, X):
@@ -95,7 +101,7 @@ def build_LH_1A(L, LH, T, H, X):
     LH.a += np.einsum("em,imae->ai", X.b.vo, H.ab.oovv, optimize=True)
 
     LH.a += 0.5 * np.einsum("efin,fena->ai", L.aa, H.aa.vvov, optimize=True) 
-    LH.a += np.einsum("efin,efna->ai", L.ab, H.ab.vvvo, optimize=True) 
+    LH.a += np.einsum("efin,efan->ai", L.ab, H.ab.vvvo, optimize=True) 
     LH.a -= 0.5 * np.einsum("afmn,finm->ai", L.aa, H.aa.vooo, optimize=True)
     LH.a -= np.einsum("afmn,ifmn->ai", L.ab, H.ab.ovoo, optimize=True)
 
@@ -113,21 +119,21 @@ def build_LH_1A(L, LH, T, H, X):
 
     LH.a += 0.5 * np.einsum("nmoa,iomn->ai", X.aa.ooov, H.aa.oooo, optimize=True)
     LH.a += np.einsum("mnao,iomn->ai", X.ab.oovo, H.ab.oooo, optimize=True)
-    LH.a += np.einsum("mfea,eimf->ai", X.aa.ovvv, H.aa.voov, optimize=True)
+    LH.a += np.einsum("fmae,eimf->ai", X.aa.vovv, H.aa.voov, optimize=True)
     LH.a += np.einsum("fmae,iefm->ai", X.ab.vovv, H.ab.ovvo, optimize=True)
     LH.a += np.einsum("mfae,iemf->ai", X.ab.ovvv, H.ab.ovov, optimize=True)
 
-    LH.a -= 0.5 * np.einsum("igef,efag->ai", X.aa.ovvv, H.aa.vvvv, optimize=True)
+    LH.a -= 0.5 * np.einsum("gife,efag->ai", X.aa.vovv, H.aa.vvvv, optimize=True)
     LH.a -= np.einsum("igef,efag->ai", X.ab.ovvv, H.ab.vvvv, optimize=True)
     LH.a -= np.einsum("imne,enma->ai", X.aa.ooov, H.aa.voov, optimize=True)
     LH.a -= np.einsum("imne,neam->ai", X.ab.ooov, H.ab.ovvo, optimize=True)
     LH.a -= np.einsum("imen,enam->ai", X.ab.oovo, H.ab.vovo, optimize=True)
 
     # < 0 | L3 * (H(2) * T3)_C | ia >
-    LH.a -= np.einsum("nm,iman->ai", X.a.oo, H.aa.ooov, optimize=True)
-    LH.a -= np.einsum("nm,iman->ai", X.b.oo, H.ab.ooov, optimize=True)
+    LH.a -= np.einsum("nm,mina->ai", X.a.oo, H.aa.ooov, optimize=True)
+    LH.a -= np.einsum("nm,iman->ai", X.b.oo, H.ab.oovo, optimize=True)
     LH.a += np.einsum("ef,fiea->ai", X.a.vv, H.aa.vovv, optimize=True)
-    LH.a += np.einsum("ef,ifae->ai", X.b.vv, H.ab.vovv, optimize=True)
+    LH.a += np.einsum("ef,ifae->ai", X.b.vv, H.ab.ovvv, optimize=True)
 
     LH.a += 0.5 * np.einsum("nmoa,iomn->ai", H.aa.ooov, X.aa.oooo, optimize=True)
     LH.a += np.einsum("mnao,iomn->ai", H.ab.oovo, X.ab.oooo, optimize=True)
@@ -426,14 +432,14 @@ def build_LH_3B(L, LH, T, H, X):
     LH.aab += 0.125 * np.einsum("efab,efcijk->abcijk", H.aa.vvvv, L.aab, optimize=True)
     LH.aab += 0.5 * np.einsum("efbc,aefijk->abcijk", H.ab.vvvv, L.aab, optimize=True)
     LH.aab += np.einsum("eima,ebcmjk->abcijk", H.aa.voov, L.aab, optimize=True)
-    LH.aab += np.einsum("eiam,becjmk->abcijk", H.ab.ovvo, L.abb, optimize=True)
+    LH.aab += np.einsum("ieam,becjmk->abcijk", H.ab.ovvo, L.abb, optimize=True)
     LH.aab += 0.25 * np.einsum("ekmc,abeijm->abcijk", H.ab.voov, L.aaa, optimize=True)
     LH.aab += 0.25 * np.einsum("ekmc,abeijm->abcijk", H.bb.voov, L.aab, optimize=True)
     LH.aab -= 0.5 * np.einsum("ekam,ebcijm->abcijk", H.ab.vovo, L.aab, optimize=True)
     LH.aab -= 0.5 * np.einsum("iemc,abemjk->abcijk", H.ab.ovov, L.aab, optimize=True)
 
     LH.aab += 0.5 * np.einsum("ekbc,ijae->abcijk", X.ab.vovv, H.aa.oovv, optimize=True)
-    LH.aab -= 0.5 * np.einsum("jkbc,imab->abcijk", X.ab.ooov, H.aa.oovv, optimize=True)
+    LH.aab -= 0.5 * np.einsum("jkmc,imab->abcijk", X.ab.ooov, H.aa.oovv, optimize=True)
     LH.aab += np.einsum("ieac,jkbe->abcijk", X.ab.ovvv, H.ab.oovv, optimize=True)
     LH.aab -= np.einsum("ikam,jmbc->abcijk", X.ab.oovo, H.ab.oovv, optimize=True)
     LH.aab += 0.5 * np.einsum("eiba,jkec->abcijk", X.aa.vovv, H.ab.oovv, optimize=True)
