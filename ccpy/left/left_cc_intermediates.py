@@ -26,7 +26,7 @@ def build_left_ccsdt_intermediates(L, T, system):
     X.a.vo = (
                0.25 * np.einsum("efmn,aefimn->ai", L.aa, T.aaa, optimize=True)
              + np.einsum("efmn,aefimn->ai", L.ab, T.aab, optimize=True)
-             + 0.25 * np.einsum("efmn,aefimn->ai", L.bb, T.abb, optimize=True) 
+             + 0.25 * np.einsum("efmn,aefimn->ai", L.bb, T.abb, optimize=True)
     )
 
     X.b.vo = (
@@ -152,5 +152,22 @@ def build_left_ccsdt_intermediates(L, T, system):
             + np.einsum("gfeonm,gfaoni->amie", L.abb, T.abb, optimize=True)
             + 0.25 * np.einsum("gfeonm,gfaoni->amie", L.aab, T.aab, optimize=True)
     )
+
+    return X
+
+###########################################################################
+
+def build_left_ccsdt_intermediates_v2(L, T, system):
+    """Calculate the L*T intermediates used in the left-CCSDT equations"""
+
+    # Create new 2-body integral object
+    X = Integral.from_empty(system, 2, data_type=T.a.dtype, use_none=True)
+
+    X.aa.vovv = -0.5 * np.einsum("abcijk,ecik->ejab", L.aaa, T.aa, optimize=True)
+    X.aa.ooov = 0.5 * np.einsum("abcijk,bcnk->jina", L.aaa, T.aa, optimize=True)
+    X.a.vv = -(1.0 / 12.0) * np.einsum("abcijk,ebcijk->ea", L.aaa, T.aaa, optimize=True)
+    X.aa.vvvv = (1.0 / 6.0) * np.einsum("abcijk,efcijk->efab", L.aaa, T.aaa, optimize=True)
+    X.aa.voov = 0.25 * np.einsum("abcijk,fbcnjk->fina", L.aaa, T.aaa, optimize=True)
+    X.ab.ovvo = 0.25 * np.einsum("abcijk,bcfjkn->ifan", L.aaa, T.aab, optimize=True)
 
     return X
