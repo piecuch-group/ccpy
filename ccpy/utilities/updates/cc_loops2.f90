@@ -848,13 +848,14 @@ module cc_loops2
                       denom = H1A_vv(a,a) + H1A_vv(b,b) - H1A_oo(i,i) - H1A_oo(j,j)
 
                       val = X2A(a, b, i, j)
+                      !val = X2A(a, b, i, j) - X2A(b, a, i, j) - X2A(a, b, j, i) + X2A(b, a, j, i)
 
                       l2a(a, b, i, j) = l2a(a, b, i, j) - (val - omega * l2a(a, b, i, j))/(denom - omega + shift)
                       l2a(b, a, i, j) = -1.0 * l2a(a, b, i, j)
                       l2a(a, b, j, i) = -1.0 * l2a(a, b, i, j)
                       l2a(b, a, j, i) = l2a(a, b, i, j)
 
-                      X2A(a, b, i, j)= val - omega * l2a(a, b, i, j)
+                      X2A(a, b, i, j) = val - omega * l2a(a, b, i, j)
                       X2A(a, b, j, i) = -1.0 * X2A(a, b, i, j)
                       X2A(b, a, i, j) = -1.0 * X2A(a, b, i, j)
                       X2A(b, a, j, i) = X2A(a, b, i, j)
@@ -936,11 +937,11 @@ module cc_loops2
 
 
               do i = 1,noa
-                  do j = i+1,noa
-                      do k = j+1,noa
+                  do j = i + 1,noa
+                      do k = j + 1,noa
                           do a = 1,nua
-                              do b = a+1,nua
-                                  do c = b+1,nua
+                              do b = a + 1,nua
+                                  do c = b + 1,nua
 
                                       denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1A_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1A_vv(C,C)
 
@@ -1041,10 +1042,10 @@ module cc_loops2
               end do
 
               do i = 1,noa
-                  do j = i+1,noa
+                  do j = i + 1,noa
                       do k = 1,nob
                           do a = 1,nua
-                              do b = a+1,nua
+                              do b = a + 1,nua
                                   do c = 1,nub
 
                                       denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1B_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1B_vv(C,C)

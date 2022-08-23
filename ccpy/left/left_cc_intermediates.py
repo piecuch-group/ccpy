@@ -77,6 +77,7 @@ def build_left_ccsdt_intermediates(L, T, system):
     )
 
     # (L3 * T3)_C
+    # l = 3, h = 4 -> s = -1
     X.a.oo = (
               (1.0 / 12.0) * np.einsum("efgmno,efgino->mi", L.aaa, T.aaa, optimize=True)
               + 0.5 * np.einsum("efgmno,efgino->mi", L.aab, T.aab, optimize=True)
@@ -87,6 +88,8 @@ def build_left_ccsdt_intermediates(L, T, system):
               + 0.5 * np.einsum("gfeonm,gfeoni->mi", L.abb, T.abb, optimize=True)
               + 0.25 * np.einsum("gfeonm,gfeoni->mi", L.aab, T.aab, optimize=True)
     )
+
+    # l = 3, h = 3 -> s = +1
     X.a.vv = (
             -(1.0 / 12.0) * np.einsum("efgmno,afgmno->ae", L.aaa, T.aaa, optimize=True)
             - 0.5 * np.einsum("efgmno,afgmno->ae", L.aab, T.aab, optimize=True)
@@ -152,11 +155,5 @@ def build_left_ccsdt_intermediates(L, T, system):
             + np.einsum("gfeonm,gfaoni->amie", L.abb, T.abb, optimize=True)
             + 0.25 * np.einsum("gfeonm,gfaoni->amie", L.aab, T.aab, optimize=True)
     )
-
-    # print(np.linalg.norm(X.aa.voov.flatten() - X.bb.voov.flatten()))
-    # print(np.linalg.norm(X.aa.vovv.flatten() - X.bb.vovv.flatten()))
-    # print(np.linalg.norm(X.aa.ooov.flatten() - X.bb.ooov.flatten()))
-    # print(np.linalg.norm(X.aa.oooo.flatten() - X.bb.oooo.flatten()))
-    # print(np.linalg.norm(X.aa.vvvv.flatten() - X.bb.vvvv.flatten()))
 
     return X
