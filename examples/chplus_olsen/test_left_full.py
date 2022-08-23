@@ -128,10 +128,17 @@ if __name__ == "__main__":
     I3C_vvvvoo -= np.transpose(I3C_vvvvoo, (0, 1, 2, 3, 5, 4))
     X1A += 0.25 * np.einsum("efgano,efgino->ai", I3C_vvvvoo, L.abb, optimize=True)
 
-    # # [7] 1/36 h(iefgamno) * l3a(mnoefg)
-    # I4A_ovvvvooo = (
-    #     -np.einsum("mnef,abin,fcjk->iefgamno", H.aa.oovv, T.aa, T.aa, optimize=True)
-    # )
+    # 4-body HBar
+    X1A += 0.25 * np.einsum("imae,efno,ghmp,fghnop->ai", H.aa.oovv, T.aa, T.aa, L.aaa, optimize=True)
+    X1A += 0.5 * np.einsum("imae,efno,ghmp,fghnop->ai", H.aa.oovv, T.aa, T.ab, L.aab, optimize=True)
+    X1A += 0.5 * np.einsum("imae,fgmn,ehop,fghnop->ai", H.aa.oovv, T.aa, T.ab, L.aab, optimize=True)
+    X1A -= 0.5 * np.einsum("ioag,egmp,fhno,efhmnp->ai", H.ab.oovv, T.ab, T.ab, L.aab, optimize=True)
+    X1A -= 0.5 * np.einsum("ioag,ehmo,fgnp,efhmnp->ai", H.ab.oovv, T.ab, T.ab, L.aab, optimize=True)
+    X1A -= np.einsum("imae,egno,fhmp,fghnop->ai", H.aa.oovv, T.ab, T.ab, L.abb, optimize=True)
+    X1A -= 0.5 * np.einsum("inaf,efmo,ghnp,eghmop->ai", H.ab.oovv, T.ab, T.bb, L.abb, optimize=True)
+    X1A -= 0.5 * np.einsum("inaf,egmn,fhop,eghmop->ai", H.ab.oovv, T.ab, T.bb, L.abb, optimize=True)
+    X1A += 0.25 * np.einsum("imae,efno,ghmp,fghnop->ai", H.ab.oovv, T.bb, T.bb, L.bbb, optimize=True)
+
 
     x1a = np.einsum("ie,ea->ai", H.a.ov, X.a.vv, optimize=True)
     x1a -= np.einsum("ma,im->ai", H.a.ov, X.a.oo, optimize=True)
@@ -160,16 +167,21 @@ if __name__ == "__main__":
     x1a -= np.einsum("imne,neam->ai", H.ab.ooov, X.ab.ovvo, optimize=True)
     x1a -= np.einsum("imen,enam->ai", H.ab.oovo, X.ab.vovo, optimize=True)
 
-    # I1A_vo = (
-    #       -0.5 * np.einsum("nomg,egno->em", X.aa.ooov, T.aa, optimize=True)
-    #       - np.einsum("nomg,egno->em", X.ab.ooov, T.ab, optimize=True)
-    # )
-    # I1B_vo = (
-    #       -0.5 * np.einsum("nomg,egno->em", X.bb.ooov, T.bb, optimize=True)
-    #       - np.einsum("ongm,geon->em", X.ab.oovo, T.ab, optimize=True)
-    # )
-    # x1a += np.einsum("em,imae->ai", I1A_vo, H.aa.oovv, optimize=True)
-    # x1a += np.einsum("em,imae->ai", I1B_vo, H.ab.oovv, optimize=True)
+    I1A_vo = (
+          -0.5 * np.einsum("nomg,egno->em", X.aa.ooov, T.aa, optimize=True)
+          - np.einsum("nomg,egno->em", X.ab.ooov, T.ab, optimize=True)
+    )
+    I1B_vo = (
+          -0.5 * np.einsum("nomg,egno->em", X.bb.ooov, T.bb, optimize=True)
+          - np.einsum("ongm,geon->em", X.ab.oovo, T.ab, optimize=True)
+    )
+    x1a += np.einsum("em,imae->ai", I1A_vo, H.aa.oovv, optimize=True)
+    x1a += np.einsum("em,imae->ai", I1B_vo, H.ab.oovv, optimize=True)
+
+    # x1a -= np.einsum("nm,mina->ai", X.a.oo, H.aa.ooov, optimize=True)
+    # x1a -= np.einsum("nm,iman->ai", X.b.oo, H.ab.oovo, optimize=True)
+    # x1a += np.einsum("ef,fiea->ai", X.a.vv, H.aa.vovv, optimize=True)
+    # x1a += np.einsum("ef,ifae->ai", X.b.vv, H.ab.ovvv, optimize=True)
 
     print("Error on L1A update = ", np.linalg.norm(X1A.flatten() - x1a.flatten()))
 
