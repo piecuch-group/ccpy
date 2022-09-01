@@ -1,6 +1,15 @@
 """Module with functions that perform the CC with singles, doubles,
 and triples (CCSDT) calculation for a molecular system."""
 
+# Further development steps:
+# (1) Refactor all terms with T3 (re-implement in Numba)
+#
+# (2) Change structure of P space so that p[a, b, c, i, j, k] = idx, where T[idx] = t3[a, b, c, i, j, k] is
+#     a compact, linear T vector used in the iterative steps.
+#
+# (3) Implement pre-screening to reduce loop sizes and checking of amplitudes for each diagram, thus removing dependence
+#     on P space matrix.
+
 
 import numpy as np
 

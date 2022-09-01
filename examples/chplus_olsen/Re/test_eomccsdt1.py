@@ -1,5 +1,4 @@
 import numpy as np
-import time
 
 from pyscf import gto, scf
 
@@ -14,8 +13,7 @@ from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.drivers.driver import cc_driver, eomcc_driver
 
 from ccpy.hbar.hbar_ccsdt import build_hbar_ccsdt, build_hbar_ccsdt1
-from ccpy.hbar.eomccsdt_intermediates import get_eomccsd_intermediates, add_R3_terms
-from ccpy.eomcc.eomccsdt import build_HR_3A, build_HR_3B, build_HR_3C, build_HR_3D, build_HR_1A, build_HR_1B, build_HR_2A, build_HR_2B, build_HR_2C
+from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, add_R3_terms
 
 from ccpy.eomcc.initial_guess import get_initial_guess
 

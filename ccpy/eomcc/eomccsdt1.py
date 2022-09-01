@@ -1,11 +1,9 @@
 """Module containing functions to calculate the vertical excitation
 energies and linear excitation amplitudes for excited states using
-the equation-of-motion (EOM) CC with singles, doubles, and triples (EOMCCSDT)."""
-import numpy as np
+the equation-of-motion (EOM) CC with singles, doubles, and active-space triples (EOMCCSDt)."""
 
-from ccpy.hbar.eomccsdt_intermediates import get_eomccsd_intermediates
+from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates
 from ccpy.eomcc.eomccsdt1_updates.intermediates import add_HR3_intermediates
-
 from ccpy.eomcc.eomccsdt1_updates import *
 
 def update(R, omega, H, system):

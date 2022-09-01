@@ -1,13 +1,6 @@
 import numpy as np
 from itertools import combinations_with_replacement
 
-# class PSpaceVector:
-#
-#     def __init__(self, order, pspace, vector=None, data_type=np.float64):
-#
-#         PSpaceVector.order = order
-
-
 
 class ActiveOperator:
 
@@ -166,10 +159,11 @@ class FockOperator:
         self.num_holes = num_holes
         self.spin_cases = []
         self.dimensions = []
+        self.order = min(num_particles, num_holes) + abs(num_particles - num_holes)
 
         assert num_particles != num_holes
 
-        order = min(num_particles, num_holes)
+        #order = min(num_particles, num_holes)
         if num_particles > num_holes: # EA operator
             num_add = num_particles - num_holes
             single_particle_dims = {'a' : system.nunoccupied_alpha, 'b' : system.nunoccupied_beta}
@@ -197,7 +191,7 @@ class FockOperator:
             ndim += np.prod(dimensions)
 
         # now add ionizing/attaching operators to np-nh particle-conserving operators
-        for i in range(1, order + 1):
+        for i in range(1, self.order + 1):
             for j in range(i + 1):
                 name_base = get_operator_name(i, j)
                 dimension_base = get_operator_dimension(i, j, system)
@@ -218,11 +212,19 @@ class FockOperator:
             [getattr(self, key).flatten() for key in self.spin_cases]
         )
 
-    def unflatten(self, T_flat):
+    def unflatten(self, T_flat, order=0):
         prev = 0
+
+        # allows unflattening of up to a specified order which may be less than
+        # the order of the cluster operator.
+        if order == 0: order = self.order
+
         for dims, name in zip(self.dimensions, self.spin_cases):
+
+            if len(name) > order: continue
+
             ndim = np.prod(dims)
-            setattr(self, name, np.reshape(T_flat[prev : ndim + prev], dims))
+            setattr(self, name, np.reshape(T_flat[prev: ndim + prev], dims))
             prev += ndim
 
 def get_operator_name(i, j):

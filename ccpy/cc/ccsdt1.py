@@ -1,8 +1,5 @@
 """Module with functions that perform the CC with singles, doubles,
-and triples (CCSDT) calculation for a molecular system."""
-
-import numpy as np
-import time
+and active-space triples (CCSDt) calculation for a molecular system."""
 
 from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates

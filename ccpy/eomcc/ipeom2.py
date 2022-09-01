@@ -1,6 +1,15 @@
 import numpy as np
 from ccpy.utilities.updates import cc_loops
 
+from ccpy.models.operators import FockOperator
+
+# R.a -> R.a (m)
+# R.b -> R.b (m)
+# R.aa -> R.aa (fnm)
+# R.ab -> R.ab (fnm~)
+# R.ba -> R.ba (f~n~m)
+# R.bb -> R.bb (f~n~m~)
+
 def update(R, omega, H, system):
 
     R.a, R.b, R.aa, R.ab, R.ba, R.bb = cc_loops.cc_loops.update_r_2h1p(
@@ -42,7 +51,6 @@ def HR(dR, R, T, H, flag_RHF, system):
     return dR.flatten()
 
 
-
 def build_HR_1A(R, T, H):
     """Calculate the projection <i|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>."""
     X1A = 0.0
@@ -70,8 +78,7 @@ def build_HR_1B(R, T, H):
 def build_HR_2A(R, T, H):
     """Calculate the projection <ijb|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>."""
 
-    X2A = 0.0
-    X2A -= np.einsum("bmji,m->bji", H.aa.vooo, R.a, optimize=True)
+    X2A = -1.0 * np.einsum("bmji,m->bji", H.aa.vooo, R.a, optimize=True)
     X2A += np.einsum("be,eji->bji", H.a.vv, R.aa, optimize=True)
     X2A += 0.5 * np.einsum("mnij,bnm->bji", H.aa.oooo, R.aa, optimize=True)
     I1 = (
@@ -81,7 +88,7 @@ def build_HR_2A(R, T, H):
     X2A += np.einsum("e,ebij->bji", I1, T.aa, optimize=True)
 
     D_ij = 0.0
-    D_ij -= np.einsum("mi,bmj->bji", H.a.oo, R.aa, optimize=True)
+    D_ij -= np.einsum("mi,bjm->bji", H.a.oo, R.aa, optimize=True)
     D_ij += np.einsum("bmje,emi->bji", H.aa.voov, R.aa, optimize=True)
     D_ij += np.einsum("bmje,emi->bji", H.ab.voov, R.ba, optimize=True)
     D_ij -= np.transpose(D_ij, (0, 2, 1))
@@ -94,19 +101,19 @@ def build_HR_2A(R, T, H):
 def build_HR_2B(R, T, H):
     """Calculate the projection <i~jb|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>."""
 
-    X2B = 0.0
-    X2B -= np.einsum("bmji,m->bij", H2B["vooo"], r1b, optimize=True)
-    X2B -= np.einsum("mi,bmj->bij", H1B["oo"], r2b, optimize=True)
-    X2B -= np.einsum("mj,bim->bij", H1A["oo"], r2b, optimize=True)
-    X2B += np.einsum("be,eij->bij", H1A["vv"], r2b, optimize=True)
-    X2B += np.einsum("nmji,bmn->bij", H2B["oooo"], r2b, optimize=True)
-    X2B += np.einsum("bmje,eim->bij", H2A["voov"], r2b, optimize=True)
-    X2B += np.einsum("bmje,eim->bij", H2B["voov"], r2d, optimize=True)
-    X2B -= np.einsum("bmei,emj->bij", H2B["vovo"], r2b, optimize=True)
-    I1 = -np.einsum("nmfe,fmn->e", vB["oovv"], r2b, optimize=True) - 0.5 * np.einsum(
-        "mnef,fmn->e", vC["oovv"], r2d, optimize=True
+    X2B = -1.0 * np.einsum("bmji,m->bji", H.ab.vooo, R.b, optimize=True)
+    X2B -= np.einsum("mi,bjm->bji", H.b.oo, R.ab, optimize=True)
+    X2B -= np.einsum("mj,bmi->bji", H.a.oo, R.ab, optimize=True)
+    X2B += np.einsum("be,eji->bji", H.a.vv, R.ab, optimize=True)
+    X2B += np.einsum("nmji,bnm->bji", H.ab.oooo, R.ab, optimize=True)
+    X2B += np.einsum("bmje,emi->bji", H.aa.voov, R.ab, optimize=True)
+    X2B += np.einsum("bmje,emi->bji", H.ab.voov, R.bb, optimize=True)
+    X2B -= np.einsum("bmei,ejm->bji", H.ab.vovo, R.ab, optimize=True)
+    I1 = (
+        -np.einsum("nmfe,fnm->e", H.ab.oovv, R.ab, optimize=True) 
+        - 0.5 * np.einsum("mnef,fnm->e", H.bb.oovv, R.bb, optimize=True)
     )
-    X2B += np.einsum("e,beji->bij", I1, t2b, optimize=True)
+    X2B += np.einsum("e,beji->bji", I1, T.ab, optimize=True)
 
     return X2B
 
@@ -114,19 +121,19 @@ def build_HR_2B(R, T, H):
 def build_HR_2C(R, T, H):
     """Calculate the projection <ij~b~|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>."""
 
-    X2C = 0.0
-    X2C -= np.einsum("mbij,m->bij", H2B["ovoo"], r1a, optimize=True)
-    X2C -= np.einsum("mi,bmj->bij", H1A["oo"], r2c, optimize=True)
-    X2C -= np.einsum("mj,bim->bij", H1B["oo"], r2c, optimize=True)
-    X2C += np.einsum("be,eij->bij", H1B["vv"], r2c, optimize=True)
-    X2C += np.einsum("mnij,bmn->bij", H2B["oooo"], r2c, optimize=True)
-    X2C += np.einsum("mbej,eim->bij", H2B["ovvo"], r2a, optimize=True)
-    X2C += np.einsum("bmje,eim->bij", H2C["voov"], r2c, optimize=True)
-    X2C -= np.einsum("mbie,emj->bij", H2B["ovov"], r2c, optimize=True)
-    I1 = -0.5 * np.einsum("mnef,fmn->e", vA["oovv"], r2a, optimize=True) - np.einsum(
-        "mnef,fmn->e", vB["oovv"], r2c, optimize=True
+    X2C = -1.0 * np.einsum("mbij,m->bji", H.ab.ovoo, R.a, optimize=True)
+    X2C -= np.einsum("mi,bjm->bji", H.a.oo, R.ba, optimize=True)
+    X2C -= np.einsum("mj,bmi->bji", H.b.oo, R.ba, optimize=True)
+    X2C += np.einsum("be,eji->bji", H.b.vv, R.ba, optimize=True)
+    X2C += np.einsum("mnij,bnm->bji", H.ab.oooo, R.ba, optimize=True)
+    X2C += np.einsum("mbej,emi->bji", H.ab.ovvo, R.aa, optimize=True)
+    X2C += np.einsum("bmje,emi->bji", H.bb.voov, R.ba, optimize=True)
+    X2C -= np.einsum("mbie,ejm->bji", H.ab.ovov, R.ba, optimize=True)
+    I1 = (
+        -0.5 * np.einsum("mnef,fnm->e", H.aa.oovv, R.aa, optimize=True)
+        - np.einsum("mnef,fnm->e", H.ab.oovv, R.ba, optimize=True)
     )
-    X2C += np.einsum("e,ebij->bij", I1, t2b, optimize=True)
+    X2C += np.einsum("e,ebij->bji", I1, T.ab, optimize=True)
 
     return X2C
 
@@ -134,60 +141,21 @@ def build_HR_2C(R, T, H):
 def build_HR_2D(R, T, H):
     """Calculate the projection <i~j~b~|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>."""
 
-    X2D = 0.0
-    X2D -= np.einsum("bmji,m->bij", H2C["vooo"], r1b, optimize=True)
-    X2D += np.einsum("be,eij->bij", H1B["vv"], r2d, optimize=True)
-    X2D += 0.5 * np.einsum("mnij,bmn->bij", H2C["oooo"], r2d, optimize=True)
-    I1 = -0.5 * np.einsum("mnef,fmn->e", vC["oovv"], r2d, optimize=True) - np.einsum(
-        "nmfe,fmn->e", vB["oovv"], r2b, optimize=True
+    X2D = -1.0 * np.einsum("bmji,m->bji", H.bb.vooo, R.b, optimize=True)
+    X2D += np.einsum("be,eji->bji", H.b.vv, R.bb, optimize=True)
+    X2D += 0.5 * np.einsum("mnij,bnm->bji", H.bb.oooo, R.bb, optimize=True)
+    I1 = (
+        -0.5 * np.einsum("mnef,fnm->e", H.bb.oovv, R.bb, optimize=True)
+        - np.einsum("nmfe,fnm->e", H.ab.oovv, R.ab, optimize=True)
     )
-    X2D += np.einsum("e,ebij->bij", I1, t2c, optimize=True)
+    X2D += np.einsum("e,ebij->bji", I1, T.bb, optimize=True)
 
     D_ij = 0.0
-    D_ij -= np.einsum("mi,bmj->bij", H1B["oo"], r2d, optimize=True)
-    D_ij += np.einsum("bmje,eim->bij", H2C["voov"], r2d, optimize=True)
-    D_ij += np.einsum("mbej,eim->bij", H2B["ovvo"], r2b, optimize=True)
+    D_ij -= np.einsum("mi,bjm->bji", H.b.oo, R.bb, optimize=True)
+    D_ij += np.einsum("bmje,emi->bji", H.bb.voov, R.bb, optimize=True)
+    D_ij += np.einsum("mbej,emi->bji", H.ab.ovvo, R.ab, optimize=True)
     D_ij -= np.transpose(D_ij, (0, 2, 1))
 
     X2D += D_ij
 
     return X2D
-
-
-def guess_1h(ints, sys):
-    """Build and diagonalize the Hamiltonian in the space of 1h excitations."""
-    fA = ints["fA"]
-    fB = ints["fB"]
-
-    n1a = sys["Nocc_a"]
-    n1b = sys["Nocc_b"]
-
-    HAA = np.zeros((n1a, n1a))
-    HAB = np.zeros((n1a, n1b))
-    HBA = np.zeros((n1b, n1a))
-    HBB = np.zeros((n1b, n1b))
-
-    ct1 = 0
-    for i in range(sys["Nocc_a"]):
-        ct2 = 0
-        for j in range(sys["Nocc_a"]):
-            HAA[ct1, ct2] = fA["oo"][i, j]
-            ct2 += 1
-        ct1 += 1
-
-    ct1 = 0
-    for i in range(sys["Nocc_b"]):
-        ct2 = 0
-        for j in range(sys["Nocc_b"]):
-            HBB[ct1, ct2] = fB["oo"][i, j]
-            ct2 += 1
-        ct1 += 1
-
-    H = np.hstack((np.vstack((HAA, HBA)), np.vstack((HAB, HBB))))
-
-    E_1h, C = np.linalg.eigh(H)
-    idx = np.argsort(E_1h)
-    E_1h = E_1h[idx]
-    C = C[:, idx]
-
-    return C, E_1h
