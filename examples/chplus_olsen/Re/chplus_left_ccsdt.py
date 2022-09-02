@@ -38,7 +38,6 @@ if __name__ == "__main__":
     L, _, _ = lcc_driver(calculation, system, T, Hbar)
 
     calculation = Calculation(
-        order=3,
         calculation_type="eomccsdt",
         maximum_iterations=100,
         convergence_tolerance=1.0e-08,
@@ -54,7 +53,6 @@ if __name__ == "__main__":
     for i in range(len(R)):
 
         calculation = Calculation(
-            order=3,
             calculation_type="left_ccsdt",
             convergence_tolerance=1.0e-08,
             maximum_iterations=500,

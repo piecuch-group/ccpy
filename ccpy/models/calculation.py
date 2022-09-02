@@ -58,35 +58,35 @@ class Calculation:
             self.num_holes = 3
             self.num_active = [1]
             self.active_orders = [3]
-        elif calculation_type.lower() in ["ipeom2"]:
+        elif calculation_type.lower() in ["ipeom2", "left_ipeom2"]:
             self.order = 2
             self.num_particles = 1
             self.num_holes = 2
-        elif calculation_type.lower() in ["ipeom3"]:
+        elif calculation_type.lower() in ["ipeom3", "left_ipeom3"]:
             self.order = 3
             self.num_particles = 2
             self.num_holes = 3
-        elif calculation_type.lower() in ["eaeom2"]:
+        elif calculation_type.lower() in ["eaeom2", "left_eaeom2"]:
             self.order = 2
             self.num_particles = 2
             self.num_holes = 1
-        elif calculation_type.lower() in ["eaeom3"]:
+        elif calculation_type.lower() in ["eaeom3", "left_eaeom3"]:
             self.order = 3
             self.num_particles = 3
             self.num_holes = 2
-        elif calculation_type.lower() in ["dipeom3"]:
+        elif calculation_type.lower() in ["dipeom3", "left_dipeom3"]:
             self.order = 3
             self.num_particles = 1
             self.num_holes = 3
-        elif calculation_type.lower() in ["dipeom4"]:
+        elif calculation_type.lower() in ["dipeom4", "left_dipeom4"]:
             self.order = 4
             self.num_particles = 2
             self.num_holes = 4
-        elif calculation_type.lower() in ["deaeom3"]:
+        elif calculation_type.lower() in ["deaeom3", "left_deaeom3"]:
             self.order = 3
             self.num_particles = 3
             self.num_holes = 1
-        elif calculation_type.lower() in ["deaeom4"]:
+        elif calculation_type.lower() in ["deaeom4", "left_deaeom4"]:
             self.order = 4
             self.num_particles = 4
             self.num_holes = 2

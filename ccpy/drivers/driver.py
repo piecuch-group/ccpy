@@ -7,10 +7,13 @@ import ccpy.left
 import ccpy.eomcc
 
 from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, eomcc_davidson, eomcc_davidson_lowmem, mrcc_jacobi
-from ccpy.models.operators import ClusterOperator
+from ccpy.models.operators import ClusterOperator, FockOperator
 from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter
 
 from ccpy.eomcc.initial_guess import get_initial_guess
+
+import numpy as np
+from copy import deepcopy
 
 
 def cc_driver(calculation, system, hamiltonian, T=None, pspace=None):
@@ -75,7 +78,6 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None):
     return T, total_energy, is_converged
 
 
-# [TODO]: Pass in cc_energy or somehow fix issue that output prints 0 for correlation energy
 def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
     """Performs the calculation specified by the user in the input."""
 
@@ -88,6 +90,7 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
     # import the specific CC method module and get its update function
     lcc_mod = import_module("ccpy.left." + calculation.calculation_type.lower())
     update_function = getattr(lcc_mod, 'update')
+    #LR_function = getattr(lcc_mod, 'LR')
 
     cc_printer = CCPrinter(calculation)
     cc_printer.cc_header()
@@ -99,18 +102,32 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
 
     # initialize the cluster operator anew, or use restart
     if L is None:
-        L = ClusterOperator(system,
-                            calculation.order,
-                            calculation.active_orders,
-                            calculation.num_active,
-                            )
+
         if is_ground:
+            L = ClusterOperator(system,
+                                calculation.order,
+                                calculation.active_orders,
+                                calculation.num_active,
+                                )
+
             L.unflatten(T.flatten()[:L.ndim])
         else:
+            if isinstance(R, ClusterOperator):
+                L = ClusterOperator(system,
+                                    calculation.order,
+                                    calculation.active_orders,
+                                    calculation.num_active,
+                                    )
+            elif isinstance(R, FockOperator):
+                L = FockOperator(system,
+                                 calculation.num_particles,
+                                 calculation.num_holes)
+
             L.unflatten(R.flatten()[:L.ndim])
 
     # regardless of restart status, initialize residual anew
-    LH = ClusterOperator(system, calculation.order)
+    LH = deepcopy(L)
+    LH.unflatten(np.zeros(shape=LH.ndim))
 
     L, omega, LR, is_converged = left_cc_jacobi(update_function,
                                          L,
