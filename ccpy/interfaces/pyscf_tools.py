@@ -402,3 +402,16 @@ def write_twobody_integrals(V, e_nuc):
                             )
                         )
         f.write("    {}    {}    {}    {}        {:.11f}\n".format(0, 0, 0, 0, e_nuc))
+
+
+def get_dipole_integrals(mol, mf):
+
+    charges = mol.atom_charges()
+    coords = mol.atom_coords()
+    nuc_charge_center = np.einsum('z,zx->x', charges, coords) / charges.sum()
+    mol.set_common_orig_(nuc_charge_center)
+    dip_ints_ao = mol.intor_symmetric('cint1e_r_sph', comp=3)
+
+    dip_ints_mo = np.einsum("xij,ip,jq->xpq", dip_ints_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
+
+    return dip_ints_mo
