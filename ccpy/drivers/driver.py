@@ -6,7 +6,7 @@ import ccpy.cc
 import ccpy.left
 import ccpy.eomcc
 
-from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, eomcc_davidson, eomcc_davidson_lowmem, mrcc_jacobi
+from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eomcc_davidson_lowmem, mrcc_jacobi
 from ccpy.models.operators import ClusterOperator, FockOperator
 from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter
 
@@ -78,7 +78,7 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None):
     return T, total_energy, is_converged
 
 
-def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
+def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None, pspace=None):
     """Performs the calculation specified by the user in the input."""
 
     # check if requested CC calculation is implemented in modules
@@ -129,17 +129,34 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
     LH = deepcopy(L)
     LH.unflatten(np.zeros(shape=LH.ndim))
 
-    L, omega, LR, is_converged = left_cc_jacobi(update_function,
-                                         L,
-                                         LH,
-                                         T,
-                                         R,
-                                         hamiltonian,
-                                         omega,
-                                         calculation,
-                                         is_ground,
-                                         system
-                                         )
+    if pspace is None:
+
+        L, omega, LR, is_converged = left_cc_jacobi(update_function,
+                                             L,
+                                             LH,
+                                             T,
+                                             R,
+                                             hamiltonian,
+                                             omega,
+                                             calculation,
+                                             is_ground,
+                                             system
+                                             )
+    else:
+
+        L, omega, LR, is_converged = left_ccp_jacobi(update_function,
+                                             L,
+                                             LH,
+                                             T,
+                                             R,
+                                             hamiltonian,
+                                             omega,
+                                             calculation,
+                                             is_ground,
+                                             system,
+                                             pspace,
+                                             )
+
     total_energy = system.reference_energy + omega
 
     cc_printer.leftcc_calculation_summary(omega, LR, is_converged)
