@@ -2,7 +2,12 @@ from pyscf import gto, scf
 
 from ccpy.models.calculation import Calculation
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
-from ccpy.drivers.driver import cc_driver
+from ccpy.drivers.driver import cc_driver, lcc_driver
+from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
+from ccpy.moments.cct3 import calc_cct3
+from ccpy.moments.ccp3 import calc_ccp3
+
+from ccpy.utilities.pspace import get_active_pspace
 
 if __name__ == "__main__":
 
@@ -25,12 +30,26 @@ if __name__ == "__main__":
     system.set_active_space(nact_unoccupied=9, nact_occupied=5)
     system.print_info()
 
+    # check that CC(P;3) and CC(t;3) give the same answer
+    #pspace = get_active_pspace(system, nact_o=5, nact_u=9)
+
+
     calculation = Calculation(
-        order=3,
-        active_orders=[3],
-        num_active=[1],
         calculation_type="ccsdt1",
         convergence_tolerance=1.0e-08
     )
 
     T, total_energy, is_converged = cc_driver(calculation, system, H)
+
+    Hbar = build_hbar_ccsd(T, H)
+
+    calculation = Calculation(
+        calculation_type="left_ccsd",
+        convergence_tolerance=1.0e-08
+    )
+
+    L, _, _ = lcc_driver(calculation, system, T, Hbar)
+
+    Ecct3, deltat3 = calc_cct3(T, L, Hbar, H, system)
+
+    #Ecct3, deltat3 = calc_ccp3(T, L, Hbar, H, system, pspace=pspace)
