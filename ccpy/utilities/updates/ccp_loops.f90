@@ -3631,14 +3631,20 @@ module ccp_loops
                               do b = a + 1,nua
                                   do c = b + 1,nua
 
-                                      if (pspace_aaa(a, b, c, i, j, k) == 0) cycle
+                                      if (pspace_aaa(a, b, c, i, j, k) == 0) then
+                                          l3a(a, b, c, i, j, k) = 0.0d0
+                                          val = 0.0d0
+                                      else
+                                          denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1A_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1A_vv(C,C)
 
-                                      denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1A_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1A_vv(C,C)
+                                          val = X3A(a, b, c, i, j, k)
 
-                                      val = X3A(a, b, c, i, j, k)
+                                          l3a(a, b, c, i, j, k) = l3a(a, b, c, i, j, k)&
+                                                  - (val - omega * l3a(a, b, c, i, j, k))/(denom - omega + shift)
 
-                                      l3a(a, b, c, i, j, k) = l3a(a, b, c, i, j, k)&
-                                              - (val - omega * l3a(a, b, c, i, j, k))/(denom - omega + shift)
+                                          val = X3A(a, b, c, i, j, k) - omega * l3a(a, b, c, i, j, k)
+                                      end if
+
                                       l3a(A,B,C,K,I,J) = l3a(A,B,C,I,J,K)
                                       l3a(A,B,C,J,K,I) = l3a(A,B,C,I,J,K)
                                       l3a(A,B,C,I,K,J) = -l3a(A,B,C,I,J,K)
@@ -3679,8 +3685,6 @@ module ccp_loops
                                       l3a(C,A,B,I,K,J) = -l3a(A,B,C,I,J,K)
                                       l3a(C,A,B,J,I,K) = -l3a(A,B,C,I,J,K)
                                       l3a(C,A,B,K,J,I) = -l3a(A,B,C,I,J,K)
-
-                                      val = X3A(a, b, c, i, j, k) - omega * l3a(a, b, c, i, j, k)
 
                                       X3A(A,B,C,I,J,K) = val
                                       X3A(A,B,C,K,I,J) = val
@@ -3738,20 +3742,22 @@ module ccp_loops
                               do b = a + 1,nua
                                   do c = 1,nub
 
-                                      if (pspace_aab(a, b, c, i, j, k) == 0) cycle
+                                      if (pspace_aab(a, b, c, i, j, k) == 0) then
+                                          l3b(a, b, c, i, j, k) = 0.0d0
+                                          val = 0.0d0
+                                      else
+                                          denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1B_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1B_vv(C,C)
 
-                                      denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1B_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1B_vv(C,C)
+                                          val = X3B(a, b, c, i, j, k)
 
-                                      val = X3B(a, b, c, i, j, k)
+                                          l3b(a, b, c, i, j, k) = l3b(a, b, c, i, j, k)&
+                                                  - (val - omega * l3b(a, b, c, i, j, k))/(denom - omega + shift)
+                                          val = X3B(a, b, c, i, j, k) - omega * l3b(a, b, c, i, j, k)
+                                      end if
 
-                                      l3b(a, b, c, i, j, k) = l3b(a, b, c, i, j, k)&
-                                              - (val - omega * l3b(a, b, c, i, j, k))/(denom - omega + shift)
                                       l3b(b, a, c, i, j, k) = -1.0 * l3b(A,B,C,I,J,K)
                                       l3b(a, b, c, j, i, k) = -1.0 * l3b(A,B,C,I,J,K)
                                       l3b(b, a, c, j, i, k) = l3b(A,B,C,I,J,K)
-
-
-                                      val = X3B(a, b, c, i, j, k) - omega * l3b(a, b, c, i, j, k)
 
                                       X3B(A,B,C,I,J,K) = val
                                       X3B(B,A,C,I,J,K) = -1.0 * val
@@ -3772,20 +3778,22 @@ module ccp_loops
                               do b = 1,nub
                                   do c = b+1,nub
 
-                                      if (pspace_abb(a, b, c, i, j, k) == 0) cycle
+                                      if (pspace_abb(a, b, c, i, j, k) == 0) then
+                                          l3c(a, b, c, i, j, k) = 0.0d0
+                                          val = 0.0d0
+                                      else
+                                          denom = -H1A_oo(I,I)-H1B_oo(J,J)-H1B_oo(K,K)+H1A_vv(A,A)+H1B_vv(B,B)+H1B_vv(C,C)
 
-                                      denom = -H1A_oo(I,I)-H1B_oo(J,J)-H1B_oo(K,K)+H1A_vv(A,A)+H1B_vv(B,B)+H1B_vv(C,C)
+                                          val = X3C(a, b, c, i, j, k)
 
-                                      val = X3C(a, b, c, i, j, k)
+                                          l3c(a, b, c, i, j, k) = l3c(a, b, c, i, j, k)&
+                                                  - (val - omega * l3c(a, b, c, i, j, k))/(denom - omega + shift)
+                                          val = X3C(a, b, c, i, j, k) - omega * l3c(a, b, c, i, j, k)
+                                      end if
 
-                                      l3c(a, b, c, i, j, k) = l3c(a, b, c, i, j, k)&
-                                              - (val - omega * l3c(a, b, c, i, j, k))/(denom - omega + shift)
                                       l3c(a, c, b, i, j, k) = -1.0 * l3c(A,B,C,I,J,K)
                                       l3c(a, b, c, i, k, j) = -1.0 * l3c(A,B,C,I,J,K)
                                       l3c(a, c, b, i, k, j) = l3c(A,B,C,I,J,K)
-
-
-                                      val = X3C(a, b, c, i, j, k) - omega * l3c(a, b, c, i, j, k)
 
                                       X3C(A,B,C,I,J,K) = val
                                       X3C(A,C,B,I,J,K) = -1.0 * val
@@ -3806,14 +3814,20 @@ module ccp_loops
                               do b = a+1,nub
                                   do c = b+1,nub
 
-                                      if (pspace_bbb(a, b, c, i, j, k) == 0) cycle
+                                      if (pspace_bbb(a, b, c, i, j, k) == 0) then
+                                          l3d(a, b, c, i, j, k) = 0.0d0
+                                          val = 0.0d0
+                                      else
+                                          denom = -H1B_oo(I,I)-H1B_oo(J,J)-H1B_oo(K,K)+H1B_vv(A,A)+H1B_vv(B,B)+H1B_vv(C,C)
 
-                                      denom = -H1B_oo(I,I)-H1B_oo(J,J)-H1B_oo(K,K)+H1B_vv(A,A)+H1B_vv(B,B)+H1B_vv(C,C)
+                                          val = X3D(a, b, c, i, j, k)
 
-                                      val = X3D(a, b, c, i, j, k)
+                                          l3d(a, b, c, i, j, k) = l3d(a, b, c, i, j, k)&
+                                                  - (val - omega * l3d(a, b, c, i, j, k))/(denom - omega + shift)
 
-                                      l3d(a, b, c, i, j, k) = l3d(a, b, c, i, j, k)&
-                                              - (val - omega * l3d(a, b, c, i, j, k))/(denom - omega + shift)
+                                          val = X3D(a, b, c, i, j, k) - omega * l3d(a, b, c, i, j, k)
+                                      end if
+
                                       l3d(A,B,C,K,I,J) = l3d(A,B,C,I,J,K)
                                       l3d(A,B,C,J,K,I) = l3d(A,B,C,I,J,K)
                                       l3d(A,B,C,I,K,J) = -l3d(A,B,C,I,J,K)
@@ -3854,8 +3868,6 @@ module ccp_loops
                                       l3d(C,A,B,I,K,J) = -l3d(A,B,C,I,J,K)
                                       l3d(C,A,B,J,I,K) = -l3d(A,B,C,I,J,K)
                                       l3d(C,A,B,K,J,I) = -l3d(A,B,C,I,J,K)
-
-                                      val = X3D(a, b, c, i, j, k) - omega * l3d(a, b, c, i, j, k)
 
                                       X3D(A,B,C,I,J,K) = val
                                       X3D(A,B,C,K,I,J) = val
