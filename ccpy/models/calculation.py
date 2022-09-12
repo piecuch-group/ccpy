@@ -44,7 +44,7 @@ class Calculation:
             self.order = 2
             self.num_particles = 2
             self.num_holes = 2
-        elif calculation_type.lower() in ["ccsdt", "eomccsdt", "left_ccsdt"]:
+        elif calculation_type.lower() in ["ccsdt", "eomccsdt", "left_ccsdt", "ccsdt_p", "left_ccsdt_p", "ccsdt_p_slow", "left_ccsdt_p_slow"]:
             self.order = 3
             self.num_particles = 3
             self.num_holes = 3

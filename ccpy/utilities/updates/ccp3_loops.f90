@@ -1369,12 +1369,12 @@ module ccp3_loops
                         D3A_V(1:nua,1:noa,1:nua),&
                         omega
                         integer :: i, j, k, a, b, c
-                        real(kind=8) :: D, temp
+                        real(kind=8) :: D, LM
 
-                        deltaA = 0.0
-                        deltaB = 0.0
-                        deltaC = 0.0
-                        deltaD = 0.0
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
 
                         do i = 1 , noa
                             do j = i+1, noa
@@ -1385,17 +1385,17 @@ module ccp3_loops
 
                                                 if (pspace(a, b, c, i, j, k) == 1) cycle
 
-                                                temp = MM23A(a,b,c,i,j,k) * L3A(a,b,c,i,j,k)
+                                                LM = MM23A(a,b,c,i,j,k) * L3A(a,b,c,i,j,k)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
 
-                                                deltaA = deltaA + temp/(omega+D)
+                                                deltaA = deltaA + LM/D
 
                                                 D = H1A_oo(i,i) + H1A_oo(j,j) + H1A_oo(k,k)&
                                                 - H1A_vv(a,a) - H1A_vv(b,b) - H1A_vv(c,c)
 
-                                                deltaB = deltaB + temp/(omega+D)
+                                                deltaB = deltaB + LM/D
 
                                                 D = D &
                                                 -H2A_voov(a,i,i,a) - H2A_voov(b,i,i,b) - H2A_voov(c,i,i,c)&
@@ -1404,7 +1404,7 @@ module ccp3_loops
                                                 -H2A_oooo(j,i,j,i) - H2A_oooo(k,i,k,i) - H2A_oooo(k,j,k,j)&
                                                 -H2A_vvvv(b,a,b,a) - H2A_vvvv(c,a,c,a) - H2A_vvvv(c,b,c,b)
 
-                                                deltaC = deltaC + temp/(omega+D)
+                                                deltaC = deltaC + LM/D
 
                                                 D = D &
                                                 +D3A_O(a,i,j)+D3A_O(a,i,k)+D3A_O(a,j,k)&
@@ -1414,7 +1414,7 @@ module ccp3_loops
                                                 -D3A_V(a,j,b)-D3A_V(a,j,c)-D3A_V(b,j,c)&
                                                 -D3A_V(a,k,b)-D3A_V(a,k,c)-D3A_V(b,k,c)
 
-                                                deltaD = deltaD + temp/(omega+D)
+                                                deltaD = deltaD + LM/D
 
                                             end do
                                         end do
@@ -1462,12 +1462,12 @@ module ccp3_loops
                         D3C_V(1:nua,1:nob,1:nub),&
                         omega
                         integer :: i, j, k, a, b, c
-                        real(kind=8) :: D, temp
+                        real(kind=8) :: D, LM
 
-                        deltaA = 0.0
-                        deltaB = 0.0
-                        deltaC = 0.0
-                        deltaD = 0.0
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
 
                         do i = 1, noa
                             do j = i+1, noa
@@ -1478,17 +1478,17 @@ module ccp3_loops
 
                                                 if (pspace(a, b, c, i, j, k) == 1) cycle
 
-                                                temp = MM23B(a,b,c,i,j,k) * L3B(a,b,c,i,j,k)
+                                                LM = MM23B(a,b,c,i,j,k) * L3B(a,b,c,i,j,k)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
 
-                                                deltaA = deltaA + temp/(omega+D)
+                                                deltaA = deltaA + LM/D
 
                                                 D = H1A_oo(i,i) + H1A_oo(j,j) + H1B_oo(k,k)&
                                                 - H1A_vv(a,a) - H1A_vv(b,b) - H1B_vv(c,c)
 
-                                                deltaB = deltaB + temp/(omega+D)
+                                                deltaB = deltaB + LM/D
 
                                                 D = D &
                                                 -H2A_voov(a,i,i,a)-H2A_voov(b,i,i,b)+H2B_ovov(i,c,i,c)&
@@ -1497,7 +1497,7 @@ module ccp3_loops
                                                 -H2A_oooo(j,i,j,i)-H2B_oooo(i,k,i,k)-H2B_oooo(j,k,j,k)&
                                                 -H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
 
-                                                deltaC = deltaC + temp/(omega+D)
+                                                deltaC = deltaC + LM/D
 
                                                 D = D &
                                                 +D3A_O(a,i,j)+D3B_O(a,i,k)+D3B_O(a,j,k)&
@@ -1507,7 +1507,7 @@ module ccp3_loops
                                                 -D3A_V(a,j,b)-D3B_V(a,j,c)-D3B_V(b,j,c)&
                                                 -D3C_V(a,k,c)-D3C_V(b,k,c)
 
-                                                deltaD = deltaD + temp/(omega+D)
+                                                deltaD = deltaD + LM/D
 
                                             end do
                                         end do
@@ -1557,10 +1557,10 @@ module ccp3_loops
                         integer :: i, j, k, a, b, c
                         real(kind=8) :: D, temp
 
-                        deltaA = 0.0
-                        deltaB = 0.0
-                        deltaC = 0.0
-                        deltaD = 0.0
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
 
                         do i = 1 , noa
                             do j = 1, nob
@@ -1633,10 +1633,10 @@ module ccp3_loops
                         integer :: i, j, k, a, b, c
                         real(kind=8) :: D, temp
 
-                        deltaA = 0.0
-                        deltaB = 0.0
-                        deltaC = 0.0
-                        deltaD = 0.0
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
 
                         do i = 1 , nob
                             do j = i+1, nob

@@ -75,19 +75,28 @@ def read_amplitudes_from_jun(amlitude_file, system, order, amp_type='T', iroot=0
         for j in range(system.noccupied_alpha):
             for a in range(system.nunoccupied_alpha):
                 for b in range(system.nunoccupied_alpha):
-                    X.aa[a, b, i, j] = amps[n + iroot * reclen]
+                    if amp_type == "T":
+                        X.aa[a, b, i, j] = -1.0 * amps[n + iroot * reclen]
+                    else:
+                        X.aa[a, b, i, j] = amps[n + iroot * reclen]
                     n += 1
     for i in range(system.noccupied_alpha):
         for j in range(system.noccupied_beta):
             for a in range(system.nunoccupied_alpha):
                 for b in range(system.nunoccupied_beta):
-                    X.ab[a, b, i, j] = amps[n + iroot * reclen]
+                    if amp_type == "T":
+                        X.bb[a, b, i, j] = -1.0 * amps[n + iroot * reclen]
+                    else:
+                        X.ab[a, b, i, j] = amps[n + iroot * reclen]
                     n += 1
     for i in range(system.noccupied_beta):
         for j in range(system.noccupied_beta):
             for a in range(system.nunoccupied_beta):
                 for b in range(system.nunoccupied_beta):
-                    X.bb[a, b, i, j] = amps[n + iroot * reclen]
+                    if amp_type == "T":
+                        X.ab[a, b, i, j] = -1.0 * amps[n + iroot * reclen]
+                    else:
+                        X.bb[a, b, i, j] = amps[n + iroot * reclen]
                     n += 1
 
     if order == 2: return X
@@ -98,7 +107,10 @@ def read_amplitudes_from_jun(amlitude_file, system, order, amp_type='T', iroot=0
                 for a in range(system.nunoccupied_alpha):
                     for b in range(system.nunoccupied_alpha):
                         for c in range(system.nunoccupied_alpha):
-                            X.aaa[a, b, c, i, j, k] = amps[n + iroot * reclen]
+                            if amp_type == "T":
+                                X.aaa[a, b, c, i, j, k] = -1.0 * amps[n + iroot * reclen]
+                            else:
+                                X.aaa[a, b, c, i, j, k] = amps[n + iroot * reclen]
                             n += 1
     for i in range(system.noccupied_alpha):
         for j in range(system.noccupied_alpha):
@@ -106,7 +118,10 @@ def read_amplitudes_from_jun(amlitude_file, system, order, amp_type='T', iroot=0
                 for a in range(system.nunoccupied_alpha):
                     for b in range(system.nunoccupied_alpha):
                         for c in range(system.nunoccupied_beta):
-                            X.aab[a, b, c, i, j, k] = amps[n + iroot * reclen]
+                            if amp_type == "T":
+                                X.bbb[a, b, c, i, j, k] = -1.0 * amps[n + iroot * reclen]
+                            else:
+                                X.aab[a, b, c, i, j, k] = amps[n + iroot * reclen]
                             n += 1
     for i in range(system.noccupied_alpha):
         for j in range(system.noccupied_beta):
@@ -114,7 +129,10 @@ def read_amplitudes_from_jun(amlitude_file, system, order, amp_type='T', iroot=0
                 for a in range(system.nunoccupied_alpha):
                     for b in range(system.nunoccupied_beta):
                         for c in range(system.nunoccupied_beta):
-                            X.abb[a, b, c, i, j, k] = amps[n + iroot * reclen]
+                            if amp_type == "T":
+                                X.aab[a, c, b, i, k, j] = -1.0 * amps[n + iroot * reclen]
+                            else:
+                                X.abb[a, b, c, i, j, k] = amps[n + iroot * reclen]
                             n += 1
     for i in range(system.noccupied_beta):
         for j in range(system.noccupied_beta):
@@ -122,7 +140,10 @@ def read_amplitudes_from_jun(amlitude_file, system, order, amp_type='T', iroot=0
                 for a in range(system.nunoccupied_beta):
                     for b in range(system.nunoccupied_beta):
                         for c in range(system.nunoccupied_beta):
-                            X.bbb[a, b, c, i, j, k] = amps[n + iroot * reclen]
+                            if amp_type == "T":
+                                X.abb[a, b, c, i, j, k] = -1.0 * amps[n + iroot * reclen]
+                            else:
+                                X.bbb[a, b, c, i, j, k] = amps[n + iroot * reclen]
                             n += 1
 
     if order == 3: return X
