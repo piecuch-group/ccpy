@@ -7,6 +7,8 @@ from ccpy.hbar.hbar_ccsdt import build_hbar_ccsdt
 
 from ccpy.eomcc.initial_guess import get_initial_guess
 
+from ccpy.utilities.pspace import get_full_pspace
+
 if __name__ == "__main__":
 
     system, H = load_from_gamess(
@@ -17,9 +19,8 @@ if __name__ == "__main__":
     )
 
     calculation = Calculation(
-        order=3,
         calculation_type="ccsdt",
-        convergence_tolerance=1.0e-08,
+        convergence_tolerance=1.0e-011,
         RHF_symmetry=True,
     )
 
@@ -27,37 +28,38 @@ if __name__ == "__main__":
 
     Hbar = build_hbar_ccsdt(T, H)
 
+    pspace = get_full_pspace(system, 3)
+
     calculation = Calculation(
-        order=3,
-        calculation_type="left_ccsdt",
-        convergence_tolerance=1.0e-08,
+        calculation_type="left_ccsdt_p",
+        convergence_tolerance=1.0e-011,
         maximum_iterations=200,
         RHF_symmetry=True,
     )
 
-    L, _, _ = lcc_driver(calculation, system, T, Hbar)
+    L, _, _ = lcc_driver(calculation, system, T, Hbar, pspace=pspace)
 
     calculation = Calculation(
         calculation_type="eomccsdt",
-        maximum_iterations=100,
-        convergence_tolerance=1.0e-08,
+        maximum_iterations=200,
+        convergence_tolerance=1.0e-011,
         multiplicity=1,
         RHF_symmetry=True,
         low_memory=False,
     )
 
-    R, omega = get_initial_guess(calculation, system, Hbar, nroot=3, noact=0, nuact=0, guess_order=1)
+    R, omega = get_initial_guess(calculation, system, Hbar, nroot=1, noact=0, nuact=0, guess_order=1)
 
     R, omega, r0, _ = eomcc_driver(calculation, system, Hbar, T, R, omega)
 
     for i in range(len(R)):
 
         calculation = Calculation(
-            calculation_type="left_ccsdt",
-            convergence_tolerance=1.0e-08,
+            calculation_type="left_ccsdt_p",
+            convergence_tolerance=1.0e-011,
             maximum_iterations=500,
             RHF_symmetry=True,
-            energy_shift=0.8,
+            energy_shift=0.0,
         )
 
-        L, _, _ = lcc_driver(calculation, system, T, Hbar, omega=omega[i], R=R[i])
+        L, _, _ = lcc_driver(calculation, system, T, Hbar, omega=omega[i], R=R[i], pspace=pspace)

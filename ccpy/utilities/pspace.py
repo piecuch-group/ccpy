@@ -118,7 +118,7 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
         [2 * i - 1 for i in range(1, system.noccupied_alpha + 1)]
         + [2 * i for i in range(1, system.noccupied_beta + 1)]
     )
-    print(HF)
+    #print(HF)
     # HF = list(range(1, system.nelectrons + 1))
     occupied_lower_bound = 1
     occupied_upper_bound = system.noccupied_alpha
