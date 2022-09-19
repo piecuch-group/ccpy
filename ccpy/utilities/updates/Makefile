@@ -21,7 +21,7 @@ LDFLAGS :=
 # configuration for local mac OSX
 # be careful: -lmkl_intel_ilp64 requires 64-bit integers while -lmkl_intel_lp64 uses 32-bit integers
 # 	      Default integer size in Python is 32-bit. Use -lmkl_intel_lp64
-#LIBS := -L/Users/harellab/opt/anaconda3/envs/ccpy_dev/lib -lmkl_core -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_avx2.2 -lgomp -lpthread -lm -ldl
+LIBS := -L/Users/harellab/opt/anaconda3/envs/ccpy_dev/lib -lmkl_core -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_avx2.2 -lgomp -lpthread -lm -ldl
 
 # configuartion for work computer
 #LIBS := -L/anaconda3/envs/ccpy_refactor/lib -lmkl_core -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_avx2.1 -lgomp -lpthread -lm -ldl

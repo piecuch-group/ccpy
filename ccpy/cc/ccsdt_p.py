@@ -9,6 +9,14 @@ and triples (CCSDT) calculation for a molecular system."""
 #
 # (3) Implement pre-screening to reduce loop sizes and checking of amplitudes for each diagram, thus removing dependence
 #     on P space matrix.
+#
+# (4) Alternative to (3), store p_space array on disk and load in p_ijk(a,b,c) and related permutations within the
+#     loop over triples in p_space and perform usual checking with p_ijk which is nu**3 storage
+#
+# (5) Alternative to (3) and (4), do a naive checking of idx in p_space_list, where p_space_list only stores the ijkabc
+#     for triples in P space. Can use good search algorithm that go as log(N) or even O(1)
+#
+# (6) Alternative to (5), use MurmurHash3 to hash each tuple in P space so that checking
 
 
 import numpy as np
