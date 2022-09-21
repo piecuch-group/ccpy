@@ -41,10 +41,19 @@ def binary_search(arr, x):
     return -1
 
 @njit
+def linear_search(arr, x):
+    for i in range(len(arr)):
+        if arr[i] == x:
+            return i
+    else:
+        return -1
+
+
+@njit
 def sub2ind(x, shape):
     return (x[0]
             + shape[0] * x[1]
             + shape[0] * shape[1] * x[2]
             + shape[0] * shape[1] * shape[2] * x[3]
             + shape[0] * shape[1] * shape[2] * shape[3] * x[4]
-            + shape[0] * shape[1] * shape[2] * shape[3] * shape[4] * x[5])
+            + shape[0] * shape[1] * shape[2] * shape[3] * shape[4] * x[5]) + 1
