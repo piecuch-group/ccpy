@@ -6,7 +6,6 @@ if __name__ == '__main__':
     from pyscf import gto, scf, cc
 
     from ccpy.models.calculation import Calculation
-    from ccpy.models.driver import CCMethod
 
     # Testing from PySCF
     mol = gto.Mole()
@@ -28,8 +27,8 @@ if __name__ == '__main__':
 
     #mycc = CCDriver('ccsd'
     
-    #calculation = Calculation('ccsd')
-    #T, cc_energy = calc_driver_main(calculation, system, H)
+    calculation = Calculation('ccsd', order=2)
+    T, cc_energy = calc_driver_main(calculation, system, H)
 
     pyscf_cc = cc.CCSD(mf, frozen=2)
     pyscf_cc.run()

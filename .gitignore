@@ -120,3 +120,5 @@ cc.inp
 pspace
 *.moe
 *.inf
+
+.vscode/

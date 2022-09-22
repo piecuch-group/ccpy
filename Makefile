@@ -6,6 +6,10 @@ autoflake = autoflake -ir --remove-all-unused-imports --ignore-init-module-impor
 mypy = mypy ccpy
 pylint = pylint ccpy
 
+.PHONY: all
+all:
+	cd ccpy/utilities/updates && $(MAKE) $@
+
 .PHONY: install
 install:
 	pip install -e .

@@ -1,5 +1,8 @@
 # The ideal input file should consist of three items
 
+run = Runner(threads=4,
+             max_memory="5g")
+
 # For ground state
 mol = Molecule()
 
@@ -8,7 +11,7 @@ inp = EnergyInput(
     method=CCMethod(truncation=2)
 )
 
-result = driver.run(inp)
+result = run(inp)
 
 # For excited states
 inp = EnergyInput(
