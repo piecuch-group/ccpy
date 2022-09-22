@@ -27,7 +27,7 @@ def binary_search(arr, x):
     high = len(arr) - 1
     mid = 0
     while low <= high:
-        mid = (high + low) // 2
+        mid = (high + low) >> 1
         # If x is greater, ignore left half
         if arr[mid] < x:
             low = mid + 1
@@ -56,4 +56,25 @@ def sub2ind(x, shape):
             + shape[0] * shape[1] * x[2]
             + shape[0] * shape[1] * shape[2] * x[3]
             + shape[0] * shape[1] * shape[2] * shape[3] * x[4]
-            + shape[0] * shape[1] * shape[2] * shape[3] * shape[4] * x[5]) + 1
+            + shape[0] * shape[1] * shape[2] * shape[3] * shape[4] * x[5])
+
+@njit
+def cantor(i, j):
+    x = (i + j) * (i + j + 1)
+    x = x >> 1
+    return x + j
+
+# @njit
+# def sub2ind(x, shape):
+#     y = cantor(x[0], x[1])
+#     y = cantor(y, x[2])
+#     y = cantor(y, x[3])
+#     y = cantor(y, x[4])
+#     return cantor(y, x[5]) + 1
+
+    # return (x[0]
+    #         + shape[0] * x[1]
+    #         + shape[0] * shape[1] * x[2]
+    #         + shape[0] * shape[1] * shape[2] * x[3]
+    #         + shape[0] * shape[1] * shape[2] * shape[3] * x[4]
+    #         + shape[0] * shape[1] * shape[2] * shape[3] * shape[4] * x[5]) + 1

@@ -2,30 +2,32 @@ import numpy as np
 from numba import njit
 from utilities import sub2ind, binary_search, linear_search
 
-@njit
-def get_bucket(key, nbits):
-   mask = (1 << nbits) - 1
-   return (key-1) & mask - 1
+# @njit
+# def get_bucket(key):
+#    mask = (1 << 16) - 1
+#    return (key-1) & mask - 1
+#
+# @njit
+# def get_key(key):
 
 @njit
-def get_number_hash_bits(num_keys):
-    nbits_max = int(np.ceil(np.log2(num_keys + 1)))
-    return nbits_max
+def get_key(index):
+    return index & 0xFFFF0000 + 1
 
 @njit
-def make_pspace_hash(no, nu, pspace, nbits=0):
+def get_bucket(index):
+    return index & 0x0000FFFF - 1
 
-    if nbits == 0:
-        nbits = get_number_hash_bits(pspace.shape[0])
-    print("using", nbits, "bits")
+@njit
+def make_pspace_hash(no, nu, pspace):
 
     n_p = pspace.shape[0]
-    n_buckets = 2**nbits - 1
+    n_buckets = 2**16 - 1
 
     counts_per_bucket = np.zeros(n_buckets, dtype=np.int32)
     for idet in range(n_p):
         index = sub2ind(pspace[idet, :], (nu, nu, nu, no, no, no))
-        i_bucket = get_bucket(index, nbits)
+        i_bucket = get_bucket(index)
         counts_per_bucket[i_bucket] += 1
 
     id_0 = []
@@ -95,9 +97,10 @@ def make_pspace_hash(no, nu, pspace, nbits=0):
     counts_per_bucket = np.zeros(n_buckets, dtype=np.int32)
     for idet in range(n_p):
         index = sub2ind(pspace[idet, :], (nu, nu, nu, no, no, no))
-        i_bucket = get_bucket(index, nbits)
+        i_bucket = get_bucket(index)
+        key = get_key(index)
 
-        hash_table[bucket_address[i_bucket] + counts_per_bucket[i_bucket], 0] = index # full key (always > 0)
+        hash_table[bucket_address[i_bucket] + counts_per_bucket[i_bucket], 0] = key   # full key (always > 0)
         hash_table[bucket_address[i_bucket] + counts_per_bucket[i_bucket], 1] = idet  # value corresponding to indical position in T3 vector
 
         counts_per_bucket[i_bucket] += 1
@@ -122,13 +125,14 @@ def make_pspace_hash(no, nu, pspace, nbits=0):
     hash_table[bucket_address[-1]:, 1] = temp[idx]
     print("finished sorting")
 
-    return hash_table, nbits, bucket_address
+    return hash_table, bucket_address
 
 @njit
-def get_from_hashtable(a, b, c, i, j, k, no, nu, nbits, hash_table, bucket_address):
+def get_from_hashtable(a, b, c, i, j, k, no, nu, hash_table, bucket_address):
 
     index = sub2ind( (a,b,c,i,j,k), (nu,nu,nu,no,no,no) )
-    i_bucket = get_bucket(index, nbits)
+    i_bucket = get_bucket(index)
+    key = get_key(index) # key we want, always > 0
 
     if i_bucket == len(bucket_address) - 1:
         keys = hash_table[bucket_address[i_bucket]:, 0]
@@ -138,12 +142,12 @@ def get_from_hashtable(a, b, c, i, j, k, no, nu, nbits, hash_table, bucket_addre
         values = hash_table[bucket_address[i_bucket]:bucket_address[i_bucket + 1], 1]
 
     if len(keys) == 1:
-        if keys[0] == index:
+        if keys[0] == key:
             return values[0]
         else:
             return -1
     else:
-        idx = binary_search(keys, index)
+        idx = binary_search(keys, key)
         if idx == -1:
             return -1
         else:
