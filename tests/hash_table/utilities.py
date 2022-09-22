@@ -21,6 +21,19 @@ def get_pspace(no, nu, p_rand):
 
     return np.asarray(pspace, dtype=np.int32), num_p_unique
 
+
+def get_list_of_hashes(pspace, no, nu):
+
+    list_of_hashes = []
+    for m in range(pspace.shape[0]):
+        index = sub2ind((pspace[m, 0], pspace[m, 1], pspace[m, 2], pspace[m, 3], pspace[m, 4], pspace[m, 5]), (nu, nu, nu, no, no, no))
+        list_of_hashes.append(index)
+
+    list_of_hashes = np.array(list_of_hashes)
+    idx = np.argsort(list_of_hashes)
+
+    return list_of_hashes[idx]
+
 @njit
 def binary_search(arr, x):
 

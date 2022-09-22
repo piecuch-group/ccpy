@@ -1,56 +1,41 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
+# For 32- or 64-bit integers:
+#   ADD - 1
+#   MUL - 3
+#   BIT - 1
+# For 64-bit floating points:
+#   ADD - 3
+#   MUL - 5
 
-def cost_slater(f, no, nu, cost_hash=10, cost_flop=20, cost_memory=250):
+# Hash function lookups should have O(1) time:
+#   - for us, the index function is 15 integer multiplications : 15 * 3 = 45
+#   - key and bucket evaluation are bit operations : 2 * 1 = 2
+#   - search within bucket : hard to predict, but assume fast : 15
+#   - table lookup is a memory access from RAM : 250
+#   - if-statement evaluation: 25 - 30 at most (branch misprediction)
+#   - total : 250 + 45 + 30 + + 15 + 2 = 342
+#
+# FLOP computation: res = res + h(...) * t3(...)
+#   - indexing of H and t3 vector are memory accesses : 250 * 2 = 500
+#   - FLOP execution : 5 (MUL) + 3 (ADD) = 8
+#   - total : 500 + 8 = 508 cycles
 
-    num_triples = no**3 * nu**3
-    num_triples_p = f * num_triples
-
-    # realistic scenario, perform bitwise analysis on every pair of determinants in P space
-
-    # this accounts for a quick bitwise comparison between determinants
-    c_hash = num_triples_p**2 * cost_hash
-    # this is the flop cost per pair of determinant, assuming that a small fraction of pairs (0.01% actually result in computations)
-    c_flop = num_triples_p ** 2 * cost_flop * 0.0001
-
-    return c_hash + c_flop
-
-def hash_scheme(f, no, nu, cost_hash=100, cost_flop=20, cost_memory=250, g=0.0):
+def hash_scheme(f, no, nu, cost_hash=342, cost_flop=508, cost_memory=250, g=0.0):
 
     num_triples = no**3 * nu**3
     num_triples_p = f * num_triples
     iters_per_triple = 3 * no + 3 * nu + 9 * no * nu + 3 * no**2 + 3 * nu**2 + no*nu**2 + nu*no**2
 
-    #cost_hash_fcn = lambda x: 916.1000006696439 * (x - 1) + 678.9937942756038
-
-    # binary search has time scaling as log2(N)
-    #cost_search = ( np.log2(num_triples_p) + cost_memory) * (1 - g)
-
-    #c_hash = num_triples_p * iters_per_triple * (g * cost_memory + (1 - g) * (cost_hash + cost_search))
     c_hash = num_triples_p * iters_per_triple * cost_hash
     c_flop = num_triples_p * iters_per_triple * cost_flop * f
 
     cost = c_flop + c_hash
     return cost
 
-def search_scheme(f, no, nu, cost_hash=120, cost_flop=20, cost_memory=250, g=0.0):
 
-    num_triples = no**3 * nu**3
-    num_triples_p = f * num_triples
-    iters_per_triple = 3 * no + 3 * nu + 9 * no * nu + 3 * no**2 + 3 * nu**2 + no*nu**2 + nu*no**2
-
-    # binary search has time scaling as log2(N)
-    cost_search = ( np.log2(num_triples_p) + cost_memory) * (1 - g)
-
-    c_hash = num_triples_p * iters_per_triple * (g * cost_memory + (1 - g) * (cost_hash + cost_search))
-    c_flop = num_triples_p * iters_per_triple * cost_flop * f
-
-    cost = c_flop + c_hash
-    return cost
-
-
-def cost_original(no, nu, cost_flop=20):
+def cost_original(no, nu, cost_flop=508):
 
     num_triples = no**3 * nu**3
     iters_per_triple = 3 * no + 3 * nu + 9 * no * nu + 3 * no ** 2 + 3 * nu ** 2 + no * nu ** 2 + nu * no ** 2
@@ -75,8 +60,9 @@ if __name__ == "__main__":
         my_speedup_ccsdt[i] = cost_original(no, nu) / hash_scheme(fraction[i + 1], no, nu)
         #my_speedup_slater[i] = cost_slater(fraction[i + 1], no, nu) / hash_scheme(fraction[i + 1], no, nu)
 
-    plt.plot(fraction[1:] * 100, my_speedup_ccsdt, label="CCSDT")
-    #plt.plot(fraction[1:] * 100, my_speedup_slater, label="Slater")
+    plt.plot(fraction[1:] * 100, my_speedup_ccsdt, label="Expacted speedup")
+    plt.plot(fraction[1:] * 100, np.ones(m - 1), color='black')
+    plt.plot(fraction[1:] * 100, 1.0/ (fraction[1:]), color='red', label="Linear speedup")
     plt.xlabel("% triples in P space")
     plt.ylabel("Speedup")
     plt.show()
