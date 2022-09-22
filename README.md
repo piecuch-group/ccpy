@@ -1,6 +1,6 @@
 
-# ```CCpy``` Coupled-cluster package written in Python.
-![image](Diagrams-CCD.png)
+# CCpy: A coupled-cluster package written in Python.
+![image](docs/assets/img/Diagrams-CCD.png)
 <p style="text-align: right;">Image from: https://nucleartalent.github.io/ManyBody2018/doc/pub/CCM/html/CCM.html</p>
 
 ---

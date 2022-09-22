@@ -1,49 +1,28 @@
-name: ccpy_refactor
+name: ccpy-dev
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - biopython=1.79=py39h89e85a6_1
-  - blas=1.0=mkl
-  - ca-certificates=2021.10.26=hecd8cb5_2
-  - cclib=1.7.1=pyhd8ed1ab_0
-  - certifi=2021.10.8=py39hecd8cb5_2
-  - intel-openmp=2021.4.0=hecd8cb5_3538
-  - libcxx=12.0.0=h2f01273_0
-  - libffi=3.3=hb1e8313_2
-  - libgfortran=3.0.1=0
-  - mkl=2021.4.0=hecd8cb5_637
-  - mkl-service=2.4.0=py39h9ed2024_0
-  - mkl_fft=1.3.1=py39h4ab4a9b_0
-  - mkl_random=1.2.2=py39hb2f4e1b_0
-  - ncurses=6.3=hca72f7f_2
-  - numpy=1.21.2=py39h4b4dc7a_0
-  - numpy-base=1.21.2=py39he0bd621_0
-  - openssl=1.1.1m=hca72f7f_0
-  - packaging=21.3=pyhd8ed1ab_0
-  - pandas=1.4.0=py39h4d6be9b_0
-  - periodictable=1.5.2=py_0
-  - pip=21.2.4=py39hecd8cb5_0
-  - pydantic=1.8.2=py39hca72f7f_0
-  - pyparsing=3.0.7=pyhd8ed1ab_0
-  - python=3.9.7=h88f2d9e_1
-  - python-dateutil=2.8.2=pyhd8ed1ab_0
-  - python_abi=3.9=2_cp39
-  - pytz=2021.3=pyhd8ed1ab_0
-  - readline=8.1.2=hca72f7f_1
-  - scipy=1.7.3=py39h8c7af03_0
-  - setuptools=58.0.4=py39hecd8cb5_0
-  - six=1.16.0=pyhd3eb1b0_0
-  - sqlite=3.37.0=h707629a_0
-  - tk=8.6.11=h7bc2e8c_0
-  - typing-extensions=3.10.0.2=hd3eb1b0_0
-  - typing_extensions=3.10.0.2=pyh06a4308_0
-  - tzdata=2021e=hda174b7_0
-  - wheel=0.37.1=pyhd3eb1b0_0
-  - xz=5.2.5=h1de35cc_0
-  - zlib=1.2.11=h4dc903c_4
-  - pip:
-    - art==5.4
-    - h5py==3.6.0
-    - pyscf==2.0.1
-prefix: /anaconda3/envs/ccpy_refactor
+  - python=3.9
+  - compilers
+  - mkl
+  - mkl-service
+  - libblas=*=*mkl
+  - bblas=*=*mkl
+  - pkg-config
+  - meson
+  - meson-python
+  - ninja
+  - pandas
+  - numpy
+  - scipy
+  - periodictable
+  - pydantic
+  - pip
+  - setuptools
+  - ipython
+  - pyscf
+  # Testing and lint
+  - flake8
+  - pytest
+  - pytest-cov

@@ -6,6 +6,10 @@ autoflake = autoflake -ir --remove-all-unused-imports --ignore-init-module-impor
 mypy = mypy ccpy
 pylint = pylint ccpy
 
+.PHONY: all
+all:
+	cd ccpy/utilities/updates && $(MAKE) $@
+
 .PHONY: install
 install:
 	pip install -e .
@@ -41,9 +45,14 @@ mypy:
 
 .PHONY: test
 test:
-	pytest -v ccpy
+	pytest
 
 .PHONY: docs
 docs:
 	black -l 80 docs/examples
 	mkdocs build
+
+.PHONY: bootstrap
+bootstrap:
+	pip install -r requirements-dev.txt
+	pip install -r requirements.txt

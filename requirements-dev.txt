@@ -1,0 +1,22 @@
+# Project requirements
+numpy
+scipy
+h5py
+
+# Docs
+mkdocs
+markdown
+mkdocs-exclude
+mkdocs-material
+markdown-include
+pygments
+ansi2html
+
+# Testing
+pytest
+pytest-cov
+
+# Formatting
+black
+autoflake
+pylint
