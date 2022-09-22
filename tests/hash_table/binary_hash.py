@@ -4,10 +4,12 @@ from utilities import sub2ind, binary_search
 
 import sys
 
-# @njit
-# def get_bucket(key):
-#    mask = (1 << 16) - 1
-#    return (key-1) & mask - 1
+@njit
+def get_bucket(index):
+   #mask = (1 << 16) - 1
+   return (index - 1) & ((1 << 16) - 1) - 1
+
+# key and bucket codes need to be written in Fortran as well
 
 # check that the keys and buckets actually return only 2 byte integers
 # bucket and key cannot coincide for 2 different determinants. So if bucket is the same, key must be different.
@@ -16,11 +18,11 @@ def get_key(index):
     return index & 0xFFFF0000 + 1 # does this need to be > 0???
     #return (-(~x))
 
-@njit
-def get_bucket(index):
-    return index & 0x0000FFFF - 1
-    #x = index & 0x0000FFFF
-    #return ((x << 1) + (~x))
+# @njit
+# def get_bucket(index):
+#     return index & 0x0000FFFF - 1
+#     #x = index & 0x0000FFFF
+#     #return ((x << 1) + (~x))
 
 # hash table should be a 2D array of 8-bit integers (2 bytes)
 @njit

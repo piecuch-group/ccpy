@@ -2,6 +2,7 @@ import numpy as np
 from ccpy.utilities.active_space import get_active_slices
 from ccpy.utilities.updates import cc_active_loops
 
+#@profile
 def build(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
@@ -51,7 +52,7 @@ def build(T, dT, H, system):
             - 1.0 * np.einsum('MNJk,baCIMN->abCIJk', H.ab.oooo[Oa, Ob, Oa, ob], T.aab.vvVOOO, optimize=True)
     )
     dT.aab.vvVOOo += (1.0 / 4.0) * (
-            -0.5 * np.einsum('abef,feCIJk->abCIJk', H.aa.vvvv[va, va, va, va], T.aab.vvVOOo, optimize=True)
+            -0.5 * np.einsum('abef,feCIJk->abCIJk', H.aa.vvvv[va, va, va, va], T.aab.vvVOOo, optimize=True) ###
             + 1.0 * np.einsum('abEf,EfCIJk->abCIJk', H.aa.vvvv[va, va, Va, va], T.aab.VvVOOo, optimize=True)
             - 0.5 * np.einsum('abEF,FECIJk->abCIJk', H.aa.vvvv[va, va, Va, Va], T.aab.VVVOOo, optimize=True)
     )

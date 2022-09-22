@@ -4,6 +4,7 @@ from ccpy.utilities.active_space import get_active_slices
 
 from ccpy.utilities.updates import cc_active_loops
 
+#@profile
 def build_ccsd(T, H, H0):
     """
     Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2))_C|0>.

@@ -1209,4 +1209,35 @@ module ccp_opt_loops_v2
 
               end subroutine update_t3d_p_opt2
 
+              logical function binary_search(x, val, n) result(exists)
+
+                      integer, intent(in) :: n
+                      integer, intent(in) :: x(n)
+
+                      logical :: exists
+
+                      integer :: left, right
+
+                      exists = .false.
+
+                      left = 1
+                      right = n
+
+                      do while (left <= right)
+
+                         mid = shiftr(left + right, 1)
+                         if (x(mid) == val) then
+                                 exists = .true.
+                                 exit
+                         else if (x(mid) > val) then
+                                 right = mid - 1
+                         else
+                                 left = mid + 1
+                         end if
+                      end do
+
+              end function binary_search
+
+
+
 end module ccp_opt_loops
