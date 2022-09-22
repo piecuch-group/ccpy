@@ -16,11 +16,13 @@ def cost_slater(f, no, nu, cost_hash=10, cost_flop=20, cost_memory=250):
 
     return c_hash + c_flop
 
-def hash_scheme(f, no, nu, cost_hash=120, cost_flop=20, cost_memory=250, g=0.0):
+def hash_scheme(f, no, nu, cost_hash=100, cost_flop=20, cost_memory=250, g=0.0):
 
     num_triples = no**3 * nu**3
     num_triples_p = f * num_triples
     iters_per_triple = 3 * no + 3 * nu + 9 * no * nu + 3 * no**2 + 3 * nu**2 + no*nu**2 + nu*no**2
+
+    #cost_hash_fcn = lambda x: 916.1000006696439 * (x - 1) + 678.9937942756038
 
     # binary search has time scaling as log2(N)
     #cost_search = ( np.log2(num_triples_p) + cost_memory) * (1 - g)
@@ -71,10 +73,10 @@ if __name__ == "__main__":
 
     for i in range(m - 1):
         my_speedup_ccsdt[i] = cost_original(no, nu) / hash_scheme(fraction[i + 1], no, nu)
-        my_speedup_slater[i] = cost_slater(fraction[i + 1], no, nu) / hash_scheme(fraction[i + 1], no, nu)
+        #my_speedup_slater[i] = cost_slater(fraction[i + 1], no, nu) / hash_scheme(fraction[i + 1], no, nu)
 
     plt.plot(fraction[1:] * 100, my_speedup_ccsdt, label="CCSDT")
-    plt.plot(fraction[1:] * 100, my_speedup_slater, label="Slater")
+    #plt.plot(fraction[1:] * 100, my_speedup_slater, label="Slater")
     plt.xlabel("% triples in P space")
     plt.ylabel("Speedup")
     plt.show()

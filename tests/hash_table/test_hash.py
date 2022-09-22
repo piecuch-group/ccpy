@@ -32,6 +32,7 @@ def test_hits(pspace, hash_table, bucket_address, no, nu):
         assert(idx == m)
     return
 
+
 def main(args):
 
     no = args.no

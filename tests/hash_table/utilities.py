@@ -23,6 +23,13 @@ def get_pspace(no, nu, p_rand):
 
 @njit
 def binary_search(arr, x):
+
+    if len(arr) == 1:
+        if arr[0] == x:
+            return 0
+        else:
+            return -1
+
     low = 0
     high = len(arr) - 1
     mid = 0
@@ -57,6 +64,10 @@ def sub2ind(x, shape):
             + shape[0] * shape[1] * shape[2] * x[3]
             + shape[0] * shape[1] * shape[2] * shape[3] * x[4]
             + shape[0] * shape[1] * shape[2] * shape[3] * shape[4] * x[5])
+
+# @njit
+# def sub2ind(x, shape):
+#     return 31*(31*(31*(31*(31*x[0]+x[1])+x[2])+x[3])+x[4])+x[5]
 
 @njit
 def cantor(i, j):
