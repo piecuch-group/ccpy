@@ -1,10 +1,10 @@
 import numpy as np
-from numba import njit
+#from numba import njit
 from utilities import sub2ind, binary_search
 
 import sys
 
-@njit
+#@njit
 def get_bucket(index):
    #mask = (1 << 16) - 1
    return (index - 1) & ((1 << 16) - 1) - 1
@@ -13,7 +13,7 @@ def get_bucket(index):
 
 # check that the keys and buckets actually return only 2 byte integers
 # bucket and key cannot coincide for 2 different determinants. So if bucket is the same, key must be different.
-@njit
+#@njit
 def get_key(index):
     return index & 0xFFFF0000 + 1 # does this need to be > 0???
     #return (-(~x))
@@ -25,7 +25,7 @@ def get_key(index):
 #     #return ((x << 1) + (~x))
 
 # hash table should be a 2D array of 8-bit integers (2 bytes)
-@njit
+#@njit
 def make_pspace_hash(no, nu, pspace):
 
     n_p = pspace.shape[0]
@@ -75,7 +75,7 @@ def make_pspace_hash(no, nu, pspace):
     return hash_table, bucket_address
 
 # this code would be written in Fortran and called within the CC(P) update loops
-@njit
+#@njit
 def get_from_hashtable(a, b, c, i, j, k, no, nu, hash_table, bucket_address):
 
     index = sub2ind( (a,b,c,i,j,k), (nu,nu,nu,no,no,no) ) # slowest line

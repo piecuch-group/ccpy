@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+#from numba import njit
 from itertools import permutations
 
 def get_pspace(no, nu, p_rand):
@@ -34,7 +34,7 @@ def get_list_of_hashes(pspace, no, nu):
 
     return list_of_hashes[idx]
 
-@njit
+#@njit
 def binary_search(arr, x):
 
     if len(arr) == 1:
@@ -60,7 +60,7 @@ def binary_search(arr, x):
     # If we reach here, then the element was not present
     return -1
 
-@njit
+#@njit
 def linear_search(arr, x):
     for i in range(len(arr)):
         if arr[i] == x:
@@ -69,7 +69,7 @@ def linear_search(arr, x):
         return -1
 
 
-@njit
+#@njit
 def sub2ind(x, shape):
     return (x[0]
             + shape[0] * x[1]
@@ -82,7 +82,7 @@ def sub2ind(x, shape):
 # def sub2ind(x, shape):
 #     return 31*(31*(31*(31*(31*x[0]+x[1])+x[2])+x[3])+x[4])+x[5]
 
-@njit
+#@njit
 def cantor(i, j):
     x = (i + j) * (i + j + 1)
     x = x >> 1

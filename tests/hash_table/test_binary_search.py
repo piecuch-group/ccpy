@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+#from numba import njit
 import argparse
 import time
 from utilities import get_pspace, binary_search, sub2ind, get_list_of_hashes
@@ -10,12 +10,12 @@ from utilities import get_pspace, binary_search, sub2ind, get_list_of_hashes
 # uniqueness is guaranteed. Each bucket holds 2**15 - 1 keys and each key is 2 bytes (1 byte = 8 bits). Thus, each bucket
 # is ~65 KiB, which fits into L1 cache (or something close by), making binary search very fast.
 
-@njit
+#@njit
 def find_hash_binary_search(a, b, c, i, j, k, no, nu, list_of_hashes):
     index = sub2ind( (a, b, c, i, j, k), (nu, nu, nu, no, no, no) )
     return binary_search(list_of_hashes, index)
 
-@njit
+#@njit
 def test_binary_search(list_of_hashes, no, nu):
 
     for a in range(nu):
