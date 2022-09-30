@@ -7,6 +7,7 @@ def load_from_gamess(
     twobody_file,
     nfrozen=0,
     normal_ordered=True,
+    sorted=True,
     data_type=np.float64,
 ):
 
@@ -48,7 +49,7 @@ def load_from_gamess(
     system.reference_energy = hf_energy
     system.frozen_energy = calc_hf_frozen_core_energy(e1int, e2int, system)
 
-    return system, getHamiltonian(e1int, e2int, system, normal_ordered)
+    return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
 
 
 def get_reference_energy(gamess_logfile):

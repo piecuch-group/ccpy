@@ -7,7 +7,7 @@ from ccpy.utilities.printing import print_cc_iteration, print_cc_iteration_heade
                                     print_eomcc_iteration, print_eomcc_iteration_header,\
                                     print_amplitudes
 from ccpy.utilities.utilities import remove_file
-from ccpy.models.operators import ClusterOperator
+from ccpy.models.operators import ClusterOperator, FockOperator
 
 # [TODO]: There is an error here. All roots beyond the first are 0 for some reason...
 def eomcc_davidson_lowmem(HR, update_r, R, omega, T, H, calculation, system):
@@ -164,6 +164,7 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
     non-Hermitian Davidson algorithm.
     """
     from ccpy.drivers.cc_energy import get_r0
+    from copy import deepcopy
 
     nroot = len(R)
 
@@ -174,11 +175,13 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
     B0, _ = np.linalg.qr(np.asarray([r.flatten() for r in R]).T)
 
     # Allocate residual R cluster operator
-    dR = ClusterOperator(system,
-                         order=R[0].order,
-                         active_orders=calculation.active_orders,
-                         num_active=calculation.num_active,
-                         data_type=R[0].a.dtype)
+    dR = deepcopy(R[0])
+    dR.unflatten(np.zeros(shape=dR.ndim))
+    # dR = ClusterOperator(system,
+    #                      order=R[0].order,
+    #                      active_orders=calculation.active_orders,
+    #                      num_active=calculation.num_active,
+    #                      data_type=R[0].a.dtype)
 
     for n in range(nroot):
         t0_root = time.time()
@@ -227,12 +230,6 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
             elapsed_time = time.time() - t1
             print_eomcc_iteration(curr_size, omega[n], residual, deltaE, elapsed_time)
 
-            # minutes, seconds = divmod(time.time() - t1, 60)
-            # print(
-            #     "   {}      {:.10f}       {:.10f}      {:.10f}      {:.2f}m {:.2f}s".format(
-            #         curr_size, omega[n], residual, deltaE, minutes, seconds
-            #     )
-            # )
             if residual < calculation.convergence_tolerance and abs(deltaE) < calculation.convergence_tolerance:
                 is_converged[n] = True
                 break
@@ -262,14 +259,14 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
         R[n].unflatten(r)
 
         # Calculate r0 for the root
-        r0[n] = get_r0(R[n], H, omega[n])
+        if isinstance(R[n], ClusterOperator):
+            r0[n] = get_r0(R[n], H, omega[n])
 
     return R, omega, r0, is_converged
 
 
 
 def cc_jacobi(update_t, T, dT, H, calculation, system):
-    import time
 
     from ccpy.drivers.cc_energy import get_cc_energy
     from ccpy.drivers.diis import DIIS
@@ -328,7 +325,6 @@ def cc_jacobi(update_t, T, dT, H, calculation, system):
         # Do DIIS extrapolation
         if niter >= calculation.diis_size + num_throw_away:
             ndiis_cycle += 1
-            #print("   DIIS Cycle - {}".format(ndiis_cycle))
             T.unflatten(diis_engine.extrapolate())
 
         # Update old energy
@@ -346,7 +342,6 @@ def cc_jacobi(update_t, T, dT, H, calculation, system):
 
 
 def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, system):
-    import time
 
     from ccpy.drivers.cc_energy import get_lcc_energy
     from ccpy.drivers.diis import DIIS
@@ -411,7 +406,6 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, syst
         # Do DIIS extrapolation
         if niter >= calculation.diis_size:
             ndiis_cycle += 1
-            #print("   DIIS Cycle - {}".format(ndiis_cycle))
             L.unflatten(diis_engine.extrapolate())
 
         # Update old energy
@@ -419,24 +413,160 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, syst
 
         # biorthogonalize to R for excited states
         if not is_ground:
-            LR = np.dot(L.flatten().T, R.flatten()[:L.ndim])
-            L.unflatten(1.0/LR * L.flatten())
+            LR = np.dot(L.flatten().T, R.flatten())
+            L.unflatten(1.0 / LR * L.flatten())
 
         elapsed_time = time.time() - t1
-        print_eomcc_iteration(niter, omega, residuum, delta_energy, elapsed_time)
+        print_eomcc_iteration(niter, energy, residuum, delta_energy, elapsed_time)
     else:
         print("Left CC calculation did not converge.")
 
     # explicitly enforce biorthonormality
-    if not is_ground:
-        LR = np.einsum("em,em->", R.a, L.a, optimize=True)
-        LR += np.einsum("em,em->", R.b, L.b, optimize=True)
-        LR += 0.25 * np.einsum("efmn,efmn->", R.aa, L.aa, optimize=True)
-        LR += np.einsum("efmn,efmn->", R.ab, L.ab, optimize=True)
-        LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
-        L.unflatten(1.0/LR * L.flatten())
+    if isinstance(L, ClusterOperator):
+        if not is_ground:
+            LR =  np.einsum("em,em->", R.a, L.a, optimize=True)
+            LR += np.einsum("em,em->", R.b, L.b, optimize=True)
+            LR += 0.25 * np.einsum("efmn,efmn->", R.aa, L.aa, optimize=True)
+            LR += np.einsum("efmn,efmn->", R.ab, L.ab, optimize=True)
+            LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
+
+            if L.order == 3 and R.order == 3:
+                LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.aaa, L.aaa, optimize=True)
+                LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.aab, L.aab, optimize=True)
+                LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
+                LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
+
+            L.unflatten(1.0/LR * L.flatten())
+        else:
+            LR = 0.0
+
+        if isinstance(L, FockOperator):
+
+            LR = -np.einsum("m,m->", R.a, L.a, optimize=True)
+            LR -= np.einsum("m,m->", R.b, L.b, optimize=True)
+            LR -= 0.5 * np.einsum("fnm,fnm->", R.aa, L.aa, optimize=True)
+            LR -= np.einsum("fnm,fnm->", R.ab, L.ab, optimize=True)
+            LR -= np.einsum("fnm,fnm->", R.ba, L.ba, optimize=True)
+            LR -= 0.5 * np.einsum("fnm,fnm->", R.bb, L.bb, optimize=True)
+
+            L.unflatten(1.0 / LR * L.flatten())
+
+    # Remove the t.npy and dt.npy files if out-of-core DIIS was used
+    diis_engine.cleanup()
+
+    return L, energy, LR, is_converged
+
+
+def left_ccp_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, system, pspace):
+
+    from ccpy.drivers.cc_energy import get_lcc_energy
+    from ccpy.drivers.diis import DIIS
+
+    # instantiate the DIIS accelerator object
+    diis_engine = DIIS(L, calculation.diis_size, calculation.low_memory, vecfile="l.npy", residfile="dl.npy")
+
+    # Jacobi/DIIS iterations
+    ndiis_cycle = 0
+    energy = 0.0
+    energy_old = get_lcc_energy(L, LH)
+    is_converged = False
+
+    print("   Energy of initial guess = {:>20.10f}".format(energy_old))
+
+    t_start = time.time()
+    print_eomcc_iteration_header()
+    for niter in range(calculation.maximum_iterations):
+        # get iteration start time
+        t1 = time.time()
+
+        # Update the L vector
+        L, LH = update_l(L,
+                         LH,
+                         T,
+                         H,
+                         omega,
+                         calculation.energy_shift,
+                         is_ground,
+                         calculation.RHF_symmetry,
+                         system,
+                         pspace)
+
+        # left CC correlation energy
+        energy = get_lcc_energy(L, LH) + omega
+
+        # change in energy
+        delta_energy = energy - energy_old
+
+        # check for exit condition
+        residuum = np.linalg.norm(LH.flatten())
+        if (
+            residuum < calculation.convergence_tolerance
+            and abs(delta_energy) < calculation.convergence_tolerance
+        ):
+            # print the iteration of convergence
+            elapsed_time = time.time() - t1
+            print_eomcc_iteration(niter, omega, residuum, delta_energy, elapsed_time)
+
+            t_end = time.time()
+            minutes, seconds = divmod(t_end - t_start, 60)
+            print(
+                "   Left CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)".format(
+                    minutes, seconds
+                )
+            )
+            is_converged = True
+            break
+
+        # Save T and dT vectors to disk for DIIS
+        diis_engine.push(L, LH, niter)
+
+        # Do DIIS extrapolation
+        if niter >= calculation.diis_size:
+            ndiis_cycle += 1
+            L.unflatten(diis_engine.extrapolate())
+
+        # Update old energy
+        energy_old = energy
+
+        # biorthogonalize to R for excited states
+        if not is_ground:
+            LR = np.dot(L.flatten().T, R.flatten())
+            L.unflatten(1.0 / LR * L.flatten())
+
+        elapsed_time = time.time() - t1
+        print_eomcc_iteration(niter, energy, residuum, delta_energy, elapsed_time)
     else:
-        LR = 0.0
+        print("Left CC calculation did not converge.")
+
+    # explicitly enforce biorthonormality
+    if isinstance(L, ClusterOperator):
+        if not is_ground:
+            LR =  np.einsum("em,em->", R.a, L.a, optimize=True)
+            LR += np.einsum("em,em->", R.b, L.b, optimize=True)
+            LR += 0.25 * np.einsum("efmn,efmn->", R.aa, L.aa, optimize=True)
+            LR += np.einsum("efmn,efmn->", R.ab, L.ab, optimize=True)
+            LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
+
+            if L.order == 3 and R.order == 3:
+                LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.aaa, L.aaa, optimize=True)
+                LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.aab, L.aab, optimize=True)
+                LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
+                LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
+
+            L.unflatten(1.0/LR * L.flatten())
+        else:
+            LR = 0.0
+
+        if isinstance(L, FockOperator):
+
+            LR = -np.einsum("m,m->", R.a, L.a, optimize=True)
+            LR -= np.einsum("m,m->", R.b, L.b, optimize=True)
+            LR -= 0.5 * np.einsum("fnm,fnm->", R.aa, L.aa, optimize=True)
+            LR -= np.einsum("fnm,fnm->", R.ab, L.ab, optimize=True)
+            LR -= np.einsum("fnm,fnm->", R.ba, L.ba, optimize=True)
+            LR -= 0.5 * np.einsum("fnm,fnm->", R.bb, L.bb, optimize=True)
+
+            L.unflatten(1.0 / LR * L.flatten())
 
     # Remove the t.npy and dt.npy files if out-of-core DIIS was used
     diis_engine.cleanup()
@@ -445,7 +575,6 @@ def left_cc_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, syst
 
 
 def ccp_jacobi(update_t, T, dT, H, calculation, system, pspace):
-    import time
 
     from ccpy.drivers.cc_energy import get_cc_energy
     from ccpy.drivers.diis import DIIS
@@ -504,7 +633,6 @@ def ccp_jacobi(update_t, T, dT, H, calculation, system, pspace):
         # Do DIIS extrapolation
         if niter >= calculation.diis_size + num_throw_away:
             ndiis_cycle += 1
-            #print("   DIIS Cycle - {}".format(ndiis_cycle))
             T.unflatten(diis_engine.extrapolate())
 
         # Update old energy
@@ -520,4 +648,107 @@ def ccp_jacobi(update_t, T, dT, H, calculation, system, pspace):
 
     return T, energy, is_converged
 
+def mrcc_jacobi(update_t, compute_Heff, T, dT, H, model_space, calculation, system):
 
+    from ccpy.drivers.diis import DIIS
+
+    model_space_dim = len(model_space)
+
+    # instantiate the DIIS accelerator object
+    diis_engine = []
+    for p in range(model_space_dim):
+        diis_engine.append(DIIS(T, calculation.diis_size, calculation.low_memory))
+
+    # Jacobi/DIIS iterations
+    num_throw_away = 3
+    ndiis_cycle = 0
+    is_converged = False
+
+    # Form the effective Hamiltonian
+    Heff = compute_Heff(H, T, model_space)
+
+    # Diagonalize effective Hamiltonian
+    energies, coeffs = np.linalg.eig(Heff)
+    idx = np.argsort(energies)
+    energy = energies[idx[0]]
+    coeff = coeffs[:, idx[0]]
+
+    coeff_guess = coeff.copy()
+
+    print("   Energy of initial guess = {:>20.10f}".format(energy))
+
+    t_start = time.time()
+    print_cc_iteration_header()
+    for niter in range(calculation.maximum_iterations):
+        # get iteration start time
+        t1 = time.time()
+
+        # update old eigenpair
+        energy_old = energy
+        coeff_old = coeff.copy()
+
+        # Update the T vector
+        T, dT = update_t(T, dT, H, model_space, Heff, coeff, calculation.energy_shift, calculation.RHF_symmetry, system)
+
+        # Form the effective Hamiltonian
+        Heff = compute_Heff(H, T, model_space)
+
+        # Diagonalize effective Hamiltonian and get eigenpair of interest
+        energies, coeffs = np.linalg.eig(Heff)
+        overlaps = np.zeros(model_space_dim)
+        for p in range(model_space_dim):
+            overlaps[p] = np.dot(coeff_guess.T, coeffs[:, p])
+        idx = np.argsort(overlaps)
+        energy = energies[idx[-1]]
+        coeff = coeffs[:, idx[-1]]
+
+        # change in energy
+        delta_energy = energy - energy_old
+        # change in eigenvector
+        delta_coeff = np.linalg.norm(coeff - coeff_old)
+        # change in T vectors
+        residuum = 0.0
+        for p in range(model_space_dim):
+            residuum += np.linalg.norm(dT[p].flatten())
+
+        # check for exit condition
+        if (
+            residuum < calculation.convergence_tolerance
+            and abs(delta_energy) < calculation.convergence_tolerance
+            and abs(delta_coeff) < calculation.convergence_tolerance
+        ):
+            # print the iteration of convergence
+            elapsed_time = time.time() - t1
+            print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+
+            t_end = time.time()
+            minutes, seconds = divmod(t_end - t_start, 60)
+            print(
+                "   MRCC calculation successfully converged! ({:0.2f}m  {:0.2f}s)".format(
+                    minutes, seconds
+                )
+            )
+            is_converged = True
+            break
+
+        # Save T and dT vectors to disk for DIIS
+        if niter >= num_throw_away:
+            for p in range(model_space_dim):
+                diis_engine[p].push(T[p], dT[p], niter)
+
+        # Do DIIS extrapolation
+        if niter >= calculation.diis_size + num_throw_away:
+            ndiis_cycle += 1
+            for p in range(model_space_dim):
+                T[p].unflatten(diis_engine[p].extrapolate())
+
+        elapsed_time = time.time() - t1
+        print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+    else:
+        print("MRCC calculation did not converge.")
+
+    # Remove the t.npy and dt.npy files if out-of-core DIIS was used
+    for p in range(model_space_dim):
+        diis_engine[p].cleanup()
+
+    return T, energy, is_converged

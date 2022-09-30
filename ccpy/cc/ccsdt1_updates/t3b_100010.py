@@ -4,6 +4,7 @@ from ccpy.utilities.updates import cc_active_loops
 
 import time as time
 
+#@profile
 def build(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)

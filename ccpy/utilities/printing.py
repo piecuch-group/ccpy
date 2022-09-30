@@ -236,8 +236,20 @@ def print_eomcc_iteration(
         )
     )
 
-
 def print_amplitudes(R, system, order, nprint=10, thresh_print=1.0e-01):
+
+    from ccpy.models.operators import ClusterOperator, FockOperator
+
+    if isinstance(R, ClusterOperator):
+        print_ee_amplitudes(R, system, order, nprint, thresh_print)
+    if isinstance(R, FockOperator):
+        delta_particles = R.num_particles - R.num_holes
+        if delta_particles == 1:
+            print_ea_amplitudes(R, system, order, nprint, thresh_print)
+        elif delta_particles == -1:
+            print_ip_amplitudes(R, system, order, nprint, thresh_print)
+
+def print_ee_amplitudes(R, system, order, nprint, thresh_print):
 
     n1a = system.noccupied_alpha * system.nunoccupied_alpha
     n1b = system.noccupied_beta * system.nunoccupied_beta
@@ -332,4 +344,342 @@ def print_amplitudes(R, system, order, nprint=10, thresh_print=1.0e-01):
                     R2[idx[n]],
                 )
             )
+
+    # Restore permutationally redundant amplitudes
+    for a in range(system.nunoccupied_alpha):
+        for b in range(a + 1, system.nunoccupied_alpha):
+            for i in range(system.noccupied_alpha):
+                for j in range(i + 1, system.noccupied_alpha):
+                    R.aa[b, a, j, i] = -1.0 * R.aa[a, b, i, j]
+                    R.aa[a, b, j, i] = -1.0 * R.aa[a, b, i, j]
+                    R.aa[b, a, i, j] = R.aa[a, b, i, j]
+    for a in range(system.nunoccupied_beta):
+        for b in range(a + 1, system.nunoccupied_beta):
+            for i in range(system.noccupied_beta):
+                for j in range(i + 1, system.noccupied_beta):
+                    R.bb[b, a, j, i] = -1.0 * R.bb[a, b, i, j]
+                    R.bb[a, b, j, i] = -1.0 * R.bb[a, b, i, j]
+                    R.bb[b, a, i, j] = R.bb[a, b, i, j]
+
     return
+
+
+def print_ip_amplitudes(R, system, order, nprint, thresh_print):
+
+    n1a = system.noccupied_alpha
+    n1b = system.noccupied_beta
+    n2a = system.noccupied_alpha ** 2 * system.nunoccupied_alpha
+    n2b = system.noccupied_beta * system.noccupied_alpha * system.nunoccupied_alpha
+    n2c = system.noccupied_beta * system.nunoccupied_beta * system.noccupied_alpha
+    n2d = system.noccupied_beta ** 2 * system.nunoccupied_beta
+
+    R1 = R.flatten()[: n1a + n1b]
+    idx = np.flip(np.argsort(abs(R1)))
+    print("     Largest 1h Amplitudes:")
+    for n in range(nprint):
+        if idx[n] < n1a:
+            i, = np.unravel_index(idx[n], R.a.shape, order="C")
+            if abs(R1[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     {}A  ->     {:.6f}".format(
+                    n + 1,
+                    i + system.nfrozen + 1,
+                    R1[idx[n]],
+                )
+            )
+        else:
+            i, = np.unravel_index(idx[n] - n1a, R.b.shape, order="C")
+            if abs(R1[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     {}B  ->     {:.6f}".format(
+                    n + 1,
+                    i + system.nfrozen + 1,
+                    R1[idx[n]],
+                )
+            )
+    if order < 2: return
+
+    # Zero out the non-unique R amplitudes related by permutational symmetry
+    for b in range(system.nunoccupied_alpha):
+        for j in range(system.noccupied_alpha):
+            for i in range(j + 1, system.noccupied_alpha):
+                R.aa[b, i, j] = 0.0
+    for b in range(system.nunoccupied_beta):
+        for j in range(system.noccupied_beta):
+            for i in range(j + 1, system.noccupied_beta):
+                R.bb[b, i, j] = 0.0
+
+    R2 = R.flatten()[n1a + n1b: n1a + n1b + n2a + n2b + n2c + n2d]
+    idx = np.flip(np.argsort(abs(R2)))
+    print("     Largest 2h-1p Excited Amplitudes:")
+    for n in range(nprint):
+        if idx[n] < n2a:
+            b, j, i = np.unravel_index(idx[n], R.aa.shape, order="C")
+            if abs(R2[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     {}A  {}A  ->  {}A    {:.6f}".format(
+                    n + 1,
+                    i + system.nfrozen + 1,
+                    j + system.nfrozen + 1,
+                    b + system.noccupied_alpha + system.nfrozen + 1,
+                    R2[idx[n]],
+                )
+            )
+        elif idx[n] < n2a + n2b:
+            b, j, i = np.unravel_index(idx[n] - n2a, R.ab.shape, order="C")
+            if abs(R2[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     {}B  {}A  ->  {}A    {:.6f}".format(
+                    n + 1,
+                    i + system.nfrozen + 1,
+                    j + system.nfrozen + 1,
+                    b + system.noccupied_beta + system.nfrozen + 1,
+                    R2[idx[n]],
+                )
+            )
+        elif idx[n] < n2a + n2b + n2c:
+            b, j, i = np.unravel_index(idx[n] - n2a - n2b, R.ba.shape, order="C")
+            if abs(R2[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     {}A  {}B  ->  {}B    {:.6f}".format(
+                    n + 1,
+                    i + system.nfrozen + 1,
+                    j + system.nfrozen + 1,
+                    b + system.noccupied_beta + system.nfrozen + 1,
+                    R2[idx[n]],
+                )
+            )
+        else:
+            b, j, i = np.unravel_index(idx[n] - n2a - n2b - n2c, R.bb.shape, order="C")
+            if abs(R2[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     {}B  {}B  ->  {}B    {:.6f}".format(
+                    n + 1,
+                    i + system.nfrozen + 1,
+                    j + system.nfrozen + 1,
+                    b + system.noccupied_beta + system.nfrozen + 1,
+                    R2[idx[n]],
+                )
+            )
+
+    # Restore permutationally redundant terms
+    for b in range(system.nunoccupied_alpha):
+        for j in range(system.noccupied_alpha):
+            for i in range(j + 1, system.noccupied_alpha):
+                R.aa[b, i, j] = -1.0 * R.aa[b, j, i]
+    for b in range(system.nunoccupied_beta):
+        for j in range(system.noccupied_beta):
+            for i in range(j + 1, system.noccupied_beta):
+                R.bb[b, i, j] = -1.0 * R.bb[b, j, i]
+
+    return
+
+def print_ea_amplitudes(R, system, order, nprint, thresh_print):
+
+    n1a = system.nunoccupied_alpha
+    n1b = system.nunoccupied_beta
+    n2a = system.noccupied_alpha * system.nunoccupied_alpha ** 2
+    n2b = system.nunoccupied_beta * system.noccupied_alpha * system.nunoccupied_alpha
+    n2c = system.noccupied_beta * system.nunoccupied_beta * system.nunoccupied_alpha
+    n2d = system.noccupied_beta * system.nunoccupied_beta ** 2
+
+    R1 = R.flatten()[: n1a + n1b]
+    idx = np.flip(np.argsort(abs(R1)))
+    print("     Largest 1p Amplitudes:")
+    for n in range(nprint):
+        if idx[n] < n1a:
+            a, = np.unravel_index(idx[n], R.a.shape, order="C")
+            if abs(R1[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     ->  {}A     {:.6f}".format(
+                    n + 1,
+                    a + system.noccupied_alpha + system.nfrozen + 1,
+                    R1[idx[n]],
+                )
+            )
+        else:
+            a, = np.unravel_index(idx[n] - n1a, R.b.shape, order="C")
+            if abs(R1[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     ->  {}B     {:.6f}".format(
+                    n + 1,
+                    a + system.noccupied_beta + system.nfrozen + 1,
+                    R1[idx[n]],
+                )
+            )
+    if order < 2: return
+
+    # Zero out the non-unique R amplitudes related by permutational symmetry
+    for b in range(system.nunoccupied_alpha):
+        for j in range(system.noccupied_alpha):
+            for a in range(b + 1, system.nunoccupied_alpha):
+                R.aa[a, j, b] = 0.0
+    for b in range(system.nunoccupied_beta):
+        for j in range(system.noccupied_beta):
+            for a in range(b + 1, system.nunoccupied_beta):
+                R.bb[a, j, b] = 0.0
+
+    R2 = R.flatten()[n1a + n1b: n1a + n1b + n2a + n2b + n2c + n2d]
+    idx = np.flip(np.argsort(abs(R2)))
+    print("     Largest 2p-1h Excited Amplitudes:")
+    for n in range(nprint):
+        if idx[n] < n2a:
+            b, j, a = np.unravel_index(idx[n], R.aa.shape, order="C")
+            if abs(R2[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     {}A  ->  {}A  {}A    {:.6f}".format(
+                    n + 1,
+                    j + system.nfrozen + 1,
+                    b + system.noccupied_alpha + system.nfrozen + 1,
+                    a + system.noccupied_alpha + system.nfrozen + 1,
+                    R2[idx[n]],
+                )
+            )
+        elif idx[n] < n2a + n2b:
+            b, j, a = np.unravel_index(idx[n] - n2a, R.ab.shape, order="C")
+            if abs(R2[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     {}A  ->  {}A  {}B    {:.6f}".format(
+                    n + 1,
+                    j + system.nfrozen + 1,
+                    b + system.noccupied_alpha + system.nfrozen + 1,
+                    a + system.noccupied_beta + system.nfrozen + 1,
+                    R2[idx[n]],
+                )
+            )
+        elif idx[n] < n2a + n2b + n2c:
+            b, j, a = np.unravel_index(idx[n] - n2a - n2b, R.ba.shape, order="C")
+            if abs(R2[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     {}B  ->  {}B  {}A    {:.6f}".format(
+                    n + 1,
+                    j + system.nfrozen + 1,
+                    b + system.noccupied_beta + system.nfrozen + 1,
+                    a + system.noccupied_alpha + system.nfrozen + 1,
+                    R2[idx[n]],
+                )
+            )
+        else:
+            b, j, a = np.unravel_index(idx[n] - n2a - n2b - n2c, R.aa.shape, order="C")
+            if abs(R2[idx[n]]) < thresh_print: continue
+            print(
+                "      [{}]     {}B  ->  {}B  {}B    {:.6f}".format(
+                    n + 1,
+                    j + system.nfrozen + 1,
+                    b + system.noccupied_beta + system.nfrozen + 1,
+                    a + system.noccupied_beta + system.nfrozen + 1,
+                    R2[idx[n]],
+                )
+            )
+
+    # Restore permutationally redundant terms
+    for b in range(system.nunoccupied_alpha):
+        for j in range(system.noccupied_alpha):
+            for a in range(b + 1, system.nunoccupied_alpha):
+                R.aa[a, j, b] = -1.0 * R.aa[b, j, a]
+    for b in range(system.nunoccupied_beta):
+        for j in range(system.noccupied_beta):
+            for a in range(b + 1, system.nunoccupied_beta):
+                R.bb[a, j, b] = -1.0 * R.bb[b, j, a]
+
+    return
+
+
+# def print_amplitudes(R, system, order, nprint=10, thresh_print=1.0e-01):
+#
+#     from ccpy.models.operators import ClusterOperator, FockOperator
+#
+#     n1a = system.noccupied_alpha * system.nunoccupied_alpha
+#     n1b = system.noccupied_beta * system.nunoccupied_beta
+#     n2a = system.noccupied_alpha ** 2 * system.nunoccupied_alpha ** 2
+#     n2b = system.noccupied_beta * system.noccupied_alpha * system.nunoccupied_beta * system.nunoccupied_alpha
+#     n2c = system.noccupied_beta ** 2 * system.nunoccupied_beta ** 2
+#
+#     R1 = R.flatten()[: n1a + n1b]
+#     idx = np.flip(np.argsort(abs(R1)))
+#     print("     Largest Singly Excited Amplitudes:")
+#     for n in range(nprint):
+#         if idx[n] < n1a:
+#             a, i = np.unravel_index(idx[n], R.a.shape, order="C")
+#             if abs(R1[idx[n]]) < thresh_print: continue
+#             print(
+#                 "      [{}]     {}A  ->  {}A     {:.6f}".format(
+#                     n + 1,
+#                     i + system.nfrozen + 1,
+#                     a + system.nfrozen + system.noccupied_alpha + 1,
+#                     R1[idx[n]],
+#                 )
+#             )
+#         else:
+#             a, i = np.unravel_index(idx[n] - n1a, R.b.shape, order="C")
+#             if abs(R1[idx[n]]) < thresh_print: continue
+#             print(
+#                 "      [{}]     {}B  ->  {}B     {:.6f}".format(
+#                     n + 1,
+#                     i + system.nfrozen + 1,
+#                     a + system.noccupied_beta + system.nfrozen + 1,
+#                     R1[idx[n]],
+#                 )
+#             )
+#     if order < 2: return
+#
+#     # Zero out the non-unique R amplitudes related by permutational symmetry
+#     for a in range(system.nunoccupied_alpha):
+#         for b in range(a + 1, system.nunoccupied_alpha):
+#             for i in range(system.noccupied_alpha):
+#                 for j in range(i + 1, system.noccupied_alpha):
+#                     R.aa[b, a, j, i] = 0.0
+#                     R.aa[a, b, j, i] = 0.0
+#                     R.aa[b, a, i, j] = 0.0
+#     for a in range(system.nunoccupied_beta):
+#         for b in range(a + 1, system.nunoccupied_beta):
+#             for i in range(system.noccupied_beta):
+#                 for j in range(i + 1, system.noccupied_beta):
+#                     R.bb[b, a, j, i] = 0.0
+#                     R.bb[a, b, j, i] = 0.0
+#                     R.bb[b, a, i, j] = 0.0
+#
+#     R2 = R.flatten()[n1a + n1b : n1a + n1b + n2a + n2b + n2c]
+#     idx = np.flip(np.argsort(abs(R2)))
+#     print("     Largest Doubly Excited Amplitudes:")
+#     for n in range(nprint):
+#         if idx[n] < n2a:
+#             a, b, i, j = np.unravel_index(idx[n], R.aa.shape, order="C")
+#             if abs(R2[idx[n]]) < thresh_print: continue
+#             print(
+#                 "      [{}]     {}A  {}A  ->  {}A  {}A    {:.6f}".format(
+#                     n + 1,
+#                     i + system.nfrozen + 1,
+#                     j + system.nfrozen + 1,
+#                     a + system.noccupied_alpha + system.nfrozen + 1,
+#                     b + system.noccupied_alpha + system.nfrozen + 1,
+#                     R2[idx[n]],
+#                 )
+#             )
+#         elif idx[n] < n2a + n2b:
+#             a, b, i, j = np.unravel_index(idx[n] - n2a, R.ab.shape, order="C")
+#             if abs(R2[idx[n]]) < thresh_print: continue
+#             print(
+#                 "      [{}]     {}A  {}B  ->  {}A  {}B    {:.6f}".format(
+#                     n + 1,
+#                     i + system.nfrozen + 1,
+#                     j + system.nfrozen + 1,
+#                     a + system.noccupied_alpha + system.nfrozen + 1,
+#                     b + system.noccupied_beta + system.nfrozen + 1,
+#                     R2[idx[n]],
+#                 )
+#             )
+#         else:
+#             a, b, i, j = np.unravel_index(idx[n] - n2a - n2b, R.bb.shape, order="C")
+#             if abs(R2[idx[n]]) < thresh_print: continue
+#             print(
+#                 "      [{}]     {}B  {}B  ->  {}B  {}B    {:.6f}".format(
+#                     n + 1,
+#                     i + system.nfrozen + 1,
+#                     j + system.nfrozen + 1,
+#                     a + system.noccupied_beta + system.nfrozen + 1,
+#                     b + system.noccupied_beta + system.nfrozen + 1,
+#                     R2[idx[n]],
+#                 )
+#             )
+#     return

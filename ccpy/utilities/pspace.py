@@ -1,111 +1,140 @@
 import numpy as np
 
+from itertools import permutations
+
+
 def get_empty_pspace(system, nexcit):
     if nexcit == 3:
-        pspace = [{'aaa' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+        pspace = [{'aaa': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
                                     system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
-                  'aab' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                   'aab': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
                                     system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
-                  'abb' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
+                   'abb': np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
                                     system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
-                  'bbb' : np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                   'bbb': np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
                                     system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}]
     if nexcit == 4:
-        pspace = [ {'aaa' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+        pspace = [{'aaa': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
                                     system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
-                   'aab' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                   'aab': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
                                     system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
-                   'abb' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
+                   'abb': np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
                                     system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
-                   'bbb' : np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                   'bbb': np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
                                     system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))},
-                   {'aaaa' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
-                   'aaab' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
-                   'aabb' : np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
-                   'bbbb' : np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))} ]
+                  {'aaaa': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                     system.nunoccupied_alpha,
+                                     system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
+                                     system.noccupied_alpha)),
+                   'aaab': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                     system.nunoccupied_beta,
+                                     system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
+                                     system.noccupied_beta)),
+                   'aabb': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                                     system.nunoccupied_beta,
+                                     system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta,
+                                     system.noccupied_beta)),
+                   'bbbb': np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                                     system.nunoccupied_beta,
+                                     system.noccupied_beta, system.noccupied_beta, system.noccupied_beta,
+                                     system.noccupied_beta))}]
     return pspace
+
 
 def get_full_pspace(system, nexcit):
     if nexcit == 3:
-        pspace = [{'aaa' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
-                  'aab' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
-                  'abb' : np.ones((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
-                  'bbb' : np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}]
+        pspace = [{'aaa': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                   system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
+                   'aab': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                                   system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
+                   'abb': np.ones((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
+                                   system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
+                   'bbb': np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                                   system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}]
     if nexcit == 4:
-        pspace = [ {'aaa' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
-                   'aab' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
-                   'abb' : np.ones((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
-                   'bbb' : np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))},
-                   {'aaaa' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
-                   'aaab' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
-                   'aabb' : np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
-                   'bbbb' : np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))} ]
+        pspace = [{'aaa': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                   system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
+                   'aab': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                                   system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
+                   'abb': np.ones((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
+                                   system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
+                   'bbb': np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                                   system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))},
+                  {'aaaa': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                    system.nunoccupied_alpha,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
+                                    system.noccupied_alpha)),
+                   'aaab': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+                                    system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
+                                    system.noccupied_beta)),
+                   'aabb': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
+                                    system.nunoccupied_beta,
+                                    system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta,
+                                    system.noccupied_beta)),
+                   'bbbb': np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
+                                    system.nunoccupied_beta,
+                                    system.noccupied_beta, system.noccupied_beta, system.noccupied_beta,
+                                    system.noccupied_beta))}]
     return pspace
 
+
 def get_excit_rank(D, D0):
-    return len( set(D) - set(D0) )
+    return len(set(D) - set(D0))
+
 
 def get_excits_from(D, D0):
-	return list( set(D0) - set(D) )
+    return list(set(D0) - set(D))
+
 
 def get_excits_to(D, D0):
-	return list( set(D) - set(D0) )
+    return list(set(D) - set(D0))
+
 
 def spatial_orb_idx(x):
-		if x%2 == 1:
-			return int( (x+1)/2 )
-		else:
-			return int( x/2 )
+    if x % 2 == 1:
+        return int((x + 1) / 2)
+    else:
+        return int(x / 2)
+
 
 def get_spincase(excits_from, excits_to):
-    
-    assert(len(excits_from) == len(excits_to))
+    assert (len(excits_from) == len(excits_to))
 
     num_alpha_occ = sum([i % 2 for i in excits_from])
     num_alpha_unocc = sum([i % 2 for i in excits_to])
 
-    assert(num_alpha_occ == num_alpha_unocc)
+    assert (num_alpha_occ == num_alpha_unocc)
 
     spincase = 'a' * num_alpha_occ + 'b' * (len(excits_from) - num_alpha_occ)
 
     return spincase
 
-def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
 
+def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
     pspace = get_empty_pspace(system, nexcit)
 
-    HF = list(range(1, system.nelectrons + 1))
+    HF = sorted(
+        [2 * i - 1 for i in range(1, system.noccupied_alpha + 1)]
+        + [2 * i for i in range(1, system.noccupied_beta + 1)]
+    )
+    #print(HF)
+    # HF = list(range(1, system.nelectrons + 1))
     occupied_lower_bound = 1
     occupied_upper_bound = system.noccupied_alpha
     unoccupied_lower_bound = 1
     unoccupied_upper_bound = system.nunoccupied_beta
 
-    orb_table = {'a' : system.noccupied_alpha, 'b' : system.noccupied_beta}
+    orb_table = {'a': system.noccupied_alpha, 'b': system.noccupied_beta}
 
-    excitation_count = [{'aaa' : 0, 'aab' : 0, 'abb' : 0, 'bbb' : 0},
-                        {'aaaa' : 0, 'aaab' : 0, 'aabb' : 0, 'abbb' : 0, 'bbbb' : 0}]
+    excitation_count = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0},
+                        {'aaaa': 0, 'aaab': 0, 'aabb': 0, 'abbb': 0, 'bbbb': 0}]
 
     with open(pspace_file) as f:
-   
+
         for line in f.readlines():
 
-            det = list( map(int, line.split()[2:]) )
+            det = list(map(int, line.split()[2:]))
 
             excit_rank = get_excit_rank(det, HF)
 
@@ -127,14 +156,16 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
             spinorb_unocc_beta.sort()
 
             idx_occ = [spatial_orb_idx(x) for x in spinorb_occ_alpha] + [spatial_orb_idx(x) for x in spinorb_occ_beta]
-            idx_unocc = [spatial_orb_idx(x) for x in spinorb_unocc_alpha] + [spatial_orb_idx(x) for x in spinorb_unocc_beta]
+            idx_unocc = [spatial_orb_idx(x) for x in spinorb_unocc_alpha] + [spatial_orb_idx(x) for x in
+                                                                             spinorb_unocc_beta]
             idx_unocc = [x - shift for x, shift in zip(idx_unocc, unocc_shift)]
 
             if any([i > occupied_upper_bound for i in idx_occ]) or any([i < occupied_lower_bound for i in idx_occ]):
                 print("Occupied orbitals out of range!")
                 print(idx_occ)
                 break
-            if any([i > unoccupied_upper_bound for i in idx_unocc]) or any([i < unoccupied_lower_bound for i in idx_unocc]):
+            if any([i > unoccupied_upper_bound for i in idx_unocc]) or any(
+                    [i < unoccupied_lower_bound for i in idx_unocc]):
                 print("Unoccupied orbitals out of range!")
                 print(idx_unocc)
                 break
@@ -144,16 +175,41 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
             excitation_count[n][spincase] += 1
 
             if excit_rank == 3:
-                pspace[n][spincase][idx_unocc[0]-1, idx_unocc[1]-1, idx_unocc[2]-1, idx_occ[0]-1, idx_occ[1]-1, idx_occ[2]-1] = 1
+                if spincase == 'aaa':
+                    for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
+                        for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
+                            a, b, c = perms_unocc
+                            i, j, k = perms_occ
+                            pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+                if spincase == 'aab':
+                    for perms_unocc in permutations((idx_unocc[0], idx_unocc[1])):
+                        for perms_occ in permutations((idx_occ[0], idx_occ[1])):
+                            a, b = perms_unocc
+                            i, j = perms_occ
+                            pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
+                if spincase == 'abb':
+                    for perms_unocc in permutations((idx_unocc[1], idx_unocc[2])):
+                        for perms_occ in permutations((idx_occ[1], idx_occ[2])):
+                            b, c = perms_unocc
+                            j, k = perms_occ
+                            pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
+                if spincase == 'bbb':
+                    for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
+                        for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
+                            a, b, c = perms_unocc
+                            i, j, k = perms_occ
+                            pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
             if excit_rank == 4:
-                pspace[n][spincase][idx_unocc[0]-1, idx_unocc[1]-1, idx_unocc[2]-1, idx_unocc[3]-1, idx_occ[0]-1, idx_occ[1]-1, idx_occ[2]-1, idx_occ[3]-1] = 1
+                pspace[n][spincase][
+                    idx_unocc[0] - 1, idx_unocc[1] - 1, idx_unocc[2] - 1, idx_unocc[3] - 1, idx_occ[0] - 1, idx_occ[
+                        1] - 1, idx_occ[2] - 1, idx_occ[3] - 1] = 1
 
     return pspace, excitation_count
 
-def count_excitations_in_pspace(pspace, system):
 
-    excitation_count = [{'aaa' : 0, 'aab' : 0, 'abb' : 0, 'bbb' : 0},
-                        {'aaaa' : 0, 'aaab' : 0, 'aabb' : 0, 'abbb' : 0, 'bbbb' : 0}]
+def count_excitations_in_pspace(pspace, system):
+    excitation_count = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0},
+                        {'aaaa': 0, 'aaab': 0, 'aabb': 0, 'abbb': 0, 'bbbb': 0}]
 
     for n, p in enumerate(pspace):
 
@@ -214,14 +270,31 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace):
         num_alpha = int(sum([x % 2 for x in triples_list[n, :]]) / 2)
         idx = [spatial_orb_idx(p) - 1 for p in triples_list[n, :]]
         a, b, c, i, j, k = idx
+
         if num_alpha == 3:
-            new_pspace['aaa'][a, b, c, i, j, k] = 1
-        elif num_alpha == 2:
-            new_pspace['aab'][a, b, c, i, j, k] = 1
-        elif num_alpha == 1:
-            new_pspace['abb'][a, b, c, i, j, k] = 1
-        else:
-            new_pspace['bbb'][a, b, c, i, j, k] = 1
+            for perms_unocc in permutations((a, b, c)):
+                for perms_occ in permutations((i, j, k)):
+                    a, b, c = perms_unocc
+                    i, j, k = perms_occ
+                    new_pspace['aaa'][a, b, c, i, j, k] = 1
+        if num_alpha == 2:
+            for perms_unocc in permutations((a, b)):
+                for perms_occ in permutations((i, j)):
+                    a, b = perms_unocc
+                    i, j = perms_occ
+                    new_pspace['aab'][a, b, c, i, j, k] = 1
+        if num_alpha == 1:
+            for perms_unocc in permutations((b, c)):
+                for perms_occ in permutations((j, k)):
+                    b, c = perms_unocc
+                    j, k = perms_occ
+                    new_pspace['abb'][a, b, c, i, j, k] = 1
+        if num_alpha == 0:
+            for perms_unocc in permutations((a, b, c)):
+                for perms_occ in permutations((i, j, k)):
+                    a, b, c = perms_unocc
+                    i, j, k = perms_occ
+                    new_pspace['bbb'][a, b, c, i, j, k] = 1
 
     return new_pspace
 
@@ -259,3 +332,60 @@ def add_spinorbital_quadruples_to_pspace(quadruples_list, pspace):
 
     return new_pspace
 
+
+def get_active_pspace(system, nact_o, nact_u, num_active=1):
+    from ccpy.utilities.active_space import active_hole, active_particle
+
+    def count_active_occ_alpha(occ):
+        return sum([active_hole(i, system.noccupied_alpha, nact_o) for i in occ])
+
+    def count_active_occ_beta(occ):
+        return sum([active_hole(i, system.noccupied_beta, nact_o) for i in occ])
+
+    def count_active_unocc_alpha(unocc):
+        return sum([active_particle(a, nact_u) for a in unocc])
+
+    def count_active_unocc_beta(unocc):
+        return sum([active_particle(a, nact_u) for a in unocc])
+
+    pspace = get_empty_pspace(system, 3)
+
+    # aaa
+    for i in range(system.noccupied_alpha):
+        for j in range(system.noccupied_alpha):
+            for k in range(system.noccupied_alpha):
+                for a in range(system.nunoccupied_alpha):
+                    for b in range(system.nunoccupied_alpha):
+                        for c in range(system.nunoccupied_alpha):
+                            if count_active_occ_alpha([i, j, k]) >= num_active and count_active_unocc_alpha([a, b, c]) >= num_active:
+                                pspace[0]["aaa"][a, b, c, i, j, k] = 1
+    # aab
+    for i in range(system.noccupied_alpha):
+        for j in range(system.noccupied_alpha):
+            for k in range(system.noccupied_beta):
+                for a in range(system.nunoccupied_alpha):
+                    for b in range(system.nunoccupied_alpha):
+                        for c in range(system.nunoccupied_beta):
+                            if (count_active_occ_alpha([i, j]) + count_active_occ_beta([k])) >= num_active and (count_active_unocc_alpha([a, b]) + count_active_unocc_beta([c])) >= num_active:
+                                pspace[0]["aab"][a, b, c, i, j, k] = 1
+
+    # abb
+    for i in range(system.noccupied_alpha):
+        for j in range(system.noccupied_beta):
+            for k in range(system.noccupied_beta):
+                for a in range(system.nunoccupied_alpha):
+                    for b in range(system.nunoccupied_beta):
+                        for c in range(system.nunoccupied_beta):
+                            if (count_active_occ_alpha([i]) + count_active_occ_beta([j, k])) >= num_active and (count_active_unocc_alpha([a]) + count_active_unocc_beta([b, c])) >= num_active:
+                                pspace[0]["abb"][a, b, c, i, j, k] = 1
+    # bbb
+    for i in range(system.noccupied_beta):
+        for j in range(system.noccupied_beta):
+            for k in range(system.noccupied_beta):
+                for a in range(system.nunoccupied_beta):
+                    for b in range(system.nunoccupied_beta):
+                        for c in range(system.nunoccupied_beta):
+                            if count_active_occ_beta([i, j, k]) >= num_active and count_active_unocc_beta([a, b, c]) >= num_active:
+                                pspace[0]["bbb"][a, b, c, i, j, k] = 1
+
+    return pspace

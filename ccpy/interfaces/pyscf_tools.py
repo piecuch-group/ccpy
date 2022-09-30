@@ -12,7 +12,7 @@ def load_pyscf_integrals(
         meanfield, nfrozen=0,
         num_act_holes_alpha=0, num_act_particles_alpha=0,
         num_act_holes_beta=0, num_act_particles_beta=0,
-        normal_ordered=True, dump_integrals=False
+        normal_ordered=True, dump_integrals=False, sorted=True
 ):
     """Builds the System and Integral objects using the information contained within a PySCF
     mean-field object for a molecular system.
@@ -68,7 +68,7 @@ def load_pyscf_integrals(
     if dump_integrals:
         dumpIntegralstoPGFiles(e1int, e2int, system)
 
-    return system, getHamiltonian(e1int, e2int, system, normal_ordered)
+    return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
 
 
 
@@ -402,3 +402,16 @@ def write_twobody_integrals(V, e_nuc):
                             )
                         )
         f.write("    {}    {}    {}    {}        {:.11f}\n".format(0, 0, 0, 0, e_nuc))
+
+
+def get_dipole_integrals(mol, mf):
+
+    charges = mol.atom_charges()
+    coords = mol.atom_coords()
+    nuc_charge_center = np.einsum('z,zx->x', charges, coords) / charges.sum()
+    mol.set_common_orig_(nuc_charge_center)
+    dip_ints_ao = mol.intor_symmetric('cint1e_r_sph', comp=3)
+
+    dip_ints_mo = np.einsum("xij,ip,jq->xpq", dip_ints_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
+
+    return dip_ints_mo

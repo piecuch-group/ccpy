@@ -1780,10 +1780,10 @@ module crcc_loops
                         integer :: i, j, k, l, a, b, c, d, ii, jj, kk, ll, aa, bb, cc, dd
                         real(kind=8) :: denom, temp
 
-                        deltaA = 0.0
-                        deltaB = 0.0
-                        deltaC = 0.0
-                        deltaD = 0.0
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
 
                         do ii = 1 , noa
                             do jj = ii+1, noa
@@ -1885,10 +1885,10 @@ module crcc_loops
                         integer :: i, j, k, l, a, b, c, d, ii, jj, kk, ll, aa, bb, cc, dd
                         real(kind=8) :: denom, temp
 
-                        deltaA = 0.0
-                        deltaB = 0.0
-                        deltaC = 0.0
-                        deltaD = 0.0
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
 
                         do ii = 1 , noa
                             do jj = ii+1, noa
@@ -1990,10 +1990,10 @@ module crcc_loops
                         integer :: i, j, k, l, a, b, c, d, ii, jj, kk, ll, aa, bb, cc, dd
                         real(kind=8) :: denom, temp
 
-                        deltaA = 0.0
-                        deltaB = 0.0
-                        deltaC = 0.0
-                        deltaD = 0.0
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
 
                         do ii = 1 , noa
                             do jj = ii+1, noa

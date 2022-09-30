@@ -3583,6 +3583,343 @@ module ccp_loops
               end do
 
       end subroutine update_t3d_p
+
+      subroutine update_L3_p(l3a,l3b,l3c,l3d,X3A,X3B,X3C,X3D,&
+                           pspace_aaa, pspace_aab, pspace_abb, pspace_bbb,&
+                           omega,&
+                           H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                           shift,&
+                           noa,nua,nob,nub)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua, nob, nub
+              real(8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+                                     H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega
+
+              integer, intent(in) :: pspace_aaa(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              integer, intent(in) :: pspace_aab(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              integer, intent(in) :: pspace_abb(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              integer, intent(in) :: pspace_bbb(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+
+              real(8), intent(inout) :: l3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              !f2py intent(in,out) :: l3a(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
+              real(8), intent(inout) :: l3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              !f2py intent(in,out) :: l3b(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:nob-1)
+              real(8), intent(inout) :: l3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              !f2py intent(in,out) :: l3c(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:nob-1)
+              real(8), intent(inout) :: l3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+              !f2py intent(in,out) :: l3d(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:nob-1)
+
+              real(8), intent(inout) :: X3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              !f2py intent(in,out) :: X3A(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
+              real(8), intent(inout) :: X3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              !f2py intent(in,out) :: X3B(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:nob-1)
+              real(8), intent(inout) :: X3C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              !f2py intent(in,out) :: X3C(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:nob-1)
+              real(8), intent(inout) :: X3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+              !f2py intent(in,out) :: X3D(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:nob-1)
+
+              integer :: i, j, k, a, b, c
+              real(8) :: denom, val
+
+
+              do i = 1,noa
+                  do j = i + 1,noa
+                      do k = j + 1,noa
+                          do a = 1,nua
+                              do b = a + 1,nua
+                                  do c = b + 1,nua
+
+                                      if (pspace_aaa(a, b, c, i, j, k) == 0) then
+                                          l3a(a, b, c, i, j, k) = 0.0d0
+                                          val = 0.0d0
+                                      else
+                                          denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1A_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1A_vv(C,C)
+
+                                          val = X3A(a, b, c, i, j, k)
+
+                                          l3a(a, b, c, i, j, k) = l3a(a, b, c, i, j, k)&
+                                                  - (val - omega * l3a(a, b, c, i, j, k))/(denom - omega + shift)
+
+                                          val = X3A(a, b, c, i, j, k) - omega * l3a(a, b, c, i, j, k)
+                                      end if
+
+                                      l3a(A,B,C,K,I,J) = l3a(A,B,C,I,J,K)
+                                      l3a(A,B,C,J,K,I) = l3a(A,B,C,I,J,K)
+                                      l3a(A,B,C,I,K,J) = -l3a(A,B,C,I,J,K)
+                                      l3a(A,B,C,J,I,K) = -l3a(A,B,C,I,J,K)
+                                      l3a(A,B,C,K,J,I) = -l3a(A,B,C,I,J,K)
+
+                                      l3a(B,A,C,I,J,K) = -l3a(A,B,C,I,J,K)
+                                      l3a(B,A,C,K,I,J) = -l3a(A,B,C,I,J,K)
+                                      l3a(B,A,C,J,K,I) = -l3a(A,B,C,I,J,K)
+                                      l3a(B,A,C,I,K,J) = l3a(A,B,C,I,J,K)
+                                      l3a(B,A,C,J,I,K) = l3a(A,B,C,I,J,K)
+                                      l3a(B,A,C,K,J,I) = l3a(A,B,C,I,J,K)
+
+                                      l3a(A,C,B,I,J,K) = -l3a(A,B,C,I,J,K)
+                                      l3a(A,C,B,K,I,J) = -l3a(A,B,C,I,J,K)
+                                      l3a(A,C,B,J,K,I) = -l3a(A,B,C,I,J,K)
+                                      l3a(A,C,B,I,K,J) = l3a(A,B,C,I,J,K)
+                                      l3a(A,C,B,J,I,K) = l3a(A,B,C,I,J,K)
+                                      l3a(A,C,B,K,J,I) = l3a(A,B,C,I,J,K)
+
+                                      l3a(C,B,A,I,J,K) = -l3a(A,B,C,I,J,K)
+                                      l3a(C,B,A,K,I,J) = -l3a(A,B,C,I,J,K)
+                                      l3a(C,B,A,J,K,I) = -l3a(A,B,C,I,J,K)
+                                      l3a(C,B,A,I,K,J) = l3a(A,B,C,I,J,K)
+                                      l3a(C,B,A,J,I,K) = l3a(A,B,C,I,J,K)
+                                      l3a(C,B,A,K,J,I) = l3a(A,B,C,I,J,K)
+
+                                      l3a(B,C,A,I,J,K) = l3a(A,B,C,I,J,K)
+                                      l3a(B,C,A,K,I,J) = l3a(A,B,C,I,J,K)
+                                      l3a(B,C,A,J,K,I) = l3a(A,B,C,I,J,K)
+                                      l3a(B,C,A,I,K,J) = -l3a(A,B,C,I,J,K)
+                                      l3a(B,C,A,J,I,K) = -l3a(A,B,C,I,J,K)
+                                      l3a(B,C,A,K,J,I) = -l3a(A,B,C,I,J,K)
+
+                                      l3a(C,A,B,I,J,K) = l3a(A,B,C,I,J,K)
+                                      l3a(C,A,B,K,I,J) = l3a(A,B,C,I,J,K)
+                                      l3a(C,A,B,J,K,I) = l3a(A,B,C,I,J,K)
+                                      l3a(C,A,B,I,K,J) = -l3a(A,B,C,I,J,K)
+                                      l3a(C,A,B,J,I,K) = -l3a(A,B,C,I,J,K)
+                                      l3a(C,A,B,K,J,I) = -l3a(A,B,C,I,J,K)
+
+                                      X3A(A,B,C,I,J,K) = val
+                                      X3A(A,B,C,K,I,J) = val
+                                      X3A(A,B,C,J,K,I) = val
+                                      X3A(A,B,C,I,K,J) = -val
+                                      X3A(A,B,C,J,I,K) = -val
+                                      X3A(A,B,C,K,J,I) = -val
+
+                                      X3A(B,C,A,I,J,K) = val
+                                      X3A(B,C,A,K,I,J) = val
+                                      X3A(B,C,A,J,K,I) = val
+                                      X3A(B,C,A,I,K,J) = -val
+                                      X3A(B,C,A,J,I,K) = -val
+                                      X3A(B,C,A,K,J,I) = -val
+
+                                      X3A(C,A,B,I,J,K) = val
+                                      X3A(C,A,B,K,I,J) = val
+                                      X3A(C,A,B,J,K,I) = val
+                                      X3A(C,A,B,I,K,J) = -val
+                                      X3A(C,A,B,J,I,K) = -val
+                                      X3A(C,A,B,K,J,I) = -val
+
+                                      X3A(A,C,B,I,J,K) = -val
+                                      X3A(A,C,B,K,I,J) = -val
+                                      X3A(A,C,B,J,K,I) = -val
+                                      X3A(A,C,B,I,K,J) = val
+                                      X3A(A,C,B,J,I,K) = val
+                                      X3A(A,C,B,K,J,I) = val
+
+                                      X3A(B,A,C,I,J,K) = -val
+                                      X3A(B,A,C,K,I,J) = -val
+                                      X3A(B,A,C,J,K,I) = -val
+                                      X3A(B,A,C,I,K,J) = val
+                                      X3A(B,A,C,J,I,K) = val
+                                      X3A(B,A,C,K,J,I) = val
+
+                                      X3A(C,B,A,I,J,K) = -val
+                                      X3A(C,B,A,K,I,J) = -val
+                                      X3A(C,B,A,J,K,I) = -val
+                                      X3A(C,B,A,I,K,J) = val
+                                      X3A(C,B,A,J,I,K) = val
+                                      X3A(C,B,A,K,J,I) = val
+
+                                  end do
+                              end do
+                          end do
+                      end do
+                  end do
+              end do
+
+              do i = 1,noa
+                  do j = i + 1,noa
+                      do k = 1,nob
+                          do a = 1,nua
+                              do b = a + 1,nua
+                                  do c = 1,nub
+
+                                      if (pspace_aab(a, b, c, i, j, k) == 0) then
+                                          l3b(a, b, c, i, j, k) = 0.0d0
+                                          val = 0.0d0
+                                      else
+                                          denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1B_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1B_vv(C,C)
+
+                                          val = X3B(a, b, c, i, j, k)
+
+                                          l3b(a, b, c, i, j, k) = l3b(a, b, c, i, j, k)&
+                                                  - (val - omega * l3b(a, b, c, i, j, k))/(denom - omega + shift)
+                                          val = X3B(a, b, c, i, j, k) - omega * l3b(a, b, c, i, j, k)
+                                      end if
+
+                                      l3b(b, a, c, i, j, k) = -1.0 * l3b(A,B,C,I,J,K)
+                                      l3b(a, b, c, j, i, k) = -1.0 * l3b(A,B,C,I,J,K)
+                                      l3b(b, a, c, j, i, k) = l3b(A,B,C,I,J,K)
+
+                                      X3B(A,B,C,I,J,K) = val
+                                      X3B(B,A,C,I,J,K) = -1.0 * val
+                                      X3B(A,B,C,J,I,K) = -1.0 * val
+                                      X3B(B,A,C,J,I,K) = val
+
+                                  end do
+                              end do
+                          end do
+                      end do
+                  end do
+              end do
+
+              do i = 1,noa
+                  do j = 1,nob
+                      do k = j+1,nob
+                          do a = 1,nua
+                              do b = 1,nub
+                                  do c = b+1,nub
+
+                                      if (pspace_abb(a, b, c, i, j, k) == 0) then
+                                          l3c(a, b, c, i, j, k) = 0.0d0
+                                          val = 0.0d0
+                                      else
+                                          denom = -H1A_oo(I,I)-H1B_oo(J,J)-H1B_oo(K,K)+H1A_vv(A,A)+H1B_vv(B,B)+H1B_vv(C,C)
+
+                                          val = X3C(a, b, c, i, j, k)
+
+                                          l3c(a, b, c, i, j, k) = l3c(a, b, c, i, j, k)&
+                                                  - (val - omega * l3c(a, b, c, i, j, k))/(denom - omega + shift)
+                                          val = X3C(a, b, c, i, j, k) - omega * l3c(a, b, c, i, j, k)
+                                      end if
+
+                                      l3c(a, c, b, i, j, k) = -1.0 * l3c(A,B,C,I,J,K)
+                                      l3c(a, b, c, i, k, j) = -1.0 * l3c(A,B,C,I,J,K)
+                                      l3c(a, c, b, i, k, j) = l3c(A,B,C,I,J,K)
+
+                                      X3C(A,B,C,I,J,K) = val
+                                      X3C(A,C,B,I,J,K) = -1.0 * val
+                                      X3C(A,B,C,I,K,J) = -1.0 * val
+                                      X3C(A,C,B,I,K,J) = val
+
+                                  end do
+                              end do
+                          end do
+                      end do
+                  end do
+              end do
+
+              do i = 1,nob
+                  do j = i+1,nob
+                      do k = j+1,nob
+                          do a = 1,nub
+                              do b = a+1,nub
+                                  do c = b+1,nub
+
+                                      if (pspace_bbb(a, b, c, i, j, k) == 0) then
+                                          l3d(a, b, c, i, j, k) = 0.0d0
+                                          val = 0.0d0
+                                      else
+                                          denom = -H1B_oo(I,I)-H1B_oo(J,J)-H1B_oo(K,K)+H1B_vv(A,A)+H1B_vv(B,B)+H1B_vv(C,C)
+
+                                          val = X3D(a, b, c, i, j, k)
+
+                                          l3d(a, b, c, i, j, k) = l3d(a, b, c, i, j, k)&
+                                                  - (val - omega * l3d(a, b, c, i, j, k))/(denom - omega + shift)
+
+                                          val = X3D(a, b, c, i, j, k) - omega * l3d(a, b, c, i, j, k)
+                                      end if
+
+                                      l3d(A,B,C,K,I,J) = l3d(A,B,C,I,J,K)
+                                      l3d(A,B,C,J,K,I) = l3d(A,B,C,I,J,K)
+                                      l3d(A,B,C,I,K,J) = -l3d(A,B,C,I,J,K)
+                                      l3d(A,B,C,J,I,K) = -l3d(A,B,C,I,J,K)
+                                      l3d(A,B,C,K,J,I) = -l3d(A,B,C,I,J,K)
+
+                                      l3d(B,A,C,I,J,K) = -l3d(A,B,C,I,J,K)
+                                      l3d(B,A,C,K,I,J) = -l3d(A,B,C,I,J,K)
+                                      l3d(B,A,C,J,K,I) = -l3d(A,B,C,I,J,K)
+                                      l3d(B,A,C,I,K,J) = l3d(A,B,C,I,J,K)
+                                      l3d(B,A,C,J,I,K) = l3d(A,B,C,I,J,K)
+                                      l3d(B,A,C,K,J,I) = l3d(A,B,C,I,J,K)
+
+                                      l3d(A,C,B,I,J,K) = -l3d(A,B,C,I,J,K)
+                                      l3d(A,C,B,K,I,J) = -l3d(A,B,C,I,J,K)
+                                      l3d(A,C,B,J,K,I) = -l3d(A,B,C,I,J,K)
+                                      l3d(A,C,B,I,K,J) = l3d(A,B,C,I,J,K)
+                                      l3d(A,C,B,J,I,K) = l3d(A,B,C,I,J,K)
+                                      l3d(A,C,B,K,J,I) = l3d(A,B,C,I,J,K)
+
+                                      l3d(C,B,A,I,J,K) = -l3d(A,B,C,I,J,K)
+                                      l3d(C,B,A,K,I,J) = -l3d(A,B,C,I,J,K)
+                                      l3d(C,B,A,J,K,I) = -l3d(A,B,C,I,J,K)
+                                      l3d(C,B,A,I,K,J) = l3d(A,B,C,I,J,K)
+                                      l3d(C,B,A,J,I,K) = l3d(A,B,C,I,J,K)
+                                      l3d(C,B,A,K,J,I) = l3d(A,B,C,I,J,K)
+
+                                      l3d(B,C,A,I,J,K) = l3d(A,B,C,I,J,K)
+                                      l3d(B,C,A,K,I,J) = l3d(A,B,C,I,J,K)
+                                      l3d(B,C,A,J,K,I) = l3d(A,B,C,I,J,K)
+                                      l3d(B,C,A,I,K,J) = -l3d(A,B,C,I,J,K)
+                                      l3d(B,C,A,J,I,K) = -l3d(A,B,C,I,J,K)
+                                      l3d(B,C,A,K,J,I) = -l3d(A,B,C,I,J,K)
+
+                                      l3d(C,A,B,I,J,K) = l3d(A,B,C,I,J,K)
+                                      l3d(C,A,B,K,I,J) = l3d(A,B,C,I,J,K)
+                                      l3d(C,A,B,J,K,I) = l3d(A,B,C,I,J,K)
+                                      l3d(C,A,B,I,K,J) = -l3d(A,B,C,I,J,K)
+                                      l3d(C,A,B,J,I,K) = -l3d(A,B,C,I,J,K)
+                                      l3d(C,A,B,K,J,I) = -l3d(A,B,C,I,J,K)
+
+                                      X3D(A,B,C,I,J,K) = val
+                                      X3D(A,B,C,K,I,J) = val
+                                      X3D(A,B,C,J,K,I) = val
+                                      X3D(A,B,C,I,K,J) = -val
+                                      X3D(A,B,C,J,I,K) = -val
+                                      X3D(A,B,C,K,J,I) = -val
+
+                                      X3D(B,C,A,I,J,K) = val
+                                      X3D(B,C,A,K,I,J) = val
+                                      X3D(B,C,A,J,K,I) = val
+                                      X3D(B,C,A,I,K,J) = -val
+                                      X3D(B,C,A,J,I,K) = -val
+                                      X3D(B,C,A,K,J,I) = -val
+
+                                      X3D(C,A,B,I,J,K) = val
+                                      X3D(C,A,B,K,I,J) = val
+                                      X3D(C,A,B,J,K,I) = val
+                                      X3D(C,A,B,I,K,J) = -val
+                                      X3D(C,A,B,J,I,K) = -val
+                                      X3D(C,A,B,K,J,I) = -val
+
+                                      X3D(A,C,B,I,J,K) = -val
+                                      X3D(A,C,B,K,I,J) = -val
+                                      X3D(A,C,B,J,K,I) = -val
+                                      X3D(A,C,B,I,K,J) = val
+                                      X3D(A,C,B,J,I,K) = val
+                                      X3D(A,C,B,K,J,I) = val
+
+                                      X3D(B,A,C,I,J,K) = -val
+                                      X3D(B,A,C,K,I,J) = -val
+                                      X3D(B,A,C,J,K,I) = -val
+                                      X3D(B,A,C,I,K,J) = val
+                                      X3D(B,A,C,J,I,K) = val
+                                      X3D(B,A,C,K,J,I) = val
+
+                                      X3D(C,B,A,I,J,K) = -val
+                                      X3D(C,B,A,K,I,J) = -val
+                                      X3D(C,B,A,J,K,I) = -val
+                                      X3D(C,B,A,I,K,J) = val
+                                      X3D(C,B,A,J,I,K) = val
+                                      X3D(C,B,A,K,J,I) = val
+
+                                  end do
+                              end do
+                          end do
+                      end do
+                  end do
+              end do
+
+
+      end subroutine update_L3_p
             
 
 

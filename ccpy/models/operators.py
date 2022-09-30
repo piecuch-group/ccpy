@@ -77,7 +77,7 @@ class ActiveOperator:
             prev += ndim
 
 class ClusterOperator:
-    def __init__(self, system, order, pspace_orders=[None], active_orders=[None], num_active=[None], data_type=np.float64):
+    def __init__(self, system, order, p_orders=[None], pspace=[None], active_orders=[None], num_active=[None], data_type=np.float64):
         self.order = order
         self.spin_cases = []
         self.dimensions = []
@@ -102,7 +102,7 @@ class ClusterOperator:
                         self.dimensions.append(dim)
                     ndim += active_t.ndim
 
-                elif i in pspace_orders:
+                elif i in p_orders:
                     setattr(self, name, np.zeros(0, dtype=data_type))
                     self.dimensions.append((0,))
                     ndim += 0
@@ -158,10 +158,11 @@ class FockOperator:
         self.num_holes = num_holes
         self.spin_cases = []
         self.dimensions = []
+        self.order = min(num_particles, num_holes) + abs(num_particles - num_holes)
 
         assert num_particles != num_holes
 
-        order = min(num_particles, num_holes)
+        #order = min(num_particles, num_holes)
         if num_particles > num_holes: # EA operator
             num_add = num_particles - num_holes
             single_particle_dims = {'a' : system.nunoccupied_alpha, 'b' : system.nunoccupied_beta}
@@ -187,8 +188,9 @@ class FockOperator:
             self.spin_cases.append(name)
             self.dimensions.append(dimensions)
             ndim += np.prod(dimensions)
+
         # now add ionizing/attaching operators to np-nh particle-conserving operators
-        for i in range(1, order + 1):
+        for i in range(1, self.order + 1):
             for j in range(i + 1):
                 name_base = get_operator_name(i, j)
                 dimension_base = get_operator_dimension(i, j, system)
@@ -209,11 +211,19 @@ class FockOperator:
             [getattr(self, key).flatten() for key in self.spin_cases]
         )
 
-    def unflatten(self, T_flat):
+    def unflatten(self, T_flat, order=0):
         prev = 0
+
+        # allows unflattening of up to a specified order which may be less than
+        # the order of the cluster operator.
+        if order == 0: order = self.order
+
         for dims, name in zip(self.dimensions, self.spin_cases):
+
+            if len(name) > order: continue
+
             ndim = np.prod(dims)
-            setattr(self, name, np.reshape(T_flat[prev : ndim + prev], dims))
+            setattr(self, name, np.reshape(T_flat[prev: ndim + prev], dims))
             prev += ndim
 
 def get_operator_name(i, j):
@@ -243,8 +253,8 @@ if __name__ == "__main__":
         atom="""F 0.0 0.0 -2.66816
                 F 0.0 0.0  2.66816""",
         basis="ccpvdz",
-        charge=1,
-        spin=1,
+        charge=0,
+        spin=0,
         symmetry="D2H",
         cart=True,
         unit="Bohr",
@@ -303,24 +313,24 @@ if __name__ == "__main__":
 
 
     print(T.flatten().shape)
-    #
-    # num_particles = 1
-    # num_holes = 3
-    # R = FockOperator(system, num_particles, num_holes)
-    # print("IP operator", num_particles, 'p-', num_holes, 'h')
-    # print("---------------------------")
-    # for key in R.spin_cases:
-    #     print(key, "->", getattr(R, key).shape)
-    # print("Flattened dimension = ", R.ndim)
-    # print(R.flatten().shape)
-    #
-    # num_particles = 4
-    # num_holes = 2
-    # R = FockOperator(system, num_particles, num_holes)
-    # print("EA operator", num_particles, 'p-', num_holes, 'h')
-    # print("---------------------------")
-    # for key in R.spin_cases:
-    #     print(key, "->", getattr(R, key).shape)
-    # print("Flattened dimension = ", R.ndim)
-    # print(R.flatten().shape)
+
+    num_particles = 1
+    num_holes = 2
+    R = FockOperator(system, num_particles, num_holes)
+    print("IP operator", num_particles, 'p-', num_holes, 'h')
+    print("---------------------------")
+    for key in R.spin_cases:
+        print(key, "->", getattr(R, key).shape)
+    print("Flattened dimension = ", R.ndim)
+    print(R.flatten().shape)
+
+    num_particles = 4
+    num_holes = 2
+    R = FockOperator(system, num_particles, num_holes)
+    print("EA operator", num_particles, 'p-', num_holes, 'h')
+    print("---------------------------")
+    for key in R.spin_cases:
+        print(key, "->", getattr(R, key).shape)
+    print("Flattened dimension = ", R.ndim)
+    print(R.flatten().shape)
 

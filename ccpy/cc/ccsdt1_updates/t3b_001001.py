@@ -4,6 +4,7 @@ from ccpy.utilities.updates import cc_active_loops
 
 import time as time
 
+#@profile
 def build(T, dT, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
@@ -53,7 +54,7 @@ def build(T, dT, H, system):
     )
     #t1 = time.time()
     dT.aab.vvVooO += (1.0 / 4.0) * (
-            -0.5 * np.einsum('abef,feCijK->abCijK', H.aa.vvvv[va, va, va, va], T.aab.vvVooO, optimize=True)
+            -0.5 * np.einsum('abef,feCijK->abCijK', H.aa.vvvv[va, va, va, va], T.aab.vvVooO, optimize=True) ###
             - 1.0 * np.einsum('abeF,FeCijK->abCijK', H.aa.vvvv[va, va, va, Va], T.aab.VvVooO, optimize=True)
             - 0.5 * np.einsum('abEF,FECijK->abCijK', H.aa.vvvv[va, va, Va, Va], T.aab.VVVooO, optimize=True)
     )

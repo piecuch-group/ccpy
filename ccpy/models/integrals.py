@@ -17,6 +17,30 @@ from ccpy.models.operators import get_operator_name
 #         super(MyClass, obj).__init__()  # Don't forget to call any polymorphic base class initializers
 #         obj._value = load_from_somewhere(somename)
 #         return obj
+#
+# class UnsortedIntegralArray(np.ndarray):
+#
+#     def __new__(cls, input_array):
+#         # Input array is an already formed ndarray instance
+#         # We first cast to be our class type
+#         obj = np.asarray(input_array).view(cls)
+#         # Finally, we must return the newly created object:
+#         return obj
+#
+#     def __getitem__(self, item):
+#         #if isinstance(item, np.ndarray):
+#         #print(np.ix_(*item))
+#         # print(item)
+#         # print(*item)
+#         #print(item)
+#         return super().__getitem__(self, np.ix_(item))
+#         #return super().__getitem__(np.ix_(*item))
+#         #return super().__getitem__(item)
+#
+#     def __array_finalize__(self, obj):
+#         # see InfoArray.__array_finalize__ for comments
+#         if obj is None: return
+#         self.info = getattr(obj, 'info', None)
 
 
 class SortedIntegral:
@@ -72,13 +96,16 @@ class SortedIntegral:
         pass
 
 class Integral:
-    def __init__(self, system, order, matrices, use_none=False):
+    def __init__(self, system, order, matrices, sorted=True, use_none=False):
         self.order = order
         for i in range(1, order + 1):  # Loop over many-body ranks
             for j in range(i + 1):  # Loop over distinct spin cases per rank
                 name = get_operator_name(i, j)
-                sorted_integral = SortedIntegral(system, name, matrices[name], use_none)
-                self.__dict__[name] = sorted_integral
+                if sorted:
+                    sorted_integral = SortedIntegral(system, name, matrices[name], use_none)
+                    self.__dict__[name] = sorted_integral
+                else:
+                    self.__dict__[name] = matrices[name]
 
     @classmethod
     def from_empty(cls, system, order, data_type=np.float64, use_none=False):
@@ -91,7 +118,7 @@ class Integral:
                     matrices[name] = None
                 else:
                     matrices[name] = np.zeros(dimension, dtype=data_type)
-        return cls(system, order, matrices, use_none=use_none)
+        return cls(system, order, matrices, sorted=True, use_none=use_none)
 
     # @classmethod
     # def from_none(cls, system, order):
@@ -105,10 +132,10 @@ class Integral:
 
     @classmethod
     def from_none(cls, system, order):
-        return cls(system, order, matrix=None, use_none=True)
+        return cls(system, order, matrix=None, sorted=True, use_none=True)
 
 
-def getHamiltonian(e1int, e2int, system, normal_ordered):
+def getHamiltonian(e1int, e2int, system, normal_ordered, sorted=True):
 
     corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
 
@@ -124,7 +151,7 @@ def getHamiltonian(e1int, e2int, system, normal_ordered):
     twobody["ab"] = twobody["ab"][corr_slice, corr_slice, corr_slice, corr_slice]
     twobody["bb"] = twobody["bb"][corr_slice, corr_slice, corr_slice, corr_slice]
 
-    return Integral(system, 2, {**onebody, **twobody})
+    return Integral(system, 2, {**onebody, **twobody}, sorted=sorted)
 
 
 def build_v(e2int):
@@ -189,66 +216,3 @@ def build_f(e1int, v, system):
 
     return f
 
-
-if __name__ == "__main__":
-
-    from pyscf import gto, scf
-
-    from ccpy.interfaces.gamess_tools import loadFromGamess
-    from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
-
-    # Testing from PySCF
-    mol = gto.Mole()
-    mol.build(
-        atom="""F 0.0 0.0 -2.66816
-                F 0.0 0.0  2.66816""",
-        basis="ccpvdz",
-        charge=1,
-        spin=1,
-        symmetry="D2H",
-        cart=True,
-        unit="Bohr",
-    )
-    mf = scf.ROHF(mol)
-    mf.kernel()
-
-    nfrozen = 0
-    system, H = load_pyscf_integrals(mf, nfrozen, dumpIntegrals=False)
-    print(system)
-
-    # Testing HF energy using F and V, only works if nfrozen = 0
-    hf_energy = np.einsum("ii->", H.a.oo, optimize=True)
-    hf_energy += np.einsum("ii->", H.b.oo, optimize=True)
-    hf_energy -= 0.5 * np.einsum("ijij->", H.aa.oooo, optimize=True)
-    hf_energy -= np.einsum("ijij->", H.ab.oooo, optimize=True)
-    hf_energy -= 0.5 * np.einsum("ijij->", H.bb.oooo, optimize=True)
-    hf_energy += system.nuclear_repulsion
-    assert np.allclose(hf_energy, mf.energy_tot(), atol=1.0e-06, rtol=0.0)
-
-    # Testing from GAMESS
-    nfrozen = 0
-    gamess_logfile = (
-        "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/F2+-1.0-631g.log"
-    )
-    onebody_file = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/onebody.inp"
-    twobody_file = "/Users/harellab/Documents/ccpy/tests/F2+-1.0-631g/twobody.inp"
-
-    system, H = loadFromGamess(
-        gamess_logfile,
-        onebody_file,
-        twobody_file,
-        nfrozen,
-        normal_ordered=True,
-        data_type=np.float64,
-    )
-
-    print(system)
-
-    # Testing HF energy using F and V, only works if nfrozen = 0
-    hf_energy = np.einsum("ii->", H.a.oo, optimize=True)
-    hf_energy += np.einsum("ii->", H.b.oo, optimize=True)
-    hf_energy -= 0.5 * np.einsum("ijij->", H.aa.oooo, optimize=True)
-    hf_energy -= np.einsum("ijij->", H.ab.oooo, optimize=True)
-    hf_energy -= 0.5 * np.einsum("ijij->", H.bb.oooo, optimize=True)
-    hf_energy += system.nuclear_repulsion
-    assert np.allclose(hf_energy, -198.0361965498, atol=1.0e-06, rtol=0.0)

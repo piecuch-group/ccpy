@@ -6,11 +6,14 @@ import ccpy.cc
 import ccpy.left
 import ccpy.eomcc
 
-from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, eomcc_davidson, eomcc_davidson_lowmem
-from ccpy.models.operators import ClusterOperator
+from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eomcc_davidson_lowmem, mrcc_jacobi
+from ccpy.models.operators import ClusterOperator, FockOperator
 from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter
 
 from ccpy.eomcc.initial_guess import get_initial_guess
+
+import numpy as np
+from copy import deepcopy
 
 
 def cc_driver(calculation, system, hamiltonian, T=None, pspace=None):
@@ -75,8 +78,7 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None):
     return T, total_energy, is_converged
 
 
-# [TODO]: Pass in cc_energy or somehow fix issue that output prints 0 for correlation energy
-def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
+def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None, pspace=None):
     """Performs the calculation specified by the user in the input."""
 
     # check if requested CC calculation is implemented in modules
@@ -88,6 +90,7 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
     # import the specific CC method module and get its update function
     lcc_mod = import_module("ccpy.left." + calculation.calculation_type.lower())
     update_function = getattr(lcc_mod, 'update')
+    #LR_function = getattr(lcc_mod, 'LR')
 
     cc_printer = CCPrinter(calculation)
     cc_printer.cc_header()
@@ -99,30 +102,61 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None):
 
     # initialize the cluster operator anew, or use restart
     if L is None:
-        L = ClusterOperator(system,
-                            calculation.order,
-                            calculation.active_orders,
-                            calculation.num_active,
-                            )
+
         if is_ground:
+            L = ClusterOperator(system,
+                                calculation.order,
+                                calculation.active_orders,
+                                calculation.num_active,
+                                )
+
             L.unflatten(T.flatten()[:L.ndim])
         else:
+            if isinstance(R, ClusterOperator):
+                L = ClusterOperator(system,
+                                    calculation.order,
+                                    calculation.active_orders,
+                                    calculation.num_active,
+                                    )
+            elif isinstance(R, FockOperator):
+                L = FockOperator(system,
+                                 calculation.num_particles,
+                                 calculation.num_holes)
+
             L.unflatten(R.flatten()[:L.ndim])
 
     # regardless of restart status, initialize residual anew
-    LH = ClusterOperator(system, calculation.order)
+    LH = deepcopy(L)
+    LH.unflatten(np.zeros(shape=LH.ndim))
 
-    L, omega, LR, is_converged = left_cc_jacobi(update_function,
-                                         L,
-                                         LH,
-                                         T,
-                                         R,
-                                         hamiltonian,
-                                         omega,
-                                         calculation,
-                                         is_ground,
-                                         system
-                                         )
+    if pspace is None:
+
+        L, omega, LR, is_converged = left_cc_jacobi(update_function,
+                                             L,
+                                             LH,
+                                             T,
+                                             R,
+                                             hamiltonian,
+                                             omega,
+                                             calculation,
+                                             is_ground,
+                                             system
+                                             )
+    else:
+
+        L, omega, LR, is_converged = left_ccp_jacobi(update_function,
+                                             L,
+                                             LH,
+                                             T,
+                                             R,
+                                             hamiltonian,
+                                             omega,
+                                             calculation,
+                                             is_ground,
+                                             system,
+                                             pspace,
+                                             )
+
     total_energy = system.reference_energy + omega
 
     cc_printer.leftcc_calculation_summary(omega, LR, is_converged)
@@ -172,3 +206,64 @@ def eomcc_driver(calculation, system, hamiltonian, T, R, omega):
     cc_printer.eomcc_calculation_summary(omega, r0, is_converged)
 
     return R, omega, r0, is_converged
+
+def mrcc_driver(calculation, system, hamiltonian, model_space, two_body_approximation=True):
+    """Performs the calculation specified by the user in the input."""
+
+    # check if requested CC calculation is implemented in modules
+    if calculation.calculation_type not in ccpy.mrcc.MODULES:
+        raise NotImplementedError(
+            "{} not implemented".format(calculation.calculation_type)
+        )
+
+    # [TODO]: Check if calculation parameters (e.g, active orbitals) make sense
+
+    # import the specific CC method module and get its update function
+    cc_mod = import_module("ccpy.mrcc." + calculation.calculation_type.lower())
+    heff_mod = import_module("ccpy.mrcc.effective_hamiltonian")
+    update_function = getattr(cc_mod, 'update')
+
+    if two_body_approximation: # use the Heff matrix elements computed using T(p) = T1(p) + T2(p)
+        compute_Heff_function = getattr(heff_mod, 'compute_Heff_mkmrccsd')
+    else:
+        compute_Heff_function = getattr(heff_mod, 'compute_Heff_' + calculation.calculation_type.lower())
+
+    cc_printer = CCPrinter(calculation)
+    cc_printer.cc_header()
+
+    # initialize the cluster operator anew, or use restart
+    #[TODO]: This is not compatible if the initial T is a lower order than the
+    # one used in the calculation. For example, we could not start a CCSDT
+    # calculation using the CCSD cluster amplitudes.
+    T = [None for i in range(len(model_space))]
+    dT = [None for i in range(len(model_space))]
+    for p in range(len(model_space)):
+        if T[p] is None:
+            T[p] = ClusterOperator(system,
+                                order=calculation.order,
+                                active_orders=calculation.active_orders,
+                                num_active=calculation.num_active)
+
+        # regardless of restart status, initialize residual anew
+        dT[p] = ClusterOperator(system,
+                            order=calculation.order,
+                            active_orders=calculation.active_orders,
+                            num_active=calculation.num_active)
+
+    T, total_energy, is_converged = mrcc_jacobi(
+                                           update_function,
+                                           compute_Heff_function,
+                                           T,
+                                           dT,
+                                           model_space,
+                                           hamiltonian,
+                                           calculation,
+                                           system,
+                                           )
+
+
+    #total_energy = system.reference_energy + corr_energy
+
+    #cc_printer.cc_calculation_summary(system.reference_energy, corr_energy)
+
+    return T, total_energy, is_converged
