@@ -7,6 +7,7 @@ MODULES := cc_loops \
 		   eomcc_initial_guess \
 		   ccp_matrix ccp_loops \
 		   ccp_opt_loops \
+		   ccp_opt_loops_v2 \
 		   eomcc_active_loops \
 		   cc_active_loops \
 		   cct3_loops \
@@ -45,7 +46,8 @@ all: $(TARGETS)
 
 %$(EXT_SUFFIX): %.f90
 	echo $(MKLFOLDER)
-	f2py $(LIBS) --quiet --f90flags="$(FFLAGS)" -c $< -m $*
+	f2py $(LIBS) --f90flags="$(FFLAGS)" -c $< -m $*
+	#f2py $(LIBS) --quiet --f90flags="$(FFLAGS)" -c $< -m $*
 
 clean:
 	rm $(TARGETS)
