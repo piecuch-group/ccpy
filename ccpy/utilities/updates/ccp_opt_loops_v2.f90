@@ -4,34 +4,21 @@ module ccp_opt_loops_v2
 !!!!      USE MKL_SERVICE
       implicit none
 
-    ! the strategy here is as follows:
-    ! we will use a p_space array with a limited amount of no, nu (specified by user)
-    ! There will be a generic function called get_pspace_element(a, b, c, i, j, k) with the pseudocode
-    !
-    ! subroutine get_pspace_element_spincase(idx, a, b, c, i, j, k, noa, nua, nob, nub, NOA_min, NOB_min, NUA_max, NUB_max, NP_max_spincase)
-    !
-    !          if ( i < NO_min .or. j < NO_min .or. k < NO_min .or. a > NU_max .or. b > NU_max .or. c > NU_max ) then
-    !              call compute_hash_spincase(idx, a, b, c, i, j, k, NP_max)  ! this function returns 0 if (a,b,c,i,j,k) not in P space
-    !              return p_space_hashtable_spincase[idx]
-    !          else
-    !              idx = p_space_spincase(a, b, c, i, j, k)
-    !          end if
-    !
-    ! end subroutine get_pspace_element
-    !
-    ! subroutine compute_hash_spincase(idx, a, b, c, i, j, k, no, nu, NP_max)
-    !
-    !         idx = (a + b + c) * nu + (i + j + k) * no
+      ! We have 2 options:
+      ! (1) For every lookup of pspace(a, b, c, i, j, k), we perform a binary search on the 1D array
+      !     index(..) (this is sorted) of indices that uniquely map (a, b, c, i, j, k) to a number.
+      !
+      ! (2) For every lookup of pspace(a, b, c, i, j, k), we perform an equivalent hash table lookup.
 
 
       contains
 
               subroutine update_t3a_p_opt2(t3a_new, resid,&
-                                           X3A,&
                                            t2a, t3a, t3b,&
                                            pspace_aaa, pspace_aab,&
-                                           H1A_vv,&
-                                           H2A_oovv, H2A_vvov, H2A_voov, H2A_vvvv,&
+                                           H1A_oo, H1A_vv,&
+                                           H2A_oovv, H2A_vvov, H2A_vooo,&
+                                           H2A_oooo, H2A_voov, H2A_vvvv,&
                                            H2B_oovv, H2B_voov,&
                                            fA_oo, fA_vv,&
                                            shift,&
@@ -41,31 +28,84 @@ module ccp_opt_loops_v2
                   real(kind=8), intent(in) :: t2a(nua, nua, noa, noa),&
                                               t3a(nua, nua, nua, noa, noa ,noa),&
                                               t3b(nua, nua, nub, noa, noa, nob),&
-                                              H1A_vv(nua, nua),&
+                                              H1A_oo(noa, noa), H1A_vv(nua, nua),&
                                               H2A_oovv(noa, noa, nua, nua),&
+                                              H2B_oovv(noa, nob, nua, nub),&
                                               H2A_vvov(nua, nua, noa, nua),&
+                                              H2A_vooo(nua, noa, noa, noa),&
+                                              H2A_oooo(noa, noa, noa, noa),&
                                               H2A_voov(nua, noa, noa, nua),&
                                               H2A_vvvv(nua, nua, nua, nua),&
-                                              H2B_oovv(noa, nob, nua, nub),&
                                               H2B_voov(nua, nob, noa, nub),&
                                               fA_vv(nua, nua), fA_oo(noa, noa),&
                                               shift
                   integer, intent(in) :: pspace_aaa(nua, nua, nua, noa, noa, noa),&
                                          pspace_aab(nua, nua, nub, noa, noa, nob)
 
-                  real(kind=8), intent(in) :: X3A(nua, nua, nua, noa, noa, noa)
-
                   real(kind=8), intent(out) :: t3a_new(nua, nua, nua, noa, noa, noa),&
                                                resid(nua, nua, nua, noa, noa, noa)
 
-                  real(kind=8) :: I2A_vvov(nua, nua, noa, nua), val, denom
-                  real(kind=8) :: res1, res2, res3, res4, res5
+                  real(kind=8) :: I2A_vvov(nua, nua, noa, nua), I2A_vooo(nua, noa, noa, noa)
+                  real(kind=8) :: val, denom
+                  real(kind=8) :: res1, res2, res3, res4, res5, res6, res7, res8
                   integer :: idx, a, b, c, i, j, k, e, f, m, n
 
                   t3a_new = 0.0d0
                   resid = 0.0d0
 
+                  ! compute VT3 intermediates
+                  I2A_vooo = H2A_vooo
                   I2A_vvov = H2A_vvov
+                  do a = 1, nua
+                      do i = 1, noa
+                          ! I2A(amij) = 1/2 h2a(mnef) * t3a(aefijn) + h2b(mnef) * t3b(aefijn) - h1A(me) * t2a(aeij)
+                          do j = i + 1, noa
+                              do m = 1, noa
+                                  do e = 1, nua
+                                      do n = 1, noa
+                                          do f = e + 1, nua
+                                              if (pspace_aaa(a, e, f, i, j, n) == 1) then
+                                                I2A_vooo(a, m, i, j) = I2A_vooo(a, m, i, j) + H2A_oovv(m, n, e, f) * t3a(a, e, f, i, j, n)
+                                              end if
+                                          end do
+                                      end do
+                                      do n = 1, nob
+                                          do f = 1, nub
+                                              if (pspace_aab(a, e, f, i, j, n) == 1) then
+                                                I2A_vooo(a, m, i, j) = I2A_vooo(a, m, i, j) + H2B_oovv(m, n, e, f) * t3b(a, e, f, i, j, n)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+                              end do
+                              I2A_vooo(a, m, j, i) = -1.0 * I2A_vooo(a, m, i, j)
+                          end do
+                          ! I2A(abie) = -1/2 h2a(mnef) * t3a(abfimn) - h2b(mnef) * t3b(abfimn)
+                          do b = a + 1, nua
+                              do m = 1, noa
+                                  do e = 1, nua
+                                      do n = m + 1, noa
+                                          do f = 1, nua
+                                              if (pspace_aaa(a, b, f, i, m, n) == 1) then
+                                                I2A_vvov(a, b, i, e) = I2A_vvov(a, b, i, e) - H2A_oovv(m, n, e, f) * t3a(a, b, f, i, m, n)
+                                              end if
+                                          end do
+                                      end do
+                                      do n = 1, nob
+                                          do f = 1, nub
+                                              if (pspace_aab(a, b, f, i, m, n) == 1) then
+                                                I2A_vvov(a, b, i, e) = I2A_vvov(a, b, i, e) - H2B_oovv(m, n, e, f) * t3b(a, b, f, i, m, n)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+                              end do
+                              I2A_vvov(b, a, i, e) = -1.0 * I2A_vvov(a, b, i, e)
+                          end do
+
+
+                      end do
+                  end do
 
                   ! loop over projection determinants in P space
                   do a = 1, nua; do b = a + 1, nua; do c = b + 1, nua;
@@ -78,6 +118,9 @@ module ccp_opt_loops_v2
                       res3 = 0.0d0
                       res4 = 0.0d0
                       res5 = 0.0d0
+                      res6 = 0.0d0
+                      res7 = 0.0d0
+                      res8 = 0.0d0
 
                       do e = 1, nua
 
@@ -167,7 +210,6 @@ module ccp_opt_loops_v2
                               end if
                           end do
 
-
                           ! A(i/jk)(c/ab) h2a(abie) * t2a(ecjk)
                           res4 = res4 + I2A_vvov(a, b, i, e) * t2a(e, c, j, k)
                           res4 = res4 - I2A_vvov(c, b, i, e) * t2a(e, a, j, k)
@@ -178,7 +220,6 @@ module ccp_opt_loops_v2
                           res4 = res4 - I2A_vvov(a, b, k, e) * t2a(e, c, j, i)
                           res4 = res4 + I2A_vvov(c, b, k, e) * t2a(e, a, j, i)
                           res4 = res4 + I2A_vvov(a, c, k, e) * t2a(e, b, j, i)
-
 
                       end do
 
@@ -215,46 +256,48 @@ module ccp_opt_loops_v2
                           end do
                       end do
 
+                      do m = 1, noa
+
+                          ! -A(i/jk) h1a(mi) * t3a(abcmjk)
+                          if (pspace_aaa(a, b, c, m, j, k) == 1) then
+                              res6 = res6 - H1A_oo(m, i) * t3a(a, b, c, m, j, k)
+                          end if
+                          if (pspace_aaa(a, b, c, m, i, k) == 1) then
+                              res6 = res6 + H1A_oo(m, j) * t3a(a, b, c, m, i, k)
+                          end if
+                          if (pspace_aaa(a, b, c, m, j, i) == 1) then
+                              res6 = res6 + H1A_oo(m, k) * t3a(a, b, c, m, j, i)
+                          end if
+
+                          ! 1/2 A(k/ij) h2a(mnij) * t3a(abcmnk)
+                          do n = m + 1, noa
+                              if (pspace_aaa(a, b, c, m, n, k) == 1) then
+                                  res7 = res7 + H2A_oooo(m, n, i, j) * t3a(a, b, c, m, n, k)
+                              end if
+                              if (pspace_aaa(a, b, c, m, n, i) == 1) then
+                                  res7 = res7 - H2A_oooo(m, n, k, j) * t3a(a, b, c, m, n, i)
+                              end if
+                              if (pspace_aaa(a, b, c, m, n, j) == 1) then
+                                  res7 = res7 - H2A_oooo(m ,n, i, k) * t3a(a, b, c, m, n, j)
+                              end if
+                          end do
+
+                          ! -A(k/ij)A(a/bc) h2a(amij) * t2a(bcmk)
+                          res8 = res8 - I2A_vooo(a, m, i, j) * t2a(b, c, m, k)
+                          res8 = res8 + I2A_vooo(b, m, i, j) * t2a(a, c, m, k)
+                          res8 = res8 + I2A_vooo(c, m, i, j) * t2a(b, a, m, k)
+                          res8 = res8 + I2A_vooo(a, m, k, j) * t2a(b, c, m, i)
+                          res8 = res8 - I2A_vooo(b, m, k, j) * t2a(a, c, m, i)
+                          res8 = res8 - I2A_vooo(c, m, k, j) * t2a(b, a, m, i)
+                          res8 = res8 + I2A_vooo(a, m, i, k) * t2a(b, c, m, j)
+                          res8 = res8 - I2A_vooo(b, m, i, k) * t2a(a, c, m, j)
+                          res8 = res8 - I2A_vooo(c, m, i, k) * t2a(b, a, m, j)
+
+                      end do
+
                       denom = fA_oo(I, I) + fA_oo(J, J) + fA_oo(K, K) - fA_vv(A, A) - fA_vv(B, B) - fA_vv(C, C)
 
-                      val = X3A(a,b,c,i,j,k)&
-                              -X3A(b,a,c,i,j,k)&
-                              -X3A(a,c,b,i,j,k)&
-                              +X3A(b,c,a,i,j,k)&
-                              -X3A(c,b,a,i,j,k)&
-                              +X3A(c,a,b,i,j,k)&
-                              -X3A(a,b,c,j,i,k)&
-                              +X3A(b,a,c,j,i,k)&
-                              +X3A(a,c,b,j,i,k)&
-                              -X3A(b,c,a,j,i,k)&
-                              +X3A(c,b,a,j,i,k)&
-                              -X3A(c,a,b,j,i,k)&
-                              -X3A(a,b,c,i,k,j)&
-                              +X3A(b,a,c,i,k,j)&
-                              +X3A(a,c,b,i,k,j)&
-                              -X3A(b,c,a,i,k,j)&
-                              +X3A(c,b,a,i,k,j)&
-                              -X3A(c,a,b,i,k,j)&
-                              -X3A(a,b,c,k,j,i)&
-                              +X3A(b,a,c,k,j,i)&
-                              +X3A(a,c,b,k,j,i)&
-                              -X3A(b,c,a,k,j,i)&
-                              +X3A(c,b,a,k,j,i)&
-                              -X3A(c,a,b,k,j,i)&
-                              +X3A(a,b,c,j,k,i)&
-                              -X3A(b,a,c,j,k,i)&
-                              -X3A(a,c,b,j,k,i)&
-                              +X3A(b,c,a,j,k,i)&
-                              -X3A(c,b,a,j,k,i)&
-                              +X3A(c,a,b,j,k,i)&
-                              +X3A(a,b,c,k,i,j)&
-                              -X3A(b,a,c,k,i,j)&
-                              -X3A(a,c,b,k,i,j)&
-                              +X3A(b,c,a,k,i,j)&
-                              -X3A(c,b,a,k,i,j)&
-                              +X3A(c,a,b,k,i,j)
-
-                      val = val + res1 + res2 + res3 + res4 + res5
+                      val = res1 + res2 + res3 + res4 + res5 + res6 + res7 + res8
 
                       val = val/(denom - shift)
 
@@ -345,13 +388,13 @@ module ccp_opt_loops_v2
               end subroutine update_t3a_p_opt2
 
               subroutine update_t3b_p_opt2(t3b_new, resid,&
-                                           X3B,&
                                            t2a, t2b, t3a, t3b, t3c,&
                                            pspace_aaa, pspace_aab, pspace_abb,&
-                                           H1A_vv, H1B_vv,&
-                                           H2A_oovv, H2A_vvov, H2A_voov, H2A_vvvv,&
-                                           H2B_oovv, H2B_vvov, H2B_vvvo, H2B_voov, H2B_vovo, H2B_ovov, H2B_ovvo, H2B_vvvv,&
-                                           H2C_voov,&
+                                           H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
+                                           H2A_oovv, H2A_vvov, H2A_vooo, H2A_oooo, H2A_voov, H2A_vvvv,&
+                                           H2B_oovv, H2B_vvov, H2B_vvvo, H2B_vooo, H2B_ovoo,&
+                                           H2B_oooo, H2B_voov, H2B_vovo, H2B_ovov, H2B_ovvo, H2B_vvvv,&
+                                           H2C_oovv, H2C_voov,&
                                            fA_oo, fA_vv, fB_oo, fB_vv,&
                                            shift,&
                                            noa, nua, nob, nub)
@@ -365,15 +408,22 @@ module ccp_opt_loops_v2
                                          t3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
                                          t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
                                          t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                         H1A_oo(1:noa,1:noa),&
                                          H1A_vv(1:nua,1:nua),&
+                                         H1B_oo(1:nob,1:nob),&
                                          H1B_vv(1:nub,1:nub),&
                                          H2A_oovv(1:noa,1:noa,1:nua,1:nua),&
                                          H2A_vvov(1:nua,1:nua,1:noa,1:nua),&
+                                         H2A_vooo(1:nua,1:noa,1:noa,1:noa),&
+                                         H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
                                          H2A_voov(1:nua,1:noa,1:noa,1:nua),&
                                          H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
                                          H2B_oovv(1:noa,1:nob,1:nua,1:nub),&
+                                         H2B_vooo(1:nua,1:nob,1:noa,1:nob),&
+                                         H2B_ovoo(1:noa,1:nub,1:noa,1:nob),&
                                          H2B_vvov(1:nua,1:nub,1:noa,1:nub),&
                                          H2B_vvvo(1:nua,1:nub,1:nua,1:nob),&
+                                         H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
                                          H2B_voov(1:nua,1:nob,1:noa,1:nub),&
                                          H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
                                          H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
@@ -382,14 +432,14 @@ module ccp_opt_loops_v2
                                          H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                                          fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
                                          fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
-                                         X3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
                                          shift
 
                   real(8), intent(out) :: t3b_new(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
                                           resid(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
                   integer :: i, j, k, a, b, c, m, n, e, f
                   real(8) :: denom, val,&
-                             res1, res2, res3, res4, res5, res6, res7, res8, res9, res10, res11, res12, res13
+                             res1, res2, res3, res4, res5, res6, res7, res8, res9, res10, res11, res12, res13,&
+                             res14, res15, res16, res17, res18, res19, res20
 
                   resid = 0.0d0
                   t3b_new = 0.0d0
@@ -412,6 +462,13 @@ module ccp_opt_loops_v2
                       res11 = 0.0d0
                       res12 = 0.0d0
                       res13 = 0.0d0
+                      res14 = 0.0d0
+                      res15 = 0.0d0
+                      res16 = 0.0d0
+                      res17 = 0.0d0
+                      res18 = 0.0d0
+                      res19 = 0.0d0
+                      res20 = 0.0d0
 
                       ! nua < nub
                       do e = 1, nua
@@ -567,6 +624,32 @@ module ccp_opt_loops_v2
                           res12 = res12 - H2B_vvov(b, c, i, e + nua) * t2b(a, e + nua, j, k)
                           res12 = res12 + H2B_vvov(b, c, j, e + nua) * t2b(a, e + nua, i, k)
 
+                      end do
+
+                      do m = 1, nob
+
+                          ! diagram 13: -A(ij) h1a(mi) * t3b(abcmjk)
+                          if (pspace_aab(a, b, c, m, j, k) == 1) then
+                              res13 = res13 - H1A_oo(m, i) * t3b(a, b, c, m, j, k)
+                          end if
+                          if (pspace_aab(a, b, c, m, i, k) == 1) then
+                              res13 = res13 + H1A_oo(m, j) * t3b(a, b, c, m, i, k)
+                          end if
+
+                          ! diagram 14: -h1b(mk) * t3b(abcijm)
+                          if (pspace_aab(a, b, c, i, j, m) == 1) then
+                              res14 = res14 - H1B_oo(m, k) * t3b(a, b, c, i, j, m)
+                          end if
+
+                          ! diagram 15: 1/2 h2a(mnij) * t3b(abcmnk)
+
+                      end do
+
+                      do m = 1, noa - nob
+                          ! diagram 14: -h1b(mk) * t3b(abcijm)
+                          if (pspace_aab(a, b, c, i, j, m + nob) == 1) then
+                              res14 = res14 + H1B_oo(m + nob, k) * t3b(a, b, c, i, j, m + nob)
+                          end if
                       end do
 
 
@@ -1240,4 +1323,4 @@ module ccp_opt_loops_v2
 
 
 
-end module ccp_opt_loops
+end module ccp_opt_loops_v2
