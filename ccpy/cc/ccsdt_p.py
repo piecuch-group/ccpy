@@ -7,8 +7,18 @@ and triples (CCSDT) calculation for a molecular system."""
 # (2) Change structure of P space so that p[a, b, c, i, j, k] = idx, where T[idx] = t3[a, b, c, i, j, k] is
 #     a compact, linear T vector used in the iterative steps.
 #
+# Remove dependence on full P space storage using one of the following (or a combination thereof):
+#
 # (3) Implement pre-screening to reduce loop sizes and checking of amplitudes for each diagram, thus removing dependence
-#     on P space matrix.
+#     on P space matrix. For instance, one could use prescreening on low-storage diagrams and some other method on the
+#     high-storage ones.
+#
+# (3) Utilize a disk-based I/O so that for each i,j,k (and its permutations), the block p_abc[:, :, :] is loaded into
+#     memory and used for all the loops.
+#
+# (3) Use full p_space storage for p[1:64, 1:64, 1:64, :, :, :], e.g., all occupied and the first 64 (or something)
+#     virtual orbitals, as these will be the amplitudes accessed most often, and use a hashing storage for all
+#     other amplitudes (look at Garniron thesis).
 #
 # (4) Alternative to (3), store p_space array on disk and load in p_ijk(a,b,c) and related permutations within the
 #     loop over triples in p_space and perform usual checking with p_ijk which is nu**3 storage
@@ -370,6 +380,95 @@ def update_t2c(T, dT, H, H0, shift):
     )
     return T, dT
 
+
+# @profile
+def update_t3a(T, dT, H, H0, shift, pspace_aaa, pspace_aab):
+    """
+    Update t3a amplitudes by calculating the projection <ijkabc|(H_N e^(T1+T2+T3))_C|0>.
+    """
+    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+
+    T.aaa, dT.aaa = ccp_opt_loops_v2.ccp_opt_loops_v2.update_t3a_p_opt2(
+        T.aa, T.aaa, T.aab,
+        pspace_aaa, pspace_aab,
+        H.a.oo, H.a.vv,
+        H.aa.oovv, H.aa.vvov, I2A_vooo,
+        H.aa.oooo, H.aa.voov, H.aa.vvvv,
+        H.ab.oovv, H.ab.voov,
+        H0.a.oo, H0.a.vv,
+        shift
+    )
+
+    return T, dT
+
+
+# @profile
+def update_t3b(T, dT, H, H0, shift, pspace_aaa, pspace_aab, pspace_abb):
+    """
+    Update t3b amplitudes by calculating the projection <ijk~abc~|(H_N e^(T1+T2+T3))_C|0>.
+    """
+    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
+    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
+
+    T.aab, dT.aab = ccp_opt_loops_v2.ccp_opt_loops_v2.update_t3b_p_opt2(
+        T.aa, T.ab, T.aaa, T.aab, T.abb,
+        pspace_aaa, pspace_aab, pspace_abb,
+        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+        H.aa.oovv, H.aa.vvov, I2A_vooo, H.aa.oooo, H.aa.voov, H.aa.vvvv,
+        H.ab.oovv, H.ab.vvov, H.ab.vvvo, I2B_vooo, I2B_ovoo,
+        H.ab.oooo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
+        H.bb.oovv, H.bb.voov,
+        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+        shift
+    )
+
+    return T, dT
+
+
+# @profile
+def update_t3c(T, dT, H, H0, shift, pspace_aab, pspace_abb, pspace_bbb):
+    """
+    Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N e^(T1+T2+T3))_C|0>.
+    """
+    I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
+    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
+    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
+
+    T.abb, dT.abb = ccp_opt_loops_v2.ccp_opt_loops_v2.update_t3c_p_opt2(
+        T.ab, T.bb, T.aab, T.abb, T.bbb,
+        pspace_aab, pspace_abb, pspace_bbb,
+        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+        H.aa.oovv, H.aa.voov,
+        H.ab.oovv, I2B_vooo, I2B_ovoo, H.ab.vvov, H.ab.vvvo, H.ab.oooo,
+        H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
+        H.bb.oovv, I2C_vooo, H.bb.vvov, H.bb.oooo, H.bb.voov, H.bb.vvvv,
+        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+        shift,
+    )
+
+    return T, dT
+
+
+# @profile
+def update_t3d(T, dT, H, H0, shift, pspace_abb, pspace_bbb):
+    """
+    Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N e^(T1+T2+T3))_C|0>.
+    """
+    I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
+
+    T.bbb, dT.bbb = ccp_opt_loops_v2.ccp_opt_loops_v2.update_t3d_p_opt2(
+        T.bb, T.abb, T.bbb,
+        pspace_abb, pspace_bbb,
+        H.b.oo, H.b.vv,
+        H.ab.oovv, H.ab.ovvo,
+        H.bb.oovv, I2C_vooo, H.bb.vvov, H.bb.oooo, H.bb.voov, H.bb.vvvv,
+        H0.b.oo, H0.b.vv,
+        shift
+    )
+
+    return T, dT
+
 # #@profile
 # def update_t3a(T, dT, H, H0, shift, pspace_aaa, pspace_aab):
 #     """
@@ -405,43 +504,6 @@ def update_t2c(T, dT, H, H0, shift):
 #     )
 #
 #     return T, dT
-
-#@profile
-def update_t3a(T, dT, H, H0, shift, pspace_aaa, pspace_aab):
-    """
-    Update t3a amplitudes by calculating the projection <ijkabc|(H_N e^(T1+T2+T3))_C|0>.
-    """
-    # <ijkabc | H(2) | 0 > + (VT3)_C intermediates
-    #I2A_vvov = H.aa.vvov - 0.5 * np.einsum("mnef,abfimn->abie", H0.aa.oovv, T.aaa, optimize=True)
-    #I2A_vvov -= np.einsum("mnef,abfimn->abie", H0.ab.oovv, T.aab, optimize=True)
-
-    #I2A_vooo = 0.5 * np.einsum("mnef,aefijn->amij", H0.aa.oovv, T.aaa, optimize=True)
-    #I2A_vooo += H.aa.vooo + np.einsum("mnef,aefijn->amij", H0.ab.oovv, T.aab, optimize=True)
-    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-
-    # MM(2,3)A
-    #dT.aaa = -0.25 * np.einsum("amij,bcmk->abcijk", I2A_vooo, T.aa, optimize=True)
-    #dT.aaa += 0.25 * np.einsum("abie,ecjk->abcijk", I2A_vvov, T.aa, optimize=True) #
-    # (HBar*T3)_C
-    #dT.aaa -= (1.0 / 12.0) * np.einsum("mk,abcijm->abcijk", H.a.oo, T.aaa, optimize=True)
-    #dT.aaa += (1.0 / 12.0) * np.einsum("ce,abeijk->abcijk", H.a.vv, T.aaa, optimize=True) #
-    #dT.aaa += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aaa, optimize=True)
-    #dT.aaa += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aaa, optimize=True) #
-    #dT.aaa += 0.25 * np.einsum("cmke,abeijm->abcijk", H.aa.voov, T.aaa, optimize=True) #
-    #dT.aaa += 0.25 * np.einsum("cmke,abeijm->abcijk", H.ab.voov, T.aab, optimize=True) ##
-
-    T.aaa, dT.aaa = ccp_opt_loops_v2.ccp_opt_loops_v2.update_t3a_p_opt2(
-       T.aa, T.aaa, T.aab,
-       pspace_aaa, pspace_aab,
-       H.a.oo, H.a.vv,
-       H.aa.oovv, H.aa.vvov, I2A_vooo,
-       H.aa.oooo, H.aa.voov, H.aa.vvvv,
-       H.ab.oovv, H.ab.voov,
-       H0.a.oo, H0.a.vv,
-       shift
-    )
-
-    return T, dT
 
 # #@profile
 # def update_t3b(T, dT, H, H0, shift, pspace_aaa, pspace_aab, pspace_abb):
@@ -513,185 +575,112 @@ def update_t3a(T, dT, H, H0, shift, pspace_aaa, pspace_aab):
 #
 #     return T, dT
 
-#@profile
-def update_t3b(T, dT, H, H0, shift, pspace_aaa, pspace_aab, pspace_abb):
-    """
-    Update t3b amplitudes by calculating the projection <ijk~abc~|(H_N e^(T1+T2+T3))_C|0>.
-    """
-    # # <ijk~abc~ | H(2) | 0 > + (VT3)_C intermediates
-    # I2A_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.aa.oovv, T.aaa, optimize=True)
-    # I2A_vvov += -np.einsum("mnef,abfimn->abie", H0.ab.oovv, T.aab, optimize=True)
-    # I2A_vvov += H.aa.vvov
-    #
-    # I2A_vooo = 0.5 * np.einsum("mnef,aefijn->amij", H0.aa.oovv, T.aaa, optimize=True)
-    # I2A_vooo += np.einsum("mnef,aefijn->amij", H0.ab.oovv, T.aab, optimize=True)
-    # I2A_vooo += -np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    # I2A_vooo += H.aa.vooo
-    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    #
-    # I2B_vvvo = -0.5 * np.einsum("mnef,afbmnj->abej", H0.aa.oovv, T.aab, optimize=True)
-    # I2B_vvvo += -np.einsum("mnef,afbmnj->abej", H0.ab.oovv, T.abb, optimize=True)
-    # I2B_vvvo += H.ab.vvvo
-    #
-    # I2B_ovoo = 0.5 * np.einsum("mnef,efbinj->mbij", H0.aa.oovv, T.aab, optimize=True)
-    # I2B_ovoo += np.einsum("mnef,efbinj->mbij", H0.ab.oovv, T.abb, optimize=True)
-    # I2B_ovoo += -np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    # I2B_ovoo += H.ab.ovoo
-    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    #
-    # I2B_vvov = -np.einsum("nmfe,afbinm->abie", H0.ab.oovv, T.aab, optimize=True)
-    # I2B_vvov += -0.5 * np.einsum("nmfe,afbinm->abie", H0.bb.oovv, T.abb, optimize=True)
-    # I2B_vvov += H.ab.vvov
-    #
-    # I2B_vooo = np.einsum("nmfe,afeinj->amij", H0.ab.oovv, T.aab, optimize=True)
-    # I2B_vooo += 0.5 * np.einsum("nmfe,afeinj->amij", H0.bb.oovv, T.abb, optimize=True)
-    # I2B_vooo += -np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
-    # I2B_vooo += H.ab.vooo
-    I2B_vooo = H.ab.vooo - np.einsum("me,aeik_.amik", H.b.ov, T.ab, optimize=True)
 
-    # MM(2,3)B
-    #dT.aab = -0.5 * np.einsum("mcjk,abim->abcijk", I2B_ovoo, T.aa, optimize=True)
-    #dT.aab += 0.5 * np.einsum("bcek,aeij->abcijk", I2B_vvvo, T.aa, optimize=True) #
-    #dT.aab -= np.einsum("amik,bcjm->abcijk", I2B_vooo, T.ab, optimize=True)
-    #dT.aab += np.einsum("acie,bejk->abcijk", I2B_vvov, T.ab, optimize=True) ##
-    #dT.aab -= 0.5 * np.einsum("amij,bcmk->abcijk", I2A_vooo, T.ab, optimize=True)
-    #dT.aab += 0.5 * np.einsum("abie,ecjk->abcijk", I2A_vvov, T.ab, optimize=True) #
-
-    # (HBar*T3)_C
-    #dT.aab -= 0.5 * np.einsum("mi,abcmjk->abcijk", H.a.oo, T.aab, optimize=True)
-    #dT.aab -= 0.25 * np.einsum("mk,abcijm->abcijk", H.b.oo, T.aab, optimize=True)
-    #dT.aab += 0.5 * np.einsum("ae,ebcijk->abcijk", H.a.vv, T.aab, optimize=True) #
-    #dT.aab += 0.25 * np.einsum("ce,abeijk->abcijk", H.b.vv, T.aab, optimize=True) ##
-    #dT.aab += 0.125 * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aab, optimize=True)
-    #dT.aab += 0.5 * np.einsum("mnjk,abcimn->abcijk", H.ab.oooo, T.aab, optimize=True)
-    #dT.aab += 0.125 * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aab, optimize=True) #
-    #dT.aab += 0.5 * np.einsum("bcef,aefijk->abcijk", H.ab.vvvv, T.aab, optimize=True) #
-    #dT.aab += np.einsum("amie,ebcmjk->abcijk", H.aa.voov, T.aab, optimize=True) #
-    #dT.aab += np.einsum("amie,becjmk->abcijk", H.ab.voov, T.abb, optimize=True) ##
-    #dT.aab += 0.25 * np.einsum("mcek,abeijm->abcijk", H.ab.ovvo, T.aaa, optimize=True) #
-    #dT.aab += 0.25 * np.einsum("cmke,abeijm->abcijk", H.bb.voov, T.aab, optimize=True) ##
-    #dT.aab -= 0.5 * np.einsum("amek,ebcijm->abcijk", H.ab.vovo, T.aab, optimize=True) #
-    #dT.aab -= 0.5 * np.einsum("mcie,abemjk->abcijk", H.ab.ovov, T.aab, optimize=True) ##
-
-    T.aab, dT.aab = ccp_opt_loops.ccp_opt_loops.update_t3b_p_opt2(
-        dT.aab, T.aa, T.ab, T.aaa, T.aab, T.abb,
-        pspace_aaa, pspace_aab, pspace_abb,
-        H.a.vv, H.b.vv,
-        H.aa.oovv, I2A_vvov, H.aa.voov, H.aa.vvvv,
-        H.ab.oovv, I2B_vvov, I2B_vvvo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
-        H.bb.voov,
-        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-        shift
-    )
-
-    return T, dT
+# #@profile
+# def update_t3c(T, dT, H, H0, shift, pspace_aab, pspace_abb, pspace_bbb):
+#     """
+#     Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N e^(T1+T2+T3))_C|0>.
+#     """
+#     # <ij~k~ab~c~ | H(2) | 0 > + (VT3)_C intermediates
+#     I2B_vvvo = -0.5 * np.einsum("mnef,afbmnj->abej", H0.aa.oovv, T.aab, optimize=True)
+#     I2B_vvvo += -np.einsum("mnef,afbmnj->abej", H0.ab.oovv, T.abb, optimize=True)
+#     I2B_vvvo += H.ab.vvvo
+#
+#     I2B_ovoo = 0.5 * np.einsum("mnef,efbinj->mbij", H0.aa.oovv, T.aab, optimize=True)
+#     I2B_ovoo += np.einsum("mnef,efbinj->mbij", H0.ab.oovv, T.abb, optimize=True)
+#     I2B_ovoo += H.ab.ovoo
+#
+#     I2B_ovoo -= np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+#     I2B_vvov = -np.einsum("nmfe,afbinm->abie", H0.ab.oovv, T.aab, optimize=True)
+#     I2B_vvov += -0.5 * np.einsum("nmfe,afbinm->abie", H0.bb.oovv, T.abb, optimize=True)
+#     I2B_vvov += H.ab.vvov
+#
+#     I2B_vooo = np.einsum("nmfe,afeinj->amij", H0.ab.oovv, T.aab, optimize=True)
+#     I2B_vooo += 0.5 * np.einsum("nmfe,afeinj->amij", H0.bb.oovv, T.abb, optimize=True)
+#     I2B_vooo += H.ab.vooo
+#     I2B_vooo -= np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
+#
+#     I2C_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.bb.oovv, T.bbb, optimize=True)
+#     I2C_vvov += -np.einsum("nmfe,fabnim->abie", H0.ab.oovv, T.abb, optimize=True)
+#     I2C_vvov += H.bb.vvov
+#
+#     I2C_vooo = np.einsum("nmfe,faenij->amij", H0.ab.oovv, T.abb, optimize=True)
+#     I2C_vooo += 0.5 * np.einsum("mnef,aefijn->amij", H0.bb.oovv, T.bbb, optimize=True)
+#     I2C_vooo -= np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
+#     I2C_vooo += H.bb.vooo
+#
+#     # MM(2,3)C
+#     dT.abb = -0.5 * np.einsum("amij,bcmk->abcijk", I2B_vooo, T.bb, optimize=True)
+#     #dT.abb += 0.5 * np.einsum("abie,ecjk->abcijk", I2B_vvov, T.bb, optimize=True) ##
+#     dT.abb -= 0.5 * np.einsum("cmkj,abim->abcijk", I2C_vooo, T.ab, optimize=True)
+#     #dT.abb += 0.5 * np.einsum("cbke,aeij->abcijk", I2C_vvov, T.ab, optimize=True) ##
+#     dT.abb -= np.einsum("mbij,acmk->abcijk", I2B_ovoo, T.ab, optimize=True)
+#     #dT.abb += np.einsum("abej,ecik->abcijk", I2B_vvvo, T.ab, optimize=True) #
+#
+#     # (HBar*T3)_C
+#     dT.abb -= 0.25 * np.einsum("mi,abcmjk->abcijk", H.a.oo, T.abb, optimize=True)
+#     dT.abb -= 0.5 * np.einsum("mj,abcimk->abcijk", H.b.oo, T.abb, optimize=True)
+#     #dT.abb += 0.25 * np.einsum("ae,ebcijk->abcijk", H.a.vv, T.abb, optimize=True) #
+#     #dT.abb += 0.5 * np.einsum("be,aecijk->abcijk", H.b.vv, T.abb, optimize=True) ##
+#     dT.abb += 0.125 * np.einsum("mnjk,abcimn->abcijk", H.bb.oooo, T.abb, optimize=True)
+#     dT.abb += 0.5 * np.einsum("mnij,abcmnk->abcijk", H.ab.oooo, T.abb, optimize=True)
+#     #dT.abb += 0.125 * np.einsum("bcef,aefijk->abcijk", H.bb.vvvv, T.abb, optimize=True) ##
+#     #dT.abb += 0.5 * np.einsum("abef,efcijk->abcijk", H.ab.vvvv, T.abb, optimize=True) #
+#     #dT.abb += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.aa.voov, T.abb, optimize=True) #
+#     #dT.abb += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.ab.voov, T.bbb, optimize=True) ##
+#     #dT.abb += np.einsum("mbej,aecimk->abcijk", H.ab.ovvo, T.aab, optimize=True) #
+#     #dT.abb += np.einsum("bmje,aecimk->abcijk", H.bb.voov, T.abb, optimize=True) ##
+#     #dT.abb -= 0.5 * np.einsum("mbie,aecmjk->abcijk", H.ab.ovov, T.abb, optimize=True) ##
+#     #dT.abb -= 0.5 * np.einsum("amej,ebcimk->abcijk", H.ab.vovo, T.abb, optimize=True) #
+#
+#     T.abb, dT.abb = ccp_opt_loops.ccp_opt_loops.update_t3c_p_opt2(
+#         dT.abb, T.ab, T.bb, T.aab, T.abb, T.bbb,
+#         pspace_aab, pspace_abb, pspace_bbb,
+#         H.a.vv, H.b.vv,
+#         H.aa.voov,
+#         H.ab.oovv, I2B_vvov, I2B_vvvo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
+#         H.bb.oovv, I2C_vvov, H.bb.voov, H.bb.vvvv,
+#         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+#         shift
+#     )
+#
+#     return T, dT
 
 
-#@profile
-def update_t3c(T, dT, H, H0, shift, pspace_aab, pspace_abb, pspace_bbb):
-    """
-    Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N e^(T1+T2+T3))_C|0>.
-    """
-    # <ij~k~ab~c~ | H(2) | 0 > + (VT3)_C intermediates
-    I2B_vvvo = -0.5 * np.einsum("mnef,afbmnj->abej", H0.aa.oovv, T.aab, optimize=True)
-    I2B_vvvo += -np.einsum("mnef,afbmnj->abej", H0.ab.oovv, T.abb, optimize=True)
-    I2B_vvvo += H.ab.vvvo
-    
-    I2B_ovoo = 0.5 * np.einsum("mnef,efbinj->mbij", H0.aa.oovv, T.aab, optimize=True)
-    I2B_ovoo += np.einsum("mnef,efbinj->mbij", H0.ab.oovv, T.abb, optimize=True)
-    I2B_ovoo += H.ab.ovoo
-    
-    I2B_ovoo -= np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
-    I2B_vvov = -np.einsum("nmfe,afbinm->abie", H0.ab.oovv, T.aab, optimize=True)
-    I2B_vvov += -0.5 * np.einsum("nmfe,afbinm->abie", H0.bb.oovv, T.abb, optimize=True)
-    I2B_vvov += H.ab.vvov
-    
-    I2B_vooo = np.einsum("nmfe,afeinj->amij", H0.ab.oovv, T.aab, optimize=True)
-    I2B_vooo += 0.5 * np.einsum("nmfe,afeinj->amij", H0.bb.oovv, T.abb, optimize=True)
-    I2B_vooo += H.ab.vooo
-    
-    I2B_vooo -= np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
-    I2C_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.bb.oovv, T.bbb, optimize=True)
-    I2C_vvov += -np.einsum("nmfe,fabnim->abie", H0.ab.oovv, T.abb, optimize=True)
-    I2C_vvov += H.bb.vvov
-    
-    I2C_vooo = np.einsum("nmfe,faenij->amij", H0.ab.oovv, T.abb, optimize=True)
-    I2C_vooo += 0.5 * np.einsum("mnef,aefijn->amij", H0.bb.oovv, T.bbb, optimize=True)
-    I2C_vooo -= np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
-    I2C_vooo += H.bb.vooo
-
-    # MM(2,3)C
-    dT.abb = -0.5 * np.einsum("amij,bcmk->abcijk", I2B_vooo, T.bb, optimize=True)
-    #dT.abb += 0.5 * np.einsum("abie,ecjk->abcijk", I2B_vvov, T.bb, optimize=True) ##
-    dT.abb -= 0.5 * np.einsum("cmkj,abim->abcijk", I2C_vooo, T.ab, optimize=True)
-    #dT.abb += 0.5 * np.einsum("cbke,aeij->abcijk", I2C_vvov, T.ab, optimize=True) ##
-    dT.abb -= np.einsum("mbij,acmk->abcijk", I2B_ovoo, T.ab, optimize=True)
-    #dT.abb += np.einsum("abej,ecik->abcijk", I2B_vvvo, T.ab, optimize=True) #
-
-    # (HBar*T3)_C
-    dT.abb -= 0.25 * np.einsum("mi,abcmjk->abcijk", H.a.oo, T.abb, optimize=True)
-    dT.abb -= 0.5 * np.einsum("mj,abcimk->abcijk", H.b.oo, T.abb, optimize=True)
-    #dT.abb += 0.25 * np.einsum("ae,ebcijk->abcijk", H.a.vv, T.abb, optimize=True) #
-    #dT.abb += 0.5 * np.einsum("be,aecijk->abcijk", H.b.vv, T.abb, optimize=True) ##
-    dT.abb += 0.125 * np.einsum("mnjk,abcimn->abcijk", H.bb.oooo, T.abb, optimize=True)
-    dT.abb += 0.5 * np.einsum("mnij,abcmnk->abcijk", H.ab.oooo, T.abb, optimize=True)
-    #dT.abb += 0.125 * np.einsum("bcef,aefijk->abcijk", H.bb.vvvv, T.abb, optimize=True) ##
-    #dT.abb += 0.5 * np.einsum("abef,efcijk->abcijk", H.ab.vvvv, T.abb, optimize=True) #
-    #dT.abb += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.aa.voov, T.abb, optimize=True) #
-    #dT.abb += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.ab.voov, T.bbb, optimize=True) ##
-    #dT.abb += np.einsum("mbej,aecimk->abcijk", H.ab.ovvo, T.aab, optimize=True) #
-    #dT.abb += np.einsum("bmje,aecimk->abcijk", H.bb.voov, T.abb, optimize=True) ##
-    #dT.abb -= 0.5 * np.einsum("mbie,aecmjk->abcijk", H.ab.ovov, T.abb, optimize=True) ##
-    #dT.abb -= 0.5 * np.einsum("amej,ebcimk->abcijk", H.ab.vovo, T.abb, optimize=True) #
-
-    T.abb, dT.abb = ccp_opt_loops.ccp_opt_loops.update_t3c_p_opt2(
-        dT.abb, T.ab, T.bb, T.aab, T.abb, T.bbb,
-        pspace_aab, pspace_abb, pspace_bbb,
-        H.a.vv, H.b.vv,
-        H.aa.voov,
-        H.ab.oovv, I2B_vvov, I2B_vvvo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
-        H.bb.oovv, I2C_vvov, H.bb.voov, H.bb.vvvv,
-        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-        shift
-    )
-
-    return T, dT
-
-
-#@profile
-def update_t3d(T, dT, H, H0, shift, pspace_abb, pspace_bbb):
-    """
-    Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N e^(T1+T2+T3))_C|0>.
-    """
-    #  <i~j~k~a~b~c~ | H(2) | 0 > + (VT3)_C intermediates
-    I2C_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.bb.oovv, T.bbb, optimize=True)
-    I2C_vvov -= np.einsum("nmfe,fabnim->abie", H0.ab.oovv, T.abb, optimize=True)
-    I2C_vvov += H.bb.vvov
-    
-    I2C_vooo = 0.5 * np.einsum("mnef,aefijn->amij", H0.bb.oovv, T.bbb, optimize=True)
-    I2C_vooo += np.einsum("nmfe,faenij->amij", H0.ab.oovv, T.abb, optimize=True)
-    I2C_vooo -= np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
-    I2C_vooo += H.bb.vooo
-
-    # MM(2,3)D
-    dT.bbb = -0.25 * np.einsum("amij,bcmk->abcijk", I2C_vooo, T.bb, optimize=True)
-    #dT.bbb += 0.25 * np.einsum("abie,ecjk->abcijk", I2C_vvov, T.bb, optimize=True) ##
-    # (HBar*T3)_C
-    dT.bbb -= (1.0 / 12.0) * np.einsum("mk,abcijm->abcijk", H.b.oo, T.bbb, optimize=True)
-    #dT.bbb += (1.0 / 12.0) * np.einsum("ce,abeijk->abcijk", H.b.vv, T.bbb, optimize=True) ##
-    dT.bbb += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.bb.oooo, T.bbb, optimize=True)
-    #dT.bbb += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.bb.vvvv, T.bbb, optimize=True) ##
-    #dT.bbb += 0.25 * np.einsum("maei,ebcmjk->abcijk", H.ab.ovvo, T.abb, optimize=True) #
-    #dT.bbb += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.bb.voov, T.bbb, optimize=True) ##
-
-    T.bbb, dT.bbb = ccp_opt_loops.ccp_opt_loops.update_t3d_p_opt2(
-        dT.bbb, T.bb, T.abb, T.bbb,
-        pspace_abb, pspace_bbb,
-        H.b.vv,
-        H.ab.oovv, H.ab.ovvo,
-        H.bb.oovv, I2C_vvov, H.bb.voov, H.bb.vvvv,
-        H0.b.oo, H0.b.vv,
-        shift
-    )
-
-    return T, dT
+# #@profile
+# def update_t3d(T, dT, H, H0, shift, pspace_abb, pspace_bbb):
+#     """
+#     Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N e^(T1+T2+T3))_C|0>.
+#     """
+#     #  <i~j~k~a~b~c~ | H(2) | 0 > + (VT3)_C intermediates
+#     I2C_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.bb.oovv, T.bbb, optimize=True)
+#     I2C_vvov -= np.einsum("nmfe,fabnim->abie", H0.ab.oovv, T.abb, optimize=True)
+#     I2C_vvov += H.bb.vvov
+#
+#     I2C_vooo = 0.5 * np.einsum("mnef,aefijn->amij", H0.bb.oovv, T.bbb, optimize=True)
+#     I2C_vooo += np.einsum("nmfe,faenij->amij", H0.ab.oovv, T.abb, optimize=True)
+#     I2C_vooo -= np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
+#     I2C_vooo += H.bb.vooo
+#
+#     # MM(2,3)D
+#     dT.bbb = -0.25 * np.einsum("amij,bcmk->abcijk", I2C_vooo, T.bb, optimize=True)
+#     #dT.bbb += 0.25 * np.einsum("abie,ecjk->abcijk", I2C_vvov, T.bb, optimize=True) ##
+#     # (HBar*T3)_C
+#     dT.bbb -= (1.0 / 12.0) * np.einsum("mk,abcijm->abcijk", H.b.oo, T.bbb, optimize=True)
+#     #dT.bbb += (1.0 / 12.0) * np.einsum("ce,abeijk->abcijk", H.b.vv, T.bbb, optimize=True) ##
+#     dT.bbb += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.bb.oooo, T.bbb, optimize=True)
+#     #dT.bbb += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.bb.vvvv, T.bbb, optimize=True) ##
+#     #dT.bbb += 0.25 * np.einsum("maei,ebcmjk->abcijk", H.ab.ovvo, T.abb, optimize=True) #
+#     #dT.bbb += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.bb.voov, T.bbb, optimize=True) ##
+#
+#     T.bbb, dT.bbb = ccp_opt_loops.ccp_opt_loops.update_t3d_p_opt2(
+#         dT.bbb, T.bb, T.abb, T.bbb,
+#         pspace_abb, pspace_bbb,
+#         H.b.vv,
+#         H.ab.oovv, H.ab.ovvo,
+#         H.bb.oovv, I2C_vvov, H.bb.voov, H.bb.vvvv,
+#         H0.b.oo, H0.b.vv,
+#         shift
+#     )
+#
+#     return T, dT

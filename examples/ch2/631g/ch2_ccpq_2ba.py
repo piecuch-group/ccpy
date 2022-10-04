@@ -53,25 +53,31 @@ def main(args):
         low_memory=False
     )
 
-    Hbar = build_hbar_ccsd(T, H)
+    # Eccp = [-38.9802624745,
+    #         -38.9806474054, # 1000 dets
+    #         -38.9809970624,
+    #         -38.9810531086,
+    #         -38.9810592029]
 
-    L, total_energy, is_converged = lcc_driver(calculation, system, T, Hbar, omega=0.0, L=None, R=None)
+    #Hbar = build_hbar_ccsd(T, H)
 
-    Eccp3, deltap3 = calc_ccp3(T, L, Hbar, H, system, pspace, use_RHF=False)
+    #L, total_energy, is_converged = lcc_driver(calculation, system, T, Hbar, omega=0.0, L=None, R=None)
 
-    Eccsd = -38.9802624745
-    Ecrcc23 = -38.9810572210
-    Eccsdt = -38.98105947
+    #Eccp3, deltap3 = calc_ccp3(T, L, Hbar, H, system, pspace, use_RHF=False)
 
-    Eccp = total_energy
-    Eccpq = Eccp3['D']
+    #Eccsd = -38.9802624745
+    #Ecrcc23 = -38.9810572210
+    #Eccsdt = -38.98105947
 
-    print("CCSDT = ", Eccsdt)
-    print("Error in CCSD = ", (Eccsd - Eccsdt) * 1000, "mEh")
-    print("Error in CR-CC(2,3) = ", (Ecrcc23 - Eccsdt) * 1000, "mEh")
-    print("Error in CC(P) = ", (Eccp - Eccsdt) * 1000, "mEh")
-    print("Error in CC(P;Q) = ", (Eccpq - Eccsdt) * 1000, "mEh")
-    print("Number of triples = ", num_excits)
+    #Eccp = total_energy
+    #Eccpq = Eccp3['D']
+
+    # print("CCSDT = ", Eccsdt)
+    # print("Error in CCSD = ", (Eccsd - Eccsdt) * 1000, "mEh")
+    # print("Error in CR-CC(2,3) = ", (Ecrcc23 - Eccsdt) * 1000, "mEh")
+    # print("Error in CC(P) = ", (Eccp - Eccsdt) * 1000, "mEh")
+    # print("Error in CC(P;Q) = ", (Eccpq - Eccsdt) * 1000, "mEh")
+    # print("Number of triples = ", num_excits)
 
 
 if __name__ == "__main__":

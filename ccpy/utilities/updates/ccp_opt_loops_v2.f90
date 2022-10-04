@@ -13,6 +13,99 @@ module ccp_opt_loops_v2
 
       contains
 
+              subroutine update_t2a_opt(t2a, resid,&
+                                        X2A,&
+                                        t3a, t3b,&
+                                        pspace_aaa, pspace_aab,&
+                                        H1A_ov, H1B_ov,&
+                                        H2A_ooov, H2A_vovv,&
+                                        H2B_ooov, H2B_vovv,&
+                                        fA_oo, fA_vv,&
+                                        shift,&
+                                        noa, nua)
+
+                  integer, intent(in) :: noa, nua
+                  integer, intent(in) :: pspace_aaa(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
+                                         pspace_aab(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+                  real(kind=8), intent(in) :: X2A(1:nua,1:nua,1:noa,1:noa),&
+                                              t3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
+                                              t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                              H1A_ov(1:noa,1:nua), H1B_ov(1:nob,1:nub),&
+                                              H2A_ooov(1:noa,1:noa,1:noa,1:nua),&
+                                              H2A_vovv(1:nua,1:noa,1:nua,1:nua),&
+                                              H2B_ooov(1:noa,1:nob,1:noa,1:nub),&
+                                              H2B_vovv(1:nua,1:nob,1:nua,1:nub),&
+                                              fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+                                              shift
+
+                  real(kind=8), intent(inout) :: t2a(1:nua,1:nua,1:noa,1:noa)
+                  !f2py intent(in,out) :: t2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+
+                  real(kind=8), intent(out) :: resid(1:nua,1:nua,1:noa,1:noa)
+
+                  integer :: i, j, a, b, m, n, e, f
+                  real(kind=8) :: denom, val, res1, res2, res3, res4, res5, res6
+
+                  do i = 1, noa
+                    do j = i + 1, noa
+                      do a = 1, nua
+                        do b = a + 1, nua
+
+                            res1 = 0.0d0
+                            res2 = 0.0d0
+                            res3 = 0.0d0
+                            res4 = 0.0d0
+                            res5 = 0.0d0
+                            res6 = 0.0d0
+
+!    dT.aa -= 0.5 * np.einsum("mnie,abemjn->abij", H0.ab.ooov + H.ab.ooov, T.aab, optimize=True)
+!    dT.aa -= 0.25 * np.einsum("mnie,abemjn->abij", H0.aa.ooov + H.aa.ooov, T.aaa, optimize=True)
+
+!    dT.aa += 0.25 * np.einsum("anef,ebfijn->abij", H0.aa.vovv + H.aa.vovv, T.aaa, optimize=True)
+!    dT.aa += 0.5 * np.einsum("anef,ebfijn->abij", H0.ab.vovv + H.ab.vovv, T.aab, optimize=True)
+
+                          ! diagram 1: h1a(me) * t3a(abeijm)
+                          ! diagram 2: h1a(me) * t3a(abeijm)
+                          do e = 1, nua
+                              do m = 1, noa
+                                  if (pspace_aaa(a, b, e, i, j, m) == 1) then
+                                      res1 = res1 + H1A_ov(m, e) * t3a(a, b, e, i, j, m)
+                                  end if
+                              end do
+                              do m = 1, nob
+                                  if (pspace_aab(a, b, e, i, j, m) == 1) then
+                                      res2 = res2 + H1B_ov(m, e) * t3b(a, b, e, i, j, m)
+                                  end if
+                              end do
+                          end do
+                          do e = 1, nub - nua
+                              do m = 1, nob
+                                  if (pspace_aab(a, b, e + nua, i, j, m) == 1) then
+                                      res2 = res2 + H1B_ov(m, e + nua) * t3b(a, b, e + nua, i, j, m)
+                                  end if
+                              end do
+                          end do
+
+
+
+                          denom = fA_oo(i,i) + fA_oo(j,j) - fA_vv(a,a) - fA_vv(b,b)
+                          val = (X2A(b,a,j,i) - X2A(a,b,j,i) - X2A(b,a,i,j) + X2A(a,b,i,j))/(denom-shift)
+                          t2a(b,a,j,i) = t2a(b,a,j,i) + val
+                          t2a(a,b,j,i) = -t2a(b,a,j,i)
+                          t2a(b,a,i,j) = -t2a(b,a,j,i)
+                          t2a(a,b,i,j) = t2a(b,a,j,i)
+
+                          resid(b,a,j,i) = val
+                          resid(a,b,j,i) = -val
+                          resid(b,a,i,j) = -val
+                          resid(a,b,i,j) = val
+                        end do
+                      end do
+                    end do
+                  end do
+
+              end subroutine update_t2a_opt
+
               subroutine update_t3a_p_opt2(t3a_new, resid,&
                                            t2a, t3a, t3b,&
                                            pspace_aaa, pspace_aab,&
@@ -549,7 +642,6 @@ module ccp_opt_loops_v2
                       end do
                   end do
 
-                  
                   do a = 1, nub
                       do i = 1, nob
                           do m = 1, noa
@@ -584,7 +676,7 @@ module ccp_opt_loops_v2
                                       do n = 1, nob
                                           do f = 1, nub
                                               if (pspace_abb(b, f, a, m, n, i) == 1) then
-                                                I2B_vvvo(b, a, e, i) = I2B_vvov(b, a, e, i) - H2B_oovv(m, n, e, f) * t3c(b, f, a, m, n, i)
+                                                I2B_vvvo(b, a, e, i) = I2B_vvvo(b, a, e, i) - H2B_oovv(m, n, e, f) * t3c(b, f, a, m, n, i)
                                               end if
                                           end do
                                       end do
@@ -719,16 +811,16 @@ module ccp_opt_loops_v2
                           end do
 
                           ! diagram 11: A(ab) I2B(bcek) * t2a(aeij)
-                          res11 = res11 + H2B_vvvo(b, c, e, k) * t2a(a, e, i, j)
-                          res11 = res11 - H2B_vvvo(a, c, e, k) * t2a(b, e, i, j)
+                          res11 = res11 + I2B_vvvo(b, c, e, k) * t2a(a, e, i, j)
+                          res11 = res11 - I2B_vvvo(a, c, e, k) * t2a(b, e, i, j)
                           ! diagram 12: A(ij)A(ab) I2B(acie) * t2b(bejk)
-                          res12 = res12 + H2B_vvov(a, c, i, e) * t2b(b, e, j, k)
-                          res12 = res12 - H2B_vvov(a, c, j, e) * t2b(b, e, i, k)
-                          res12 = res12 - H2B_vvov(b, c, i, e) * t2b(a, e, j, k)
-                          res12 = res12 + H2B_vvov(b, c, j, e) * t2b(a, e, i, k)
+                          res12 = res12 + I2B_vvov(a, c, i, e) * t2b(b, e, j, k)
+                          res12 = res12 - I2B_vvov(a, c, j, e) * t2b(b, e, i, k)
+                          res12 = res12 - I2B_vvov(b, c, i, e) * t2b(a, e, j, k)
+                          res12 = res12 + I2B_vvov(b, c, j, e) * t2b(a, e, i, k)
                           ! diagram 13: A(ij) I2A(abie) * t2b(ecjk)
-                          res13 = res13 + H2A_vvov(a, b, i, e) * t2b(e, c, j, k)
-                          res13 = res13 - H2A_vvov(a, b, j, e) * t2b(e, c, i, k)
+                          res13 = res13 + I2A_vvov(a, b, i, e) * t2b(e, c, j, k)
+                          res13 = res13 - I2A_vvov(a, b, j, e) * t2b(e, c, i, k)
 
                       end do
 
@@ -771,10 +863,10 @@ module ccp_opt_loops_v2
                           end do
 
                           ! diagram 12: A(ij)A(ab) I2B(acie) * t2b(bejk)
-                          res12 = res12 + H2B_vvov(a, c, i, e + nua) * t2b(b, e + nua, j, k)
-                          res12 = res12 - H2B_vvov(a, c, j, e + nua) * t2b(b, e + nua, i, k)
-                          res12 = res12 - H2B_vvov(b, c, i, e + nua) * t2b(a, e + nua, j, k)
-                          res12 = res12 + H2B_vvov(b, c, j, e + nua) * t2b(a, e + nua, i, k)
+                          res12 = res12 + I2B_vvov(a, c, i, e + nua) * t2b(b, e + nua, j, k)
+                          res12 = res12 - I2B_vvov(a, c, j, e + nua) * t2b(b, e + nua, i, k)
+                          res12 = res12 - I2B_vvov(b, c, i, e + nua) * t2b(a, e + nua, j, k)
+                          res12 = res12 + I2B_vvov(b, c, j, e + nua) * t2b(a, e + nua, i, k)
 
                       end do
 
@@ -858,7 +950,7 @@ module ccp_opt_loops_v2
                                            t2b, t2c, t3b, t3c, t3d,&
                                            pspace_aab, pspace_abb, pspace_bbb,&
                                            H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
-                                           H2A_voov,&
+                                           H2A_oovv, H2A_voov,&
                                            H2B_oovv, H2B_vooo, H2B_ovoo, H2B_vvov, H2B_vvvo, H2B_oooo,&
                                            H2B_voov, H2B_vovo, H2B_ovov, H2B_ovvo, H2B_vvvv,&
                                            H2C_oovv, H2C_vooo, H2C_vvov, H2C_oooo, H2C_voov, H2C_vvvv,&
@@ -879,6 +971,7 @@ module ccp_opt_loops_v2
                                          H1A_vv(1:nua,1:nua),&
                                          H1B_oo(1:nob,1:nob),&
                                          H1B_vv(1:nub,1:nub),&
+                                         H2A_oovv(1:noa,1:noa,1:nua,1:nua),&
                                          H2A_voov(1:nua,1:noa,1:noa,1:nua),&
                                          H2B_oovv(1:noa,1:nob,1:nua,1:nub),&
                                          H2B_vooo(1:nua,1:nob,1:noa,1:nob),&
@@ -903,13 +996,166 @@ module ccp_opt_loops_v2
 
                   real(8), intent(out) :: t3c_new(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
                                           resid(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+
                   integer :: i, j, k, a, b, c, m, n, e, f
+                  real(kind=8) :: I2C_vooo(nub, nob, nob, nob),&
+                                  I2C_vvov(nub, nub, nob, nub),&
+                                  I2B_vooo(nua, nob, noa, nob),&
+                                  I2B_ovoo(noa, nub, noa, nob),&
+                                  I2B_vvov(nua, nub, noa, nub),&
+                                  I2B_vvvo(nua, nub, nua, nob)
                   real(8) :: denom, val,&
                              res1, res2, res3, res4, res5, res6, res7, res8, res9, res10, res11, res12, res13,&
                              res14, res15, res16, res17, res18, res19, res20
 
                   resid = 0.0d0
                   t3c_new = 0.0d0
+
+                  ! VT3 intermediates
+                  I2C_vooo = H2C_vooo
+                  I2C_vvov = H2C_vvov
+                  I2B_vooo = H2B_vooo
+                  I2B_ovoo = H2B_ovoo
+                  I2B_vvov = H2B_vvov
+                  I2B_vvvo = H2B_vvvo
+
+                  do a = 1, nub
+                      do i = 1, nob
+                          do m = 1, nob
+                              do e = 1, nub
+
+                                  ! I2C(amij) = 1/2 h2c(mnef) * t3d(aefijn) + h2b(nmfe) * t3c(feanji)
+                                  do j = i + 1, nob
+                                      do n = 1, nob
+                                          do f = e + 1, nub
+                                              if (pspace_bbb(a, e, f, i, j, n) == 1) then
+                                                I2C_vooo(a, m, i, j) = I2C_vooo(a, m, i, j) + H2C_oovv(m, n, e, f) * t3d(a, e, f, i, j, n)
+                                              end if
+                                          end do
+                                      end do
+                                      do n = 1, noa
+                                          do f = 1, nua
+                                              if (pspace_abb(f, e, a, n, j, i) == 1) then
+                                                I2C_vooo(a, m, i, j) = I2C_vooo(a, m, i, j) + H2B_oovv(n, m, f, e) * t3c(f, e, a, n, j, i)
+                                              end if
+                                          end do
+                                      end do
+                                      I2C_vooo(a, m, j, i) = -1.0 * I2C_vooo(a, m, i, j)
+                                  end do
+                                  ! I2C(abie) = -1/2 h2c(mnef) * t3d(abfimn) - h2b(nmfe) * t3c(fbanmi)
+                                  do b = a + 1, nub
+                                      do n = m + 1, nob
+                                          do f = 1, nub
+                                              if (pspace_bbb(a, b, f, i, m, n) == 1) then
+                                                I2C_vvov(a, b, i, e) = I2C_vvov(a, b, i, e) - H2C_oovv(m, n, e, f) * t3d(a, b, f, i, m, n)
+                                              end if
+                                          end do
+                                      end do
+                                      do n = 1, noa
+                                          do f = 1, nua
+                                              if (pspace_abb(f, b, a, n, m, i) == 1) then
+                                                I2C_vvov(a, b, i, e) = I2C_vvov(a, b, i, e) - H2B_oovv(n, m, f, e) * t3c(f, b, a, n, m, i)
+                                              end if
+                                          end do
+                                      end do
+                                      I2C_vvov(b, a, i, e) = -1.0 * I2C_vvov(a, b, i, e)
+                                  end do
+
+                              end do
+                          end do
+                      end do
+                  end do
+
+                  do a = 1, nua
+                      do i = 1, noa
+                          do m = 1, nob
+                              do e = 1, nub
+
+                                  ! I2B(amij) = h2b(nmfe) * t3b(afeinj) + 1/2 h2c(nmfe) * t3c(afeinj)
+                                  do j = 1, nob
+                                      do n = 1, noa
+                                          do f = 1, nua
+                                              if (pspace_aab(a, f, e, i, n, j) == 1) then
+                                                I2B_vooo(a, m, i, j) = I2B_vooo(a, m, i, j) + H2B_oovv(n, m, f, e) * t3b(a, f, e, i, n, j)
+                                              end if
+                                          end do
+                                      end do
+                                      do n = 1, nob
+                                          do f = e + 1, nub
+                                              if (pspace_abb(a, f, e, i, n, j) == 1) then
+                                                I2B_vooo(a, m, i, j) = I2B_vooo(a, m, i, j) + H2C_oovv(n, m, f, e) * t3c(a, f, e, i, n, j)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+                                  ! I2B(abie) = -h2b(nmfe) * t3b(afbinm) - 1/2 h2c(mnef) * t3c(afbinm)
+                                  do b = 1, nub
+                                      do n = 1, noa
+                                          do f = 1, nua
+                                              if (pspace_aab(a, f, b, i, n, m) == 1) then
+                                                I2B_vvov(a, b, i, e) = I2B_vvov(a, b, i, e) - H2B_oovv(n, m, f, e) * t3b(a, f, b, i, n, m)
+                                              end if
+                                          end do
+                                      end do
+                                      do n = m + 1, nob
+                                          do f = 1, nub
+                                              if (pspace_abb(a, f, b, i, n, m) == 1) then
+                                                I2B_vvov(a, b, i, e) = I2B_vvov(a, b, i, e) - H2C_oovv(n, m, f, e) * t3c(a, f, b, i, n, m)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+
+                            end do
+                          end do
+                      end do
+                  end do
+
+
+                  do a = 1, nub
+                      do i = 1, nob
+                          do m = 1, noa
+                              do e = 1, nua
+
+                                  ! I2B(maji) = 1/2 h2a(mnef) * t3b(efajni) + h2b(mnef) * t3c(efajni)
+                                  do j = 1, noa
+                                      do n = 1, noa
+                                          do f = e + 1, nua
+                                              if (pspace_aab(e, f, a, j, n, i) == 1) then
+                                                I2B_ovoo(m, a, j, i) = I2B_ovoo(m, a, j, i) + H2A_oovv(m, n, e, f) * t3b(e, f, a, j, n, i)
+                                              end if
+                                          end do
+                                      end do
+                                      do n = 1, nob
+                                          do f = 1, nub
+                                              if (pspace_abb(e, f, a, j, n, i) == 1) then
+                                                I2B_ovoo(m, a, j, i) = I2B_ovoo(m, a, j, i) + H2B_oovv(m, n, e, f) * t3c(e, f, a, j, n, i)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+                                  ! I2B(baei) = -1/2 h2a(mnef) * t3b(bfamni) - h2b(mnef) * t3c(bfamni)
+                                  do b = 1, nua
+                                      do n = m + 1, noa
+                                          do f = 1, nua
+                                              if (pspace_aab(b, f, a, m, n, i) == 1) then
+                                                I2B_vvvo(b, a, e, i) = I2B_vvvo(b, a, e, i) - H2A_oovv(m, n, e, f) * t3b(b, f, a, m, n, i)
+                                              end if
+                                          end do
+                                      end do
+                                      do n = 1, nob
+                                          do f = 1, nub
+                                              if (pspace_abb(b, f, a, m, n, i) == 1) then
+                                                I2B_vvvo(b, a, e, i) = I2B_vvvo(b, a, e, i) - H2B_oovv(m, n, e, f) * t3c(b, f, a, m, n, i)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+
+                              end do
+                          end do
+                      end do
+                  end do
 
                   do i = 1, noa; do j = 1, nob; do k = j + 1, nob;
                   do a = 1, nua; do b = 1, nub; do c = b + 1, nub;
@@ -1036,16 +1282,16 @@ module ccp_opt_loops_v2
                           end do
 
                           ! diagram 11: A(bc) h2B(abie) * t2c(ecjk)
-                          res11 = res11 + H2B_vvov(a, b, i, e) * t2c(e, c, j, k)
-                          res11 = res11 - H2B_vvov(a, c, i, e) * t2c(e, b, j, k)
+                          res11 = res11 + I2B_vvov(a, b, i, e) * t2c(e, c, j, k)
+                          res11 = res11 - I2B_vvov(a, c, i, e) * t2c(e, b, j, k)
                           ! diagram 12: A(jk) h2C(cbke) * t2b(aeij)
-                          res12 = res12 + H2C_vvov(c, b, k, e) * t2b(a, e, i, j)
-                          res12 = res12 - H2C_vvov(c, b, j, e) * t2b(a, e, i, k)
+                          res12 = res12 + I2C_vvov(c, b, k, e) * t2b(a, e, i, j)
+                          res12 = res12 - I2C_vvov(c, b, j, e) * t2b(a, e, i, k)
                           ! diagram 13: A(jk)A(bc) h2B(abej) * t2b(ecik)
-                          res13 = res13 + H2B_vvvo(a, b, e, j) * t2b(e, c, i, k)
-                          res13 = res13 - H2B_vvvo(a, b, e, k) * t2b(e, c, i, j)
-                          res13 = res13 - H2B_vvvo(a, c, e, j) * t2b(e, b, i, k)
-                          res13 = res13 + H2B_vvvo(a, c, e, k) * t2b(e, b, i, j)
+                          res13 = res13 + I2B_vvvo(a, b, e, j) * t2b(e, c, i, k)
+                          res13 = res13 - I2B_vvvo(a, b, e, k) * t2b(e, c, i, j)
+                          res13 = res13 - I2B_vvvo(a, c, e, j) * t2b(e, b, i, k)
+                          res13 = res13 + I2B_vvvo(a, c, e, k) * t2b(e, b, i, j)
 
                       end do
 
@@ -1103,11 +1349,63 @@ module ccp_opt_loops_v2
                           end do
 
                           ! diagram 11: A(bc) h2B(abie) * t2c(ecjk)
-                          res11 = res11 + H2B_vvov(a, b, i, e + nua) * t2c(e + nua, c, j, k)
-                          res11 = res11 - H2B_vvov(a, c, i, e + nua) * t2c(e + nua, b, j, k)
+                          res11 = res11 + I2B_vvov(a, b, i, e + nua) * t2c(e + nua, c, j, k)
+                          res11 = res11 - I2B_vvov(a, c, i, e + nua) * t2c(e + nua, b, j, k)
                           ! diagram 12: A(jk) h2C(cbke) * t2b(aeij)
-                          res12 = res12 + H2C_vvov(c, b, k, e + nua) * t2b(a, e + nua, i, j)
-                          res12 = res12 - H2C_vvov(c, b, j, e + nua) * t2b(a, e + nua, i, k)
+                          res12 = res12 + I2C_vvov(c, b, k, e + nua) * t2b(a, e + nua, i, j)
+                          res12 = res12 - I2C_vvov(c, b, j, e + nua) * t2b(a, e + nua, i, k)
+
+                      end do
+
+                      do m = 1, noa
+
+                          ! diagram 14: -h1a(mi) * t3c(abcmjk)
+                          if (pspace_abb(a, b, c, m, j, k) == 1) then
+                              res14 = res14 - H1A_oo(m, i) * t3c(a, b, c, m, j, k)
+                          end if
+
+                          ! diagram 16: A(jk) h2b(mnij) * t3c(abcmnk)
+                          do n = 1, nob
+                              if (pspace_abb(a, b, c, m, n, k) == 1) then
+                                  res16 = res16 + H2B_oooo(m, n, i, j) * t3c(a, b, c, m, n, k)
+                              end if
+                              if (pspace_abb(a, b, c, m, n, j) == 1) then
+                                  res16 = res16 - H2B_oooo(m, n, i, k) * t3c(a, b, c, m, n, j)
+                              end if
+                          end do
+
+                          ! diagram 18: -A(kj)A(bc) h2b(mbij) * t2b(acmk)
+                          res18 = res18 - I2B_ovoo(m, b, i, j) * t2b(a, c, m, k)
+                          res18 = res18 + I2B_ovoo(m, c, i, j) * t2b(a, b, m, k)
+                          res18 = res18 + I2B_ovoo(m, b, i, k) * t2b(a, c, m, j)
+                          res18 = res18 - I2B_ovoo(m, c, i, k) * t2b(a, b, m, j)
+
+                      end do
+
+                      do m = 1, nob
+
+                          ! diagram 15: -A(jk) h1b(mj) * t3c(abcimk)
+                          if (pspace_abb(a, b, c, i, m, k) == 1) then
+                              res15 = res15 - H1B_oo(m, j) * t3c(a, b, c, i, m, k)
+                          end if
+                          if (pspace_abb(a, b, c, i, m, j) == 1) then
+                              res15 = res15 + H1B_oo(m, k) * t3c(a, b, c, i, m, j)
+                          end if
+
+                          ! diagram 17: 1/2 h2c(mnjk) * t3c(abcimn)
+                          do n = m + 1, nob
+                              if (pspace_abb(a, b, c, i, m, n) == 1) then
+                                  res17 = res17 + H2C_oooo(m, n, j, k) * t3c(a, b, c, i, m, n)
+                              end if
+                          end do
+
+                          ! diagram 19: -A(jk) h2b(amij) * t2c(bcmk)
+                          res19 = res19 - I2B_vooo(a, m, i, j) * t2c(b, c, m, k)
+                          res19 = res19 + I2B_vooo(a, m, i, k) * t2c(b, c, m, j)
+
+                          ! diagram 20: -A(bc) h2c(cmkj) * t2b(abim)
+                          res20 = res20 - I2C_vooo(c, m, k, j) * t2b(a, b, i, m)
+                          res20 = res20 + I2C_vooo(b, m, k, j) * t2b(a, c, i, m)
 
                       end do
 
@@ -1134,12 +1432,11 @@ module ccp_opt_loops_v2
               end subroutine update_t3c_p_opt2
 
               subroutine update_t3d_p_opt2(t3d_new, resid,&
-                                           X3D,&
                                            t2c, t3c, t3d,&
                                            pspace_abb, pspace_bbb,&
-                                           H1B_vv,&
+                                           H1B_oo, H1B_vv,&
                                            H2B_oovv, H2B_ovvo,&
-                                           H2C_oovv, H2C_vvov, H2C_voov, H2C_vvvv,&
+                                           H2C_oovv, H2C_vooo, H2C_vvov, H2C_oooo, H2C_voov, H2C_vvvv,&
                                            fB_oo, fB_vv,&
                                            shift,&
                                            noa, nua, nob, nub)
@@ -1148,11 +1445,13 @@ module ccp_opt_loops_v2
                   real(kind=8), intent(in) :: t2c(nub, nub, nob, nob),&
                                               t3c(nua, nub, nub, noa, nob, nob),&
                                               t3d(nub, nub, nub, nob, nob, nob),&
-                                              H1B_vv(nub, nub),&
+                                              H1B_oo(nob, nob), H1B_vv(nub, nub),&
                                               H2B_oovv(noa, nob, nua, nub),&
                                               H2B_ovvo(noa, nub, nua, nob),&
                                               H2C_oovv(nob, nob, nub, nub),&
+                                              H2C_vooo(nub, nob, nob, nob),&
                                               H2C_vvov(nub, nub, nob, nub),&
+                                              H2C_oooo(nob, nob, nob, nob),&
                                               H2C_voov(nub, nob, nob, nub),&
                                               H2C_vvvv(nub, nub, nub, nub),&
                                               fB_vv(nub, nub), fB_oo(nob, nob),&
@@ -1160,17 +1459,67 @@ module ccp_opt_loops_v2
                   integer, intent(in) :: pspace_abb(nua, nub, nub, noa, nob, nob),&
                                          pspace_bbb(nub, nub, nub, nob, nob, nob)
 
-                  real(kind=8), intent(in) :: X3D(nub, nub, nub, nob, nob, nob)
-
                   real(kind=8), intent(out) :: t3d_new(nub, nub, nub, nob, nob, nob),&
                                                resid(nub, nub, nub, nob, nob, nob)
 
                   real(kind=8) :: val, denom
-                  real(kind=8) :: res1, res2, res3, res4, res5
+                  real(kind=8) :: I2C_vooo(nub, nob, nob, nob),&
+                                  I2C_vvov(nub, nub, nob, nub)
+                  real(kind=8) :: res1, res2, res3, res4, res5, res6, res7, res8
                   integer :: a, b, c, i, j, k, e, f, m, n
 
                   t3d_new = 0.0d0
                   resid = 0.0d0
+
+                  ! compute VT3 intermediates
+                  I2C_vooo = H2C_vooo
+                  I2C_vvov = H2C_vvov
+                  do a = 1, nub
+                      do i = 1, nob
+                          do m = 1, nob
+                              do e = 1, nub
+
+                                  ! I2C(amij) = 1/2 h2c(mnef) * t3d(aefijn) + h2b(nmfe) * t3c(feanji)
+                                  do j = i + 1, nob
+                                      do n = 1, nob
+                                          do f = e + 1, nub
+                                              if (pspace_bbb(a, e, f, i, j, n) == 1) then
+                                                I2C_vooo(a, m, i, j) = I2C_vooo(a, m, i, j) + H2C_oovv(m, n, e, f) * t3d(a, e, f, i, j, n)
+                                              end if
+                                          end do
+                                      end do
+                                      do n = 1, noa
+                                          do f = 1, nua
+                                              if (pspace_abb(f, e, a, n, j, i) == 1) then
+                                                I2C_vooo(a, m, i, j) = I2C_vooo(a, m, i, j) + H2B_oovv(n, m, f, e) * t3c(f, e, a, n, j, i)
+                                              end if
+                                          end do
+                                      end do
+                                      I2C_vooo(a, m, j, i) = -1.0 * I2C_vooo(a, m, i, j)
+                                  end do
+                                  ! I2C(abie) = -1/2 h2c(mnef) * t3d(abfimn) - h2b(nmfe) * t3c(fbanmi)
+                                  do b = a + 1, nub
+                                      do n = m + 1, nob
+                                          do f = 1, nub
+                                              if (pspace_bbb(a, b, f, i, m, n) == 1) then
+                                                I2C_vvov(a, b, i, e) = I2C_vvov(a, b, i, e) - H2C_oovv(m, n, e, f) * t3d(a, b, f, i, m, n)
+                                              end if
+                                          end do
+                                      end do
+                                      do n = 1, noa
+                                          do f = 1, nua
+                                              if (pspace_abb(f, b, a, n, m, i) == 1) then
+                                                I2C_vvov(a, b, i, e) = I2C_vvov(a, b, i, e) - H2B_oovv(n, m, f, e) * t3c(f, b, a, n, m, i)
+                                              end if
+                                          end do
+                                      end do
+                                      I2C_vvov(b, a, i, e) = -1.0 * I2C_vvov(a, b, i, e)
+                                  end do
+
+                              end do
+                          end do
+                      end do
+                  end do
 
                   ! loop over projection determinants in P space
                   do a = 1, nub; do b = a + 1, nub; do c = b + 1, nub;
@@ -1272,15 +1621,15 @@ module ccp_opt_loops_v2
                               end do
 
                               ! diagram 5: A(i/jk)A(c/ab) h2C(abie) * t2c(ecjk)
-                              res5 = res5 + H2C_vvov(a, b, i, e) * t2c(e, c, j, k)
-                              res5 = res5 - H2C_vvov(c, b, i, e) * t2c(e, a, j, k)
-                              res5 = res5 - H2C_vvov(a, c, i, e) * t2c(e, b, j, k)
-                              res5 = res5 - H2C_vvov(a, b, j, e) * t2c(e, c, i, k)
-                              res5 = res5 + H2C_vvov(c, b, j, e) * t2c(e, a, i, k)
-                              res5 = res5 + H2C_vvov(a, c, j, e) * t2c(e, b, i, k)
-                              res5 = res5 - H2C_vvov(a, b, k, e) * t2c(e, c, j, i)
-                              res5 = res5 + H2C_vvov(c, b, k, e) * t2c(e, a, j, i)
-                              res5 = res5 + H2C_vvov(a, c, k, e) * t2c(e, b, j, i)
+                              res5 = res5 + I2C_vvov(a, b, i, e) * t2c(e, c, j, k)
+                              res5 = res5 - I2C_vvov(c, b, i, e) * t2c(e, a, j, k)
+                              res5 = res5 - I2C_vvov(a, c, i, e) * t2c(e, b, j, k)
+                              res5 = res5 - I2C_vvov(a, b, j, e) * t2c(e, c, i, k)
+                              res5 = res5 + I2C_vvov(c, b, j, e) * t2c(e, a, i, k)
+                              res5 = res5 + I2C_vvov(a, c, j, e) * t2c(e, b, i, k)
+                              res5 = res5 - I2C_vvov(a, b, k, e) * t2c(e, c, j, i)
+                              res5 = res5 + I2C_vvov(c, b, k, e) * t2c(e, a, j, i)
+                              res5 = res5 + I2C_vvov(a, c, k, e) * t2c(e, b, j, i)
 
                           end do
 
@@ -1353,46 +1702,48 @@ module ccp_opt_loops_v2
 
                           end do
 
+                          do m = 1, nob
+
+                              ! diagram 6: -A(i/jk) h1b(mi) * t3d(abcmjk)
+                              if (pspace_bbb(a, b, c, m, j, k) == 1) then
+                                  res6 = res6 - H1B_oo(m, i) * t3d(a, b, c, m, j, k)
+                              end if
+                              if (pspace_bbb(a, b, c, m, i, k) == 1) then
+                                  res6 = res6 + H1B_oo(m, j) * t3d(a, b, c, m, i, k)
+                              end if
+                              if (pspace_bbb(a, b, c, m, j, i) == 1) then
+                                  res6 = res6 + H1B_oo(m, k) * t3d(a, b, c, m, j, i)
+                              end if
+
+                              ! diagram 7: 1/2 A(k/ij) h2c(mnij) * t3d(abcmnk)
+                              do n = m + 1, nob
+                                  if (pspace_bbb(a, b, c, m, n, k) == 1) then
+                                      res7 = res7 + H2C_oooo(m, n, i, j) * t3d(a, b, c, m, n, k)
+                                  end if
+                                  if (pspace_bbb(a, b, c, m, n, i) == 1) then
+                                      res7 = res7 - H2C_oooo(m, n, k, j) * t3d(a, b, c, m, n, i)
+                                  end if
+                                  if (pspace_bbb(a, b, c, m, n, j) == 1) then
+                                      res7 = res7 - H2C_oooo(m, n, i, k) * t3d(a, b, c, m, n, j)
+                                  end if
+                              end do
+
+                              ! diagram 8: - A(k/ij)A(a/bc) h2c(amij) * t2c(bcmk)
+                              res8 = res8 - I2C_vooo(a, m, i, j) * t2c(b, c, m, k)
+                              res8 = res8 + I2C_vooo(a, m, i, k) * t2c(b, c, m, j)
+                              res8 = res8 + I2C_vooo(a, m, k, j) * t2c(b, c, m, i)
+                              res8 = res8 + I2C_vooo(b, m, i, j) * t2c(a, c, m, k)
+                              res8 = res8 - I2C_vooo(b, m, i, k) * t2c(a, c, m, j)
+                              res8 = res8 - I2C_vooo(b, m, k, j) * t2c(a, c, m, i)
+                              res8 = res8 + I2C_vooo(c, m, i, j) * t2c(b, a, m, k)
+                              res8 = res8 - I2C_vooo(c, m, i, k) * t2c(b, a, m, j)
+                              res8 = res8 - I2C_vooo(c, m, k, j) * t2c(b, a, m, i)
+
+                          end do
+
                           denom = fB_oo(I, I) + fB_oo(J, J) + fB_oo(K, K) - fB_vv(A, A) - fB_vv(B, B) - fB_vv(C, C)
 
-                          val = X3D(a,b,c,i,j,k)&
-                                  -X3D(b,a,c,i,j,k)&
-                                  -X3D(a,c,b,i,j,k)&
-                                  +X3D(b,c,a,i,j,k)&
-                                  -X3D(c,b,a,i,j,k)&
-                                  +X3D(c,a,b,i,j,k)&
-                                  -X3D(a,b,c,j,i,k)&
-                                  +X3D(b,a,c,j,i,k)&
-                                  +X3D(a,c,b,j,i,k)&
-                                  -X3D(b,c,a,j,i,k)&
-                                  +X3D(c,b,a,j,i,k)&
-                                  -X3D(c,a,b,j,i,k)&
-                                  -X3D(a,b,c,i,k,j)&
-                                  +X3D(b,a,c,i,k,j)&
-                                  +X3D(a,c,b,i,k,j)&
-                                  -X3D(b,c,a,i,k,j)&
-                                  +X3D(c,b,a,i,k,j)&
-                                  -X3D(c,a,b,i,k,j)&
-                                  -X3D(a,b,c,k,j,i)&
-                                  +X3D(b,a,c,k,j,i)&
-                                  +X3D(a,c,b,k,j,i)&
-                                  -X3D(b,c,a,k,j,i)&
-                                  +X3D(c,b,a,k,j,i)&
-                                  -X3D(c,a,b,k,j,i)&
-                                  +X3D(a,b,c,j,k,i)&
-                                  -X3D(b,a,c,j,k,i)&
-                                  -X3D(a,c,b,j,k,i)&
-                                  +X3D(b,c,a,j,k,i)&
-                                  -X3D(c,b,a,j,k,i)&
-                                  +X3D(c,a,b,j,k,i)&
-                                  +X3D(a,b,c,k,i,j)&
-                                  -X3D(b,a,c,k,i,j)&
-                                  -X3D(a,c,b,k,i,j)&
-                                  +X3D(b,c,a,k,i,j)&
-                                  -X3D(c,b,a,k,i,j)&
-                                  +X3D(c,a,b,k,i,j)
-
-                          val = val + res1 + res2 + res3 + res4 + res5
+                          val = val + res1 + res2 + res3 + res4 + res5 + res6 + res7 + res8
 
                           val = val/(denom - shift)
 
