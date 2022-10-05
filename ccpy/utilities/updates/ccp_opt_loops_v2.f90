@@ -13,6 +13,175 @@ module ccp_opt_loops_v2
 
       contains
 
+               subroutine update_t1a_opt(t1a, resid,&
+                                         X1A,&
+                                         t3a, t3b, t3c,&
+                                         pspace_aaa, pspace_aab, pspace_abb,&
+                                         H2A_oovv, H2B_oovv, H2C_oovv,&
+                                         fA_oo, fA_vv,&
+                                         shift,&
+                                         noa, nua, nob, nub)
+
+                      integer, intent(in) :: noa, nua, nob, nub
+                      integer, intent(in) :: pspace_aaa(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
+                                             pspace_aab(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                             pspace_abb(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+                      real(kind=8), intent(in) :: X1A(1:nua,1:noa),&
+                                                  t3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
+                                                  t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                                  t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                                  H2A_oovv(1:noa,1:noa,1:nua,1:nua),&
+                                                  H2B_oovv(1:noa,1:nob,1:nua,1:nub),&
+                                                  H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
+                                                  fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
+                                                  shift
+
+                      real(kind=8), intent(inout) :: t1a(1:nua,1:noa)
+                      !f2py intent(in,out) :: t1a(0:nua-1,0:noa-1)
+
+                      real(kind=8), intent(out) :: resid(1:nua,1:noa)
+
+                      integer :: i, a, m, n, e, f
+                      real(kind=8) :: denom, val, res1, res2, res3
+
+                      do i = 1, noa
+                          do a = 1, nua
+
+                              res1 = 0.0d0
+                              res2 = 0.0d0
+                              res3 = 0.0d0
+
+                              do e = 1, nua
+                                  do m = 1, noa
+                                      ! diagram 1: 1/4 h2a(mnef) * t3a(aefimn)
+                                      do f = e + 1, nua
+                                          do n = m + 1, noa
+                                              if (pspace_aaa(a, e, f, i, m, n) == 1) then
+                                                  res1 = res1 + H2A_oovv(m, n, e, f) * t3a(a, e, f, i, m, n)
+                                              end if
+                                          end do
+                                      end do
+                                      ! diagram 2: h2b(mnef) * t3b(aefimn)
+                                      do f = 1, nub
+                                          do n = 1, nob
+                                              if (pspace_aab(a, e, f, i, m, n) == 1) then
+                                                  res2 = res2 + H2B_oovv(m, n, e, f) * t3b(a, e, f, i, m, n)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+                              end do
+
+                              ! diagram 3: 1/4 h2c(mnef) * t3c(aefimn)
+                              do e = 1, nub
+                                  do f = e + 1, nub
+                                      do m = 1, nob
+                                          do n = m + 1, nob
+                                              if (pspace_abb(a, e, f, i, m, n) == 1) then
+                                                  res3 = res3 + H2C_oovv(m, n, e, f) * t3c(a, e, f, i, m, n)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+                              end do
+
+                              denom = fA_oo(i, i) - fA_vv(a, a)
+                              val = X1A(a, i) + res1 + res2 + res3
+
+                              t1a(a, i) = t1a(a, i) + val/(denom - shift)
+
+                              resid(a, i) = val
+
+                          end do
+                      end do
+
+              end subroutine update_t1a_opt
+
+              subroutine update_t1b_opt(t1b, resid,&
+                                         X1B,&
+                                         t3b, t3c, t3d,&
+                                         pspace_aab, pspace_abb, pspace_bbb,&
+                                         H2A_oovv, H2B_oovv, H2C_oovv,&
+                                         fB_oo, fB_vv,&
+                                         shift,&
+                                         noa, nua, nob, nub)
+
+                      integer, intent(in) :: noa, nua, nob, nub
+                      integer, intent(in) :: pspace_aab(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                             pspace_abb(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                             pspace_bbb(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+                      real(kind=8), intent(in) :: X1B(1:nub,1:nob),&
+                                                  t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                                  t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                                  t3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob),&
+                                                  H2A_oovv(1:noa,1:noa,1:nua,1:nua),&
+                                                  H2B_oovv(1:noa,1:nob,1:nua,1:nub),&
+                                                  H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
+                                                  fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
+                                                  shift
+
+                      real(kind=8), intent(inout) :: t1b(1:nub,1:nob)
+                      !f2py intent(in,out) :: t1b(0:nub-1,0:nob-1)
+
+                      real(kind=8), intent(out) :: resid(1:nub,1:nob)
+
+                      integer :: i, a, m, n, e, f
+                      real(kind=8) :: denom, val, res1, res2, res3
+
+                      do i = 1, nob
+                          do a = 1, nub
+
+                              res1 = 0.0d0
+                              res2 = 0.0d0
+                              res3 = 0.0d0
+
+                              do e = 1, nub
+                                  do m = 1, nob
+                                      ! diagram 1: 1/4 h2c(mnef) * t3d(aefimn)
+                                      do f = e + 1, nub
+                                          do n = m + 1, nob
+                                              if (pspace_bbb(a, e, f, i, m, n) == 1) then
+                                                  res1 = res1 + H2C_oovv(m, n, e, f) * t3d(a, e, f, i, m, n)
+                                              end if
+                                          end do
+                                      end do
+                                      ! diagram 2: h2b(nmfe) * t3c(feanmi)
+                                      do f = 1, nua
+                                          do n = 1, noa
+                                              if (pspace_abb(f, e, a, n, m, i) == 1) then
+                                                  res2 = res2 + H2B_oovv(n, m, f, e) * t3c(f, e, a, n, m, i)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+                              end do
+
+                              ! diagram 3: 1/4 h2a(mnef) * t3b(feanmi)
+                              do e = 1, nua
+                                  do f = e + 1, nua
+                                      do m = 1, noa
+                                          do n = m + 1, noa
+                                              if (pspace_aab(f, e, a, n, m, i) == 1) then
+                                                  res3 = res3 + H2A_oovv(m, n, e, f) * t3b(f, e, a, n, m, i)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+                              end do
+
+                              denom = fB_oo(i, i) - fB_vv(a, a)
+                              val = X1B(a, i) + res1 + res2 + res3
+
+                              t1b(a, i) = t1b(a, i) + val/(denom - shift)
+
+                              resid(a, i) = val
+
+                          end do
+                      end do
+
+              end subroutine update_t1b_opt
+
+
               subroutine update_t2a_opt(t2a, resid,&
                                         X2A,&
                                         t3a, t3b,&
@@ -22,9 +191,9 @@ module ccp_opt_loops_v2
                                         H2B_ooov, H2B_vovv,&
                                         fA_oo, fA_vv,&
                                         shift,&
-                                        noa, nua)
+                                        noa, nua, nob, nub)
 
-                  integer, intent(in) :: noa, nua
+                  integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: pspace_aaa(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
                                          pspace_aab(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
                   real(kind=8), intent(in) :: X2A(1:nua,1:nua,1:noa,1:noa),&
@@ -35,7 +204,7 @@ module ccp_opt_loops_v2
                                               H2A_vovv(1:nua,1:noa,1:nua,1:nua),&
                                               H2B_ooov(1:noa,1:nob,1:noa,1:nub),&
                                               H2B_vovv(1:nua,1:nob,1:nua,1:nub),&
-                                              fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+                                              fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
                                               shift
 
                   real(kind=8), intent(inout) :: t2a(1:nua,1:nua,1:noa,1:noa)
@@ -47,64 +216,413 @@ module ccp_opt_loops_v2
                   real(kind=8) :: denom, val, res1, res2, res3, res4, res5, res6
 
                   do i = 1, noa
-                    do j = i + 1, noa
-                      do a = 1, nua
-                        do b = a + 1, nua
+                      do j = i + 1, noa
+                          do a = 1, nua
+                              do b = a + 1, nua
 
-                            res1 = 0.0d0
-                            res2 = 0.0d0
-                            res3 = 0.0d0
-                            res4 = 0.0d0
-                            res5 = 0.0d0
-                            res6 = 0.0d0
+                                  res1 = 0.0d0
+                                  res2 = 0.0d0
+                                  res3 = 0.0d0
+                                  res4 = 0.0d0
+                                  res5 = 0.0d0
+                                  res6 = 0.0d0
 
-!    dT.aa -= 0.5 * np.einsum("mnie,abemjn->abij", H0.ab.ooov + H.ab.ooov, T.aab, optimize=True)
-!    dT.aa -= 0.25 * np.einsum("mnie,abemjn->abij", H0.aa.ooov + H.aa.ooov, T.aaa, optimize=True)
+                                  do e = 1, nua
+                                      ! diagram 1: h1a(me) * t3a(abeijm)
+                                      do m = 1, noa
+                                          if (pspace_aaa(a, b, e, i, j, m) == 1) then
+                                              res1 = res1 + H1A_ov(m, e) * t3a(a, b, e, i, j, m)
+                                          end if
+                                          ! diagram 3: -1/2 A(ij) h2a(mnie) * t3a(abemjn)
+                                          do n = m + 1, noa
+                                              if (pspace_aaa(a, b, e, m, j, n) == 1) then
+                                                  res3 = res3 - H2A_ooov(m, n, i, e) * t3a(a, b, e, m, j, n)
+                                              end if
+                                              if (pspace_aaa(a, b, e, m, i, n) == 1) then
+                                                  res3 = res3 + H2A_ooov(m, n, j, e) * t3a(a, b, e, m, i, n)
+                                              end if
+                                          end do
+                                          ! diagram 4: -A(ij) h2b(mnie) * t3b(abemjn)
+                                          do n = 1, nob
+                                              if (pspace_aab(a, b, e, m, j, n) == 1) then
+                                                  res4 = res4 - H2B_ooov(m, n, i, e) * t3b(a, b, e, m, j, n)
+                                              end if
+                                              if (pspace_aab(a, b, e, m, i, n) == 1) then
+                                                  res4 = res4 + H2B_ooov(m, n, j, e) * t3b(a, b, e, m, i, n)
+                                              end if
+                                          end do
+                                      end do
 
-!    dT.aa += 0.25 * np.einsum("anef,ebfijn->abij", H0.aa.vovv + H.aa.vovv, T.aaa, optimize=True)
-!    dT.aa += 0.5 * np.einsum("anef,ebfijn->abij", H0.ab.vovv + H.ab.vovv, T.aab, optimize=True)
+                                      ! diagram 2: h1b(me) * t3b(abeijm)
+                                      do m = 1, nob
+                                          if (pspace_aab(a, b, e, i, j, m) == 1) then
+                                              res2 = res2 + H1B_ov(m, e) * t3b(a, b, e, i, j, m)
+                                          end if
+                                      end do
 
-                          ! diagram 1: h1a(me) * t3a(abeijm)
-                          ! diagram 2: h1a(me) * t3a(abeijm)
-                          do e = 1, nua
-                              do m = 1, noa
-                                  if (pspace_aaa(a, b, e, i, j, m) == 1) then
-                                      res1 = res1 + H1A_ov(m, e) * t3a(a, b, e, i, j, m)
-                                  end if
-                              end do
-                              do m = 1, nob
-                                  if (pspace_aab(a, b, e, i, j, m) == 1) then
-                                      res2 = res2 + H1B_ov(m, e) * t3b(a, b, e, i, j, m)
-                                  end if
+                                      ! diagram 5: 1/2 A(ab) h2a(anef) * t3a(ebfijn)
+                                      do f = e + 1, nua
+                                          do n = 1, noa
+                                              if (pspace_aaa(e, b, f, i, j, n) == 1) then
+                                                  res5 = res5 + H2A_vovv(a, n, e, f) * t3a(e, b, f, i, j, n)
+                                              end if
+                                              if (pspace_aaa(e, a, f, i, j, n) == 1) then
+                                                  res5 = res5 - H2A_vovv(b, n, e, f) * t3a(e, a, f, i, j, n)
+                                              end if
+                                          end do
+                                      end do
+
+                                      ! diagram 6: A(ab) h2b(anef) * t3b(ebfijn)
+                                      do f = 1, nub
+                                          do n = 1, nob
+                                              if (pspace_aab(e, b, f, i, j, n) == 1) then
+                                                  res6 = res6 + H2B_vovv(a, n, e, f) * t3b(e, b, f, i, j, n)
+                                              end if
+                                              if (pspace_aab(e, a, f, i, j, n) == 1) then
+                                                  res6 = res6 - H2B_vovv(b, n, e, f) * t3b(e, a, f, i, j, n)
+                                              end if
+                                          end do
+                                      end do
+
+                                  end do
+
+                                  do e = 1, nub - nua
+                                      ! diagram 2: h1b(me) * t3b(abeijm)
+                                      do m = 1, nob
+                                          if (pspace_aab(a, b, e + nua, i, j, m) == 1) then
+                                              res2 = res2 + H1B_ov(m, e + nua) * t3b(a, b, e + nua, i, j, m)
+                                          end if
+                                      end do
+                                      ! diagram 4: -A(ij) h2b(mnie) * t3b(abemjn)
+                                      do m = 1, noa
+                                          do n = 1, nob
+                                              if (pspace_aab(a, b, e + nua, m, j, n) == 1) then
+                                                  res4 = res4 - H2B_ooov(m, n, i, e + nua) * t3b(a, b, e + nua, m, j, n)
+                                              end if
+                                              if (pspace_aab(a, b, e + nua, m, i, n) == 1) then
+                                                  res4 = res4 + H2B_ooov(m, n, j, e + nua) * t3b(a, b, e + nua, m, i, n)
+                                              end if
+                                          end do
+                                      end do
+
+                                  end do
+
+                                  denom = fA_oo(i, i) + fA_oo(j, j) - fA_vv(a, a) - fA_vv(b, b)
+                                  val = X2A(b, a, j, i) - X2A(a, b, j, i) - X2A(b, a, i, j) + X2A(a, b, i, j)
+                                  val = val + res1 + res2 + res3 + res4 + res5 + res6
+
+                                  t2a(b, a, j, i) =  t2a(b, a, j, i) + val/(denom - shift)
+                                  t2a(a, b, j, i) = -t2a(b, a, j, i)
+                                  t2a(b, a, i, j) = -t2a(b, a, j, i)
+                                  t2a(a, b, i, j) =  t2a(b, a, j, i)
+
+                                  resid(b, a, j, i) =  val
+                                  resid(a, b, j, i) = -val
+                                  resid(b, a, i, j) = -val
+                                  resid(a, b, i, j) =  val
+
                               end do
                           end do
-                          do e = 1, nub - nua
-                              do m = 1, nob
-                                  if (pspace_aab(a, b, e + nua, i, j, m) == 1) then
-                                      res2 = res2 + H1B_ov(m, e + nua) * t3b(a, b, e + nua, i, j, m)
-                                  end if
-                              end do
-                          end do
-
-
-
-                          denom = fA_oo(i,i) + fA_oo(j,j) - fA_vv(a,a) - fA_vv(b,b)
-                          val = (X2A(b,a,j,i) - X2A(a,b,j,i) - X2A(b,a,i,j) + X2A(a,b,i,j))/(denom-shift)
-                          t2a(b,a,j,i) = t2a(b,a,j,i) + val
-                          t2a(a,b,j,i) = -t2a(b,a,j,i)
-                          t2a(b,a,i,j) = -t2a(b,a,j,i)
-                          t2a(a,b,i,j) = t2a(b,a,j,i)
-
-                          resid(b,a,j,i) = val
-                          resid(a,b,j,i) = -val
-                          resid(b,a,i,j) = -val
-                          resid(a,b,i,j) = val
-                        end do
                       end do
-                    end do
                   end do
 
               end subroutine update_t2a_opt
+
+              subroutine update_t2b_opt(t2b, resid,&
+                                        X2B,&
+                                        t3b, t3c,&
+                                        pspace_aab, pspace_abb,&
+                                        H1A_ov, H1B_ov,&
+                                        H2A_ooov, H2A_vovv,&
+                                        H2B_ooov, H2B_oovo, H2B_vovv, H2B_ovvv,&
+                                        H2C_ooov, H2C_vovv,&
+                                        fA_oo, fA_vv, fB_oo, fB_vv,&
+                                        shift,&
+                                        noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: pspace_aab(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                         pspace_abb(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+                  real(kind=8), intent(in) :: X2B(1:nua,1:nub,1:noa,1:nob),&
+                                              t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                              t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                              H1A_ov(1:noa,1:nua), H1B_ov(1:nob,1:nub),&
+                                              H2A_ooov(1:noa,1:noa,1:noa,1:nua),&
+                                              H2A_vovv(1:nua,1:noa,1:nua,1:nua),&
+                                              H2B_ooov(1:noa,1:nob,1:noa,1:nub),&
+                                              H2B_oovo(1:noa,1:nob,1:nua,1:nob),&
+                                              H2B_vovv(1:nua,1:nob,1:nua,1:nub),&
+                                              H2B_ovvv(1:noa,1:nub,1:nua,1:nub),&
+                                              H2C_ooov(1:nob,1:nob,1:nob,1:nub),&
+                                              H2C_vovv(1:nub,1:nob,1:nub,1:nub),&
+                                              fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
+                                              fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
+                                              shift
+
+                  real(kind=8), intent(inout) :: t2b(1:nua,1:nub,1:noa,1:nob)
+                  !f2py intent(in,out) :: t2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+
+                  real(kind=8), intent(out) :: resid(1:nua,1:nub,1:noa,1:nob)
+
+                  integer :: i, j, a, b, m, n, e, f
+                  real(kind=8) :: denom, val, res1, res2, res3, res4, res5, res6, res7, res8, res9, res10
+
+                  do i = 1, noa
+                      do j = 1, nob
+                          do a = 1, nua
+                              do b = 1, nub
+
+                                  res1 = 0.0d0
+                                  res2 = 0.0d0
+                                  res3 = 0.0d0
+                                  res4 = 0.0d0
+                                  res5 = 0.0d0
+                                  res6 = 0.0d0
+                                  res7 = 0.0d0
+                                  res8 = 0.0d0
+                                  res9 = 0.0d0
+                                  res10 = 0.0d0
+
+                                  do e = 1, nua
+                                      ! diagram 1: h1a(me) * t3b(aebimj)
+                                      do m = 1, noa
+                                          if (pspace_aab(a, e, b, i, m, j) == 1) then
+                                              res1 = res1 + H1A_ov(m, e) * t3b(a, e, b, i, m, j)
+                                          end if
+                                          ! diagram 3: -1/2 h2a(mnie) * t3b(aebmnj)
+                                          do n = m + 1, noa
+                                              if (pspace_aab(a, e, b, m, n, j) == 1) then
+                                                  res3 = res3 - H2A_ooov(m, n, i, e) * t3b(a, e, b, m, n, j)
+                                              end if
+                                          end do
+                                          ! diagram 4: -h2b(mnie) * t3c(abemjn)
+                                          ! diagram 9: -h2b(mnej) * t3b(aebimn)
+                                          do n = 1, nob
+                                              if (pspace_abb(a, b, e, m, j, n) == 1) then
+                                                  res4 = res4 - H2B_ooov(m, n, i, e) * t3c(a, b, e, m, j, n)
+                                              end if
+                                              if (pspace_aab(a, e, b, i, m, n) == 1) then
+                                                  res9 = res9 - H2B_oovo(m, n, e, j) * t3b(a, e, b, i, m, n)
+                                              end if
+                                          end do
+
+
+                                      end do
+
+                                      ! diagram 2: h1b(me) * t3c(abeijm)
+                                      do m = 1, nob
+                                          if (pspace_abb(a, b, e, i, j, m) == 1) then
+                                              res2 = res2 + H1B_ov(m, e) * t3c(a, b, e, i, j, m)
+                                          end if
+                                          ! diagram 7: -1/2 h2c(mnje) * t3c(aebinm)
+                                          do n = m + 1, nob
+                                              if (pspace_abb(a, e, b, i, n, m) == 1) then
+                                                  res7 = res7 - H2C_ooov(m, n, j, e) * t3c(a, e, b, i, n, m)
+                                              end if
+                                          end do
+                                      end do
+
+                                      ! diagram 5: 1/2 h2a(anef) * t3b(efbinj)
+                                      do f = e + 1, nua
+                                          do n = 1, noa
+                                              if (pspace_aab(e, f, b, i, n, j) == 1) then
+                                                  res5 = res5 + H2A_vovv(a, n, e, f) * t3b(e, f, b, i, n, j)
+                                              end if
+                                          end do
+                                      end do
+
+                                      ! diagram 6: h2b(anef) * t3c(ebfijn)
+                                      ! diagram 10: h2b(nbef) * t3b(aefinj)
+                                      do f = 1, nub
+                                          do n = 1, nob
+                                              if (pspace_abb(e, b, f, i, j, n) == 1) then
+                                                  res6 = res6 + H2B_vovv(a, n, e, f) * t3c(e, b, f, i, j, n)
+                                              end if
+                                          end do
+                                          do n = 1, noa
+                                              if (pspace_aab(a, e, f, i, n, j) == 1) then
+                                                  res10 = res10 + H2B_ovvv(n, b, e, f) * t3b(a, e, f, i, n, j)
+                                              end if
+                                          end do
+                                      end do
+
+                                  end do
+
+                                  do e = 1, nub - nua
+                                      ! diagram 2: h1b(me) * t3c(abeijm)
+                                      do m = 1, nob
+                                          if (pspace_abb(a, b, e + nua, i, j, m) == 1) then
+                                              res2 = res2 + H1B_ov(m, e + nua) * t3c(a, b, e + nua, i, j, m)
+                                          end if
+                                          ! diagram 7: -1/2 h2c(mnje) * t3c(aebinm)
+                                          do n = m + 1, nob
+                                              if (pspace_abb(a, e + nua, b, i, n, m) == 1) then
+                                                  res7 = res7 - H2C_ooov(m, n, j, e + nua) * t3c(a, e + nua, b, i, n, m)
+                                              end if
+                                          end do
+                                      end do
+                                      ! diagram 4: -h2b(mnie) * t3c(abemjn)
+                                      do m = 1, noa
+                                          do n = 1, nob
+                                              if (pspace_abb(a, b, e + nua, m, j, n) == 1) then
+                                                  res4 = res4 - H2B_ooov(m, n, i, e + nua) * t3c(a, b, e + nua, m, j, n)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+
+                                  ! diagram 8: 1/2 h2c(bnef) * t3c(afeinj)
+                                  do e = 1, nub
+                                      do f = e + 1, nub
+                                          do n = 1, nob
+                                              if (pspace_abb(a, f, e, i, n, j) == 1) then
+                                                  res8 = res8 + H2C_vovv(b, n, e, f) * t3c(a, f, e, i, n, j)
+                                              end if
+                                          end do
+                                      end do
+                                  end do
+
+                                  denom = fA_oo(i, i) + fB_oo(j, j) - fA_vv(a, a) - fB_vv(b, b)
+                                  val = X2B(a, b, i, j) + res1 + res2 + res3 + res4 + res5 + res6 + res7 + res8 + res9 + res10
+
+                                  t2b(a, b, i, j) =  t2b(a, b, i, j) + val/(denom - shift)
+
+                                  resid(a, b, i, j) =  val
+
+                              end do
+                          end do
+                      end do
+                  end do
+
+              end subroutine update_t2b_opt
+
+              subroutine update_t2c_opt(t2c, resid,&
+                                        X2C,&
+                                        t3c, t3d,&
+                                        pspace_abb, pspace_bbb,&
+                                        H1A_ov, H1B_ov,&
+                                        H2B_oovo, H2B_ovvv,&
+                                        H2C_ooov, H2C_vovv,&
+                                        fB_oo, fB_vv,&
+                                        shift,&
+                                        noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: pspace_abb(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                         pspace_bbb(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+                  real(kind=8), intent(in) :: X2C(1:nub,1:nub,1:nob,1:nob),&
+                                              t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                              t3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob),&
+                                              H1A_ov(1:noa,1:nua), H1B_ov(1:nob,1:nub),&
+                                              H2B_oovo(1:noa,1:nob,1:nua,1:nob),&
+                                              H2B_ovvv(1:noa,1:nub,1:nua,1:nub),&
+                                              H2C_ooov(1:nob,1:nob,1:nob,1:nub),&
+                                              H2C_vovv(1:nub,1:nob,1:nub,1:nub),&
+                                              fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
+                                              shift
+
+                  real(kind=8), intent(inout) :: t2c(1:nub,1:nub,1:nob,1:nob)
+                  !f2py intent(in,out) :: t2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+
+                  real(kind=8), intent(out) :: resid(1:nub,1:nub,1:nob,1:nob)
+
+                  integer :: i, j, a, b, m, n, e, f
+                  real(kind=8) :: denom, val, res1, res2, res3, res4, res5, res6
+
+                  do i = 1, nob
+                      do j = i + 1, nob
+                          do a = 1, nub
+                              do b = a + 1, nub
+
+                                  res1 = 0.0d0
+                                  res2 = 0.0d0
+                                  res3 = 0.0d0
+                                  res4 = 0.0d0
+                                  res5 = 0.0d0
+                                  res6 = 0.0d0
+
+                                  do e = 1, nub
+                                      ! diagram 1: h1b(me) * t3d(abeijm)
+                                      do m = 1, nob
+                                          if (pspace_bbb(a, b, e, i, j, m) == 1) then
+                                              res1 = res1 + H1B_ov(m, e) * t3d(a, b, e, i, j, m)
+                                          end if
+                                          ! diagram 3: -1/2 A(ij) h2c(mnie) * t3d(abemjn)
+                                          do n = m + 1, nob
+                                              if (pspace_bbb(a, b, e, m, j, n) == 1) then
+                                                  res3 = res3 - H2C_ooov(m, n, i, e) * t3d(a, b, e, m, j, n)
+                                              end if
+                                              if (pspace_bbb(a, b, e, m, i, n) == 1) then
+                                                  res3 = res3 + H2C_ooov(m, n, j, e) * t3d(a, b, e, m, i, n)
+                                              end if
+                                          end do
+                                      end do
+
+                                      ! diagram 5: 1/2 A(ab) h2c(anef) * t3d(ebfijn)
+                                      do f = e + 1, nub
+                                          do n = 1, nob
+                                              if (pspace_bbb(e, b, f, i, j, n) == 1) then
+                                                  res5 = res5 + H2C_vovv(a, n, e, f) * t3d(e, b, f, i, j, n)
+                                              end if
+                                              if (pspace_bbb(e, a, f, i, j, n) == 1) then
+                                                  res5 = res5 - H2C_vovv(b, n, e, f) * t3d(e, a, f, i, j, n)
+                                              end if
+                                          end do
+                                      end do
+
+                                      ! diagram 6: A(ab) h2b(nafe) * t3c(fbenji)
+                                      do f = 1, nua
+                                          do n = 1, noa
+                                              if (pspace_abb(f, b, e, n, j, i) == 1) then
+                                                  res6 = res6 + H2B_ovvv(n, a, f, e) * t3c(f, b, e, n, j, i)
+                                              end if
+                                              if (pspace_abb(f, a, e, n, j, i) == 1) then
+                                                  res6 = res6 - H2B_ovvv(n, b, f, e) * t3c(f, a, e, n, j, i)
+                                              end if
+                                          end do
+                                      end do
+
+                                  end do
+
+                                  do e = 1, nua
+                                      do n = 1, noa
+                                          ! diagram 4: -A(ij) h2b(nmei) * t3c(ebanjm)
+                                          do m = 1, nob
+                                              if (pspace_abb(e, b, a, n, j, m) == 1) then
+                                                  res4 = res4 - H2B_oovo(n, m, e, i) * t3c(e, b, a, n, j, m)
+                                              end if
+                                              if (pspace_abb(e, b, a, n, i, m) == 1) then
+                                                  res4 = res4 + H2B_oovo(n, m, e, j) * t3c(e, b, a, n, i, m)
+                                              end if
+                                          end do
+                                          ! diagram 2: h1a(ne) * t3c(ebanji)
+                                          if (pspace_abb(e, b, a, n, j, i) == 1) then
+                                              res2 = res2 + H1A_ov(n, e) * t3c(e, b, a, n, j, i)
+                                          end if
+                                      end do
+
+                                  end do
+
+                                  denom = fB_oo(i, i) + fB_oo(j, j) - fB_vv(a, a) - fB_vv(b, b)
+                                  val = X2C(b, a, j, i) - X2C(a, b, j, i) - X2C(b, a, i, j) + X2C(a, b, i, j)
+                                  val = val + res1 + res2 + res3 + res4 + res5 + res6
+
+                                  t2c(b, a, j, i) =  t2c(b, a, j, i) + val/(denom - shift)
+                                  t2c(a, b, j, i) = -t2c(b, a, j, i)
+                                  t2c(b, a, i, j) = -t2c(b, a, j, i)
+                                  t2c(a, b, i, j) =  t2c(b, a, j, i)
+
+                                  resid(b, a, j, i) =  val
+                                  resid(a, b, j, i) = -val
+                                  resid(b, a, i, j) = -val
+                                  resid(a, b, i, j) =  val
+
+                              end do
+                          end do
+                      end do
+                  end do
+
+              end subroutine update_t2c_opt
 
               subroutine update_t3a_p_opt2(t3a_new, resid,&
                                            t2a, t3a, t3b,&
@@ -492,40 +1010,40 @@ module ccp_opt_loops_v2
                   integer, intent(in) :: pspace_aaa(nua, nua, nua, noa, noa, noa),&
                                          pspace_aab(nua, nua, nub, noa, noa, nob),&
                                          pspace_abb(nua, nub, nub, noa, nob, nob)
-                  real(8), intent(in) :: t2a(1:nua,1:nua,1:noa,1:noa),&
-                                         t2b(1:nua,1:nub,1:noa,1:nob),&
-                                         t3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
-                                         t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
-                                         t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
-                                         H1A_oo(1:noa,1:noa),&
-                                         H1A_vv(1:nua,1:nua),&
-                                         H1B_oo(1:nob,1:nob),&
-                                         H1B_vv(1:nub,1:nub),&
-                                         H2A_oovv(1:noa,1:noa,1:nua,1:nua),&
-                                         H2A_vvov(1:nua,1:nua,1:noa,1:nua),&
-                                         H2A_vooo(1:nua,1:noa,1:noa,1:noa),&
-                                         H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
-                                         H2A_voov(1:nua,1:noa,1:noa,1:nua),&
-                                         H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
-                                         H2B_oovv(1:noa,1:nob,1:nua,1:nub),&
-                                         H2B_vooo(1:nua,1:nob,1:noa,1:nob),&
-                                         H2B_ovoo(1:noa,1:nub,1:noa,1:nob),&
-                                         H2B_vvov(1:nua,1:nub,1:noa,1:nub),&
-                                         H2B_vvvo(1:nua,1:nub,1:nua,1:nob),&
-                                         H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
-                                         H2B_voov(1:nua,1:nob,1:noa,1:nub),&
-                                         H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
-                                         H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
-                                         H2B_ovvo(1:noa,1:nub,1:nua,1:nob),&
-                                         H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
-                                         H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
-                                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
-                                         fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
-                                         fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
-                                         shift
+                  real(kind=8), intent(in) :: t2a(1:nua,1:nua,1:noa,1:noa),&
+                                              t2b(1:nua,1:nub,1:noa,1:nob),&
+                                              t3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
+                                              t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                              t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                              H1A_oo(1:noa,1:noa),&
+                                              H1A_vv(1:nua,1:nua),&
+                                              H1B_oo(1:nob,1:nob),&
+                                              H1B_vv(1:nub,1:nub),&
+                                              H2A_oovv(1:noa,1:noa,1:nua,1:nua),&
+                                              H2A_vvov(1:nua,1:nua,1:noa,1:nua),&
+                                              H2A_vooo(1:nua,1:noa,1:noa,1:noa),&
+                                              H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
+                                              H2A_voov(1:nua,1:noa,1:noa,1:nua),&
+                                              H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                                              H2B_oovv(1:noa,1:nob,1:nua,1:nub),&
+                                              H2B_vooo(1:nua,1:nob,1:noa,1:nob),&
+                                              H2B_ovoo(1:noa,1:nub,1:noa,1:nob),&
+                                              H2B_vvov(1:nua,1:nub,1:noa,1:nub),&
+                                              H2B_vvvo(1:nua,1:nub,1:nua,1:nob),&
+                                              H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
+                                              H2B_voov(1:nua,1:nob,1:noa,1:nub),&
+                                              H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
+                                              H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
+                                              H2B_ovvo(1:noa,1:nub,1:nua,1:nob),&
+                                              H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                                              H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
+                                              H2C_voov(1:nub,1:nob,1:nob,1:nub),&
+                                              fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
+                                              fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
+                                              shift
 
-                  real(8), intent(out) :: t3b_new(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
-                                          resid(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+                  real(kind=8), intent(out) :: t3b_new(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                               resid(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
                   integer :: i, j, k, a, b, c, m, n, e, f
 
                   real(kind=8) :: I2A_vooo(nua, noa, noa, noa),&
@@ -535,9 +1053,9 @@ module ccp_opt_loops_v2
                                   I2B_vvov(nua, nub, noa, nub),&
                                   I2B_vvvo(nua, nub, nua, nob)
 
-                  real(8) :: denom, val,&
-                             res1, res2, res3, res4, res5, res6, res7, res8, res9, res10, res11, res12, res13,&
-                             res14, res15, res16, res17, res18, res19, res20
+                  real(kind=8) :: denom, val,&
+                                  res1, res2, res3, res4, res5, res6, res7, res8, res9, res10, res11, res12, res13,&
+                                  res14, res15, res16, res17, res18, res19, res20
 
                   resid = 0.0d0
                   t3b_new = 0.0d0
@@ -571,7 +1089,7 @@ module ccp_opt_loops_v2
                                               end if
                                           end do
                                       end do
-                                      I2A_vooo(a, m, j, i) = -1.0 * I2A_vooo(a, m, i, j)
+                                      I2A_vooo(a, m, j, i) = -1.0d0 * I2A_vooo(a, m, i, j)
                                   end do
                                   ! I2A(abie) = -1/2 h2a(mnef) * t3a(abfimn) - h2b(mnef) * t3b(abfimn)
                                   do b = a + 1, nua
@@ -589,7 +1107,7 @@ module ccp_opt_loops_v2
                                               end if
                                           end do
                                       end do
-                                      I2A_vvov(b, a, i, e) = -1.0 * I2A_vvov(a, b, i, e)
+                                      I2A_vvov(b, a, i, e) = -1.0d0 * I2A_vvov(a, b, i, e)
                                   end do
 
                               end do
@@ -962,40 +1480,40 @@ module ccp_opt_loops_v2
                   integer, intent(in) :: pspace_aab(nua, nua, nub, noa, noa, nob),&
                                          pspace_abb(nua, nub, nub, noa, nob, nob),&
                                          pspace_bbb(nub, nub, nub, nob, nob, nob)
-                  real(8), intent(in) :: t2b(1:nua,1:nub,1:noa,1:nob),&
-                                         t2c(1:nub,1:nub,1:nob,1:nob),&
-                                         t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
-                                         t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
-                                         t3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob),&
-                                         H1A_oo(1:noa,1:noa),&
-                                         H1A_vv(1:nua,1:nua),&
-                                         H1B_oo(1:nob,1:nob),&
-                                         H1B_vv(1:nub,1:nub),&
-                                         H2A_oovv(1:noa,1:noa,1:nua,1:nua),&
-                                         H2A_voov(1:nua,1:noa,1:noa,1:nua),&
-                                         H2B_oovv(1:noa,1:nob,1:nua,1:nub),&
-                                         H2B_vooo(1:nua,1:nob,1:noa,1:nob),&
-                                         H2B_ovoo(1:noa,1:nub,1:noa,1:nob),&
-                                         H2B_vvov(1:nua,1:nub,1:noa,1:nub),&
-                                         H2B_vvvo(1:nua,1:nub,1:nua,1:nob),&
-                                         H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
-                                         H2B_voov(1:nua,1:nob,1:noa,1:nub),&
-                                         H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
-                                         H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
-                                         H2B_ovvo(1:noa,1:nub,1:nua,1:nob),&
-                                         H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
-                                         H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
-                                         H2C_vooo(1:nub,1:nob,1:nob,1:nob),&
-                                         H2C_vvov(1:nub,1:nub,1:nob,1:nub),&
-                                         H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
-                                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
-                                         H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
-                                         fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
-                                         fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
-                                         shift
+                  real(kind=8), intent(in) :: t2b(1:nua,1:nub,1:noa,1:nob),&
+                                              t2c(1:nub,1:nub,1:nob,1:nob),&
+                                              t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                              t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                              t3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob),&
+                                              H1A_oo(1:noa,1:noa),&
+                                              H1A_vv(1:nua,1:nua),&
+                                              H1B_oo(1:nob,1:nob),&
+                                              H1B_vv(1:nub,1:nub),&
+                                              H2A_oovv(1:noa,1:noa,1:nua,1:nua),&
+                                              H2A_voov(1:nua,1:noa,1:noa,1:nua),&
+                                              H2B_oovv(1:noa,1:nob,1:nua,1:nub),&
+                                              H2B_vooo(1:nua,1:nob,1:noa,1:nob),&
+                                              H2B_ovoo(1:noa,1:nub,1:noa,1:nob),&
+                                              H2B_vvov(1:nua,1:nub,1:noa,1:nub),&
+                                              H2B_vvvo(1:nua,1:nub,1:nua,1:nob),&
+                                              H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
+                                              H2B_voov(1:nua,1:nob,1:noa,1:nub),&
+                                              H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
+                                              H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
+                                              H2B_ovvo(1:noa,1:nub,1:nua,1:nob),&
+                                              H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                                              H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
+                                              H2C_vooo(1:nub,1:nob,1:nob,1:nob),&
+                                              H2C_vvov(1:nub,1:nub,1:nob,1:nub),&
+                                              H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
+                                              H2C_voov(1:nub,1:nob,1:nob,1:nub),&
+                                              H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                                              fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
+                                              fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
+                                              shift
 
-                  real(8), intent(out) :: t3c_new(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
-                                          resid(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+                  real(kind=8), intent(out) :: t3c_new(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                               resid(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
 
                   integer :: i, j, k, a, b, c, m, n, e, f
                   real(kind=8) :: I2C_vooo(nub, nob, nob, nob),&
@@ -1004,9 +1522,9 @@ module ccp_opt_loops_v2
                                   I2B_ovoo(noa, nub, noa, nob),&
                                   I2B_vvov(nua, nub, noa, nub),&
                                   I2B_vvvo(nua, nub, nua, nob)
-                  real(8) :: denom, val,&
-                             res1, res2, res3, res4, res5, res6, res7, res8, res9, res10, res11, res12, res13,&
-                             res14, res15, res16, res17, res18, res19, res20
+                  real(kind=8) :: denom, val,&
+                                  res1, res2, res3, res4, res5, res6, res7, res8, res9, res10, res11, res12, res13,&
+                                  res14, res15, res16, res17, res18, res19, res20
 
                   resid = 0.0d0
                   t3c_new = 0.0d0
@@ -1040,7 +1558,7 @@ module ccp_opt_loops_v2
                                               end if
                                           end do
                                       end do
-                                      I2C_vooo(a, m, j, i) = -1.0 * I2C_vooo(a, m, i, j)
+                                      I2C_vooo(a, m, j, i) = -1.0d0 * I2C_vooo(a, m, i, j)
                                   end do
                                   ! I2C(abie) = -1/2 h2c(mnef) * t3d(abfimn) - h2b(nmfe) * t3c(fbanmi)
                                   do b = a + 1, nub
@@ -1058,7 +1576,7 @@ module ccp_opt_loops_v2
                                               end if
                                           end do
                                       end do
-                                      I2C_vvov(b, a, i, e) = -1.0 * I2C_vvov(a, b, i, e)
+                                      I2C_vvov(b, a, i, e) = -1.0d0 * I2C_vvov(a, b, i, e)
                                   end do
 
                               end do
@@ -1495,7 +2013,7 @@ module ccp_opt_loops_v2
                                               end if
                                           end do
                                       end do
-                                      I2C_vooo(a, m, j, i) = -1.0 * I2C_vooo(a, m, i, j)
+                                      I2C_vooo(a, m, j, i) = -1.0d0 * I2C_vooo(a, m, i, j)
                                   end do
                                   ! I2C(abie) = -1/2 h2c(mnef) * t3d(abfimn) - h2b(nmfe) * t3c(fbanmi)
                                   do b = a + 1, nub
@@ -1513,7 +2031,7 @@ module ccp_opt_loops_v2
                                               end if
                                           end do
                                       end do
-                                      I2C_vvov(b, a, i, e) = -1.0 * I2C_vvov(a, b, i, e)
+                                      I2C_vvov(b, a, i, e) = -1.0d0 * I2C_vvov(a, b, i, e)
                                   end do
 
                               end do
