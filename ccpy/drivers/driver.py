@@ -8,15 +8,13 @@ import ccpy.eomcc
 
 from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eomcc_davidson_lowmem, mrcc_jacobi
 from ccpy.models.operators import ClusterOperator, FockOperator
-from ccpy.utilities.printing import ccpy_header, SystemPrinter, CCPrinter
+from ccpy.utilities.printing import CCPrinter
+from ccpy.utilities.pspace import count_excitations_in_pspace
 
-from ccpy.eomcc.initial_guess import get_initial_guess
-
-import numpy as np
 from copy import deepcopy
 
 
-def cc_driver(calculation, system, hamiltonian, T=None, pspace=None):
+def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, excitation_count=None):
     """Performs the calculation specified by the user in the input."""
 
     # check if requested CC calculation is implemented in modules
@@ -38,16 +36,23 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None):
     #[TODO]: This is not compatible if the initial T is a lower order than the
     # one used in the calculation. For example, we could not start a CCSDT
     # calculation using the CCSD cluster amplitudes.
+
+    p_orders = [3 + i for i in range(len(pspace))]
+    pspace_sizes = count_excitations_in_pspace(pspace, system, ordered_index=True)
     if T is None:
         T = ClusterOperator(system,
                             order=calculation.order,
                             active_orders=calculation.active_orders,
+                            p_orders=p_orders,
+                            pspace_sizes=pspace_sizes,
                             num_active=calculation.num_active)
 
     # regardless of restart status, initialize residual anew
     dT = ClusterOperator(system,
                         order=calculation.order,
                         active_orders=calculation.active_orders,
+                        p_orders=p_orders,
+                        pspace_sizes=pspace_sizes,
                         num_active=calculation.num_active)
 
 
@@ -68,7 +73,7 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None):
             hamiltonian,
             calculation,
             system,
-            pspace
+            pspace,
         )
 
     total_energy = system.reference_energy + corr_energy
@@ -127,7 +132,7 @@ def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None, p
 
     # regardless of restart status, initialize residual anew
     LH = deepcopy(L)
-    LH.unflatten(np.zeros(shape=LH.ndim))
+    LH.unflatten(0.0 * L.flatten())
 
     if pspace is None:
 

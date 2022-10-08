@@ -111,15 +111,15 @@ def get_spincase(excits_from, excits_to):
     return spincase
 
 
-def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
+def get_pspace_from_cipsi(pspace_file, system, nexcit=3, ordered_index=True):
+
     pspace = get_empty_pspace(system, nexcit)
 
     HF = sorted(
         [2 * i - 1 for i in range(1, system.noccupied_alpha + 1)]
         + [2 * i for i in range(1, system.noccupied_beta + 1)]
     )
-    #print(HF)
-    # HF = list(range(1, system.nelectrons + 1))
+
     occupied_lower_bound = 1
     occupied_upper_bound = system.noccupied_alpha
     unoccupied_lower_bound = 1
@@ -174,40 +174,63 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
 
             excitation_count[n][spincase] += 1
 
+            ct_aaa = 1
+            ct_aab = 1
+            ct_abb = 1
+            ct_bbb = 1
+
             if excit_rank == 3:
                 if spincase == 'aaa':
                     for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
                         for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
                             a, b, c = perms_unocc
                             i, j, k = perms_occ
-                            pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+                            if ordered_index:
+                                pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = ct_aaa
+                                ct_aaa += 1
+                            else:
+                                pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+
                 if spincase == 'aab':
                     for perms_unocc in permutations((idx_unocc[0], idx_unocc[1])):
                         for perms_occ in permutations((idx_occ[0], idx_occ[1])):
                             a, b = perms_unocc
                             i, j = perms_occ
-                            pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
+                            if ordered_index:
+                                pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = ct_aab
+                                ct_aab += 1
+                            else:
+                                pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
+
                 if spincase == 'abb':
                     for perms_unocc in permutations((idx_unocc[1], idx_unocc[2])):
                         for perms_occ in permutations((idx_occ[1], idx_occ[2])):
                             b, c = perms_unocc
                             j, k = perms_occ
-                            pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
+                            if ordered_index:
+                                pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = ct_abb
+                                ct_abb += 1
+                            else:
+                                pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
+
                 if spincase == 'bbb':
                     for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
                         for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
                             a, b, c = perms_unocc
                             i, j, k = perms_occ
-                            pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+                            if ordered_index:
+                                pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = ct_bbb
+                                ct_bbb += 1
+                            else:
+                                pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+
             if excit_rank == 4:
-                pspace[n][spincase][
-                    idx_unocc[0] - 1, idx_unocc[1] - 1, idx_unocc[2] - 1, idx_unocc[3] - 1, idx_occ[0] - 1, idx_occ[
-                        1] - 1, idx_occ[2] - 1, idx_occ[3] - 1] = 1
+                pspace[n][spincase][idx_unocc[0] - 1, idx_unocc[1] - 1, idx_unocc[2] - 1, idx_unocc[3] - 1, idx_occ[0] - 1, idx_occ[1] - 1, idx_occ[2] - 1, idx_occ[3] - 1] = 1
 
     return pspace, excitation_count
 
 
-def count_excitations_in_pspace(pspace, system):
+def count_excitations_in_pspace(pspace, system, ordered_index=True):
     excitation_count = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0},
                         {'aaaa': 0, 'aaab': 0, 'aabb': 0, 'abbb': 0, 'bbbb': 0}]
 
@@ -221,37 +244,60 @@ def count_excitations_in_pspace(pspace, system):
                         for i in range(system.noccupied_alpha):
                             for j in range(i + 1, system.noccupied_alpha):
                                 for k in range(j + 1, system.noccupied_alpha):
-                                    if p['aaa'][a, b, c, i, j, k] == 1:
-                                        excitation_count[n]['aaa'] += 1
+
+                                    if ordered_index:
+                                        if p['aaa'][a, b, c, i, j, k] != 0:
+                                            excitation_count[n]['aaa'] += 1
+                                    else:
+                                        if p['aaa'][a, b, c, i, j, k] == 1:
+                                            excitation_count[n]['aaa'] += 1
+
             for a in range(system.nunoccupied_alpha):
                 for b in range(a + 1, system.nunoccupied_alpha):
                     for c in range(system.nunoccupied_beta):
                         for i in range(system.noccupied_alpha):
                             for j in range(i + 1, system.noccupied_alpha):
                                 for k in range(system.noccupied_beta):
-                                    if p['aab'][a, b, c, i, j, k] == 1:
-                                        excitation_count[n]['aab'] += 1
+
+                                    if ordered_index:
+                                        if p['aab'][a, b, c, i, j, k] != 0:
+                                            excitation_count[n]['aab'] += 1
+                                    else:
+                                        if p['aab'][a, b, c, i, j, k] == 1:
+                                            excitation_count[n]['aab'] += 1
+
             for a in range(system.nunoccupied_alpha):
                 for b in range(system.nunoccupied_beta):
                     for c in range(b + 1, system.nunoccupied_beta):
                         for i in range(system.noccupied_alpha):
                             for j in range(system.noccupied_beta):
                                 for k in range(j + 1, system.noccupied_beta):
-                                    if p['abb'][a, b, c, i, j, k] == 1:
-                                        excitation_count[n]['abb'] += 1
+
+                                    if ordered_index:
+                                        if p['abb'][a, b, c, i, j, k] != 0:
+                                            excitation_count[n]['abb'] += 1
+                                    else:
+                                        if p['abb'][a, b, c, i, j, k] == 1:
+                                            excitation_count[n]['abb'] += 1
+
             for a in range(system.nunoccupied_beta):
                 for b in range(a + 1, system.nunoccupied_beta):
                     for c in range(b + 1, system.nunoccupied_beta):
                         for i in range(system.noccupied_beta):
                             for j in range(i + 1, system.noccupied_beta):
                                 for k in range(j + 1, system.noccupied_beta):
-                                    if p['bbb'][a, b, c, i, j, k] == 1:
-                                        excitation_count[n]['bbb'] += 1
+
+                                    if ordered_index:
+                                        if p['bbb'][a, b, c, i, j, k] != 0:
+                                            excitation_count[n]['bbb'] += 1
+                                    else:
+                                        if p['bbb'][a, b, c, i, j, k] == 1:
+                                            excitation_count[n]['bbb'] += 1
 
     return excitation_count
 
 
-def add_spinorbital_triples_to_pspace(triples_list, pspace):
+def add_spinorbital_triples_to_pspace(triples_list, pspace, ordered_index=True):
     """Expand the size of the previous P space using the determinants contained in the list
     of triples (stored as a, b, c, i, j, k) in triples_list. The variable triples_list stores
     triples in spinorbital form, where all orbital indices start from 1 and odd indices
@@ -265,6 +311,12 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace):
         "bbb": pspace["bbb"],
     }
 
+    if ordered_index:
+        ct_aaa = np.max(pspace["aaa"].flatten()) + 1
+        ct_aab = np.max(pspace["aab"].flatten()) + 1
+        ct_abb = np.max(pspace["abb"].flatten()) + 1
+        ct_bbb = np.max(pspace["bbb"].flatten()) + 1
+
     num_add = triples_list.shape[0]
     for n in range(num_add):
         num_alpha = int(sum([x % 2 for x in triples_list[n, :]]) / 2)
@@ -276,25 +328,47 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace):
                 for perms_occ in permutations((i, j, k)):
                     a, b, c = perms_unocc
                     i, j, k = perms_occ
-                    new_pspace['aaa'][a, b, c, i, j, k] = 1
+                    if ordered_index:
+                        new_pspace['aaa'][a, b, c, i, j, k] = ct_aaa
+                        ct_aaa += 1
+                    else:
+                        new_pspace['aaa'][a, b, c, i, j, k] = 1
+
         if num_alpha == 2:
             for perms_unocc in permutations((a, b)):
                 for perms_occ in permutations((i, j)):
                     a, b = perms_unocc
                     i, j = perms_occ
-                    new_pspace['aab'][a, b, c, i, j, k] = 1
+                    if ordered_index:
+                        new_pspace['aab'][a, b, c, i, j, k] = ct_aab
+                        ct_aab += 1
+                    else:
+                        new_pspace['aab'][a, b, c, i, j, k] = 1
+                    ct += 1
+
         if num_alpha == 1:
             for perms_unocc in permutations((b, c)):
                 for perms_occ in permutations((j, k)):
                     b, c = perms_unocc
                     j, k = perms_occ
-                    new_pspace['abb'][a, b, c, i, j, k] = 1
+                    if ordered_index:
+                        new_pspace['abb'][a, b, c, i, j, k] = ct_abb
+                        ct_abb += 1
+                    else:
+                        new_pspace['abb'][a, b, c, i, j, k] = 1
+                    ct += 1
+
         if num_alpha == 0:
             for perms_unocc in permutations((a, b, c)):
                 for perms_occ in permutations((i, j, k)):
                     a, b, c = perms_unocc
                     i, j, k = perms_occ
-                    new_pspace['bbb'][a, b, c, i, j, k] = 1
+                    if ordered_index:
+                        new_pspace['bbb'][a, b, c, i, j, k] = ct_bbb
+                        ct_bbb += 1
+                    else:
+                        new_pspace['bbb'][a, b, c, i, j, k] = 1
+                    ct += 1
 
     return new_pspace
 

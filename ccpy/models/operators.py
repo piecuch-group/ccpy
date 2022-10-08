@@ -279,6 +279,8 @@ if __name__ == "__main__":
     T = ClusterOperator(system, 3, p_orders=[3], pspace_sizes=[[100, 200, 200, 100]])
     for key in T.spin_cases:
         print(key, "->", getattr(T, key).shape)
+    print(T.dimensions)
+    print(T.dimensions[5], T.dimensions[6], T.dimensions[7], T.dimensions[8])
     print("Flattened dimension = ", T.ndim)
     print(T.flatten().shape)
 
