@@ -10,6 +10,30 @@ module ccp_opt_loops_v2
       !
       ! (2) For every lookup of pspace(a, b, c, i, j, k), we perform an equivalent hash table lookup.
 
+      ! Update: 10/08/22
+      ! Intermediates and T3 parts of T1 and T2 updates are computed very inefficiently. Since were are making
+      ! "full" (e.g., not P-space limited) objects, we can take advantage of this and impose a cheap linear speedup.
+      ! The idea here is that since the output is not sparse, *every* T3 amplitude we have contributes to the expression,
+      ! thus, we should simply loop over all of them and put the resulting expression where it belongs in the intermediate.
+      !
+      ! E.g., I2A(amij) = H2A(amij) + 1/2 * vA(mnef) * t3a(aefijn) + vB(mnef) * t3b(aefijn)
+      !       I2A(abie) = H2A(abie) - 1/2 * vA(mnef) * t3a(abfimn) - vB(mnef) * t3b(abfimn)
+      !
+      ! do idet = 1, n3a_p
+      !    a1 = p_coo(idet, 1); b1 = p_coo(idet, 2); c1 = p_coo(idet, 3);
+      !    i1 = p_coo(idet, 4); j1 = p_coo(idet, 5); k1 = p_coo(idet, 6);
+      !
+      !    I2A_vooo(a1, :, i1, j1) = I2A_vooo(a1, :, i1, j1) + 0.5d0 * h2a_oovv(:, k1, b1, c1) * t3a(idet)
+      !    I2A_vvov(a1, b1, i1, :) = I2A_vvov(a1, b1, i1, :) - 0.5d0 * h2a_oovv(j1, k1, :, c1) * t3a(idet)
+      ! end do
+      ! do idet = 1, n3b_p
+      !    a1 = p_coo(idet, 1); b1 = p_coo(idet, 2); c1 = p_coo(idet, 3);
+      !    i1 = p_coo(idet, 4); j1 = p_coo(idet, 5); k1 = p_coo(idet, 6);
+      !
+      !    I2A_vooo(a1, :, i1, j1) = I2A_vooo(a1, :, i1, j1) + h2b_oovv(:, k1, b1, c1) * t3b(idet)
+      !    I2A_vvov(a1, b1, i1, :) = I2A_vvov(a1, b1, i1, :) - h2b_oovv(j1, k1, :, c1) * t3b(idet)
+      ! end do
+
 
       contains
 

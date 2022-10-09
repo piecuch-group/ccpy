@@ -5,7 +5,8 @@ MODULES := cc_loops \
 		   mbgf_loops \
 		   mbpt_loops \
 		   eomcc_initial_guess \
-		   ccp_matrix ccp_loops \
+		   ccp_matrix \
+		   ccp_loops \
 		   ccp_opt_loops \
 		   ccp_opt_loops_v2 \
 		   eomcc_active_loops \
@@ -38,7 +39,8 @@ endif
 LDFLAGS :=
 
 # configuration for lab computers
-LIBS := -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
+# the mkl library specifics are different for different computer. Just don't use this for now...
+#LIBS := -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 
 .PHONY: all clean
 
@@ -46,8 +48,8 @@ all: $(TARGETS)
 
 %$(EXT_SUFFIX): %.f90
 	echo $(MKLFOLDER)
-	f2py $(LIBS) --f90flags="$(FFLAGS)" -c $< -m $*
-	#f2py $(LIBS) --quiet --f90flags="$(FFLAGS)" -c $< -m $*
+	#f2py $(LIBS) --f90flags="$(FFLAGS)" -c $< -m $*
+	f2py $(LIBS) --quiet --f90flags="$(FFLAGS)" -c $< -m $*
 
 clean:
 	rm $(TARGETS)

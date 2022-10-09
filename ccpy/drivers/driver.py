@@ -37,26 +37,20 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, excitation_
     # one used in the calculation. For example, we could not start a CCSDT
     # calculation using the CCSD cluster amplitudes.
 
-    p_orders = [3 + i for i in range(len(pspace))]
-    pspace_sizes = count_excitations_in_pspace(pspace, system, ordered_index=True)
-    if T is None:
-        T = ClusterOperator(system,
-                            order=calculation.order,
-                            active_orders=calculation.active_orders,
-                            p_orders=p_orders,
-                            pspace_sizes=pspace_sizes,
-                            num_active=calculation.num_active)
-
-    # regardless of restart status, initialize residual anew
-    dT = ClusterOperator(system,
-                        order=calculation.order,
-                        active_orders=calculation.active_orders,
-                        p_orders=p_orders,
-                        pspace_sizes=pspace_sizes,
-                        num_active=calculation.num_active)
-
 
     if pspace is None:  # Run the standard CC solver if no explicit P space is used
+        if T is None:
+            T = ClusterOperator(system,
+                                order=calculation.order,
+                                active_orders=calculation.active_orders,
+                                num_active=calculation.num_active)
+
+        # regardless of restart status, initialize residual anew
+        dT = ClusterOperator(system,
+                             order=calculation.order,
+                             active_orders=calculation.active_orders,
+                             num_active=calculation.num_active)
+
         T, corr_energy, is_converged = cc_jacobi(
                                                update_function,
                                                T,
@@ -66,6 +60,24 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, excitation_
                                                system,
                                                )
     else: # Run the dedicated CC(P) solver
+        p_orders = [3 + i for i in range(len(pspace))]
+        pspace_sizes = count_excitations_in_pspace(pspace, system, ordered_index=True)
+        if T is None:
+            T = ClusterOperator(system,
+                                order=calculation.order,
+                                active_orders=calculation.active_orders,
+                                p_orders=p_orders,
+                                pspace_sizes=pspace_sizes,
+                                num_active=calculation.num_active)
+
+        # regardless of restart status, initialize residual anew
+        dT = ClusterOperator(system,
+                             order=calculation.order,
+                             active_orders=calculation.active_orders,
+                             p_orders=p_orders,
+                             pspace_sizes=pspace_sizes,
+                             num_active=calculation.num_active)
+
         T, corr_energy, is_converged = ccp_jacobi(
             update_function,
             T,
