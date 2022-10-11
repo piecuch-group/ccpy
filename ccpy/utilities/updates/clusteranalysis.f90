@@ -200,8 +200,8 @@ module clusteranalysis
                 t3c = 0.0d0
                 do a = 1 , nua
                     do b = 1 , nub
-                        do c = b + 1 , nub
-                            do i = 1 , noa
+                        do c = b + 1, nub
+                            do i = 1, noa
                                 do j = 1, nob
                                     do k = j + 1, nob
                                         if (abs(c3c(a, b, c, i, j, k)) > 0.0d0) then
@@ -1950,21 +1950,42 @@ subroutine cluster_analysis_t4(t4_aaaa, t4_aaab, t4_aabb, t4_abbb, t4_bbbb,&
                     !else
                     !    t4_abbb = 0.0d0
                     !end if
-                    t4_abbb(a, b, c, d, i, j, l, k) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(a, b, c, d, j, i, k, l) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(a, b, c, d, j, i, l, k) = t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(a, b, d, c, i, j, k, l) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(a, b, d, c, i, j, l, k) = t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(a, b, d, c, j, i, k, l) = t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(a, b, d, c, j, i, l, k) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(b, a, c, d, i, j, k, l) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(b, a, c, d, i, j, l, k) = t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(b, a, c, d, j, i, k, l) = t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(b, a, c, d, j, i, l, k) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(b, a, d, c, i, j, k, l) = t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(b, a, d, c, i, j, l, k) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(b, a, d, c, j, i, k, l) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
-                    t4_abbb(b, a, d, c, j, i, l, k) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, b, c, d, i, j, l, k) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, b, c, d, i, k, j, l) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, b, c, d, i, k, l, j) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, b, c, d, i, l, j, k) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, b, c, d, i, l, k, j) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, b, d, c, i, j, k, l) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, b, d, c, i, j, l, k) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, b, d, c, i, k, j, l) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, b, d, c, i, k, l, j) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, b, d, c, i, l, j, k) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, b, d, c, i, l, k, j) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, b, d, i, j, k, l) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, b, d, i, j, l, k) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, b, d, i, k, j, l) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, b, d, i, k, l, j) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, b, d, i, l, j, k) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, b, d, i, l, k, j) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, d, b, i, j, k, l) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, d, b, i, j, l, k) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, d, b, i, k, j, l) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, d, b, i, k, l, j) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, d, b, i, l, j, k) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, c, d, b, i, l, k, j) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, b, c, i, j, k, l) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, b, c, i, j, l, k) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, b, c, i, k, j, l) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, b, c, i, k, l, j) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, b, c, i, l, j, k) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, b, c, i, l, k, j) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, c, b, i, j, k, l) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, c, b, i, j, l, k) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, c, b, i, k, j, l) = t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, c, b, i, k, l, j) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, c, b, i, l, j, k) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
+                        t4_abbb(a, d, c, b, i, l, k, j) = t4_abbb(a, b, c, d, i, j, k, l)
+
                 enddo
 
                 t4_bbbb = 0.0d0
@@ -4567,7 +4588,7 @@ end module clusteranalysis
 !        end subroutine contract_vt3
 !
 !        subroutine contract_vt4(x2a, x2b, x2c,&
-!                                t4a, t4b, t4c, t4d, t4e,&
+!                                t4a, t4b, t4c, t4_abbb, t4e,&
 !                                vA_oovv, vB_oovv, vC_oovv,&
 !                                noa, nua, nob, nub)
 !
@@ -4575,7 +4596,7 @@ end module clusteranalysis
 !                real(kind=8), intent(in) :: t4a(nua, nua, nua, nua, noa, noa, noa, noa),&
 !                                            t4b(nua, nua, nua, nub, noa, noa, noa, nob),&
 !                                            t4c(nua, nua, nub, nub, noa, noa, nob, nob),&
-!                                            t4d(nua, nub, nub, nub, noa, nob, nob, nob),&
+!                                            t4_abbb(nua, nub, nub, nub, noa, nob, nob, nob),&
 !                                            t4e(nub, nub, nub, nub, nob, nob, nob, nob),&
 !                                            vA_oovv(noa, noa, nua, nua),&
 !                                            vB_oovv(noa, nob, nua, nub),&
@@ -4653,12 +4674,12 @@ end module clusteranalysis
 !                                        end do
 !                                    end do
 !                               end do
-!                               ! 1/4 * vC_oovv(mnef) * t4d(aefbimnj)
+!                               ! 1/4 * vC_oovv(mnef) * t4_abbb(aefbimnj)
 !                               do e = 1, nub
 !                                    do f = e + 1, nub
 !                                        do m = 1, nob
 !                                            do n = m + 1, nob
-!                                                x2b(a, b, i, j) = x2b(a, b, i, j) + vC_oovv(m, n, e, f) * t4d(a, e, f, b, i, m, n, j)
+!                                                x2b(a, b, i, j) = x2b(a, b, i, j) + vC_oovv(m, n, e, f) * t4_abbb(a, e, f, b, i, m, n, j)
 !                                            end do
 !                                        end do
 !                                    end do
@@ -4684,12 +4705,12 @@ end module clusteranalysis
 !                                        end do
 !                                    end do
 !                               end do
-!                                ! vB_oovv(mnef) * t4d(efabmnij)
+!                                ! vB_oovv(mnef) * t4_abbb(efabmnij)
 !                               do e = 1, nua
 !                                    do f = 1, nub
 !                                        do m = 1, noa
 !                                            do n = 1, nob
-!                                                x2c(a, b, i, j) = x2c(a, b, i, j) + vB_oovv(m, n, e, f) * t4d(e, f, a, b, m, n, i, j)
+!                                                x2c(a, b, i, j) = x2c(a, b, i, j) + vB_oovv(m, n, e, f) * t4_abbb(e, f, a, b, m, n, i, j)
 !                                            end do
 !                                        end do
 !                                    end do
