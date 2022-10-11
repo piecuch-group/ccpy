@@ -4,46 +4,43 @@ triples, and quadruples (CCSDTQ) calculation for a molecular system."""
 import numpy as np
 
 from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
-from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
-from ccpy.hbar.hbar_ccsdt import add_VT3_intermediates
 from ccpy.utilities.updates import cc_loops2
-from ccpy.utilities.updates import cc_loops_t4
 
 
-def update(T, dT, H, shift, flag_RHF, system, x1a, x1b, x2a, x2b, x2c):
+def update(T, dT, H, shift, flag_RHF, system, T_ext):
 
-    # Holds the static results of <ia|V*T3|0>
-    dT.a = x1a.copy()
-    dT.b = x1b.copy()
-    # Holds the static results of <ijab|V*T4|0>
-    dT.aa = x2a.copy()
-    dT.ab = x2b.copy()
-    dT.bb = x2c.copy()
+    # # Holds the static results of <ia|V*T3|0>
+    # dT.a = x1a.copy()
+    # dT.b = x1b.copy()
+    # # Holds the static results of <ijab|V*T4|0>
+    # dT.aa = x2a.copy()
+    # dT.ab = x2b.copy()
+    # dT.bb = x2c.copy()
 
     # update T1
-    T, dT = update_t1a(T, dT, H, shift)
+    T, dT = update_t1a(T, dT, H, shift, T_ext)
     if flag_RHF:
         T.b = T.a.copy()
         dT.b = dT.a.copy()
     else:
-        T, dT = update_t1b(T, dT, H, shift)
+        T, dT = update_t1b(T, dT, H, shift, T_ext)
 
     # CCS intermediates
     hbar = get_ccs_intermediates_opt(T, H)
 
     # update T2
-    T, dT = update_t2a(T, dT, hbar, H, shift)
-    T, dT = update_t2b(T, dT, hbar, H, shift)
+    T, dT = update_t2a(T, dT, hbar, H, shift, T_ext)
+    T, dT = update_t2b(T, dT, hbar, H, shift, T_ext)
     if flag_RHF:
         T.bb = T.aa.copy()
         dT.bb = dT.aa.copy()
     else:
-        T, dT = update_t2c(T, dT, hbar, H, shift)
+        T, dT = update_t2c(T, dT, hbar, H, shift, T_ext)
 
     return T, dT
 
 
-def update_t1a(T, dT, H, shift):
+def update_t1a(T, dT, H, shift, T_ext):
     """
     Update t1a amplitudes by calculating the projection <ia|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -84,9 +81,9 @@ def update_t1a(T, dT, H, shift):
 
     # This is a one-time computation that is passed in at the start of the solver
     # T3 parts
-    # dT.a += 0.25 * np.einsum("mnef,aefimn->ai", H.aa.oovv, T.aaa, optimize=True)
-    # dT.a += np.einsum("mnef,aefimn->ai", H.ab.oovv, T.aab, optimize=True)
-    # dT.a += 0.25 * np.einsum("mnef,aefimn->ai", H.bb.oovv, T.abb, optimize=True)
+    dT.a += 0.25 * np.einsum("mnef,aefimn->ai", H.aa.oovv, T_ext.aaa, optimize=True)
+    dT.a += np.einsum("mnef,aefimn->ai", H.ab.oovv, T_ext.aab, optimize=True)
+    dT.a += 0.25 * np.einsum("mnef,aefimn->ai", H.bb.oovv, T_ext.abb, optimize=True)
 
     T.a, dT.a = cc_loops2.cc_loops2.update_t1a(
         T.a,
@@ -98,7 +95,7 @@ def update_t1a(T, dT, H, shift):
     return T, dT
 
 
-def update_t1b(T, dT, H, shift):
+def update_t1b(T, dT, H, shift, T_ext):
     """
     Update t1b amplitudes by calculating the projection <i~a~|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -138,10 +135,10 @@ def update_t1b(T, dT, H, shift):
     dT.b += np.einsum("nafe,feni->ai", h2B_ovvv, T.ab, optimize=True)
 
     # This is a one-time computation that is passed in at the start of the solver
-    # # T3 parts
-    # dT.b += 0.25 * np.einsum("mnef,aefimn->ai", H.bb.oovv, T.bbb, optimize=True)
-    # dT.b += 0.25 * np.einsum("mnef,efamni->ai", H.aa.oovv, T.aab, optimize=True)
-    # dT.b += np.einsum("mnef,efamni->ai", H.ab.oovv, T.abb, optimize=True)
+    # T3 parts
+    dT.b += 0.25 * np.einsum("mnef,aefimn->ai", H.bb.oovv, T_ext.bbb, optimize=True)
+    dT.b += 0.25 * np.einsum("mnef,efamni->ai", H.aa.oovv, T_ext.aab, optimize=True)
+    dT.b += np.einsum("mnef,efamni->ai", H.ab.oovv, T_ext.abb, optimize=True)
 
     T.b, dT.b = cc_loops2.cc_loops2.update_t1b(
         T.b,
@@ -154,7 +151,7 @@ def update_t1b(T, dT, H, shift):
 
 
 # @profile
-def update_t2a(T, dT, H, H0, shift):
+def update_t2a(T, dT, H, H0, shift, T_ext):
     """
     Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2))_C|0>.
     """
@@ -198,18 +195,18 @@ def update_t2a(T, dT, H, H0, shift):
     dT.aa += 0.25 * np.einsum("abef,efij->abij", H.aa.vvvv, tau, optimize=True)
     dT.aa += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
     # T3 parts
-    dT.aa += 0.25 * np.einsum("me,abeijm->abij", H.a.ov, T.aaa, optimize=True)
-    dT.aa += 0.25 * np.einsum("me,abeijm->abij", H.b.ov, T.aab, optimize=True)
-    dT.aa -= 0.5 * np.einsum("mnif,abfmjn->abij", H0.ab.ooov + H.ab.ooov, T.aab, optimize=True)
-    dT.aa -= 0.25 * np.einsum("mnif,abfmjn->abij", H0.aa.ooov + H.aa.ooov, T.aaa, optimize=True)
-    dT.aa += 0.25 * np.einsum("anef,ebfijn->abij", H0.aa.vovv + H.aa.vovv, T.aaa, optimize=True)
-    dT.aa += 0.5 * np.einsum("anef,ebfijn->abij", H0.ab.vovv + H.ab.vovv, T.aab, optimize=True)
+    dT.aa += 0.25 * np.einsum("me,abeijm->abij", H.a.ov, T_ext.aaa, optimize=True)
+    dT.aa += 0.25 * np.einsum("me,abeijm->abij", H.b.ov, T_ext.aab, optimize=True)
+    dT.aa -= 0.5 * np.einsum("mnif,abfmjn->abij", H0.ab.ooov + H.ab.ooov, T_ext.aab, optimize=True)
+    dT.aa -= 0.25 * np.einsum("mnif,abfmjn->abij", H0.aa.ooov + H.aa.ooov, T_ext.aaa, optimize=True)
+    dT.aa += 0.25 * np.einsum("anef,ebfijn->abij", H0.aa.vovv + H.aa.vovv, T_ext.aaa, optimize=True)
+    dT.aa += 0.5 * np.einsum("anef,ebfijn->abij", H0.ab.vovv + H.ab.vovv, T_ext.aab, optimize=True)
 
     # This is a one-time computation that is passed in at the start of the solver
-    # # T4 parts
-    # dT.aa += (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", H0.aa.oovv, T.aaaa, optimize=True)
-    # dT.aa += (1.0 / 4.0) * np.einsum("mnef,abefijmn->abij", H0.ab.oovv, T.aaab, optimize=True)
-    # dT.aa += (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T.aabb, optimize=True)
+    # T4 parts
+    dT.aa += (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", H0.aa.oovv, T_ext.aaaa, optimize=True)
+    dT.aa += (1.0 / 4.0) * np.einsum("mnef,abefijmn->abij", H0.ab.oovv, T_ext.aaab, optimize=True)
+    dT.aa += (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T_ext.aabb, optimize=True)
 
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
         T.aa,
@@ -222,7 +219,7 @@ def update_t2a(T, dT, H, H0, shift):
 
 
 # @profile
-def update_t2b(T, dT, H, H0, shift):
+def update_t2b(T, dT, H, H0, shift, T_ext):
     """
     Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2))_C|0>.
     """
@@ -289,22 +286,22 @@ def update_t2b(T, dT, H, H0, shift):
     dT.ab += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
     dT.ab += np.einsum("abef,efij->abij", H.ab.vvvv, tau, optimize=True)
     # T3 parts
-    dT.ab -= 0.5 * np.einsum("mnif,afbmnj->abij", H0.aa.ooov + H.aa.ooov, T.aab, optimize=True)
-    dT.ab -= np.einsum("nmfj,afbinm->abij", H0.ab.oovo + H.ab.oovo, T.aab, optimize=True)
-    dT.ab -= 0.5 * np.einsum("mnjf,afbinm->abij", H0.bb.ooov + H.bb.ooov, T.abb, optimize=True)
-    dT.ab -= np.einsum("mnif,afbmnj->abij", H0.ab.ooov + H.ab.ooov, T.abb, optimize=True)
-    dT.ab += 0.5 * np.einsum("anef,efbinj->abij", H0.aa.vovv + H.aa.vovv, T.aab, optimize=True)
-    dT.ab += np.einsum("anef,efbinj->abij", H0.ab.vovv + H.ab.vovv, T.abb, optimize=True)
-    dT.ab += np.einsum("nbfe,afeinj->abij", H0.ab.ovvv + H.ab.ovvv, T.aab, optimize=True)
-    dT.ab += 0.5 * np.einsum("bnef,afeinj->abij", H0.bb.vovv + H.bb.vovv, T.abb, optimize=True)
-    dT.ab += np.einsum("me,aebimj->abij", H.a.ov, T.aab, optimize=True)
-    dT.ab += np.einsum("me,aebimj->abij", H.b.ov, T.abb, optimize=True)
+    dT.ab -= 0.5 * np.einsum("mnif,afbmnj->abij", H0.aa.ooov + H.aa.ooov, T_ext.aab, optimize=True)
+    dT.ab -= np.einsum("nmfj,afbinm->abij", H0.ab.oovo + H.ab.oovo, T_ext.aab, optimize=True)
+    dT.ab -= 0.5 * np.einsum("mnjf,afbinm->abij", H0.bb.ooov + H.bb.ooov, T_ext.abb, optimize=True)
+    dT.ab -= np.einsum("mnif,afbmnj->abij", H0.ab.ooov + H.ab.ooov, T_ext.abb, optimize=True)
+    dT.ab += 0.5 * np.einsum("anef,efbinj->abij", H0.aa.vovv + H.aa.vovv, T_ext.aab, optimize=True)
+    dT.ab += np.einsum("anef,efbinj->abij", H0.ab.vovv + H.ab.vovv, T_ext.abb, optimize=True)
+    dT.ab += np.einsum("nbfe,afeinj->abij", H0.ab.ovvv + H.ab.ovvv, T_ext.aab, optimize=True)
+    dT.ab += 0.5 * np.einsum("bnef,afeinj->abij", H0.bb.vovv + H.bb.vovv, T_ext.abb, optimize=True)
+    dT.ab += np.einsum("me,aebimj->abij", H.a.ov, T_ext.aab, optimize=True)
+    dT.ab += np.einsum("me,aebimj->abij", H.b.ov, T_ext.abb, optimize=True)
 
     # This is a one-time computation that is passed in at the start of the solver
-    # # T4 parts
-    # dT.ab += 0.25 * np.einsum("mnef,aefbimnj->abij", H0.aa.oovv, T.aaab, optimize=True)
-    # dT.ab += np.einsum("mnef,aefbimnj->abij", H0.ab.oovv, T.aabb, optimize=True)
-    # dT.ab += 0.25 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T.abbb, optimize=True)
+    # T4 parts
+    dT.ab += 0.25 * np.einsum("mnef,aefbimnj->abij", H0.aa.oovv, T_ext.aaab, optimize=True)
+    dT.ab += np.einsum("mnef,aefbimnj->abij", H0.ab.oovv, T_ext.aabb, optimize=True)
+    dT.ab += 0.25 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T_ext.abbb, optimize=True)
 
     T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
         T.ab,
@@ -319,7 +316,7 @@ def update_t2b(T, dT, H, H0, shift):
 
 
 # @profile
-def update_t2c(T, dT, H, H0, shift):
+def update_t2c(T, dT, H, H0, shift, T_ext):
     """
     Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2))_C|0>.
     """
@@ -363,18 +360,18 @@ def update_t2c(T, dT, H, H0, shift):
     dT.bb += 0.25 * np.einsum("abef,efij->abij", H.bb.vvvv, tau, optimize=True)
     dT.bb += 0.125 * np.einsum("mnij,abmn->abij", I2C_oooo, T.bb, optimize=True)
     # T3 parts
-    dT.bb += 0.25 * np.einsum("me,eabmij->abij", H.a.ov, T.abb, optimize=True)
-    dT.bb += 0.25 * np.einsum("me,abeijm->abij", H.b.ov, T.bbb, optimize=True)
-    dT.bb += 0.25 * np.einsum("anef,ebfijn->abij", H0.bb.vovv + H.bb.vovv, T.bbb, optimize=True)
-    dT.bb += 0.5 * np.einsum("nafe,febnij->abij", H0.ab.ovvv + H.ab.ovvv, T.abb, optimize=True)
-    dT.bb -= 0.25 * np.einsum("mnif,abfmjn->abij", H0.bb.ooov + H.bb.ooov, T.bbb, optimize=True)
-    dT.bb -= 0.5 * np.einsum("nmfi,fabnmj->abij", H0.ab.oovo + H.ab.oovo, T.abb, optimize=True)
+    dT.bb += 0.25 * np.einsum("me,eabmij->abij", H.a.ov, T_ext.abb, optimize=True)
+    dT.bb += 0.25 * np.einsum("me,abeijm->abij", H.b.ov, T_ext.bbb, optimize=True)
+    dT.bb += 0.25 * np.einsum("anef,ebfijn->abij", H0.bb.vovv + H.bb.vovv, T_ext.bbb, optimize=True)
+    dT.bb += 0.5 * np.einsum("nafe,febnij->abij", H0.ab.ovvv + H.ab.ovvv, T_ext.abb, optimize=True)
+    dT.bb -= 0.25 * np.einsum("mnif,abfmjn->abij", H0.bb.ooov + H.bb.ooov, T_ext.bbb, optimize=True)
+    dT.bb -= 0.5 * np.einsum("nmfi,fabnmj->abij", H0.ab.oovo + H.ab.oovo, T_ext.abb, optimize=True)
 
     # This is a one-time computation that is passed in at the start of the solver
-    # # T4 parts
-    # dT.bb += 0.0625 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T.bbbb, optimize=True)
-    # dT.bb += 0.25 * np.einsum("nmfe,febanmji->abij", H0.ab.oovv, T.abbb, optimize=True)
-    # dT.bb += 0.0625 * np.einsum("mnef,febanmji->abij", H0.aa.oovv, T.aabb, optimize=True)
+    # T4 parts
+    dT.bb += 0.0625 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T_ext.bbbb, optimize=True)
+    dT.bb += 0.25 * np.einsum("nmfe,febanmji->abij", H0.ab.oovv, T_ext.abbb, optimize=True)
+    dT.bb += 0.0625 * np.einsum("mnef,febanmji->abij", H0.aa.oovv, T_ext.aabb, optimize=True)
 
     T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
         T.bb,

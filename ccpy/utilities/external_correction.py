@@ -47,9 +47,9 @@ def get_spincase(excits_from, excits_to):
 
     return spincase
 
-def cluster_analysis(C, system):
+def cluster_analysis(C, C4_excitations, C4_amplitudes, system):
 
-    T = ClusterOperator(system, order=C.order)
+    T = ClusterOperator(system, 4)
 
     print("Performing Cluster Analysis")
     print("---------------------------")
@@ -69,17 +69,26 @@ def cluster_analysis(C, system):
                                                                                      C.aaa, C.aab, C.abb, C.bbb)
     print("done")
 
-    # if T.order > 3:
-    #     print("T4... ", end="")
-    #     T.aaaa, T.aaab, T.aabb, T.abbb, T.bbb = clusteranalysis.clusteranalysis.cluster_analysis_t4(C.a, C.b,
-    #                                                                                                 C.aa, C.ab, C.bb,
-    #                                                                                                 C.aaa, C.aab, C.abb, C.bbb,
-    #                                                                                                 C.aaaa, C.aaab, C.aabb, C.abbb, C.bbbb)
-    #     print("done")
+    if T.order > 3:
+        print("T4... ", end="")
+        T.aaaa, T.aaab, T.aabb, T.abbb, T.bbbb = clusteranalysis.clusteranalysis.cluster_analysis_t4(C.a, C.b,
+                                                                                                     C.aa, C.ab, C.bb,
+                                                                                                     C.aaa, C.aab, C.abb, C.bbb,
+                                                                                                     C4_excitations['aaaa'],
+                                                                                                     C4_excitations['aaab'],
+                                                                                                     C4_excitations['aabb'],
+                                                                                                     C4_excitations['abbb'],
+                                                                                                     C4_excitations['bbbb'],
+                                                                                                     C4_amplitudes['aaaa'],
+                                                                                                     C4_amplitudes['aaab'],
+                                                                                                     C4_amplitudes['aabb'],
+                                                                                                     C4_amplitudes['abbb'],
+                                                                                                     C4_amplitudes['bbbb'])
+        print("done")
 
     return T
 
-def parse_ci_wavefunction(ci_file, system, full_quadruples=True):
+def parse_ci_wavefunction(ci_file, system):
 
     C4_excits = {'aaaa' : [], 'aaab' : [], 'aabb' : [], 'abbb' : [], 'bbbb' : []}
     C4_amps   = {'aaaa' : [], 'aaab' : [], 'aabb' : [], 'abbb' : [], 'bbbb' : []}
@@ -89,10 +98,10 @@ def parse_ci_wavefunction(ci_file, system, full_quadruples=True):
                         'aaa' : 0, 'aab' : 0, 'abb' : 0, 'bbb' : 0,
                         'aaaa' : 0, 'aaab' : 0, 'aabb' : 0, 'abbb' : 0, 'bbbb' : 0}
 
-    if full_quadruples:
-        C = ClusterOperator(system, 4)
-    else:
-        C = ClusterOperator(system, 3)
+    #if full_quadruples:
+    #    C = ClusterOperator(system, 4)
+    #else:
+    C = ClusterOperator(system, 3)
 
 
     HF = sorted(
@@ -108,7 +117,7 @@ def parse_ci_wavefunction(ci_file, system, full_quadruples=True):
     orb_table = {'a': system.noccupied_alpha, 'b': system.noccupied_beta}
 
     print("Parsing external CI file up through quadruples")
-    if full_quadruples: print("Storing full C4 array")
+    #if full_quadruples: print("Storing full C4 array")
 
     with open(ci_file) as f:
 
@@ -171,14 +180,18 @@ def parse_ci_wavefunction(ci_file, system, full_quadruples=True):
 
             excitation_count[spincase] += 1   # increment excitation count for this spincase
 
-            if full_quadruples:
-                    C = insert_ci_amplitude(C, [x - 1 for x in excitation], coefficient, spincase)
+            # if full_quadruples:
+            #         C = insert_ci_amplitude(C, [x - 1 for x in excitation], coefficient, spincase)
+            # else:
+            if excit_rank == 4:
+                C4_excits[spincase].append(excitation)
+                C4_amps[spincase].append(coefficient)
             else:
-                if excit_rank == 4:
-                    C4_excits[spincase].append(excitation)
-                    C4_amps[spincase].append(coefficient)
-                else:
-                    C = insert_ci_amplitude(C, [x - 1 for x in excitation], coefficient, spincase)
+                C = insert_ci_amplitude(C, [x - 1 for x in excitation], coefficient, spincase)
+
+        for key in C4_excits.keys():
+            C4_excits[key] = np.asarray(C4_excits[key])
+            C4_amps[key] = np.asarray(C4_amps[key])
 
     return C, C4_excits, C4_amps, excitation_count
 

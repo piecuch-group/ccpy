@@ -7,6 +7,8 @@ import ccpy.left
 import ccpy.eomcc
 
 from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eomcc_davidson_lowmem, mrcc_jacobi
+from ccpy.drivers.solvers import eccc_jacobi
+
 from ccpy.models.operators import ClusterOperator, FockOperator
 from ccpy.utilities.printing import CCPrinter
 from ccpy.utilities.pspace import count_excitations_in_pspace
@@ -93,6 +95,58 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, excitation_
     cc_printer.cc_calculation_summary(system.reference_energy, corr_energy)
 
     return T, total_energy, is_converged
+
+def eccc_driver(calculation, system, hamiltonian, T_ext, T=None):
+    """Performs the calculation specified by the user in the input."""
+
+    # check if requested CC calculation is implemented in modules
+    if calculation.calculation_type not in ccpy.cc.MODULES:
+        raise NotImplementedError(
+            "{} not implemented".format(calculation.calculation_type)
+        )
+
+    # [TODO]: Check if calculation parameters (e.g, active orbitals) make sense
+
+    # import the specific CC method module and get its update function
+    cc_mod = import_module("ccpy.cc." + calculation.calculation_type.lower())
+    update_function = getattr(cc_mod, 'update')
+
+    cc_printer = CCPrinter(calculation)
+    cc_printer.cc_header()
+
+    # initialize the cluster operator anew, or use restart
+    #[TODO]: This is not compatible if the initial T is a lower order than the
+    # one used in the calculation. For example, we could not start a CCSDT
+    # calculation using the CCSD cluster amplitudes.
+
+
+    if T is None:
+        T = ClusterOperator(system,
+                            order=calculation.order,
+                            active_orders=calculation.active_orders,
+                            num_active=calculation.num_active)
+
+    # regardless of restart status, initialize residual anew
+    dT = ClusterOperator(system,
+                         order=calculation.order,
+                         active_orders=calculation.active_orders,
+                         num_active=calculation.num_active)
+
+    T, corr_energy, is_converged = eccc_jacobi(
+                                           update_function,
+                                           T,
+                                           dT,
+                                           hamiltonian,
+                                           calculation,
+                                           system,
+                                           T_ext)
+
+    total_energy = system.reference_energy + corr_energy
+
+    cc_printer.cc_calculation_summary(system.reference_energy, corr_energy)
+
+    return T, total_energy, is_converged
+
 
 
 def lcc_driver(calculation, system, T, hamiltonian, omega=0.0, L=None, R=None, pspace=None):

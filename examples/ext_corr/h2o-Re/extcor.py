@@ -2,7 +2,7 @@ import numpy as np
 
 from ccpy.models.calculation import Calculation
 from ccpy.interfaces.gamess_tools import load_from_gamess
-from ccpy.drivers.driver import cc_driver
+from ccpy.drivers.driver import eccc_driver
 from ccpy.drivers.cc_energy import get_ci_energy, get_cc_energy
 
 from ccpy.utilities.external_correction import parse_ci_wavefunction, cluster_analysis
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     )
     system.print_info()
 
-    C, C4_excits, C4_amps, excitation_count = parse_ci_wavefunction("ndet_50000/civecs.dat", system, full_quadruples=False)
+    C, C4_excits, C4_amps, excitation_count = parse_ci_wavefunction("ndet_50000/civecs.dat", system)
 
     print("Excitation Content")
     print("-------------------")
@@ -32,9 +32,13 @@ if __name__ == "__main__":
 
     print("External correction energy = ", Ecorr_c)
 
-    T = cluster_analysis(C, system)
+    T_ext = cluster_analysis(C, C4_excits, C4_amps, system)
 
-    Ecorr_t = get_cc_energy(T, H)
+    Ecorr_t = get_cc_energy(T_ext, H)
     print("T vector energy = ", Ecorr_t)
 
     assert(abs(Ecorr_t - Ecorr_c) < 1.0e-07)
+
+    calculation = Calculation(calculation_type="eccc2_slow")
+
+    T, total_energy, converged = eccc_driver(calculation, system, H, T_ext)
