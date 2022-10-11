@@ -146,9 +146,13 @@ def parse_ci_wavefunction(ci_file, system):
 
             # if determinants were printed right, these should be sorted
             spinorb_occ_alpha = [i for i in spinorb_occ if i % 2 == 1]
+            spinorb_occ_alpha.sort()
             spinorb_occ_beta = [i for i in spinorb_occ if i % 2 == 0]
+            spinorb_occ_beta.sort()
             spinorb_unocc_alpha = [i for i in spinorb_unocc if i % 2 == 1]
+            spinorb_unocc_alpha.sort()
             spinorb_unocc_beta = [i for i in spinorb_unocc if i % 2 == 0]
+            spinorb_unocc_beta.sort()
 
             # WARNING: You will need to compute phase factor associated with QMC determinant ordering (abab...)
             # alpha -> odd, beta -> even; e.g., 1, 2, 3, 4,...
@@ -180,6 +184,7 @@ def parse_ci_wavefunction(ci_file, system):
 
             excitation_count[spincase] += 1   # increment excitation count for this spincase
 
+
             # if full_quadruples:
             #         C = insert_ci_amplitude(C, [x - 1 for x in excitation], coefficient, spincase)
             # else:
@@ -192,6 +197,11 @@ def parse_ci_wavefunction(ci_file, system):
         for key in C4_excits.keys():
             C4_excits[key] = np.asarray(C4_excits[key])
             C4_amps[key] = np.asarray(C4_amps[key])
+
+        # Put in the sign fix... not sure why this is but it has to do with the ordering of excited_det_spinorb
+        C.b *= -1.0
+        C.aab *= -1.0
+        C.bbb *= -1.0
 
     return C, C4_excits, C4_amps, excitation_count
 
@@ -208,7 +218,7 @@ def insert_ci_amplitude(C, excitation, coefficient, spincase):
 
     elif spincase == 'b':
         a, i = excitation
-        C.b[a, i] = coefficient
+        C.b[a, i] = coefficient 
 
     elif spincase == 'aa':
         a, b, i, j = excitation

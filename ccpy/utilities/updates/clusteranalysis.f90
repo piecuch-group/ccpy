@@ -21,13 +21,13 @@ module clusteranalysis
                         do b = a + 1, nua
                             do i = 1 , noa
                                 do j = i + 1, noa
-                                    !if ( abs(c2a(a, b, i, j)) > 0.0d0 ) then
+                                    if ( abs(c2a(a, b, i, j)) > 0.0d0 ) then
                                         t2a(a, b, i, j) = c2a(a, b, i, j)&
                                                          -c1a(a, i) * c1a(b, j)&
                                                          +c1a(a, j) * c1a(b, i)
-                                    !else
-                                    !    t2a(a, b, i, j) = 0.0d0
-                                    !end if
+                                    else
+                                        t2a(a, b, i, j) = 0.0d0
+                                    end if
                                     t2a(b, a, i, j) = -1.0 * t2a(a, b, i, j)
                                     t2a(a, b, j, i) = -1.0 * t2a(a, b, i, j)
                                     t2a(b, a, j, i) = t2a(a, b, i, j)
@@ -41,12 +41,12 @@ module clusteranalysis
                         do b = 1, nub
                             do i = 1, noa
                                 do j = 1, nob
-                                    !if ( abs(c2b(a, b, i, j)) > 0.0d0 ) then
+                                    if ( abs(c2b(a, b, i, j)) > 0.0d0 ) then
                                         t2b(a, b, i, j) = c2b(a, b, i, j)&
                                                          -c1a(a, i) * c1b(b, j)
-                                    !else
-                                    !    t2b(a, b, i, j) = 0.0d0
-                                    !end if
+                                    else
+                                        t2b(a, b, i, j) = 0.0d0
+                                    end if
                                 end do
                             end do
                         end do
@@ -57,13 +57,13 @@ module clusteranalysis
                         do b = a + 1, nub
                             do i = 1, nob
                                 do j = i + 1, nob
-                                    !if ( abs(c2c(a, b, i, j)) > 0.0d0 ) then
+                                    if ( abs(c2c(a, b, i, j)) > 0.0d0 ) then
                                         t2c(a, b, i, j) = c2c(a, b, i, j)&
                                                          -c1b(a, i) * c1b(b, j)&
                                                          +c1b(a, j) * c1b(b, i)
-                                    !else
-                                    !    t2c(a, b, i, j) = 0.0d0
-                                    !end if
+                                    else
+                                        t2c(a, b, i, j) = 0.0d0
+                                    end if
                                     t2c(b, a, i, j) = -1.0 * t2c(a, b, i, j)
                                     t2c(a, b, j, i) = -1.0 * t2c(a, b, i, j)
                                     t2c(b, a, j, i) = t2c(a, b, i, j)
@@ -219,7 +219,7 @@ module clusteranalysis
                                         ! antisymmetrize t3c
                                         t3c(a, c, b, i, j, k) = -1.0 * t3c(a, b, c, i, j, k)
                                         t3c(a, b, c, i, k, j) = -1.0 * t3c(a, b, c, i, j, k)
-                                        t3c(a, b, c, i, j, k) = t3c(a, b, c, i, j, k)
+                                        t3c(a, c, b, i, k, j) = t3c(a, b, c, i, j, k)
                                     end do
                                 end do
                             end do
