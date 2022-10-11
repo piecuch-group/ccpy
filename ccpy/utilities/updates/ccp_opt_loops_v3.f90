@@ -68,50 +68,85 @@ module ccp_opt_loops_v2
 
                       integer :: i, a, m, n, e, f
                       real(kind=8) :: denom, val, res1, res2, res3
+                      real(kind=8) :: HT3(nua, noa)
+
+                      HT3 = 0.0d0
+
+                      ! diagram 1: 1/4 h2a(mnef) * t3a(aefimn)
+                      do idet = 1, n3a_p
+                          a = pspace_aaa(idet, 1)
+                          e = pspace_aaa(idet, 2)
+                          f = pspace_aaa(idet, 3)
+                          i = pspace_aaa(idet, 4)
+                          m = pspace_aaa(idet, 5)
+                          n = pspace_aaa(idet, 6)
+                          HT3(a, i) = HT3(a, i) + 0.25d0 * H2A_oovv(m, n, e, f) * t3a(idet)
+                      end do
+
+                      do idet = 1, n3b_p
+                          a = pspace_aaa(idet, 1)
+                          e = pspace_aaa(idet, 2)
+                          f = pspace_aaa(idet, 3)
+                          i = pspace_aaa(idet, 4)
+                          m = pspace_aaa(idet, 5)
+                          n = pspace_aaa(idet, 6)
+                          HT3(a, i) = HT3(a, i) + H2B_oovv(m, n, e, f) * t3b(idet)
+                      end do
+
+                      do idet = 1, n3c_p
+                          a = pspace_aaa(idet, 1)
+                          e = pspace_aaa(idet, 2)
+                          f = pspace_aaa(idet, 3)
+                          i = pspace_aaa(idet, 4)
+                          m = pspace_aaa(idet, 5)
+                          n = pspace_aaa(idet, 6)
+                          HT3(a, i) = HT3(a, i) + 0.25d0 * H2A_oovv(m, n, e, f) * t3c(idet)
+                      end do
 
                       do i = 1, noa
                           do a = 1, nua
 
-                              res1 = 0.0d0
-                              res2 = 0.0d0
-                              res3 = 0.0d0
-
-                              do e = 1, nua
-                                  do m = 1, noa
-                                      ! diagram 1: 1/4 h2a(mnef) * t3a(aefimn)
-                                      do f = e + 1, nua
-                                          do n = m + 1, noa
-                                              if (pspace_aaa(a, e, f, i, m, n) /= 0) then
-                                                  res1 = res1 + H2A_oovv(m, n, e, f) * t3a(pspace_aaa(a, e, f, i, m, n))
-                                              end if
-                                          end do
-                                      end do
-                                      ! diagram 2: h2b(mnef) * t3b(aefimn)
-                                      do f = 1, nub
-                                          do n = 1, nob
-                                              if (pspace_aab(a, e, f, i, m, n) /= 0) then
-                                                  res2 = res2 + H2B_oovv(m, n, e, f) * t3b(pspace_aab(a, e, f, i, m, n))
-                                              end if
-                                          end do
-                                      end do
-                                  end do
-                              end do
-
-                              ! diagram 3: 1/4 h2c(mnef) * t3c(aefimn)
-                              do e = 1, nub
-                                  do f = e + 1, nub
-                                      do m = 1, nob
-                                          do n = m + 1, nob
-                                              if (pspace_abb(a, e, f, i, m, n) /= 0) then
-                                                  res3 = res3 + H2C_oovv(m, n, e, f) * t3c(pspace_abb(a, e, f, i, m, n))
-                                              end if
-                                          end do
-                                      end do
-                                  end do
-                              end do
+!                              res1 = 0.0d0
+!                              res2 = 0.0d0
+!                              res3 = 0.0d0
+!
+!                              do e = 1, nua
+!                                  do m = 1, noa
+!                                      ! diagram 1: 1/4 h2a(mnef) * t3a(aefimn)
+!                                      do f = e + 1, nua
+!                                          do n = m + 1, noa
+!                                              if (pspace_aaa(a, e, f, i, m, n) /= 0) then
+!                                                  res1 = res1 + H2A_oovv(m, n, e, f) * t3a(pspace_aaa(a, e, f, i, m, n))
+!                                              end if
+!                                          end do
+!                                      end do
+!                                      ! diagram 2: h2b(mnef) * t3b(aefimn)
+!                                      do f = 1, nub
+!                                          do n = 1, nob
+!                                              if (pspace_aab(a, e, f, i, m, n) /= 0) then
+!                                                  res2 = res2 + H2B_oovv(m, n, e, f) * t3b(pspace_aab(a, e, f, i, m, n))
+!                                              end if
+!                                          end do
+!                                      end do
+!                                  end do
+!                              end do
+!
+!                              ! diagram 3: 1/4 h2c(mnef) * t3c(aefimn)
+!                              do e = 1, nub
+!                                  do f = e + 1, nub
+!                                      do m = 1, nob
+!                                          do n = m + 1, nob
+!                                              if (pspace_abb(a, e, f, i, m, n) /= 0) then
+!                                                  res3 = res3 + H2C_oovv(m, n, e, f) * t3c(pspace_abb(a, e, f, i, m, n))
+!                                              end if
+!                                          end do
+!                                      end do
+!                                  end do
+!                              end do
 
                               denom = fA_oo(i, i) - fA_vv(a, a)
-                              val = X1A(a, i) + res1 + res2 + res3
+!                              val = X1A(a, i) + res1 + res2 + res3
+                              val = X1A(a, i) + HT3(a, i)
 
                               t1a(a, i) = t1a(a, i) + val/(denom - shift)
 

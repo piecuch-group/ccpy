@@ -3,7 +3,7 @@ from ccpy.models.operators import ClusterOperator
 from ccpy.utilities.updates import clusteranalysis
 from itertools import permutations
 
-print(clusteranalysis.clusteranalysis.__doc__)
+#print(clusteranalysis.clusteranalysis.__doc__)
 
 def calculate_permutation_parity(lst):
     """Given a permutation of the digits 0..N in order as a list,
@@ -69,13 +69,13 @@ def cluster_analysis(C, system):
                                                                                      C.aaa, C.aab, C.abb, C.bbb)
     print("done")
 
-    if T.order > 3:
-        print("T4... ", end="")
-        T.aaaa, T.aaab, T.aabb, T.abbb, T.bbb = clusteranalysis.clusteranalysis.cluster_analysis_t4(C.a, C.b,
-                                                                                                    C.aa, C.ab, C.bb,
-                                                                                                    C.aaa, C.aab, C.abb, C.bbb,
-                                                                                                    C.aaaa, C.aaab, C.aabb, C.abbb, C.bbbb)
-        print("done")
+    # if T.order > 3:
+    #     print("T4... ", end="")
+    #     T.aaaa, T.aaab, T.aabb, T.abbb, T.bbb = clusteranalysis.clusteranalysis.cluster_analysis_t4(C.a, C.b,
+    #                                                                                                 C.aa, C.ab, C.bb,
+    #                                                                                                 C.aaa, C.aab, C.abb, C.bbb,
+    #                                                                                                 C.aaaa, C.aaab, C.aabb, C.abbb, C.bbbb)
+    #     print("done")
 
     return T
 
