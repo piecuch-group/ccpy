@@ -90,19 +90,16 @@ def cluster_analysis(C, C4_excitations, C4_amplitudes, system):
 
 def parse_ci_wavefunction(ci_file, system):
 
-    C4_excits = {'aaaa' : [], 'aaab' : [], 'aabb' : [], 'abbb' : [], 'bbbb' : []}
-    C4_amps   = {'aaaa' : [], 'aaab' : [], 'aabb' : [], 'abbb' : [], 'bbbb' : []}
-
+    # container to count excitations in the wave function
     excitation_count = {'a' : 0, 'b' : 0,
                         'aa' : 0, 'ab' : 0, 'bb' : 0,
                         'aaa' : 0, 'aab' : 0, 'abb' : 0, 'bbb' : 0,
                         'aaaa' : 0, 'aaab' : 0, 'aabb' : 0, 'abbb' : 0, 'bbbb' : 0}
 
-    #if full_quadruples:
-    #    C = ClusterOperator(system, 4)
-    #else:
+    # C is stored in full through triples; quadruples stored as a list of what's there
     C = ClusterOperator(system, 3)
-
+    C4_excits = {'aaaa' : [], 'aaab' : [], 'aabb' : [], 'abbb' : [], 'bbbb' : []}
+    C4_amps   = {'aaaa' : [], 'aaab' : [], 'aabb' : [], 'abbb' : [], 'bbbb' : []}
 
     HF = sorted(
         [2 * i - 1 for i in range(1, system.noccupied_alpha + 1)]
@@ -117,8 +114,6 @@ def parse_ci_wavefunction(ci_file, system):
     orb_table = {'a': system.noccupied_alpha, 'b': system.noccupied_beta}
 
     print("Parsing external CI file up through quadruples")
-    #if full_quadruples: print("Storing full C4 array")
-
     with open(ci_file) as f:
 
         for line in f.readlines():
@@ -184,29 +179,24 @@ def parse_ci_wavefunction(ci_file, system):
 
             excitation_count[spincase] += 1   # increment excitation count for this spincase
 
-
-            # if full_quadruples:
-            #         C = insert_ci_amplitude(C, [x - 1 for x in excitation], coefficient, spincase)
-            # else:
             if excit_rank == 4:
                 C4_excits[spincase].append(excitation)
                 C4_amps[spincase].append(coefficient)
             else:
                 C = insert_ci_amplitude(C, [x - 1 for x in excitation], coefficient, spincase)
 
-            #if spincase == 'abbb':
-            #    print(excitation, "->", coefficient, "-> det:", det)
-
         for key in C4_excits.keys():
             C4_excits[key] = np.asarray(C4_excits[key])
             C4_amps[key] = np.asarray(C4_amps[key])
+            # fix in case C4 for a certain spincase is empty
+            if len(C4_excits[key].shape) < 2:
+                C4_excits[key] = np.zeros((0, 8))
+                C4_amps[key] = np.zeros(shape=(1,))
 
         # Put in the sign fix... not sure why this is but it has to do with the ordering of excited_det_spinorb
         C.b *= -1.0
         C.aab *= -1.0
         C.bbb *= -1.0
-
-        #C4_amps['abbb'] *= -1.0
 
     return C, C4_excits, C4_amps, excitation_count
 

@@ -18,7 +18,7 @@ if __name__ == "__main__":
     )
     system.print_info()
 
-    civecs = "ndet_5000/civecs.dat"
+    civecs = "ndet_1000000/civecs.dat"
     C, C4_excits, C4_amps, excitation_count = parse_ci_wavefunction(civecs, system)
 
     print("Excitation Content")
