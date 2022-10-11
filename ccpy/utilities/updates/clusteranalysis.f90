@@ -1985,7 +1985,6 @@ subroutine cluster_analysis_t4(t4_aaaa, t4_aaab, t4_aabb, t4_abbb, t4_bbbb,&
                         t4_abbb(a, d, c, b, i, k, l, j) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
                         t4_abbb(a, d, c, b, i, l, j, k) = -1.0 * t4_abbb(a, b, c, d, i, j, k, l)
                         t4_abbb(a, d, c, b, i, l, k, j) = t4_abbb(a, b, c, d, i, j, k, l)
-
                 enddo
 
                 t4_bbbb = 0.0d0

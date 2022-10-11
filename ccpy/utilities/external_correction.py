@@ -194,6 +194,9 @@ def parse_ci_wavefunction(ci_file, system):
             else:
                 C = insert_ci_amplitude(C, [x - 1 for x in excitation], coefficient, spincase)
 
+            #if spincase == 'abbb':
+            #    print(excitation, "->", coefficient, "-> det:", det)
+
         for key in C4_excits.keys():
             C4_excits[key] = np.asarray(C4_excits[key])
             C4_amps[key] = np.asarray(C4_amps[key])
@@ -202,6 +205,8 @@ def parse_ci_wavefunction(ci_file, system):
         C.b *= -1.0
         C.aab *= -1.0
         C.bbb *= -1.0
+
+        #C4_amps['abbb'] *= -1.0
 
     return C, C4_excits, C4_amps, excitation_count
 
