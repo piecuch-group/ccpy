@@ -1,7 +1,8 @@
 import numpy as np
 from ccpy.models.operators import ClusterOperator
 from ccpy.utilities.updates import clusteranalysis
-from itertools import permutations
+from ccpy.drivers.cc_energy import get_cc_energy, get_ci_energy
+import time
 
 #print(clusteranalysis.clusteranalysis.__doc__)
 
@@ -47,30 +48,63 @@ def get_spincase(excits_from, excits_to):
 
     return spincase
 
-def cluster_analysis(C, C4_excitations, C4_amplitudes, system):
+def cluster_analysis(wavefunction_file, hamiltonian, system):
+
+    print("   Performing cluster analysis")
+    print("   ------------------------------")
+    t1 = time.time()
+    # Parse the CI wave function to get C1 - C3 and list of C4
+    print("   Reading the CI vector file at", wavefunction_file)
+    C, C4_excits, C4_amps, excitation_count = parse_ci_wavefunction(wavefunction_file, system)
+
+    # Print the excitation content
+    print("")
+    print("   Excitation Content")
+    print("   -------------------")
+    print("   Number of singles = ", excitation_count['a'] + excitation_count['b'])
+    print("   Number of doubles = ", excitation_count['aa'] + excitation_count['ab'] + excitation_count['bb'])
+    print("   Number of triples = ", excitation_count['aaa'] + excitation_count['aab'] + excitation_count['abb'] + excitation_count['bbb'])
+    print("   Number of quadruples = ", excitation_count['aaaa'] + excitation_count['aaab'] + excitation_count['aabb'] + excitation_count['abbb'] + excitation_count['bbbb'])
+    print("")
+
+    # Perform cluster analysis
+    T_ext = cluster_analyze_ci(C, C4_excits, C4_amps, system)
+
+    print("")
+    print("   External CI wave function energy = ", get_ci_energy(C, hamiltonian))
+    print("   CC correlation energy = ", get_cc_energy(T_ext, hamiltonian))
+
+    elapsed_time = time.time() - t1
+    minutes, seconds = divmod(elapsed_time, 60)
+    time_str = f"({minutes:.1f}m {seconds:.1f}s)"
+    print("   --------------------")
+    print("   Completed in", time_str)
+    print("")
+
+    return T_ext
+
+def cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system):
 
     T = ClusterOperator(system, 4)
 
-    print("Performing Cluster Analysis")
-    print("---------------------------")
-    print("T1... ", end="")
+    print("   Analyzing T1... ", end="")
     T.a = C.a.copy()
     T.b = C.b.copy()
     print("done")
 
-    print("T2... ", end="")
+    print("   Analyzing T2... ", end="")
     T.aa, T.ab, T.bb = clusteranalysis.clusteranalysis.cluster_analysis_t2(C.a, C.b,
                                                                            C.aa, C.ab, C.bb)
     print("done")
 
-    print("T3... ", end="")
+    print("   Analyzing T3... ", end="")
     T.aaa, T.aab, T.abb, T.bbb = clusteranalysis.clusteranalysis.cluster_analysis_t3(C.a, C.b,
                                                                                      C.aa, C.ab, C.bb,
                                                                                      C.aaa, C.aab, C.abb, C.bbb)
     print("done")
 
     if T.order > 3:
-        print("T4... ", end="")
+        print("   Analyzing T4... ", end="")
         T.aaaa, T.aaab, T.aabb, T.abbb, T.bbbb = clusteranalysis.clusteranalysis.cluster_analysis_t4(C.a, C.b,
                                                                                                      C.aa, C.ab, C.bb,
                                                                                                      C.aaa, C.aab, C.abb, C.bbb,
@@ -113,7 +147,6 @@ def parse_ci_wavefunction(ci_file, system):
 
     orb_table = {'a': system.noccupied_alpha, 'b': system.noccupied_beta}
 
-    print("Parsing external CI file up through quadruples")
     with open(ci_file) as f:
 
         for line in f.readlines():
@@ -124,8 +157,6 @@ def parse_ci_wavefunction(ci_file, system):
             # get and save CI coefficient of HF to write everything in intermediate normalization
             if det == HF:
                 c_hf = coeff
-                print("Hartree-Fock coefficient = ", c_hf)
-                print("")
                 continue
 
             excit_rank = get_excit_rank(det, HF)

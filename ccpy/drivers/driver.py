@@ -96,8 +96,12 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, excitation_
 
     return T, total_energy, is_converged
 
-def eccc_driver(calculation, system, hamiltonian, T_ext, T=None):
+def eccc_driver(calculation, system, hamiltonian, external_wavefunction, T=None):
     """Performs the calculation specified by the user in the input."""
+    from ccpy.utilities.external_correction import cluster_analysis
+
+    # Get the external T vector corresponding to the cluster analysis
+    T_ext = cluster_analysis(external_wavefunction, hamiltonian, system)
 
     # check if requested CC calculation is implemented in modules
     if calculation.calculation_type not in ccpy.cc.MODULES:
@@ -119,12 +123,18 @@ def eccc_driver(calculation, system, hamiltonian, T_ext, T=None):
     # one used in the calculation. For example, we could not start a CCSDT
     # calculation using the CCSD cluster amplitudes.
 
-
     if T is None:
         T = ClusterOperator(system,
                             order=calculation.order,
                             active_orders=calculation.active_orders,
                             num_active=calculation.num_active)
+
+        # Set the initial T1 and T2 components to that from cluster analysis
+        setattr(T, 'a', T_ext.a)
+        setattr(T, 'b', T_ext.b)
+        setattr(T, 'aa', T_ext.aa)
+        setattr(T, 'ab', T_ext.ab)
+        setattr(T, 'bb', T_ext.bb)
 
     # regardless of restart status, initialize residual anew
     dT = ClusterOperator(system,
