@@ -259,7 +259,7 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
 
     return R, omega, r0, is_converged
 
-def eccc_jacobi(update_t, T, dT, H, calculation, system, T_ext):
+def eccc_jacobi(update_t, T, dT, H, calculation, system, T_ext, VT_ext):
 
     from ccpy.drivers.cc_energy import get_cc_energy
     from ccpy.drivers.diis import DIIS
@@ -283,7 +283,7 @@ def eccc_jacobi(update_t, T, dT, H, calculation, system, T_ext):
         t1 = time.time()
 
         # Update the T vector
-        T, dT = update_t(T, dT, H, calculation.energy_shift, calculation.RHF_symmetry, system, T_ext)
+        T, dT = update_t(T, dT, H, calculation.energy_shift, calculation.RHF_symmetry, system, T_ext, VT_ext)
 
         # CC correlation energy
         energy = get_cc_energy(T, H)

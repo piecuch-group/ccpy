@@ -337,17 +337,27 @@ module clusteranalysis
 
             do idet = 1, n4a
 
-                ! x2a(abij) <- A(ij/mn)A(ab/ef) v_aa(mnef) * t_aaaa(abefijmn)
-                ! A(ij/mn) = (1) - (im) - (in) - (jm) - (jn) + (im)(jn)
-                ! A(ab/ef) = (1) - (ae) - (af) - (be) - (bf) + (ae)(bf)
-                ! A(ij/mn)A(ab/ef) =
-
                 a = c4_aaaa(idet, 1); b = c4_aaaa(idet, 2); e = c4_aaaa(idet, 3); f = c4_aaaa(idet, 4);
                 i = c4_aaaa(idet, 5); j = c4_aaaa(idet, 6); m = c4_aaaa(idet, 7); n = c4_aaaa(idet, 8);
 
                 call get_t4aaaa_amp(t_amp, c1_a, c2_aa, c3_aaa, c4_aaaa_amps(idet),&
                                     a, b, e, f, i, j, m, n,&
                                     noa, nua)
+
+                ! x2a(abij) <- A(ij/mn)A(ab/ef) v_aa(mnef) * t_aaaa(abefijmn)
+                ! A(ij/mn) = (1) - (im) - (in) - (jm) - (jn) + (im)(jn)
+                ! A(ab/ef) = (1) - (ae) - (af) - (be) - (bf) + (ae)(bf)
+                hmatel =  v_aa(m,n,e,f) - v_aa(i,n,e,f) - v_aa(m,i,e,f) - v_aa(j,n,e,f) - v_aa(m,j,e,f) + v_aa(i,j,e,f)&
+                         -v_aa(m,n,a,f) + v_aa(i,n,a,f) + v_aa(m,i,a,f) + v_aa(j,n,a,f) + v_aa(m,j,a,f) - v_aa(i,j,a,f)&
+                         -v_aa(m,n,e,a) + v_aa(i,n,e,a) + v_aa(m,i,e,a) + v_aa(j,n,e,a) + v_aa(m,j,e,a) - v_aa(i,j,e,a)&
+                         -v_aa(m,n,b,f) + v_aa(i,n,b,f) + v_aa(m,i,b,f) + v_aa(j,n,b,f) + v_aa(m,j,b,f) - v_aa(i,j,b,f)&
+                         -v_aa(m,n,e,b) + v_aa(i,n,e,b) + v_aa(m,i,e,b) + v_aa(j,n,e,b) + v_aa(m,j,e,b) - v_aa(i,j,e,b)&
+                         +v_aa(m,n,a,b) - v_aa(i,n,a,b) - v_aa(m,i,a,b) - v_aa(j,n,a,b) - v_aa(m,j,a,b) + v_aa(i,j,a,b)
+
+                x2a(a, b, i, j) = x2a(a, b, i, j) + hmatel * t_amp
+                x2a(b, a, i, j) = -1.0 * x2a(a, b, i, j)
+                x2a(a, b, j, i) = -1.0 * x2a(a, b, i, j)
+                x2a(b, a, j, i) = x2a(a, b, i, j)
 
             end do
 
@@ -365,10 +375,10 @@ module clusteranalysis
                         -v_ab(m, n, a, f) + v_ab(i, n, a, f) + v_ab(j, n, a, f)&
                         -v_ab(m, n, b, f) + v_ab(i, n, b, f) + v_ab(j, n, b, f)
 
-                x2a(a, b, i, j) = x2a(a, b, i, j) + hmatel * t_amp
-                x2a(b, a, i, j) = -1.0 * x2a(a, b, i, j)
-                x2a(a, b, j, i) = -1.0 * x2a(a, b, i, j)
-                x2a(b, a, j, i) = x2a(a, b, i, j)
+!                x2a(a, b, i, j) = x2a(a, b, i, j) + hmatel * t_amp
+!                x2a(b, a, i, j) = -1.0 * x2a(a, b, i, j)
+!                x2a(a, b, j, i) = -1.0 * x2a(a, b, i, j)
+!                x2a(b, a, j, i) = x2a(a, b, i, j)
 
                 ! x2b(abij) <- A(i/mn)A(a/ef) v_aa(mnef) * t_aaab(aefbimnj)
                 a = c4_aaab(idet, 1); e = c4_aaab(idet, 2); f = c4_aaab(idet, 3); b = c4_aaab(idet, 4);
@@ -394,12 +404,13 @@ module clusteranalysis
                 call get_t4aabb_amp(t_amp, c1_a, c1_b, c2_aa, c2_ab, c2_bb, c3_aaa, c3_aab, c3_abb, c4_aabb_amps(idet),&
                                   a, b, e, f, i, j, m, n,&
                                   noa, nua, nob, nub)
+
                 hmatel = v_bb(m, n, e, f)
 
-                x2a(a, b, i, j) = x2a(a, b, i, j) + hmatel * t_amp
-                x2a(b, a, i, j) = -1.0 * x2a(a, b, i, j)
-                x2a(a, b, j, i) = -1.0 * x2a(a, b, i, j)
-                x2a(b, a, j, i) = x2a(a, b, i, j)
+!                x2a(a, b, i, j) = x2a(a, b, i, j) + hmatel * t_amp
+!                x2a(b, a, i, j) = -1.0 * x2a(a, b, i, j)
+!                x2a(a, b, j, i) = -1.0 * x2a(a, b, i, j)
+!                x2a(b, a, j, i) = x2a(a, b, i, j)
 
                 ! x2b(abij) <- A(jn)A(im)A(ae)A(bf) v_ab(mnef) * t_aabb(aefbimnj)
                 a = c4_aabb(idet, 1); e = c4_aabb(idet, 2); f = c4_aabb(idet, 3); b = c4_aabb(idet, 4);

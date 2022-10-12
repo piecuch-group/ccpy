@@ -1,5 +1,6 @@
 import numpy as np
 from ccpy.models.operators import ClusterOperator
+from ccpy.models.integrals import Integral
 from ccpy.utilities.updates import clusteranalysis
 from ccpy.drivers.cc_energy import get_cc_energy, get_ci_energy
 import time
@@ -58,6 +59,10 @@ def cluster_analysis(wavefunction_file, hamiltonian, system, debug=False):
     print("   Performing cluster analysis")
     print("   ------------------------------")
     t1 = time.time()
+
+    # Create the VT4 storage object
+    VT_ext = Integral.from_empty(system, 2, data_type=hamiltonian.a.oo.dtype, use_none=True)
+
     # Parse the CI wave function to get C1 - C3 and list of C4
     print("   Reading the CI vector file at", wavefunction_file)
     C, C4_excitations, C4_amplitudes, excitation_count = parse_ci_wavefunction(wavefunction_file, system)
@@ -73,11 +78,21 @@ def cluster_analysis(wavefunction_file, hamiltonian, system, debug=False):
     print("")
 
     # Perform cluster analysis
+    print("   Computing T from CI amplitudes")
     T_ext = cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, order)
 
     print("")
     print("   External CI wave function energy = ", get_ci_energy(C, hamiltonian))
     print("   CC correlation energy = ", get_cc_energy(T_ext, hamiltonian))
+
+    print("   Performing < ia | [V_N, T3(ext)] | 0 > contraction")
+    VT_ext.a.vo = 0.25 * np.einsum("mnef,aefimn->ai", hamiltonian.aa.oovv, T_ext.aaa, optimize=True)
+    VT_ext.a.vo += np.einsum("mnef,aefimn->ai", hamiltonian.ab.oovv, T_ext.aab, optimize=True)
+    VT_ext.a.vo += 0.25 * np.einsum("mnef,aefimn->ai", hamiltonian.bb.oovv, T_ext.abb, optimize=True)
+
+    VT_ext.b.vo = 0.25 * np.einsum("mnef,aefimn->ai", hamiltonian.bb.oovv, T_ext.bbb, optimize=True)
+    VT_ext.b.vo += 0.25 * np.einsum("mnef,efamni->ai", hamiltonian.aa.oovv, T_ext.aab, optimize=True)
+    VT_ext.b.vo += np.einsum("mnef,efamni->ai", hamiltonian.ab.oovv, T_ext.abb, optimize=True)
 
     print("   Performing < ijab | [V_N, T4(ext)] | 0 > contraction")
     x2_aa, x2_ab, x2_bb = clusteranalysis.clusteranalysis.contract_vt4_opt(hamiltonian.aa.oovv,
@@ -97,9 +112,12 @@ def cluster_analysis(wavefunction_file, hamiltonian, system, debug=False):
                                                                            C4_amplitudes['abbb'],
                                                                            C4_amplitudes['bbbb'])
     if debug:
+
         x2_aa_exact = (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", hamiltonian.aa.oovv, T_ext.aaaa, optimize=True)
         x2_aa_exact += (1.0 / 4.0) * np.einsum("mnef,abefijmn->abij", hamiltonian.ab.oovv, T_ext.aaab, optimize=True)
         x2_aa_exact += (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", hamiltonian.bb.oovv, T_ext.aabb, optimize=True)
+
+        #x2_aa_exact = 0.25 * np.einsum("mnef,abefijmn->abij", hamiltonian.aa.oovv, T_ext.aaaa, optimize=True)
         print("Error in X2_aa = ", np.linalg.norm(x2_aa.flatten() - x2_aa_exact.flatten()))
 
         x2_ab_exact = 0.25 * np.einsum("mnef,aefbimnj->abij", hamiltonian.aa.oovv, T_ext.aaab, optimize=True)
@@ -112,6 +130,10 @@ def cluster_analysis(wavefunction_file, hamiltonian, system, debug=False):
         x2_bb_exact += 0.0625 * np.einsum("mnef,febanmji->abij", hamiltonian.aa.oovv, T_ext.aabb, optimize=True)
         print("Error in X2_bb = ", np.linalg.norm(x2_bb.flatten() - x2_bb_exact.flatten()))
 
+        VT_ext.aa.vvoo = x2_aa_exact
+        VT_ext.ab.vvoo = x2_ab_exact
+        VT_ext.bb.vvoo = x2_bb_exact
+
     elapsed_time = time.time() - t1
     minutes, seconds = divmod(elapsed_time, 60)
     time_str = f"({minutes:.1f}m {seconds:.1f}s)"
@@ -119,30 +141,23 @@ def cluster_analysis(wavefunction_file, hamiltonian, system, debug=False):
     print("   Completed in", time_str)
     print("")
 
-    return T_ext
+    return T_ext, VT_ext
 
 def cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, order=3):
 
     T = ClusterOperator(system, order)
 
-    print("   Analyzing T1... ", end="")
     T.a = C.a.copy()
     T.b = C.b.copy()
-    print("done")
 
-    print("   Analyzing T2... ", end="")
     T.aa, T.ab, T.bb = clusteranalysis.clusteranalysis.cluster_analysis_t2(C.a, C.b,
                                                                            C.aa, C.ab, C.bb)
-    print("done")
 
-    print("   Analyzing T3... ", end="")
     T.aaa, T.aab, T.abb, T.bbb = clusteranalysis.clusteranalysis.cluster_analysis_t3(C.a, C.b,
                                                                                      C.aa, C.ab, C.bb,
                                                                                      C.aaa, C.aab, C.abb, C.bbb)
-    print("done")
 
     if T.order > 3:
-        print("   Analyzing T4... ", end="")
         T.aaaa, T.aaab, T.aabb, T.abbb, T.bbbb = clusteranalysis.clusteranalysis.cluster_analysis_t4(C.a, C.b,
                                                                                                      C.aa, C.ab, C.bb,
                                                                                                      C.aaa, C.aab, C.abb, C.bbb,
@@ -156,7 +171,6 @@ def cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, order=3):
                                                                                                      C4_amplitudes['aabb'],
                                                                                                      C4_amplitudes['abbb'],
                                                                                                      C4_amplitudes['bbbb'])
-        print("done")
 
     return T
 
