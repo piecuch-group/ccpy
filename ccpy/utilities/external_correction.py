@@ -48,14 +48,19 @@ def get_spincase(excits_from, excits_to):
 
     return spincase
 
-def cluster_analysis(wavefunction_file, hamiltonian, system):
+def cluster_analysis(wavefunction_file, hamiltonian, system, debug=False):
+
+    if debug:
+        order = 4
+    else:
+        order = 3
 
     print("   Performing cluster analysis")
     print("   ------------------------------")
     t1 = time.time()
     # Parse the CI wave function to get C1 - C3 and list of C4
     print("   Reading the CI vector file at", wavefunction_file)
-    C, C4_excits, C4_amps, excitation_count = parse_ci_wavefunction(wavefunction_file, system)
+    C, C4_excitations, C4_amplitudes, excitation_count = parse_ci_wavefunction(wavefunction_file, system)
 
     # Print the excitation content
     print("")
@@ -68,11 +73,44 @@ def cluster_analysis(wavefunction_file, hamiltonian, system):
     print("")
 
     # Perform cluster analysis
-    T_ext = cluster_analyze_ci(C, C4_excits, C4_amps, system)
+    T_ext = cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, order)
 
     print("")
     print("   External CI wave function energy = ", get_ci_energy(C, hamiltonian))
     print("   CC correlation energy = ", get_cc_energy(T_ext, hamiltonian))
+
+    print("   Performing < ijab | [V_N, T4(ext)] | 0 > contraction")
+    x2_aa, x2_ab, x2_bb = clusteranalysis.clusteranalysis.contract_vt4_opt(hamiltonian.aa.oovv,
+                                                                           hamiltonian.ab.oovv,
+                                                                           hamiltonian.bb.oovv,
+                                                                           C.a, C.b,
+                                                                           C.aa, C.ab, C.bb,
+                                                                           C.aaa, C.aab, C.abb, C.bbb,
+                                                                           C4_excitations['aaaa'],
+                                                                           C4_excitations['aaab'],
+                                                                           C4_excitations['aabb'],
+                                                                           C4_excitations['abbb'],
+                                                                           C4_excitations['bbbb'],
+                                                                           C4_amplitudes['aaaa'],
+                                                                           C4_amplitudes['aaab'],
+                                                                           C4_amplitudes['aabb'],
+                                                                           C4_amplitudes['abbb'],
+                                                                           C4_amplitudes['bbbb'])
+    if debug:
+        x2_aa_exact = (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", hamiltonian.aa.oovv, T_ext.aaaa, optimize=True)
+        x2_aa_exact += (1.0 / 4.0) * np.einsum("mnef,abefijmn->abij", hamiltonian.ab.oovv, T_ext.aaab, optimize=True)
+        x2_aa_exact += (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", hamiltonian.bb.oovv, T_ext.aabb, optimize=True)
+        print("Error in X2_aa = ", np.linalg.norm(x2_aa.flatten() - x2_aa_exact.flatten()))
+
+        x2_ab_exact = 0.25 * np.einsum("mnef,aefbimnj->abij", hamiltonian.aa.oovv, T_ext.aaab, optimize=True)
+        x2_ab_exact += np.einsum("mnef,aefbimnj->abij", hamiltonian.ab.oovv, T_ext.aabb, optimize=True)
+        x2_ab_exact += 0.25 * np.einsum("mnef,abefijmn->abij", hamiltonian.bb.oovv, T_ext.abbb, optimize=True)
+        print("Error in X2_ab = ", np.linalg.norm(x2_ab.flatten() - x2_ab_exact.flatten()))
+
+        x2_bb_exact = 0.0625 * np.einsum("mnef,abefijmn->abij", hamiltonian.bb.oovv, T_ext.bbbb, optimize=True)
+        x2_bb_exact += 0.25 * np.einsum("nmfe,febanmji->abij", hamiltonian.ab.oovv, T_ext.abbb, optimize=True)
+        x2_bb_exact += 0.0625 * np.einsum("mnef,febanmji->abij", hamiltonian.aa.oovv, T_ext.aabb, optimize=True)
+        print("Error in X2_bb = ", np.linalg.norm(x2_bb.flatten() - x2_bb_exact.flatten()))
 
     elapsed_time = time.time() - t1
     minutes, seconds = divmod(elapsed_time, 60)
@@ -83,9 +121,9 @@ def cluster_analysis(wavefunction_file, hamiltonian, system):
 
     return T_ext
 
-def cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system):
+def cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, order=3):
 
-    T = ClusterOperator(system, 4)
+    T = ClusterOperator(system, order)
 
     print("   Analyzing T1... ", end="")
     T.a = C.a.copy()
