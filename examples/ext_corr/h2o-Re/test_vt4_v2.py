@@ -10,37 +10,95 @@ def contract_vt4_exact(H, T_ext):
 
     return x2_aa_exact
 
-def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
+def contract_vt4_matel(C4_excitations, C4_amplitudes, H, T_ext, system):
 
     x2a = np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.noccupied_alpha, system.noccupied_alpha))
     # Loop over aaab determinants
     for idet in range(len(C4_amplitudes["aaab"])):
 
-        # x2a(abij) <- A(m/ij)A(e/ab) v_ab(mnef) * t_aaab(abefijmn)
+        print("quadruple", idet, "/", len(C4_amplitudes["aaab"]))
+        c, d, e, f, k, l, m, n = [x - 1 for x in C4_excitations["aaab"][idet]]
 
-        # (abefijmn) -> (abij)(efmn)
-        a, b, e, f, i, j, m, n = [x - 1 for x in C4_excitations["aaab"][idet]]
-        t_amp = T_ext.aaab[a, b, e, f, i, j, m, n]
+        t_amp = T_ext.aaab[c, d, e, f, k, l, m, n]
 
-        # (1)
-        hmatel = (
-                  H.ab.oovv[m, n, e, f] - H.ab.oovv[i, n, e, f] - H.ab.oovv[j, n, e, f]
-                - H.ab.oovv[m, n, a, f] + H.ab.oovv[i, n, a, f] + H.ab.oovv[j, n, a, f]
-                - H.ab.oovv[m, n, b, f] + H.ab.oovv[i, n, b, f] + H.ab.oovv[j, n, b, f]
-        )
-        x2a[a, b, i, j] += hmatel * t_amp
+        for a in range(system.nunoccupied_alpha):
+            for b in range(a + 1, system.nunoccupied_alpha):
+                for i in range(system.noccupied_alpha):
+                    for j in range(i + 1, system.noccupied_alpha):
 
-        # (afmn)
-        hmatel = (
-                  H.ab.oovv[m, n, a, f] - H.ab.oovv[i, n, a, f] - H.ab.oovv[j, n, a, f]
-                - H.ab.oovv[m, n, e, f] + H.ab.oovv[i, n, e, f] + H.ab.oovv[j, n, e, f]
-                - H.ab.oovv[m, n, b, f] + H.ab.oovv[i, n, b, f] + H.ab.oovv[j, n, b, f]
-        )
-        x2a[b, e, i, j] -= hmatel * t_amp
+                        # x2a(abij) <- A(ij)A(ab)A(m/kl)A(e/cd) delta(i,k)*delta(j,l)*delta(a,c)*delta(b,d)*v_ab(m,n,e,f)
+                        hmatel = (
+                                  (i == k) * (j == l) * (a == c) * (b == d) * H.ab.oovv[m, n, e, f]
+                                - (i == k) * (j == l) * (a == e) * (b == d) * H.ab.oovv[m, n, c, f]
+                                - (i == k) * (j == l) * (a == c) * (b == e) * H.ab.oovv[m, n, d, f]
+                                - (i == m) * (j == l) * (a == c) * (b == d) * H.ab.oovv[k, n, e, f]
+                                + (i == m) * (j == l) * (a == e) * (b == d) * H.ab.oovv[k, n, c, f]
+                                + (i == m) * (j == l) * (a == c) * (b == e) * H.ab.oovv[k, n, d, f]
+                                - (i == k) * (j == m) * (a == c) * (b == d) * H.ab.oovv[l, n, e, f]
+                                + (i == k) * (j == m) * (a == e) * (b == d) * H.ab.oovv[l, n, c, f]
+                                + (i == k) * (j == m) * (a == c) * (b == e) * H.ab.oovv[l, n, d, f]
+                                - (i == k) * (j == l) * (b == c) * (a == d) * H.ab.oovv[m, n, e, f]
+                                + (i == k) * (j == l) * (b == e) * (a == d) * H.ab.oovv[m, n, c, f]
+                                + (i == k) * (j == l) * (b == c) * (a == e) * H.ab.oovv[m, n, d, f]
+                                + (i == m) * (j == l) * (b == c) * (a == d) * H.ab.oovv[k, n, e, f]
+                                - (i == m) * (j == l) * (b == e) * (a == d) * H.ab.oovv[k, n, c, f]
+                                - (i == m) * (j == l) * (b == c) * (a == e) * H.ab.oovv[k, n, d, f]
+                                + (i == k) * (j == m) * (b == c) * (a == d) * H.ab.oovv[l, n, e, f]
+                                - (i == k) * (j == m) * (b == e) * (a == d) * H.ab.oovv[l, n, c, f]
+                                - (i == k) * (j == m) * (b == c) * (a == e) * H.ab.oovv[l, n, d, f]
+                                - (j == k) * (i == l) * (a == c) * (b == d) * H.ab.oovv[m, n, e, f]
+                                + (j == k) * (i == l) * (a == e) * (b == d) * H.ab.oovv[m, n, c, f]
+                                + (j == k) * (i == l) * (a == c) * (b == e) * H.ab.oovv[m, n, d, f]
+                                + (j == m) * (i == l) * (a == c) * (b == d) * H.ab.oovv[k, n, e, f]
+                                - (j == m) * (i == l) * (a == e) * (b == d) * H.ab.oovv[k, n, c, f]
+                                - (j == m) * (i == l) * (a == c) * (b == e) * H.ab.oovv[k, n, d, f]
+                                + (j == k) * (i == m) * (a == c) * (b == d) * H.ab.oovv[l, n, e, f]
+                                - (j == k) * (i == m) * (a == e) * (b == d) * H.ab.oovv[l, n, c, f]
+                                - (j == k) * (i == m) * (a == c) * (b == e) * H.ab.oovv[l, n, d, f]
+                                + (j == k) * (i == l) * (b == c) * (a == d) * H.ab.oovv[m, n, e, f]
+                                - (j == k) * (i == l) * (b == e) * (a == d) * H.ab.oovv[m, n, c, f]
+                                - (j == k) * (i == l) * (b == c) * (a == e) * H.ab.oovv[m, n, d, f]
+                                - (j == m) * (i == l) * (b == c) * (a == d) * H.ab.oovv[k, n, e, f]
+                                + (j == m) * (i == l) * (b == e) * (a == d) * H.ab.oovv[k, n, c, f]
+                                + (j == m) * (i == l) * (b == c) * (a == e) * H.ab.oovv[k, n, d, f]
+                                - (j == k) * (i == m) * (b == c) * (a == d) * H.ab.oovv[l, n, e, f]
+                                + (j == k) * (i == m) * (b == e) * (a == d) * H.ab.oovv[l, n, c, f]
+                                + (j == k) * (i == m) * (b == c) * (a == e) * H.ab.oovv[l, n, d, f]
+                        )
 
-
+                        x2a[a, b, i, j] += hmatel * t_amp
 
     return x2a
+
+# def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
+#
+#     x2a = np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.noccupied_alpha, system.noccupied_alpha))
+#     # Loop over aaab determinants
+#     for idet in range(len(C4_amplitudes["aaab"])):
+#
+#         # x2a(abij) <- A(m/ij)A(e/ab) v_ab(mnef) * t_aaab(abefijmn)
+#
+#         # (abefijmn) -> (abij)(efmn)
+#         a, b, e, f, i, j, m, n = [x - 1 for x in C4_excitations["aaab"][idet]]
+#         t_amp = T_ext.aaab[a, b, e, f, i, j, m, n]
+#
+#         # (1)
+#         hmatel = (
+#                   H.ab.oovv[m, n, e, f] - H.ab.oovv[i, n, e, f] - H.ab.oovv[j, n, e, f]
+#                 - H.ab.oovv[m, n, a, f] + H.ab.oovv[i, n, a, f] + H.ab.oovv[j, n, a, f]
+#                 - H.ab.oovv[m, n, b, f] + H.ab.oovv[i, n, b, f] + H.ab.oovv[j, n, b, f]
+#         )
+#         x2a[a, b, i, j] += hmatel * t_amp
+#
+#         # (afmn)
+#         hmatel = (
+#                   H.ab.oovv[m, n, a, f] - H.ab.oovv[i, n, a, f] - H.ab.oovv[j, n, a, f]
+#                 - H.ab.oovv[m, n, e, f] + H.ab.oovv[i, n, e, f] + H.ab.oovv[j, n, e, f]
+#                 - H.ab.oovv[m, n, b, f] + H.ab.oovv[i, n, b, f] + H.ab.oovv[j, n, b, f]
+#         )
+#         x2a[b, e, i, j] -= hmatel * t_amp
+#
+#     return x2a
 
 if __name__ == "__main__":
 
@@ -77,7 +135,7 @@ if __name__ == "__main__":
     x2_aa_exact = contract_vt4_exact(H, T_ext)
 
     # Get the on-the-fly contraction result (although for now, we are still using full T4)
-    x2_aa = contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system)
+    x2_aa = contract_vt4_matel(C4_excitations, C4_amplitudes, H, T_ext, system)
 
     error = np.zeros_like(x2_aa)
     for a in range(system.nunoccupied_alpha):
@@ -88,3 +146,4 @@ if __name__ == "__main__":
                     if abs(error[a, b, i, j]) > 1.0e-012:
                         print(a + 1, b + 1, i + 1, j + 1, "Expected = ", x2_aa_exact[a, b, i, j], "Got = ", x2_aa[a, b, i, j],
                               "Error = ", error[a, b, i, j])
+    print(np.linalg.norm(error.flatten()))
