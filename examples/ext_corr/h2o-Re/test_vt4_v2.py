@@ -8,74 +8,19 @@ def contract_vt4_exact(H, T_ext):
     # < ijab | [V_N, T4] | 0 >
     x2_aa_exact = np.einsum("mnef,abefijmn->abij", H.ab.oovv, T_ext.aaab, optimize=True)
     x2_aa_exact += 0.25 * np.einsum("mnef,abefijmn->abij", H.bb.oovv, T_ext.aabb, optimize=True)
-    #x2_aa_exact += 0.25 * np.einsum("mnef,abefijmn->abij", H.aa.oovv, T_ext.aaaa, optimize=True)
+    x2_aa_exact += 0.25 * np.einsum("mnef,abefijmn->abij", H.aa.oovv, T_ext.aaaa, optimize=True)
 
     # <ij~ab~ | [V_N, T4] | 0 >
     x2_ab_exact = 0.25 * np.einsum("mnef,aefbimnj->abij", H.aa.oovv, T_ext.aaab, optimize=True)
     x2_ab_exact += np.einsum("mnef,aefbimnj->abij", H.ab.oovv, T_ext.aabb, optimize=True)
     x2_ab_exact += 0.25 * np.einsum("mnef,aefbimnj->abij", H.bb.oovv, T_ext.abbb, optimize=True)
 
-    return x2_aa_exact, x2_ab_exact
+    # <i~j~a~b~ | [V_N, T4] | 0 >
+    x2_bb_exact = 0.25 * np.einsum("mnef,efabmnij->abij", H.bb.oovv, T_ext.aabb, optimize=True)
+    x2_bb_exact += np.einsum("mnef,efabmnij->abij", H.ab.oovv, T_ext.abbb, optimize=True)
+    x2_bb_exact += 0.25 * np.einsum("mnef,abefijmn->abij", H.bb.oovv, T_ext.bbbb, optimize=True)
 
-def contract_vt4_matel(C4_excitations, C4_amplitudes, H, T_ext, system):
-
-    x2a = np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.noccupied_alpha, system.noccupied_alpha))
-    # Loop over aaab determinants
-    for idet in range(len(C4_amplitudes["aaab"])):
-
-        print("quadruple", idet, "/", len(C4_amplitudes["aaab"]))
-        c, d, e, f, k, l, m, n = [x - 1 for x in C4_excitations["aaab"][idet]]
-
-        t_amp = T_ext.aaab[c, d, e, f, k, l, m, n]
-
-        for a in range(system.nunoccupied_alpha):
-            for b in range(a + 1, system.nunoccupied_alpha):
-                for i in range(system.noccupied_alpha):
-                    for j in range(i + 1, system.noccupied_alpha):
-
-                        # x2a(abij) <- A(ij)A(ab)A(m/kl)A(e/cd) delta(i,k)*delta(j,l)*delta(a,c)*delta(b,d)*v_ab(m,n,e,f)
-                        hmatel = (
-                                  (i == k) * (j == l) * (a == c) * (b == d) * H.ab.oovv[m, n, e, f]
-                                - (i == k) * (j == l) * (a == e) * (b == d) * H.ab.oovv[m, n, c, f]
-                                - (i == k) * (j == l) * (a == c) * (b == e) * H.ab.oovv[m, n, d, f]
-                                - (i == m) * (j == l) * (a == c) * (b == d) * H.ab.oovv[k, n, e, f]
-                                + (i == m) * (j == l) * (a == e) * (b == d) * H.ab.oovv[k, n, c, f]
-                                + (i == m) * (j == l) * (a == c) * (b == e) * H.ab.oovv[k, n, d, f]
-                                - (i == k) * (j == m) * (a == c) * (b == d) * H.ab.oovv[l, n, e, f]
-                                + (i == k) * (j == m) * (a == e) * (b == d) * H.ab.oovv[l, n, c, f]
-                                + (i == k) * (j == m) * (a == c) * (b == e) * H.ab.oovv[l, n, d, f]
-                                - (i == k) * (j == l) * (b == c) * (a == d) * H.ab.oovv[m, n, e, f]
-                                + (i == k) * (j == l) * (b == e) * (a == d) * H.ab.oovv[m, n, c, f]
-                                + (i == k) * (j == l) * (b == c) * (a == e) * H.ab.oovv[m, n, d, f]
-                                + (i == m) * (j == l) * (b == c) * (a == d) * H.ab.oovv[k, n, e, f]
-                                - (i == m) * (j == l) * (b == e) * (a == d) * H.ab.oovv[k, n, c, f]
-                                - (i == m) * (j == l) * (b == c) * (a == e) * H.ab.oovv[k, n, d, f]
-                                + (i == k) * (j == m) * (b == c) * (a == d) * H.ab.oovv[l, n, e, f]
-                                - (i == k) * (j == m) * (b == e) * (a == d) * H.ab.oovv[l, n, c, f]
-                                - (i == k) * (j == m) * (b == c) * (a == e) * H.ab.oovv[l, n, d, f]
-                                - (j == k) * (i == l) * (a == c) * (b == d) * H.ab.oovv[m, n, e, f]
-                                + (j == k) * (i == l) * (a == e) * (b == d) * H.ab.oovv[m, n, c, f]
-                                + (j == k) * (i == l) * (a == c) * (b == e) * H.ab.oovv[m, n, d, f]
-                                + (j == m) * (i == l) * (a == c) * (b == d) * H.ab.oovv[k, n, e, f]
-                                - (j == m) * (i == l) * (a == e) * (b == d) * H.ab.oovv[k, n, c, f]
-                                - (j == m) * (i == l) * (a == c) * (b == e) * H.ab.oovv[k, n, d, f]
-                                + (j == k) * (i == m) * (a == c) * (b == d) * H.ab.oovv[l, n, e, f]
-                                - (j == k) * (i == m) * (a == e) * (b == d) * H.ab.oovv[l, n, c, f]
-                                - (j == k) * (i == m) * (a == c) * (b == e) * H.ab.oovv[l, n, d, f]
-                                + (j == k) * (i == l) * (b == c) * (a == d) * H.ab.oovv[m, n, e, f]
-                                - (j == k) * (i == l) * (b == e) * (a == d) * H.ab.oovv[m, n, c, f]
-                                - (j == k) * (i == l) * (b == c) * (a == e) * H.ab.oovv[m, n, d, f]
-                                - (j == m) * (i == l) * (b == c) * (a == d) * H.ab.oovv[k, n, e, f]
-                                + (j == m) * (i == l) * (b == e) * (a == d) * H.ab.oovv[k, n, c, f]
-                                + (j == m) * (i == l) * (b == c) * (a == e) * H.ab.oovv[k, n, d, f]
-                                - (j == k) * (i == m) * (b == c) * (a == d) * H.ab.oovv[l, n, e, f]
-                                + (j == k) * (i == m) * (b == e) * (a == d) * H.ab.oovv[l, n, c, f]
-                                + (j == k) * (i == m) * (b == c) * (a == e) * H.ab.oovv[l, n, d, f]
-                        )
-
-                        x2a[a, b, i, j] += hmatel * t_amp
-
-    return x2a
+    return x2_aa_exact, x2_ab_exact, x2_bb_exact
 
 def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
 
@@ -83,75 +28,241 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
     x2b = np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.noccupied_alpha, system.noccupied_beta))
     x2c = np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.noccupied_beta, system.noccupied_beta))
 
-
     # Loop over aaaa determinants
     for idet in range(len(C4_amplitudes["aaaa"])):
 
         # x2a(abij) <- A(ij/mn)A(ab/ef) v_aa(mnef) * t_aaaa(abefijmn)
         a, b, e, f, i, j, m, n = [x - 1 for x in C4_excitations["aaaa"][idet]]
         t_amp = T_ext.aaaa[a, b, e, f, i, j, m, n]
-        #  (1)
-        #  (im)
-        #  (in)
-        #  (jm)
-        #  (jn)
-        #  (im)(jn)
-        #  (ae)
-        #  (af)
-        #  (be)
-        #  (bf)
-        #  (ae)(bf)
-        #  (im)
 
-    # Loop over aaab determinants
-    for idet in range(len(C4_amplitudes["aaab"])):
-
-        # x2a(abij) <- A(ij)A(ab)A(m/kl)A(e/cd) delta(i,k)*delta(j,l)*delta(a,c)*delta(b,d)*v_ab(m,n,e,f)
-        #           <- A(m/ij)A(e/ab) v_ab(mnef) * t_aaab(abefijmn)
-        a, b, e, f, i, j, m, n = [x - 1 for x in C4_excitations["aaab"][idet]]
-        t_amp = T_ext.aaab[a, b, e, f, i, j, m, n]
-
-        x2a[a, b, i, j] += H.ab.oovv[m, n, e, f] * t_amp # (1)
+        x2a[a, b, i, j] += H.aa.oovv[m, n, e, f] * t_amp  #  (1)
         x2a[b, a, i, j] = -x2a[a, b, i, j]
         x2a[a, b, j, i] = -x2a[a, b, i, j]
         x2a[b, a, j, i] = x2a[a, b, i, j]
 
-        x2a[e, b, i, j] -= H.ab.oovv[m, n, a, f] * t_amp # (ae)
+        x2a[a, b, m, j] -= H.aa.oovv[i, n, e, f] * t_amp  #  (im)
+        x2a[b, a, m, j] = -x2a[a, b, m, j]
+        x2a[a, b, j, m] = -x2a[a, b, m, j]
+        x2a[b, a, j, m] = x2a[a, b, m, j]
+
+        x2a[a, b, n, j] -= H.aa.oovv[m, i, e, f] * t_amp  #  (in)
+        x2a[b, a, n, j] = -x2a[a, b, n, j]
+        x2a[a, b, j, n] = -x2a[a, b, n, j]
+        x2a[b, a, j, n] = x2a[a, b, n, j]
+
+        x2a[a, b, i, m] -= H.aa.oovv[j, n, e, f] * t_amp  #  (jm)
+        x2a[b, a, i, m] = -x2a[a, b, i, m]
+        x2a[a, b, m, i] = -x2a[a, b, i, m]
+        x2a[b, a, m, i] = x2a[a, b, i, m]
+
+        x2a[a, b, i, n] -= H.aa.oovv[m, j, e, f] * t_amp  #  (jn)
+        x2a[b, a, i, n] = -x2a[a, b, i, n]
+        x2a[a, b, n, i] = -x2a[a, b, i, n]
+        x2a[b, a, n, i] = x2a[a, b, i, n]
+
+        x2a[a, b, m, n] += H.aa.oovv[i, j, e, f] * t_amp  #  (im)(jn)
+        x2a[b, a, m, n] = -x2a[a, b, m, n]
+        x2a[a, b, n, m] = -x2a[a, b, m, n]
+        x2a[b, a, n, m] = x2a[a, b, m, n]
+
+        x2a[e, b, i, j] -= H.aa.oovv[m, n, a, f] * t_amp  #  (ae)
+        x2a[b, e, i, j] = -x2a[e, b, i, j]
+        x2a[e, b, j, i] = -x2a[e, b, i, j]
+        x2a[b, e, j, i] = x2a[e, b, i, j]
+
+        x2a[e, b, m, j] += H.aa.oovv[i, n, a, f] * t_amp  #  (im)(ae)
+        x2a[b, e, m, j] = -x2a[e, b, m, j]
+        x2a[e, b, j, m] = -x2a[e, b, m, j]
+        x2a[b, e, j, m] = x2a[e, b, m, j]
+
+        x2a[e, b, n, j] += H.aa.oovv[m, i, a, f] * t_amp  #  (in)(ae)
+        x2a[b, e, n, j] = -x2a[e, b, n, j]
+        x2a[e, b, j, n] = -x2a[e, b, n, j]
+        x2a[b, e, j, n] = x2a[e, b, n, j]
+
+        x2a[e, b, i, m] += H.aa.oovv[j, n, a, f] * t_amp  #  (jm)(ae)
+        x2a[b, e, i, m] = -x2a[e, b, i, m]
+        x2a[e, b, m, i] = -x2a[e, b, i, m]
+        x2a[b, e, m, i] = x2a[e, b, i, m]
+
+        x2a[e, b, i, n] += H.aa.oovv[m, j, a, f] * t_amp  #  (jn)(ae)
+        x2a[b, e, i, n] = -x2a[e, b, i, n]
+        x2a[e, b, n, i] = -x2a[e, b, i, n]
+        x2a[b, e, n, i] = x2a[e, b, i, n]
+
+        x2a[e, b, m, n] -= H.aa.oovv[i, j, a, f] * t_amp  #  (im)(jn)(ae)
+        x2a[b, e, m, n] = -x2a[e, b, m, n]
+        x2a[e, b, n, m] = -x2a[e, b, m, n]
+        x2a[b, e, n, m] = x2a[e, b, m, n]
+
+        x2a[f, b, i, j] -= H.aa.oovv[m, n, e, a] * t_amp  #  (af)
+        x2a[b, f, i, j] = -x2a[f, b, i, j]
+        x2a[f, b, j, i] = -x2a[f, b, i, j]
+        x2a[b, f, j, i] = x2a[f, b, i, j]
+
+        x2a[f, b, m, j] += H.aa.oovv[i, n, e, a] * t_amp  #  (im)(af)
+        x2a[b, f, m, j] = -x2a[f, b, m, j]
+        x2a[f, b, j, m] = -x2a[f, b, m, j]
+        x2a[b, f, j, m] = x2a[f, b, m, j]
+
+        x2a[f, b, n, j] += H.aa.oovv[m, i, e, a] * t_amp  #  (in)(af)
+        x2a[b, f, n, j] = -x2a[f, b, n, j]
+        x2a[f, b, j, n] = -x2a[f, b, n, j]
+        x2a[b, f, j, n] = x2a[f, b, n, j]
+
+        x2a[f, b, i, m] += H.aa.oovv[j, n, e, a] * t_amp  #  (jm)(af)
+        x2a[b, f, i, m] = -x2a[f, b, i, m]
+        x2a[f, b, m, i] = -x2a[f, b, i, m]
+        x2a[b, f, m, i] = x2a[f, b, i, m]
+
+        x2a[f, b, i, n] += H.aa.oovv[m, j, e, a] * t_amp  #  (jn)(af)
+        x2a[b, f, i, n] = -x2a[f, b, i, n]
+        x2a[f, b, n, i] = -x2a[f, b, i, n]
+        x2a[b, f, n, i] = x2a[f, b, i, n]
+
+        x2a[f, b, m, n] -= H.aa.oovv[i, j, e, a] * t_amp  #  (im)(jn)(af)
+        x2a[b, f, m, n] = -x2a[f, b, m, n]
+        x2a[f, b, n, m] = -x2a[f, b, m, n]
+        x2a[b, f, n, m] = x2a[f, b, m, n]
+
+        x2a[a, e, i, j] -= H.aa.oovv[m, n, b, f] * t_amp  #  (be)
+        x2a[e, a, i, j] = -x2a[a, e, i, j]
+        x2a[a, e, j, i] = -x2a[a, e, i, j]
+        x2a[e, a, j, i] = x2a[a, e, i, j]
+
+        x2a[a, e, m, j] += H.aa.oovv[i, n, b, f] * t_amp  #  (im)(be)
+        x2a[e, a, m, j] = -x2a[a, e, m, j]
+        x2a[a, e, j, m] = -x2a[a, e, m, j]
+        x2a[e, a, j, m] = x2a[a, e, m, j]
+
+        x2a[a, e, n, j] += H.aa.oovv[m, i, b, f] * t_amp  #  (in)(be)
+        x2a[e, a, n, j] = -x2a[a, e, n, j]
+        x2a[a, e, j, n] = -x2a[a, e, n, j]
+        x2a[e, a, j, n] = x2a[a, e, n, j]
+
+        x2a[a, e, i, m] += H.aa.oovv[j, n, b, f] * t_amp  #  (jm)(be)
+        x2a[e, a, i, m] = -x2a[a, e, i, m]
+        x2a[a, e, m, i] = -x2a[a, e, i, m]
+        x2a[e, a, m, i] = x2a[a, e, i, m]
+
+        x2a[a, e, i, n] += H.aa.oovv[m, j, b, f] * t_amp  #  (jn)(be)
+        x2a[e, a, i, n] = -x2a[a, e, i, n]
+        x2a[a, e, n, i] = -x2a[a, e, i, n]
+        x2a[e, a, n, i] = x2a[a, e, i, n]
+
+        x2a[a, e, m, n] -= H.aa.oovv[i, j, b, f] * t_amp  #  (im)(jn)(be)
+        x2a[e, a, m, n] = -x2a[a, e, m, n]
+        x2a[a, e, n, m] = -x2a[a, e, m, n]
+        x2a[e, a, n, m] = x2a[a, e, m, n]
+
+        x2a[a, f, i, j] -= H.aa.oovv[m, n, e, b] * t_amp  #  (bf)
+        x2a[f, a, i, j] = -x2a[a, f, i, j]
+        x2a[a, f, j, i] = -x2a[a, f, i, j]
+        x2a[f, a, j, i] = x2a[a, f, i, j]
+
+        x2a[a, f, m, j] += H.aa.oovv[i, n, e, b] * t_amp  #  (im)(bf)
+        x2a[f, a, m, j] = -x2a[a, f, m, j]
+        x2a[a, f, j, m] = -x2a[a, f, m, j]
+        x2a[f, a, j, m] = x2a[a, f, m, j]
+
+        x2a[a, f, n, j] += H.aa.oovv[m, i, e, b] * t_amp  #  (in)(bf)
+        x2a[f, a, n, j] = -x2a[a, f, n, j]
+        x2a[a, f, j, n] = -x2a[a, f, n, j]
+        x2a[f, a, j, n] = x2a[a, f, n, j]
+
+        x2a[a, f, i, m] += H.aa.oovv[j, n, e, b] * t_amp  #  (jm)(bf)
+        x2a[f, a, i, m] = -x2a[a, f, i, m]
+        x2a[a, f, m, i] = -x2a[a, f, i, m]
+        x2a[f, a, m, i] = x2a[a, f, i, m]
+
+        x2a[a, f, i, n] += H.aa.oovv[m, j, e, b] * t_amp  #  (jn)(bf)
+        x2a[f, a, i, n] = -x2a[a, f, i, n]
+        x2a[a, f, n, i] = -x2a[a, f, i, n]
+        x2a[f, a, n, i] = x2a[a, f, i, n]
+
+        x2a[a, f, m, n] -= H.aa.oovv[i, j, e, b] * t_amp  #  (im)(jn)(bf)
+        x2a[f, a, m, n] = -x2a[a, f, m, n]
+        x2a[a, f, n, m] = -x2a[a, f, m, n]
+        x2a[f, a, n, m] = x2a[a, f, m, n]
+
+        x2a[e, f, i, j] += H.aa.oovv[m, n, a, b] * t_amp  #  (ae)(bf)
+        x2a[f, e, i, j] = -x2a[e, f, i, j]
+        x2a[e, f, j, i] = -x2a[e, f, i, j]
+        x2a[f, e, j, i] = x2a[e, f, i, j]
+
+        x2a[e, f, m, j] -= H.aa.oovv[i, n, a, b] * t_amp  #  (im)(ae)(bf)
+        x2a[f, e, m, j] = -x2a[e, f, m, j]
+        x2a[e, f, j, m] = -x2a[e, f, m, j]
+        x2a[f, e, j, m] = x2a[e, f, m, j]
+
+        x2a[e, f, n, j] -= H.aa.oovv[m, i, a, b] * t_amp  #  (in)(ae)(bf)
+        x2a[f, e, n, j] = -x2a[e, f, n, j]
+        x2a[e, f, j, n] = -x2a[e, f, n, j]
+        x2a[f, e, j, n] = x2a[e, f, n, j]
+
+        x2a[e, f, i, m] -= H.aa.oovv[j, n, a, b] * t_amp  #  (jm)(ae)(bf)
+        x2a[f, e, i, m] = -x2a[e, f, i, m]
+        x2a[e, f, m, i] = -x2a[e, f, i, m]
+        x2a[f, e, m, i] = x2a[e, f, i, m]
+
+        x2a[e, f, i, n] -= H.aa.oovv[m, j, a, b] * t_amp  #  (jn)(ae)(bf)
+        x2a[f, e, i, n] = -x2a[e, f, i, n]
+        x2a[e, f, n, i] = -x2a[e, f, i, n]
+        x2a[f, e, n, i] = x2a[e, f, i, n]
+
+        x2a[e, f, m, n] += H.aa.oovv[i, j, a, b] * t_amp  #  (im)(jn)(ae)(bf)
+        x2a[f, e, m, n] = -x2a[e, f, m, n]
+        x2a[e, f, n, m] = -x2a[e, f, m, n]
+        x2a[f, e, n, m] = x2a[e, f, m, n]
+
+    # Loop over aaab determinants
+    for idet in range(len(C4_amplitudes["aaab"])):
+
+        # x2a(abij) <- A(m/ij)A(e/ab) v_ab(mnef) * t_aaab(abefijmn)
+        a, b, e, f, i, j, m, n = [x - 1 for x in C4_excitations["aaab"][idet]]
+        t_amp = T_ext.aaab[a, b, e, f, i, j, m, n]
+
+        x2a[a, b, i, j] += H.ab.oovv[m, n, e, f] * t_amp  # (1)
+        x2a[b, a, i, j] = -x2a[a, b, i, j]
+        x2a[a, b, j, i] = -x2a[a, b, i, j]
+        x2a[b, a, j, i] = x2a[a, b, i, j]
+
+        x2a[e, b, i, j] -= H.ab.oovv[m, n, a, f] * t_amp  # (ae)
         x2a[e, b, j, i] = -x2a[e, b, i, j]
         x2a[b, e, i, j] = -x2a[e, b, i, j]
         x2a[b, e, j, i] = x2a[e, b, i, j]
 
-        x2a[a, e, i, j] -= H.ab.oovv[m, n, b, f] * t_amp # (be)
+        x2a[a, e, i, j] -= H.ab.oovv[m, n, b, f] * t_amp  # (be)
         x2a[a, e, j, i] = -x2a[a, e, i, j]
         x2a[e, a, i, j] = -x2a[a, e, i, j]
         x2a[e, a, j, i] = x2a[a, e, i, j]
 
-        x2a[a, b, m, j] -= H.ab.oovv[i, n, e, f] * t_amp # (mi)
+        x2a[a, b, m, j] -= H.ab.oovv[i, n, e, f] * t_amp  # (mi)
         x2a[a, b, j, m] = -x2a[a, b, m, j]
         x2a[b, a, m, j] = -x2a[a, b, m, j]
         x2a[b, a, j, m] = x2a[a, b, m, j]
 
-        x2a[e, b, m, j] += H.ab.oovv[i, n, a, f] * t_amp # (mi)(ae)
+        x2a[e, b, m, j] += H.ab.oovv[i, n, a, f] * t_amp  # (mi)(ae)
         x2a[e, b, j, m] = -x2a[e, b, m, j]
         x2a[b, e, m, j] = -x2a[e, b, m, j]
         x2a[b, e, j, m] = x2a[e, b, m, j]
 
-        x2a[a, e, m, j] += H.ab.oovv[i, n, b, f] * t_amp # (mi)(be)
+        x2a[a, e, m, j] += H.ab.oovv[i, n, b, f] * t_amp  # (mi)(be)
         x2a[a, e, j, m] = -x2a[a, e, m, j]
         x2a[e, a, m, j] = -x2a[a, e, m, j]
         x2a[e, a, j, m] = x2a[a, e, m, j]
 
-        x2a[a, b, i, m] -= H.ab.oovv[j, n, e, f] * t_amp # (mj)
+        x2a[a, b, i, m] -= H.ab.oovv[j, n, e, f] * t_amp  # (mj)
         x2a[a, b, m, i] = -x2a[a, b, i, m]
         x2a[b, a, i, m] = -x2a[a, b, i, m]
         x2a[b, a, m, i] = x2a[a, b, i, m]
 
-        x2a[e, b, i, m] += H.ab.oovv[j, n, a, f] * t_amp # (ae)(mj)
+        x2a[e, b, i, m] += H.ab.oovv[j, n, a, f] * t_amp  # (ae)(mj)
         x2a[e, b, m, i] = -x2a[e, b, i, m]
         x2a[b, e, i, m] = -x2a[e, b, i, m]
         x2a[b, e, m, i] = x2a[e, b, i, m]
 
-        x2a[a, e, i, m] += H.ab.oovv[j, n, b, f] * t_amp # (be)(mj)
+        x2a[a, e, i, m] += H.ab.oovv[j, n, b, f] * t_amp  # (be)(mj)
         x2a[a, e, m, i] = -x2a[a, e, i, m]
         x2a[e, a, i, m] = -x2a[a, e, i, m]
         x2a[e, a, m, i] = x2a[a, e, i, m]
@@ -203,6 +314,15 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
         x2b[a, f, m, n] -= H.ab.oovv[i, j, e, b] * t_amp  #  (bf)(im)(jn)
         x2b[e, f, m, n] += H.ab.oovv[i, j, a, b] * t_amp  #  (ae)(bf)(im)(jn)
 
+        # x2c(abij) <- v_aa(mnef) * t_aabb(efabmnij)
+        e, f, a, b, m, n, i, j = [x - 1 for x in C4_excitations["aabb"][idet]]
+        t_amp = T_ext.aabb[e, f, a, b, m, n, i, j]
+
+        x2c[a, b, i, j] += H.aa.oovv[m, n, e, f] * t_amp
+        x2c[b, a, i, j] = -x2c[a, b, i, j]
+        x2c[a, b, j, i] = -x2c[a, b, i, j]
+        x2c[b, a, j, i] = x2c[a, b, i, j]
+
     # Loop over abbb determinants
     for idet in range(len(C4_amplitudes["abbb"])):
 
@@ -220,8 +340,243 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
         x2b[a, f, i, m] += H.bb.oovv[j, n, e, b] * t_amp  #  (jm)(bf)
         x2b[a, f, i, n] += H.bb.oovv[m, j, e, b] * t_amp  #  (jn)(bf)
 
+        # x2c(abij) <- A(n/ij)A(f/ab) v_ab(mnef) * t_abbb(efabmnij)
+        e, f, a, b, m, n, i, j = [x - 1 for x in C4_excitations["abbb"][idet]]
+        t_amp = T_ext.abbb[e, f, a, b, m, n, i, j]
 
-    return x2a, x2b
+        x2c[a, b, i, j] += H.ab.oovv[m, n, e, f] * t_amp  #  (1)
+        x2c[b, a, i, j] = -x2c[a, b, i, j]
+        x2c[a, b, j, i] = -x2c[a, b, i, j]
+        x2c[b, a, j, i] = x2c[a, b, i, j]
+
+        x2c[a, b, n, j] -= H.ab.oovv[m, i, e, f] * t_amp  #  (in)
+        x2c[b, a, n, j] = -x2c[a, b, n, j]
+        x2c[a, b, j, n] = -x2c[a, b, n, j]
+        x2c[b, a, j, n] = x2c[a, b, n, j]
+
+        x2c[a, b, i, n] -= H.ab.oovv[m, j, e, f] * t_amp  #  (jn)
+        x2c[b, a, i, n] = -x2c[a, b, i, n]
+        x2c[a, b, n, i] = -x2c[a, b, i, n]
+        x2c[b, a, n, i] = x2c[a, b, i, n]
+
+        x2c[f, b, i, j] -= H.ab.oovv[m, n, e, a] * t_amp  #  (af)
+        x2c[b, f, i, j] = -x2c[f, b, i, j]
+        x2c[f, b, j, i] = -x2c[f, b, i, j]
+        x2c[b, f, j, i] = x2c[f, b, i, j]
+
+        x2c[a, f, i, j] -= H.ab.oovv[m, n, e, b] * t_amp  #  (bf)
+        x2c[f, a, i, j] = -x2c[a, f, i, j]
+        x2c[a, f, j, i] = -x2c[a, f, i, j]
+        x2c[f, a, j, i] = x2c[a, f, i, j]
+
+        x2c[f, b, n, j] += H.ab.oovv[m, i, e, a] * t_amp  #  (in)(af)
+        x2c[b, f, n, j] = -x2c[f, b, n, j]
+        x2c[f, b, j, n] = -x2c[f, b, n, j]
+        x2c[b, f, j, n] = x2c[f, b, n, j]
+
+        x2c[a, f, n, j] += H.ab.oovv[m, i, e, b] * t_amp  #  (in)(bf)
+        x2c[f, a, n, j] = -x2c[a, f, n, j]
+        x2c[a, f, j, n] = -x2c[a, f, n, j]
+        x2c[f, a, j, n] = x2c[a, f, n, j]
+
+        x2c[f, b, i, n] += H.ab.oovv[m, j, e, a] * t_amp  #  (jn)(af)
+        x2c[b, f, i, n] = -x2c[f, b, i, n]
+        x2c[f, b, n, i] = -x2c[f, b, i, n]
+        x2c[b, f, n, i] = x2c[f, b, i, n]
+
+        x2c[a, f, i, n] += H.ab.oovv[m, j, e, b] * t_amp  #  (jn)(bf)
+        x2c[f, a, i, n] = -x2c[a, f, i, n]
+        x2c[a, f, n, i] = -x2c[a, f, i, n]
+        x2c[f, a, n, i] = x2c[a, f, i, n]
+
+    # Loop over bbbb determinants
+    for idet in range(len(C4_amplitudes["bbbb"])):
+
+        # x2c(abij) <- A(ij/mn)A(ab/ef) v_bb(mnef) * t_bbbb(abefijmn)
+        a, b, e, f, i, j, m, n = [x - 1 for x in C4_excitations["bbbb"][idet]]
+        t_amp = T_ext.bbbb[a, b, e, f, i, j, m, n]
+
+        x2c[a, b, i, j] += H.bb.oovv[m, n, e, f] * t_amp  #  (1)
+        x2c[b, a, i, j] = -x2c[a, b, i, j]
+        x2c[a, b, j, i] = -x2c[a, b, i, j]
+        x2c[b, a, j, i] = x2c[a, b, i, j]
+
+        x2c[a, b, m, j] -= H.bb.oovv[i, n, e, f] * t_amp  #  (im)
+        x2c[b, a, m, j] = -x2c[a, b, m, j]
+        x2c[a, b, j, m] = -x2c[a, b, m, j]
+        x2c[b, a, j, m] = x2c[a, b, m, j]
+
+        x2c[a, b, n, j] -= H.bb.oovv[m, i, e, f] * t_amp  #  (in)
+        x2c[b, a, n, j] = -x2c[a, b, n, j]
+        x2c[a, b, j, n] = -x2c[a, b, n, j]
+        x2c[b, a, j, n] = x2c[a, b, n, j]
+
+        x2c[a, b, i, m] -= H.bb.oovv[j, n, e, f] * t_amp  #  (jm)
+        x2c[b, a, i, m] = -x2c[a, b, i, m]
+        x2c[a, b, m, i] = -x2c[a, b, i, m]
+        x2c[b, a, m, i] = x2c[a, b, i, m]
+
+        x2c[a, b, i, n] -= H.bb.oovv[m, j, e, f] * t_amp  #  (jn)
+        x2c[b, a, i, n] = -x2c[a, b, i, n]
+        x2c[a, b, n, i] = -x2c[a, b, i, n]
+        x2c[b, a, n, i] = x2c[a, b, i, n]
+
+        x2c[a, b, m, n] += H.bb.oovv[i, j, e, f] * t_amp  #  (im)(jn)
+        x2c[b, a, m, n] = -x2c[a, b, m, n]
+        x2c[a, b, n, m] = -x2c[a, b, m, n]
+        x2c[b, a, n, m] = x2c[a, b, m, n]
+
+        x2c[e, b, i, j] -= H.bb.oovv[m, n, a, f] * t_amp  #  (ae)
+        x2c[b, e, i, j] = -x2c[e, b, i, j]
+        x2c[e, b, j, i] = -x2c[e, b, i, j]
+        x2c[b, e, j, i] = x2c[e, b, i, j]
+
+        x2c[e, b, m, j] += H.bb.oovv[i, n, a, f] * t_amp  #  (im)(ae)
+        x2c[b, e, m, j] = -x2c[e, b, m, j]
+        x2c[e, b, j, m] = -x2c[e, b, m, j]
+        x2c[b, e, j, m] = x2c[e, b, m, j]
+
+        x2c[e, b, n, j] += H.bb.oovv[m, i, a, f] * t_amp  #  (in)(ae)
+        x2c[b, e, n, j] = -x2c[e, b, n, j]
+        x2c[e, b, j, n] = -x2c[e, b, n, j]
+        x2c[b, e, j, n] = x2c[e, b, n, j]
+
+        x2c[e, b, i, m] += H.bb.oovv[j, n, a, f] * t_amp  #  (jm)(ae)
+        x2c[b, e, i, m] = -x2c[e, b, i, m]
+        x2c[e, b, m, i] = -x2c[e, b, i, m]
+        x2c[b, e, m, i] = x2c[e, b, i, m]
+
+        x2c[e, b, i, n] += H.bb.oovv[m, j, a, f] * t_amp  #  (jn)(ae)
+        x2c[b, e, i, n] = -x2c[e, b, i, n]
+        x2c[e, b, n, i] = -x2c[e, b, i, n]
+        x2c[b, e, n, i] = x2c[e, b, i, n]
+
+        x2c[e, b, m, n] -= H.bb.oovv[i, j, a, f] * t_amp  #  (im)(jn)(ae)
+        x2c[b, e, m, n] = -x2c[e, b, m, n]
+        x2c[e, b, n, m] = -x2c[e, b, m, n]
+        x2c[b, e, n, m] = x2c[e, b, m, n]
+
+        x2c[f, b, i, j] -= H.bb.oovv[m, n, e, a] * t_amp  #  (af)
+        x2c[b, f, i, j] = -x2c[f, b, i, j]
+        x2c[f, b, j, i] = -x2c[f, b, i, j]
+        x2c[b, f, j, i] = x2c[f, b, i, j]
+
+        x2c[f, b, m, j] += H.bb.oovv[i, n, e, a] * t_amp  #  (im)(af)
+        x2c[b, f, m, j] = -x2c[f, b, m, j]
+        x2c[f, b, j, m] = -x2c[f, b, m, j]
+        x2c[b, f, j, m] = x2c[f, b, m, j]
+
+        x2c[f, b, n, j] += H.bb.oovv[m, i, e, a] * t_amp  #  (in)(af)
+        x2c[b, f, n, j] = -x2c[f, b, n, j]
+        x2c[f, b, j, n] = -x2c[f, b, n, j]
+        x2c[b, f, j, n] = x2c[f, b, n, j]
+
+        x2c[f, b, i, m] += H.bb.oovv[j, n, e, a] * t_amp  #  (jm)(af)
+        x2c[b, f, i, m] = -x2c[f, b, i, m]
+        x2c[f, b, m, i] = -x2c[f, b, i, m]
+        x2c[b, f, m, i] = x2c[f, b, i, m]
+
+        x2c[f, b, i, n] += H.bb.oovv[m, j, e, a] * t_amp  #  (jn)(af)
+        x2c[b, f, i, n] = -x2c[f, b, i, n]
+        x2c[f, b, n, i] = -x2c[f, b, i, n]
+        x2c[b, f, n, i] = x2c[f, b, i, n]
+
+        x2c[f, b, m, n] -= H.bb.oovv[i, j, e, a] * t_amp  #  (im)(jn)(af)
+        x2c[b, f, m, n] = -x2c[f, b, m, n]
+        x2c[f, b, n, m] = -x2c[f, b, m, n]
+        x2c[b, f, n, m] = x2c[f, b, m, n]
+
+        x2c[a, e, i, j] -= H.bb.oovv[m, n, b, f] * t_amp  #  (be)
+        x2c[e, a, i, j] = -x2c[a, e, i, j]
+        x2c[a, e, j, i] = -x2c[a, e, i, j]
+        x2c[e, a, j, i] = x2c[a, e, i, j]
+
+        x2c[a, e, m, j] += H.bb.oovv[i, n, b, f] * t_amp  #  (im)(be)
+        x2c[e, a, m, j] = -x2c[a, e, m, j]
+        x2c[a, e, j, m] = -x2c[a, e, m, j]
+        x2c[e, a, j, m] = x2c[a, e, m, j]
+
+        x2c[a, e, n, j] += H.bb.oovv[m, i, b, f] * t_amp  #  (in)(be)
+        x2c[e, a, n, j] = -x2c[a, e, n, j]
+        x2c[a, e, j, n] = -x2c[a, e, n, j]
+        x2c[e, a, j, n] = x2c[a, e, n, j]
+
+        x2c[a, e, i, m] += H.bb.oovv[j, n, b, f] * t_amp  #  (jm)(be)
+        x2c[e, a, i, m] = -x2c[a, e, i, m]
+        x2c[a, e, m, i] = -x2c[a, e, i, m]
+        x2c[e, a, m, i] = x2c[a, e, i, m]
+
+        x2c[a, e, i, n] += H.bb.oovv[m, j, b, f] * t_amp  #  (jn)(be)
+        x2c[e, a, i, n] = -x2c[a, e, i, n]
+        x2c[a, e, n, i] = -x2c[a, e, i, n]
+        x2c[e, a, n, i] = x2c[a, e, i, n]
+
+        x2c[a, e, m, n] -= H.bb.oovv[i, j, b, f] * t_amp  #  (im)(jn)(be)
+        x2c[e, a, m, n] = -x2c[a, e, m, n]
+        x2c[a, e, n, m] = -x2c[a, e, m, n]
+        x2c[e, a, n, m] = x2c[a, e, m, n]
+
+        x2c[a, f, i, j] -= H.bb.oovv[m, n, e, b] * t_amp  #  (bf)
+        x2c[f, a, i, j] = -x2c[a, f, i, j]
+        x2c[a, f, j, i] = -x2c[a, f, i, j]
+        x2c[f, a, j, i] = x2c[a, f, i, j]
+
+        x2c[a, f, m, j] += H.bb.oovv[i, n, e, b] * t_amp  #  (im)(bf)
+        x2c[f, a, m, j] = -x2c[a, f, m, j]
+        x2c[a, f, j, m] = -x2c[a, f, m, j]
+        x2c[f, a, j, m] = x2c[a, f, m, j]
+
+        x2c[a, f, n, j] += H.bb.oovv[m, i, e, b] * t_amp  #  (in)(bf)
+        x2c[f, a, n, j] = -x2c[a, f, n, j]
+        x2c[a, f, j, n] = -x2c[a, f, n, j]
+        x2c[f, a, j, n] = x2c[a, f, n, j]
+
+        x2c[a, f, i, m] += H.bb.oovv[j, n, e, b] * t_amp  #  (jm)(bf)
+        x2c[f, a, i, m] = -x2c[a, f, i, m]
+        x2c[a, f, m, i] = -x2c[a, f, i, m]
+        x2c[f, a, m, i] = x2c[a, f, i, m]
+
+        x2c[a, f, i, n] += H.bb.oovv[m, j, e, b] * t_amp  #  (jn)(bf)
+        x2c[f, a, i, n] = -x2c[a, f, i, n]
+        x2c[a, f, n, i] = -x2c[a, f, i, n]
+        x2c[f, a, n, i] = x2c[a, f, i, n]
+
+        x2c[a, f, m, n] -= H.bb.oovv[i, j, e, b] * t_amp  #  (im)(jn)(bf)
+        x2c[f, a, m, n] = -x2c[a, f, m, n]
+        x2c[a, f, n, m] = -x2c[a, f, m, n]
+        x2c[f, a, n, m] = x2c[a, f, m, n]
+
+        x2c[e, f, i, j] += H.bb.oovv[m, n, a, b] * t_amp  #  (ae)(bf)
+        x2c[f, e, i, j] = -x2c[e, f, i, j]
+        x2c[e, f, j, i] = -x2c[e, f, i, j]
+        x2c[f, e, j, i] = x2c[e, f, i, j]
+
+        x2c[e, f, m, j] -= H.bb.oovv[i, n, a, b] * t_amp  #  (im)(ae)(bf)
+        x2c[f, e, m, j] = -x2c[e, f, m, j]
+        x2c[e, f, j, m] = -x2c[e, f, m, j]
+        x2c[f, e, j, m] = x2c[e, f, m, j]
+
+        x2c[e, f, n, j] -= H.bb.oovv[m, i, a, b] * t_amp  #  (in)(ae)(bf)
+        x2c[f, e, n, j] = -x2c[e, f, n, j]
+        x2c[e, f, j, n] = -x2c[e, f, n, j]
+        x2c[f, e, j, n] = x2c[e, f, n, j]
+
+        x2c[e, f, i, m] -= H.bb.oovv[j, n, a, b] * t_amp  #  (jm)(ae)(bf)
+        x2c[f, e, i, m] = -x2c[e, f, i, m]
+        x2c[e, f, m, i] = -x2c[e, f, i, m]
+        x2c[f, e, m, i] = x2c[e, f, i, m]
+
+        x2c[e, f, i, n] -= H.bb.oovv[m, j, a, b] * t_amp  #  (jn)(ae)(bf)
+        x2c[f, e, i, n] = -x2c[e, f, i, n]
+        x2c[e, f, n, i] = -x2c[e, f, i, n]
+        x2c[f, e, n, i] = x2c[e, f, i, n]
+
+        x2c[e, f, m, n] += H.bb.oovv[i, j, a, b] * t_amp  #  (im)(jn)(ae)(bf)
+        x2c[f, e, m, n] = -x2c[e, f, m, n]
+        x2c[e, f, n, m] = -x2c[e, f, m, n]
+        x2c[f, e, n, m] = x2c[e, f, m, n]
+
+    return x2a, x2b, x2c
 
 if __name__ == "__main__":
 
@@ -255,12 +610,12 @@ if __name__ == "__main__":
     T_ext = cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, 4)
 
     # Get the expected result for the contraction, computed using full T_ext
-    x2_aa_exact, x2_ab_exact = contract_vt4_exact(H, T_ext)
+    x2_aa_exact, x2_ab_exact, x2_bb_exact = contract_vt4_exact(H, T_ext)
 
     # Get the on-the-fly contraction result (although for now, we are still using full T4)
-    x2_aa, x2_ab = contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system)
-
+    x2_aa, x2_ab, x2_bb = contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system)
 
     print("")
     print("Error in x2a = ", np.linalg.norm(x2_aa.flatten() - x2_aa_exact.flatten()))
     print("Error in x2b = ", np.linalg.norm(x2_ab.flatten() - x2_ab_exact.flatten()))
+    print("Error in x2c = ", np.linalg.norm(x2_bb.flatten() - x2_bb_exact.flatten()))
