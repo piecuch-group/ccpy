@@ -1,53 +1,11 @@
 import numpy as np
+
+from ccpy.utilities.determinants import get_excits_from, get_excits_to, get_spincase, get_excit_rank, calculate_permutation_parity, spatial_orb_idx
 from ccpy.models.operators import ClusterOperator
 from ccpy.models.integrals import Integral
 from ccpy.utilities.updates import clusteranalysis
 from ccpy.drivers.cc_energy import get_cc_energy, get_ci_energy
 import time
-
-#print(clusteranalysis.clusteranalysis.__doc__)
-
-def calculate_permutation_parity(lst):
-    """Given a permutation of the digits 0..N in order as a list,
-    returns its parity (or sign): +1 for even parity; -1 for odd."""
-    parity = 1.0
-    for i in range(0, len(lst) - 1):
-        if lst[i] != i:
-            parity *= -1.0
-            mn = min(range(i, len(lst)), key=lst.__getitem__)
-            lst[i], lst[mn] = lst[mn], lst[i]
-    return parity
-
-def get_excit_rank(D, D0):
-    return len(set(D) - set(D0))
-
-
-def get_excits_from(D, D0):
-    return list(set(D0) - set(D))
-
-
-def get_excits_to(D, D0):
-    return list(set(D) - set(D0))
-
-
-def spatial_orb_idx(x):
-    if x % 2 == 1:
-        return int((x + 1) / 2)
-    else:
-        return int(x / 2)
-
-
-def get_spincase(excits_from, excits_to):
-    assert (len(excits_from) == len(excits_to))
-
-    num_alpha_occ = sum([i % 2 for i in excits_from])
-    num_alpha_unocc = sum([i % 2 for i in excits_to])
-
-    assert (num_alpha_occ == num_alpha_unocc)
-
-    spincase = 'a' * num_alpha_occ + 'b' * (len(excits_from) - num_alpha_occ)
-
-    return spincase
 
 def cluster_analysis(wavefunction_file, hamiltonian, system):
 
@@ -117,7 +75,7 @@ def cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, order=3):
                                                                                      C.aa, C.ab, C.bb,
                                                                                      C.aaa, C.aab, C.abb, C.bbb)
 
-    t4_aaaa_amps, t4_aaab_amps, t4_aabb_amps, t4_abbb_amps, t4_bbbb_amps = clusteranalysis.clusteranalysis.cluster_analysis_t4_direct(C.a, C.b,
+    t4_aaaa_amps, t4_aaab_amps, t4_aabb_amps, t4_abbb_amps, t4_bbbb_amps = clusteranalysis.clusteranalysis.cluster_analysis_t4(C.a, C.b,
                                                                                                      C.aa, C.ab, C.bb,
                                                                                                      C.aaa, C.aab, C.abb, C.bbb,
                                                                                                      C4_excitations['aaaa'],
@@ -134,7 +92,7 @@ def cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, order=3):
     T4_amplitudes = {"aaaa" : t4_aaaa_amps, "aaab" : t4_aaab_amps, "aabb" : t4_aabb_amps, "abbb" : t4_abbb_amps, "bbbb" : t4_bbbb_amps}
 
     if T.order > 3:
-        T.aaaa, T.aaab, T.aabb, T.abbb, T.bbbb = clusteranalysis.clusteranalysis.cluster_analysis_t4(C.a, C.b,
+        T.aaaa, T.aaab, T.aabb, T.abbb, T.bbbb = clusteranalysis.clusteranalysis.cluster_analysis_t4_full(C.a, C.b,
                                                                                                      C.aa, C.ab, C.bb,
                                                                                                      C.aaa, C.aab, C.abb, C.bbb,
                                                                                                      C4_excitations['aaaa'],
@@ -210,7 +168,7 @@ def parse_ci_wavefunction(ci_file, system):
 
             # WARNING: You will need to compute phase factor associated with QMC determinant ordering (abab...)
             # alpha -> odd, beta -> even; e.g., 1, 2, 3, 4,...
-            # and Slater determinant excitation {a+b+c+d+lkji} (holes are reversed!)
+            # and Slater determinant excitation N[a+b+c+d+lkji] (holes are reversed!)
             excited_det_spinorb = spinorb_unocc_alpha + spinorb_unocc_beta + list(reversed(spinorb_occ_alpha)) + list(reversed(spinorb_occ_beta))
             i_perm = np.argsort(excited_det_spinorb)
 
@@ -252,10 +210,10 @@ def parse_ci_wavefunction(ci_file, system):
                 C4_excits[key] = np.zeros((0, 8))
                 C4_amps[key] = np.zeros(shape=(1,))
 
-        # Put in the sign fix... not sure why this is but it has to do with the ordering of excited_det_spinorb
-        C.b *= -1.0
-        C.aab *= -1.0
-        C.bbb *= -1.0
+    # Put in the sign fix... not sure why this is, but it has to do with the ordering of excited_det_spinorb
+    C.b *= -1.0
+    C.aab *= -1.0
+    C.bbb *= -1.0
 
     return C, C4_excits, C4_amps, excitation_count
 

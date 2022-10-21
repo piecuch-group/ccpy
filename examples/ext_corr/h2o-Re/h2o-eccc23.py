@@ -16,7 +16,7 @@ if __name__ == "__main__":
     )
     system.print_info()
 
-    civecs = "ndet_100000/civecs.dat"
+    civecs = "ndet_1000000/civecs.dat"
 
     calculation = Calculation(calculation_type="eccc2")
     T, total_energy, converged = eccc_driver(calculation, system, H, external_wavefunction=civecs)

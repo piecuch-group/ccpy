@@ -1,6 +1,7 @@
 import numpy as np
-
 from itertools import permutations
+
+from ccpy.utilities.determinants import get_excits_from, get_excits_to, get_spincase, spatial_orb_idx, get_excit_rank
 
 
 def get_empty_pspace(system, nexcit):
@@ -77,38 +78,6 @@ def get_full_pspace(system, nexcit):
                                     system.noccupied_beta, system.noccupied_beta, system.noccupied_beta,
                                     system.noccupied_beta))}]
     return pspace
-
-
-def get_excit_rank(D, D0):
-    return len(set(D) - set(D0))
-
-
-def get_excits_from(D, D0):
-    return list(set(D0) - set(D))
-
-
-def get_excits_to(D, D0):
-    return list(set(D) - set(D0))
-
-
-def spatial_orb_idx(x):
-    if x % 2 == 1:
-        return int((x + 1) / 2)
-    else:
-        return int(x / 2)
-
-
-def get_spincase(excits_from, excits_to):
-    assert (len(excits_from) == len(excits_to))
-
-    num_alpha_occ = sum([i % 2 for i in excits_from])
-    num_alpha_unocc = sum([i % 2 for i in excits_to])
-
-    assert (num_alpha_occ == num_alpha_unocc)
-
-    spincase = 'a' * num_alpha_occ + 'b' * (len(excits_from) - num_alpha_occ)
-
-    return spincase
 
 
 def get_pspace_from_cipsi(pspace_file, system, nexcit=3, ordered_index=True):
@@ -344,7 +313,6 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, ordered_index=True):
                         ct_aab += 1
                     else:
                         new_pspace['aab'][a, b, c, i, j, k] = 1
-                    ct += 1
 
         if num_alpha == 1:
             for perms_unocc in permutations((b, c)):
@@ -356,7 +324,6 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, ordered_index=True):
                         ct_abb += 1
                     else:
                         new_pspace['abb'][a, b, c, i, j, k] = 1
-                    ct += 1
 
         if num_alpha == 0:
             for perms_unocc in permutations((a, b, c)):
@@ -368,7 +335,6 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, ordered_index=True):
                         ct_bbb += 1
                     else:
                         new_pspace['bbb'][a, b, c, i, j, k] = 1
-                    ct += 1
 
     return new_pspace
 

@@ -305,673 +305,7 @@ module clusteranalysis
         end subroutine cluster_analysis_t3
 
 
-        subroutine contract_vt4_opt(x2a, x2b, x2c,&
-                                    v_aa, v_ab, v_bb,&
-                                    c1_a, c1_b, c2_aa, c2_ab, c2_bb, c3_aaa, c3_aab, c3_abb, c3_bbb,&
-                                    c4_aaaa, c4_aaab, c4_aabb, c4_abbb, c4_bbbb,&
-                                    c4_aaaa_amps, c4_aaab_amps, c4_aabb_amps, c4_abbb_amps, c4_bbbb_amps,&
-                                    n4a, n4b, n4c, n4d, n4e,&
-                                    noa, nua, nob, nub)
-
-            integer, intent(in) :: noa, nua, nob, nub
-            integer, intent(in) :: n4a, n4b, n4c, n4d, n4e
-
-            integer, intent(in) :: c4_aaaa(n4a, 8), c4_aaab(n4b, 8), c4_aabb(n4c, 8), c4_abbb(n4d, 8), c4_bbbb(n4e, 8)
-
-            real(kind=8), intent(in) :: c1_a(nua, noa), c1_b(nub, nob),&
-                                        c2_aa(nua, nua, noa, noa), c2_ab(nua, nub, noa, nob), c2_bb(nub, nub, nob, nob),&
-                                        c3_aaa(nua, nua, nua, noa, noa, noa), c3_aab(nua, nua, nub, noa, noa, nob),&
-                                        c3_abb(nua, nub, nub, noa, nob, nob), c3_bbb(nub, nub, nub, nob, nob, nob)
-
-            real(kind=8), intent(in) :: c4_aaaa_amps(n4a), c4_aaab_amps(n4b), c4_aabb_amps(n4c), c4_abbb_amps(n4d), c4_bbbb_amps(n4e)
-            real(kind=8), intent(in) :: v_aa(noa, noa, nua, nua), v_ab(noa, nob, nua, nub), v_bb(nob, nob, nub, nub)
-
-            real(kind=8), intent(out) :: x2a(nua, nua, noa, noa), x2b(nua, nub, noa, nob), x2c(nub, nub, nob, nob)
-
-            integer :: a, b, i, j, m, n, e, f, idet
-            real(kind=8) :: hmatel, t_amp
-
-            x2a = 0.0d0
-            x2b = 0.0d0
-            x2c = 0.0d0
-
-            do idet = 1, n4a
-
-                a = c4_aaaa(idet, 1); b = c4_aaaa(idet, 2); e = c4_aaaa(idet, 3); f = c4_aaaa(idet, 4);
-                i = c4_aaaa(idet, 5); j = c4_aaaa(idet, 6); m = c4_aaaa(idet, 7); n = c4_aaaa(idet, 8);
-
-                call get_t4aaaa_amp(t_amp, c1_a, c2_aa, c3_aaa, c4_aaaa_amps(idet),&
-                                    a, b, e, f, i, j, m, n,&
-                                    noa, nua)
-
-                ! x2a(abij) <- A(ij/mn)A(ab/ef) v_aa(mnef) * t_aaaa(abefijmn)
-                ! A(ij/mn) = (1) - (im) - (in) - (jm) - (jn) + (im)(jn)
-                ! A(ab/ef) = (1) - (ae) - (af) - (be) - (bf) + (ae)(bf)
-                hmatel =  v_aa(m,n,e,f) - v_aa(i,n,e,f) - v_aa(m,i,e,f) - v_aa(j,n,e,f) - v_aa(m,j,e,f) + v_aa(i,j,e,f)&
-                         -v_aa(m,n,a,f) + v_aa(i,n,a,f) + v_aa(m,i,a,f) + v_aa(j,n,a,f) + v_aa(m,j,a,f) - v_aa(i,j,a,f)&
-                         -v_aa(m,n,e,a) + v_aa(i,n,e,a) + v_aa(m,i,e,a) + v_aa(j,n,e,a) + v_aa(m,j,e,a) - v_aa(i,j,e,a)&
-                         -v_aa(m,n,b,f) + v_aa(i,n,b,f) + v_aa(m,i,b,f) + v_aa(j,n,b,f) + v_aa(m,j,b,f) - v_aa(i,j,b,f)&
-                         -v_aa(m,n,e,b) + v_aa(i,n,e,b) + v_aa(m,i,e,b) + v_aa(j,n,e,b) + v_aa(m,j,e,b) - v_aa(i,j,e,b)&
-                         +v_aa(m,n,a,b) - v_aa(i,n,a,b) - v_aa(m,i,a,b) - v_aa(j,n,a,b) - v_aa(m,j,a,b) + v_aa(i,j,a,b)
-
-                x2a(a, b, i, j) = x2a(a, b, i, j) + hmatel * t_amp
-                x2a(b, a, i, j) = -1.0 * x2a(a, b, i, j)
-                x2a(a, b, j, i) = -1.0 * x2a(a, b, i, j)
-                x2a(b, a, j, i) = x2a(a, b, i, j)
-
-            end do
-
-            do idet = 1, n4b
-
-                ! x2a(abij) <- A(m/ij)A(e/ab) v_ab(mnef) * t_aaab(abefijmn)
-                a = c4_aaab(idet, 1); b = c4_aaab(idet, 2); e = c4_aaab(idet, 3); f = c4_aaab(idet, 4);
-                i = c4_aaab(idet, 5); j = c4_aaab(idet, 6); m = c4_aaab(idet, 7); n = c4_aaab(idet, 8);
-
-                call get_t4aaab_amp(t_amp, c1_a, c1_b, c2_aa, c2_ab, c3_aaa, c3_aab, c4_aaab_amps(idet),&
-                                    a, b, e, f, i, j, m, n,&
-                                    noa, nua, nob, nub)
-
-                hmatel = v_ab(m, n, e, f) - v_ab(i, n, e, f) - v_ab(j, n, e, f)&
-                        -v_ab(m, n, a, f) + v_ab(i, n, a, f) + v_ab(j, n, a, f)&
-                        -v_ab(m, n, b, f) + v_ab(i, n, b, f) + v_ab(j, n, b, f)
-
-!                x2a(a, b, i, j) = x2a(a, b, i, j) + hmatel * t_amp
-!                x2a(b, a, i, j) = -1.0 * x2a(a, b, i, j)
-!                x2a(a, b, j, i) = -1.0 * x2a(a, b, i, j)
-!                x2a(b, a, j, i) = x2a(a, b, i, j)
-
-                ! x2b(abij) <- A(i/mn)A(a/ef) v_aa(mnef) * t_aaab(aefbimnj)
-                a = c4_aaab(idet, 1); e = c4_aaab(idet, 2); f = c4_aaab(idet, 3); b = c4_aaab(idet, 4);
-                i = c4_aaab(idet, 5); m = c4_aaab(idet, 6); n = c4_aaab(idet, 7); j = c4_aaab(idet, 8);
-
-                call get_t4aaab_amp(t_amp, c1_a, c1_b, c2_aa, c2_ab, c3_aaa, c3_aab, c4_aaab_amps(idet),&
-                                    a, e, f, b, i, m, n, j,&
-                                    noa, nua, nob, nub)
-
-                hmatel = v_aa(m, n, e, f) - v_aa(i, n, e, f) - v_aa(m, i, e, f)&
-                        -v_aa(m, n, a, f) + v_aa(i, n, a, f) + v_aa(m, i, a, f)&
-                        -v_aa(m, n, e, a) + v_aa(i, n, e, a) + v_aa(m, i, e, a)
-
-                x2b(a, b, i, j) = x2b(a, b, i, j) + hmatel * t_amp
-            end do
-
-            do idet = 1, n4c
-
-                ! x2a(abij) <- v_bb(mnef) * t_aabb(abefijmn)
-                a = c4_aabb(idet, 1); b = c4_aabb(idet, 2); e = c4_aabb(idet, 3); f = c4_aabb(idet, 4);
-                i = c4_aabb(idet, 5); j = c4_aabb(idet, 6); m = c4_aabb(idet, 7); n = c4_aabb(idet, 8);
-
-                call get_t4aabb_amp(t_amp, c1_a, c1_b, c2_aa, c2_ab, c2_bb, c3_aaa, c3_aab, c3_abb, c4_aabb_amps(idet),&
-                                  a, b, e, f, i, j, m, n,&
-                                  noa, nua, nob, nub)
-
-                hmatel = v_bb(m, n, e, f)
-
-!                x2a(a, b, i, j) = x2a(a, b, i, j) + hmatel * t_amp
-!                x2a(b, a, i, j) = -1.0 * x2a(a, b, i, j)
-!                x2a(a, b, j, i) = -1.0 * x2a(a, b, i, j)
-!                x2a(b, a, j, i) = x2a(a, b, i, j)
-
-                ! x2b(abij) <- A(jn)A(im)A(ae)A(bf) v_ab(mnef) * t_aabb(aefbimnj)
-                a = c4_aabb(idet, 1); e = c4_aabb(idet, 2); f = c4_aabb(idet, 3); b = c4_aabb(idet, 4);
-                i = c4_aabb(idet, 5); m = c4_aabb(idet, 6); n = c4_aabb(idet, 7); j = c4_aabb(idet, 8);
-
-                call get_t4aabb_amp(t_amp, c1_a, c1_b, c2_aa, c2_ab, c2_bb, c3_aaa, c3_aab, c3_abb, c4_aabb_amps(idet),&
-                                    a, e, f, b, i, m, n, j,&
-                                    noa, nua, nob, nub)
-
-                hmatel = v_ab(m, n, e, f) - v_ab(m, j, e, f) ! (jn)
-
-                x2b(a, b, i, j) = x2b(a, b, i, j) + hmatel * t_amp
-
-                ! x2c(abij) <- v_aa(mnef) * t_aabb(efabmnij)
-                e = c4_aabb(idet, 1); f = c4_aabb(idet, 2); a = c4_aabb(idet, 3); b = c4_aabb(idet, 4);
-                m = c4_aabb(idet, 5); n = c4_aabb(idet, 6); i = c4_aabb(idet, 7); j = c4_aabb(idet, 8);
-                call get_t4aabb_amp(t_amp, c1_a, c1_b, c2_aa, c2_ab, c2_bb, c3_aaa, c3_aab, c3_abb, c4_aabb_amps(idet),&
-                                    e, f, a, b, m, n, i, j,&
-                                    noa, nua, nob, nub)
-
-                hmatel = v_aa(m, n, e, f)
-
-                x2c(a, b, i, j) = x2c(a, b, i, j) + hmatel * t_amp
-                x2c(b, a, i, j) = -1.0 * x2c(a, b, i, j)
-                x2c(a, b, j, i) = -1.0 * x2c(a, b, i, j)
-                x2c(b, a, j, i) = x2c(a, b, i, j)
-            end do
-
-            do idet = 1, n4d
-
-                ! x2b(abij) <- A(j/mn)A(b/ef) v_bb(mnef) * t_abbb(aefbimnj)
-                a = c4_abbb(idet, 1); e = c4_abbb(idet, 2); f = c4_abbb(idet, 3); b = c4_abbb(idet, 4);
-                i = c4_abbb(idet, 5); m = c4_abbb(idet, 6); n = c4_abbb(idet, 7); j = c4_abbb(idet, 8);
-
-                call get_t4abbb_amp(t_amp, c1_a, c1_b, c2_ab, c2_bb, c3_abb, c3_bbb, c4_abbb_amps(idet),&
-                                    a, e, f, b, i, m, n, j,&
-                                    noa, nua, nob, nub)
-
-                ! x2c(abij) <- A(n/ij)A(f/ab) v_ab(mnef) * t_abbb(efabmnij)
-                e = c4_abbb(idet, 1); f = c4_abbb(idet, 2); a = c4_abbb(idet, 3); b = c4_abbb(idet, 4);
-                m = c4_abbb(idet, 5); n = c4_abbb(idet, 6); i = c4_abbb(idet, 7); j = c4_abbb(idet, 8);
-                call get_t4abbb_amp(t_amp, c1_a, c1_b, c2_ab, c2_bb, c3_abb, c3_bbb, c4_abbb_amps(idet),&
-                                    e, f, a, b, m, n, i, j,&
-                                    noa, nua, nob, nub)
-            end do
-
-            do idet = 1, n4e
-
-                ! x2c(abij) <- A(ij/mn)A(ab/ef) v_bb(mnef) * t_bbbb(efabmnij)
-                e = c4_bbbb(idet, 1); f = c4_bbbb(idet, 2); a = c4_bbbb(idet, 3); b = c4_bbbb(idet, 4);
-                m = c4_bbbb(idet, 5); n = c4_bbbb(idet, 6); i = c4_bbbb(idet, 7); j = c4_bbbb(idet, 8);
-
-                call get_t4bbbb_amp(t_amp, c1_b, c2_bb, c3_bbb, c4_bbbb_amps(idet),&
-                                    e, f, a, b, m, n, i, j,&
-                                    nob, nub)
-            end do
-
-
-        end subroutine contract_vt4_opt
-
-        subroutine get_t4aaaa_amp(t_amp, c1_a, c2_aa, c3_aaa, c_amp,&
-                                  a, b, c, d, i, j, k, l,&
-                                  noa, nua)
-
-            integer, intent(in) :: noa, nua
-            integer, intent(in) :: a, b, c, d, i, j, k, l
-
-            real(kind=8), intent(in) :: c1_a(nua, noa), c2_aa(nua, nua, noa, noa), c3_aaa(nua, nua, nua, noa, noa, noa)
-            real(kind=8), intent(in) :: c_amp
-
-            real(kind=8), intent(out) :: t_amp
-
-            t_amp = (c_amp&
-                ! -C_1 * C_3
-                -c1_a(a,i)*c3_aaa(b,c,d,j,k,l) &
-                +c1_a(a,j)*c3_aaa(b,c,d,i,k,l) &
-                +c1_a(a,k)*c3_aaa(b,c,d,j,i,l) &
-                +c1_a(a,l)*c3_aaa(b,c,d,j,k,i) &
-                +c1_a(b,i)*c3_aaa(a,c,d,j,k,l) &
-                +c1_a(c,i)*c3_aaa(b,a,d,j,k,l) &
-                +c1_a(d,i)*c3_aaa(b,c,a,j,k,l) &
-                -c1_a(b,j)*c3_aaa(a,c,d,i,k,l) &
-                -c1_a(c,j)*c3_aaa(b,a,d,i,k,l) &
-                -c1_a(d,j)*c3_aaa(b,c,a,i,k,l) &
-                -c1_a(b,k)*c3_aaa(a,c,d,j,i,l) &
-                -c1_a(c,k)*c3_aaa(b,a,d,j,i,l) &
-                -c1_a(d,k)*c3_aaa(b,c,a,j,i,l) &
-                -c1_a(b,l)*c3_aaa(a,c,d,j,k,i) &
-                -c1_a(c,l)*c3_aaa(b,a,d,j,k,i) &
-                -c1_a(d,l)*c3_aaa(b,c,a,j,k,i) &
-                ! 2 * 1/2 C_1^2 * C_2
-            +2.0d0*(c1_a(a,i)*c1_a(b,j)*c2_aa(c,d,k,l) & !1
-                -c1_a(a,k)*c1_a(b,j)*c2_aa(c,d,i,l) & !(ik)
-                -c1_a(a,l)*c1_a(b,j)*c2_aa(c,d,k,i) & !(il)
-                -c1_a(a,j)*c1_a(b,i)*c2_aa(c,d,k,l) & !(ij)
-                -c1_a(a,i)*c1_a(b,k)*c2_aa(c,d,j,l) & !(jk)
-                -c1_a(a,i)*c1_a(b,l)*c2_aa(c,d,k,j) & !(jl)
-                -c1_a(c,i)*c1_a(b,j)*c2_aa(a,d,k,l) & !(ac)
-                -c1_a(d,i)*c1_a(b,j)*c2_aa(c,a,k,l) & !(ad)
-                -c1_a(a,i)*c1_a(c,j)*c2_aa(b,d,k,l) & !(bc)
-                -c1_a(a,i)*c1_a(d,j)*c2_aa(c,b,k,l) & !(bd)
-                +c1_a(c,i)*c1_a(d,j)*c2_aa(a,b,k,l) & !(ac)(bd)
-                +c1_a(c,k)*c1_a(b,j)*c2_aa(a,d,i,l) & !(ac)(ik)
-                +c1_a(d,k)*c1_a(b,j)*c2_aa(c,a,i,l) & !(ad)(ik)
-                +c1_a(a,k)*c1_a(c,j)*c2_aa(b,d,i,l) & !(bc)(ik)
-                +c1_a(a,k)*c1_a(d,j)*c2_aa(c,b,i,l) & !(bd)(ik)
-                +c1_a(c,l)*c1_a(b,j)*c2_aa(a,d,k,i) & !(ac)(il)
-                +c1_a(d,l)*c1_a(b,j)*c2_aa(c,a,k,i) & !(ad)(il)
-                +c1_a(a,l)*c1_a(c,j)*c2_aa(b,d,k,i) & !(bc)(il)
-                +c1_a(a,l)*c1_a(d,j)*c2_aa(c,b,k,i) & !(bd)(il)
-                +c1_a(c,j)*c1_a(b,i)*c2_aa(a,d,k,l) & !(ac)(ij)
-                +c1_a(d,j)*c1_a(b,i)*c2_aa(c,a,k,l) & !(ad)(ij)
-                +c1_a(a,j)*c1_a(c,i)*c2_aa(b,d,k,l) & !(bc)(ij)
-                +c1_a(a,j)*c1_a(d,i)*c2_aa(c,b,k,l) & !(bd)(ij)
-                +c1_a(c,i)*c1_a(b,k)*c2_aa(a,d,j,l) & !(ac)(jk)
-                +c1_a(d,i)*c1_a(b,k)*c2_aa(c,a,j,l) & !(ad)(jk)
-                +c1_a(a,i)*c1_a(c,k)*c2_aa(b,d,j,l) & !(bc)(jk)
-                +c1_a(a,i)*c1_a(d,k)*c2_aa(c,b,j,l) & !(bd)(jk)
-                +c1_a(c,i)*c1_a(b,l)*c2_aa(a,d,k,j) & !(ac)(jl)
-                +c1_a(d,i)*c1_a(b,l)*c2_aa(c,a,k,j) & !(ad)(jl)
-                +c1_a(a,i)*c1_a(c,l)*c2_aa(b,d,k,j) & !(bc)(jl)
-                +c1_a(a,i)*c1_a(d,l)*c2_aa(c,b,k,j) & !(bd)(jl)
-                +c1_a(a,j)*c1_a(b,k)*c2_aa(c,d,i,l) & !(ijk)
-                +c1_a(a,k)*c1_a(b,i)*c2_aa(c,d,j,l) & !(ikj)
-                +c1_a(a,j)*c1_a(b,l)*c2_aa(c,d,k,i) & !(ijl)
-                +c1_a(a,l)*c1_a(b,i)*c2_aa(c,d,k,j) & !(ilj)
-                -c1_a(a,l)*c1_a(b,k)*c2_aa(c,d,i,j) & !(kilj)
-                -c1_a(c,k)*c1_a(d,j)*c2_aa(a,b,i,l) & !(ac)(bd)(ik)
-                -c1_a(c,l)*c1_a(d,j)*c2_aa(a,b,k,i) & !(ac)(bd)(il)
-                -c1_a(c,j)*c1_a(d,i)*c2_aa(a,b,k,l) & !(ac)(bd)(ij)
-                -c1_a(c,i)*c1_a(d,k)*c2_aa(a,b,j,l) & !(ac)(bd)(jk)
-                -c1_a(c,i)*c1_a(d,l)*c2_aa(a,b,k,j) & !(ac)(bd)(jl)
-                -c1_a(c,j)*c1_a(b,k)*c2_aa(a,d,i,l) & !(ac)(ijk)
-                -c1_a(d,j)*c1_a(b,k)*c2_aa(c,a,i,l) & !(ad)(ijk)
-                -c1_a(a,j)*c1_a(c,k)*c2_aa(b,d,i,l) & !(bc)(ijk)
-                -c1_a(a,j)*c1_a(d,k)*c2_aa(c,b,i,l) & !(bd)(ijk)
-                -c1_a(c,k)*c1_a(b,i)*c2_aa(a,d,j,l) & !(ac)(ikj)
-                -c1_a(d,k)*c1_a(b,i)*c2_aa(c,a,j,l) & !(ad)(ikj)
-                -c1_a(a,k)*c1_a(c,i)*c2_aa(b,d,j,l) & !(bc)(ikj)
-                -c1_a(a,k)*c1_a(d,i)*c2_aa(c,b,j,l) & !(bd)(ikj)
-                -c1_a(c,j)*c1_a(b,l)*c2_aa(a,d,k,i) & !(ac)(ijl)
-                -c1_a(d,j)*c1_a(b,l)*c2_aa(c,a,k,i) & !(ad)(ijl)
-                -c1_a(a,j)*c1_a(c,l)*c2_aa(b,d,k,i) & !(bc)(ijl)
-                -c1_a(a,j)*c1_a(d,l)*c2_aa(c,b,k,i) & !(bd)(ijl)
-                -c1_a(c,l)*c1_a(b,i)*c2_aa(a,d,k,j) & !(ac)(ilj)
-                -c1_a(d,l)*c1_a(b,i)*c2_aa(c,a,k,j) & !(ad)(ilj)
-                -c1_a(a,l)*c1_a(c,i)*c2_aa(b,d,k,j) & !(bc)(ilj)
-                -c1_a(a,l)*c1_a(d,i)*c2_aa(c,b,k,j) & !(bd)(ilj)
-                +c1_a(c,j)*c1_a(d,k)*c2_aa(a,b,i,l) & !(ac)(bd)(ijk)
-                +c1_a(c,k)*c1_a(d,i)*c2_aa(a,b,j,l) & !(ac)(bd)(ikj)
-                +c1_a(c,j)*c1_a(d,l)*c2_aa(a,b,k,i) & !(ac)(bd)(ijl)
-                +c1_a(c,l)*c1_a(d,i)*c2_aa(a,b,k,j) & !(ac)(bd)(ilj)
-                +c1_a(c,l)*c1_a(b,k)*c2_aa(a,d,i,j) & !(ac)(kilj)
-                +c1_a(d,l)*c1_a(b,k)*c2_aa(c,a,i,j) & !(ad)(kilj)
-                +c1_a(a,l)*c1_a(c,k)*c2_aa(b,d,i,j) & !(bc)(kilj)
-                +c1_a(a,l)*c1_a(d,k)*c2_aa(c,b,i,j) & !(bd)(kilj)
-                -c1_a(c,l)*c1_a(d,k)*c2_aa(a,b,i,j) & !(ac)(bd)(kilj)
-                -c1_a(c,k)*c1_a(b,l)*c2_aa(a,d,i,j) & !(ac)(ik)(jl)
-                -c1_a(d,k)*c1_a(b,l)*c2_aa(c,a,i,j) & !(ad)(ik)(jl)
-                -c1_a(a,k)*c1_a(c,l)*c2_aa(b,d,i,j) & !(bc)(ik)(jl)
-                -c1_a(a,k)*c1_a(d,l)*c2_aa(c,b,i,j) & !(bd)(ik)(jl)
-                +c1_a(c,k)*c1_a(d,l)*c2_aa(a,b,i,j) & !(ac)(bd)(ik)(jl)
-                +c1_a(a,k)*c1_a(b,l)*c2_aa(c,d,i,j)) & !(ik)(jl)
-                -c2_aa(a,b,i,j)*c2_aa(c,d,k,l) &
-                +c2_aa(a,b,k,j)*c2_aa(c,d,i,l) &
-                +c2_aa(a,b,l,j)*c2_aa(c,d,k,i) &
-                +c2_aa(a,b,i,k)*c2_aa(c,d,j,l) &
-                +c2_aa(a,b,i,l)*c2_aa(c,d,k,j) &
-                +c2_aa(c,b,i,j)*c2_aa(a,d,k,l) &
-                +c2_aa(d,b,i,j)*c2_aa(c,a,k,l) &
-                -c2_aa(a,b,k,l)*c2_aa(c,d,i,j) &
-                -c2_aa(c,b,k,j)*c2_aa(a,d,i,l) &
-                -c2_aa(c,b,l,j)*c2_aa(a,d,k,i) &
-                -c2_aa(c,b,i,k)*c2_aa(a,d,j,l) &
-                -c2_aa(c,b,i,l)*c2_aa(a,d,k,j) &
-                -c2_aa(d,b,k,j)*c2_aa(c,a,i,l) &
-                -c2_aa(d,b,l,j)*c2_aa(c,a,k,i) &
-                -c2_aa(d,b,i,k)*c2_aa(c,a,j,l) &
-                -c2_aa(d,b,i,l)*c2_aa(c,a,k,j) &
-                +c2_aa(c,b,k,l)*c2_aa(a,d,i,j) &
-                +c2_aa(d,b,k,l)*c2_aa(c,a,i,j) &
-                -6.0d0*(c1_a(a,i)*c1_a(b,j)*c1_a(c,k)*c1_a(d,l) &
-                -c1_a(a,j)*c1_a(b,i)*c1_a(c,k)*c1_a(d,l) &
-                -c1_a(a,k)*c1_a(b,j)*c1_a(c,i)*c1_a(d,l) &
-                -c1_a(a,l)*c1_a(b,j)*c1_a(c,k)*c1_a(d,i) &
-                -c1_a(a,i)*c1_a(b,k)*c1_a(c,j)*c1_a(d,l) &
-                -c1_a(a,i)*c1_a(b,l)*c1_a(c,k)*c1_a(d,j) &
-                -c1_a(a,i)*c1_a(b,j)*c1_a(c,l)*c1_a(d,k) &
-                +c1_a(a,j)*c1_a(b,k)*c1_a(c,i)*c1_a(d,l) &
-                +c1_a(a,k)*c1_a(b,i)*c1_a(c,j)*c1_a(d,l) &
-                +c1_a(a,j)*c1_a(b,l)*c1_a(c,k)*c1_a(d,i) &
-                +c1_a(a,l)*c1_a(b,i)*c1_a(c,k)*c1_a(d,j) &
-                +c1_a(a,k)*c1_a(b,j)*c1_a(c,l)*c1_a(d,i) &
-                +c1_a(a,l)*c1_a(b,j)*c1_a(c,i)*c1_a(d,k) &
-                +c1_a(a,i)*c1_a(b,k)*c1_a(c,l)*c1_a(d,j) &
-                +c1_a(a,i)*c1_a(b,l)*c1_a(c,j)*c1_a(d,k) &
-                +c1_a(a,j)*c1_a(b,i)*c1_a(c,l)*c1_a(d,k) &
-                +c1_a(a,k)*c1_a(b,l)*c1_a(c,i)*c1_a(d,j) &
-                +c1_a(a,l)*c1_a(b,k)*c1_a(c,j)*c1_a(d,i) &
-                -c1_a(a,j)*c1_a(b,k)*c1_a(c,l)*c1_a(d,i) &
-                -c1_a(a,j)*c1_a(b,l)*c1_a(c,i)*c1_a(d,k) &
-                -c1_a(a,k)*c1_a(b,l)*c1_a(c,j)*c1_a(d,i) &
-                -c1_a(a,k)*c1_a(b,i)*c1_a(c,l)*c1_a(d,j) &
-                -c1_a(a,l)*c1_a(b,i)*c1_a(c,j)*c1_a(d,k) &
-                -c1_a(a,l)*c1_a(b,k)*c1_a(c,i)*c1_a(d,j)))
-
-        end subroutine get_t4aaaa_amp
-
-        subroutine get_t4aaab_amp(t_amp, c1_a, c1_b, c2_aa, c2_ab, c3_aaa, c3_aab, c_amp,&
-                                  a, b, c, d, i, j, k, l,&
-                                  noa, nua, nob, nub)
-
-            integer, intent(in) :: noa, nua, nob, nub
-            integer, intent(in) :: a, b, c, d, i, j, k, l
-
-            real(kind=8), intent(in) :: c1_a(nua, noa), c1_b(nub, nob),&
-                                        c2_aa(nua, nua, noa, noa), c2_ab(nua, nub, noa, nob),&
-                                        c3_aaa(nua, nua, nua, noa, noa, noa), c3_aab(nua, nua, nub, noa, noa, nob)
-            real(kind=8), intent(in) :: c_amp
-
-            real(kind=8), intent(out) :: t_amp
-
-            t_amp = (c_amp &
-                    -c1_a(a,i)*c3_aab(b,c,d,j,k,l) &
-                    +c1_a(a,j)*c3_aab(b,c,d,i,k,l) &
-                    +c1_a(a,k)*c3_aab(b,c,d,j,i,l) &
-                    +c1_a(b,i)*c3_aab(a,c,d,j,k,l) &
-                    +c1_a(c,i)*c3_aab(b,a,d,j,k,l) &
-                    -c1_a(b,j)*c3_aab(a,c,d,i,k,l) &
-                    -c1_a(c,j)*c3_aab(b,a,d,i,k,l) &
-                    -c1_a(b,k)*c3_aab(a,c,d,j,i,l) &
-                    -c1_a(c,k)*c3_aab(b,a,d,j,i,l) &
-                    -c1_b(d,l)*c3_aaa(a,b,c,i,j,k) &
-                    +2.0d0*(c1_a(a,i)*c1_b(d,l)*c2_aa(b,c,j,k) &
-                    -c1_a(a,j)*c1_b(d,l)*c2_aa(b,c,i,k) &
-                    -c1_a(a,k)*c1_b(d,l)*c2_aa(b,c,j,i) &
-                    -c1_a(b,i)*c1_b(d,l)*c2_aa(a,c,j,k) &
-                    -c1_a(c,i)*c1_b(d,l)*c2_aa(b,a,j,k) &
-                    +c1_a(b,j)*c1_b(d,l)*c2_aa(a,c,i,k) &
-                    +c1_a(c,j)*c1_b(d,l)*c2_aa(b,a,i,k) &
-                    +c1_a(b,k)*c1_b(d,l)*c2_aa(a,c,j,i) &
-                    +c1_a(c,k)*c1_b(d,l)*c2_aa(b,a,j,i) &
-                    +c1_a(a,i)*c1_a(b,j)*c2_ab(c,d,k,l) &
-                    -c1_a(a,j)*c1_a(b,i)*c2_ab(c,d,k,l) &
-                    -c1_a(a,k)*c1_a(b,j)*c2_ab(c,d,i,l) &
-                    -c1_a(a,i)*c1_a(b,k)*c2_ab(c,d,j,l) &
-                    -c1_a(c,i)*c1_a(b,j)*c2_ab(a,d,k,l) &
-                    -c1_a(a,i)*c1_a(c,j)*c2_ab(b,d,k,l) &
-                    +c1_a(a,j)*c1_a(b,k)*c2_ab(c,d,i,l) &
-                    +c1_a(a,k)*c1_a(b,i)*c2_ab(c,d,j,l) &
-                    +c1_a(c,j)*c1_a(b,i)*c2_ab(a,d,k,l) &
-                    +c1_a(a,j)*c1_a(c,i)*c2_ab(b,d,k,l) &
-                    +c1_a(c,k)*c1_a(b,j)*c2_ab(a,d,i,l) &
-                    +c1_a(a,k)*c1_a(c,j)*c2_ab(b,d,i,l) &
-                    +c1_a(c,i)*c1_a(b,k)*c2_ab(a,d,j,l) &
-                    +c1_a(a,i)*c1_a(c,k)*c2_ab(b,d,j,l) &
-                    -c1_a(c,j)*c1_a(b,k)*c2_ab(a,d,i,l) &
-                    -c1_a(a,j)*c1_a(c,k)*c2_ab(b,d,i,l) &
-                    -c1_a(c,k)*c1_a(b,i)*c2_ab(a,d,j,l) &
-                    -c1_a(a,k)*c1_a(c,i)*c2_ab(b,d,j,l)) &
-                    -c2_aa(a,b,i,j)*c2_ab(c,d,k,l) &
-                    +c2_aa(a,b,k,j)*c2_ab(c,d,i,l) &
-                    +c2_aa(a,b,i,k)*c2_ab(c,d,j,l) &
-                    +c2_aa(c,b,i,j)*c2_ab(a,d,k,l) &
-                    +c2_aa(a,c,i,j)*c2_ab(b,d,k,l) &
-                    -c2_aa(c,b,k,j)*c2_ab(a,d,i,l) &
-                    -c2_aa(a,c,k,j)*c2_ab(b,d,i,l) &
-                    -c2_aa(c,b,i,k)*c2_ab(a,d,j,l) &
-                    -c2_aa(a,c,i,k)*c2_ab(b,d,j,l) &
-                    -6.0d0*(c1_a(a,i)*c1_a(b,j)*c1_a(c,k)*c1_b(d,l) &
-                    -c1_a(a,j)*c1_a(b,i)*c1_a(c,k)*c1_b(d,l) &
-                    -c1_a(a,k)*c1_a(b,j)*c1_a(c,i)*c1_b(d,l) &
-                    -c1_a(a,i)*c1_a(b,k)*c1_a(c,j)*c1_b(d,l) &
-                    +c1_a(a,j)*c1_a(b,k)*c1_a(c,i)*c1_b(d,l) &
-                    +c1_a(a,k)*c1_a(b,i)*c1_a(c,j)*c1_b(d,l)))
-
-        end subroutine get_t4aaab_amp
-
-        subroutine get_t4aabb_amp(t_amp, c1_a, c1_b, c2_aa, c2_ab, c2_bb, c3_aaa, c3_aab, c3_abb, c_amp,&
-                                  a, b, c, d, i, j, k, l,&
-                                  noa, nua, nob, nub)
-
-            integer, intent(in) :: noa, nua, nob, nub
-            integer, intent(in) :: a, b, c, d, i, j, k, l
-
-            real(kind=8), intent(in) :: c1_a(nua, noa), c1_b(nub, nob),&
-                                        c2_aa(nua, nua, noa, noa), c2_ab(nua, nub, noa, nob), c2_bb(nub, nub, nob, nob),&
-                                        c3_aaa(nua, nua, nua, noa, noa, noa), c3_aab(nua, nua, nub, noa, noa, nob), c3_abb(nua, nub, nub, noa, nob, nob)
-            real(kind=8), intent(in) :: c_amp
-
-            real(kind=8), intent(out) :: t_amp
-
-            real(kind=8) :: c1c3, c12c2, c22, c13
-
-            c1c3 = (-c1_a(a,i)*c3_abb(b,c,d,j,k,l) &
-                +c1_a(a,j)*c3_abb(b,c,d,i,k,l) &
-                +c1_a(b,i)*c3_abb(a,c,d,j,k,l) &
-                -c1_a(b,j)*c3_abb(a,c,d,i,k,l) &
-                -c1_b(d,l)*c3_aab(a,b,c,i,j,k) &
-                +c1_b(d,k)*c3_aab(a,b,c,i,j,l) &
-                +c1_b(c,l)*c3_aab(a,b,d,i,j,k) &
-                -c1_b(c,k)*c3_aab(a,b,d,i,j,l))
-
-            c12c2 = 2.0d0*(c1_a(a,i)*c1_a(b,j)*c2_bb(c,d,k,l) &
-                -c1_a(a,j)*c1_a(b,i)*c2_bb(c,d,k,l) &
-                +c1_a(a,i)*c1_b(c,k)*c2_ab(b,d,j,l) &
-                -c1_a(a,j)*c1_b(c,k)*c2_ab(b,d,i,l) &
-                -c1_a(a,i)*c1_b(c,l)*c2_ab(b,d,j,k) &
-                -c1_a(b,i)*c1_b(c,k)*c2_ab(a,d,j,l) &
-                -c1_a(a,i)*c1_b(d,k)*c2_ab(b,c,j,l) &
-                +c1_a(a,j)*c1_b(c,l)*c2_ab(b,d,i,k) &
-                +c1_a(b,j)*c1_b(c,k)*c2_ab(a,d,i,l) &
-                +c1_a(a,j)*c1_b(d,k)*c2_ab(b,c,i,l) &
-                +c1_a(b,i)*c1_b(c,l)*c2_ab(a,d,j,k) &
-                +c1_a(a,i)*c1_b(d,l)*c2_ab(b,c,j,k) &
-                +c1_a(b,i)*c1_b(d,k)*c2_ab(a,c,j,l) &
-                -c1_a(b,j)*c1_b(c,l)*c2_ab(a,d,i,k) &
-                -c1_a(a,j)*c1_b(d,l)*c2_ab(b,c,i,k) &
-                -c1_a(b,j)*c1_b(d,k)*c2_ab(a,c,i,l) &
-                -c1_a(b,i)*c1_b(d,l)*c2_ab(a,c,j,k) &
-                +c1_a(b,j)*c1_b(d,l)*c2_ab(a,c,i,k) &
-                +c1_b(c,k)*c1_b(d,l)*c2_aa(a,b,i,j) &
-                -c1_b(c,l)*c1_b(d,k)*c2_aa(a,b,i,j))
-
-            c22 = (-c2_ab(a,c,i,k)*c2_ab(b,d,j,l) &
-                +c2_ab(a,c,j,k)*c2_ab(b,d,i,l) &
-                +c2_ab(a,c,i,l)*c2_ab(b,d,j,k) &
-                +c2_ab(b,c,i,k)*c2_ab(a,d,j,l) &
-                -c2_ab(a,c,j,l)*c2_ab(b,d,i,k) &
-                -c2_ab(b,c,j,k)*c2_ab(a,d,i,l) &
-                -c2_ab(b,c,i,l)*c2_ab(a,d,j,k) &
-                +c2_ab(b,c,j,l)*c2_ab(a,d,i,k) &
-                -c2_aa(a,b,i,j)*c2_bb(c,d,k,l))
-
-            c13 = (-6.0d0*(c1_a(a,i)*c1_a(b,j)*c1_b(c,k)*c1_b(d,l) &
-                -c1_a(a,j)*c1_a(b,i)*c1_b(c,k)*c1_b(d,l) &
-                -c1_a(a,i)*c1_a(b,j)*c1_b(c,l)*c1_b(d,k) &
-                +c1_a(a,j)*c1_a(b,i)*c1_b(c,l)*c1_b(d,k)))
-
-            t_amp = c_amp + c1c3 + c12c2 + c22 + c13
-
-        end subroutine get_t4aabb_amp
-
-        subroutine get_t4abbb_amp(t_amp, c1_a, c1_b, c2_ab, c2_bb, c3_abb, c3_bbb, c_amp,&
-                                  a, b, c, d, i, j, k, l,&
-                                  noa, nua, nob, nub)
-
-            integer, intent(in) :: noa, nua, nob, nub
-            integer, intent(in) :: a, b, c, d, i, j, k, l
-
-            real(kind=8), intent(in) :: c1_a(nua, noa), c1_b(nub, nob),&
-                                        c2_ab(nua, nub, noa, nob), c2_bb(nub, nub, nob, nob),&
-                                        c3_abb(nua, nub, nub, noa, nob, nob), c3_bbb(nub, nub, nub, nob, nob, nob)
-            real(kind=8), intent(in) :: c_amp
-
-            real(kind=8), intent(out) :: t_amp
-
-            t_amp = (c_amp &
-                    -c1_a(a,i)*c3_bbb(b,c,d,j,k,l) &
-                    -c1_b(d,l)*c3_abb(a,b,c,i,j,k) &
-                    +c1_b(d,j)*c3_abb(a,b,c,i,l,k) &
-                    +c1_b(d,k)*c3_abb(a,b,c,i,j,l) &
-                    +c1_b(b,l)*c3_abb(a,d,c,i,j,k) &
-                    +c1_b(c,l)*c3_abb(a,b,d,i,j,k) &
-                    -c1_b(b,j)*c3_abb(a,d,c,i,l,k) &
-                    -c1_b(c,j)*c3_abb(a,b,d,i,l,k) &
-                    -c1_b(b,k)*c3_abb(a,d,c,i,j,l) &
-                    -c1_b(c,k)*c3_abb(a,b,d,i,j,l) &
-                    +2.0d0*(c1_b(c,k)*c1_b(d,l)*c2_ab(a,b,i,j) &
-                    -c1_b(c,j)*c1_b(d,l)*c2_ab(a,b,i,k) &
-                    -c1_b(c,k)*c1_b(d,j)*c2_ab(a,b,i,l) &
-                    -c1_b(c,l)*c1_b(d,k)*c2_ab(a,b,i,j) &
-                    -c1_b(b,k)*c1_b(d,l)*c2_ab(a,c,i,j) &
-                    -c1_b(c,k)*c1_b(b,l)*c2_ab(a,d,i,j) &
-                    +c1_b(c,l)*c1_b(d,j)*c2_ab(a,b,i,k) &
-                    +c1_b(c,j)*c1_b(d,k)*c2_ab(a,b,i,l) &
-                    +c1_b(b,j)*c1_b(d,l)*c2_ab(a,c,i,k) &
-                    +c1_b(c,j)*c1_b(b,l)*c2_ab(a,d,i,k) &
-                    +c1_b(b,k)*c1_b(d,j)*c2_ab(a,c,i,l) &
-                    +c1_b(c,k)*c1_b(b,j)*c2_ab(a,d,i,l) &
-                    +c1_b(b,l)*c1_b(d,k)*c2_ab(a,c,i,j) &
-                    +c1_b(c,l)*c1_b(b,k)*c2_ab(a,d,i,j) &
-                    -c1_b(b,l)*c1_b(d,j)*c2_ab(a,c,i,k) &
-                    -c1_b(c,l)*c1_b(b,j)*c2_ab(a,d,i,k) &
-                    -c1_b(b,j)*c1_b(d,k)*c2_ab(a,c,i,l) &
-                    -c1_b(c,j)*c1_b(b,k)*c2_ab(a,d,i,l) &
-                    +c1_a(a,i)*c1_b(b,j)*c2_bb(c,d,k,l) &
-                    -c1_a(a,i)*c1_b(b,k)*c2_bb(c,d,j,l) &
-                    -c1_a(a,i)*c1_b(b,l)*c2_bb(c,d,k,j) &
-                    -c1_a(a,i)*c1_b(c,j)*c2_bb(b,d,k,l) &
-                    -c1_a(a,i)*c1_b(d,j)*c2_bb(c,b,k,l) &
-                    +c1_a(a,i)*c1_b(c,k)*c2_bb(b,d,j,l) &
-                    +c1_a(a,i)*c1_b(d,k)*c2_bb(c,b,j,l) &
-                    +c1_a(a,i)*c1_b(c,l)*c2_bb(b,d,k,j) &
-                    +c1_a(a,i)*c1_b(d,l)*c2_bb(c,b,k,j)) &
-                    -c2_ab(a,b,i,j)*c2_bb(c,d,k,l) &
-                    +c2_ab(a,b,i,k)*c2_bb(c,d,j,l) &
-                    +c2_ab(a,b,i,l)*c2_bb(c,d,k,j) &
-                    +c2_ab(a,c,i,j)*c2_bb(b,d,k,l) &
-                    +c2_ab(a,d,i,j)*c2_bb(c,b,k,l) &
-                    -c2_ab(a,c,i,k)*c2_bb(b,d,j,l) &
-                    -c2_ab(a,d,i,k)*c2_bb(c,b,j,l) &
-                    -c2_ab(a,c,i,l)*c2_bb(b,d,k,j) &
-                    -c2_ab(a,d,i,l)*c2_bb(c,b,k,j) &
-                    -6.0d0*(c1_a(a,i)*c1_b(b,j)*c1_b(c,k)*c1_b(d,l) &
-                    -c1_a(a,i)*c1_b(b,k)*c1_b(c,j)*c1_b(d,l) &
-                    -c1_a(a,i)*c1_b(b,l)*c1_b(c,k)*c1_b(d,j) &
-                    -c1_a(a,i)*c1_b(b,j)*c1_b(c,l)*c1_b(d,k) &
-                    +c1_a(a,i)*c1_b(b,k)*c1_b(c,l)*c1_b(d,j) &
-                    +c1_a(a,i)*c1_b(b,l)*c1_b(c,j)*c1_b(d,k)))
-
-        end subroutine get_t4abbb_amp
-
-        subroutine get_t4bbbb_amp(t_amp, c1_b, c2_bb, c3_bbb, c_amp,&
-                                  a, b, c, d, i, j, k, l,&
-                                  nob, nub)
-
-            integer, intent(in) :: nob, nub
-            integer, intent(in) :: a, b, c, d, i, j, k, l
-
-            real(kind=8), intent(in) :: c1_b(nub, nob), c2_bb(nub, nub, nob, nob), c3_bbb(nub, nub, nub, nob, nob, nob)
-            real(kind=8), intent(in) :: c_amp
-
-            real(kind=8), intent(out) :: t_amp
-
-            t_amp = (c_amp &
-                    -c1_b(a,i)*c3_bbb(b,c,d,j,k,l) &
-                    +c1_b(a,j)*c3_bbb(b,c,d,i,k,l) &
-                    +c1_b(a,k)*c3_bbb(b,c,d,j,i,l) &
-                    +c1_b(a,l)*c3_bbb(b,c,d,j,k,i) &
-                    +c1_b(b,i)*c3_bbb(a,c,d,j,k,l) &
-                    +c1_b(c,i)*c3_bbb(b,a,d,j,k,l) &
-                    +c1_b(d,i)*c3_bbb(b,c,a,j,k,l) &
-                    -c1_b(b,j)*c3_bbb(a,c,d,i,k,l) &
-                    -c1_b(c,j)*c3_bbb(b,a,d,i,k,l) &
-                    -c1_b(d,j)*c3_bbb(b,c,a,i,k,l) &
-                    -c1_b(b,k)*c3_bbb(a,c,d,j,i,l) &
-                    -c1_b(c,k)*c3_bbb(b,a,d,j,i,l) &
-                    -c1_b(d,k)*c3_bbb(b,c,a,j,i,l) &
-                    -c1_b(b,l)*c3_bbb(a,c,d,j,k,i) &
-                    -c1_b(c,l)*c3_bbb(b,a,d,j,k,i) &
-                    -c1_b(d,l)*c3_bbb(b,c,a,j,k,i) &
-                    +2.0d0*(c1_b(a,i)*c1_b(b,j)*c2_bb(c,d,k,l) & !1
-                    -c1_b(a,k)*c1_b(b,j)*c2_bb(c,d,i,l) & !(ik)
-                    -c1_b(a,l)*c1_b(b,j)*c2_bb(c,d,k,i) & !(il)
-                    -c1_b(a,j)*c1_b(b,i)*c2_bb(c,d,k,l) & !(ij)
-                    -c1_b(a,i)*c1_b(b,k)*c2_bb(c,d,j,l) & !(jk)
-                    -c1_b(a,i)*c1_b(b,l)*c2_bb(c,d,k,j) & !(jl)
-                    -c1_b(c,i)*c1_b(b,j)*c2_bb(a,d,k,l) & !(ac)
-                    -c1_b(d,i)*c1_b(b,j)*c2_bb(c,a,k,l) & !(ad)
-                    -c1_b(a,i)*c1_b(c,j)*c2_bb(b,d,k,l) & !(bc)
-                    -c1_b(a,i)*c1_b(d,j)*c2_bb(c,b,k,l) & !(bd)
-                    +c1_b(c,i)*c1_b(d,j)*c2_bb(a,b,k,l) & !(ac)(bd)
-                    +c1_b(c,k)*c1_b(b,j)*c2_bb(a,d,i,l) & !(ac)(ik)
-                    +c1_b(d,k)*c1_b(b,j)*c2_bb(c,a,i,l) & !(ad)(ik)
-                    +c1_b(a,k)*c1_b(c,j)*c2_bb(b,d,i,l) & !(bc)(ik)
-                    +c1_b(a,k)*c1_b(d,j)*c2_bb(c,b,i,l) & !(bd)(ik)
-                    +c1_b(c,l)*c1_b(b,j)*c2_bb(a,d,k,i) & !(ac)(il)
-                    +c1_b(d,l)*c1_b(b,j)*c2_bb(c,a,k,i) & !(ad)(il)
-                    +c1_b(a,l)*c1_b(c,j)*c2_bb(b,d,k,i) & !(bc)(il)
-                    +c1_b(a,l)*c1_b(d,j)*c2_bb(c,b,k,i) & !(bd)(il)
-                    +c1_b(c,j)*c1_b(b,i)*c2_bb(a,d,k,l) & !(ac)(ij)
-                    +c1_b(d,j)*c1_b(b,i)*c2_bb(c,a,k,l) & !(ad)(ij)
-                    +c1_b(a,j)*c1_b(c,i)*c2_bb(b,d,k,l) & !(bc)(ij)
-                    +c1_b(a,j)*c1_b(d,i)*c2_bb(c,b,k,l) & !(bd)(ij)
-                    +c1_b(c,i)*c1_b(b,k)*c2_bb(a,d,j,l) & !(ac)(jk)
-                    +c1_b(d,i)*c1_b(b,k)*c2_bb(c,a,j,l) & !(ad)(jk)
-                    +c1_b(a,i)*c1_b(c,k)*c2_bb(b,d,j,l) & !(bc)(jk)
-                    +c1_b(a,i)*c1_b(d,k)*c2_bb(c,b,j,l) & !(bd)(jk)
-                    +c1_b(c,i)*c1_b(b,l)*c2_bb(a,d,k,j) & !(ac)(jl)
-                    +c1_b(d,i)*c1_b(b,l)*c2_bb(c,a,k,j) & !(ad)(jl)
-                    +c1_b(a,i)*c1_b(c,l)*c2_bb(b,d,k,j) & !(bc)(jl)
-                    +c1_b(a,i)*c1_b(d,l)*c2_bb(c,b,k,j) & !(bd)(jl)
-                    +c1_b(a,j)*c1_b(b,k)*c2_bb(c,d,i,l) & !(ijk)
-                    +c1_b(a,k)*c1_b(b,i)*c2_bb(c,d,j,l) & !(ikj)
-                    +c1_b(a,j)*c1_b(b,l)*c2_bb(c,d,k,i) & !(ijl)
-                    +c1_b(a,l)*c1_b(b,i)*c2_bb(c,d,k,j) & !(ilj)
-                    -c1_b(a,l)*c1_b(b,k)*c2_bb(c,d,i,j) & !(kilj)
-                    -c1_b(c,k)*c1_b(d,j)*c2_bb(a,b,i,l) & !(ac)(bd)(ik)
-                    -c1_b(c,l)*c1_b(d,j)*c2_bb(a,b,k,i) & !(ac)(bd)(il)
-                    -c1_b(c,j)*c1_b(d,i)*c2_bb(a,b,k,l) & !(ac)(bd)(ij)
-                    -c1_b(c,i)*c1_b(d,k)*c2_bb(a,b,j,l) & !(ac)(bd)(jk)
-                    -c1_b(c,i)*c1_b(d,l)*c2_bb(a,b,k,j) & !(ac)(bd)(jl)
-                    -c1_b(c,j)*c1_b(b,k)*c2_bb(a,d,i,l) & !(ac)(ijk)
-                    -c1_b(d,j)*c1_b(b,k)*c2_bb(c,a,i,l) & !(ad)(ijk)
-                    -c1_b(a,j)*c1_b(c,k)*c2_bb(b,d,i,l) & !(bc)(ijk)
-                    -c1_b(a,j)*c1_b(d,k)*c2_bb(c,b,i,l) & !(bd)(ijk)
-                    -c1_b(c,k)*c1_b(b,i)*c2_bb(a,d,j,l) & !(ac)(ikj)
-                    -c1_b(d,k)*c1_b(b,i)*c2_bb(c,a,j,l) & !(ad)(ikj)
-                    -c1_b(a,k)*c1_b(c,i)*c2_bb(b,d,j,l) & !(bc)(ikj)
-                    -c1_b(a,k)*c1_b(d,i)*c2_bb(c,b,j,l) & !(bd)(ikj)
-                    -c1_b(c,j)*c1_b(b,l)*c2_bb(a,d,k,i) & !(ac)(ijl)
-                    -c1_b(d,j)*c1_b(b,l)*c2_bb(c,a,k,i) & !(ad)(ijl)
-                    -c1_b(a,j)*c1_b(c,l)*c2_bb(b,d,k,i) & !(bc)(ijl)
-                    -c1_b(a,j)*c1_b(d,l)*c2_bb(c,b,k,i) & !(bd)(ijl)
-                    -c1_b(c,l)*c1_b(b,i)*c2_bb(a,d,k,j) & !(ac)(ilj)
-                    -c1_b(d,l)*c1_b(b,i)*c2_bb(c,a,k,j) & !(ad)(ilj)
-                    -c1_b(a,l)*c1_b(c,i)*c2_bb(b,d,k,j) & !(bc)(ilj)
-                    -c1_b(a,l)*c1_b(d,i)*c2_bb(c,b,k,j) & !(bd)(ilj)
-                    +c1_b(c,j)*c1_b(d,k)*c2_bb(a,b,i,l) & !(ac)(bd)(ijk)
-                    +c1_b(c,k)*c1_b(d,i)*c2_bb(a,b,j,l) & !(ac)(bd)(ikj)
-                    +c1_b(c,j)*c1_b(d,l)*c2_bb(a,b,k,i) & !(ac)(bd)(ijl)
-                    +c1_b(c,l)*c1_b(d,i)*c2_bb(a,b,k,j) & !(ac)(bd)(ilj)
-                    +c1_b(c,l)*c1_b(b,k)*c2_bb(a,d,i,j) & !(ac)(kilj)
-                    +c1_b(d,l)*c1_b(b,k)*c2_bb(c,a,i,j) & !(ad)(kilj)
-                    +c1_b(a,l)*c1_b(c,k)*c2_bb(b,d,i,j) & !(bc)(kilj)
-                    +c1_b(a,l)*c1_b(d,k)*c2_bb(c,b,i,j) & !(bd)(kilj)
-                    -c1_b(c,l)*c1_b(d,k)*c2_bb(a,b,i,j) & !(ac)(bd)(kilj)
-                    -c1_b(c,k)*c1_b(b,l)*c2_bb(a,d,i,j) & !(ac)(ik)(jl)
-                    -c1_b(d,k)*c1_b(b,l)*c2_bb(c,a,i,j) & !(ad)(ik)(jl)
-                    -c1_b(a,k)*c1_b(c,l)*c2_bb(b,d,i,j) & !(bc)(ik)(jl)
-                    -c1_b(a,k)*c1_b(d,l)*c2_bb(c,b,i,j) & !(bd)(ik)(jl)
-                    +c1_b(c,k)*c1_b(d,l)*c2_bb(a,b,i,j) & !(ac)(bd)(ik)(jl)
-                    +c1_b(a,k)*c1_b(b,l)*c2_bb(c,d,i,j)) & !(ik)(jl)
-                    -c2_bb(a,b,i,j)*c2_bb(c,d,k,l) &
-                    +c2_bb(a,b,k,j)*c2_bb(c,d,i,l) &
-                    +c2_bb(a,b,l,j)*c2_bb(c,d,k,i) &
-                    +c2_bb(a,b,i,k)*c2_bb(c,d,j,l) &
-                    +c2_bb(a,b,i,l)*c2_bb(c,d,k,j) &
-                    +c2_bb(c,b,i,j)*c2_bb(a,d,k,l) &
-                    +c2_bb(d,b,i,j)*c2_bb(c,a,k,l) &
-                    -c2_bb(a,b,k,l)*c2_bb(c,d,i,j) &
-                    -c2_bb(c,b,k,j)*c2_bb(a,d,i,l) &
-                    -c2_bb(c,b,l,j)*c2_bb(a,d,k,i) &
-                    -c2_bb(c,b,i,k)*c2_bb(a,d,j,l) &
-                    -c2_bb(c,b,i,l)*c2_bb(a,d,k,j) &
-                    -c2_bb(d,b,k,j)*c2_bb(c,a,i,l) &
-                    -c2_bb(d,b,l,j)*c2_bb(c,a,k,i) &
-                    -c2_bb(d,b,i,k)*c2_bb(c,a,j,l) &
-                    -c2_bb(d,b,i,l)*c2_bb(c,a,k,j) &
-                    +c2_bb(c,b,k,l)*c2_bb(a,d,i,j) &
-                    +c2_bb(d,b,k,l)*c2_bb(c,a,i,j) &
-                    -6.0d0*(c1_b(a,i)*c1_b(b,j)*c1_b(c,k)*c1_b(d,l) &
-                    -c1_b(a,j)*c1_b(b,i)*c1_b(c,k)*c1_b(d,l) &
-                    -c1_b(a,k)*c1_b(b,j)*c1_b(c,i)*c1_b(d,l) &
-                    -c1_b(a,l)*c1_b(b,j)*c1_b(c,k)*c1_b(d,i) &
-                    -c1_b(a,i)*c1_b(b,k)*c1_b(c,j)*c1_b(d,l) &
-                    -c1_b(a,i)*c1_b(b,l)*c1_b(c,k)*c1_b(d,j) &
-                    -c1_b(a,i)*c1_b(b,j)*c1_b(c,l)*c1_b(d,k) &
-                    +c1_b(a,j)*c1_b(b,k)*c1_b(c,i)*c1_b(d,l) &
-                    +c1_b(a,k)*c1_b(b,i)*c1_b(c,j)*c1_b(d,l) &
-                    +c1_b(a,j)*c1_b(b,l)*c1_b(c,k)*c1_b(d,i) &
-                    +c1_b(a,l)*c1_b(b,i)*c1_b(c,k)*c1_b(d,j) &
-                    +c1_b(a,k)*c1_b(b,j)*c1_b(c,l)*c1_b(d,i) &
-                    +c1_b(a,l)*c1_b(b,j)*c1_b(c,i)*c1_b(d,k) &
-                    +c1_b(a,i)*c1_b(b,k)*c1_b(c,l)*c1_b(d,j) &
-                    +c1_b(a,i)*c1_b(b,l)*c1_b(c,j)*c1_b(d,k) &
-                    +c1_b(a,j)*c1_b(b,i)*c1_b(c,l)*c1_b(d,k) &
-                    +c1_b(a,k)*c1_b(b,l)*c1_b(c,i)*c1_b(d,j) &
-                    +c1_b(a,l)*c1_b(b,k)*c1_b(c,j)*c1_b(d,i) &
-                    -c1_b(a,j)*c1_b(b,k)*c1_b(c,l)*c1_b(d,i) &
-                    -c1_b(a,j)*c1_b(b,l)*c1_b(c,i)*c1_b(d,k) &
-                    -c1_b(a,k)*c1_b(b,l)*c1_b(c,j)*c1_b(d,i) &
-                    -c1_b(a,k)*c1_b(b,i)*c1_b(c,l)*c1_b(d,j) &
-                    -c1_b(a,l)*c1_b(b,i)*c1_b(c,j)*c1_b(d,k) &
-                    -c1_b(a,l)*c1_b(b,k)*c1_b(c,i)*c1_b(d,j)))
-
-        end subroutine get_t4bbbb_amp
-
-
-         subroutine cluster_analysis_t4_direct(t4_aaaa_amps, t4_aaab_amps, t4_aabb_amps, t4_abbb_amps, t4_bbbb_amps,&
+         subroutine cluster_analysis_t4(t4_aaaa_amps, t4_aaab_amps, t4_aabb_amps, t4_abbb_amps, t4_bbbb_amps,&
                                        c1_a, c1_b, c2_aa, c2_ab, c2_bb,&
                                        c3_aaa, c3_aab, c3_abb, c3_bbb,&
                                        c4_aaaa, c4_aaab, c4_aabb, c4_abbb, c4_bbbb,&
@@ -1467,10 +801,10 @@ module clusteranalysis
 
                 enddo
 
-        end subroutine cluster_analysis_t4_direct
+        end subroutine cluster_analysis_t4
 
 
-        subroutine cluster_analysis_t4(t4_aaaa, t4_aaab, t4_aabb, t4_abbb, t4_bbbb,&
+        subroutine cluster_analysis_t4_full(t4_aaaa, t4_aaab, t4_aabb, t4_abbb, t4_bbbb,&
                                        c1_a, c1_b, c2_aa, c2_ab, c2_bb,&
                                        c3_aaa, c3_aab, c3_abb, c3_bbb,&
                                        c4_aaaa, c4_aaab, c4_aabb, c4_abbb, c4_bbbb,&
@@ -3220,7 +2554,160 @@ module clusteranalysis
 
                 enddo
 
-        end subroutine cluster_analysis_t4
+        end subroutine cluster_analysis_t4_full
+
+        subroutine contract_vt4_opt(x2a, x2b, x2c,&
+                                    v_aa, v_ab, v_bb,&
+                                    c1_a, c1_b, c2_aa, c2_ab, c2_bb, c3_aaa, c3_aab, c3_abb, c3_bbb,&
+                                    c4_aaaa, c4_aaab, c4_aabb, c4_abbb, c4_bbbb,&
+                                    c4_aaaa_amps, c4_aaab_amps, c4_aabb_amps, c4_abbb_amps, c4_bbbb_amps,&
+                                    n4a, n4b, n4c, n4d, n4e,&
+                                    noa, nua, nob, nub)
+
+            integer, intent(in) :: noa, nua, nob, nub
+            integer, intent(in) :: n4a, n4b, n4c, n4d, n4e
+
+            integer, intent(in) :: c4_aaaa(n4a, 8), c4_aaab(n4b, 8), c4_aabb(n4c, 8), c4_abbb(n4d, 8), c4_bbbb(n4e, 8)
+
+            real(kind=8), intent(in) :: c1_a(nua, noa), c1_b(nub, nob),&
+                                        c2_aa(nua, nua, noa, noa), c2_ab(nua, nub, noa, nob), c2_bb(nub, nub, nob, nob),&
+                                        c3_aaa(nua, nua, nua, noa, noa, noa), c3_aab(nua, nua, nub, noa, noa, nob),&
+                                        c3_abb(nua, nub, nub, noa, nob, nob), c3_bbb(nub, nub, nub, nob, nob, nob)
+
+            real(kind=8), intent(in) :: c4_aaaa_amps(n4a), c4_aaab_amps(n4b), c4_aabb_amps(n4c), c4_abbb_amps(n4d), c4_bbbb_amps(n4e)
+            real(kind=8), intent(in) :: v_aa(noa, noa, nua, nua), v_ab(noa, nob, nua, nub), v_bb(nob, nob, nub, nub)
+
+            real(kind=8), intent(out) :: x2a(nua, nua, noa, noa), x2b(nua, nub, noa, nob), x2c(nub, nub, nob, nob)
+
+            integer :: a, b, i, j, m, n, e, f, idet
+            real(kind=8) :: hmatel, t_amp
+
+            x2a = 0.0d0
+            x2b = 0.0d0
+            x2c = 0.0d0
+
+            do idet = 1, n4a
+
+                a = c4_aaaa(idet, 1); b = c4_aaaa(idet, 2); e = c4_aaaa(idet, 3); f = c4_aaaa(idet, 4);
+                i = c4_aaaa(idet, 5); j = c4_aaaa(idet, 6); m = c4_aaaa(idet, 7); n = c4_aaaa(idet, 8);
+
+                t_amp = 0.0d0
+
+                ! x2a(abij) <- A(ij/mn)A(ab/ef) v_aa(mnef) * t_aaaa(abefijmn)
+                ! A(ij/mn) = (1) - (im) - (in) - (jm) - (jn) + (im)(jn)
+                ! A(ab/ef) = (1) - (ae) - (af) - (be) - (bf) + (ae)(bf)
+                hmatel =  v_aa(m,n,e,f) - v_aa(i,n,e,f) - v_aa(m,i,e,f) - v_aa(j,n,e,f) - v_aa(m,j,e,f) + v_aa(i,j,e,f)&
+                         -v_aa(m,n,a,f) + v_aa(i,n,a,f) + v_aa(m,i,a,f) + v_aa(j,n,a,f) + v_aa(m,j,a,f) - v_aa(i,j,a,f)&
+                         -v_aa(m,n,e,a) + v_aa(i,n,e,a) + v_aa(m,i,e,a) + v_aa(j,n,e,a) + v_aa(m,j,e,a) - v_aa(i,j,e,a)&
+                         -v_aa(m,n,b,f) + v_aa(i,n,b,f) + v_aa(m,i,b,f) + v_aa(j,n,b,f) + v_aa(m,j,b,f) - v_aa(i,j,b,f)&
+                         -v_aa(m,n,e,b) + v_aa(i,n,e,b) + v_aa(m,i,e,b) + v_aa(j,n,e,b) + v_aa(m,j,e,b) - v_aa(i,j,e,b)&
+                         +v_aa(m,n,a,b) - v_aa(i,n,a,b) - v_aa(m,i,a,b) - v_aa(j,n,a,b) - v_aa(m,j,a,b) + v_aa(i,j,a,b)
+
+                x2a(a, b, i, j) = x2a(a, b, i, j) + hmatel * t_amp
+                x2a(b, a, i, j) = -1.0 * x2a(a, b, i, j)
+                x2a(a, b, j, i) = -1.0 * x2a(a, b, i, j)
+                x2a(b, a, j, i) = x2a(a, b, i, j)
+
+            end do
+
+            do idet = 1, n4b
+
+                ! x2a(abij) <- A(m/ij)A(e/ab) v_ab(mnef) * t_aaab(abefijmn)
+                a = c4_aaab(idet, 1); b = c4_aaab(idet, 2); e = c4_aaab(idet, 3); f = c4_aaab(idet, 4);
+                i = c4_aaab(idet, 5); j = c4_aaab(idet, 6); m = c4_aaab(idet, 7); n = c4_aaab(idet, 8);
+
+                t_amp = 0.0d0
+
+                hmatel = v_ab(m, n, e, f) - v_ab(i, n, e, f) - v_ab(j, n, e, f)&
+                        -v_ab(m, n, a, f) + v_ab(i, n, a, f) + v_ab(j, n, a, f)&
+                        -v_ab(m, n, b, f) + v_ab(i, n, b, f) + v_ab(j, n, b, f)
+
+!                x2a(a, b, i, j) = x2a(a, b, i, j) + hmatel * t_amp
+!                x2a(b, a, i, j) = -1.0 * x2a(a, b, i, j)
+!                x2a(a, b, j, i) = -1.0 * x2a(a, b, i, j)
+!                x2a(b, a, j, i) = x2a(a, b, i, j)
+
+                ! x2b(abij) <- A(i/mn)A(a/ef) v_aa(mnef) * t_aaab(aefbimnj)
+                a = c4_aaab(idet, 1); e = c4_aaab(idet, 2); f = c4_aaab(idet, 3); b = c4_aaab(idet, 4);
+                i = c4_aaab(idet, 5); m = c4_aaab(idet, 6); n = c4_aaab(idet, 7); j = c4_aaab(idet, 8);
+
+                t_amp = 0.0d0
+
+                hmatel = v_aa(m, n, e, f) - v_aa(i, n, e, f) - v_aa(m, i, e, f)&
+                        -v_aa(m, n, a, f) + v_aa(i, n, a, f) + v_aa(m, i, a, f)&
+                        -v_aa(m, n, e, a) + v_aa(i, n, e, a) + v_aa(m, i, e, a)
+
+                x2b(a, b, i, j) = x2b(a, b, i, j) + hmatel * t_amp
+            end do
+
+            do idet = 1, n4c
+
+                ! x2a(abij) <- v_bb(mnef) * t_aabb(abefijmn)
+                a = c4_aabb(idet, 1); b = c4_aabb(idet, 2); e = c4_aabb(idet, 3); f = c4_aabb(idet, 4);
+                i = c4_aabb(idet, 5); j = c4_aabb(idet, 6); m = c4_aabb(idet, 7); n = c4_aabb(idet, 8);
+
+                t_amp = 0.0d0
+
+                hmatel = v_bb(m, n, e, f)
+
+!                x2a(a, b, i, j) = x2a(a, b, i, j) + hmatel * t_amp
+!                x2a(b, a, i, j) = -1.0 * x2a(a, b, i, j)
+!                x2a(a, b, j, i) = -1.0 * x2a(a, b, i, j)
+!                x2a(b, a, j, i) = x2a(a, b, i, j)
+
+                ! x2b(abij) <- A(jn)A(im)A(ae)A(bf) v_ab(mnef) * t_aabb(aefbimnj)
+                a = c4_aabb(idet, 1); e = c4_aabb(idet, 2); f = c4_aabb(idet, 3); b = c4_aabb(idet, 4);
+                i = c4_aabb(idet, 5); m = c4_aabb(idet, 6); n = c4_aabb(idet, 7); j = c4_aabb(idet, 8);
+
+                t_amp = 0.0d0
+
+                hmatel = v_ab(m, n, e, f) - v_ab(m, j, e, f) ! (jn)
+
+                x2b(a, b, i, j) = x2b(a, b, i, j) + hmatel * t_amp
+
+                ! x2c(abij) <- v_aa(mnef) * t_aabb(efabmnij)
+                e = c4_aabb(idet, 1); f = c4_aabb(idet, 2); a = c4_aabb(idet, 3); b = c4_aabb(idet, 4);
+                m = c4_aabb(idet, 5); n = c4_aabb(idet, 6); i = c4_aabb(idet, 7); j = c4_aabb(idet, 8);
+
+                t_amp = 0.0d0
+
+                hmatel = v_aa(m, n, e, f)
+
+                x2c(a, b, i, j) = x2c(a, b, i, j) + hmatel * t_amp
+                x2c(b, a, i, j) = -1.0 * x2c(a, b, i, j)
+                x2c(a, b, j, i) = -1.0 * x2c(a, b, i, j)
+                x2c(b, a, j, i) = x2c(a, b, i, j)
+            end do
+
+            do idet = 1, n4d
+
+                ! x2b(abij) <- A(j/mn)A(b/ef) v_bb(mnef) * t_abbb(aefbimnj)
+                a = c4_abbb(idet, 1); e = c4_abbb(idet, 2); f = c4_abbb(idet, 3); b = c4_abbb(idet, 4);
+                i = c4_abbb(idet, 5); m = c4_abbb(idet, 6); n = c4_abbb(idet, 7); j = c4_abbb(idet, 8);
+
+                t_amp = 0.0d0
+
+                ! x2c(abij) <- A(n/ij)A(f/ab) v_ab(mnef) * t_abbb(efabmnij)
+                e = c4_abbb(idet, 1); f = c4_abbb(idet, 2); a = c4_abbb(idet, 3); b = c4_abbb(idet, 4);
+                m = c4_abbb(idet, 5); n = c4_abbb(idet, 6); i = c4_abbb(idet, 7); j = c4_abbb(idet, 8);
+
+                t_amp = 0.0d0
+
+            end do
+
+            do idet = 1, n4e
+
+                ! x2c(abij) <- A(ij/mn)A(ab/ef) v_bb(mnef) * t_bbbb(efabmnij)
+                e = c4_bbbb(idet, 1); f = c4_bbbb(idet, 2); a = c4_bbbb(idet, 3); b = c4_bbbb(idet, 4);
+                m = c4_bbbb(idet, 5); n = c4_bbbb(idet, 6); i = c4_bbbb(idet, 7); j = c4_bbbb(idet, 8);
+
+                t_amp = 0.0d0
+
+
+            end do
+
+
+        end subroutine contract_vt4_opt
 
 end module clusteranalysis
 
