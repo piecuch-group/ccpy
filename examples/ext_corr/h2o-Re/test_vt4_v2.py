@@ -1,7 +1,9 @@
 import numpy as np
+import time
+
 from ccpy.interfaces.gamess_tools import load_from_gamess
 from ccpy.utilities.external_correction import parse_ci_wavefunction, cluster_analyze_ci
-from itertools import permutations
+from ccpy.utilities.updates import clusteranalysis
 
 def contract_vt4_exact(H, T_ext):
 
@@ -22,7 +24,7 @@ def contract_vt4_exact(H, T_ext):
 
     return x2_aa_exact, x2_ab_exact, x2_bb_exact
 
-def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
+def contract_vt4_opt(C4_excitations, C4_amplitudes, C, H, T_ext, system):
 
     x2a = np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.noccupied_alpha, system.noccupied_alpha))
     x2b = np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.noccupied_alpha, system.noccupied_beta))
@@ -33,7 +35,9 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
 
         # x2a(abij) <- A(ij/mn)A(ab/ef) v_aa(mnef) * t_aaaa(abefijmn)
         a, b, e, f, i, j, m, n = [x - 1 for x in C4_excitations["aaaa"][idet]]
-        t_amp = T_ext.aaaa[a, b, e, f, i, j, m, n]
+        #t_amp = T_ext.aaaa[a, b, e, f, i, j, m, n]
+        t_amp = clusteranalysis.clusteranalysis.get_t4aaaa_amp(C.a, C.aa, C.aaa, C4_amplitudes["aaaa"][idet],
+                                                               a+1, b+1, e+1, f+1, i+1, j+1, m+1, n+1)
 
         x2a[a, b, i, j] += H.aa.oovv[m, n, e, f] * t_amp  #  (1)
         x2a[b, a, i, j] = -x2a[a, b, i, j]
@@ -220,7 +224,9 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
 
         # x2a(abij) <- A(m/ij)A(e/ab) v_ab(mnef) * t_aaab(abefijmn)
         a, b, e, f, i, j, m, n = [x - 1 for x in C4_excitations["aaab"][idet]]
-        t_amp = T_ext.aaab[a, b, e, f, i, j, m, n]
+        #t_amp = T_ext.aaab[a, b, e, f, i, j, m, n]
+        t_amp = clusteranalysis.clusteranalysis.get_t4aaab_amp(C.a, C.b, C.aa, C.ab, C.aaa, C.aab, C4_amplitudes["aaab"][idet],
+                                                               a+1, b+1, e+1, f+1, i+1, j+1, m+1, n+1)
 
         x2a[a, b, i, j] += H.ab.oovv[m, n, e, f] * t_amp  # (1)
         x2a[b, a, i, j] = -x2a[a, b, i, j]
@@ -269,7 +275,9 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
 
         # x2b(abij) < - A(i/mn)A(a/ef) v_aa(mnef) * t_aaab(aefbimnj)
         a, e, f, b, i, m, n, j = [x - 1 for x in C4_excitations["aaab"][idet]]
-        t_amp = T_ext.aaab[a, e, f, b, i, m, n, j]
+        #t_amp = T_ext.aaab[a, e, f, b, i, m, n, j]
+        t_amp = clusteranalysis.clusteranalysis.get_t4aaab_amp(C.a, C.b, C.aa, C.ab, C.aaa, C.aab, C4_amplitudes["aaab"][idet],
+                                                               a+1, e+1, f+1, b+1, i+1, m+1, n+1, j+1)
 
         x2b[a, b, i, j] += H.aa.oovv[m, n, e, f] * t_amp  # (1)
         x2b[a, b, m, j] -= H.aa.oovv[i, n, e, f] * t_amp  # (im)
@@ -286,7 +294,9 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
 
         # x2a(abij) <- v_bb(mnef) * t_aabb(abefijmn)
         a, b, e, f, i, j, m, n = [x - 1 for x in C4_excitations["aabb"][idet]]
-        t_amp = T_ext.aabb[a, b, e, f, i, j, m, n]
+        #t_amp = T_ext.aabb[a, b, e, f, i, j, m, n]
+        t_amp = clusteranalysis.clusteranalysis.get_t4aabb_amp(C.a, C.b, C.aa, C.ab, C.bb, C.aaa, C.aab, C.abb, C4_amplitudes["aabb"][idet],
+                                                               a+1, b+1, e+1, f+1, i+1, j+1, m+1, n+1)
 
         x2a[a, b, i, j] += H.bb.oovv[m, n, e, f] * t_amp
         x2a[b, a, i, j] = -x2a[a, b, i, j]
@@ -295,7 +305,9 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
 
         # x2b(abij) <- A(ae)A(bf)A(im)(jn) v_ab(mnef) * t_aabb(aefbimnj)
         a, e, f, b, i, m, n, j = [x - 1 for x in C4_excitations["aabb"][idet]]
-        t_amp = T_ext.aabb[a, e, f, b, i, m, n, j]
+        #t_amp = T_ext.aabb[a, e, f, b, i, m, n, j]
+        t_amp = clusteranalysis.clusteranalysis.get_t4aabb_amp(C.a, C.b, C.aa, C.ab, C.bb, C.aaa, C.aab, C.abb, C4_amplitudes["aabb"][idet],
+                                                               a+1, e+1, f+1, b+1, i+1, m+1, n+1, j+1)
 
         x2b[a, b, i, j] += H.ab.oovv[m, n, e, f] * t_amp  # (1)
         x2b[e, b, i, j] -= H.ab.oovv[m, n, a, f] * t_amp  # (ae)
@@ -316,7 +328,9 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
 
         # x2c(abij) <- v_aa(mnef) * t_aabb(efabmnij)
         e, f, a, b, m, n, i, j = [x - 1 for x in C4_excitations["aabb"][idet]]
-        t_amp = T_ext.aabb[e, f, a, b, m, n, i, j]
+        #t_amp = T_ext.aabb[e, f, a, b, m, n, i, j]
+        t_amp = clusteranalysis.clusteranalysis.get_t4aabb_amp(C.a, C.b, C.aa, C.ab, C.bb, C.aaa, C.aab, C.abb, C4_amplitudes["aabb"][idet],
+                                                               e+1, f+1, a+1, b+1, m+1, n+1, i+1, j+1)
 
         x2c[a, b, i, j] += H.aa.oovv[m, n, e, f] * t_amp
         x2c[b, a, i, j] = -x2c[a, b, i, j]
@@ -329,6 +343,8 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
         # x2b(abij) <- A(j/mn)A(b/ef) v_bb(mnef) * t_abbb(aefbimnj)
         a, e, f, b, i, m, n, j = [x - 1 for x in C4_excitations["abbb"][idet]]
         t_amp = T_ext.abbb[a, e, f, b, i, m, n, j]
+        t_amp = clusteranalysis.clusteranalysis.get_t4abbb_amp(C.a, C.b, C.ab, C.bb, C.abb, C.bbb, C4_amplitudes["abbb"][idet],
+                                                               a+1, e+1, f+1, b+1, i+1, m+1, n+1, j+1)
 
         x2b[a, b, i, j] += H.bb.oovv[m, n, e, f] * t_amp  #  (1)
         x2b[a, b, i, m] -= H.bb.oovv[j, n, e, f] * t_amp  #  (jm)
@@ -342,7 +358,9 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
 
         # x2c(abij) <- A(n/ij)A(f/ab) v_ab(mnef) * t_abbb(efabmnij)
         e, f, a, b, m, n, i, j = [x - 1 for x in C4_excitations["abbb"][idet]]
-        t_amp = T_ext.abbb[e, f, a, b, m, n, i, j]
+        #t_amp = T_ext.abbb[e, f, a, b, m, n, i, j]
+        t_amp = clusteranalysis.clusteranalysis.get_t4abbb_amp(C.a, C.b, C.ab, C.bb, C.abb, C.bbb, C4_amplitudes["abbb"][idet],
+                                                               e+1, f+1, a+1, b+1, m+1, n+1, i+1, j+1)
 
         x2c[a, b, i, j] += H.ab.oovv[m, n, e, f] * t_amp  #  (1)
         x2c[b, a, i, j] = -x2c[a, b, i, j]
@@ -394,7 +412,9 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system):
 
         # x2c(abij) <- A(ij/mn)A(ab/ef) v_bb(mnef) * t_bbbb(abefijmn)
         a, b, e, f, i, j, m, n = [x - 1 for x in C4_excitations["bbbb"][idet]]
-        t_amp = T_ext.bbbb[a, b, e, f, i, j, m, n]
+        #t_amp = T_ext.bbbb[a, b, e, f, i, j, m, n]
+        t_amp = clusteranalysis.clusteranalysis.get_t4bbbb_amp(C.b, C.bb, C.bbb, C4_amplitudes["bbbb"][idet],
+                                                               a+1, b+1, e+1, f+1, i+1, j+1, m+1, n+1)
 
         x2c[a, b, i, j] += H.bb.oovv[m, n, e, f] * t_amp  #  (1)
         x2c[b, a, i, j] = -x2c[a, b, i, j]
@@ -610,10 +630,14 @@ if __name__ == "__main__":
     T_ext = cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, 4)
 
     # Get the expected result for the contraction, computed using full T_ext
+    print("   Exact V*T4 contraction")
     x2_aa_exact, x2_ab_exact, x2_bb_exact = contract_vt4_exact(H, T_ext)
 
     # Get the on-the-fly contraction result (although for now, we are still using full T4)
-    x2_aa, x2_ab, x2_bb = contract_vt4_opt(C4_excitations, C4_amplitudes, H, T_ext, system)
+    print("   On-the-fly V*T4 contraction")
+    t1 = time.time()
+    x2_aa, x2_ab, x2_bb = contract_vt4_opt(C4_excitations, C4_amplitudes, C, H, T_ext, system)
+    print("   Completed in ", time.time() - t1, "seconds")
 
     print("")
     print("Error in x2a = ", np.linalg.norm(x2_aa.flatten() - x2_aa_exact.flatten()))
