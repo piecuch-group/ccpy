@@ -971,6 +971,505 @@ module clusteranalysis
         end subroutine get_t4bbbb_amp
 
 
+         subroutine cluster_analysis_t4_direct(t4_aaaa_amps, t4_aaab_amps, t4_aabb_amps, t4_abbb_amps, t4_bbbb_amps,&
+                                       c1_a, c1_b, c2_aa, c2_ab, c2_bb,&
+                                       c3_aaa, c3_aab, c3_abb, c3_bbb,&
+                                       c4_aaaa, c4_aaab, c4_aabb, c4_abbb, c4_bbbb,&
+                                       c4_aaaa_amps, c4_aaab_amps, c4_aabb_amps, c4_abbb_amps, c4_bbbb_amps,&
+                                       n4a, n4b, n4c, n4d, n4e,&
+                                       noa, nua, nob, nub)
+
+                integer, intent(in) :: noa, nua, nob, nub, n4a, n4b, n4c, n4d, n4e
+                integer, intent(in) :: c4_aaaa(n4a, 8), c4_aaab(n4b, 8), c4_aabb(n4c, 8), c4_abbb(n4d, 8), c4_bbbb(n4e, 8)
+                real(kind=8), intent(in) :: c1_a(nua, noa), c1_b(nub, nob),&
+                                            c2_aa(nua, nua, noa, noa), c2_ab(nua, nub, noa, nob), c2_bb(nub, nub, nob, nob),&
+                                            c3_aaa(nua, nua, nua, noa, noa, noa), c3_aab(nua, nua, nub, noa, noa, nob),&
+                                            c3_abb(nua, nub, nub, noa, nob, nob), c3_bbb(nub, nub, nub, nob, nob, nob),&
+                                            c4_aaaa_amps(n4a),&
+                                            c4_aaab_amps(n4b),&
+                                            c4_aabb_amps(n4c),&
+                                            c4_abbb_amps(n4d),&
+                                            c4_bbbb_amps(n4e)
+
+                real(kind=8), intent(out) :: t4_aaaa_amps(n4a),&
+                                             t4_aaab_amps(n4b),&
+                                             t4_aabb_amps(n4c),&
+                                             t4_abbb_amps(n4d),&
+                                             t4_bbbb_amps(n4e)
+
+                integer :: a, b, c, d, i, j, k, l, idet
+                real(kind=8) :: c1c3, c12c2, c22, c13
+
+                c13 = 0.0d0
+                c22 = 0.0d0
+                c12c2 = 0.0d0
+                c1c3 = 0.0d0
+
+                t4_aaaa_amps = 0.0d0
+                do idet = 1, n4a
+
+                    a = c4_aaaa(idet, 1); b = c4_aaaa(idet, 2); c = c4_aaaa(idet, 3); d = c4_aaaa(idet, 4);
+                    i = c4_aaaa(idet, 5); j = c4_aaaa(idet, 6); k = c4_aaaa(idet, 7); l = c4_aaaa(idet, 8);
+
+                        t4_aaaa_amps(idet) = &
+                            (c4_aaaa_amps(idet) &
+                            ! -C_1 * C_3
+                            -c1_a(a,i)*c3_aaa(b,c,d,j,k,l) &
+                            +c1_a(a,j)*c3_aaa(b,c,d,i,k,l) &
+                            +c1_a(a,k)*c3_aaa(b,c,d,j,i,l) &
+                            +c1_a(a,l)*c3_aaa(b,c,d,j,k,i) &
+                            +c1_a(b,i)*c3_aaa(a,c,d,j,k,l) &
+                            +c1_a(c,i)*c3_aaa(b,a,d,j,k,l) &
+                            +c1_a(d,i)*c3_aaa(b,c,a,j,k,l) &
+                            -c1_a(b,j)*c3_aaa(a,c,d,i,k,l) &
+                            -c1_a(c,j)*c3_aaa(b,a,d,i,k,l) &
+                            -c1_a(d,j)*c3_aaa(b,c,a,i,k,l) &
+                            -c1_a(b,k)*c3_aaa(a,c,d,j,i,l) &
+                            -c1_a(c,k)*c3_aaa(b,a,d,j,i,l) &
+                            -c1_a(d,k)*c3_aaa(b,c,a,j,i,l) &
+                            -c1_a(b,l)*c3_aaa(a,c,d,j,k,i) &
+                            -c1_a(c,l)*c3_aaa(b,a,d,j,k,i) &
+                            -c1_a(d,l)*c3_aaa(b,c,a,j,k,i) &
+                            ! 2 * 1/2 C_1^2 * C_2
+                        +2.0d0*(c1_a(a,i)*c1_a(b,j)*c2_aa(c,d,k,l) & !1
+                            -c1_a(a,k)*c1_a(b,j)*c2_aa(c,d,i,l) & !(ik)
+                            -c1_a(a,l)*c1_a(b,j)*c2_aa(c,d,k,i) & !(il)
+                            -c1_a(a,j)*c1_a(b,i)*c2_aa(c,d,k,l) & !(ij)
+                            -c1_a(a,i)*c1_a(b,k)*c2_aa(c,d,j,l) & !(jk)
+                            -c1_a(a,i)*c1_a(b,l)*c2_aa(c,d,k,j) & !(jl)
+                            -c1_a(c,i)*c1_a(b,j)*c2_aa(a,d,k,l) & !(ac)
+                            -c1_a(d,i)*c1_a(b,j)*c2_aa(c,a,k,l) & !(ad)
+                            -c1_a(a,i)*c1_a(c,j)*c2_aa(b,d,k,l) & !(bc)
+                            -c1_a(a,i)*c1_a(d,j)*c2_aa(c,b,k,l) & !(bd)
+                            +c1_a(c,i)*c1_a(d,j)*c2_aa(a,b,k,l) & !(ac)(bd)
+                            +c1_a(c,k)*c1_a(b,j)*c2_aa(a,d,i,l) & !(ac)(ik)
+                            +c1_a(d,k)*c1_a(b,j)*c2_aa(c,a,i,l) & !(ad)(ik)
+                            +c1_a(a,k)*c1_a(c,j)*c2_aa(b,d,i,l) & !(bc)(ik)
+                            +c1_a(a,k)*c1_a(d,j)*c2_aa(c,b,i,l) & !(bd)(ik)
+                            +c1_a(c,l)*c1_a(b,j)*c2_aa(a,d,k,i) & !(ac)(il)
+                            +c1_a(d,l)*c1_a(b,j)*c2_aa(c,a,k,i) & !(ad)(il)
+                            +c1_a(a,l)*c1_a(c,j)*c2_aa(b,d,k,i) & !(bc)(il)
+                            +c1_a(a,l)*c1_a(d,j)*c2_aa(c,b,k,i) & !(bd)(il)
+                            +c1_a(c,j)*c1_a(b,i)*c2_aa(a,d,k,l) & !(ac)(ij)
+                            +c1_a(d,j)*c1_a(b,i)*c2_aa(c,a,k,l) & !(ad)(ij)
+                            +c1_a(a,j)*c1_a(c,i)*c2_aa(b,d,k,l) & !(bc)(ij)
+                            +c1_a(a,j)*c1_a(d,i)*c2_aa(c,b,k,l) & !(bd)(ij)
+                            +c1_a(c,i)*c1_a(b,k)*c2_aa(a,d,j,l) & !(ac)(jk)
+                            +c1_a(d,i)*c1_a(b,k)*c2_aa(c,a,j,l) & !(ad)(jk)
+                            +c1_a(a,i)*c1_a(c,k)*c2_aa(b,d,j,l) & !(bc)(jk)
+                            +c1_a(a,i)*c1_a(d,k)*c2_aa(c,b,j,l) & !(bd)(jk)
+                            +c1_a(c,i)*c1_a(b,l)*c2_aa(a,d,k,j) & !(ac)(jl)
+                            +c1_a(d,i)*c1_a(b,l)*c2_aa(c,a,k,j) & !(ad)(jl)
+                            +c1_a(a,i)*c1_a(c,l)*c2_aa(b,d,k,j) & !(bc)(jl)
+                            +c1_a(a,i)*c1_a(d,l)*c2_aa(c,b,k,j) & !(bd)(jl)
+                            +c1_a(a,j)*c1_a(b,k)*c2_aa(c,d,i,l) & !(ijk)
+                            +c1_a(a,k)*c1_a(b,i)*c2_aa(c,d,j,l) & !(ikj)
+                            +c1_a(a,j)*c1_a(b,l)*c2_aa(c,d,k,i) & !(ijl)
+                            +c1_a(a,l)*c1_a(b,i)*c2_aa(c,d,k,j) & !(ilj)
+                            -c1_a(a,l)*c1_a(b,k)*c2_aa(c,d,i,j) & !(kilj)
+                            -c1_a(c,k)*c1_a(d,j)*c2_aa(a,b,i,l) & !(ac)(bd)(ik)
+                            -c1_a(c,l)*c1_a(d,j)*c2_aa(a,b,k,i) & !(ac)(bd)(il)
+                            -c1_a(c,j)*c1_a(d,i)*c2_aa(a,b,k,l) & !(ac)(bd)(ij)
+                            -c1_a(c,i)*c1_a(d,k)*c2_aa(a,b,j,l) & !(ac)(bd)(jk)
+                            -c1_a(c,i)*c1_a(d,l)*c2_aa(a,b,k,j) & !(ac)(bd)(jl)
+                            -c1_a(c,j)*c1_a(b,k)*c2_aa(a,d,i,l) & !(ac)(ijk)
+                            -c1_a(d,j)*c1_a(b,k)*c2_aa(c,a,i,l) & !(ad)(ijk)
+                            -c1_a(a,j)*c1_a(c,k)*c2_aa(b,d,i,l) & !(bc)(ijk)
+                            -c1_a(a,j)*c1_a(d,k)*c2_aa(c,b,i,l) & !(bd)(ijk)
+                            -c1_a(c,k)*c1_a(b,i)*c2_aa(a,d,j,l) & !(ac)(ikj)
+                            -c1_a(d,k)*c1_a(b,i)*c2_aa(c,a,j,l) & !(ad)(ikj)
+                            -c1_a(a,k)*c1_a(c,i)*c2_aa(b,d,j,l) & !(bc)(ikj)
+                            -c1_a(a,k)*c1_a(d,i)*c2_aa(c,b,j,l) & !(bd)(ikj)
+                            -c1_a(c,j)*c1_a(b,l)*c2_aa(a,d,k,i) & !(ac)(ijl)
+                            -c1_a(d,j)*c1_a(b,l)*c2_aa(c,a,k,i) & !(ad)(ijl)
+                            -c1_a(a,j)*c1_a(c,l)*c2_aa(b,d,k,i) & !(bc)(ijl)
+                            -c1_a(a,j)*c1_a(d,l)*c2_aa(c,b,k,i) & !(bd)(ijl)
+                            -c1_a(c,l)*c1_a(b,i)*c2_aa(a,d,k,j) & !(ac)(ilj)
+                            -c1_a(d,l)*c1_a(b,i)*c2_aa(c,a,k,j) & !(ad)(ilj)
+                            -c1_a(a,l)*c1_a(c,i)*c2_aa(b,d,k,j) & !(bc)(ilj)
+                            -c1_a(a,l)*c1_a(d,i)*c2_aa(c,b,k,j) & !(bd)(ilj)
+                            +c1_a(c,j)*c1_a(d,k)*c2_aa(a,b,i,l) & !(ac)(bd)(ijk)
+                            +c1_a(c,k)*c1_a(d,i)*c2_aa(a,b,j,l) & !(ac)(bd)(ikj)
+                            +c1_a(c,j)*c1_a(d,l)*c2_aa(a,b,k,i) & !(ac)(bd)(ijl)
+                            +c1_a(c,l)*c1_a(d,i)*c2_aa(a,b,k,j) & !(ac)(bd)(ilj)
+                            +c1_a(c,l)*c1_a(b,k)*c2_aa(a,d,i,j) & !(ac)(kilj)
+                            +c1_a(d,l)*c1_a(b,k)*c2_aa(c,a,i,j) & !(ad)(kilj)
+                            +c1_a(a,l)*c1_a(c,k)*c2_aa(b,d,i,j) & !(bc)(kilj)
+                            +c1_a(a,l)*c1_a(d,k)*c2_aa(c,b,i,j) & !(bd)(kilj)
+                            -c1_a(c,l)*c1_a(d,k)*c2_aa(a,b,i,j) & !(ac)(bd)(kilj)
+                            -c1_a(c,k)*c1_a(b,l)*c2_aa(a,d,i,j) & !(ac)(ik)(jl)
+                            -c1_a(d,k)*c1_a(b,l)*c2_aa(c,a,i,j) & !(ad)(ik)(jl)
+                            -c1_a(a,k)*c1_a(c,l)*c2_aa(b,d,i,j) & !(bc)(ik)(jl)
+                            -c1_a(a,k)*c1_a(d,l)*c2_aa(c,b,i,j) & !(bd)(ik)(jl)
+                            +c1_a(c,k)*c1_a(d,l)*c2_aa(a,b,i,j) & !(ac)(bd)(ik)(jl)
+                            +c1_a(a,k)*c1_a(b,l)*c2_aa(c,d,i,j)) & !(ik)(jl)
+                            -c2_aa(a,b,i,j)*c2_aa(c,d,k,l) &
+                            +c2_aa(a,b,k,j)*c2_aa(c,d,i,l) &
+                            +c2_aa(a,b,l,j)*c2_aa(c,d,k,i) &
+                            +c2_aa(a,b,i,k)*c2_aa(c,d,j,l) &
+                            +c2_aa(a,b,i,l)*c2_aa(c,d,k,j) &
+                            +c2_aa(c,b,i,j)*c2_aa(a,d,k,l) &
+                            +c2_aa(d,b,i,j)*c2_aa(c,a,k,l) &
+                            -c2_aa(a,b,k,l)*c2_aa(c,d,i,j) &
+                            -c2_aa(c,b,k,j)*c2_aa(a,d,i,l) &
+                            -c2_aa(c,b,l,j)*c2_aa(a,d,k,i) &
+                            -c2_aa(c,b,i,k)*c2_aa(a,d,j,l) &
+                            -c2_aa(c,b,i,l)*c2_aa(a,d,k,j) &
+                            -c2_aa(d,b,k,j)*c2_aa(c,a,i,l) &
+                            -c2_aa(d,b,l,j)*c2_aa(c,a,k,i) &
+                            -c2_aa(d,b,i,k)*c2_aa(c,a,j,l) &
+                            -c2_aa(d,b,i,l)*c2_aa(c,a,k,j) &
+                            +c2_aa(c,b,k,l)*c2_aa(a,d,i,j) &
+                            +c2_aa(d,b,k,l)*c2_aa(c,a,i,j) &
+                            -6.0d0*(c1_a(a,i)*c1_a(b,j)*c1_a(c,k)*c1_a(d,l) &
+                            -c1_a(a,j)*c1_a(b,i)*c1_a(c,k)*c1_a(d,l) &
+                            -c1_a(a,k)*c1_a(b,j)*c1_a(c,i)*c1_a(d,l) &
+                            -c1_a(a,l)*c1_a(b,j)*c1_a(c,k)*c1_a(d,i) &
+                            -c1_a(a,i)*c1_a(b,k)*c1_a(c,j)*c1_a(d,l) &
+                            -c1_a(a,i)*c1_a(b,l)*c1_a(c,k)*c1_a(d,j) &
+                            -c1_a(a,i)*c1_a(b,j)*c1_a(c,l)*c1_a(d,k) &
+                            +c1_a(a,j)*c1_a(b,k)*c1_a(c,i)*c1_a(d,l) &
+                            +c1_a(a,k)*c1_a(b,i)*c1_a(c,j)*c1_a(d,l) &
+                            +c1_a(a,j)*c1_a(b,l)*c1_a(c,k)*c1_a(d,i) &
+                            +c1_a(a,l)*c1_a(b,i)*c1_a(c,k)*c1_a(d,j) &
+                            +c1_a(a,k)*c1_a(b,j)*c1_a(c,l)*c1_a(d,i) &
+                            +c1_a(a,l)*c1_a(b,j)*c1_a(c,i)*c1_a(d,k) &
+                            +c1_a(a,i)*c1_a(b,k)*c1_a(c,l)*c1_a(d,j) &
+                            +c1_a(a,i)*c1_a(b,l)*c1_a(c,j)*c1_a(d,k) &
+                            +c1_a(a,j)*c1_a(b,i)*c1_a(c,l)*c1_a(d,k) &
+                            +c1_a(a,k)*c1_a(b,l)*c1_a(c,i)*c1_a(d,j) &
+                            +c1_a(a,l)*c1_a(b,k)*c1_a(c,j)*c1_a(d,i) &
+                            -c1_a(a,j)*c1_a(b,k)*c1_a(c,l)*c1_a(d,i) &
+                            -c1_a(a,j)*c1_a(b,l)*c1_a(c,i)*c1_a(d,k) &
+                            -c1_a(a,k)*c1_a(b,l)*c1_a(c,j)*c1_a(d,i) &
+                            -c1_a(a,k)*c1_a(b,i)*c1_a(c,l)*c1_a(d,j) &
+                            -c1_a(a,l)*c1_a(b,i)*c1_a(c,j)*c1_a(d,k) &
+                            -c1_a(a,l)*c1_a(b,k)*c1_a(c,i)*c1_a(d,j)))
+                enddo
+
+                t4_aaab_amps = 0.0d0
+                do idet = 1, n4b
+
+                    a = c4_aaab(idet, 1); b = c4_aaab(idet, 2); c = c4_aaab(idet, 3); d = c4_aaab(idet, 4);
+                    i = c4_aaab(idet, 5); j = c4_aaab(idet, 6); k = c4_aaab(idet, 7); l = c4_aaab(idet, 8);
+
+                    !if (abs(c4_aaab_amps(idet)) > 0.0d0) then
+                        t4_aaab_amps(idet)=(c4_aaab_amps(idet) &
+                            -c1_a(a,i)*c3_aab(b,c,d,j,k,l) &
+                            +c1_a(a,j)*c3_aab(b,c,d,i,k,l) &
+                            +c1_a(a,k)*c3_aab(b,c,d,j,i,l) &
+                            +c1_a(b,i)*c3_aab(a,c,d,j,k,l) &
+                            +c1_a(c,i)*c3_aab(b,a,d,j,k,l) &
+                            -c1_a(b,j)*c3_aab(a,c,d,i,k,l) &
+                            -c1_a(c,j)*c3_aab(b,a,d,i,k,l) &
+                            -c1_a(b,k)*c3_aab(a,c,d,j,i,l) &
+                            -c1_a(c,k)*c3_aab(b,a,d,j,i,l) &
+                            -c1_b(d,l)*c3_aaa(a,b,c,i,j,k) &
+                            +2.0d0*(c1_a(a,i)*c1_b(d,l)*c2_aa(b,c,j,k) &
+                            -c1_a(a,j)*c1_b(d,l)*c2_aa(b,c,i,k) &
+                            -c1_a(a,k)*c1_b(d,l)*c2_aa(b,c,j,i) &
+                            -c1_a(b,i)*c1_b(d,l)*c2_aa(a,c,j,k) &
+                            -c1_a(c,i)*c1_b(d,l)*c2_aa(b,a,j,k) &
+                            +c1_a(b,j)*c1_b(d,l)*c2_aa(a,c,i,k) &
+                            +c1_a(c,j)*c1_b(d,l)*c2_aa(b,a,i,k) &
+                            +c1_a(b,k)*c1_b(d,l)*c2_aa(a,c,j,i) &
+                            +c1_a(c,k)*c1_b(d,l)*c2_aa(b,a,j,i) &
+                            +c1_a(a,i)*c1_a(b,j)*c2_ab(c,d,k,l) &
+                            -c1_a(a,j)*c1_a(b,i)*c2_ab(c,d,k,l) &
+                            -c1_a(a,k)*c1_a(b,j)*c2_ab(c,d,i,l) &
+                            -c1_a(a,i)*c1_a(b,k)*c2_ab(c,d,j,l) &
+                            -c1_a(c,i)*c1_a(b,j)*c2_ab(a,d,k,l) &
+                            -c1_a(a,i)*c1_a(c,j)*c2_ab(b,d,k,l) &
+                            +c1_a(a,j)*c1_a(b,k)*c2_ab(c,d,i,l) &
+                            +c1_a(a,k)*c1_a(b,i)*c2_ab(c,d,j,l) &
+                            +c1_a(c,j)*c1_a(b,i)*c2_ab(a,d,k,l) &
+                            +c1_a(a,j)*c1_a(c,i)*c2_ab(b,d,k,l) &
+                            +c1_a(c,k)*c1_a(b,j)*c2_ab(a,d,i,l) &
+                            +c1_a(a,k)*c1_a(c,j)*c2_ab(b,d,i,l) &
+                            +c1_a(c,i)*c1_a(b,k)*c2_ab(a,d,j,l) &
+                            +c1_a(a,i)*c1_a(c,k)*c2_ab(b,d,j,l) &
+                            -c1_a(c,j)*c1_a(b,k)*c2_ab(a,d,i,l) &
+                            -c1_a(a,j)*c1_a(c,k)*c2_ab(b,d,i,l) &
+                            -c1_a(c,k)*c1_a(b,i)*c2_ab(a,d,j,l) &
+                            -c1_a(a,k)*c1_a(c,i)*c2_ab(b,d,j,l)) &
+                            -c2_aa(a,b,i,j)*c2_ab(c,d,k,l) &
+                            +c2_aa(a,b,k,j)*c2_ab(c,d,i,l) &
+                            +c2_aa(a,b,i,k)*c2_ab(c,d,j,l) &
+                            +c2_aa(c,b,i,j)*c2_ab(a,d,k,l) &
+                            +c2_aa(a,c,i,j)*c2_ab(b,d,k,l) &
+                            -c2_aa(c,b,k,j)*c2_ab(a,d,i,l) &
+                            -c2_aa(a,c,k,j)*c2_ab(b,d,i,l) &
+                            -c2_aa(c,b,i,k)*c2_ab(a,d,j,l) &
+                            -c2_aa(a,c,i,k)*c2_ab(b,d,j,l) &
+                            -6.0d0*(c1_a(a,i)*c1_a(b,j)*c1_a(c,k)*c1_b(d,l) &
+                            -c1_a(a,j)*c1_a(b,i)*c1_a(c,k)*c1_b(d,l) &
+                            -c1_a(a,k)*c1_a(b,j)*c1_a(c,i)*c1_b(d,l) &
+                            -c1_a(a,i)*c1_a(b,k)*c1_a(c,j)*c1_b(d,l) &
+                            +c1_a(a,j)*c1_a(b,k)*c1_a(c,i)*c1_b(d,l) &
+                            +c1_a(a,k)*c1_a(b,i)*c1_a(c,j)*c1_b(d,l)))
+                enddo
+
+                t4_aabb_amps = 0.0d0
+                do idet = 1, n4c
+
+                    a = c4_aabb(idet, 1); b = c4_aabb(idet, 2); c = c4_aabb(idet, 3); d = c4_aabb(idet, 4);
+                    i = c4_aabb(idet, 5); j = c4_aabb(idet, 6); k = c4_aabb(idet, 7); l = c4_aabb(idet, 8);
+
+                    !if (abs(c4_aabb_amps(idet)) > 0.0d0) then
+                        c1c3 = (-c1_a(a,i)*c3_abb(b,c,d,j,k,l) &
+                            +c1_a(a,j)*c3_abb(b,c,d,i,k,l) &
+                            +c1_a(b,i)*c3_abb(a,c,d,j,k,l) &
+                            -c1_a(b,j)*c3_abb(a,c,d,i,k,l) &
+                            -c1_b(d,l)*c3_aab(a,b,c,i,j,k) &
+                            +c1_b(d,k)*c3_aab(a,b,c,i,j,l) &
+                            +c1_b(c,l)*c3_aab(a,b,d,i,j,k) &
+                            -c1_b(c,k)*c3_aab(a,b,d,i,j,l))
+
+                        c12c2 = 2.0d0*(c1_a(a,i)*c1_a(b,j)*c2_bb(c,d,k,l) &
+                            -c1_a(a,j)*c1_a(b,i)*c2_bb(c,d,k,l) &
+                            +c1_a(a,i)*c1_b(c,k)*c2_ab(b,d,j,l) &
+                            -c1_a(a,j)*c1_b(c,k)*c2_ab(b,d,i,l) &
+                            -c1_a(a,i)*c1_b(c,l)*c2_ab(b,d,j,k) &
+                            -c1_a(b,i)*c1_b(c,k)*c2_ab(a,d,j,l) &
+                            -c1_a(a,i)*c1_b(d,k)*c2_ab(b,c,j,l) &
+                            +c1_a(a,j)*c1_b(c,l)*c2_ab(b,d,i,k) &
+                            +c1_a(b,j)*c1_b(c,k)*c2_ab(a,d,i,l) &
+                            +c1_a(a,j)*c1_b(d,k)*c2_ab(b,c,i,l) &
+                            +c1_a(b,i)*c1_b(c,l)*c2_ab(a,d,j,k) &
+                            +c1_a(a,i)*c1_b(d,l)*c2_ab(b,c,j,k) &
+                            +c1_a(b,i)*c1_b(d,k)*c2_ab(a,c,j,l) &
+                            -c1_a(b,j)*c1_b(c,l)*c2_ab(a,d,i,k) &
+                            -c1_a(a,j)*c1_b(d,l)*c2_ab(b,c,i,k) &
+                            -c1_a(b,j)*c1_b(d,k)*c2_ab(a,c,i,l) &
+                            -c1_a(b,i)*c1_b(d,l)*c2_ab(a,c,j,k) &
+                            +c1_a(b,j)*c1_b(d,l)*c2_ab(a,c,i,k) &
+                            +c1_b(c,k)*c1_b(d,l)*c2_aa(a,b,i,j) &
+                            -c1_b(c,l)*c1_b(d,k)*c2_aa(a,b,i,j))
+
+                        c22 = (-c2_ab(a,c,i,k)*c2_ab(b,d,j,l) &
+                            +c2_ab(a,c,j,k)*c2_ab(b,d,i,l) &
+                            +c2_ab(a,c,i,l)*c2_ab(b,d,j,k) &
+                            +c2_ab(b,c,i,k)*c2_ab(a,d,j,l) &
+                            -c2_ab(a,c,j,l)*c2_ab(b,d,i,k) &
+                            -c2_ab(b,c,j,k)*c2_ab(a,d,i,l) &
+                            -c2_ab(b,c,i,l)*c2_ab(a,d,j,k) &
+                            +c2_ab(b,c,j,l)*c2_ab(a,d,i,k) &
+                            -c2_aa(a,b,i,j)*c2_bb(c,d,k,l))
+
+                        c13 = (-6.0d0*(c1_a(a,i)*c1_a(b,j)*c1_b(c,k)*c1_b(d,l) &
+                            -c1_a(a,j)*c1_a(b,i)*c1_b(c,k)*c1_b(d,l) &
+                            -c1_a(a,i)*c1_a(b,j)*c1_b(c,l)*c1_b(d,k) &
+                            +c1_a(a,j)*c1_a(b,i)*c1_b(c,l)*c1_b(d,k)))
+
+                        t4_aabb_amps(idet)=c4_aabb_amps(idet) + c1c3 + c12c2 + c22 + c13
+
+                enddo
+
+                t4_abbb_amps = 0.0d0
+                do idet = 1, n4d
+
+                    a = c4_abbb(idet, 1); b = c4_abbb(idet, 2); c = c4_abbb(idet, 3); d = c4_abbb(idet, 4);
+                    i = c4_abbb(idet, 5); j = c4_abbb(idet, 6); k = c4_abbb(idet, 7); l = c4_abbb(idet, 8);
+
+                        t4_abbb_amps(idet)=(c4_abbb_amps(idet) &
+                            -c1_a(a,i)*c3_bbb(b,c,d,j,k,l) &
+                            -c1_b(d,l)*c3_abb(a,b,c,i,j,k) &
+                            +c1_b(d,j)*c3_abb(a,b,c,i,l,k) &
+                            +c1_b(d,k)*c3_abb(a,b,c,i,j,l) &
+                            +c1_b(b,l)*c3_abb(a,d,c,i,j,k) &
+                            +c1_b(c,l)*c3_abb(a,b,d,i,j,k) &
+                            -c1_b(b,j)*c3_abb(a,d,c,i,l,k) &
+                            -c1_b(c,j)*c3_abb(a,b,d,i,l,k) &
+                            -c1_b(b,k)*c3_abb(a,d,c,i,j,l) &
+                            -c1_b(c,k)*c3_abb(a,b,d,i,j,l) &
+                            +2.0d0*(c1_b(c,k)*c1_b(d,l)*c2_ab(a,b,i,j) &
+                            -c1_b(c,j)*c1_b(d,l)*c2_ab(a,b,i,k) &
+                            -c1_b(c,k)*c1_b(d,j)*c2_ab(a,b,i,l) &
+                            -c1_b(c,l)*c1_b(d,k)*c2_ab(a,b,i,j) &
+                            -c1_b(b,k)*c1_b(d,l)*c2_ab(a,c,i,j) &
+                            -c1_b(c,k)*c1_b(b,l)*c2_ab(a,d,i,j) &
+                            +c1_b(c,l)*c1_b(d,j)*c2_ab(a,b,i,k) &
+                            +c1_b(c,j)*c1_b(d,k)*c2_ab(a,b,i,l) &
+                            +c1_b(b,j)*c1_b(d,l)*c2_ab(a,c,i,k) &
+                            +c1_b(c,j)*c1_b(b,l)*c2_ab(a,d,i,k) &
+                            +c1_b(b,k)*c1_b(d,j)*c2_ab(a,c,i,l) &
+                            +c1_b(c,k)*c1_b(b,j)*c2_ab(a,d,i,l) &
+                            +c1_b(b,l)*c1_b(d,k)*c2_ab(a,c,i,j) &
+                            +c1_b(c,l)*c1_b(b,k)*c2_ab(a,d,i,j) &
+                            -c1_b(b,l)*c1_b(d,j)*c2_ab(a,c,i,k) &
+                            -c1_b(c,l)*c1_b(b,j)*c2_ab(a,d,i,k) &
+                            -c1_b(b,j)*c1_b(d,k)*c2_ab(a,c,i,l) &
+                            -c1_b(c,j)*c1_b(b,k)*c2_ab(a,d,i,l) &
+                            +c1_a(a,i)*c1_b(b,j)*c2_bb(c,d,k,l) &
+                            -c1_a(a,i)*c1_b(b,k)*c2_bb(c,d,j,l) &
+                            -c1_a(a,i)*c1_b(b,l)*c2_bb(c,d,k,j) &
+                            -c1_a(a,i)*c1_b(c,j)*c2_bb(b,d,k,l) &
+                            -c1_a(a,i)*c1_b(d,j)*c2_bb(c,b,k,l) &
+                            +c1_a(a,i)*c1_b(c,k)*c2_bb(b,d,j,l) &
+                            +c1_a(a,i)*c1_b(d,k)*c2_bb(c,b,j,l) &
+                            +c1_a(a,i)*c1_b(c,l)*c2_bb(b,d,k,j) &
+                            +c1_a(a,i)*c1_b(d,l)*c2_bb(c,b,k,j)) &
+                            -c2_ab(a,b,i,j)*c2_bb(c,d,k,l) &
+                            +c2_ab(a,b,i,k)*c2_bb(c,d,j,l) &
+                            +c2_ab(a,b,i,l)*c2_bb(c,d,k,j) &
+                            +c2_ab(a,c,i,j)*c2_bb(b,d,k,l) &
+                            +c2_ab(a,d,i,j)*c2_bb(c,b,k,l) &
+                            -c2_ab(a,c,i,k)*c2_bb(b,d,j,l) &
+                            -c2_ab(a,d,i,k)*c2_bb(c,b,j,l) &
+                            -c2_ab(a,c,i,l)*c2_bb(b,d,k,j) &
+                            -c2_ab(a,d,i,l)*c2_bb(c,b,k,j) &
+                            -6.0d0*(c1_a(a,i)*c1_b(b,j)*c1_b(c,k)*c1_b(d,l) &
+                            -c1_a(a,i)*c1_b(b,k)*c1_b(c,j)*c1_b(d,l) &
+                            -c1_a(a,i)*c1_b(b,l)*c1_b(c,k)*c1_b(d,j) &
+                            -c1_a(a,i)*c1_b(b,j)*c1_b(c,l)*c1_b(d,k) &
+                            +c1_a(a,i)*c1_b(b,k)*c1_b(c,l)*c1_b(d,j) &
+                            +c1_a(a,i)*c1_b(b,l)*c1_b(c,j)*c1_b(d,k)))
+                enddo
+
+                t4_bbbb_amps = 0.0d0
+                do idet = 1, n4e
+                    a = c4_bbbb(idet, 1); b = c4_bbbb(idet, 2); c = c4_bbbb(idet, 3); d = c4_bbbb(idet, 4);
+                    i = c4_bbbb(idet, 5); j = c4_bbbb(idet, 6); k = c4_bbbb(idet, 7); l = c4_bbbb(idet, 8);
+
+                    !if (abs(c4_bbbb_amps(idet)) > 0.0d0) then
+                        t4_bbbb_amps(idet) = &
+                            (c4_bbbb_amps(idet) &
+                            -c1_b(a,i)*c3_bbb(b,c,d,j,k,l) &
+                            +c1_b(a,j)*c3_bbb(b,c,d,i,k,l) &
+                            +c1_b(a,k)*c3_bbb(b,c,d,j,i,l) &
+                            +c1_b(a,l)*c3_bbb(b,c,d,j,k,i) &
+                            +c1_b(b,i)*c3_bbb(a,c,d,j,k,l) &
+                            +c1_b(c,i)*c3_bbb(b,a,d,j,k,l) &
+                            +c1_b(d,i)*c3_bbb(b,c,a,j,k,l) &
+                            -c1_b(b,j)*c3_bbb(a,c,d,i,k,l) &
+                            -c1_b(c,j)*c3_bbb(b,a,d,i,k,l) &
+                            -c1_b(d,j)*c3_bbb(b,c,a,i,k,l) &
+                            -c1_b(b,k)*c3_bbb(a,c,d,j,i,l) &
+                            -c1_b(c,k)*c3_bbb(b,a,d,j,i,l) &
+                            -c1_b(d,k)*c3_bbb(b,c,a,j,i,l) &
+                            -c1_b(b,l)*c3_bbb(a,c,d,j,k,i) &
+                            -c1_b(c,l)*c3_bbb(b,a,d,j,k,i) &
+                            -c1_b(d,l)*c3_bbb(b,c,a,j,k,i) &
+                            +2.0d0*(c1_b(a,i)*c1_b(b,j)*c2_bb(c,d,k,l) & !1
+                            -c1_b(a,k)*c1_b(b,j)*c2_bb(c,d,i,l) & !(ik)
+                            -c1_b(a,l)*c1_b(b,j)*c2_bb(c,d,k,i) & !(il)
+                            -c1_b(a,j)*c1_b(b,i)*c2_bb(c,d,k,l) & !(ij)
+                            -c1_b(a,i)*c1_b(b,k)*c2_bb(c,d,j,l) & !(jk)
+                            -c1_b(a,i)*c1_b(b,l)*c2_bb(c,d,k,j) & !(jl)
+                            -c1_b(c,i)*c1_b(b,j)*c2_bb(a,d,k,l) & !(ac)
+                            -c1_b(d,i)*c1_b(b,j)*c2_bb(c,a,k,l) & !(ad)
+                            -c1_b(a,i)*c1_b(c,j)*c2_bb(b,d,k,l) & !(bc)
+                            -c1_b(a,i)*c1_b(d,j)*c2_bb(c,b,k,l) & !(bd)
+                            +c1_b(c,i)*c1_b(d,j)*c2_bb(a,b,k,l) & !(ac)(bd)
+                            +c1_b(c,k)*c1_b(b,j)*c2_bb(a,d,i,l) & !(ac)(ik)
+                            +c1_b(d,k)*c1_b(b,j)*c2_bb(c,a,i,l) & !(ad)(ik)
+                            +c1_b(a,k)*c1_b(c,j)*c2_bb(b,d,i,l) & !(bc)(ik)
+                            +c1_b(a,k)*c1_b(d,j)*c2_bb(c,b,i,l) & !(bd)(ik)
+                            +c1_b(c,l)*c1_b(b,j)*c2_bb(a,d,k,i) & !(ac)(il)
+                            +c1_b(d,l)*c1_b(b,j)*c2_bb(c,a,k,i) & !(ad)(il)
+                            +c1_b(a,l)*c1_b(c,j)*c2_bb(b,d,k,i) & !(bc)(il)
+                            +c1_b(a,l)*c1_b(d,j)*c2_bb(c,b,k,i) & !(bd)(il)
+                            +c1_b(c,j)*c1_b(b,i)*c2_bb(a,d,k,l) & !(ac)(ij)
+                            +c1_b(d,j)*c1_b(b,i)*c2_bb(c,a,k,l) & !(ad)(ij)
+                            +c1_b(a,j)*c1_b(c,i)*c2_bb(b,d,k,l) & !(bc)(ij)
+                            +c1_b(a,j)*c1_b(d,i)*c2_bb(c,b,k,l) & !(bd)(ij)
+                            +c1_b(c,i)*c1_b(b,k)*c2_bb(a,d,j,l) & !(ac)(jk)
+                            +c1_b(d,i)*c1_b(b,k)*c2_bb(c,a,j,l) & !(ad)(jk)
+                            +c1_b(a,i)*c1_b(c,k)*c2_bb(b,d,j,l) & !(bc)(jk)
+                            +c1_b(a,i)*c1_b(d,k)*c2_bb(c,b,j,l) & !(bd)(jk)
+                            +c1_b(c,i)*c1_b(b,l)*c2_bb(a,d,k,j) & !(ac)(jl)
+                            +c1_b(d,i)*c1_b(b,l)*c2_bb(c,a,k,j) & !(ad)(jl)
+                            +c1_b(a,i)*c1_b(c,l)*c2_bb(b,d,k,j) & !(bc)(jl)
+                            +c1_b(a,i)*c1_b(d,l)*c2_bb(c,b,k,j) & !(bd)(jl)
+                            +c1_b(a,j)*c1_b(b,k)*c2_bb(c,d,i,l) & !(ijk)
+                            +c1_b(a,k)*c1_b(b,i)*c2_bb(c,d,j,l) & !(ikj)
+                            +c1_b(a,j)*c1_b(b,l)*c2_bb(c,d,k,i) & !(ijl)
+                            +c1_b(a,l)*c1_b(b,i)*c2_bb(c,d,k,j) & !(ilj)
+                            -c1_b(a,l)*c1_b(b,k)*c2_bb(c,d,i,j) & !(kilj)
+                            -c1_b(c,k)*c1_b(d,j)*c2_bb(a,b,i,l) & !(ac)(bd)(ik)
+                            -c1_b(c,l)*c1_b(d,j)*c2_bb(a,b,k,i) & !(ac)(bd)(il)
+                            -c1_b(c,j)*c1_b(d,i)*c2_bb(a,b,k,l) & !(ac)(bd)(ij)
+                            -c1_b(c,i)*c1_b(d,k)*c2_bb(a,b,j,l) & !(ac)(bd)(jk)
+                            -c1_b(c,i)*c1_b(d,l)*c2_bb(a,b,k,j) & !(ac)(bd)(jl)
+                            -c1_b(c,j)*c1_b(b,k)*c2_bb(a,d,i,l) & !(ac)(ijk)
+                            -c1_b(d,j)*c1_b(b,k)*c2_bb(c,a,i,l) & !(ad)(ijk)
+                            -c1_b(a,j)*c1_b(c,k)*c2_bb(b,d,i,l) & !(bc)(ijk)
+                            -c1_b(a,j)*c1_b(d,k)*c2_bb(c,b,i,l) & !(bd)(ijk)
+                            -c1_b(c,k)*c1_b(b,i)*c2_bb(a,d,j,l) & !(ac)(ikj)
+                            -c1_b(d,k)*c1_b(b,i)*c2_bb(c,a,j,l) & !(ad)(ikj)
+                            -c1_b(a,k)*c1_b(c,i)*c2_bb(b,d,j,l) & !(bc)(ikj)
+                            -c1_b(a,k)*c1_b(d,i)*c2_bb(c,b,j,l) & !(bd)(ikj)
+                            -c1_b(c,j)*c1_b(b,l)*c2_bb(a,d,k,i) & !(ac)(ijl)
+                            -c1_b(d,j)*c1_b(b,l)*c2_bb(c,a,k,i) & !(ad)(ijl)
+                            -c1_b(a,j)*c1_b(c,l)*c2_bb(b,d,k,i) & !(bc)(ijl)
+                            -c1_b(a,j)*c1_b(d,l)*c2_bb(c,b,k,i) & !(bd)(ijl)
+                            -c1_b(c,l)*c1_b(b,i)*c2_bb(a,d,k,j) & !(ac)(ilj)
+                            -c1_b(d,l)*c1_b(b,i)*c2_bb(c,a,k,j) & !(ad)(ilj)
+                            -c1_b(a,l)*c1_b(c,i)*c2_bb(b,d,k,j) & !(bc)(ilj)
+                            -c1_b(a,l)*c1_b(d,i)*c2_bb(c,b,k,j) & !(bd)(ilj)
+                            +c1_b(c,j)*c1_b(d,k)*c2_bb(a,b,i,l) & !(ac)(bd)(ijk)
+                            +c1_b(c,k)*c1_b(d,i)*c2_bb(a,b,j,l) & !(ac)(bd)(ikj)
+                            +c1_b(c,j)*c1_b(d,l)*c2_bb(a,b,k,i) & !(ac)(bd)(ijl)
+                            +c1_b(c,l)*c1_b(d,i)*c2_bb(a,b,k,j) & !(ac)(bd)(ilj)
+                            +c1_b(c,l)*c1_b(b,k)*c2_bb(a,d,i,j) & !(ac)(kilj)
+                            +c1_b(d,l)*c1_b(b,k)*c2_bb(c,a,i,j) & !(ad)(kilj)
+                            +c1_b(a,l)*c1_b(c,k)*c2_bb(b,d,i,j) & !(bc)(kilj)
+                            +c1_b(a,l)*c1_b(d,k)*c2_bb(c,b,i,j) & !(bd)(kilj)
+                            -c1_b(c,l)*c1_b(d,k)*c2_bb(a,b,i,j) & !(ac)(bd)(kilj)
+                            -c1_b(c,k)*c1_b(b,l)*c2_bb(a,d,i,j) & !(ac)(ik)(jl)
+                            -c1_b(d,k)*c1_b(b,l)*c2_bb(c,a,i,j) & !(ad)(ik)(jl)
+                            -c1_b(a,k)*c1_b(c,l)*c2_bb(b,d,i,j) & !(bc)(ik)(jl)
+                            -c1_b(a,k)*c1_b(d,l)*c2_bb(c,b,i,j) & !(bd)(ik)(jl)
+                            +c1_b(c,k)*c1_b(d,l)*c2_bb(a,b,i,j) & !(ac)(bd)(ik)(jl)
+                            +c1_b(a,k)*c1_b(b,l)*c2_bb(c,d,i,j)) & !(ik)(jl)
+                            -c2_bb(a,b,i,j)*c2_bb(c,d,k,l) &
+                            +c2_bb(a,b,k,j)*c2_bb(c,d,i,l) &
+                            +c2_bb(a,b,l,j)*c2_bb(c,d,k,i) &
+                            +c2_bb(a,b,i,k)*c2_bb(c,d,j,l) &
+                            +c2_bb(a,b,i,l)*c2_bb(c,d,k,j) &
+                            +c2_bb(c,b,i,j)*c2_bb(a,d,k,l) &
+                            +c2_bb(d,b,i,j)*c2_bb(c,a,k,l) &
+                            -c2_bb(a,b,k,l)*c2_bb(c,d,i,j) &
+                            -c2_bb(c,b,k,j)*c2_bb(a,d,i,l) &
+                            -c2_bb(c,b,l,j)*c2_bb(a,d,k,i) &
+                            -c2_bb(c,b,i,k)*c2_bb(a,d,j,l) &
+                            -c2_bb(c,b,i,l)*c2_bb(a,d,k,j) &
+                            -c2_bb(d,b,k,j)*c2_bb(c,a,i,l) &
+                            -c2_bb(d,b,l,j)*c2_bb(c,a,k,i) &
+                            -c2_bb(d,b,i,k)*c2_bb(c,a,j,l) &
+                            -c2_bb(d,b,i,l)*c2_bb(c,a,k,j) &
+                            +c2_bb(c,b,k,l)*c2_bb(a,d,i,j) &
+                            +c2_bb(d,b,k,l)*c2_bb(c,a,i,j) &
+                            -6.0d0*(c1_b(a,i)*c1_b(b,j)*c1_b(c,k)*c1_b(d,l) &
+                            -c1_b(a,j)*c1_b(b,i)*c1_b(c,k)*c1_b(d,l) &
+                            -c1_b(a,k)*c1_b(b,j)*c1_b(c,i)*c1_b(d,l) &
+                            -c1_b(a,l)*c1_b(b,j)*c1_b(c,k)*c1_b(d,i) &
+                            -c1_b(a,i)*c1_b(b,k)*c1_b(c,j)*c1_b(d,l) &
+                            -c1_b(a,i)*c1_b(b,l)*c1_b(c,k)*c1_b(d,j) &
+                            -c1_b(a,i)*c1_b(b,j)*c1_b(c,l)*c1_b(d,k) &
+                            +c1_b(a,j)*c1_b(b,k)*c1_b(c,i)*c1_b(d,l) &
+                            +c1_b(a,k)*c1_b(b,i)*c1_b(c,j)*c1_b(d,l) &
+                            +c1_b(a,j)*c1_b(b,l)*c1_b(c,k)*c1_b(d,i) &
+                            +c1_b(a,l)*c1_b(b,i)*c1_b(c,k)*c1_b(d,j) &
+                            +c1_b(a,k)*c1_b(b,j)*c1_b(c,l)*c1_b(d,i) &
+                            +c1_b(a,l)*c1_b(b,j)*c1_b(c,i)*c1_b(d,k) &
+                            +c1_b(a,i)*c1_b(b,k)*c1_b(c,l)*c1_b(d,j) &
+                            +c1_b(a,i)*c1_b(b,l)*c1_b(c,j)*c1_b(d,k) &
+                            +c1_b(a,j)*c1_b(b,i)*c1_b(c,l)*c1_b(d,k) &
+                            +c1_b(a,k)*c1_b(b,l)*c1_b(c,i)*c1_b(d,j) &
+                            +c1_b(a,l)*c1_b(b,k)*c1_b(c,j)*c1_b(d,i) &
+                            -c1_b(a,j)*c1_b(b,k)*c1_b(c,l)*c1_b(d,i) &
+                            -c1_b(a,j)*c1_b(b,l)*c1_b(c,i)*c1_b(d,k) &
+                            -c1_b(a,k)*c1_b(b,l)*c1_b(c,j)*c1_b(d,i) &
+                            -c1_b(a,k)*c1_b(b,i)*c1_b(c,l)*c1_b(d,j) &
+                            -c1_b(a,l)*c1_b(b,i)*c1_b(c,j)*c1_b(d,k) &
+                            -c1_b(a,l)*c1_b(b,k)*c1_b(c,i)*c1_b(d,j)))
+
+                enddo
+
+        end subroutine cluster_analysis_t4_direct
+
+
         subroutine cluster_analysis_t4(t4_aaaa, t4_aaab, t4_aabb, t4_abbb, t4_bbbb,&
                                        c1_a, c1_b, c2_aa, c2_ab, c2_bb,&
                                        c3_aaa, c3_aab, c3_abb, c3_bbb,&

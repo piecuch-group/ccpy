@@ -101,7 +101,7 @@ def eccc_driver(calculation, system, hamiltonian, external_wavefunction, T=None)
     from ccpy.utilities.external_correction import cluster_analysis
 
     # Get the external T vector corresponding to the cluster analysis
-    T_ext, VT_ext = cluster_analysis(external_wavefunction, hamiltonian, system, debug=True)
+    T_ext, VT_ext = cluster_analysis(external_wavefunction, hamiltonian, system)
 
     # check if requested CC calculation is implemented in modules
     if calculation.calculation_type not in ccpy.cc.MODULES:
