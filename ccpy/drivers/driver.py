@@ -98,7 +98,7 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, excitation_
 
 def eccc_driver(calculation, system, hamiltonian, external_wavefunction, T=None):
     """Performs the calculation specified by the user in the input."""
-    from ccpy.utilities.external_correction import cluster_analysis
+    from ccpy.extcorr.external_correction import cluster_analysis
 
     # Get the external T vector corresponding to the cluster analysis
     T_ext, VT_ext = cluster_analysis(external_wavefunction, hamiltonian, system)

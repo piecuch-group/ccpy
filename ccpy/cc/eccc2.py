@@ -9,39 +9,30 @@ from ccpy.utilities.updates import cc_loops2
 
 def update(T, dT, H, shift, flag_RHF, system, T_ext, VT_ext):
 
-    # Holds the static results of <ia|V*T3|0>
-    dT.a = VT_ext.a.vo.copy()
-    dT.b = VT_ext.b.vo.copy()
-
-    # Holds the static results of <ijab|V*T4|0>
-    dT.aa = VT_ext.aa.vvoo.copy()
-    dT.ab = VT_ext.ab.vvoo.copy()
-    dT.bb = VT_ext.bb.vvoo.copy()
-
     # update T1
-    T, dT = update_t1a(T, dT, H, shift)
+    T, dT = update_t1a(T, dT, H, VT_ext, shift)
     if flag_RHF:
         T.b = T.a.copy()
         dT.b = dT.a.copy()
     else:
-        T, dT = update_t1b(T, dT, H, shift)
+        T, dT = update_t1b(T, dT, H, VT_ext, shift)
 
     # CCS intermediates
     hbar = get_ccs_intermediates_opt(T, H)
 
     # update T2
-    T, dT = update_t2a(T, dT, hbar, H, shift, T_ext)
-    T, dT = update_t2b(T, dT, hbar, H, shift, T_ext)
+    T, dT = update_t2a(T, dT, hbar, H, VT_ext, shift, T_ext)
+    T, dT = update_t2b(T, dT, hbar, H, VT_ext, shift, T_ext)
     if flag_RHF:
         T.bb = T.aa.copy()
         dT.bb = dT.aa.copy()
     else:
-        T, dT = update_t2c(T, dT, hbar, H, shift, T_ext)
+        T, dT = update_t2c(T, dT, hbar, H, VT_ext, shift, T_ext)
 
     return T, dT
 
 
-def update_t1a(T, dT, H, shift):
+def update_t1a(T, dT, H, VT_ext, shift):
     """
     Update t1a amplitudes by calculating the projection <ia|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -69,7 +60,7 @@ def update_t1a(T, dT, H, shift):
     h2A_vovv = H.aa.vovv - np.einsum("mnfe,an->amef", H.aa.oovv, T.a, optimize=True)
     h2B_vovv = H.ab.vovv - np.einsum("nmef,an->amef", H.ab.oovv, T.a, optimize=True)
 
-    dT.a -= np.einsum("mi,am->ai", h1A_oo, T.a, optimize=True)
+    dT.a = -np.einsum("mi,am->ai", h1A_oo, T.a, optimize=True)
     dT.a += np.einsum("ae,ei->ai", chi1A_vv, T.a, optimize=True)
     dT.a += np.einsum("anif,fn->ai", H.aa.voov, T.a, optimize=True)
     dT.a += np.einsum("anif,fn->ai", H.ab.voov, T.b, optimize=True)
@@ -82,7 +73,7 @@ def update_t1a(T, dT, H, shift):
 
     T.a, dT.a = cc_loops2.cc_loops2.update_t1a(
         T.a,
-        dT.a + H.a.vo,
+        dT.a + H.a.vo + VT_ext.a.vo,
         H.a.oo,
         H.a.vv,
         shift,
@@ -90,7 +81,7 @@ def update_t1a(T, dT, H, shift):
     return T, dT
 
 
-def update_t1b(T, dT, H, shift):
+def update_t1b(T, dT, H, VT_ext, shift):
     """
     Update t1b amplitudes by calculating the projection <i~a~|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -118,7 +109,7 @@ def update_t1b(T, dT, H, shift):
     h2C_vovv = H.bb.vovv - np.einsum("mnfe,an->amef", H.bb.oovv, T.b, optimize=True)
     h2B_ovvv = H.ab.ovvv - np.einsum("mnfe,an->mafe", H.ab.oovv, T.b, optimize=True)
 
-    dT.b -= np.einsum("mi,am->ai", h1B_oo, T.b, optimize=True)
+    dT.b = -np.einsum("mi,am->ai", h1B_oo, T.b, optimize=True)
     dT.b += np.einsum("ae,ei->ai", chi1B_vv, T.b, optimize=True)
     dT.b += np.einsum("anif,fn->ai", H.bb.voov, T.b, optimize=True)
     dT.b += np.einsum("nafi,fn->ai", H.ab.ovvo, T.a, optimize=True)
@@ -131,7 +122,7 @@ def update_t1b(T, dT, H, shift):
 
     T.b, dT.b = cc_loops2.cc_loops2.update_t1b(
         T.b,
-        dT.b + H.b.vo,
+        dT.b + H.b.vo + VT_ext.b.vo,
         H.b.oo,
         H.b.vv,
         shift,
@@ -140,7 +131,7 @@ def update_t1b(T, dT, H, shift):
 
 
 # @profile
-def update_t2a(T, dT, H, H0, shift, T_ext):
+def update_t2a(T, dT, H, H0, VT_ext, shift, T_ext):
     """
     Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2))_C|0>.
     """
@@ -175,7 +166,7 @@ def update_t2a(T, dT, H, H0, shift, T_ext):
 
     tau = 0.5 * T.aa + np.einsum('ai,bj->abij', T.a, T.a, optimize=True)
 
-    dT.aa -= 0.5 * np.einsum("amij,bm->abij", I2A_vooo, T.a, optimize=True)
+    dT.aa = -0.5 * np.einsum("amij,bm->abij", I2A_vooo, T.a, optimize=True)
     dT.aa += 0.5 * np.einsum("abie,ej->abij", H.aa.vvov, T.a, optimize=True)
     dT.aa += 0.5 * np.einsum("ae,ebij->abij", I1A_vv, T.aa, optimize=True)
     dT.aa -= 0.5 * np.einsum("mi,abmj->abij", I1A_oo, T.aa, optimize=True)
@@ -193,7 +184,7 @@ def update_t2a(T, dT, H, H0, shift, T_ext):
 
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
         T.aa,
-        dT.aa + 0.25 * H0.aa.vvoo,
+        dT.aa + 0.25 * (H0.aa.vvoo + VT_ext.aa.vvoo),
         H0.a.oo,
         H0.a.vv,
         shift
@@ -202,7 +193,7 @@ def update_t2a(T, dT, H, H0, shift, T_ext):
 
 
 # @profile
-def update_t2b(T, dT, H, H0, shift, T_ext):
+def update_t2b(T, dT, H, H0, VT_ext, shift, T_ext):
     """
     Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2))_C|0>.
     """
@@ -252,7 +243,7 @@ def update_t2b(T, dT, H, H0, shift, T_ext):
 
     tau = T.ab + np.einsum('ai,bj->abij', T.a, T.b, optimize=True)
 
-    dT.ab -= np.einsum("mbij,am->abij", I2B_ovoo, T.a, optimize=True)
+    dT.ab = -np.einsum("mbij,am->abij", I2B_ovoo, T.a, optimize=True)
     dT.ab -= np.einsum("amij,bm->abij", I2B_vooo, T.b, optimize=True)
     dT.ab += np.einsum("abej,ei->abij", H.ab.vvvo, T.a, optimize=True)
     dT.ab += np.einsum("abie,ej->abij", H.ab.vvov, T.b, optimize=True)
@@ -282,7 +273,7 @@ def update_t2b(T, dT, H, H0, shift, T_ext):
 
     T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
         T.ab,
-        dT.ab + H0.ab.vvoo,
+        dT.ab + H0.ab.vvoo + VT_ext.ab.vvoo,
         H0.a.oo,
         H0.a.vv,
         H0.b.oo,
@@ -293,7 +284,7 @@ def update_t2b(T, dT, H, H0, shift, T_ext):
 
 
 # @profile
-def update_t2c(T, dT, H, H0, shift, T_ext):
+def update_t2c(T, dT, H, H0, VT_ext, shift, T_ext):
     """
     Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2))_C|0>.
     """
@@ -328,7 +319,7 @@ def update_t2c(T, dT, H, H0, shift, T_ext):
 
     tau = 0.5 * T.bb + np.einsum('ai,bj->abij', T.b, T.b, optimize=True)
 
-    dT.bb -= 0.5 * np.einsum("amij,bm->abij", I2C_vooo, T.b, optimize=True)
+    dT.bb = -0.5 * np.einsum("amij,bm->abij", I2C_vooo, T.b, optimize=True)
     dT.bb += 0.5 * np.einsum("abie,ej->abij", H.bb.vvov, T.b, optimize=True)
     dT.bb += 0.5 * np.einsum("ae,ebij->abij", I1B_vv, T.bb, optimize=True)
     dT.bb -= 0.5 * np.einsum("mi,abmj->abij", I1B_oo, T.bb, optimize=True)
@@ -346,7 +337,7 @@ def update_t2c(T, dT, H, H0, shift, T_ext):
 
     T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
         T.bb,
-        dT.bb + 0.25 * H0.bb.vvoo,
+        dT.bb + 0.25 * (H0.bb.vvoo + VT_ext.bb.vvoo),
         H0.b.oo,
         H0.b.vv,
         shift
