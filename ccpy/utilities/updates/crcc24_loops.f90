@@ -11,6 +11,7 @@ module crcc24_loops
                               fA_oo,fA_vv,H1A_oo,H1A_vv,&
                               H2A_voov,H2A_oooo,H2A_vvvv,H2A_oovv,&
                               D3A_O,D3A_V,&
+                              MM24_test,&
                               noa,nua)
 
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
@@ -24,15 +25,21 @@ module crcc24_loops
                         H2A_oovv(1:noa,1:noa,1:nua,1:nua),&
                         D3A_O(1:nua,1:noa,1:noa),&
                         D3A_V(1:nua,1:noa,1:nua)
+
+                        real(kind=8), intent(in) :: mm24_test(1:nua,1:nua,1:nua,1:nua,1:noa,1:noa,1:noa,1:noa)
+
                         integer :: i, j, k, l, a, b, c, d, m, n, e, f
                         real(kind=8) :: denom, temp, mm24, l4
+
+                        real(kind=8) :: error
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
 
-                        do i = 1 , noa
+                        error = 0.0d0
+                        do i = 1, noa
                             do j = i+1, noa
                                 do k = j+1, noa
                                     do l = k+1, noa
@@ -48,10 +55,167 @@ module crcc24_loops
                                                         ! Diagram 1: -A(jl/i/k)A(bc/a/d) h2a(amie) * t2a(bcmk) * t2a(edjl)
                                                         do m = 1, noa
                                                             do e = 1, nua
-                                                                mm24 = -h2a_voov(a, m, i, e) * t2a(b, c, m, k) * t2a(e, d, j, l)&
-                                                                       +h2a_voov(a, m, k, e) * t2a(b, c, m, i) * t2a(e, d, j, l) ! (ik)
+                                                                ! (1)
+                                                                mm24 =  mm24 &
+                                                                        -h2a_voov(a, m, i, e) * t2a(b, c, m, k) * t2a(e, d, j, l)&  ! (1)
+                                                                        +h2a_voov(a, m, j, e) * t2a(b, c, m, k) * t2a(e, d, i, l)&  ! (ij)
+                                                                        +h2a_voov(a, m, i, e) * t2a(b, c, m, j) * t2a(e, d, k, l)&  ! (jk)
+                                                                        +h2a_voov(a, m, l, e) * t2a(b, c, m, k) * t2a(e, d, j, i)&  ! (il)
+                                                                        +h2a_voov(a, m, i, e) * t2a(b, c, m, l) * t2a(e, d, j, k)&  ! (kl)
+                                                                        -h2a_voov(a, m, j, e) * t2a(b, c, m, l) * t2a(e, d, i, k)&  ! (ij)(kl)
+                                                                        +h2a_voov(a, m, k, e) * t2a(b, c, m, i) * t2a(e, d, j, l)&  ! (ik)
+                                                                        -h2a_voov(a, m, j, e) * t2a(b, c, m, i) * t2a(e, d, k, l)&  ! (ij)(ik)
+                                                                        -h2a_voov(a, m, k, e) * t2a(b, c, m, j) * t2a(e, d, i, l)&  ! (jk)(ik)
+                                                                        -h2a_voov(a, m, l, e) * t2a(b, c, m, i) * t2a(e, d, j, k)&  ! (il)(ik)
+                                                                        -h2a_voov(a, m, k, e) * t2a(b, c, m, l) * t2a(e, d, j, i)&  ! (kl)(ik)
+                                                                        +h2a_voov(a, m, j, e) * t2a(b, c, m, l) * t2a(e, d, k, i)   ! (ij)(kl)(ik)
+                                                                ! (ab)
+                                                                mm24 =  mm24 + h2a_voov(b, m, i, e) * t2a(a, c, m, k) * t2a(e, d, j, l)&  ! (1)
+                                                                        -h2a_voov(b, m, j, e) * t2a(a, c, m, k) * t2a(e, d, i, l)&        ! (ij)
+                                                                        -h2a_voov(b, m, i, e) * t2a(a, c, m, j) * t2a(e, d, k, l)&        ! (jk)
+                                                                        -h2a_voov(b, m, l, e) * t2a(a, c, m, k) * t2a(e, d, j, i)&        ! (il)
+                                                                        -h2a_voov(b, m, i, e) * t2a(a, c, m, l) * t2a(e, d, j, k)&        ! (kl)
+                                                                        +h2a_voov(b, m, j, e) * t2a(a, c, m, l) * t2a(e, d, i, k)&        ! (ij)(kl)
+                                                                        -h2a_voov(b, m, k, e) * t2a(a, c, m, i) * t2a(e, d, j, l)&        ! (ik)
+                                                                        +h2a_voov(b, m, j, e) * t2a(a, c, m, i) * t2a(e, d, k, l)&        ! (ij)(ik)
+                                                                        +h2a_voov(b, m, k, e) * t2a(a, c, m, j) * t2a(e, d, i, l)&        ! (jk)(ik)
+                                                                        +h2a_voov(b, m, l, e) * t2a(a, c, m, i) * t2a(e, d, j, k)&        ! (il)(ik)
+                                                                        +h2a_voov(b, m, k, e) * t2a(a, c, m, l) * t2a(e, d, j, i)&        ! (kl)(ik)
+                                                                        -h2a_voov(b, m, j, e) * t2a(a, c, m, l) * t2a(e, d, k, i)         ! (ij)(kl)(ik)
+                                                                ! (bd)
+                                                                mm24 =  mm24 + h2a_voov(a, m, i, e) * t2a(d, c, m, k) * t2a(e, b, j, l)&  ! (1)
+                                                                        -h2a_voov(a, m, j, e) * t2a(d, c, m, k) * t2a(e, b, i, l)&        ! (ij)
+                                                                        -h2a_voov(a, m, i, e) * t2a(d, c, m, j) * t2a(e, b, k, l)&        ! (jk)
+                                                                        -h2a_voov(a, m, l, e) * t2a(d, c, m, k) * t2a(e, b, j, i)&        ! (il)
+                                                                        -h2a_voov(a, m, i, e) * t2a(d, c, m, l) * t2a(e, b, j, k)&        ! (kl)
+                                                                        +h2a_voov(a, m, j, e) * t2a(d, c, m, l) * t2a(e, b, i, k)&        ! (ij)(kl)
+                                                                        -h2a_voov(a, m, k, e) * t2a(d, c, m, i) * t2a(e, b, j, l)&        ! (ik)
+                                                                        +h2a_voov(a, m, j, e) * t2a(d, c, m, i) * t2a(e, b, k, l)&        ! (ij)(ik)
+                                                                        +h2a_voov(a, m, k, e) * t2a(d, c, m, j) * t2a(e, b, i, l)&        ! (jk)(ik)
+                                                                        +h2a_voov(a, m, l, e) * t2a(d, c, m, i) * t2a(e, b, j, k)&        ! (il)(ik)
+                                                                        +h2a_voov(a, m, k, e) * t2a(d, c, m, l) * t2a(e, b, j, i)&        ! (kl)(ik)
+                                                                        -h2a_voov(a, m, j, e) * t2a(d, c, m, l) * t2a(e, b, k, i)         ! (ij)(kl)(ik)
+                                                                ! (ac)
+                                                                mm24 =  mm24  + h2a_voov(c, m, i, e) * t2a(b, a, m, k) * t2a(e, d, j, l)&  ! (1)
+                                                                        -h2a_voov(c, m, j, e) * t2a(b, a, m, k) * t2a(e, d, i, l)&         ! (ij)
+                                                                        -h2a_voov(c, m, i, e) * t2a(b, a, m, j) * t2a(e, d, k, l)&         ! (jk)
+                                                                        -h2a_voov(c, m, l, e) * t2a(b, a, m, k) * t2a(e, d, j, i)&         ! (il)
+                                                                        -h2a_voov(c, m, i, e) * t2a(b, a, m, l) * t2a(e, d, j, k)&         ! (kl)
+                                                                        +h2a_voov(c, m, j, e) * t2a(b, a, m, l) * t2a(e, d, i, k)&         ! (ij)(kl)
+                                                                        -h2a_voov(c, m, k, e) * t2a(b, a, m, i) * t2a(e, d, j, l)&         ! (ik)
+                                                                        +h2a_voov(c, m, j, e) * t2a(b, a, m, i) * t2a(e, d, k, l)&         ! (ij)(ik)
+                                                                        +h2a_voov(c, m, k, e) * t2a(b, a, m, j) * t2a(e, d, i, l)&         ! (jk)(ik)
+                                                                        +h2a_voov(c, m, l, e) * t2a(b, a, m, i) * t2a(e, d, j, k)&         ! (il)(ik)
+                                                                        +h2a_voov(c, m, k, e) * t2a(b, a, m, l) * t2a(e, d, j, i)&         ! (kl)(ik)
+                                                                        -h2a_voov(c, m, j, e) * t2a(b, a, m, l) * t2a(e, d, k, i)          ! (ij)(kl)(ik)
+                                                                ! (cd)
+                                                                mm24 =  mm24 + h2a_voov(a, m, i, e) * t2a(b, d, m, k) * t2a(e, c, j, l)&  ! (1)
+                                                                        -h2a_voov(a, m, j, e) * t2a(b, d, m, k) * t2a(e, c, i, l)&        ! (ij)
+                                                                        -h2a_voov(a, m, i, e) * t2a(b, d, m, j) * t2a(e, c, k, l)&        ! (jk)
+                                                                        -h2a_voov(a, m, l, e) * t2a(b, d, m, k) * t2a(e, c, j, i)&        ! (il)
+                                                                        -h2a_voov(a, m, i, e) * t2a(b, d, m, l) * t2a(e, c, j, k)&        ! (kl)
+                                                                        +h2a_voov(a, m, j, e) * t2a(b, d, m, l) * t2a(e, c, i, k)&        ! (ij)(kl)
+                                                                        -h2a_voov(a, m, k, e) * t2a(b, d, m, i) * t2a(e, c, j, l)&        ! (ik)
+                                                                        +h2a_voov(a, m, j, e) * t2a(b, d, m, i) * t2a(e, c, k, l)&        ! (ij)(ik)
+                                                                        +h2a_voov(a, m, k, e) * t2a(b, d, m, j) * t2a(e, c, i, l)&        ! (jk)(ik)
+                                                                        +h2a_voov(a, m, l, e) * t2a(b, d, m, i) * t2a(e, c, j, k)&        ! (il)(ik)
+                                                                        +h2a_voov(a, m, k, e) * t2a(b, d, m, l) * t2a(e, c, j, i)&        ! (kl)(ik)
+                                                                        -h2a_voov(a, m, j, e) * t2a(b, d, m, l) * t2a(e, c, k, i)         ! (ij)(kl)(ik)
+                                                                ! (ab)(cd)
+                                                                mm24 =  mm24 - h2a_voov(b, m, i, e) * t2a(a, d, m, k) * t2a(e, c, j, l)&  ! (1)
+                                                                        +h2a_voov(b, m, j, e) * t2a(a, d, m, k) * t2a(e, c, i, l)&        ! (ij)
+                                                                        +h2a_voov(b, m, i, e) * t2a(a, d, m, j) * t2a(e, c, k, l)&        ! (jk)
+                                                                        +h2a_voov(b, m, l, e) * t2a(a, d, m, k) * t2a(e, c, j, i)&        ! (il)
+                                                                        +h2a_voov(b, m, i, e) * t2a(a, d, m, l) * t2a(e, c, j, k)&        ! (kl)
+                                                                        -h2a_voov(b, m, j, e) * t2a(a, d, m, l) * t2a(e, c, i, k)&        ! (ij)(kl)
+                                                                        +h2a_voov(b, m, k, e) * t2a(a, d, m, i) * t2a(e, c, j, l)&        ! (ik)
+                                                                        -h2a_voov(b, m, j, e) * t2a(a, d, m, i) * t2a(e, c, k, l)&        ! (ij)(ik)
+                                                                        -h2a_voov(b, m, k, e) * t2a(a, d, m, j) * t2a(e, c, i, l)&        ! (jk)(ik)
+                                                                        -h2a_voov(b, m, l, e) * t2a(a, d, m, i) * t2a(e, c, j, k)&        ! (il)(ik)
+                                                                        -h2a_voov(b, m, k, e) * t2a(a, d, m, l) * t2a(e, c, j, i)&        ! (kl)(ik)
+                                                                        +h2a_voov(b, m, j, e) * t2a(a, d, m, l) * t2a(e, c, k, i)         ! (ij)(kl)(ik)
+                                                                ! (ad)
+                                                                mm24 =  mm24 + h2a_voov(d, m, i, e) * t2a(b, c, m, k) * t2a(e, a, j, l)&  ! (1)
+                                                                        -h2a_voov(d, m, j, e) * t2a(b, c, m, k) * t2a(e, a, i, l)&        ! (ij)
+                                                                        -h2a_voov(d, m, i, e) * t2a(b, c, m, j) * t2a(e, a, k, l)&        ! (jk)
+                                                                        -h2a_voov(d, m, l, e) * t2a(b, c, m, k) * t2a(e, a, j, i)&        ! (il)
+                                                                        -h2a_voov(d, m, i, e) * t2a(b, c, m, l) * t2a(e, a, j, k)&        ! (kl)
+                                                                        +h2a_voov(d, m, j, e) * t2a(b, c, m, l) * t2a(e, a, i, k)&        ! (ij)(kl)
+                                                                        -h2a_voov(d, m, k, e) * t2a(b, c, m, i) * t2a(e, a, j, l)&        ! (ik)
+                                                                        +h2a_voov(d, m, j, e) * t2a(b, c, m, i) * t2a(e, a, k, l)&        ! (ij)(ik)
+                                                                        +h2a_voov(d, m, k, e) * t2a(b, c, m, j) * t2a(e, a, i, l)&        ! (jk)(ik)
+                                                                        +h2a_voov(d, m, l, e) * t2a(b, c, m, i) * t2a(e, a, j, k)&        ! (il)(ik)
+                                                                        +h2a_voov(d, m, k, e) * t2a(b, c, m, l) * t2a(e, a, j, i)&        ! (kl)(ik)
+                                                                        -h2a_voov(d, m, j, e) * t2a(b, c, m, l) * t2a(e, a, k, i)         ! (ij)(kl)(ik)
+                                                                ! (ab)(ad)
+                                                                mm24 =  mm24 - h2a_voov(b, m, i, e) * t2a(d, c, m, k) * t2a(e, a, j, l)&  ! (1)
+                                                                        +h2a_voov(b, m, j, e) * t2a(d, c, m, k) * t2a(e, a, i, l)&        ! (ij)
+                                                                        +h2a_voov(b, m, i, e) * t2a(d, c, m, j) * t2a(e, a, k, l)&        ! (jk)
+                                                                        +h2a_voov(b, m, l, e) * t2a(d, c, m, k) * t2a(e, a, j, i)&        ! (il)
+                                                                        +h2a_voov(b, m, i, e) * t2a(d, c, m, l) * t2a(e, a, j, k)&        ! (kl)
+                                                                        -h2a_voov(b, m, j, e) * t2a(d, c, m, l) * t2a(e, a, i, k)&        ! (ij)(kl)
+                                                                        +h2a_voov(b, m, k, e) * t2a(d, c, m, i) * t2a(e, a, j, l)&        ! (ik)
+                                                                        -h2a_voov(b, m, j, e) * t2a(d, c, m, i) * t2a(e, a, k, l)&        ! (ij)(ik)
+                                                                        -h2a_voov(b, m, k, e) * t2a(d, c, m, j) * t2a(e, a, i, l)&        ! (jk)(ik)
+                                                                        -h2a_voov(b, m, l, e) * t2a(d, c, m, i) * t2a(e, a, j, k)&        ! (il)(ik)
+                                                                        -h2a_voov(b, m, k, e) * t2a(d, c, m, l) * t2a(e, a, j, i)&        ! (kl)(ik)
+                                                                        +h2a_voov(b, m, j, e) * t2a(d, c, m, l) * t2a(e, a, k, i)         ! (ij)(kl)(ik)
+                                                                ! (bd)(ad)
+                                                                mm24 =  mm24 - h2a_voov(d, m, i, e) * t2a(a, c, m, k) * t2a(e, b, j, l)&  ! (1)
+                                                                        +h2a_voov(d, m, j, e) * t2a(a, c, m, k) * t2a(e, b, i, l)&        ! (ij)
+                                                                        +h2a_voov(d, m, i, e) * t2a(a, c, m, j) * t2a(e, b, k, l)&        ! (jk)
+                                                                        +h2a_voov(d, m, l, e) * t2a(a, c, m, k) * t2a(e, b, j, i)&        ! (il)
+                                                                        +h2a_voov(d, m, i, e) * t2a(a, c, m, l) * t2a(e, b, j, k)&        ! (kl)
+                                                                        -h2a_voov(d, m, j, e) * t2a(a, c, m, l) * t2a(e, b, i, k)&        ! (ij)(kl)
+                                                                        +h2a_voov(d, m, k, e) * t2a(a, c, m, i) * t2a(e, b, j, l)&        ! (ik)
+                                                                        -h2a_voov(d, m, j, e) * t2a(a, c, m, i) * t2a(e, b, k, l)&        ! (ij)(ik)
+                                                                        -h2a_voov(d, m, k, e) * t2a(a, c, m, j) * t2a(e, b, i, l)&        ! (jk)(ik)
+                                                                        -h2a_voov(d, m, l, e) * t2a(a, c, m, i) * t2a(e, b, j, k)&        ! (il)(ik)
+                                                                        -h2a_voov(d, m, k, e) * t2a(a, c, m, l) * t2a(e, b, j, i)&        ! (kl)(ik)
+                                                                        +h2a_voov(d, m, j, e) * t2a(a, c, m, l) * t2a(e, b, k, i)         ! (ij)(kl)(ik)
+                                                                ! (ac)(ad)
+                                                                mm24 =  mm24 - h2a_voov(c, m, i, e) * t2a(b, d, m, k) * t2a(e, a, j, l)&   ! (1)
+                                                                        +h2a_voov(c, m, j, e) * t2a(b, d, m, k) * t2a(e, a, i, l)&         ! (ij)
+                                                                        +h2a_voov(c, m, i, e) * t2a(b, d, m, j) * t2a(e, a, k, l)&         ! (jk)
+                                                                        +h2a_voov(c, m, l, e) * t2a(b, d, m, k) * t2a(e, a, j, i)&         ! (il)
+                                                                        +h2a_voov(c, m, i, e) * t2a(b, d, m, l) * t2a(e, a, j, k)&         ! (kl)
+                                                                        -h2a_voov(c, m, j, e) * t2a(b, d, m, l) * t2a(e, a, i, k)&         ! (ij)(kl)
+                                                                        +h2a_voov(c, m, k, e) * t2a(b, d, m, i) * t2a(e, a, j, l)&         ! (ik)
+                                                                        -h2a_voov(c, m, j, e) * t2a(b, d, m, i) * t2a(e, a, k, l)&         ! (ij)(ik)
+                                                                        -h2a_voov(c, m, k, e) * t2a(b, d, m, j) * t2a(e, a, i, l)&         ! (jk)(ik)
+                                                                        -h2a_voov(c, m, l, e) * t2a(b, d, m, i) * t2a(e, a, j, k)&         ! (il)(ik)
+                                                                        -h2a_voov(c, m, k, e) * t2a(b, d, m, l) * t2a(e, a, j, i)&         ! (kl)(ik)
+                                                                        +h2a_voov(c, m, j, e) * t2a(b, d, m, l) * t2a(e, a, k, i)          ! (ij)(kl)(ik)
+                                                                ! (cd)(ad)
+                                                                mm24 =  mm24 - h2a_voov(d, m, i, e) * t2a(b, a, m, k) * t2a(e, c, j, l)&  ! (1)
+                                                                        +h2a_voov(d, m, j, e) * t2a(b, a, m, k) * t2a(e, c, i, l)&        ! (ij)
+                                                                        +h2a_voov(d, m, i, e) * t2a(b, a, m, j) * t2a(e, c, k, l)&        ! (jk)
+                                                                        +h2a_voov(d, m, l, e) * t2a(b, a, m, k) * t2a(e, c, j, i)&        ! (il)
+                                                                        +h2a_voov(d, m, i, e) * t2a(b, a, m, l) * t2a(e, c, j, k)&        ! (kl)
+                                                                        -h2a_voov(d, m, j, e) * t2a(b, a, m, l) * t2a(e, c, i, k)&        ! (ij)(kl)
+                                                                        +h2a_voov(d, m, k, e) * t2a(b, a, m, i) * t2a(e, c, j, l)&        ! (ik)
+                                                                        -h2a_voov(d, m, j, e) * t2a(b, a, m, i) * t2a(e, c, k, l)&        ! (ij)(ik)
+                                                                        -h2a_voov(d, m, k, e) * t2a(b, a, m, j) * t2a(e, c, i, l)&        ! (jk)(ik)
+                                                                        -h2a_voov(d, m, l, e) * t2a(b, a, m, i) * t2a(e, c, j, k)&        ! (il)(ik)
+                                                                        -h2a_voov(d, m, k, e) * t2a(b, a, m, l) * t2a(e, c, j, i)&        ! (kl)(ik)
+                                                                        +h2a_voov(d, m, j, e) * t2a(b, a, m, l) * t2a(e, c, k, i)         ! (ij)(kl)(ik)
+                                                                ! (ab)(cd)(ad)
+                                                                mm24 =  mm24 + h2a_voov(b, m, i, e) * t2a(d, a, m, k) * t2a(e, c, j, l)&  ! (1)
+                                                                        -h2a_voov(b, m, j, e) * t2a(d, a, m, k) * t2a(e, c, i, l)&        ! (ij)
+                                                                        -h2a_voov(b, m, i, e) * t2a(d, a, m, j) * t2a(e, c, k, l)&        ! (jk)
+                                                                        -h2a_voov(b, m, l, e) * t2a(d, a, m, k) * t2a(e, c, j, i)&        ! (il)
+                                                                        -h2a_voov(b, m, i, e) * t2a(d, a, m, l) * t2a(e, c, j, k)&        ! (kl)
+                                                                        +h2a_voov(b, m, j, e) * t2a(d, a, m, l) * t2a(e, c, i, k)&        ! (ij)(kl)
+                                                                        -h2a_voov(b, m, k, e) * t2a(d, a, m, i) * t2a(e, c, j, l)&        ! (ik)
+                                                                        +h2a_voov(b, m, j, e) * t2a(d, a, m, i) * t2a(e, c, k, l)&        ! (ij)(ik)
+                                                                        +h2a_voov(b, m, k, e) * t2a(d, a, m, j) * t2a(e, c, i, l)&        ! (jk)(ik)
+                                                                        +h2a_voov(b, m, l, e) * t2a(d, a, m, i) * t2a(e, c, j, k)&        ! (il)(ik)
+                                                                        +h2a_voov(b, m, k, e) * t2a(d, a, m, l) * t2a(e, c, j, i)&        ! (kl)(ik)
+                                                                        -h2a_voov(b, m, j, e) * t2a(d, a, m, l) * t2a(e, c, k, i)         ! (ij)(kl)(ik)
+
                                                             end do
                                                         end do
+                                                        ! error = error + mm24 - MM24_test(a, b, c, d, i, j, k, l)
                                                         ! Diagram 2: A(ij/kl)A(bc/ad) h2a(mnij) * t2a(adml) * t2a(bcnk)
 
                                                         ! Diagram 3: A(jk/il)A(ab/cd) h2a(abef) * t2a(fcjk) * t2a(edil)
@@ -110,6 +274,8 @@ module crcc24_loops
                                 end do
                             end do
                         end do
+
+                  print*, "Error = ", error
 
               end subroutine crcc24A
 

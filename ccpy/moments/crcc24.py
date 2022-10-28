@@ -6,7 +6,14 @@ from ccpy.drivers.cc_energy import get_cc_energy
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
 from ccpy.utilities.updates import crcc24_loops
 
-def calc_crcc24(T, L, H, H0, system, use_RHF=False):
+def permute(x, perm_list):
+    str1 = ["a", "b", "c", "d", "i", "j", "k", "l"]
+    str2 = "".join([str1[x - 1] for x in perm_list])
+    str1 = "".join(s for s in str1)
+    contr = str1 + "->" + str2
+    return np.einsum(contr, x, optimize=True)
+
+def calc_crcc24(T, L, H, H0, system, use_RHF=True):
     """
     Calculate the ground-state CR-CC(2,4) correction to the CCSD energy.
     """
@@ -19,7 +26,27 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
 
     #### aaaa correction ####
-    dA_AAAA, dB_AAAA, dC_AAAA, dD_AAAA = crcc24_loops.crcc24_loops.crcc24a(
+    # (jl/i/k)(bc/a/d)
+    D1 = -np.einsum("amie,bcmk,edjl->abcdijkl", H.aa.voov, T.aa, T.aa, optimize=True)
+    # (jl/ik)(ik) - THE ORDER MATTERS HERE???
+    D1 += (
+            - permute(D1, [1, 2, 3, 4, 6, 5, 7, 8])
+            - permute(D1, [1, 2, 3, 4, 5, 7, 6, 8])
+            - permute(D1, [1, 2, 3, 4, 8, 6, 7, 5])
+            - permute(D1, [1, 2, 3, 4, 5, 6, 8, 7])
+            + permute(D1, [1, 2, 3, 4, 6, 5, 8, 7])
+    )
+    D1 += -permute(D1, [1, 2, 3, 4, 7, 6, 5, 8])
+    # A(bc/a/d) = A(bc/ad)A(ad)
+    D1 += (
+            -permute(D1, [2, 1, 3, 4, 5, 6, 7, 8])
+            - permute(D1, [3, 2, 1, 4, 5, 6, 7, 8])
+            - permute(D1, [1, 4, 3, 2, 5, 6, 7, 8])
+            - permute(D1, [1, 2, 4, 3, 5, 6, 7, 8])
+            + permute(D1, [2, 1, 4, 3, 5, 6, 7, 8])
+    )
+    D1 += -permute(D1, [4, 2, 3, 1, 5, 6, 7, 8])
+    dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = crcc24_loops.crcc24_loops.crcc24a(
         T.aa,
         L.aa,
         H0.a.oo,
@@ -31,11 +58,12 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
         H.aa.vvvv,
         H.aa.oovv,
         d3aaa_o,
-        d3aaa_v
+        d3aaa_v,
+        D1,
     )
 
     #### aaab correction ####
-    dA_AAAB, dB_AAAB, dC_AAAB, dD_AAAB = crcc24_loops.crcc24_loops.crcc24b(
+    dA_aaab, dB_aaab, dC_aaab, dD_aaab = crcc24_loops.crcc24_loops.crcc24b(
         T.aa,
         T.ab,
         L.aa,
@@ -59,14 +87,14 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
         H.ab.oovv,
         H.bb.voov,
         d3aaa_o,
-        d3aaa_o,
+        d3aaa_v,
         d3aab_o,
         d3aab_v,
         d3abb_o,
         d3abb_v,
     )
     #### aaab correction ####
-    dA_AABB, dB_AABB, dC_AABB, dD_AABB = crcc24_loops.crcc24_loops.crcc24c(
+    dA_aabb, dB_aabb, dC_aabb, dD_aabb = crcc24_loops.crcc24_loops.crcc24c(
         T.aa,
         T.ab,
         T.bb,
