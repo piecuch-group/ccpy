@@ -9,6 +9,7 @@ def main(args):
     from ccpy.drivers.driver import cc_driver, lcc_driver
     from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
     from ccpy.moments.crcc24 import calc_crcc24
+    from ccpy.moments.crcc23 import calc_crcc23
 
     if args.re== 1:
         geom = [['H', (0, 1.515263, -1.058898)], ['H', (0, -1.515263, -1.058898)], ['O', (0.0, 0.0, -0.0090)]]
@@ -56,7 +57,14 @@ def main(args):
     )
     L, _, _ = lcc_driver(calculation, system, T, Hbar)
 
-    _, _ = calc_crcc24(T, L, Hbar, H, system)
+    _, delta23 = calc_crcc23(T, L, Hbar, H, system)
+    _, delta24 = calc_crcc24(T, L, Hbar, H, system)
+
+    Ecrcc24_AA = total_energy + delta23['A'] + delta24['A']
+    Ecrcc24_DA = total_energy + delta23['D'] + delta24['A']
+
+    print("CR-CC(2,4)_AA = ", Ecrcc24_AA)
+    print("CR-CC(2,4)_DA = ", Ecrcc24_DA)
 
 
 if __name__ == "__main__":
