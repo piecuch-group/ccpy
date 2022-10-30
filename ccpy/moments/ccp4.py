@@ -1,17 +1,24 @@
-"""Functions to calculate the ground-state CR-CC(2,4) quadruples correction to CCSD."""
+"""Functions to calculate the ground-state CR-CC(2,4)-like Q space quadruples correction to CC(P)."""
 import time
 import numpy as np
 
 from ccpy.drivers.cc_energy import get_cc_energy
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
 from ccpy.utilities.updates import crcc24_loops
+from ccpy.moments.crcc24 import calc_crcc24
 
-def calc_crcc24(T, L, H, H0, system, use_RHF=False):
+
+def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
     """
     Calculate the ground-state CR-CC(2,4) correction to the CCSD energy.
     """
     t_start = time.time()
-    
+
+    # first compute the entire CR-CC(2,4) quadruples correction for all quadruples
+    _, delta24_full = calc_crcc24(T, L, H, H0, system, use_RHF=use_RHF)
+
+    # Now, compute the correction for determinants in the P space (which should be a short list hopefully)
+
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
     d3aab_v, d3aab_o = aab_H3_aab_diagonal(T, H, system)
@@ -19,7 +26,8 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
 
     #### aaaa correction ####
-    dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = crcc24_loops.crcc24_loops.crcc24a(
+    dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = crcc24_loops.crcc24_loops.crcc24a_p(
+        pspace_quadruples_list["aaaa"],
         T.aa,
         L.aa,
         H0.a.oo,
@@ -35,7 +43,8 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     )
 
     #### aaab correction ####
-    dA_aaab, dB_aaab, dC_aaab, dD_aaab = crcc24_loops.crcc24_loops.crcc24b(
+    dA_aaab, dB_aaab, dC_aaab, dD_aaab = crcc24_loops.crcc24_loops.crcc24b_p(
+        pspace_quadruples_list["aaab"],
         T.aa,
         T.ab,
         L.aa,
@@ -69,7 +78,8 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     )
 
     #### aabb correction ####
-    dA_aabb, dB_aabb, dC_aabb, dD_aabb = crcc24_loops.crcc24_loops.crcc24c(
+    dA_aabb, dB_aabb, dC_aabb, dD_aabb = crcc24_loops.crcc24_loops.crcc24c_p(
+        pspace_quadruples_list["aabb"],
         T.aa,
         T.ab,
         T.bb,
@@ -117,7 +127,8 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
 
     else:
         #### abbb correction ####
-        dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_loops.crcc24_loops.crcc24d(
+        dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_loops.crcc24_loops.crcc24d_p(
+            pspace_quadruples_list["abbb"],
             T.ab,
             T.bb,
             L.ab,
@@ -150,7 +161,8 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
             d3abb_v,
         )
         #### bbbb correction ####
-        dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_loops.crcc24_loops.crcc24e(
+        dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_loops.crcc24_loops.crcc24e_p(
+            pspace_quadruples_list["bbbb"],
             T.bb,
             L.bb,
             H0.b.oo,
@@ -171,6 +183,13 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
         correction_D = dD_aaaa + dD_aaab + dD_aabb + dD_abbb + dD_bbbb
 
 
+    # Compute the CC(P;4) energy as the difference between the correction over all quadruples
+    # minus the correction over quadruples in the P space
+    correction_A = delta24_full["A"] - correction_A
+    correction_B = delta24_full["B"] - correction_B
+    correction_C = delta24_full["C"] - correction_C
+    correction_D = delta24_full["D"] - correction_D
+
     t_end = time.time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
@@ -187,33 +206,32 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     total_energy_C = system.reference_energy + energy_C
     total_energy_D = system.reference_energy + energy_D
 
-    print('   CR-CC(2,4) Calculation Summary')
+    print('   CC(P;4) Calculation Summary')
     print('   -------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
-    print("   CCSD = {:>10.10f}".format(system.reference_energy + cc_energy))
+    print("   CC(P) = {:>10.10f}".format(system.reference_energy + cc_energy))
     print(
-        "   CR-CC(2,4)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
+        "   CC(P;4)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A
         )
     )
     print(
-        "   CR-CC(2,4)_B = {:>10.10f}     ΔE_B = {:>10.10f}     δ_B = {:>10.10f}".format(
+        "   CC(P;4)_B = {:>10.10f}     ΔE_B = {:>10.10f}     δ_B = {:>10.10f}".format(
             total_energy_B, energy_B, correction_B
         )
     )
     print(
-        "   CR-CC(2,4)_C = {:>10.10f}     ΔE_C = {:>10.10f}     δ_C = {:>10.10f}".format(
+        "   CC(P;4)_C = {:>10.10f}     ΔE_C = {:>10.10f}     δ_C = {:>10.10f}".format(
             total_energy_C, energy_C, correction_C
         )
     )
     print(
-        "   CR-CC(2,4)_D = {:>10.10f}     ΔE_D = {:>10.10f}     δ_D = {:>10.10f}\n".format(
+        "   CC(P;4)_D = {:>10.10f}     ΔE_D = {:>10.10f}     δ_D = {:>10.10f}\n".format(
             total_energy_D, energy_D, correction_D
         )
     )
 
-    Ecrcc24 = {"A": total_energy_A, "B": total_energy_B, "C": total_energy_C, "D": total_energy_D}
-    delta24 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
-    
-    return Ecrcc24, delta24
+    Eccp4 = {"A": total_energy_A, "B": total_energy_B, "C": total_energy_C, "D": total_energy_D}
+    deltap4 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
 
+    return Eccp4, deltap4
