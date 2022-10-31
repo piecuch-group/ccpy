@@ -4,7 +4,7 @@ import numpy as np
 
 from ccpy.drivers.cc_energy import get_cc_energy
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
-from ccpy.utilities.updates import crcc24_loops
+from ccpy.utilities.updates import crcc24_opt_loops
 
 def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     """
@@ -19,7 +19,7 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
 
     #### aaaa correction ####
-    dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = crcc24_loops.crcc24_loops.crcc24a(
+    dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = crcc24_opt_loops.crcc24_opt_loops.crcc24a_opt(
         T.aa,
         L.aa,
         H0.a.oo,
@@ -35,7 +35,7 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     )
 
     #### aaab correction ####
-    dA_aaab, dB_aaab, dC_aaab, dD_aaab = crcc24_loops.crcc24_loops.crcc24b(
+    dA_aaab, dB_aaab, dC_aaab, dD_aaab = crcc24_opt_loops.crcc24_opt_loops.crcc24b_opt(
         T.aa,
         T.ab,
         L.aa,
@@ -69,7 +69,7 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     )
 
     #### aabb correction ####
-    dA_aabb, dB_aabb, dC_aabb, dD_aabb = crcc24_loops.crcc24_loops.crcc24c(
+    dA_aabb, dB_aabb, dC_aabb, dD_aabb = crcc24_opt_loops.crcc24_opt_loops.crcc24c_opt(
         T.aa,
         T.ab,
         T.bb,
@@ -117,7 +117,7 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
 
     else:
         #### abbb correction ####
-        dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_loops.crcc24_loops.crcc24d(
+        dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_opt_loops.crcc24_opt_loops.crcc24d_opt(
             T.ab,
             T.bb,
             L.ab,
@@ -150,7 +150,7 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
             d3abb_v,
         )
         #### bbbb correction ####
-        dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_loops.crcc24_loops.crcc24e(
+        dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_opt_loops.crcc24_opt_loops.crcc24e_opt(
             T.bb,
             L.bb,
             H0.b.oo,
