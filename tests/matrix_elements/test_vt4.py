@@ -615,16 +615,17 @@ def contract_vt4_opt(C4_excitations, C4_amplitudes, C, H, T_ext, T4_amplitudes, 
 
 if __name__ == "__main__":
 
+    ccpy_root = "/Users/karthik/Documents/Python/ccpy"
 
     system, H = load_from_gamess(
-            "h2o-Re.log",
-            "onebody.inp",
-            "twobody.inp",
+            ccpy_root + "/examples/ext_corr/h2o-Re/h2o-Re.log",
+            ccpy_root + "/examples/ext_corr/h2o-Re/onebody.inp",
+            ccpy_root + "/examples/ext_corr/h2o-Re/twobody.inp",
             nfrozen=0,
     )
     system.print_info()
 
-    civecs = "ndet_100000/civecs.dat"
+    civecs = ccpy_root + "/examples/ext_corr/h2o-Re/ndet_100000/civecs.dat"
 
     # Parse the CI wave function to get C1 - C3 and list of C4
     print("   Reading the CI vector file at", civecs)
@@ -648,7 +649,7 @@ if __name__ == "__main__":
     print("   Exact V*T4 contraction")
     x2_aa_exact, x2_ab_exact, x2_bb_exact = contract_vt4_exact(H, T_ext)
 
-    # Get the on-the-fly contraction result (although for now, we are still using full T4)
+    # Get the on-the-fly contraction result
     print("   On-the-fly V*T4 contraction")
     t1 = time.time()
     x2_aa, x2_ab, x2_bb = contract_vt4_opt(C4_excitations, C4_amplitudes, C, H, T_ext, T4_amplitudes, system)
