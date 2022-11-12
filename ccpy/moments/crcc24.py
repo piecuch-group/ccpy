@@ -7,7 +7,7 @@ from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_
 from ccpy.utilities.updates import crcc24_opt_loops
 from ccpy.utilities.updates import crcc24_loops
 
-def calc_crcc24(T, L, H, H0, system, use_RHF=True):
+def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     """
     Calculate the ground-state CR-CC(2,4) correction to the CCSD energy.
     """
@@ -127,38 +127,41 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=True):
 
     else:
         #### abbb correction ####
-        dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_opt_loops.crcc24_opt_loops.crcc24d_opt(
-            T.ab,
-            T.bb,
-            L.ab,
-            L.bb,
-            H0.a.oo,
-            H0.a.vv,
-            H0.b.oo,
-            H0.b.vv,
-            H.a.oo,
-            H.a.vv,
-            H.b.oo,
-            H.b.vv,
-            H.aa.voov,
-            H.ab.voov,
-            H.ab.ovov,
-            H.ab.vovo,
-            H.ab.ovvo,
-            H.ab.oooo,
-            H.ab.vvvv,
-            H.ab.oovv,
-            H.bb.voov,
-            H.bb.oooo,
-            H.bb.vvvv,
-            H.bb.oovv,
-            d3aab_o,
-            d3aab_v,
-            d3bbb_o,
-            d3bbb_v,
-            d3abb_o,
-            d3abb_v,
-        )
+        t1 = time.time()
+        dA_abbb, dB_abbb, dC_abbb, dD_abbb = abbb_correction(T, L, H, H0, d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v)
+        #dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_opt_loops.crcc24_opt_loops.crcc24d_opt(
+        #    T.ab,
+        #    T.bb,
+        #    L.ab,
+        #    L.bb,
+        #    H0.a.oo,
+        #    H0.a.vv,
+        #    H0.b.oo,
+        #    H0.b.vv,
+        #    H.a.oo,
+        #    H.a.vv,
+        #    H.b.oo,
+        #    H.b.vv,
+        #    H.aa.voov,
+        #    H.ab.voov,
+        #    H.ab.ovov,
+        #    H.ab.vovo,
+        #    H.ab.ovvo,
+        #    H.ab.oooo,
+        #    H.ab.vvvv,
+        #    H.ab.oovv,
+        #    H.bb.voov,
+        #    H.bb.oooo,
+        #    H.bb.vvvv,
+        #    H.bb.oovv,
+        #    d3aab_o,
+        #    d3aab_v,
+        #    d3bbb_o,
+        #    d3bbb_v,
+        #    d3abb_o,
+        #    d3abb_v,
+        #)
+        print("finished abbb correction in", time.time() - t1, "seconds")
         #### bbbb correction ####
         dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_opt_loops.crcc24_opt_loops.crcc24e_opt(
             T.bb,
@@ -508,3 +511,99 @@ def aabb_correction(T, L, H, H0, d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3
                     dD_aabb += dD
 
     return dA_aabb, dB_aabb, dC_aabb, dD_aabb
+
+
+def abbb_correction(T, L, H, H0, d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v):
+
+    nua, noa = T.a.shape
+    nub, nob = T.b.shape
+
+    dA_abbb = 0.0
+    dB_abbb = 0.0
+    dC_abbb = 0.0
+    dD_abbb = 0.0
+
+    for l in range(noa):
+        for i in range(nob):
+            for j in range(i + 1, nob):
+                for k in range(j + 1, nob):
+
+                    # Diagram 1:  -A(i/jk)A(c/ab) h2b(dmle) * t2c(abim) * t2c(ecjk)
+                    x4d = -0.5 * np.einsum("dme,abm,ec->dabc", H.ab.voov[:, :, l, :], T.bb[:, :, i, :], T.bb[:, :, j, k], optimize=True)
+                    x4d += 0.5 * np.einsum("dme,abm,ec->dabc", H.ab.voov[:, :, l, :], T.bb[:, :, j, :], T.bb[:, :, i, k], optimize=True)
+                    x4d += 0.5 * np.einsum("dme,abm,ec->dabc", H.ab.voov[:, :, l, :], T.bb[:, :, k, :], T.bb[:, :, j, i], optimize=True)
+
+                    # Diagram 2:   A(k/ij)A(a/bc) h2c(mnij) * t2c(bcnk) * t2b(dalm)
+                    x4d += 0.5 * np.einsum("mn,bcn,dam->dabc", H.bb.oooo[:, :, i, j], T.bb[:, :, :, k], T.ab[:, :, l, :], optimize=True) 
+                    x4d -= 0.5 * np.einsum("mn,bcn,dam->dabc", H.bb.oooo[:, :, k, j], T.bb[:, :, :, i], T.ab[:, :, l, :], optimize=True) 
+                    x4d -= 0.5 * np.einsum("mn,bcn,dam->dabc", H.bb.oooo[:, :, i, k], T.bb[:, :, :, j], T.ab[:, :, l, :], optimize=True)
+
+                    # Diagram 3:  -A(ijk)A(c/ab) h2b(dmfj) * t2c(abim) * t2b(fclk)
+                    x4d -= 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, j], T.bb[:, :, i, :], T.ab[:, :, l, k], optimize=True)
+                    x4d += 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, i], T.bb[:, :, j, :], T.ab[:, :, l, k], optimize=True)
+                    x4d += 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, j], T.bb[:, :, k, :], T.ab[:, :, l, i], optimize=True)
+                    x4d += 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, k], T.bb[:, :, i, :], T.ab[:, :, l, j], optimize=True)
+                    x4d -= 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, i], T.bb[:, :, k, :], T.ab[:, :, l, j], optimize=True)
+                    x4d -= 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, k], T.bb[:, :, j, :], T.ab[:, :, l, i], optimize=True)
+
+                    # Diagram 4:  -A(ijk)A(abc) h2b(maei) * t2b(eblj) * t2b(dcmk)
+                    x4d -= np.einsum("mae,eb,dcm->dabc", H.ab.ovvo[:, :, :, i], T.ab[:, :, l, j], T.ab[:, :, :, k], optimize=True)
+                    x4d += np.einsum("mae,eb,dcm->dabc", H.ab.ovvo[:, :, :, j], T.ab[:, :, l, i], T.ab[:, :, :, k], optimize=True)
+                    x4d += np.einsum("mae,eb,dcm->dabc", H.ab.ovvo[:, :, :, k], T.ab[:, :, l, j], T.ab[:, :, :, i], optimize=True)
+                    x4d += np.einsum("mae,eb,dcm->dabc", H.ab.ovvo[:, :, :, i], T.ab[:, :, l, k], T.ab[:, :, :, j], optimize=True)
+                    x4d -= np.einsum("mae,eb,dcm->dabc", H.ab.ovvo[:, :, :, k], T.ab[:, :, l, i], T.ab[:, :, :, j], optimize=True)
+                    x4d -= np.einsum("mae,eb,dcm->dabc", H.ab.ovvo[:, :, :, j], T.ab[:, :, l, k], T.ab[:, :, :, i], optimize=True)
+
+                    # Diagram 5:   A(ijk)A(a/bc) h2b(nmlj) * t2c(bcmk) * t2b(dani)
+                    x4d += 0.5 * np.einsum("nm,bcm,dan->dabc", H.ab.oooo[:, :, l, j], T.bb[:, :, :, k], T.ab[:, :, :, i], optimize=True)
+                    x4d -= 0.5 * np.einsum("nm,bcm,dan->dabc", H.ab.oooo[:, :, l, i], T.bb[:, :, :, k], T.ab[:, :, :, j], optimize=True)
+                    x4d -= 0.5 * np.einsum("nm,bcm,dan->dabc", H.ab.oooo[:, :, l, j], T.bb[:, :, :, i], T.ab[:, :, :, k], optimize=True)
+                    x4d -= 0.5 * np.einsum("nm,bcm,dan->dabc", H.ab.oooo[:, :, l, k], T.bb[:, :, :, j], T.ab[:, :, :, i], optimize=True)
+                    x4d += 0.5 * np.einsum("nm,bcm,dan->dabc", H.ab.oooo[:, :, l, i], T.bb[:, :, :, j], T.ab[:, :, :, k], optimize=True)
+                    x4d += 0.5 * np.einsum("nm,bcm,dan->dabc", H.ab.oooo[:, :, l, k], T.bb[:, :, :, i], T.ab[:, :, :, j], optimize=True)
+
+                    # Diagram 6:  -A(i/jk)A(abc) h2b(mble) * t2c(ecjk) * t2b(dami)
+                    x4d -= np.einsum("mbe,ec,dam->dabc", H.ab.ovov[:, :, l, :], T.bb[:, :, j, k], T.ab[:, :, :, i], optimize=True)
+                    x4d += np.einsum("mbe,ec,dam->dabc", H.ab.ovov[:, :, l, :], T.bb[:, :, i, k], T.ab[:, :, :, j], optimize=True)
+                    x4d += np.einsum("mbe,ec,dam->dabc", H.ab.ovov[:, :, l, :], T.bb[:, :, j, i], T.ab[:, :, :, k], optimize=True)
+
+                    # Diagram 7:  -A(i/jk)A(abc) h2c(amie) * t2c(ecjk) * t2b(dblm)
+                    x4d -= np.einsum("ame,ec,dbm->dabc", H.bb.voov[:, :, i, :], T.bb[:, :, j, k], T.ab[:, :, l, :], optimize=True)
+                    x4d += np.einsum("ame,ec,dbm->dabc", H.bb.voov[:, :, j, :], T.bb[:, :, i, k], T.ab[:, :, l, :], optimize=True)
+                    x4d += np.einsum("ame,ec,dbm->dabc", H.bb.voov[:, :, k, :], T.bb[:, :, j, i], T.ab[:, :, l, :], optimize=True)
+
+                    # Diagram 8:   A(i/jk)A(c/ab) h2c(abef) * t2c(fcjk) * t2b(deli)
+                    x4d += 0.5 * np.einsum("abef,fc,de->dabc", H.bb.vvvv, T.bb[:, :, j, k], T.ab[:, :, l, i], optimize=True)
+                    x4d -= 0.5 * np.einsum("abef,fc,de->dabc", H.bb.vvvv, T.bb[:, :, i, k], T.ab[:, :, l, j], optimize=True)
+                    x4d -= 0.5 * np.einsum("abef,fc,de->dabc", H.bb.vvvv, T.bb[:, :, j, i], T.ab[:, :, l, k], optimize=True)
+
+                    # Diagram 9:  -A(ijk)A(a/bc) h2c(amie) * t2c(bcmk) * t2b(delj)
+                    x4d -= 0.5 * np.einsum("ame,bcm,de->dabc", H.bb.voov[:, :, i, :], T.bb[:, :, :, k], T.ab[:, :, l, j], optimize=True)
+                    x4d += 0.5 * np.einsum("ame,bcm,de->dabc", H.bb.voov[:, :, j, :], T.bb[:, :, :, k], T.ab[:, :, l, i], optimize=True)
+                    x4d += 0.5 * np.einsum("ame,bcm,de->dabc", H.bb.voov[:, :, k, :], T.bb[:, :, :, i], T.ab[:, :, l, j], optimize=True)
+                    x4d += 0.5 * np.einsum("ame,bcm,de->dabc", H.bb.voov[:, :, i, :], T.bb[:, :, :, j], T.ab[:, :, l, k], optimize=True)
+                    x4d -= 0.5 * np.einsum("ame,bcm,de->dabc", H.bb.voov[:, :, k, :], T.bb[:, :, :, j], T.ab[:, :, l, i], optimize=True)
+                    x4d -= 0.5 * np.einsum("ame,bcm,de->dabc", H.bb.voov[:, :, j, :], T.bb[:, :, :, i], T.ab[:, :, l, k], optimize=True)
+
+                    # Diagram 10:  A(k/ij)A(abc) h2b(dafe) * t2c(ebij) * t2b(fclk)
+                    x4d += np.einsum("dafe,eb,fc->dabc", H.ab.vvvv, T.bb[:, :, i, j], T.ab[:, :, l, k], optimize=True)
+                    x4d -= np.einsum("dafe,eb,fc->dabc", H.ab.vvvv, T.bb[:, :, k, j], T.ab[:, :, l, i], optimize=True)
+                    x4d -= np.einsum("dafe,eb,fc->dabc", H.ab.vvvv, T.bb[:, :, i, k], T.ab[:, :, l, j], optimize=True)
+
+                    dA, dB, dC, dD = crcc24_opt_loops.crcc24_opt_loops.crcc24d_ijkl(
+                              i + 1, j + 1, k + 1, l + 1,
+                              x4d, T.ab, T.bb, L.ab, L.bb,
+                              H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+                              H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                              H.aa.voov,
+                              H.ab.voov, H.ab.ovov, H.ab.vovo, H.ab.ovvo, H.ab.oooo, H.ab.vvvv, H.ab.oovv,
+                              H.bb.voov, H.bb.oooo, H.bb.vvvv, H.bb.oovv,
+                              d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
+                    )
+
+                    dA_abbb += dA
+                    dB_abbb += dB
+                    dC_abbb += dC
+                    dD_abbb += dD
+
+    return dA_abbb, dB_abbb, dC_abbb, dD_abbb

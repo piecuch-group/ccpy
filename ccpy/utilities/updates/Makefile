@@ -3,6 +3,7 @@ MODULES := cc_loops \
 		   cc_loops2 \
 		   crcc_loops \
 		   crcc24_loops \
+		   crcc24_opt_loops \
 		   mbgf_loops \
 		   mbpt_loops \
 		   eomcc_initial_guess \

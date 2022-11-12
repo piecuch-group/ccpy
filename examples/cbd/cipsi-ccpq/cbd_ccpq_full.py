@@ -35,7 +35,7 @@ def main(args):
         print("      Total number of rank {} = {}".format(n + 3, num_excits))
 
     calculation = Calculation(
-            calculation_type="ccsdt_p",
+            calculation_type="ccsdt_p_slow",
             convergence_tolerance=1.0e-08,
             diis_size=6,
             energy_shift=0.0,

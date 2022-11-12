@@ -107,10 +107,11 @@ class ClusterOperator:
                         self.dimensions.append(dim)
                     ndim += active_t.ndim
 
-                elif i in p_orders:
-                    setattr(self, name, np.zeros(excitation_count[j], dtype=data_type))
-                    self.dimensions.append((excitation_count[j],))
-                    ndim += excitation_count[j]
+                # This is trying to set a zero 1D vector for the P space components
+                #elif i in p_orders:
+                #    setattr(self, name, np.zeros(excitation_count[j], dtype=data_type))
+                #    self.dimensions.append((excitation_count[j],))
+                #    ndim += excitation_count[j]
 
                 else:
                     setattr(self, name, np.zeros(dimensions, dtype=data_type))

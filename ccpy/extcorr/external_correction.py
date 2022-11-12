@@ -126,6 +126,19 @@ def parse_ci_wavefunction(ci_file, system):
 
     orb_table = {'a': system.noccupied_alpha, 'b': system.noccupied_beta}
 
+    # Find the HF coefficient
+    with open(ci_file) as f:
+
+        for line in f.readlines():
+            det = list(map(int, line.split()[2:]))
+            coeff = float(line.split()[1])
+
+            # get and save the CI coefficient of HF
+            if det == HF:
+                c_hf = coeff
+                print("   Found Reference State =", det, "c_ref = ", c_hf)
+                break
+
     with open(ci_file) as f:
 
         for line in f.readlines():
@@ -135,7 +148,6 @@ def parse_ci_wavefunction(ci_file, system):
 
             # get and save CI coefficient of HF to write everything in intermediate normalization
             if det == HF:
-                c_hf = coeff
                 continue
 
             excit_rank = get_excit_rank(det, HF)

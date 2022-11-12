@@ -415,6 +415,144 @@ module crcc24_opt_loops
 
             end subroutine crcc24C_ijkl
 
+
+            subroutine crcc24D_ijkl(deltaA,deltaB,deltaC,deltaD,&
+                              i,j,k,l,&
+                              x4d,t2b,t2c,l2b,l2c,&
+                              fA_oo,fA_vv,fB_oo,fB_vv,&
+                              H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                              H2A_voov,&
+                              H2B_voov,H2B_ovov,H2B_vovo,H2B_ovvo,H2B_oooo,H2B_vvvv,H2B_oovv,&
+                              H2C_voov,H2C_oooo, H2C_vvvv,H2C_oovv,&
+                              D3B_O,D3B_V,D3C_O,D3C_V,D3D_O,D3D_V,&
+                              noa,nua,nob,nub)
+
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        integer, intent(in) :: noa, nua, nob, nub
+                        integer, intent(in) :: i, j, k, l
+                        real(kind=8), intent(in) :: x4d(1:nua,1:nub,1:nub,1:nub)
+                        real(kind=8), intent(in) :: t2c(1:nub,1:nub,1:nob,1:nob),t2b(1:nua,1:nub,1:noa,1:nob),&
+                        l2c(1:nub,1:nub,1:nob,1:nob),l2b(1:nua,1:nub,1:noa,1:nob),&
+                        fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
+                        H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
+                        H2A_voov(1:nua,1:noa,1:noa,1:nua),&
+                        H2B_voov(1:nua,1:nob,1:noa,1:nub),&
+                        H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
+                        H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
+                        H2B_ovvo(1:noa,1:nub,1:nua,1:nob),&
+                        H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
+                        H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        H2B_oovv(1:noa,1:nob,1:nua,1:nub),&
+                        H2C_voov(1:nub,1:nob,1:nob,1:nub),&
+                        H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
+                        H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
+                        D3B_O(1:nua,1:noa,1:nob),&
+                        D3B_V(1:nua,1:noa,1:nub),&
+                        D3C_O(1:nub,1:noa,1:nob),&
+                        D3C_V(1:nua,1:nob,1:nub),&
+                        D3D_O(1:nub,1:nob,1:nob),&
+                        D3D_V(1:nub,1:nob,1:nub)
+
+                        integer :: a, b, c, d
+                        real(kind=8) :: denom, temp, mm24, l4
+
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
+
+                        do d = 1, nua
+                            do a = 1, nub
+                                do b = a+1, nub
+                                    do c = b+1, nub
+
+                                        mm24 = x4d(d, a, b, c) - x4d(a, a, c, b)&
+                                              +x4d(d, b, c, a) - x4d(d, b, a, c)&
+                                              +x4d(d, c, a, b) - x4d(d, c, b, a)
+
+                                        l4 = 0.0d0
+
+                                        !!! L4D Computation !!!
+                                        ! Diagram 1:  A(k/ij)A(c/ab) h2c(ijab) * l2b(dclk)
+                                        ! (1)
+                                        l4 = l4 + h2c_oovv(i, j, a, b) * l2b(d, c, l, k)&  ! (1)
+                                                - h2c_oovv(k, j, a, b) * l2b(d, c, l, i)&  ! (ik)
+                                                - h2c_oovv(i, k, a, b) * l2b(d, c, l, j)   ! (jk)
+                                        ! (ac)
+                                        l4 = l4 - h2c_oovv(i, j, c, b) * l2b(d, a, l, k)&  ! (1)
+                                                + h2c_oovv(k, j, c, b) * l2b(d, a, l, i)&  ! (ik)
+                                                + h2c_oovv(i, k, c, b) * l2b(d, a, l, j)   ! (jk)
+                                        ! (bc)
+                                        l4 = l4 - h2c_oovv(i, j, a, c) * l2b(d, b, l, k)&  ! (1)
+                                                + h2c_oovv(k, j, a, c) * l2b(d, b, l, i)&  ! (ik)
+                                                + h2c_oovv(i, k, a, c) * l2b(d, b, l, j)   ! (jk)
+                                        ! Diagram 2:  A(k/ij)A(c/ab) h2b(lkdc) * l2c(abij)
+                                        ! (1)
+                                        l4 = l4 + h2b_oovv(l, k, d, c) * l2c(a, b, i, j)&  ! (1)
+                                                - h2b_oovv(l, i, d, c) * l2c(a, b, k, j)&  ! (ik)
+                                                - h2b_oovv(l, j, d, c) * l2c(a, b, i, k)   ! (jk)
+                                        ! (ac)
+                                        l4 = l4 - h2b_oovv(l, k, d, a) * l2c(c, b, i, j)&  ! (1)
+                                                + h2b_oovv(l, i, d, a) * l2c(c, b, k, j)&  ! (ik)
+                                                + h2b_oovv(l, j, d, a) * l2c(c, b, i, k)   ! (jk)
+                                        ! (bc)
+                                        l4 = l4 - h2b_oovv(l, k, d, b) * l2c(a, c, i, j)&  ! (1)
+                                                + h2b_oovv(l, i, d, b) * l2c(a, c, k, j)&  ! (ik)
+                                                + h2b_oovv(l, j, d, b) * l2c(a, c, i, k)   ! (jk)
+
+                                        temp = mm24 * l4
+
+                                        denom = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) + fA_oo(l,l)&
+                                        - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c) - fA_vv(d,d)
+
+                                        deltaA = deltaA + temp/denom
+
+                                        denom = H1B_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k) + H1A_oo(l,l)&
+                                        - H1B_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c) - H1A_vv(d,d)
+
+                                        deltaB = deltaB + temp/denom
+
+                                        denom = denom &
+                                        -H2C_oooo(i,j,i,j)-H2C_oooo(i,k,i,k)-H2C_oooo(j,k,j,k)-H2C_voov(a,i,i,a)&
+                                        -H2C_voov(a,j,j,a)-H2C_voov(a,k,k,a)-H2C_voov(b,i,i,b)-H2C_voov(b,j,j,b)&
+                                        -H2C_voov(b,k,k,b)-H2C_voov(c,i,i,c)-H2C_voov(c,j,j,c)-H2C_voov(c,k,k,c)&
+                                        -H2C_vvvv(a,b,a,b)-H2C_vvvv(a,c,a,c)-H2C_vvvv(b,c,b,c)-H2B_oooo(l,i,l,i)&
+                                        -H2B_oooo(l,j,l,j)-H2B_oooo(l,k,l,k)+H2B_vovo(d,i,d,i)+H2B_vovo(d,j,d,j)&
+                                        +H2B_vovo(d,k,d,k)+H2B_ovov(l,a,l,a)+H2B_ovov(l,b,l,b)+H2B_ovov(l,c,l,c)&
+                                        -H2B_vvvv(d,a,d,a)-H2B_vvvv(d,b,d,b)-H2B_vvvv(d,c,d,c)-H2A_voov(d,l,l,d)
+
+                                        deltaC = deltaC + temp/denom
+
+                                        ! [TODO]: Transform D denominator from aaab to abbb here
+                                        !denom = denom &
+                                        !+D3A_O(a,i,j)+D3A_O(a,i,k)+D3A_O(a,j,k)+D3A_O(b,i,j)&
+                                        !+D3A_O(b,i,k)+D3A_O(b,j,k)+D3A_O(c,i,j)+D3A_O(c,i,k)&
+                                        !+D3A_O(c,j,k)-D3A_V(a,i,b)-D3A_V(a,j,b)-D3A_V(a,k,b)&
+                                        !-D3A_V(a,i,c)-D3A_V(a,j,c)-D3A_V(a,k,c)-D3A_V(b,i,c)&
+                                        !-D3A_V(b,j,c)-D3A_V(b,k,c)+D3B_O(a,i,l)+D3B_O(a,j,l)&
+                                        !+D3B_O(a,k,l)+D3B_O(b,i,l)+D3B_O(b,j,l)+D3B_O(b,k,l)&
+                                        !+D3B_O(c,i,l)+D3B_O(c,j,l)+D3B_O(c,k,l)-D3B_V(a,i,d)&
+                                        !-D3B_V(a,j,d)-D3B_V(a,k,d)-D3B_V(b,i,d)-D3B_V(b,j,d)&
+                                        !-D3B_V(b,k,d)-D3B_V(c,i,d)-D3B_V(c,j,d)-D3B_V(c,k,d)&
+                                        !+D3C_O(d,i,l)+D3C_O(d,j,l)+D3C_O(d,k,l)-D3C_V(a,l,d)&
+                                        !-D3C_V(b,l,d)-D3C_V(c,l,d)
+
+                                        deltaD = deltaD + temp/denom
+
+                                    end do
+                                end do
+                            end do
+                        end do
+
+            end subroutine crcc24D_ijkl
+
+
+
+
+
+
+
             subroutine crcc24A_opt(deltaA,deltaB,deltaC,deltaD,&
                               t2a,l2a,&
                               fA_oo,fA_vv,H1A_oo,H1A_vv,&

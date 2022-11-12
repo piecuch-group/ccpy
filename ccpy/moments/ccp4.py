@@ -8,16 +8,16 @@ from ccpy.utilities.updates import crcc24_loops
 from ccpy.moments.crcc24 import calc_crcc24
 
 
-def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
+def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=True):
     """
     Calculate the ground-state CR-CC(2,4) correction to the CCSD energy.
     """
-    t_start = time.time()
 
     # first compute the entire CR-CC(2,4) quadruples correction for all quadruples
     _, delta24_full = calc_crcc24(T, L, H, H0, system, use_RHF=use_RHF)
 
     # Now, compute the correction for determinants in the P space (which should be a short list hopefully)
+    t_start = time.time()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -119,15 +119,15 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
         d3bbb_v,
     )
 
-    if use_RHF:
-        correction_A = 2.0 * dA_aaaa + 2.0 * dA_aaab + dA_aabb
-        correction_B = 2.0 * dB_aaaa + 2.0 * dB_aaab + dB_aabb
-        correction_C = 2.0 * dC_aaaa + 2.0 * dC_aaab + dC_aabb
-        correction_D = 2.0 * dD_aaaa + 2.0 * dD_aaab + dD_aabb
+    #if use_RHF:
+    #    correction_A = 2.0 * dA_aaaa + 2.0 * dA_aaab + dA_aabb
+    #    correction_B = 2.0 * dB_aaaa + 2.0 * dB_aaab + dB_aabb
+    #    correction_C = 2.0 * dC_aaaa + 2.0 * dC_aaab + dC_aabb
+    #    correction_D = 2.0 * dD_aaaa + 2.0 * dD_aaab + dD_aabb
 
-    else:
-        #### abbb correction ####
-        dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_loops.crcc24_loops.crcc24d_p(
+    #else:
+    #### abbb correction ####
+    dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_loops.crcc24_loops.crcc24d_p(
             pspace_quadruples_list["abbb"],
             T.ab,
             T.bb,
@@ -159,9 +159,9 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
             d3bbb_v,
             d3abb_o,
             d3abb_v,
-        )
-        #### bbbb correction ####
-        dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_loops.crcc24_loops.crcc24e_p(
+    )
+    #### bbbb correction ####
+    dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_loops.crcc24_loops.crcc24e_p(
             pspace_quadruples_list["bbbb"],
             T.bb,
             L.bb,
@@ -175,12 +175,12 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
             H.bb.oovv,
             d3bbb_o,
             d3bbb_v,
-        )
+    )
 
-        correction_A = dA_aaaa + dA_aaab + dA_aabb + dA_abbb + dA_bbbb
-        correction_B = dB_aaaa + dB_aaab + dB_aabb + dB_abbb + dB_bbbb
-        correction_C = dC_aaaa + dC_aaab + dC_aabb + dC_abbb + dC_bbbb
-        correction_D = dD_aaaa + dD_aaab + dD_aabb + dD_abbb + dD_bbbb
+    correction_A = dA_aaaa + dA_aaab + dA_aabb + dA_abbb + dA_bbbb
+    correction_B = dB_aaaa + dB_aaab + dB_aabb + dB_abbb + dB_bbbb
+    correction_C = dC_aaaa + dC_aaab + dC_aabb + dC_abbb + dC_bbbb
+    correction_D = dD_aaaa + dD_aaab + dD_aabb + dD_abbb + dD_bbbb
 
 
     # Compute the CC(P;4) energy as the difference between the correction over all quadruples
