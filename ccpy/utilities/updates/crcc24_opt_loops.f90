@@ -467,7 +467,7 @@ module crcc24_opt_loops
                                 do b = a+1, nub
                                     do c = b+1, nub
 
-                                        mm24 = x4d(d, a, b, c) - x4d(a, a, c, b)&
+                                        mm24 = x4d(d, a, b, c) - x4d(d, a, c, b)&
                                               +x4d(d, b, c, a) - x4d(d, b, a, c)&
                                               +x4d(d, c, a, b) - x4d(d, c, b, a)
 
@@ -548,7 +548,148 @@ module crcc24_opt_loops
             end subroutine crcc24D_ijkl
 
 
+            subroutine crcc24E_ijkl(deltaA,deltaB,deltaC,deltaD,&
+                                    i,j,k,l,&
+                                    x4e,t2c,l2c,&
+                                    fB_oo,fB_vv,H1B_oo,H1B_vv,&
+                                    H2C_voov,H2C_oooo,H2C_vvvv,H2C_oovv,&
+                                    D3D_O,D3D_V,&
+                                    nob,nub)
 
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        integer, intent(in) :: nob, nub
+                        integer, intent(in) :: i, j, k, l
+                        real(kind=8), intent(in) :: x4e(1:nub,1:nub,1:nub,1:nub)
+                        real(kind=8), intent(in) :: t2c(1:nub,1:nub,1:nob,1:nob),l2c(1:nub,1:nub,1:nob,1:nob),&
+                        fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
+                        H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
+                        H2C_voov(1:nub,1:nob,1:nob,1:nub),&
+                        H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
+                        H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
+                        D3D_O(1:nub,1:nob,1:nob),&
+                        D3D_V(1:nub,1:nob,1:nub)
+
+                        integer :: a, b, c, d
+                        real(kind=8) :: denom, temp, mm24, l4
+                        real(kind=8) :: error
+
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
+
+                        error = 0.0d0
+
+                        do a = 1, nub
+                            do b = a+1, nub
+                                do c = b+1, nub
+                                    do d = c+1, nub
+
+                                        mm24 = x4e(a, b, c, d) + x4e(a, c, d, b) + x4e(a, d, b, c)&
+                                              -x4e(a, b, d, c) - x4e(a, c, b, d) - x4e(a, d, c, b)&
+                                              -x4e(b, a, c, d) - x4e(b, c, d, a) - x4e(b, d, a, c)&
+                                              +x4e(b, a, d, c) + x4e(b, c, a, d) + x4e(b, d, c, a)&
+                                              +x4e(c, a, b, d) + x4e(c, b, d, a) + x4e(c, d, a, b)&
+                                              -x4e(c, a, d, b) - x4e(c, b, a, d) - x4e(c, d, b, a)&
+                                              -x4e(d, a, b, c) - x4e(d, b, c, a) - x4e(d, c, a, b)&
+                                              +x4e(d, a, c, b) + x4e(d, b, a, c) + x4e(d, c, b, a)
+
+                                        l4 = 0.0d0
+
+                                        !!! L4E Computation !!!
+                                        ! Diagram 1: A(ij/kl)A(ab/cd) h2c(klcd) * l2c(abij)
+                                        ! (1)
+                                        l4 = l4 + h2c_oovv(k, l, c, d) * l2c(a, b, i, j)&  ! (1)
+                                             -h2c_oovv(i, l, c, d) * l2c(a, b, k, j)&      ! (ik)
+                                             -h2c_oovv(k, i, c, d) * l2c(a, b, l, j)&      ! (il)
+                                             -h2c_oovv(j, l, c, d) * l2c(a, b, i, k)&      ! (jk)
+                                             -h2c_oovv(k, j, c, d) * l2c(a, b, i, l)&      ! (jl)
+                                             +h2c_oovv(i, j, c, d) * l2c(a, b, k, l)       ! (ik)(jl)
+                                        ! (ac)
+                                        l4 = l4 - h2c_oovv(k, l, a, d) * l2c(c, b, i, j)&  ! (1)
+                                             +h2c_oovv(i, l, a, d) * l2c(c, b, k, j)&      ! (ik)
+                                             +h2c_oovv(k, i, a, d) * l2c(c, b, l, j)&      ! (il)
+                                             +h2c_oovv(j, l, a, d) * l2c(c, b, i, k)&      ! (jk)
+                                             +h2c_oovv(k, j, a, d) * l2c(c, b, i, l)&      ! (jl)
+                                             -h2c_oovv(i, j, a, d) * l2c(c, b, k, l)       ! (ik)(jl)
+                                        ! (ad)
+                                        l4 = l4 - h2c_oovv(k, l, c, a) * l2c(d, b, i, j)&  ! (1)
+                                             +h2c_oovv(i, l, c, a) * l2c(d, b, k, j)&      ! (ik)
+                                             +h2c_oovv(k, i, c, a) * l2c(d, b, l, j)&      ! (il)
+                                             +h2c_oovv(j, l, c, a) * l2c(d, b, i, k)&      ! (jk)
+                                             +h2c_oovv(k, j, c, a) * l2c(d, b, i, l)&      ! (jl)
+                                             -h2c_oovv(i, j, c, a) * l2c(d, b, k, l)       ! (ik)(jl)
+                                        ! (bc)
+                                        l4 = l4 - h2c_oovv(k, l, b, d) * l2c(a, c, i, j)&  ! (1)
+                                             +h2c_oovv(i, l, b, d) * l2c(a, c, k, j)&      ! (ik)
+                                             +h2c_oovv(k, i, b, d) * l2c(a, c, l, j)&      ! (il)
+                                             +h2c_oovv(j, l, b, d) * l2c(a, c, i, k)&      ! (jk)
+                                             +h2c_oovv(k, j, b, d) * l2c(a, c, i, l)&      ! (jl)
+                                             -h2c_oovv(i, j, b, d) * l2c(a, c, k, l)       ! (ik)(jl)
+                                        ! (bd)
+                                        l4 = l4 - h2c_oovv(k, l, c, b) * l2c(a, d, i, j)&  ! (1)
+                                             +h2c_oovv(i, l, c, b) * l2c(a, d, k, j)&      ! (ik)
+                                             +h2c_oovv(k, i, c, b) * l2c(a, d, l, j)&      ! (il)
+                                             +h2c_oovv(j, l, c, b) * l2c(a, d, i, k)&      ! (jk)
+                                             +h2c_oovv(k, j, c, b) * l2c(a, d, i, l)&      ! (jl)
+                                             -h2c_oovv(i, j, c, b) * l2c(a, d, k, l)       ! (ik)(jl)
+                                        ! (ac)(bd)
+                                        l4 = l4 + h2c_oovv(k, l, a, b) * l2c(c, d, i, j)&  ! (1)
+                                             -h2c_oovv(i, l, a, b) * l2c(c, d, k, j)&      ! (ik)
+                                             -h2c_oovv(k, i, a, b) * l2c(c, d, l, j)&      ! (il)
+                                             -h2c_oovv(j, l, a, b) * l2c(c, d, i, k)&      ! (jk)
+                                             -h2c_oovv(k, j, a, b) * l2c(c, d, i, l)&      ! (jl)
+                                             +h2c_oovv(i, j, a, b) * l2c(c, d, k, l)       ! (ik)(jl)
+
+                                        temp = mm24 * l4
+
+                                        denom = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) + fB_oo(l,l)&
+                                        - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c) - fB_vv(d,d)
+
+                                        deltaA = deltaA + temp/denom
+
+                                        denom = H1B_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k) + H1B_oo(l,l)&
+                                        - H1B_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c) - H1B_vv(d,d)
+
+                                        deltaB = deltaB + temp/denom
+
+                                        denom = denom &
+                                        -H2C_oooo(j,i,j,i)-H2C_oooo(k,i,k,i)-H2C_oooo(l,i,l,i)&
+                                        -H2C_oooo(k,j,k,j)-H2C_oooo(l,j,l,j)-H2C_oooo(l,k,l,k)&
+                                        -H2C_voov(a,i,i,a)-H2C_voov(a,j,j,a)-H2C_voov(a,k,k,a)&
+                                        -H2C_voov(a,l,l,a)-H2C_voov(b,i,i,b)-H2C_voov(b,j,j,b)&
+                                        -H2C_voov(b,k,k,b)-H2C_voov(b,l,l,b)-H2C_voov(c,i,i,c)&
+                                        -H2C_voov(c,j,j,c)-H2C_voov(c,k,k,c)-H2C_voov(c,l,l,c)&
+                                        -H2C_voov(d,i,i,d)-H2C_voov(d,j,j,d)-H2C_voov(d,k,k,d)&
+                                        -H2C_voov(d,l,l,d)-H2C_vvvv(a,b,a,b)-H2C_vvvv(a,c,a,c)&
+                                        -H2C_vvvv(a,d,a,d)-H2C_vvvv(b,c,b,c)-H2C_vvvv(b,d,b,d)&
+                                        -H2C_vvvv(c,d,c,d)
+
+                                        deltaC = deltaC + temp/denom
+
+                                        denom = denom &
+                                        +D3D_O(a,i,j)+D3D_O(a,i,k)+D3D_O(a,i,l)+D3D_O(a,j,k)&
+                                        +D3D_O(a,j,l)+D3D_O(a,k,l)+D3D_O(b,i,j)+D3D_O(b,i,k)&
+                                        +D3D_O(b,i,l)+D3D_O(b,j,k)+D3D_O(b,j,l)+D3D_O(b,k,l)&
+                                        +D3D_O(c,i,j)+D3D_O(c,i,k)+D3D_O(c,i,l)+D3D_O(c,j,k)&
+                                        +D3D_O(c,j,l)+D3D_O(c,k,l)+D3D_O(d,i,j)+D3D_O(d,i,k)&
+                                        +D3D_O(d,i,l)+D3D_O(d,j,k)+D3D_O(d,j,l)+D3D_O(d,k,l)&
+                                        -D3D_V(a,i,b)-D3D_V(a,j,b)-D3D_V(a,k,b)-D3D_V(a,l,b)&
+                                        -D3D_V(a,i,c)-D3D_V(a,j,c)-D3D_V(a,k,c)-D3D_V(a,l,c)&
+                                        -D3D_V(a,i,d)-D3D_V(a,j,d)-D3D_V(a,k,d)-D3D_V(a,l,d)&
+                                        -D3D_V(b,i,c)-D3D_V(b,j,c)-D3D_V(b,k,c)-D3D_V(b,l,c)&
+                                        -D3D_V(b,i,d)-D3D_V(b,j,d)-D3D_V(b,k,d)-D3D_V(b,l,d)&
+                                        -D3D_V(c,i,d)-D3D_V(c,j,d)-D3D_V(c,k,d)-D3D_V(c,l,d)
+
+                                        deltaD = deltaD + temp/denom
+
+                                    end do
+                                end do
+                            end do
+                        end do
+
+            end subroutine crcc24E_ijkl
 
 
 

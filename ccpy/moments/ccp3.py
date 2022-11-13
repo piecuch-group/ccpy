@@ -105,7 +105,6 @@ def calc_ccp3_full(T, L, H, H0, system, pspace, use_RHF=False):
     return Eccp3, deltap3
 
 
-
 def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.

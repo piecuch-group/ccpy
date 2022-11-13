@@ -163,26 +163,28 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
         #)
         print("finished abbb correction in", time.time() - t1, "seconds")
         #### bbbb correction ####
-        dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_opt_loops.crcc24_opt_loops.crcc24e_opt(
-            T.bb,
-            L.bb,
-            H0.b.oo,
-            H0.b.vv,
-            H.b.oo,
-            H.b.vv,
-            H.bb.voov,
-            H.bb.oooo,
-            H.bb.vvvv,
-            H.bb.oovv,
-            d3bbb_o,
-            d3bbb_v,
-        )
+        t1 = time.time()
+        dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = bbbb_correction(T, L, H, H0, d3bbb_o, d3bbb_v)
+        # dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_opt_loops.crcc24_opt_loops.crcc24e_opt(
+        #     T.bb,
+        #     L.bb,
+        #     H0.b.oo,
+        #     H0.b.vv,
+        #     H.b.oo,
+        #     H.b.vv,
+        #     H.bb.voov,
+        #     H.bb.oooo,
+        #     H.bb.vvvv,
+        #     H.bb.oovv,
+        #     d3bbb_o,
+        #     d3bbb_v,
+        # )
+        print("finished bbbb correction in", time.time() - t1, "seconds")
 
         correction_A = dA_aaaa + dA_aaab + dA_aabb + dA_abbb + dA_bbbb
         correction_B = dB_aaaa + dB_aaab + dB_aabb + dB_abbb + dB_bbbb
         correction_C = dC_aaaa + dC_aaab + dC_aabb + dC_abbb + dC_bbbb
         correction_D = dD_aaaa + dD_aaab + dD_aabb + dD_abbb + dD_bbbb
-
 
     t_end = time.time()
     minutes, seconds = divmod(t_end - t_start, 60)
@@ -529,22 +531,22 @@ def abbb_correction(T, L, H, H0, d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3
                 for k in range(j + 1, nob):
 
                     # Diagram 1:  -A(i/jk)A(c/ab) h2b(dmle) * t2c(abim) * t2c(ecjk)
-                    x4d = -0.5 * np.einsum("dme,abm,ec->dabc", H.ab.voov[:, :, l, :], T.bb[:, :, i, :], T.bb[:, :, j, k], optimize=True)
-                    x4d += 0.5 * np.einsum("dme,abm,ec->dabc", H.ab.voov[:, :, l, :], T.bb[:, :, j, :], T.bb[:, :, i, k], optimize=True)
-                    x4d += 0.5 * np.einsum("dme,abm,ec->dabc", H.ab.voov[:, :, l, :], T.bb[:, :, k, :], T.bb[:, :, j, i], optimize=True)
+                    x4d = -0.5 * np.einsum("dme,abm,ec->dabc", H.ab.voov[:, :, l, :], T.bb[:, :, i, :], T.bb[:, :, j, k], optimize=True) # (1)
+                    x4d += 0.5 * np.einsum("dme,abm,ec->dabc", H.ab.voov[:, :, l, :], T.bb[:, :, j, :], T.bb[:, :, i, k], optimize=True) # (ij)
+                    x4d += 0.5 * np.einsum("dme,abm,ec->dabc", H.ab.voov[:, :, l, :], T.bb[:, :, k, :], T.bb[:, :, j, i], optimize=True) # (ik)
 
                     # Diagram 2:   A(k/ij)A(a/bc) h2c(mnij) * t2c(bcnk) * t2b(dalm)
-                    x4d += 0.5 * np.einsum("mn,bcn,dam->dabc", H.bb.oooo[:, :, i, j], T.bb[:, :, :, k], T.ab[:, :, l, :], optimize=True) 
-                    x4d -= 0.5 * np.einsum("mn,bcn,dam->dabc", H.bb.oooo[:, :, k, j], T.bb[:, :, :, i], T.ab[:, :, l, :], optimize=True) 
-                    x4d -= 0.5 * np.einsum("mn,bcn,dam->dabc", H.bb.oooo[:, :, i, k], T.bb[:, :, :, j], T.ab[:, :, l, :], optimize=True)
+                    x4d += 0.5 * np.einsum("mn,bcn,dam->dabc", H.bb.oooo[:, :, i, j], T.bb[:, :, :, k], T.ab[:, :, l, :], optimize=True) # (1)
+                    x4d -= 0.5 * np.einsum("mn,bcn,dam->dabc", H.bb.oooo[:, :, k, j], T.bb[:, :, :, i], T.ab[:, :, l, :], optimize=True) # (ik)
+                    x4d -= 0.5 * np.einsum("mn,bcn,dam->dabc", H.bb.oooo[:, :, i, k], T.bb[:, :, :, j], T.ab[:, :, l, :], optimize=True) # (jk)
 
                     # Diagram 3:  -A(ijk)A(c/ab) h2b(dmfj) * t2c(abim) * t2b(fclk)
-                    x4d -= 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, j], T.bb[:, :, i, :], T.ab[:, :, l, k], optimize=True)
-                    x4d += 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, i], T.bb[:, :, j, :], T.ab[:, :, l, k], optimize=True)
-                    x4d += 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, j], T.bb[:, :, k, :], T.ab[:, :, l, i], optimize=True)
-                    x4d += 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, k], T.bb[:, :, i, :], T.ab[:, :, l, j], optimize=True)
-                    x4d -= 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, i], T.bb[:, :, k, :], T.ab[:, :, l, j], optimize=True)
-                    x4d -= 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, k], T.bb[:, :, j, :], T.ab[:, :, l, i], optimize=True)
+                    x4d -= 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, j], T.bb[:, :, i, :], T.ab[:, :, l, k], optimize=True) # (1)
+                    x4d += 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, i], T.bb[:, :, j, :], T.ab[:, :, l, k], optimize=True) # (ij)
+                    x4d += 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, j], T.bb[:, :, k, :], T.ab[:, :, l, i], optimize=True) # (ik)
+                    x4d += 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, k], T.bb[:, :, i, :], T.ab[:, :, l, j], optimize=True) # (jk)
+                    x4d -= 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, i], T.bb[:, :, k, :], T.ab[:, :, l, j], optimize=True) # (ij)(jk)
+                    x4d -= 0.5 * np.einsum("dmf,abm,fc->dabc", H.ab.vovo[:, :, :, k], T.bb[:, :, j, :], T.ab[:, :, l, i], optimize=True) # (ik)(jk)
 
                     # Diagram 4:  -A(ijk)A(abc) h2b(maei) * t2b(eblj) * t2b(dcmk)
                     x4d -= np.einsum("mae,eb,dcm->dabc", H.ab.ovvo[:, :, :, i], T.ab[:, :, l, j], T.ab[:, :, :, k], optimize=True)
@@ -607,3 +609,86 @@ def abbb_correction(T, L, H, H0, d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3
                     dD_abbb += dD
 
     return dA_abbb, dB_abbb, dC_abbb, dD_abbb
+
+
+def bbbb_correction(T, L, H, H0, d3bbb_o, d3bbb_v):
+    nub, nob = T.b.shape
+
+    dA_bbbb = 0.0
+    dB_bbbb = 0.0
+    dC_bbbb = 0.0
+    dD_bbbb = 0.0
+
+    for i in range(nob):
+        for j in range(i + 1, nob):
+            for k in range(j + 1, nob):
+                for l in range(k + 1, nob):
+                    # Diagram 1: -A(jl/i/k)A(bc/a/d) h2c(amie) * t2c(bcmk) * t2c(edjl)
+                    x4e = -0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, i, :], T.bb[:, :, :, k],
+                                           T.bb[:, :, j, l], optimize=True)  # (1)
+                    x4e += 0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, j, :], T.bb[:, :, :, k],
+                                           T.bb[:, :, i, l], optimize=True)  # (ij)
+                    x4e += 0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, i, :], T.bb[:, :, :, j],
+                                           T.bb[:, :, k, l], optimize=True)  # (jk)
+                    x4e += 0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, l, :], T.bb[:, :, :, k],
+                                           T.bb[:, :, j, i], optimize=True)  # (il)
+                    x4e += 0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, i, :], T.bb[:, :, :, l],
+                                           T.bb[:, :, j, k], optimize=True)  # (kl)
+                    x4e -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, j, :], T.bb[:, :, :, l],
+                                           T.bb[:, :, i, k], optimize=True)  # (ij)(kl)
+                    x4e += 0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, k, :], T.bb[:, :, :, i],
+                                           T.bb[:, :, j, l], optimize=True)  # (ik)
+                    x4e -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, j, :], T.bb[:, :, :, i],
+                                           T.bb[:, :, k, l], optimize=True)  # (ij)(ik)
+                    x4e -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, k, :], T.bb[:, :, :, j],
+                                           T.bb[:, :, i, l], optimize=True)  # (jk)(ik)
+                    x4e -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, l, :], T.bb[:, :, :, i],
+                                           T.bb[:, :, j, k], optimize=True)  # (il)(ik)
+                    x4e -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, k, :], T.bb[:, :, :, l],
+                                           T.bb[:, :, j, i], optimize=True)  # (kl)(ik)
+                    x4e += 0.5 * np.einsum("ame,bcm,ed->abcd", H.bb.voov[:, :, j, :], T.bb[:, :, :, l],
+                                           T.bb[:, :, k, i], optimize=True)  # (ij)(kl)(ik)
+
+                    # Diagram 2: A(ij/kl)A(bc/ad) h2c(mnij) * t2c(adml) * t2c(bcnk)
+                    x4e += 0.25 * np.einsum("mn,adm,bcn->abcd", H.bb.oooo[:, :, i, j], T.bb[:, :, :, l],
+                                            T.bb[:, :, :, k], optimize=True)  # (1)
+                    x4e -= 0.25 * np.einsum("mn,adm,bcn->abcd", H.bb.oooo[:, :, k, j], T.bb[:, :, :, l],
+                                            T.bb[:, :, :, i], optimize=True)  # (ik)
+                    x4e -= 0.25 * np.einsum("mn,adm,bcn->abcd", H.bb.oooo[:, :, l, j], T.bb[:, :, :, i],
+                                            T.bb[:, :, :, k], optimize=True)  # (il)
+                    x4e -= 0.25 * np.einsum("mn,adm,bcn->abcd", H.bb.oooo[:, :, i, k], T.bb[:, :, :, l],
+                                            T.bb[:, :, :, j], optimize=True)  # (jk)
+                    x4e -= 0.25 * np.einsum("mn,adm,bcn->abcd", H.bb.oooo[:, :, i, l], T.bb[:, :, :, j],
+                                            T.bb[:, :, :, k], optimize=True)  # (jl)
+                    x4e += 0.25 * np.einsum("mn,adm,bcn->abcd", H.bb.oooo[:, :, k, l], T.bb[:, :, :, j],
+                                            T.bb[:, :, :, i], optimize=True)  # (ik)(jl)
+
+                    # Diagram 3: A(jk/il)A(ab/cd) h2c(abef) * t2c(fcjk) * t2c(edil)
+                    x4e += 0.25 * np.einsum("abef,fc,ed->abcd", H.bb.vvvv, T.bb[:, :, j, k], T.bb[:, :, i, l],
+                                            optimize=True)  # (1)
+                    x4e -= 0.25 * np.einsum("abef,fc,ed->abcd", H.bb.vvvv, T.bb[:, :, i, k], T.bb[:, :, j, l],
+                                            optimize=True)  # (ij)
+                    x4e -= 0.25 * np.einsum("abef,fc,ed->abcd", H.bb.vvvv, T.bb[:, :, l, k], T.bb[:, :, i, j],
+                                            optimize=True)  # (jl)
+                    x4e -= 0.25 * np.einsum("abef,fc,ed->abcd", H.bb.vvvv, T.bb[:, :, j, i], T.bb[:, :, k, l],
+                                            optimize=True)  # (ik)
+                    x4e -= 0.25 * np.einsum("abef,fc,ed->abcd", H.bb.vvvv, T.bb[:, :, j, l], T.bb[:, :, i, k],
+                                            optimize=True)  # (kl)
+                    x4e += 0.25 * np.einsum("abef,fc,ed->abcd", H.bb.vvvv, T.bb[:, :, i, l], T.bb[:, :, j, k],
+                                            optimize=True)  # (ij)(kl)
+
+                    dA, dB, dC, dD = crcc24_opt_loops.crcc24_opt_loops.crcc24e_ijkl(
+                        i + 1, j + 1, k + 1, l + 1,
+                        x4e, T.bb, L.bb,
+                        H0.b.oo, H0.b.vv,
+                        H.b.oo, H.b.vv,
+                        H.bb.voov, H.bb.oooo, H.bb.vvvv, H.bb.oovv,
+                        d3bbb_o, d3bbb_v
+                    )
+
+                    dA_bbbb += dA
+                    dB_bbbb += dB
+                    dC_bbbb += dC
+                    dD_bbbb += dD
+
+    return dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb
