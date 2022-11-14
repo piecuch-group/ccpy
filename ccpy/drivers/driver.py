@@ -156,7 +156,7 @@ def eccc_driver(calculation, system, hamiltonian, external_wavefunction, T=None)
 
     cc_printer.cc_calculation_summary(system.reference_energy, corr_energy)
 
-    return T, total_energy, is_converged
+    return T, total_energy, is_converged, T_ext
 
 
 
