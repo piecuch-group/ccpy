@@ -83,7 +83,7 @@ module ecccp3_loops
 
                                                 else ! internal
 
-                                                        LM = M3A(a,b,c,i,j,k) * C3A(a,b,c,i,j,k)
+                                                        LM = M3A(a,b,c,i,j,k) * L3A(a,b,c,i,j,k)
 
                                                         D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
                                                         - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
@@ -219,7 +219,7 @@ module ecccp3_loops
 
                                                 else ! internal
 
-                                                        LM = M3B(a,b,c,i,j,k) * C3B(a,b,c,i,j,k)
+                                                        LM = M3B(a,b,c,i,j,k) * L3B(a,b,c,i,j,k)
 
                                                         D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
                                                         - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
@@ -355,7 +355,7 @@ module ecccp3_loops
 
                                                 else ! internal
 
-                                                        temp = M3C(a,b,c,i,j,k) * C3C(a,b,c,i,j,k)
+                                                        temp = M3C(a,b,c,i,j,k) * L3C(a,b,c,i,j,k)
 
                                                         D = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                         - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
@@ -474,7 +474,7 @@ module ecccp3_loops
 
                                                 else ! internal
 
-                                                        temp = M3D(a,b,c,i,j,k) * C3D(a,b,c,i,j,k)
+                                                        temp = M3D(a,b,c,i,j,k) * L3D(a,b,c,i,j,k)
 
                                                         D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                         - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)

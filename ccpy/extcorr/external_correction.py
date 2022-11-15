@@ -1,7 +1,8 @@
 import numpy as np
 
 from ccpy.utilities.determinants import get_excits_from, get_excits_to, get_spincase, get_excit_rank, calculate_permutation_parity, spatial_orb_idx
-from ccpy.extcorr.contractions import contract_vt3_singles, contract_vt4_doubles
+from ccpy.extcorr.contractions_t3 import contract_vt3_singles
+from ccpy.extcorr.contractions_t4 import contract_vt4_doubles
 from ccpy.models.operators import ClusterOperator
 from ccpy.models.integrals import Integral
 from ccpy.utilities.updates import clusteranalysis
