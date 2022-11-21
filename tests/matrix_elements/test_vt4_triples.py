@@ -33,41 +33,41 @@ def contract_vt4_fly(H, T4_excitations, T4_amplitudes, system):
         # Get the particular aaaa T4 amplitude
         t_amp = T4_amplitudes["aaaa"][idet]
 
-        # x3a(abcijk) <- A(ijk)A(b/ac)[ A(ac/ef)A(n/ijk) h_aa(bnef) * t_aaaa(aecfijkn) ]
-        #             = 1/2 A(ijk)A(abc)[ A(ac/ef)A(n/ijk) h_aa(bnef) * t_aaaa(aecfijkn) ]
+        # x3a(abcijk) <- A(ijk)A(ac)A(b/ac)[ A(ac/ef)A(n/ijk) h_aa(bnef) * t_aaaa(aecfijkn) ]
+        #             = A(ijk)A(abc)[ A(ac/ef)A(n/ijk) h_aa(bnef) * t_aaaa(aecfijkn) ]
         a, e, c, f, i, j, k, n = [x - 1 for x in T4_excitations["aaaa"][idet]]
 
         # (1)
-        x3a[a, :, c, i, j, k] += 0.5 * H.aa.vovv[:, n, e, f] * t_amp # (1)
-        x3a[e, :, c, i, j, k] -= 0.5 * H.aa.vovv[:, n, a, f] * t_amp # (ae)
-        x3a[f, :, c, i, j, k] -= 0.5 * H.aa.vovv[:, n, e, a] * t_amp # (af)
-        x3a[a, :, e, i, j, k] -= 0.5 * H.aa.vovv[:, n, c, f] * t_amp # (ce)
-        x3a[a, :, f, i, j, k] -= 0.5 * H.aa.vovv[:, n, e, c] * t_amp # (cf)
-        x3a[e, :, f, i, j, k] += 0.5 * H.aa.vovv[:, n, a, c] * t_amp # (ae)(cf)
+        x3a[a, :, c, i, j, k] += H.aa.vovv[:, n, e, f] * t_amp # (1)
+        x3a[e, :, c, i, j, k] -= H.aa.vovv[:, n, a, f] * t_amp # (ae)
+        x3a[f, :, c, i, j, k] -= H.aa.vovv[:, n, e, a] * t_amp # (af)
+        x3a[a, :, e, i, j, k] -= H.aa.vovv[:, n, c, f] * t_amp # (ce)
+        x3a[a, :, f, i, j, k] -= H.aa.vovv[:, n, e, c] * t_amp # (cf)
+        x3a[e, :, f, i, j, k] += H.aa.vovv[:, n, a, c] * t_amp # (ae)(cf)
 
         # (in)
-        x3a[a, :, c, n, j, k] -= 0.5 * H.aa.vovv[:, i, e, f] * t_amp # (1)
-        x3a[e, :, c, n, j, k] += 0.5 * H.aa.vovv[:, i, a, f] * t_amp # (ae)
-        x3a[f, :, c, n, j, k] += 0.5 * H.aa.vovv[:, i, e, a] * t_amp # (af)
-        x3a[a, :, e, n, j, k] += 0.5 * H.aa.vovv[:, i, c, f] * t_amp # (ce)
-        x3a[a, :, f, n, j, k] += 0.5 * H.aa.vovv[:, i, e, c] * t_amp # (cf)
-        x3a[e, :, f, n, j, k] -= 0.5 * H.aa.vovv[:, i, a, c] * t_amp # (ae)(cf)
+        x3a[a, :, c, n, j, k] -= H.aa.vovv[:, i, e, f] * t_amp # (1)
+        x3a[e, :, c, n, j, k] += H.aa.vovv[:, i, a, f] * t_amp # (ae)
+        x3a[f, :, c, n, j, k] += H.aa.vovv[:, i, e, a] * t_amp # (af)
+        x3a[a, :, e, n, j, k] += H.aa.vovv[:, i, c, f] * t_amp # (ce)
+        x3a[a, :, f, n, j, k] += H.aa.vovv[:, i, e, c] * t_amp # (cf)
+        x3a[e, :, f, n, j, k] -= H.aa.vovv[:, i, a, c] * t_amp # (ae)(cf)
 
         # (jn)
-        x3a[a, :, c, i, n, k] -= 0.5 * H.aa.vovv[:, j, e, f] * t_amp # (1)
-        x3a[e, :, c, i, n, k] += 0.5 * H.aa.vovv[:, j, a, f] * t_amp # (ae)
-        x3a[f, :, c, i, n, k] += 0.5 * H.aa.vovv[:, j, e, a] * t_amp # (af)
-        x3a[a, :, e, i, n, k] += 0.5 * H.aa.vovv[:, j, c, f] * t_amp # (ce)
-        x3a[a, :, f, i, n, k] += 0.5 * H.aa.vovv[:, j, e, c] * t_amp # (cf)
-        x3a[e, :, f, i, n, k] -= 0.5 * H.aa.vovv[:, j, a, c] * t_amp # (ae)(cf)
+        x3a[a, :, c, i, n, k] -= H.aa.vovv[:, j, e, f] * t_amp # (1)
+        x3a[e, :, c, i, n, k] += H.aa.vovv[:, j, a, f] * t_amp # (ae)
+        x3a[f, :, c, i, n, k] += H.aa.vovv[:, j, e, a] * t_amp # (af)
+        x3a[a, :, e, i, n, k] += H.aa.vovv[:, j, c, f] * t_amp # (ce)
+        x3a[a, :, f, i, n, k] += H.aa.vovv[:, j, e, c] * t_amp # (cf)
+        x3a[e, :, f, i, n, k] -= H.aa.vovv[:, j, a, c] * t_amp # (ae)(cf)
 
         # (kn)
-        x3a[a, :, c, i, j, n] -= 0.5 * H.aa.vovv[:, k, e, f] * t_amp # (1)
-        x3a[e, :, c, i, j, n] += 0.5 * H.aa.vovv[:, k, a, f] * t_amp # (ae)
-        x3a[f, :, c, i, j, n] += 0.5 * H.aa.vovv[:, k, e, a] * t_amp # (af)
-        x3a[a, :, e, i, j, n] += 0.5 * H.aa.vovv[:, k, c, f] * t_amp # (ce)
-        x3a[a, :, f, i, j, n] += 0.5 * H.aa.vovv[:, k, e, c] * t_amp # (cf)
-        x3a[e, :, f, i, j, n] -= 0.5 * H.aa.vovv[:, k, a, c] * t_amp # (ae)(cf)
+        x3a[a, :, c, i, j, n] -= H.aa.vovv[:, k, e, f] * t_amp # (1)
+        x3a[e, :, c, i, j, n] += H.aa.vovv[:, k, a, f] * t_amp # (ae)
+        x3a[f, :, c, i, j, n] += H.aa.vovv[:, k, e, a] * t_amp # (af)
+        x3a[a, :, e, i, j, n] += H.aa.vovv[:, k, c, f] * t_amp # (ce)
+        x3a[a, :, f, i, j, n] += H.aa.vovv[:, k, e, c] * t_amp # (cf)
+        x3a[e, :, f, i, j, n] -= H.aa.vovv[:, k, a, c] * t_amp # (ae)(cf)
 
 
     # Loop over aaab determinants
@@ -98,7 +98,6 @@ def contract_vt4_fly(H, T4_excitations, T4_amplitudes, system):
     #    t_amp = T4_amplitudes["bbbb"][idet]
 
 
-    x3a *= 2.0
     x3a -= np.transpose(x3a, (0, 1, 2, 3, 5, 4)) # (jk)
     x3a -= np.transpose(x3a, (0, 1, 2, 4, 3, 5)) + np.transpose(x3a, (0, 1, 2, 5, 4, 3)) # (i/jk)
     x3a -= np.transpose(x3a, (0, 2, 1, 3, 4, 5)) # (bc)
@@ -108,7 +107,8 @@ def contract_vt4_fly(H, T4_excitations, T4_amplitudes, system):
 
 if __name__ == "__main__":
 
-    ccpy_root = "/home2/gururang/ccpy"
+    #ccpy_root = "/home2/gururang/ccpy"
+    ccpy_root = "/Users/harellab/Documents/ccpy"
 
     system, H = load_from_gamess(
             ccpy_root + "/examples/ext_corr/h2o-Re/h2o-Re.log",

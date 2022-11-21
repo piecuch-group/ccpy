@@ -1,11 +1,7 @@
 import datetime
 import numpy as np
 
-
 WHITESPACE = "  "
-
-# [TODO]: Make EOMCC printer
-# [TODO]: Make left-CC printer
 
 
 def ccpy_header():
@@ -123,8 +119,6 @@ class CCPrinter:
         )
         print(WHITESPACE, "State target multiplicity =", self.calculation.multiplicity)
         print(WHITESPACE, "RHF symmetry =", self.calculation.RHF_symmetry)
-        #if self.calculation.active_orders != [None]:
-        #    print(WHITESPACE, "Number active occupied =", calculation.)
 
         print(WHITESPACE, "--------------------------------------------------")
         print("")

@@ -180,14 +180,14 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
 
     for n in range(nroot):
         t0_root = time.time()
-        print("=======================================")
-        print("Solving for root - ", n + 1)
-        print("Energy of initial guess = {:>10.10f}".format(omega[n]))
+        print("   =======================================")
+        print("   Solving for root - ", n + 1)
+        print("   Energy of initial guess = {:>10.10f}".format(omega[n]))
         print_amplitudes(R[n], system, 2, nprint=5)
-        print("=======================================")
+        print("   =======================================")
         print_eomcc_iteration_header()
 
-        # Allocate the B and sigma matrices
+        # Allocate the B (correction/subspace) and sigma (HR) matrices
         sigma = np.zeros((R[n].ndim, calculation.maximum_iterations))
         B = np.zeros((R[n].ndim, calculation.maximum_iterations))
 
