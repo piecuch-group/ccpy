@@ -1,6 +1,8 @@
 import numpy as np
 from itertools import combinations_with_replacement
 
+# [TODO]: Make sparse array operator class that holds 1D array of amplitudes and COO array of indices
+
 class ActiveOperator:
 
     def __init__(self, system, order, spincase, num_active, matrix=None, data_type=np.float64):

@@ -72,7 +72,7 @@ module ccp_opt_loops_v2
 
                       HT3 = 0.0d0
 
-                      ! diagram 1: 1/4 h2a(mnef) * t3a(aefimn)
+                      ! diagram 1: 1/4 A(a/ef)A(i/mn) h2a(mnef) * t3a(aefimn)
                       do idet = 1, n3a_p
                           a = pspace_aaa(idet, 1)
                           e = pspace_aaa(idet, 2)
