@@ -55,7 +55,7 @@ A list of all CC/EOMCC routines available in `ccpy`:
   - ec-CC-II_{3}
   - ec-CC_II_{3,4}
 
-All implementations are based on the spin-integrated spinorbital formulation and are compatible with RHF/ROHF and UHF references.
+All implementations are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references.
 
 # Installation
 Installation should be simple. Simply clone this git repository and run `make install` followed by `make all` inside of it. You will
