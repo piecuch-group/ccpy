@@ -27,7 +27,7 @@ These include the completely-renormalized (CR) methods such as the CR-CC(2,3) an
 corrections to CCSD, the
 active-space CCSDt and CC(t;3) approaches, which are based on a user-defined selection of active orbitals, and the black-box 
 selected configuration interaction (CI) driven and adaptive CC(P;Q) methodologies, which construct the P and Q spaces 
-entering the CC(P;Q) computations using information extracted of selected CI wave functions or the adaptive CC(P;Q) moment 
+entering the CC(P;Q) computations using information extracted from selected CI wave functions or the adaptive CC(P;Q) moment 
 expansions themselves, respectively. The ec-CC approaches on the other hand seek to converge the exact, full CI energetics
 directly by solving for the T1 and T2 clusters in the presence of the leading T3 and T4 clusters extracted from an
 external non-CC wave function. Current implementations of the ec-CC approaches in CCpy are designed to iterate T1 and T2 clusters 
