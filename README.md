@@ -23,7 +23,8 @@ one subspace of the many-electron Hilbert space, called the P space, are correct
 effects captured with the help of a complementary subspace called the Q space using the state-selective, non-iterative,
 and non-perturbative energy corrections based on the CC moment expansion formalism. Currently, CCpy offers implementations
 of several CC(P;Q) methods, the majority of which are aimed at converging the high-level CCSDT and EOMCCSDT energetics. 
-These include the conventional CR-CC(2,3) and CR-CC(2,4) triples and quadruples corrections to CCSD, the
+These include the completely-renormalized (CR) methods such as the CR-CC(2,3) and CR-CC(2,4) triples and quadruples 
+corrections to CCSD, the
 active-space CCSDt and CC(t;3) approaches, which are based on a user-defined selection of active orbitals, and the black-box 
 selected-configuration-interaction-driven and adaptive CC(P;Q) methodologies, which construct the P and Q spaces relevant
 to the CC(P;Q) theory of interest using information extracted of selected CI wave functions or the adaptive CC(P;Q) moment 
