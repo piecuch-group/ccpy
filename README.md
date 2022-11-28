@@ -37,7 +37,7 @@ As `ccpy` is solely used for CC method development work, we use interfaces to GA
 reference state and associated molecular orbital one- and two-body integrals prior to performing the correlated CC calculations. 
 
 A list of all CC/EOMCC routines available in `ccpy`:
-
+  - CCD
   - CCSD
   - CR-CC(2,3)
   - CCSDt
