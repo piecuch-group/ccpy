@@ -60,6 +60,10 @@ All implementations are based on the spin-integrated spinorbital formulation and
 # Installation
 Installation should be simple. Simply clone this git repository and run `make install` followed by `make all` inside of it. You will
 need a working gfortran compiler as well as locations for BLAS (preferably MKL) libraries, which enter in the Makefile as the environment
-variable `$MKLROOT`. Additionally, you will need the `cclib` package (`conda install --channel conda-forge cclib`) and Pyscf (`pip install pyscf`).
+variable `$MKLROOT`. For a given computer architecture, the Intel Link Line Advisor is a useful tool to figure out what compiler flags need to be included.
+(https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-link-line-advisor.html#gs.jxf4xw)
 
-Affiliated with Piecuch Group at Michigan State University (https://www2.chemistry.msu.edu/faculty/piecuch/)
+Additionally, you will need the `cclib` package (`conda install --channel conda-forge cclib`) and Pyscf (`pip install pyscf`).
+
+
+This package is affiliated with the Piecuch Group at Michigan State University (https://www2.chemistry.msu.edu/faculty/piecuch/)
