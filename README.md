@@ -17,9 +17,9 @@ hand, the dense tensor contractions forming the bulk of the computational cost o
 implemented using standard Numpy functions, especially when the latter is compiled with efficient BLAS libraries. As a result, `ccpy`
 can achieve a serial performance comparable to a standard Fortran implementation. 
 
-`ccpy` specializes in applying the CC(P;Q) and externally corrected (ec) CC methodologies developed in the Piecuch group at MSU.
+`ccpy` specializes in applying the CC(P;Q) and externally corrected (ec) CC methodologies developed in the Piecuch group at Michigan State University.
 In CC(P;Q), the energetics obtained by solving the ground- or excited-state CC/EOMCC equations in
-one subspace of the many-electron Hilbert space, called the P space, are corrected for the missing correlation
+one subspace of the many-electron Hilbert space, called the P space, are corrected for the missing many-electron correlation
 effects captured with the help of a complementary subspace called the Q space using the state-selective, non-iterative,
 and non-perturbative energy corrections based on the CC moment expansion formalism. Currently, `ccpy` offers implementations
 of several CC(P;Q) methods, the majority of which are aimed at converging the high-level CCSDT and EOMCCSDT energetics. 
@@ -62,4 +62,4 @@ Installation should be simple. Simply clone this git repository and run `make in
 need a working gfortran compiler as well as locations for BLAS (preferably MKL) libraries, which enter in the Makefile as the environment
 variable `$MKLROOT`. Additionally, you will need the `cclib` package (`conda install --channel conda-forge cclib`) and Pyscf (`pip install pyscf`).
 
-Affiliated with Piecuch Group at MSU (https://www2.chemistry.msu.edu/faculty/piecuch/)
+Affiliated with Piecuch Group at Michigan State University (https://www2.chemistry.msu.edu/faculty/piecuch/)
