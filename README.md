@@ -5,7 +5,7 @@
 
 ---
 # Overview
-CCpy aims to provide a suite of Python implementations of non-relativistic
+'''ccpy''' aims to provide a suite of Python implementations of non-relativistic
 electronic structure methods for molecular systems
 based on the traditional ground-state coupled-cluster (CC) theory and its excited-state extension
 using the equation-of-motion (EOM) CC formalism. The driving philosophy behind CCpy is to use routines that
