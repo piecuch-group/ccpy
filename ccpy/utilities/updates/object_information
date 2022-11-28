@@ -1,0 +1,1 @@
+object dump *.so -s or -m

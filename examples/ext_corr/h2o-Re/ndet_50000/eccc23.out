@@ -1,0 +1,145 @@
+   System Information:
+   ----------------------------------------------------
+     Number of correlated electrons = 10
+     Number of correlated orbitals = 24
+     Number of frozen orbitals = 0
+     Number of alpha occupied orbitals = 5
+     Number of alpha unoccupied orbitals = 19
+     Number of beta occupied orbitals = 5
+     Number of beta unoccupied orbitals = 19
+     Charge = 0
+     Point group = C2V
+     Symmetry of reference = A1
+     Spin multiplicity of reference = 1
+
+      MO #        Energy (a.u.)      Symmetry    Occupation
+-----------------------------------------------------------
+         1           -20.549991            A1           2.0
+         2            -1.322999            A1           2.0
+         3            -0.700200            B2           2.0
+         4            -0.551000            A1           2.0
+         5            -0.489500            B1           2.0
+         6             0.183200            A1           0.0
+         7             0.253000            B2           0.0
+         8             0.798300            B2           0.0
+         9             0.809800            A1           0.0
+        10             1.162600            A1           0.0
+        11             1.201799            B1           0.0
+        12             1.247899            B2           0.0
+        13             1.453899            A2           0.0
+        14             1.498099            A1           0.0
+        15             1.702199            B1           0.0
+        16             1.882599            B2           0.0
+        17             1.885199            A1           0.0
+        18             2.429799            B2           0.0
+        19             2.436699            A1           0.0
+        20             3.238099            B1           0.0
+        21             3.343799            A2           0.0
+        22             3.442899            A1           0.0
+        23             3.904598            A1           0.0
+        24             4.089498            B2           0.0
+
+   Nuclear Repulsion Energy = 9.009354229662662
+   Reference Energy = -76.02403850028135
+
+Parsing external CI file up through quadruples
+Hartree-Fock coefficient =  0.971015270236
+
+Excitation Content
+-------------------
+Number of singles =  62
+Number of doubles =  3173
+Number of triples =  19184
+Number of quadruples =  58633
+
+External correction energy =  -0.21520916736700058
+Performing Cluster Analysis
+---------------------------
+T1... done
+T2... done
+T3... done
+T4... done
+T vector energy =  -0.21520916685280989
+   --------------------------------------------------
+   Calculation type =  ECCC2_SLOW
+   Maximum iterations = 80
+   Convergence tolerance = 1e-07
+   Energy shift = 0.0
+   DIIS size =  6
+   RHF symmetry = False
+   --------------------------------------------------
+
+   CC calculation started at 2022-10-11 18:48:00 
+
+   Energy of initial guess =         0.0000000000
+
+      Iter.     Residuum             δE                ΔE           Wall time
+    ----------------------------------------------------------------------------
+       0      0.2762007599     -0.1939784322     -0.1939784322     (0.0m 1.9s)
+       1      0.0425097248     -0.0198694672     -0.2138478994     (0.0m 1.8s)
+       2      0.0137239715     -0.0025706730     -0.2164185725     (0.0m 1.8s)
+       3      0.0046640097     -0.0005137339     -0.2169323064     (0.0m 1.8s)
+       4      0.0017617489     -0.0001608327     -0.2170931391     (0.0m 1.9s)
+       5      0.0007436637     -0.0000605183     -0.2171536574     (0.0m 1.9s)
+       6      0.0003381657     -0.0000244933     -0.2171781507     (0.0m 2.7s)
+       7      0.0001610450     -0.0000101717     -0.2171883224     (0.0m 1.9s)
+       8      0.0000789724     -0.0000043013     -0.2171926237     (0.0m 1.9s)
+       9      0.0000394779     -0.0000018448     -0.2171944686     (0.0m 1.9s)
+      10      0.0000002195     -0.0000014416     -0.2171959101     (0.0m 1.9s)
+      11      0.0000000838     -0.0000000002     -0.2171959103     (0.0m 2.1s)
+   ec-CC calculation successfully converged! (0.00m  23.49s)
+
+   CC Calculation Summary
+  --------------------------------------------------
+   Reference energy                    -76.02403850
+   CC correlation energy                -0.21719591
+   Total CC energy                     -76.24123441
+
+   CC calculation ended at 2022-10-11 18:49:04
+
+   HBar CCSD construction finished in 0.00m 0.06s
+   --------------------------------------------------
+   Calculation type =  LEFT_CCSD
+   Maximum iterations = 80
+   Convergence tolerance = 1e-07
+   Energy shift = 0.0
+   DIIS size =  6
+   RHF symmetry = False
+   --------------------------------------------------
+
+   CC calculation started at 2022-10-11 18:49:00 
+
+   Energy of initial guess =         0.0000000000
+
+      Iter.     Residuum              ω                δω           Wall time
+    ----------------------------------------------------------------------------
+       0      0.0454572457      0.1558639610      0.1558639610     (0.0m 0.0s)
+       1      0.0065584541      0.0225428663     -0.1333210947     (0.0m 0.0s)
+       2      0.0022398501      0.0077052285     -0.0148376378     (0.0m 0.0s)
+       3      0.0009864094      0.0033942667     -0.0043109619     (0.0m 0.1s)
+       4      0.0004990990      0.0017176239     -0.0016766427     (0.0m 0.0s)
+       5      0.0002721845      0.0009367624     -0.0007808615     (0.0m 0.0s)
+       6      0.0001564823      0.0005385720     -0.0003981904     (0.0m 0.0s)
+       7      0.0000034960      0.0000120329     -0.0005265392     (0.0m 0.0s)
+       8      0.0000007584      0.0000026104     -0.0000094225     (0.0m 0.0s)
+       9      0.0000001652      0.0000005686     -0.0000020418     (0.0m 0.0s)
+      10      0.0000000374      0.0000001287     -0.0000004399     (0.0m 0.0s)
+      11      0.0000000098      0.0000000000     -0.0000000949     (0.0m 0.0s)
+   Left CC calculation successfully converged! (0.00m  0.40s)
+
+   Left-CC Calculation Summary
+  --------------------------------------------------
+   Converged        ω = 0.00000003       LR = 0.00000000
+
+   Left CC calculation ended at 2022-10-11 18:49:05
+
+   CC(P;3) Calculation Summary
+   -------------------------------------
+   Completed in  (0.00m  0.15s)
+
+   CC(P) = -76.2412344106
+   CC(P;3)_A = -76.2416248670     ΔE_A = -0.2175863668     δ_A = -0.0003904565
+   CC(P;3)_B = -76.2416153578     ΔE_B = -0.2175768575     δ_B = -0.0003809472
+   CC(P;3)_C = -76.2416929380     ΔE_C = -0.2176544378     δ_C = -0.0004585274
+   CC(P;3)_D = -76.2416924708     ΔE_D = -0.2176539706     δ_D = -0.0004580603
+

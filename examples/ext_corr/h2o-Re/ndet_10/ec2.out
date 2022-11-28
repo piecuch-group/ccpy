@@ -1,0 +1,61 @@
+   System Information:
+   ----------------------------------------------------
+     Number of correlated electrons = 10
+     Number of correlated orbitals = 24
+     Number of frozen orbitals = 0
+     Number of alpha occupied orbitals = 5
+     Number of alpha unoccupied orbitals = 19
+     Number of beta occupied orbitals = 5
+     Number of beta unoccupied orbitals = 19
+     Charge = 0
+     Point group = C2V
+     Symmetry of reference = A1
+     Spin multiplicity of reference = 1
+
+      MO #        Energy (a.u.)      Symmetry    Occupation
+-----------------------------------------------------------
+         1           -20.549991            A1           2.0
+         2            -1.322999            A1           2.0
+         3            -0.700200            B2           2.0
+         4            -0.551000            A1           2.0
+         5            -0.489500            B1           2.0
+         6             0.183200            A1           0.0
+         7             0.253000            B2           0.0
+         8             0.798300            B2           0.0
+         9             0.809800            A1           0.0
+        10             1.162600            A1           0.0
+        11             1.201799            B1           0.0
+        12             1.247899            B2           0.0
+        13             1.453899            A2           0.0
+        14             1.498099            A1           0.0
+        15             1.702199            B1           0.0
+        16             1.882599            B2           0.0
+        17             1.885199            A1           0.0
+        18             2.429799            B2           0.0
+        19             2.436699            A1           0.0
+        20             3.238099            B1           0.0
+        21             3.343799            A2           0.0
+        22             3.442899            A1           0.0
+        23             3.904598            A1           0.0
+        24             4.089498            B2           0.0
+
+   Nuclear Repulsion Energy = 9.009354229662662
+   Reference Energy = -76.02403850028135
+
+Parsing external CI file up through quadruples
+Hartree-Fock coefficient =  -0.992675228737
+
+Excitation Content
+-------------------
+Number of singles =  0
+Number of doubles =  18
+Number of triples =  0
+Number of quadruples =  0
+
+External correction energy =  -0.04246332046180083
+Performing Cluster Analysis
+---------------------------
+T1... done
+T2... done
+T3... done
+T4... 
