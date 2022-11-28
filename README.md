@@ -55,7 +55,7 @@ A list of all CC/EOMCC routines available in CCpy:
   - EOMCCSDT
   - ec-CC-II
   - ec-CC-II_{3}
-  - ec-CC_II_{3,4}
+  - ec-CC_II_{3,4} (unpublished)
 
 # Installation
 Installation should be simple. Simply clone this git repository and run `make install` followed by `make all` inside of it. You will
