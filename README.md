@@ -34,7 +34,7 @@ in the presence of T3 and T4 obtained from CI wave functions of the selected CI 
 energetics for the missing many-electron correlations using the generalized moment expansions of the ec-CC equations.
 
 Because CCpy is primarily used for CC method development work, we use interfaces to GAMESS and Pyscf to obtain the mean-field (typically Hartree-Fock)
-reference state and associated molecular orbital one- and two-body integrals prior to performing the correlated CC calculations. All implementations
+reference state and associated molecular orbital one- and two-electron integrals prior to performing the correlated CC calculations. All implementations
 in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references.
 
 A list of all CC/EOMCC routines available in CCpy:
