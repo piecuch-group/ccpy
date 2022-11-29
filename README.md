@@ -65,5 +65,8 @@ variable `$MKLROOT`. For a given computer architecture, the Intel Link Line Advi
 
 Additionally, you will need the `cclib` package (`conda install --channel conda-forge cclib`) and Pyscf (`pip install pyscf`).
 
+# Contact
+Karthik Gururangan - gururang@msu.edu
+J. Emiliano Deustua - edeustua@gmail.com
 
 CCpy is affiliated with the Piecuch Group at Michigan State University (https://www2.chemistry.msu.edu/faculty/piecuch/)
