@@ -65,6 +65,9 @@ variable `$MKLROOT`. For a given computer architecture, the Intel Link Line Advi
 
 Additionally, you will need the `cclib` package (`conda install --channel conda-forge cclib`) and Pyscf (`pip install pyscf`).
 
+In all selected CI based computations, including the ec-CC-II and CIPSI-driven CC(P;Q), we currently rely on the CIPSI wave functions obtained 
+using the open-source Quantum Package software (https://github.com/QuantumPackage/qp2).
+
 # Contact
 Karthik Gururangan - gururang@msu.edu
 
