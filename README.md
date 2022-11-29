@@ -67,6 +67,7 @@ Additionally, you will need the `cclib` package (`conda install --channel conda-
 
 # Contact
 Karthik Gururangan - gururang@msu.edu
+
 J. Emiliano Deustua - edeustua@gmail.com
 
 CCpy is affiliated with the Piecuch Group at Michigan State University (https://www2.chemistry.msu.edu/faculty/piecuch/)
