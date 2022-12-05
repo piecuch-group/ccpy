@@ -11,6 +11,7 @@ MODULES := cc_loops \
 		   ccp_loops \
 		   ccp_opt_loops \
 		   ccp_opt_loops_v2 \
+		   ccp_linear_loops \
 		   eomcc_active_loops \
 		   cc_active_loops \
 		   cct3_loops \

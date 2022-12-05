@@ -61,19 +61,20 @@ def contract_vt3_exact(H, T):
     nub, nob = T.b.shape
 
     # Residual containers
-    x3a = np.zeros((nua, nua, nua, noa, noa, noa))
     x3b = np.zeros((nua, nua, nub, noa, noa, nob))
     x3c = np.zeros((nua, nub, nub, noa, nob, nob))
     x3d = np.zeros((nub, nub, nub, nob, nob, nob))
 
-    x3a -= (3.0 / 36.0) * np.einsum("mi,abcmjk->abcijk", H.a.oo, T.aaa, optimize=True)
+    x3a = -(3.0 / 36.0) * np.einsum("mi,abcmjk->abcijk", H.a.oo, T.aaa, optimize=True)
     x3a += (3.0 / 36.0) * np.einsum("ae,ebcijk->abcijk", H.a.vv, T.aaa, optimize=True)
     x3a += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aaa, optimize=True) # (k/ij) = 3
     x3a += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aaa, optimize=True) # (c/ab) = 3
     x3a += 0.25 * np.einsum("cmke,abeijm->abcijk", H.aa.voov, T.aaa, optimize=True) # (c/ij)(k/ij) = 9
     x3a += 0.25 * np.einsum("cmke,abeijm->abcijk", H.ab.voov, T.aab, optimize=True) # (c/ij)(k/ij) = 9
 
-    I2A_vooo = (
+    #x3b = -(1.0 / 2.0) * np.einsum("mi")
+
+    I2A_vooo = H.aa.vooo + (
                 0.5 * np.einsum("mnef,aefijn->amij", H.aa.oovv, T.aaa, optimize=True)
                 + np.einsum("mnef,aefijn->amij", H.ab.oovv, T.aab, optimize=True)
     )
@@ -108,7 +109,7 @@ def contract_vt3_fly(H, T3_excitations, T3_amplitudes):
     x3d = np.zeros((nub, nub, nub, nob, nob, nob))
 
     # Intermediate containers
-    I2A_vooo = np.zeros((nua, noa, noa, noa))
+    I2A_vooo = 0.5 * H.aa.vooo
     I2A_vvov = np.zeros((nua, nua, noa, nua))
     I2B_vooo = np.zeros((nua, nob, noa, nob))
     I2B_ovoo = np.zeros((noa, nub, noa, nob))
@@ -237,8 +238,8 @@ def contract_vt3_fly(H, T3_excitations, T3_amplitudes):
 if __name__ == "__main__":
 
     #ccpy_root = "/home2/gururang/ccpy"
-    #ccpy_root = "/Users/harellab/Documents/ccpy"
-    ccpy_root = "/Users/karthik/Documents/Python/ccpy"
+    ccpy_root = "/Users/harellab/Documents/ccpy"
+    #ccpy_root = "/Users/karthik/Documents/Python/ccpy"
 
     system, H = load_from_gamess(
             ccpy_root + "/examples/ext_corr/h2o-Re/h2o-Re.log",

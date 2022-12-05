@@ -472,18 +472,18 @@ def update_t3c(T, dT, H, H0, shift):
     
     I2B_ovoo = 0.5 * np.einsum("mnef,efbinj->mbij", H0.aa.oovv, T.aab, optimize=True)
     I2B_ovoo += np.einsum("mnef,efbinj->mbij", H0.ab.oovv, T.abb, optimize=True)
-    I2B_ovoo += H.ab.ovoo
-    
     I2B_ovoo -= np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+    I2B_ovoo += H.ab.ovoo
+
     I2B_vvov = -np.einsum("nmfe,afbinm->abie", H0.ab.oovv, T.aab, optimize=True)
     I2B_vvov += -0.5 * np.einsum("nmfe,afbinm->abie", H0.bb.oovv, T.abb, optimize=True)
     I2B_vvov += H.ab.vvov
     
     I2B_vooo = np.einsum("nmfe,afeinj->amij", H0.ab.oovv, T.aab, optimize=True)
     I2B_vooo += 0.5 * np.einsum("nmfe,afeinj->amij", H0.bb.oovv, T.abb, optimize=True)
-    I2B_vooo += H.ab.vooo
-    
     I2B_vooo -= np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
+    I2B_vooo += H.ab.vooo
+
     I2C_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.bb.oovv, T.bbb, optimize=True)
     I2C_vvov += -np.einsum("nmfe,fabnim->abie", H0.ab.oovv, T.abb, optimize=True)
     I2C_vvov += H.bb.vvov
