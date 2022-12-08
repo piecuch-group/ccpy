@@ -4,6 +4,10 @@ module ccp_linear_loops
 !!!!      USE MKL_SERVICE
       implicit none
 
+      ! Notes:
+      ! (1) Validate each diagrammatic expression in Python or otherwise. In particular, check the accuracy of
+      !     applying the final antisymmetrizer A(ijk)A(abc) and how that may affect doing the loops
+
       contains
 
                subroutine update_t1a(t1a, resid,&
@@ -328,7 +332,7 @@ module ccp_linear_loops
                   real(kind=8) :: denom, val, t_amp
 
                   ! Store x2b in residual container
-                  resid(:,:,:,:) = X2B(:,:,:,:)
+                  resid(:,:,:,:) = x2b(:,:,:,:)
 
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
@@ -658,6 +662,23 @@ module ccp_linear_loops
                       x3a(a,b,c,:,j,k) = x3a(a,b,c,:,j,k) - H1A_oo(m,:) * t_amp ! (1)
                       x3a(a,b,c,:,m,k) = x3a(a,b,c,:,m,k) + H1A_oo(j,:) * t_amp ! (mj)
                       x3a(a,b,c,:,j,m) = x3a(a,b,c,:,j,m) + H1A_oo(k,:) * t_amp ! (mk)
+                    !   ! note the following alternative quadratically saving variant (needs pspace array):
+                    !   a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
+                    !   m = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
+                    !   vec1 = pspace_aaa(a,b,c,:,j,k)
+                    !   vec2 = pspace_aaa(a,b,c,:,m,k)
+                    !   vec3 = pspace_aaa(a,b,c,:,j,m)
+                    !   do i = 1, noa
+                    !     if (vec1(i) == 1) then
+                    !         x3a(a,b,c,vec1(i),j,k) = x3a(a,b,c,vec1(i),j,k) - H1A_oo(m,vec1(i)) * t_amp ! (1)
+                    !     end if 
+                    !     if (vec2(i) == 1) then
+                    !         x3a(a,b,c,vec2(i),m,k) = x3a(a,b,c,vec2(i),m,k) + H1A_oo(j,vec2(i)) * t_amp ! (mj)
+                    !     end if
+                    !     if (vec3(i) == 1) then
+                    !         x3a(a,b,c,vec3(i),j,m) = x3a(a,b,c,vec3(i),j,m) + H1A_oo(k,vec3(i)) * t_amp ! (mk)
+                    !     end if
+                    ! end do 
 
                       ! x3a(abcijk) <- A(abc)A(a/bc)A(bc)A(e/bc) h1a(ae) * t3a(ebcijk)
                       !              = A(abc)A(ijk)[ A(e/bc) h1a(ae) * t3a(ebcijk) ]
@@ -999,7 +1020,7 @@ module ccp_linear_loops
                       a = t3b_excits(idet,1); e = t3b_excits(idet,2); f = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
                       x3b(a,:,:,i,j,k) = x3b(a,:,:,i,j,k) + H2B_vvvv(:,:,e,f) * t_amp ! (1)
-                      x3b(e,:,:,i,j,k) = x3b(e,:,:,i,j,k) + H2B_vvvv(:,:,a,f) * t_amp ! (ae)
+                      x3b(e,:,:,i,j,k) = x3b(e,:,:,i,j,k) - H2B_vvvv(:,:,a,f) * t_amp ! (ae)
 
                       ! x3b(abcijk) <- A(ij)A(ab) [A(be)A(jm) h2a(amie) * t3b(ebcmjk)]
                       e = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
@@ -1007,7 +1028,7 @@ module ccp_linear_loops
                       x3b(:,b,c,:,j,k) = x3b(:,b,c,:,j,k) + H2A_voov(:,m,:,e) * t_amp ! (1)
                       x3b(:,e,c,:,j,k) = x3b(:,e,c,:,j,k) - H2A_voov(:,m,:,b) * t_amp ! (be)
                       x3b(:,b,c,:,m,k) = x3b(:,b,c,:,m,k) - H2A_voov(:,j,:,e) * t_amp ! (jm)
-                      x3b(:,e,c,:,m,k) = x3b(:,e,c,:,m,k) + H2A_voov(:,j,:,n) * t_amp ! (be)(jm)
+                      x3b(:,e,c,:,m,k) = x3b(:,e,c,:,m,k) + H2A_voov(:,j,:,b) * t_amp ! (be)(jm)
 
                       ! x3b(abcijk) <- A(ij)A(ab) [h2c(cmke) * t3b(abeijm)]
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); e = t3b_excits(idet,3);
@@ -1273,13 +1294,13 @@ module ccp_linear_loops
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
 
-                      ! x3c(abcijk) <- A(jk)A(bc) [A(mk)A(ec) h2b(mbej) * t3b(aecimk)]
+                      ! x3c(abcijk) <- A(jk)A(bc) [A(im)A(ae) h2b(mbej) * t3b(aecimk)]
                       a = t3b_excits(idet,1); e = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); m = t3b_excits(idet,5); k = t3b_excits(idet,6);
                       x3c(a,:,c,i,:,k) = x3c(a,:,c,i,:,k) + H2B_ovvo(m,:,e,:) * t_amp ! (1)
-                      x3c(a,:,c,i,:,m) = x3c(a,:,c,i,:,m) - H2B_ovvo(k,:,e,:) * t_amp ! (mk)
-                      x3c(a,:,e,i,:,k) = x3c(a,:,e,i,:,k) - H2B_ovvo(m,:,c,:) * t_amp ! (ec)
-                      x3c(a,:,e,i,:,m) = x3c(a,:,e,i,:,m) + H2B_ovvo(k,:,c,:) * t_amp ! (mk)(ec)
+                      x3c(a,:,c,m,:,k) = x3c(a,:,c,m,:,k) - H2B_ovvo(i,:,e,:) * t_amp ! (im)
+                      x3c(e,:,c,i,:,k) = x3c(e,:,c,i,:,k) - H2B_ovvo(m,:,a,:) * t_amp ! (ae)
+                      x3c(e,:,c,m,:,k) = x3c(e,:,c,m,:,k) + H2B_ovvo(i,:,a,:) * t_amp ! (im)(ae)
                   end do
 
                   do idet = 1, n3abb
@@ -1383,7 +1404,15 @@ module ccp_linear_loops
                       ! x3c(abcijk) <- A(jk)A(bc) [h2b(amie) * t3d(ebcmjk)]
                       e = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                       m = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                      x3c(:,b,c,:,j,k) = x3c(:,b,c,:,j,k) + H2B_voov(:,m,:,e) * t_amp ! (1)
+                      x3c(:,b,c,:,j,k) = x3c(:,b,c,:,j,k) + H.ab.voov(:,m,:,e) * t_amp ! (1)
+                      x3c(:,b,c,:,m,k) = x3c(:,b,c,:,m,k) - H.ab.voov(:,j,:,e) * t_amp ! (jm)
+                      x3c(:,b,c,:,j,m) = x3c(:,b,c,:,j,m) - H.ab.voov(:,k,:,e) * t_amp ! (km)
+                      x3c(:,e,c,:,j,k) = x3c(:,e,c,:,j,k) - H.ab.voov(:,m,:,b) * t_amp ! (eb)
+                      x3c(:,e,c,:,m,k) = x3c(:,e,c,:,m,k) + H.ab.voov(:,j,:,b) * t_amp ! (jm)(eb)
+                      x3c(:,e,c,:,j,m) = x3c(:,e,c,:,j,m) + H.ab.voov(:,k,:,b) * t_amp ! (km)(eb)
+                      x3c(:,b,e,:,j,k) = x3c(:,b,e,:,j,k) - H.ab.voov(:,m,:,c) * t_amp ! (ec)
+                      x3c(:,b,e,:,m,k) = x3c(:,b,e,:,m,k) + H.ab.voov(:,j,:,c) * t_amp ! (jm)(ec)
+                      x3c(:,b,e,:,j,m) = x3c(:,b,e,:,j,m) + H.ab.voov(:,k,:,c) * t_amp ! (km)(ec)
                   end do
 
                   ! Update loop
