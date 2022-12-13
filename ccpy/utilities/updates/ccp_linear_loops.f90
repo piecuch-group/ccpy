@@ -87,14 +87,14 @@ module ccp_linear_loops
               end subroutine update_t1a
 
               subroutine update_t1b(t1b, resid,&
-                                         X1B,&
-                                         t3b_excits, t3c_excits, t3d_excits,&
-                                         t3b_amps, t3c_amps, t3d_amps,&
-                                         H2A_oovv, H2B_oovv, H2C_oovv,&
-                                         fB_oo, fB_vv,&
-                                         shift,&
-                                         n3aab, n3abb, n3bbb,&
-                                         noa, nua, nob, nub)
+                                    X1B,&
+                                    t3b_excits, t3c_excits, t3d_excits,&
+                                    t3b_amps, t3c_amps, t3d_amps,&
+                                    H2A_oovv, H2B_oovv, H2C_oovv,&
+                                    fB_oo, fB_vv,&
+                                    shift,&
+                                    n3aab, n3abb, n3bbb,&
+                                    noa, nua, nob, nub)
 
                       integer, intent(in) :: noa, nua, nob, nub, n3aab, n3abb, n3bbb
                       integer, intent(in) :: t3b_excits(n3aab, 6), t3c_excits(n3abb, 6), t3d_excits(n3bbb, 6)
@@ -128,6 +128,8 @@ module ccp_linear_loops
                       do idet = 1, n3abb
                           t_amp = t3c_amps(idet)
                           ! A(af)A(in) h2b(mnef) * t3c(efamni)
+                          e = t3c_excits(idet,1); f = t3c_excits(idet,2); a = t3c_excits(idet,3);
+                          m = t3c_excits(idet,4); n = t3c_excits(idet,5); i = t3c_excits(idet,6);
                           resid(a,i) = resid(a,i) + H2B_oovv(m,n,e,f) * t_amp ! (1)
                           resid(f,i) = resid(f,i) - H2B_oovv(m,n,e,a) * t_amp ! (af)
                           resid(a,n) = resid(a,n) - H2B_oovv(m,i,e,f) * t_amp ! (in)
@@ -230,8 +232,8 @@ module ccp_linear_loops
                       resid(a,f,:,n) = resid(a,f,:,n) - H2A_ooov(m,j,:,b) * t_amp ! (jn)(bf)
 
                       ! A(ij)A(ab) [A(n/ij)A(b/ef) h2a(anef) * t3a(ebfijn)]
-                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); f = t3a_excits(idet,3);
-                      m = t3a_excits(idet,4); j = t3a_excits(idet,5); n = t3a_excits(idet,6);
+                      e = t3a_excits(idet,1); b = t3a_excits(idet,2); f = t3a_excits(idet,3);
+                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); n = t3a_excits(idet,6);
                       resid(:,b,i,j) = resid(:,b,i,j) + H2A_vovv(:,n,e,f) * t_amp ! (1)
                       resid(:,b,n,j) = resid(:,b,n,j) - H2A_vovv(:,i,e,f) * t_amp ! (in)
                       resid(:,b,i,n) = resid(:,b,i,n) - H2A_vovv(:,j,e,f) * t_amp ! (jn)
@@ -361,10 +363,14 @@ module ccp_linear_loops
                       resid(a,:,n,j) = resid(a,:,n,j) - H2B_ovvv(i,:,f,e) * t_amp ! (in)
                       resid(f,:,n,j) = resid(f,:,n,j) + H2B_ovvv(i,:,a,e) * t_amp ! (af)(in)
 
-                      ! h1a(me) * t3b(aebimj)
+                      ! A(ae)A(im) h1a(me) * t3b(aebimj)
                       a = t3b_excits(idet,1); e = t3b_excits(idet,2); b = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); m = t3b_excits(idet,5); j = t3b_excits(idet,6);
                       resid(a,b,i,j) = resid(a,b,i,j) + H1A_ov(m,e) * t_amp ! (1)
+                      resid(a,b,m,j) = resid(a,b,m,j) - H1A_ov(i,e) * t_amp ! (im)
+                      resid(e,b,i,j) = resid(e,b,i,j) - H1A_ov(m,a) * t_amp ! (ae)
+                      resid(e,b,m,j) = resid(e,b,m,j) + H1A_ov(i,a) * t_amp ! (im)(ae)
+
                   end do
 
                   do idet = 1, n3abb
@@ -398,10 +404,13 @@ module ccp_linear_loops
                       resid(:,b,i,n) = resid(:,b,i,n) - H2B_vovv(:,j,e,f) * t_amp ! (jn)
                       resid(:,f,i,n) = resid(:,f,i,n) + H2B_vovv(:,j,e,b) * t_amp ! (bf)(jn)
 
-                      ! h1b(me) * t3c(aebimj)
+                      ! [A(be)A(mj) h1b(me) * t3c(aebimj)]
                       a = t3c_excits(idet,1); e = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); m = t3c_excits(idet,5); j = t3c_excits(idet,6);
                       resid(a,b,i,j) = resid(a,b,i,j) + H1B_ov(m,e) * t_amp ! (1)
+                      resid(a,b,i,m) = resid(a,b,i,m) - H1B_ov(j,e) * t_amp ! (jm)
+                      resid(a,e,i,j) = resid(a,e,i,j) - H1B_ov(m,b) * t_amp ! (be)
+                      resid(a,e,i,m) = resid(a,e,i,m) + H1B_ov(j,b) * t_amp ! (jm)(be)
                   end do
 
                   do j = 1, nob
@@ -463,7 +472,7 @@ module ccp_linear_loops
                       e = t3c_excits(idet,1); a = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       m = t3c_excits(idet,4); i = t3c_excits(idet,5); j = t3c_excits(idet,6);
                       resid(a,b,i,j) = resid(a,b,i,j) + H1A_ov(m,e) * t_amp ! (1)
-
+            
                       ! A(ij)A(ab) [A(be) h2b(nafe) * t3c(febnij)]
                       f = t3c_excits(idet,1); e = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       n = t3c_excits(idet,4); i = t3c_excits(idet,5); j = t3c_excits(idet,6);
@@ -507,8 +516,8 @@ module ccp_linear_loops
                       resid(a,f,:,n) = resid(a,f,:,n) - H2C_ooov(m,j,:,b) * t_amp ! (jn)(bf)
 
                       ! A(ij)A(ab) [A(n/ij)A(b/ef) h2c(anef) * t3d(ebfijn)]
-                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); f = t3d_excits(idet,3);
-                      m = t3d_excits(idet,4); j = t3d_excits(idet,5); n = t3d_excits(idet,6);
+                      e = t3d_excits(idet,1); b = t3d_excits(idet,2); f = t3d_excits(idet,3);
+                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); n = t3d_excits(idet,6);
                       resid(:,b,i,j) = resid(:,b,i,j) + H2C_vovv(:,n,e,f) * t_amp ! (1)
                       resid(:,b,n,j) = resid(:,b,n,j) - H2C_vovv(:,i,e,f) * t_amp ! (in)
                       resid(:,b,i,n) = resid(:,b,i,n) - H2C_vovv(:,j,e,f) * t_amp ! (jn)

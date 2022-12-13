@@ -12,8 +12,6 @@ from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 
 from ccpy.utilities.updates import ccp_linear_loops
 
-print(ccp_linear_loops.ccp_linear_loops.__doc__)
-
 # linear CC(P) algorithm:
 # x3a(abcijk) <- A(c/ab)A(ijk)[ A(c/ef) h2a(abef) * t3a(efcijk) ]
 #                 = A(abc)A(ijk)[ 1/2 A(c/ef) h2a(abef) * t3a(efcijk) ]
@@ -39,6 +37,7 @@ print(ccp_linear_loops.ccp_linear_loops.__doc__)
 #           x3a[a, b, f, i, j, k] -= H.aa.vvvv[a, b, e, c] * t_amp # (fc)
 
 # space-saving quadratic CC(P) algorithm (operates at ~2x CPU cost of the original quadratic CC(P) method):
+# the function tuple_to_idx() is an invertible map, something like np.ravel/np.unravel or Cantor pairing function
 # x3a(abcijk) <- A(c/ab)A(ijk)[ A(c/ef) h2a(abef) * t3a(efcijk) ]
 #              = A(abc)A(ijk)[ 1/2 A(c/ef) h2a(abef) * t3a(efcijk) ]
 # e, f, c, i, j, k = T3_excitations["aaa"][idet]
@@ -104,10 +103,43 @@ def get_T3_list(T):
 
     return T3_excitations, T3_amplitudes
 
-def contract_vt3_exact(H, T):
+def contract_vt3_exact(H0, H, T):
 
     nua, noa = T.a.shape
     nub, nob = T.b.shape
+
+    x1a = 0.25 * np.einsum("mnef,aefimn->ai", H.aa.oovv, T.aaa, optimize=True)
+    x1a += np.einsum("mnef,aefimn->ai", H.ab.oovv, T.aab, optimize=True)
+    x1a += 0.25 * np.einsum("mnef,aefimn->ai", H.bb.oovv, T.abb, optimize=True)
+
+    x1b = 0.25 * np.einsum("mnef,aefimn->ai", H.bb.oovv, T.bbb, optimize=True)
+    x1b += 0.25 * np.einsum("mnef,efamni->ai", H.aa.oovv, T.aab, optimize=True)
+    x1b += np.einsum("mnef,efamni->ai", H.ab.oovv, T.abb, optimize=True)
+
+    x2a = 0.25 * np.einsum("me,abeijm->abij", H.a.ov, T.aaa, optimize=True)
+    x2a += 0.25 * np.einsum("me,abeijm->abij", H.b.ov, T.aab, optimize=True)
+    x2a -= 0.5 * np.einsum("mnif,abfmjn->abij", H0.ab.ooov + H.ab.ooov, T.aab, optimize=True)
+    x2a -= 0.25 * np.einsum("mnif,abfmjn->abij", H0.aa.ooov + H.aa.ooov, T.aaa, optimize=True)
+    x2a += 0.25 * np.einsum("anef,ebfijn->abij", H0.aa.vovv + H.aa.vovv, T.aaa, optimize=True)
+    x2a += 0.5 * np.einsum("anef,ebfijn->abij", H0.ab.vovv + H.ab.vovv, T.aab, optimize=True)
+
+    x2b = -0.5 * np.einsum("mnif,afbmnj->abij", H0.aa.ooov + H.aa.ooov, T.aab, optimize=True)
+    x2b -= np.einsum("nmfj,afbinm->abij", H0.ab.oovo + H.ab.oovo, T.aab, optimize=True)
+    x2b -= 0.5 * np.einsum("mnjf,afbinm->abij", H0.bb.ooov + H.bb.ooov, T.abb, optimize=True)
+    x2b -= np.einsum("mnif,afbmnj->abij", H0.ab.ooov + H.ab.ooov, T.abb, optimize=True)
+    x2b += 0.5 * np.einsum("anef,efbinj->abij", H0.aa.vovv + H.aa.vovv, T.aab, optimize=True)
+    x2b += np.einsum("anef,efbinj->abij", H0.ab.vovv + H.ab.vovv, T.abb, optimize=True)
+    x2b += np.einsum("nbfe,afeinj->abij", H0.ab.ovvv + H.ab.ovvv, T.aab, optimize=True)
+    x2b += 0.5 * np.einsum("bnef,afeinj->abij", H0.bb.vovv + H.bb.vovv, T.abb, optimize=True)
+    x2b += np.einsum("me,aebimj->abij", H.a.ov, T.aab, optimize=True)
+    x2b += np.einsum("me,aebimj->abij", H.b.ov, T.abb, optimize=True)
+
+    x2c = 0.25 * np.einsum("me,eabmij->abij", H.a.ov, T.abb, optimize=True)
+    x2c += 0.25 * np.einsum("me,abeijm->abij", H.b.ov, T.bbb, optimize=True)
+    x2c += 0.25 * np.einsum("anef,ebfijn->abij", H0.bb.vovv + H.bb.vovv, T.bbb, optimize=True)
+    x2c += 0.5 * np.einsum("nafe,febnij->abij", H0.ab.ovvv + H.ab.ovvv, T.abb, optimize=True)
+    x2c -= 0.25 * np.einsum("mnif,abfmjn->abij", H0.bb.ooov + H.bb.ooov, T.bbb, optimize=True)
+    x2c -= 0.5 * np.einsum("nmfi,fabnmj->abij", H0.ab.oovo + H.ab.oovo, T.abb, optimize=True)
 
     I2A_vvov = (
         H.aa.vvov - 0.5 * np.einsum("mnef,abfimn->abie", H.aa.oovv, T.aaa, optimize=True)
@@ -214,6 +246,12 @@ def contract_vt3_exact(H, T):
     x3d += 0.25 * np.einsum("maei,ebcmjk->abcijk", H.ab.ovvo, T.abb, optimize=True)
     x3d += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.bb.voov, T.bbb, optimize=True)
 
+    x2a -= np.transpose(x2a, (1, 0, 2, 3))
+    x2a -= np.transpose(x2a, (0, 1, 3, 2))
+
+    x2c -= np.transpose(x2c, (1, 0, 2, 3))
+    x2c -= np.transpose(x2c, (0, 1, 3, 2))
+
     x3a -= np.transpose(x3a, (0, 1, 2, 3, 5, 4)) # (jk)
     x3a -= np.transpose(x3a, (0, 1, 2, 4, 3, 5)) + np.transpose(x3a, (0, 1, 2, 5, 4, 3)) # (i/jk)
     x3a -= np.transpose(x3a, (0, 2, 1, 3, 4, 5)) # (bc)
@@ -230,7 +268,7 @@ def contract_vt3_exact(H, T):
     x3d -= np.transpose(x3d, (0, 2, 1, 3, 4, 5)) # (bc)
     x3d -= np.transpose(x3d, (2, 1, 0, 3, 4, 5)) + np.transpose(x3d, (1, 0, 2, 3, 4, 5)) # (a/bc)
 
-    return x3a, x3b, x3c, x3d
+    return x1a, x1b, x2a, x2b, x2c, x3a, x3b, x3c, x3d
 
 def contract_vt3_fly(H, H0, T, T3_excitations, T3_amplitudes):
 
@@ -813,17 +851,87 @@ def contract_vt3_fly(H, H0, T, T3_excitations, T3_amplitudes):
 
 def contract_vt3_fly_fortran(H, H0, T, T3_excitations, T3_amplitudes):
 
+    nua, noa = T.a.shape
+    nub, nob = T.b.shape
+
     # build adjusted intermediates
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
+
     # save the input T vectors; these get modififed by Fortran calls even if output is not set
+    t1a_amps = T.a.copy()
+    t1b_amps = T.b.copy()
+    t2a_amps = T.aa.copy()
+    t2b_amps = T.ab.copy()
+    t2c_amps = T.bb.copy()
     t3a_amps = T3_amplitudes["aaa"].copy()
     t3b_amps = T3_amplitudes["aab"].copy()
     t3c_amps = T3_amplitudes["abb"].copy()
     t3d_amps = T3_amplitudes["bbb"].copy()
 
+    _, x1a = ccp_linear_loops.ccp_linear_loops.update_t1a(
+        T.a, 
+        np.zeros((nua, noa)),
+        T3_excitations["aaa"], T3_excitations["aab"], T3_excitations["abb"],
+        T3_amplitudes["aaa"], T3_amplitudes["aab"], T3_amplitudes["abb"],
+        H0.aa.oovv, H0.ab.oovv, H0.bb.oovv,
+        H0.a.oo, H0.a.vv,
+        0.0
+    )
+    T.a = t1a_amps.copy()
+
+    _, x1b = ccp_linear_loops.ccp_linear_loops.update_t1b(
+        T.b, 
+        np.zeros((nub, nob)),
+        T3_excitations["aab"], T3_excitations["abb"], T3_excitations["bbb"],
+        T3_amplitudes["aab"], T3_amplitudes["abb"], T3_amplitudes["bbb"],
+        H0.aa.oovv, H0.ab.oovv, H0.bb.oovv,
+        H0.b.oo, H0.b.vv,
+        0.0
+    )
+    T.b = t1b_amps.copy()
+
+    _, x2a = ccp_linear_loops.ccp_linear_loops.update_t2a(
+        T.aa,
+        np.zeros((nua,nua,noa,noa)),
+        T3_excitations["aaa"], T3_excitations["aab"],
+        T3_amplitudes["aaa"], T3_amplitudes["aab"],
+        H.a.ov, H.b.ov,
+        H0.aa.ooov + H.aa.ooov, H0.aa.vovv + H.aa.vovv,
+        H0.ab.ooov + H.ab.ooov, H0.ab.vovv + H.ab.vovv,
+        H0.a.oo, H0.a.vv,
+        0.0
+    )
+    T.aa = t2a_amps.copy()
+
+    _, x2b = ccp_linear_loops.ccp_linear_loops.update_t2b(
+        T.ab,
+        np.zeros((nua,nub,noa,nob)),
+        T3_excitations["aab"], T3_excitations["abb"],
+        T3_amplitudes["aab"], T3_amplitudes["abb"],
+        H.a.ov, H.b.ov,
+        H.aa.ooov + H0.aa.ooov, H.aa.vovv + H0.aa.vovv,
+        H.ab.ooov + H0.ab.ooov, H.ab.oovo + H0.ab.oovo, H.ab.vovv + H0.ab.vovv, H.ab.ovvv + H0.ab.ovvv,
+        H.bb.ooov + H0.bb.ooov, H.bb.vovv + H0.bb.vovv,
+        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+        0.0
+    )
+    T.ab = t2b_amps.copy()
+
+    _, x2c = ccp_linear_loops.ccp_linear_loops.update_t2c(
+        T.bb,
+        np.zeros((nub,nub,nob,nob)),
+        T3_excitations["abb"], T3_excitations["bbb"],
+        T3_amplitudes["abb"], T3_amplitudes["bbb"],
+        H.a.ov, H.b.ov,
+        H0.ab.oovo + H.ab.oovo, H0.ab.ovvv + H.ab.ovvv,
+        H0.bb.ooov + H.bb.ooov, H0.bb.vovv + H.bb.vovv,
+        H0.b.oo, H0.b.vv,
+        0.0
+    )
+    T.bb = t2c_amps.copy()
 
     _, x3a = ccp_linear_loops.ccp_linear_loops.update_t3a_p(
         T3_amplitudes["aaa"],
@@ -882,7 +990,7 @@ def contract_vt3_fly_fortran(H, H0, T, T3_excitations, T3_amplitudes):
     )
     T3_amplitudes["bbb"] = t3d_amps.copy()
 
-    return x3a, x3b, x3c, x3d
+    return x1a, x1b, x2a, x2b, x2c, x3a, x3b, x3c, x3d
 
 if __name__ == "__main__":
 
@@ -893,7 +1001,7 @@ if __name__ == "__main__":
                     C 0.0000000000 0.0000000000 -0.1160863568
                     H -1.8693479331 0.0000000000 0.6911102033
                     H 1.8693479331 0.0000000000  0.6911102033
-                 """
+     """
 
     fluorine = """
                     F 0.0000000000 0.0000000000 -2.66816
@@ -907,7 +1015,7 @@ if __name__ == "__main__":
         spin=0, 
         charge=0,
         unit="Bohr",
-        cart=True,
+        cart=False,
     )
     mf = scf.ROHF(mol).run()
 
@@ -923,7 +1031,7 @@ if __name__ == "__main__":
     # Get the expected result for the contraction, computed using full T_ext
     print("   Exact H*T3 contraction", end="")
     t1 = time.time()
-    x3_aaa_exact, x3_aab_exact, x3_abb_exact, x3_bbb_exact = contract_vt3_exact(hbar, T)
+    x1_a_exact, x1_b_exact, x2_aa_exact, x2_ab_exact, x2_bb_exact, x3_aaa_exact, x3_aab_exact, x3_abb_exact, x3_bbb_exact = contract_vt3_exact(H, hbar, T)
     print(" (Completed in ", time.time() - t1, "seconds)")
 
     # # Get the on-the-fly contraction result
@@ -935,12 +1043,101 @@ if __name__ == "__main__":
     # Get the on-the-fly contraction result
     print("   On-the-fly H*T3 contraction (Fortran)", end="")
     t1 = time.time()
-    x3_aaa, x3_aab, x3_abb, x3_bbb = contract_vt3_fly_fortran(hbar, H, T, T3_excitations, T3_amplitudes)
+    x1_a, x1_b, x2_aa, x2_ab, x2_bb, x3_aaa, x3_aab, x3_abb, x3_bbb = contract_vt3_fly_fortran(hbar, H, T, T3_excitations, T3_amplitudes)
     print(" (Completed in ", time.time() - t1, "seconds)")
 
     print("")
     nua, noa = T.a.shape
     nub, nob = T.b.shape
+
+    flag = True
+    err_cum = 0.0
+    for a in range(system.nunoccupied_alpha):
+        for i in range(system.noccupied_alpha):
+            denom = (
+                        H.a.oo[i, i] - H.a.vv[a, a]
+            )
+            error = x1_a[a, i] - x1_a_exact[a, i]/denom
+            err_cum += abs(error)
+            if abs(error) > 1.0e-012:
+                flag = False
+    if flag:
+        print("T1A update passed!", "Cumulative Error = ", err_cum)
+    else:
+        print("T1A update FAILED!", "Cumulative Error = ", err_cum)
+
+    flag = True
+    err_cum = 0.0
+    for a in range(system.nunoccupied_beta):
+        for i in range(system.noccupied_beta):
+            denom = (
+                        H.b.oo[i, i] - H.b.vv[a, a]
+            )
+            error = x1_b[a, i] - x1_b_exact[a, i]/denom
+            err_cum += abs(error)
+            if abs(error) > 1.0e-012:
+                flag = False
+    if flag:
+        print("T1B update passed!", "Cumulative Error = ", err_cum)
+    else:
+        print("T1B update FAILED!", "Cumulative Error = ", err_cum)
+
+    flag = True
+    err_cum = 0.0
+    for a in range(system.nunoccupied_alpha):
+        for b in range(a + 1, system.nunoccupied_alpha):
+            for i in range(system.noccupied_alpha):
+                for j in range(i + 1, system.noccupied_alpha):
+                    denom = (
+                                H.a.oo[i, i] + H.a.oo[j, j] 
+                              - H.a.vv[a, a] - H.a.vv[b, b]
+                    )
+                    error = x2_aa[a, b, i, j] - x2_aa_exact[a, b, i, j]/denom
+                    err_cum += abs(error)
+                    if abs(error) > 1.0e-012:
+                        flag = False
+    if flag:
+        print("T2A update passed!", "Cumulative Error = ", err_cum)
+    else:
+        print("T2A update FAILED!", "Cumulative Error = ", err_cum)
+
+    flag = True
+    err_cum = 0.0
+    for a in range(system.nunoccupied_alpha):
+        for b in range(system.nunoccupied_beta):
+            for i in range(system.noccupied_alpha):
+                for j in range(system.noccupied_beta):
+                    denom = (
+                                H.a.oo[i, i] + H.b.oo[j, j] 
+                              - H.a.vv[a, a] - H.b.vv[b, b]
+                    )
+                    error = x2_ab[a, b, i, j] - x2_ab_exact[a, b, i, j]/denom
+                    err_cum += abs(error)
+                    if abs(error) > 1.0e-012:
+                        flag = False
+    if flag:
+        print("T2B update passed!", "Cumulative Error = ", err_cum)
+    else:
+        print("T2B update FAILED!", "Cumulative Error = ", err_cum)
+
+    flag = True
+    err_cum = 0.0
+    for a in range(system.nunoccupied_beta):
+        for b in range(a + 1, system.nunoccupied_beta):
+            for i in range(system.noccupied_beta):
+                for j in range(i + 1, system.noccupied_beta):
+                    denom = (
+                                H.b.oo[i, i] + H.b.oo[j, j] 
+                              - H.b.vv[a, a] - H.b.vv[b, b]
+                    )
+                    error = x2_bb[a, b, i, j] - x2_bb_exact[a, b, i, j]/denom
+                    err_cum += abs(error)
+                    if abs(error) > 1.0e-012:
+                        flag = False
+    if flag:
+        print("T2C update passed!", "Cumulative Error = ", err_cum)
+    else:
+        print("T2C update FAILED!", "Cumulative Error = ", err_cum)
 
     flag = True
     err_cum = 0.0
