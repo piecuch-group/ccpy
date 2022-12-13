@@ -98,6 +98,8 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3, ordered_index=True):
 
     excitation_count = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0},
                         {'aaaa': 0, 'aaab': 0, 'aabb': 0, 'abbb': 0, 'bbbb': 0}]
+    excitations = [{'aaa': [], 'aab': [], 'abb': [], 'bbb': []},
+                   {'aaaa': [], 'aaab': [], 'aabb': [], 'abbb': [], 'bbbb': []}]
 
     with open(pspace_file) as f:
 
@@ -142,6 +144,10 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3, ordered_index=True):
             n = excit_rank - 3
 
             excitation_count[n][spincase] += 1
+            if n == 0:
+                excitations[n][spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_occ[0], idx_occ[1], idx_occ[2]])
+            if n == 1:
+                excitations[n][spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_unocc[3], idx_occ[0], idx_occ[1], idx_occ[2], idx_occ[3]])
 
             ct_aaa = 1
             ct_aab = 1
@@ -196,7 +202,13 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3, ordered_index=True):
             if excit_rank == 4:
                 pspace[n][spincase][idx_unocc[0] - 1, idx_unocc[1] - 1, idx_unocc[2] - 1, idx_unocc[3] - 1, idx_occ[0] - 1, idx_occ[1] - 1, idx_occ[2] - 1, idx_occ[3] - 1] = 1
 
-    return pspace, excitation_count
+    # convert excitation arrays to Numpy arrays
+    for spincase in ["aaa", "aab", "abb", "bbb"]:
+        excitations[0][spincase] = np.asarray(excitations[0][spincase])
+    for spincase in ["aaaa", "aaab", "aabb", "abbb", "bbbb"]:
+        excitations[1][spincase] = np.asarray(excitations[1][spincase])
+
+    return pspace, excitations, excitation_count
 
 
 def count_excitations_in_pspace(pspace, system, ordered_index=True):

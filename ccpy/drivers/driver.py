@@ -6,7 +6,7 @@ import ccpy.cc
 import ccpy.left
 import ccpy.eomcc
 
-from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eomcc_davidson_lowmem, mrcc_jacobi
+from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eomcc_davidson_lowmem, mrcc_jacobi, ccp_linear_jacobi
 from ccpy.drivers.solvers import eccc_jacobi
 
 from ccpy.models.operators import ClusterOperator, FockOperator
@@ -16,7 +16,7 @@ from ccpy.utilities.pspace import count_excitations_in_pspace
 from copy import deepcopy
 
 
-def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, excitation_count=None):
+def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, t3_excitations=None):
     """Performs the calculation specified by the user in the input."""
 
     # check if requested CC calculation is implemented in modules
@@ -40,7 +40,7 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, excitation_
     # calculation using the CCSD cluster amplitudes.
 
 
-    if pspace is None:  # Run the standard CC solver if no explicit P space is used
+    if pspace is None and t3_excitations is None:  # Run the standard CC solver if no explicit P space is used
         if T is None:
             T = ClusterOperator(system,
                                 order=calculation.order,
@@ -61,34 +61,51 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, excitation_
                                                calculation,
                                                system,
                                                )
-    else: # Run the dedicated CC(P) solver
-        p_orders = [3 + i for i in range(len(pspace))]
-        pspace_sizes = count_excitations_in_pspace(pspace, system, ordered_index=True)
-        if T is None:
-            T = ClusterOperator(system,
-                                order=calculation.order,
-                                active_orders=calculation.active_orders,
-                                p_orders=p_orders,
-                                pspace_sizes=pspace_sizes,
-                                num_active=calculation.num_active)
+    else: # P space CC solvers
+    
+        if t3_excitations is None: # Run the slow CC(P) solver
 
-        # regardless of restart status, initialize residual anew
-        dT = ClusterOperator(system,
-                             order=calculation.order,
-                             active_orders=calculation.active_orders,
-                             p_orders=p_orders,
-                             pspace_sizes=pspace_sizes,
-                             num_active=calculation.num_active)
+            if T is None:
+                T = ClusterOperator(system, order=calculation.order)
 
-        T, corr_energy, is_converged = ccp_jacobi(
-            update_function,
-            T,
-            dT,
-            hamiltonian,
-            calculation,
-            system,
-            pspace,
-        )
+            # regardless of restart status, initialize residual anew
+            dT = ClusterOperator(system, order=calculation.order)
+
+            T, corr_energy, is_converged = ccp_jacobi(
+                update_function,
+                T,
+                dT,
+                hamiltonian,
+                calculation,
+                system,
+                pspace,
+            )
+        else: # Run the linear CC(P) solver (for CCSDT for now)
+            excitation_count = [[t3_excitations["aaa"].shape[0],
+                                 t3_excitations["aab"].shape[0],
+                                 t3_excitations["abb"].shape[0],
+                                 t3_excitations["bbb"].shape[0]]]
+            if T is None:
+                T = ClusterOperator(system,
+                                    order=calculation.order,
+                                    p_orders=[3],
+                                    pspace_sizes=excitation_count)
+                
+            # regardless of restart status, initialize residual anew
+            dT = ClusterOperator(system,
+                                 order=calculation.order,
+                                 p_orders=[3],
+                                 pspace_sizes=excitation_count)
+
+            T, corr_energy, is_converged = ccp_linear_jacobi(
+                update_function,
+                T,
+                dT,
+                hamiltonian,
+                calculation,
+                system,
+                t3_excitations,
+            )
 
     total_energy = system.reference_energy + corr_energy
 

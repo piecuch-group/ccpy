@@ -289,6 +289,13 @@ module ccp_linear_loops
                       end do
                   end do
 
+                  do a = 1, nua
+                     resid(a,a,:,:) = 0.0d0
+                  end do
+                  do i = 1, noa
+                     resid(:,:,i,i) = 0.0d0
+                  end do
+
               end subroutine update_t2a
 
               subroutine update_t2b(t2b, resid,&
@@ -552,6 +559,13 @@ module ccp_linear_loops
                       end do
                   end do
 
+                  do a = 1, nub
+                     resid(a,a,:,:) = 0.0d0
+                  end do
+                  do i = 1, nob
+                     resid(:,:,i,i) = 0.0d0
+                  end do
+
               end subroutine update_t2c
 
               subroutine update_t3a_p(t3a_amps, resid,&
@@ -708,27 +722,27 @@ module ccp_linear_loops
                       res_mm23 = 0.0d0
                       do e = 1, nua
                            ! A(i/jk)(c/ab) h2a(abie) * t2a(ecjk)
-                          res_mm23 = res_mm23 + (I2A_vvov(a, b, i, e) - I2A_vvov(b, a, i, e)) * t2a(e, c, j, k)
-                          res_mm23 = res_mm23 - (I2A_vvov(c, b, i, e) - I2A_vvov(b, c, i, e)) * t2a(e, a, j, k)
-                          res_mm23 = res_mm23 - (I2A_vvov(a, c, i, e) - I2A_vvov(c, a, i, e)) * t2a(e, b, j, k)
-                          res_mm23 = res_mm23 - (I2A_vvov(a, b, j, e) - I2A_vvov(b, a, j, e)) * t2a(e, c, i, k)
-                          res_mm23 = res_mm23 + (I2A_vvov(c, b, j, e) - I2A_vvov(b, c, j, e)) * t2a(e, a, i, k)
-                          res_mm23 = res_mm23 + (I2A_vvov(a, c, j, e) - I2A_vvov(c, a, j, e)) * t2a(e, b, i, k)
-                          res_mm23 = res_mm23 - (I2A_vvov(a, b, k, e) - I2A_vvov(b, a, k, e)) * t2a(e, c, j, i)
-                          res_mm23 = res_mm23 + (I2A_vvov(c, b, k, e) - I2A_vvov(b, c, k, e)) * t2a(e, a, j, i)
-                          res_mm23 = res_mm23 + (I2A_vvov(a, c, k, e) - I2A_vvov(c, a, k, e)) * t2a(e, b, j, i)
+                          res_mm23 = res_mm23 + (I2A_vvov(a,b,i,e) - I2A_vvov(b,a,i,e)) * t2a(e,c,j,k)
+                          res_mm23 = res_mm23 - (I2A_vvov(c,b,i,e) - I2A_vvov(b,c,i,e)) * t2a(e,a,j,k)
+                          res_mm23 = res_mm23 - (I2A_vvov(a,c,i,e) - I2A_vvov(c,a,i,e)) * t2a(e,b,j,k)
+                          res_mm23 = res_mm23 - (I2A_vvov(a,b,j,e) - I2A_vvov(b,a,j,e)) * t2a(e,c,i,k)
+                          res_mm23 = res_mm23 + (I2A_vvov(c,b,j,e) - I2A_vvov(b,c,j,e)) * t2a(e,a,i,k)
+                          res_mm23 = res_mm23 + (I2A_vvov(a,c,j,e) - I2A_vvov(c,a,j,e)) * t2a(e,b,i,k)
+                          res_mm23 = res_mm23 - (I2A_vvov(a,b,k,e) - I2A_vvov(b,a,k,e)) * t2a(e,c,j,i)
+                          res_mm23 = res_mm23 + (I2A_vvov(c,b,k,e) - I2A_vvov(b,c,k,e)) * t2a(e,a,j,i)
+                          res_mm23 = res_mm23 + (I2A_vvov(a,c,k,e) - I2A_vvov(c,a,k,e)) * t2a(e,b,j,i)
                       end do
                       do m = 1, noa
                           ! -A(k/ij)A(a/bc) h2a(amij) * t2a(bcmk)
-                          res_mm23 = res_mm23 - (I2A_vooo(a, m, i, j) - I2A_vooo(a, m, j, i)) * t2a(b, c, m, k)
-                          res_mm23 = res_mm23 + (I2A_vooo(b, m, i, j) - I2A_vooo(b, m, j, i)) * t2a(a, c, m, k)
-                          res_mm23 = res_mm23 + (I2A_vooo(c, m, i, j) - I2A_vooo(c, m, j, i)) * t2a(b, a, m, k)
-                          res_mm23 = res_mm23 + (I2A_vooo(a, m, k, j) - I2A_vooo(a, m, j, k)) * t2a(b, c, m, i)
-                          res_mm23 = res_mm23 - (I2A_vooo(b, m, k, j) - I2A_vooo(b, m, j, k)) * t2a(a, c, m, i)
-                          res_mm23 = res_mm23 - (I2A_vooo(c, m, k, j) - I2A_vooo(c, m, j, k)) * t2a(b, a, m, i)
-                          res_mm23 = res_mm23 + (I2A_vooo(a, m, i, k) - I2A_vooo(a, m, k, i)) * t2a(b, c, m, j)
-                          res_mm23 = res_mm23 - (I2A_vooo(b, m, i, k) - I2A_vooo(b, m, k, i)) * t2a(a, c, m, j)
-                          res_mm23 = res_mm23 - (I2A_vooo(c, m, i, k) - I2A_vooo(c, m, k, i)) * t2a(b, a, m, j)
+                          res_mm23 = res_mm23 - (I2A_vooo(a,m,i,j) - I2A_vooo(a,m,j,i)) * t2a(b,c,m,k)
+                          res_mm23 = res_mm23 + (I2A_vooo(b,m,i,j) - I2A_vooo(b,m,j,i)) * t2a(a,c,m,k)
+                          res_mm23 = res_mm23 + (I2A_vooo(c,m,i,j) - I2A_vooo(c,m,j,i)) * t2a(b,a,m,k)
+                          res_mm23 = res_mm23 + (I2A_vooo(a,m,k,j) - I2A_vooo(a,m,j,k)) * t2a(b,c,m,i)
+                          res_mm23 = res_mm23 - (I2A_vooo(b,m,k,j) - I2A_vooo(b,m,j,k)) * t2a(a,c,m,i)
+                          res_mm23 = res_mm23 - (I2A_vooo(c,m,k,j) - I2A_vooo(c,m,j,k)) * t2a(b,a,m,i)
+                          res_mm23 = res_mm23 + (I2A_vooo(a,m,i,k) - I2A_vooo(a,m,k,i)) * t2a(b,c,m,j)
+                          res_mm23 = res_mm23 - (I2A_vooo(b,m,i,k) - I2A_vooo(b,m,k,i)) * t2a(a,c,m,j)
+                          res_mm23 = res_mm23 - (I2A_vooo(c,m,i,k) - I2A_vooo(c,m,k,i)) * t2a(b,a,m,j)
                       end do
 
                       ! fully antisymmetrize x3a(abcijk)
@@ -1026,33 +1040,33 @@ module ccp_linear_loops
                       res_mm23 = 0.0d0
                       do e = 1, nua
                           ! A(ab) I2B(bcek) * t2a(aeij)
-                          res_mm23 = res_mm23 + I2B_vvvo(b, c, e, k) * t2a(a, e, i, j)
-                          res_mm23 = res_mm23 - I2B_vvvo(a, c, e, k) * t2a(b, e, i, j)
+                          res_mm23 = res_mm23 + I2B_vvvo(b,c,e,k) * t2a(a,e,i,j)
+                          res_mm23 = res_mm23 - I2B_vvvo(a,c,e,k) * t2a(b,e,i,j)
                           ! A(ij) I2A(abie) * t2b(ecjk)
-                          res_mm23 = res_mm23 + (I2A_vvov(a, b, i, e) - I2A_vvov(b, a, i, e)) * t2b(e, c, j, k)
-                          res_mm23 = res_mm23 - (I2A_vvov(a, b, j, e) - I2A_vvov(b, a, j, e)) * t2b(e, c, i, k)
+                          res_mm23 = res_mm23 + (I2A_vvov(a,b,i,e) - I2A_vvov(b,a,i,e)) * t2b(e,c,j,k)
+                          res_mm23 = res_mm23 - (I2A_vvov(a,b,j,e) - I2A_vvov(b,a,j,e)) * t2b(e,c,i,k)
                       end do
                       do e = 1, nub
                           ! A(ij)A(ab) I2B(acie) * t2b(bejk)
-                          res_mm23 = res_mm23 + I2B_vvov(a, c, i, e) * t2b(b, e, j, k)
-                          res_mm23 = res_mm23 - I2B_vvov(a, c, j, e) * t2b(b, e, i, k)
-                          res_mm23 = res_mm23 - I2B_vvov(b, c, i, e) * t2b(a, e, j, k)
-                          res_mm23 = res_mm23 + I2B_vvov(b, c, j, e) * t2b(a, e, i, k)
+                          res_mm23 = res_mm23 + I2B_vvov(a,c,i,e) * t2b(b,e,j,k)
+                          res_mm23 = res_mm23 - I2B_vvov(a,c,j,e) * t2b(b,e,i,k)
+                          res_mm23 = res_mm23 - I2B_vvov(b,c,i,e) * t2b(a,e,j,k)
+                          res_mm23 = res_mm23 + I2B_vvov(b,c,j,e) * t2b(a,e,i,k)
                       end do
                       do m = 1, noa
                           ! -A(ij) h2b(mcjk) * t2a(abim) 
-                          res_mm23 = res_mm23 - I2B_ovoo(m, c, j, k) * t2a(a, b, i, m)
-                          res_mm23 = res_mm23 + I2B_ovoo(m, c, i, k) * t2a(a, b, j, m)
+                          res_mm23 = res_mm23 - I2B_ovoo(m,c,j,k) * t2a(a,b,i,m)
+                          res_mm23 = res_mm23 + I2B_ovoo(m,c,i,k) * t2a(a,b,j,m)
                           ! -A(ab) h2a(amij) * t2b(bcmk)
-                          res_mm23 = res_mm23 - (I2A_vooo(a, m, i, j) - I2A_vooo(a, m, j, i)) * t2b(b, c, m, k)
-                          res_mm23 = res_mm23 + (I2A_vooo(b, m, i, j) - I2A_vooo(b, m, j, i)) * t2b(a, c, m, k)
+                          res_mm23 = res_mm23 - (I2A_vooo(a,m,i,j) - I2A_vooo(a,m,j,i)) * t2b(b,c,m,k)
+                          res_mm23 = res_mm23 + (I2A_vooo(b,m,i,j) - I2A_vooo(b,m,j,i)) * t2b(a,c,m,k)
                       end do
                       do m = 1, nob
                           ! -A(ij)A(ab) h2b(amik) * t2b(bcjm)
-                          res_mm23 = res_mm23 - I2B_vooo(a, m, i, k) * t2b(b, c, j, m)
-                          res_mm23 = res_mm23 + I2B_vooo(b, m, i, k) * t2b(a, c, j, m)
-                          res_mm23 = res_mm23 + I2B_vooo(a, m, j, k) * t2b(b, c, i, m)
-                          res_mm23 = res_mm23 - I2B_vooo(b, m, j, k) * t2b(a, c, i, m)
+                          res_mm23 = res_mm23 - I2B_vooo(a,m,i,k) * t2b(b,c,j,m)
+                          res_mm23 = res_mm23 + I2B_vooo(b,m,i,k) * t2b(a,c,j,m)
+                          res_mm23 = res_mm23 + I2B_vooo(a,m,j,k) * t2b(b,c,i,m)
+                          res_mm23 = res_mm23 - I2B_vooo(b,m,j,k) * t2b(a,c,i,m)
                       end do
 
                       ! fully antisymmetrize x3a(abcijk)
@@ -1343,33 +1357,33 @@ module ccp_linear_loops
                       res_mm23 = 0.0
                       do e = 1, nua
                           ! A(jk)A(bc) h2B(abej) * t2b(ecik)
-                          res_mm23 = res_mm23 + I2B_vvvo(a, b, e, j) * t2b(e, c, i, k)
-                          res_mm23 = res_mm23 - I2B_vvvo(a, b, e, k) * t2b(e, c, i, j)
-                          res_mm23 = res_mm23 - I2B_vvvo(a, c, e, j) * t2b(e, b, i, k)
-                          res_mm23 = res_mm23 + I2B_vvvo(a, c, e, k) * t2b(e, b, i, j)
+                          res_mm23 = res_mm23 + I2B_vvvo(a,b,e,j) * t2b(e,c,i,k)
+                          res_mm23 = res_mm23 - I2B_vvvo(a,b,e,k) * t2b(e,c,i,j)
+                          res_mm23 = res_mm23 - I2B_vvvo(a,c,e,j) * t2b(e,b,i,k)
+                          res_mm23 = res_mm23 + I2B_vvvo(a,c,e,k) * t2b(e,b,i,j)
                       end do
                       do e = 1, nub
                           ! A(bc) h2B(abie) * t2c(ecjk)
-                          res_mm23 = res_mm23 + I2B_vvov(a, b, i, e) * t2c(e, c, j, k)
-                          res_mm23 = res_mm23 - I2B_vvov(a, c, i, e) * t2c(e, b, j, k)
+                          res_mm23 = res_mm23 + I2B_vvov(a,b,i,e) * t2c(e,c,j,k)
+                          res_mm23 = res_mm23 - I2B_vvov(a,c,i,e) * t2c(e,b,j,k)
                           ! A(jk) h2C(cbke) * t2b(aeij)
-                          res_mm23 = res_mm23 + (I2C_vvov(c, b, k, e) - I2C_vvov(b, c, k, e)) * t2b(a, e, i, j)
-                          res_mm23 = res_mm23 - (I2C_vvov(c, b, j, e) - I2C_vvov(b, c, j, e)) * t2b(a, e, i, k)
+                          res_mm23 = res_mm23 + (I2C_vvov(c,b,k,e) - I2C_vvov(b,c,k,e)) * t2b(a,e,i,j)
+                          res_mm23 = res_mm23 - (I2C_vvov(c,b,j,e) - I2C_vvov(b,c,j,e)) * t2b(a,e,i,k)
                       end do
                       do m = 1, noa
                           ! -A(kj)A(bc) h2b(mbij) * t2b(acmk)
-                          res_mm23 = res_mm23 - I2B_ovoo(m, b, i, j) * t2b(a, c, m, k)
-                          res_mm23 = res_mm23 + I2B_ovoo(m, c, i, j) * t2b(a, b, m, k)
-                          res_mm23 = res_mm23 + I2B_ovoo(m, b, i, k) * t2b(a, c, m, j)
-                          res_mm23 = res_mm23 - I2B_ovoo(m, c, i, k) * t2b(a, b, m, j)
+                          res_mm23 = res_mm23 - I2B_ovoo(m,b,i,j) * t2b(a,c,m,k)
+                          res_mm23 = res_mm23 + I2B_ovoo(m,c,i,j) * t2b(a,b,m,k)
+                          res_mm23 = res_mm23 + I2B_ovoo(m,b,i,k) * t2b(a,c,m,j)
+                          res_mm23 = res_mm23 - I2B_ovoo(m,c,i,k) * t2b(a,b,m,j)
                       end do
                       do m = 1, nob
                           ! -A(jk) h2b(amij) * t2c(bcmk)
-                          res_mm23 = res_mm23 - I2B_vooo(a, m, i, j) * t2c(b, c, m, k)
-                          res_mm23 = res_mm23 + I2B_vooo(a, m, i, k) * t2c(b, c, m, j)
+                          res_mm23 = res_mm23 - I2B_vooo(a,m,i,j) * t2c(b,c,m,k)
+                          res_mm23 = res_mm23 + I2B_vooo(a,m,i,k) * t2c(b,c,m,j)
                           ! -A(bc) h2c(cmkj) * t2b(abim)
-                          res_mm23 = res_mm23 - (I2C_vooo(c, m, k, j) - I2C_vooo(c, m, j, k)) * t2b(a, b, i, m)
-                          res_mm23 = res_mm23 + (I2C_vooo(b, m, k, j) - I2C_vooo(b, m, j, k)) * t2b(a, c, i, m)
+                          res_mm23 = res_mm23 - (I2C_vooo(c,m,k,j) - I2C_vooo(c,m,j,k)) * t2b(a,b,i,m)
+                          res_mm23 = res_mm23 + (I2C_vooo(b,m,k,j) - I2C_vooo(b,m,j,k)) * t2b(a,c,i,m)
                       end do
 
                       denom = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
@@ -1536,27 +1550,27 @@ module ccp_linear_loops
                       res_mm23 = 0.0d0
                       do e = 1, nub
                            ! A(i/jk)(c/ab) h2c(abie) * t2c(ecjk)
-                          res_mm23 = res_mm23 + (I2C_vvov(a, b, i, e) - I2C_vvov(b, a, i, e)) * t2c(e, c, j, k)
-                          res_mm23 = res_mm23 - (I2C_vvov(c, b, i, e) - I2C_vvov(b, c, i, e)) * t2c(e, a, j, k)
-                          res_mm23 = res_mm23 - (I2C_vvov(a, c, i, e) - I2C_vvov(c, a, i, e)) * t2c(e, b, j, k)
-                          res_mm23 = res_mm23 - (I2C_vvov(a, b, j, e) - I2C_vvov(b, a, j, e)) * t2c(e, c, i, k)
-                          res_mm23 = res_mm23 + (I2C_vvov(c, b, j, e) - I2C_vvov(b, c, j, e)) * t2c(e, a, i, k)
-                          res_mm23 = res_mm23 + (I2C_vvov(a, c, j, e) - I2C_vvov(c, a, j, e)) * t2c(e, b, i, k)
-                          res_mm23 = res_mm23 - (I2C_vvov(a, b, k, e) - I2C_vvov(b, a, k, e)) * t2c(e, c, j, i)
-                          res_mm23 = res_mm23 + (I2C_vvov(c, b, k, e) - I2C_vvov(b, c, k, e)) * t2c(e, a, j, i)
-                          res_mm23 = res_mm23 + (I2C_vvov(a, c, k, e) - I2C_vvov(c, a, k, e)) * t2c(e, b, j, i)
+                          res_mm23 = res_mm23 + (I2C_vvov(a,b,i,e) - I2C_vvov(b,a,i,e)) * t2c(e,c,j,k)
+                          res_mm23 = res_mm23 - (I2C_vvov(c,b,i,e) - I2C_vvov(b,c,i,e)) * t2c(e,a,j,k)
+                          res_mm23 = res_mm23 - (I2C_vvov(a,c,i,e) - I2C_vvov(c,a,i,e)) * t2c(e,b,j,k)
+                          res_mm23 = res_mm23 - (I2C_vvov(a,b,j,e) - I2C_vvov(b,a,j,e)) * t2c(e,c,i,k)
+                          res_mm23 = res_mm23 + (I2C_vvov(c,b,j,e) - I2C_vvov(b,c,j,e)) * t2c(e,a,i,k)
+                          res_mm23 = res_mm23 + (I2C_vvov(a,c,j,e) - I2C_vvov(c,a,j,e)) * t2c(e,b,i,k)
+                          res_mm23 = res_mm23 - (I2C_vvov(a,b,k,e) - I2C_vvov(b,a,k,e)) * t2c(e,c,j,i)
+                          res_mm23 = res_mm23 + (I2C_vvov(c,b,k,e) - I2C_vvov(b,c,k,e)) * t2c(e,a,j,i)
+                          res_mm23 = res_mm23 + (I2C_vvov(a,c,k,e) - I2C_vvov(c,a,k,e)) * t2c(e,b,j,i)
                       end do
                       do m = 1, nob
                           ! -A(k/ij)A(a/bc) h2c(amij) * t2c(bcmk)
-                          res_mm23 = res_mm23 - (I2C_vooo(a, m, i, j) - I2C_vooo(a, m, j, i)) * t2c(b, c, m, k)
-                          res_mm23 = res_mm23 + (I2C_vooo(b, m, i, j) - I2C_vooo(b, m, j, i)) * t2c(a, c, m, k)
-                          res_mm23 = res_mm23 + (I2C_vooo(c, m, i, j) - I2C_vooo(c, m, j, i)) * t2c(b, a, m, k)
-                          res_mm23 = res_mm23 + (I2C_vooo(a, m, k, j) - I2C_vooo(a, m, j, k)) * t2c(b, c, m, i)
-                          res_mm23 = res_mm23 - (I2C_vooo(b, m, k, j) - I2C_vooo(b, m, j, k)) * t2c(a, c, m, i)
-                          res_mm23 = res_mm23 - (I2C_vooo(c, m, k, j) - I2C_vooo(c, m, j, k)) * t2c(b, a, m, i)
-                          res_mm23 = res_mm23 + (I2C_vooo(a, m, i, k) - I2C_vooo(a, m, k, i)) * t2c(b, c, m, j)
-                          res_mm23 = res_mm23 - (I2C_vooo(b, m, i, k) - I2C_vooo(b, m, k, i)) * t2c(a, c, m, j)
-                          res_mm23 = res_mm23 - (I2C_vooo(c, m, i, k) - I2C_vooo(c, m, k, i)) * t2c(b, a, m, j)
+                          res_mm23 = res_mm23 - (I2C_vooo(a,m,i,j) - I2C_vooo(a,m,j,i)) * t2c(b,c,m,k)
+                          res_mm23 = res_mm23 + (I2C_vooo(b,m,i,j) - I2C_vooo(b,m,j,i)) * t2c(a,c,m,k)
+                          res_mm23 = res_mm23 + (I2C_vooo(c,m,i,j) - I2C_vooo(c,m,j,i)) * t2c(b,a,m,k)
+                          res_mm23 = res_mm23 + (I2C_vooo(a,m,k,j) - I2C_vooo(a,m,j,k)) * t2c(b,c,m,i)
+                          res_mm23 = res_mm23 - (I2C_vooo(b,m,k,j) - I2C_vooo(b,m,j,k)) * t2c(a,c,m,i)
+                          res_mm23 = res_mm23 - (I2C_vooo(c,m,k,j) - I2C_vooo(c,m,j,k)) * t2c(b,a,m,i)
+                          res_mm23 = res_mm23 + (I2C_vooo(a,m,i,k) - I2C_vooo(a,m,k,i)) * t2c(b,c,m,j)
+                          res_mm23 = res_mm23 - (I2C_vooo(b,m,i,k) - I2C_vooo(b,m,k,i)) * t2c(a,c,m,j)
+                          res_mm23 = res_mm23 - (I2C_vooo(c,m,i,k) - I2C_vooo(c,m,k,i)) * t2c(b,a,m,j)
                       end do
 
                       denom = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)

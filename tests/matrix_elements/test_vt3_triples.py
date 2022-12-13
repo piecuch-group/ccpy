@@ -1009,7 +1009,7 @@ if __name__ == "__main__":
     """
 
     mol.build(
-        atom=fluorine,
+        atom=methylene,
         basis="ccpvdz",
         symmetry="C2V",
         spin=0, 
@@ -1019,7 +1019,7 @@ if __name__ == "__main__":
     )
     mf = scf.ROHF(mol).run()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=2)
+    system, H = load_pyscf_integrals(mf, nfrozen=1)
     system.print_info()
 
     calculation = Calculation(calculation_type="ccsdt")
@@ -1085,9 +1085,9 @@ if __name__ == "__main__":
     flag = True
     err_cum = 0.0
     for a in range(system.nunoccupied_alpha):
-        for b in range(a + 1, system.nunoccupied_alpha):
+        for b in range(system.nunoccupied_alpha):
             for i in range(system.noccupied_alpha):
-                for j in range(i + 1, system.noccupied_alpha):
+                for j in range(system.noccupied_alpha):
                     denom = (
                                 H.a.oo[i, i] + H.a.oo[j, j] 
                               - H.a.vv[a, a] - H.a.vv[b, b]
@@ -1123,9 +1123,9 @@ if __name__ == "__main__":
     flag = True
     err_cum = 0.0
     for a in range(system.nunoccupied_beta):
-        for b in range(a + 1, system.nunoccupied_beta):
+        for b in range(system.nunoccupied_beta):
             for i in range(system.noccupied_beta):
-                for j in range(i + 1, system.noccupied_beta):
+                for j in range(system.noccupied_beta):
                     denom = (
                                 H.b.oo[i, i] + H.b.oo[j, j] 
                               - H.b.vv[a, a] - H.b.vv[b, b]
@@ -1134,6 +1134,7 @@ if __name__ == "__main__":
                     err_cum += abs(error)
                     if abs(error) > 1.0e-012:
                         flag = False
+                        print(a, b, i, j, "Expected = ", x2_bb_exact[a, b, i, j], "Got = ", x2_bb[a, b, i ,j])
     if flag:
         print("T2C update passed!", "Cumulative Error = ", err_cum)
     else:
