@@ -1,14 +1,13 @@
-"""In this script, we test out the idea of using the 'amplitude-driven' approach
-to constructing the sparse triples projection < ijkabc | (H(2) * T3)_C | 0 >, where
-T3 is sparse and defined over a given list of triples."""
+"""This script does a direct check of the update function of the CC(P) method against
+the full CCSDT method."""
 import numpy as np
 import time
+from copy import deepcopy
 
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.drivers.driver import cc_driver
 from ccpy.models.calculation import Calculation
-
-from ccpy.utilities.updates import ccp_linear_loops
+from ccpy.models.operators import ClusterOperator
 
 from ccpy.cc.ccsdt import update
 from ccpy.cc.ccsdt_p_linear import update as update_p
@@ -79,7 +78,7 @@ if __name__ == "__main__":
     """
 
     mol.build(
-        atom=methylene,
+        atom=fluorine,
         basis="ccpvdz",
         symmetry="C2V",
         spin=0, 
@@ -89,24 +88,37 @@ if __name__ == "__main__":
     )
     mf = scf.ROHF(mol).run()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=1)
+    system, H = load_pyscf_integrals(mf, nfrozen=2)
     system.print_info()
 
     calculation = Calculation(calculation_type="ccsdt")
     T, cc_energy, converged = cc_driver(calculation, system, H)
 
     T3_excitations, T3_amplitudes = get_T3_list(T)
+    excitation_count = [[T3_excitations["aaa"].shape[0],
+                         T3_excitations["aab"].shape[0],
+                         T3_excitations["abb"].shape[0],
+                         T3_excitations["bbb"].shape[0]]]
 
     # Get the expected result for the contraction, computed using full T_ext
     print("   Exact H*T3 contraction", end="")
+    T_ex = deepcopy(T)
+    dT_ex = ClusterOperator(system, order=3)
     t1 = time.time()
-    T_ex, dT_ex = update(T, dT, H, shift=0.0, flag_RHF=False)
+    T_ex, dT_ex = update(T_ex, dT_ex, H, 0.0, False, system)
     print(" (Completed in ", time.time() - t1, "seconds)")
 
     # Get the on-the-fly contraction result
     print("   On-the-fly H*T3 contraction (Fortran)", end="")
+    dT_p = ClusterOperator(system, order=3, p_orders=[3], pspace_sizes=excitation_count)
+    T_p = ClusterOperator(system, order=3, p_orders=[3], pspace_sizes=excitation_count)
+    T_p.unflatten(
+        np.hstack((T.a.flatten(), T.b.flatten(),
+                   T.aa.flatten(), T.ab.flatten(), T.bb.flatten(),
+                   T3_amplitudes["aaa"], T3_amplitudes["aab"], T3_amplitudes["abb"], T3_amplitudes["bbb"]))
+    )
     t1 = time.time()
-    T_p, dT_p = update_p(T, dT, H, shift=0.0, flag_RHF=False, system, t3_excitations=T3_excitations)
+    T_p, dT_p = update_p(T_p, dT_p, H, 0.0, False, system, T3_excitations)
     print(" (Completed in ", time.time() - t1, "seconds)")
 
     print("")
