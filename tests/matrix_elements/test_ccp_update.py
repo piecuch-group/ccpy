@@ -78,17 +78,17 @@ if __name__ == "__main__":
     """
 
     mol.build(
-        atom=fluorine,
+        atom=methylene,
         basis="ccpvdz",
         symmetry="C2V",
         spin=0, 
         charge=0,
         unit="Bohr",
-        cart=True,
+        cart=False,
     )
     mf = scf.ROHF(mol).run()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=2)
+    system, H = load_pyscf_integrals(mf, nfrozen=1)
     system.print_info()
 
     calculation = Calculation(calculation_type="ccsdt")

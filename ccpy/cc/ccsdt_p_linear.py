@@ -9,6 +9,18 @@ from ccpy.utilities.updates import ccp_linear_loops
 
 def update(T, dT, H, shift, flag_RHF, system, t3_excitations):
 
+    # determine whether t3 updates should be done. Stupid compatibility with
+    # empty sections of t3_excitations
+    do_t3 = {"aaa" : True, "aab" : True, "abb" : True, "bbb" : True}
+    if np.array_equal(t3_excitations["aaa"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_t3["aaa"] = False
+    if np.array_equal(t3_excitations["aab"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_t3["aab"] = False
+    if np.array_equal(t3_excitations["abb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_t3["abb"] = False
+    if np.array_equal(t3_excitations["bbb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_t3["bbb"] = False
+
     # update T1
     T, dT = update_t1a(T, dT, H, shift, t3_excitations)
     if flag_RHF:
@@ -34,10 +46,18 @@ def update(T, dT, H, shift, flag_RHF, system, t3_excitations):
     hbar = get_ccsd_intermediates(T, H)
 
     # update T3
-    T, dT = update_t3a(T, dT, hbar, H, shift, t3_excitations)
-    T, dT = update_t3b(T, dT, hbar, H, shift, t3_excitations)
-    T, dT = update_t3c(T, dT, hbar, H, shift, t3_excitations)
-    T, dT = update_t3d(T, dT, hbar, H, shift, t3_excitations)
+    if do_t3["aaa"]:
+        T, dT = update_t3a(T, dT, hbar, H, shift, t3_excitations)
+    if do_t3["aab"]:
+        T, dT = update_t3b(T, dT, hbar, H, shift, t3_excitations)
+    if flag_RHF:
+        T.abb = T.aab.copy()
+        T.bbb = T.aaa.copy()
+    else:
+        if do_t3["abb"]:
+            T, dT = update_t3c(T, dT, hbar, H, shift, t3_excitations)
+        if do_t3["bbb"]:
+            T, dT = update_t3d(T, dT, hbar, H, shift, t3_excitations)
 
     return T, dT
 

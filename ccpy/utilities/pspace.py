@@ -205,8 +205,12 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3, ordered_index=True):
     # convert excitation arrays to Numpy arrays
     for spincase in ["aaa", "aab", "abb", "bbb"]:
         excitations[0][spincase] = np.asarray(excitations[0][spincase])
+        if len(excitations[0][spincase].shape) < 2:
+            excitations[0][spincase] = np.ones((1, 6))
     for spincase in ["aaaa", "aaab", "aabb", "abbb", "bbbb"]:
         excitations[1][spincase] = np.asarray(excitations[1][spincase])
+        if len(excitations[1][spincase].shape) < 2:
+            excitations[1][spincase] = np.ones((1, 8))
 
     return pspace, excitations, excitation_count
 
@@ -278,11 +282,22 @@ def count_excitations_in_pspace(pspace, system, ordered_index=True):
     return excitation_count
 
 
-def add_spinorbital_triples_to_pspace(triples_list, pspace, ordered_index=True):
+def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, system, ordered_index=False):
     """Expand the size of the previous P space using the determinants contained in the list
     of triples (stored as a, b, c, i, j, k) in triples_list. The variable triples_list stores
     triples in spinorbital form, where all orbital indices start from 1 and odd indices
     correspond to alpha orbitals while even indices corresopnd to beta orbitals."""
+
+    def _add_t3_excitations(new_t3_excitations, old_t3_excitations, num_add, spincase):
+        if num_add > 0:
+            if np.array_equal(old_t3_excitations[spincase][0, :], np.ones(6)):
+                new_t3_excitations[spincase] = np.asarray(new_t3_excitations[spincase])
+            else:
+                new_t3_excitations[spincase] = np.vstack((old_t3_excitations[spincase], np.asarray(new_t3_excitations[spincase])))
+        else:
+            new_t3_excitations[spincase] = old_t3_excitations[spincase].copy()
+
+        return new_t3_excitations
 
     # should these be copied?
     new_pspace = {
@@ -291,6 +306,13 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, ordered_index=True):
         "abb": pspace["abb"],
         "bbb": pspace["bbb"],
     }
+    new_t3_excitations = {
+        "aaa" : [],
+        "aab" : [],
+        "abb" : [],
+        "bbb" : []
+    }
+
 
     if ordered_index:
         ct_aaa = np.max(pspace["aaa"].flatten()) + 1
@@ -299,12 +321,18 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, ordered_index=True):
         ct_bbb = np.max(pspace["bbb"].flatten()) + 1
 
     num_add = triples_list.shape[0]
+    n3aaa = 0
+    n3aab = 0
+    n3abb = 0
+    n3bbb = 0
     for n in range(num_add):
         num_alpha = int(sum([x % 2 for x in triples_list[n, :]]) / 2)
         idx = [spatial_orb_idx(p) - 1 for p in triples_list[n, :]]
         a, b, c, i, j, k = idx
 
         if num_alpha == 3:
+            new_t3_excitations["aaa"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+            n3aaa += 1
             for perms_unocc in permutations((a, b, c)):
                 for perms_occ in permutations((i, j, k)):
                     a, b, c = perms_unocc
@@ -314,8 +342,10 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, ordered_index=True):
                         ct_aaa += 1
                     else:
                         new_pspace['aaa'][a, b, c, i, j, k] = 1
-
+                   
         if num_alpha == 2:
+            new_t3_excitations["aab"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+            n3aab += 1
             for perms_unocc in permutations((a, b)):
                 for perms_occ in permutations((i, j)):
                     a, b = perms_unocc
@@ -327,6 +357,8 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, ordered_index=True):
                         new_pspace['aab'][a, b, c, i, j, k] = 1
 
         if num_alpha == 1:
+            new_t3_excitations["abb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+            n3abb += 1
             for perms_unocc in permutations((b, c)):
                 for perms_occ in permutations((j, k)):
                     b, c = perms_unocc
@@ -338,6 +370,8 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, ordered_index=True):
                         new_pspace['abb'][a, b, c, i, j, k] = 1
 
         if num_alpha == 0:
+            new_t3_excitations["bbb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+            n3bbb += 1
             for perms_unocc in permutations((a, b, c)):
                 for perms_occ in permutations((i, j, k)):
                     a, b, c = perms_unocc
@@ -348,7 +382,13 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, ordered_index=True):
                     else:
                         new_pspace['bbb'][a, b, c, i, j, k] = 1
 
-    return new_pspace
+    # Update the t3 excitation lists with the new content from the moment selection
+    new_t3_excitations = _add_t3_excitations(new_t3_excitations, t3_excitations, n3aaa, "aaa") 
+    new_t3_excitations = _add_t3_excitations(new_t3_excitations, t3_excitations, n3aab, "aab") 
+    new_t3_excitations = _add_t3_excitations(new_t3_excitations, t3_excitations, n3abb, "abb") 
+    new_t3_excitations = _add_t3_excitations(new_t3_excitations, t3_excitations, n3bbb, "bbb") 
+
+    return new_pspace, new_t3_excitations
 
 
 def add_spinorbital_quadruples_to_pspace(quadruples_list, pspace):

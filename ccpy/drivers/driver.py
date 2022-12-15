@@ -81,10 +81,21 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, t3_excitati
                 pspace,
             )
         else: # Run the linear CC(P) solver (for CCSDT for now)
-            excitation_count = [[t3_excitations["aaa"].shape[0],
-                                 t3_excitations["aab"].shape[0],
-                                 t3_excitations["abb"].shape[0],
-                                 t3_excitations["bbb"].shape[0]]]
+
+            # Get dimensions of T3 spincases in P space
+            n3aaa = t3_excitations["aaa"].shape[0]
+            n3aab = t3_excitations["aab"].shape[0]
+            n3abb = t3_excitations["abb"].shape[0]
+            n3bbb = t3_excitations["bbb"].shape[0]
+            excitation_count = [[n3aaa, n3aab, n3abb, n3bbb]]
+
+            # If RHF, copy aab into abb and aaa in bbb
+            if calculation.RHF_symmetry:
+                assert(n3aaa == n3bbb)
+                assert(n3aab == n3abb)
+                t3_excitations["bbb"] = t3_excitations["aaa"].copy() 
+                t3_excitations["abb"] = t3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]] # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
+
             if T is None:
                 T = ClusterOperator(system,
                                     order=calculation.order,

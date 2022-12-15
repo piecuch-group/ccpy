@@ -55,7 +55,7 @@ class Calculation:
             self.order = 3
             self.num_particles = 3
             self.num_holes = 3
-        elif calculation_type.lower() in ["ccsdt_p", "ccsdt_p_linear"]:
+        elif calculation_type.lower() in ["ccsdt_p", "ccsdt_p_linear", "ccsdt_p_linear_omp", "adapt_ccsdt"]:
             self.order = 3
             self.num_particles = 3
             self.num_holes = 3
