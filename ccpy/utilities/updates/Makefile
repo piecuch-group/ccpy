@@ -12,6 +12,7 @@ MODULES := cc_loops \
 		   ccp_opt_loops \
 		   ccp_opt_loops_v2 \
 		   ccp_linear_loops \
+		   ccp_linear_loops_omp \
 		   eomcc_active_loops \
 		   cc_active_loops \
 		   cct3_loops \
@@ -33,7 +34,7 @@ TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 #		-ffixed-line-length-132 \
 #		-O3 \
 #		-std=f2018
-FFLAGS := -std=f2018 -O3 -ffree-line-length-512
+FFLAGS := -std=f2018 -O3 -ffree-line-length-512 -fopenmp -lgomp
 
 ifeq ($(CONDA_PREFIX),)
 	MKLFOLDER := $(MKLROOT)/lib/intel64
