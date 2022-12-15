@@ -22,7 +22,8 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
     # check if requested CC(P) calculation is implemented in modules
     # assuming the underlying CC(P) follows in the * in the calculation_type
     # input adapt_*, as in adapt_ccsdt -> "ccsdt_p:
-    setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p")
+    #setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_slow")
+    setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_linear")
 
     # make the left-CC calculation using the CC(P) parameters (maybe this isn't the best way)
     calculation_left = Calculation(
@@ -36,24 +37,20 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
 
     # start with an empty P space
     pspace = get_empty_pspace(system, calculation.order)
+    # Start with empty t3_excitations; remember, a single entry of [1., 1., 1., 1., 1., 1.]
+    # in t3_excitations[spincase] is the default to signal that there are 0 triples in that 
+    # category
+    t3_excitations = {"aaa" : np.ones((1, 6)),
+                      "aab" : np.ones((1, 6)),
+                      "abb" : np.ones((1, 6)),
+                      "bbb" : np.ones((1, 6))}
 
     # get total number of external determinants in the problem (e.g., triples)
-    if calculation.order == 3:
-        count_sym, _ = count_triples(system)
-        num_total = count_sym[system.point_group_irrep_to_number[system.reference_symmetry]]
-        n1 = int(0.01 * num_total)
-        print("   The total number of triples of ground-state symmetry ({}) is {}".format(system.reference_symmetry, num_total))
-        print("   The increment of 1% is {}".format(n1))
-    elif calculation.order == 4:
-        count_sym_t3, _ = count_triples(system)
-        count_sym_t4, _ = count_quadruples(system)
-        num_t3 = count_sym_t3[system.point_group_irrep_to_number[system.reference_symmetry]]
-        num_t4 = count_sym_t4[system.point_group_irrep_to_number[system.reference_symmetry]]
-        num_total = num_t3 + num_t4
-        n1 = int(0.01 * num_total)
-        print("   The total number of triples of ground-state symmetry ({}) is {}".format(system.reference_symmetry, num_t3))
-        print("   The total number of quadruples of ground-state symmetry ({}) is {}".format(system.reference_symmetry, num_t4))
-        print("   The increment of 1% is {}".format(n1))
+    count_sym, _ = count_triples(system)
+    num_total = count_sym[system.point_group_irrep_to_number[system.reference_symmetry]]
+    n1 = int(0.01 * num_total)
+    print("   The total number of triples of ground-state symmetry ({}) is {}".format(system.reference_symmetry, num_total))
+    print("   The increment of 1% is {}".format(n1))
 
     calculation.adaptive_percentages.insert(0, 0.0)
     num_calcs = len(calculation.adaptive_percentages)
@@ -80,9 +77,11 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
         
         # Perform CC(P) calculation using previous T vector as initial guess
         if n > 0:
-            T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace, T=T)
+            #T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace, T=T)
+            T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations)
         else:
-            T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace)
+            #T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace)
+            T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations)
         #assert(is_converged)
 
         # Build CCSD-like Hbar from CC(P) 
@@ -102,7 +101,7 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
                                                                              num_dets_to_add[n],
                                                                              use_RHF=calculation.RHF_symmetry)
             # add the triples
-            pspace[0] = add_spinorbital_triples_to_pspace(triples_list, pspace[0])
+            pspace[0], t3_excitations = add_spinorbital_triples_to_pspace(triples_list, pspace[0], t3_excitations, system)
 
         else:
             Eccp3, deltap3 = calc_ccp3(T, L, Hbar, hamiltonian, system, pspace, use_RHF=calculation.RHF_symmetry)
