@@ -645,9 +645,9 @@ module ccp_quadratic_loops
                       m = t3a_excits(idet,4); n = t3a_excits(idet,5); k = t3a_excits(idet,6);
                       do i = 1, noa
                           do j = i+1, noa
-                              if (pspace(a,b,c,i,j,k)) x3a(a,b,c,i,j,k) = x3a(a,b,c,i,j,k) + H2A_oooo(m,n,i,j) * t_amp ! (1)
-                              if (pspace(a,b,c,i,j,m)) x3a(a,b,c,i,j,m) = x3a(a,b,c,i,j,m) - H2A_oooo(k,n,i,j) * t_amp ! (mk)
-                              if (pspace(a,b,c,i,j,n)) x3a(a,b,c,i,j,n) = x3a(a,b,c,i,j,n) - H2A_oooo(m,k,i,j) * t_amp ! (nk)
+                              if (pspace(a,b,c,j,i,k)) x3a(a,b,c,j,i,k) = x3a(a,b,c,j,i,k) + H2A_oooo(m,n,j,i) * t_amp ! (1)
+                              if (pspace(a,b,c,j,i,m)) x3a(a,b,c,j,i,m) = x3a(a,b,c,j,i,m) - H2A_oooo(k,n,j,i) * t_amp ! (mk)
+                              if (pspace(a,b,c,j,i,n)) x3a(a,b,c,j,i,n) = x3a(a,b,c,j,i,n) - H2A_oooo(m,k,j,i) * t_amp ! (nk)
                           end do
                       end do
 
@@ -657,9 +657,9 @@ module ccp_quadratic_loops
                       i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
                       do a = 1, nua
                           do b = a+1, nua
-                              if (pspace(a,b,c,i,j,k)) x3a(a,b,c,i,j,k) = x3a(a,b,c,i,j,k) + H2A_vvvv(a,b,e,f) * t_amp ! (1)
-                              if (pspace(a,b,e,i,j,k)) x3a(a,b,e,i,j,k) = x3a(a,b,e,i,j,k) - H2A_vvvv(a,b,c,f) * t_amp ! (ec)
-                              if (pspace(a,b,f,i,j,k)) x3a(a,b,f,i,j,k) = x3a(a,b,f,i,j,k) - H2A_vvvv(a,b,e,c) * t_amp ! (fc)
+                              if (pspace(b,a,c,i,j,k)) x3a(b,a,c,i,j,k) = x3a(b,a,c,i,j,k) + H2A_vvvv(b,a,e,f) * t_amp ! (1)
+                              if (pspace(b,a,e,i,j,k)) x3a(b,a,e,i,j,k) = x3a(b,a,e,i,j,k) - H2A_vvvv(b,a,c,f) * t_amp ! (ec)
+                              if (pspace(b,a,f,i,j,k)) x3a(b,a,f,i,j,k) = x3a(b,a,f,i,j,k) - H2A_vvvv(b,a,e,c) * t_amp ! (fc)
                           end do
                       end do
 
@@ -919,65 +919,103 @@ module ccp_quadratic_loops
                       ! x3b(abcijk) <- A(ij)A(ab) [-h1b(mk) * t3b(abcijm)]
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); m = t3b_excits(idet,6);
-                      x3b(a,b,c,i,j,:) = x3b(a,b,c,i,j,:) - H1B_oo(m,:) * t_amp ! (1)
+                      do k = 1, nob
+                        if (pspace(a,b,c,i,j,k)) x3b(a,b,c,i,j,k) = x3b(a,b,c,i,j,k) - H1B_oo(m,k) * t_amp ! (1)
+                      end do
 
                       ! x3b(abcijk) <- A(ij)A(ab) [A(be) h1a(ae) * t3b(ebcijk)]
                       e = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      x3b(:,b,c,i,j,k) = x3b(:,b,c,i,j,k) + H1A_vv(:,e) * t_amp ! (1)
-                      x3b(:,e,c,i,j,k) = x3b(:,e,c,i,j,k) - H1A_vv(:,b) * t_amp ! (eb)
+                      do a = 1, nua
+                        if (pspace(a,b,c,i,j,k)) x3b(a,b,c,i,j,k) = x3b(a,b,c,i,j,k) + H1A_vv(a,e) * t_amp ! (1)
+                        if (pspace(a,e,c,i,j,k)) x3b(a,e,c,i,j,k) = x3b(a,e,c,i,j,k) - H1A_vv(a,b) * t_amp ! (eb)
+                      end do
 
                       ! x3b(abcijk) <- A(ij)A(ab) [h1b(ce) * t3b(abeijk)]
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); e = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      x3b(a,b,:,i,j,k) = x3b(a,b,:,i,j,k) + H1B_vv(:,e) * t_amp ! (1)
+                      do c = 1, nub
+                        if (pspace(a,b,c,i,j,k)) x3b(a,b,c,i,j,k) = x3b(a,b,c,i,j,k) + H1B_vv(c,e) * t_amp ! (1)
+                      end do
 
                       ! x3b(abcijk) <- A(ij)A(ab) [1/2 h2a(mnij) * t3b(abcmnk)]
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       m = t3b_excits(idet,4); n = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      x3b(a,b,c,:,:,k) = x3b(a,b,c,:,:,k) + 0.5d0 * H2A_oooo(m,n,:,:) * t_amp ! (1)
+                      do i = 1, noa
+                          do j = i+1, noa
+                            if (pspace(a,b,c,j,i,k)) x3b(a,b,c,j,i,k) = x3b(a,b,c,j,i,k) + H2A_oooo(m,n,j,i) * t_amp ! (1)
+                          end do
+                      end do
 
                       ! x3b(abcijk) <- A(ij)A(ab) [A(im) h2b(mnjk) * t3b(abcimn)]
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); m = t3b_excits(idet,5); n = t3b_excits(idet,6);
-                      x3b(a,b,c,i,:,:) = x3b(a,b,c,i,:,:) + H2B_oooo(m,n,:,:) * t_amp ! (1)
-                      x3b(a,b,c,m,:,:) = x3b(a,b,c,m,:,:) - H2B_oooo(i,n,:,:) * t_amp ! (im)
+                      do k = 1, nob
+                          do j = 1, noa
+                            if (pspace(a,b,c,i,j,k)) x3b(a,b,c,i,j,k) = x3b(a,b,c,i,j,k) + H2B_oooo(m,n,j,k) * t_amp ! (1)
+                            if (pspace(a,b,c,m,j,k)) x3b(a,b,c,m,j,k) = x3b(a,b,c,m,j,k) - H2B_oooo(i,n,j,k) * t_amp ! (im)
+                          end do
+                      end do
 
                       ! x3b(abcijk) <- A(ij)A(ab) [1/2 h2a(abef) * t3b(efcijk)]
                       e = t3b_excits(idet,1); f = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      x3b(:,:,c,i,j,k) = x3b(:,:,c,i,j,k) + 0.5d0 * H2A_vvvv(:,:,e,f) * t_amp ! (1)
+                      do a = 1, nua
+                          do b = a+1, nua
+                            if (pspace(b,a,c,i,j,k)) x3b(b,a,c,i,j,k) = x3b(b,a,c,i,j,k) + H2A_vvvv(b,a,e,f) * t_amp ! (1)
+                          end do
+                      end do
 
                       ! x3b(abcijk) <- A(ij)A(ab) [A(ae) h2b(bcef) * t3b(aefijk)]
                       a = t3b_excits(idet,1); e = t3b_excits(idet,2); f = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      x3b(a,:,:,i,j,k) = x3b(a,:,:,i,j,k) + H2B_vvvv(:,:,e,f) * t_amp ! (1)
-                      x3b(e,:,:,i,j,k) = x3b(e,:,:,i,j,k) - H2B_vvvv(:,:,a,f) * t_amp ! (ae)
+                      do c = 1, nub
+                          do b = 1, nua
+                            if (pspace(a,b,c,i,j,k)) x3b(a,b,c,i,j,k) = x3b(a,b,c,i,j,k) + H2B_vvvv(b,c,e,f) * t_amp ! (1)
+                            if (pspace(e,b,c,i,j,k)) x3b(e,b,c,i,j,k) = x3b(e,b,c,i,j,k) - H2B_vvvv(b,c,a,f) * t_amp ! (ae)
+                          end do
+                      end do
 
                       ! x3b(abcijk) <- A(ij)A(ab) [A(be)A(jm) h2a(amie) * t3b(ebcmjk)]
                       e = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       m = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      x3b(:,b,c,:,j,k) = x3b(:,b,c,:,j,k) + H2A_voov(:,m,:,e) * t_amp ! (1)
-                      x3b(:,e,c,:,j,k) = x3b(:,e,c,:,j,k) - H2A_voov(:,m,:,b) * t_amp ! (be)
-                      x3b(:,b,c,:,m,k) = x3b(:,b,c,:,m,k) - H2A_voov(:,j,:,e) * t_amp ! (jm)
-                      x3b(:,e,c,:,m,k) = x3b(:,e,c,:,m,k) + H2A_voov(:,j,:,b) * t_amp ! (be)(jm)
+                      do i = 1, noa
+                          do a = 1, nua
+                              if (pspace(a,b,c,i,j,k)) x3b(a,b,c,i,j,k) = x3b(a,b,c,i,j,k) + H2A_voov(a,m,i,e) * t_amp ! (1)
+                              if (pspace(a,e,c,i,j,k)) x3b(a,e,c,i,j,k) = x3b(a,e,c,i,j,k) - H2A_voov(a,m,i,b) * t_amp ! (be)
+                              if (pspace(a,b,c,i,m,k)) x3b(a,b,c,i,m,k) = x3b(a,b,c,i,m,k) - H2A_voov(a,j,i,e) * t_amp ! (jm)
+                              if (pspace(a,e,c,i,m,k)) x3b(a,e,c,i,m,k) = x3b(a,e,c,i,m,k) + H2A_voov(a,j,i,b) * t_amp ! (be)(jm)
+                          end do
+                      end do
 
                       ! x3b(abcijk) <- A(ij)A(ab) [h2c(cmke) * t3b(abeijm)]
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); e = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); m = t3b_excits(idet,6);
-                      x3b(a,b,:,i,j,:) = x3b(a,b,:,i,j,:) + H2C_voov(:,m,:,e) * t_amp ! (1)
+                      do k = 1, nob
+                          do c = 1, nub
+                            if (pspace(a,b,c,i,j,k)) x3b(a,b,c,i,j,k) = x3b(a,b,c,i,j,k) + H2C_voov(c,m,k,e) * t_amp ! (1)
+                          end do
+                      end do
 
                       ! x3b(abcijk) <- A(ij)A(ab) [A(be) -h2b(amek) * t3b(ebcijm)]
                       e = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); m = t3b_excits(idet,6);
-                      x3b(:,b,c,i,j,:) = x3b(:,b,c,i,j,:) - H2B_vovo(:,m,e,:) * t_amp ! (1)
-                      x3b(:,e,c,i,j,:) = x3b(:,e,c,i,j,:) + H2B_vovo(:,m,b,:) * t_amp ! (be)
+                      do k = 1, nob
+                          do a = 1, nua
+                            if (pspace(a,b,c,i,j,k)) x3b(a,b,c,i,j,k) = x3b(a,b,c,i,j,k) - H2B_vovo(a,m,e,k) * t_amp ! (1)
+                            if (pspace(a,e,c,i,j,k)) x3b(a,e,c,i,j,k) = x3b(a,e,c,i,j,k) + H2B_vovo(a,m,b,k) * t_amp ! (be)
+                          end do
+                      end do
 
                       ! x3b(abcijk) <- A(ij)A(ab) [A(jm) -h2b(mcie) * t3b(abemjk)]
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); e = t3b_excits(idet,3);
                       m = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      x3b(a,b,:,:,j,k) = x3b(a,b,:,:,j,k) - H2B_ovov(m,:,:,e) * t_amp ! (1)
-                      x3b(a,b,:,:,m,k) = x3b(a,b,:,:,m,k) + H2B_ovov(j,:,:,e) * t_amp ! (jm)
+                      do i = 1, noa
+                          do c = 1, nub
+                            if (pspace(a,b,c,i,j,k)) x3b(a,b,c,i,j,k) = x3b(a,b,c,i,j,k) - H2B_ovov(m,c,i,e) * t_amp ! (1)
+                            if (pspace(a,b,c,i,m,k)) x3b(a,b,c,i,m,k) = x3b(a,b,c,i,m,k) + H2B_ovov(j,c,i,e) * t_amp ! (jm)
+                          end do
+                      end do
 
                       ! I2A(amij) <- A(ij) [A(ae) h2b(mnef) * t3b(aefijn)]
                       a = t3b_excits(idet,1); e = t3b_excits(idet,2); f = t3b_excits(idet,3);
@@ -1026,10 +1064,14 @@ module ccp_quadratic_loops
                       ! x3b(abcijk) <- A(ij)A(ab) [A(ec)A(mk) h2b(amie) * t3c(becjmk)]
                       b = t3c_excits(idet,1); e = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       j = t3c_excits(idet,4); m = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3b(:,b,c,:,j,k) = x3b(:,b,c,:,j,k) + H2B_voov(:,m,:,e) * t_amp ! (1)
-                      x3b(:,b,e,:,j,k) = x3b(:,b,e,:,j,k) - H2B_voov(:,m,:,c) * t_amp ! (ec)
-                      x3b(:,b,c,:,j,m) = x3b(:,b,c,:,j,m) - H2B_voov(:,k,:,e) * t_amp ! (mk)
-                      x3b(:,b,e,:,j,m) = x3b(:,b,e,:,j,m) + H2B_voov(:,k,:,c) * t_amp ! (ec)(mk)
+                      do i = 1, noa
+                          do a = 1, nua
+                            if (pspace(a,b,c,i,j,k)) x3b(a,b,c,i,j,k) = x3b(a,b,c,i,j,k) + H2B_voov(a,m,i,e) * t_amp ! (1)
+                            if (pspace(a,b,e,i,j,k)) x3b(a,b,e,i,j,k) = x3b(a,b,e,i,j,k) - H2B_voov(a,m,i,c) * t_amp ! (ec)
+                            if (pspace(a,b,c,i,j,m)) x3b(a,b,c,i,j,m) = x3b(a,b,c,i,j,m) - H2B_voov(a,k,i,e) * t_amp ! (mk)
+                            if (pspace(a,b,e,i,j,m)) x3b(a,b,e,i,j,m) = x3b(a,b,e,i,j,m) + H2B_voov(a,k,i,c) * t_amp ! (ec)(mk)
+                        end do
+                      end do
 
                       ! I2B(abej) <- A(bf)A(jn) -h2b(mnef) * t3c(afbmnj)
                       a = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
@@ -1191,10 +1233,14 @@ module ccp_quadratic_loops
                       ! x3c(abcijk) <- A(jk)A(bc) [A(im)A(ae) h2b(mbej) * t3b(aecimk)]
                       a = t3b_excits(idet,1); e = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); m = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      x3c(a,:,c,i,:,k) = x3c(a,:,c,i,:,k) + H2B_ovvo(m,:,e,:) * t_amp ! (1)
-                      x3c(a,:,c,m,:,k) = x3c(a,:,c,m,:,k) - H2B_ovvo(i,:,e,:) * t_amp ! (im)
-                      x3c(e,:,c,i,:,k) = x3c(e,:,c,i,:,k) - H2B_ovvo(m,:,a,:) * t_amp ! (ae)
-                      x3c(e,:,c,m,:,k) = x3c(e,:,c,m,:,k) + H2B_ovvo(i,:,a,:) * t_amp ! (im)(ae)
+                      do j = 1, nob
+                          do b = 1, nub
+                            if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) + H2B_ovvo(m,b,e,j) * t_amp ! (1)
+                            if (pspace(a,b,c,m,j,k)) x3c(a,b,c,m,j,k) = x3c(a,b,c,m,j,k) - H2B_ovvo(i,b,e,j) * t_amp ! (im)
+                            if (pspace(e,b,c,i,j,k)) x3c(e,b,c,i,j,k) = x3c(e,b,c,i,j,k) - H2B_ovvo(m,b,a,j) * t_amp ! (ae)
+                            if (pspace(e,b,c,m,j,k)) x3c(e,b,c,m,j,k) = x3c(e,b,c,m,j,k) + H2B_ovvo(i,b,a,j) * t_amp ! (im)(ae)
+                          end do
+                      end do
 
                       ! I2B(abej) <- A(af) -h2a(mnef) * t3b(afbmnj)
                       a = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
@@ -1231,71 +1277,111 @@ module ccp_quadratic_loops
                       ! x3c(abcijk) <- A(jk)A(bc) [-h1a(mi) * t3c(abcmjk)]
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       m = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3c(a,b,c,:,j,k) = x3c(a,b,c,:,j,k) - H1A_oo(m,:) * t_amp ! (1)
+                      do i = 1, noa
+                        if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) - H1A_oo(m,i) * t_amp ! (1)
+                      end do
 
                       ! x3c(abcijk) <- A(jk)A(bc) [A(mk) -h1b(mj) * t3c(abcimk)]
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); m = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3c(a,b,c,i,:,k) = x3c(a,b,c,i,:,k) - H1B_oo(m,:) * t_amp ! (1)
-                      x3c(a,b,c,i,:,m) = x3c(a,b,c,i,:,m) + H1B_oo(k,:) * t_amp ! (mk)
+                      do j = 1, nob
+                        if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) - H1B_oo(m,j) * t_amp ! (1)
+                        if (pspace(a,b,c,i,j,m)) x3c(a,b,c,i,j,m) = x3c(a,b,c,i,j,m) + H1B_oo(k,j) * t_amp ! (mk)
+                      end do
 
                       ! x3c(abcijk) <- A(jk)A(bc) [h1a(ae) * t3c(ebcijk)]
                       e = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3c(:,b,c,i,j,k) = x3c(:,b,c,i,j,k) + H1A_vv(:,e) * t_amp ! (1)
+                      do a = 1, nua
+                        if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) + H1A_vv(a,e) * t_amp ! (1)
+                      end do
 
                       ! x3c(abcijk) <- A(jk)A(bc) [A(ec) h1b(be) * t3c(aecijk)]
                       a = t3c_excits(idet,1); e = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3c(a,:,c,i,j,k) = x3c(a,:,c,i,j,k) + H1B_vv(:,e) * t_amp ! (1)
-                      x3c(a,:,e,i,j,k) = x3c(a,:,e,i,j,k) - H1B_vv(:,c) * t_amp ! (ec)
+                      do b = 1, nua
+                        if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) + H1B_vv(b,e) * t_amp ! (1)
+                        if (pspace(a,b,e,i,j,k)) x3c(a,b,e,i,j,k) = x3c(a,b,e,i,j,k) - H1B_vv(b,c) * t_amp ! (ec)
+                      end do
 
                       ! x3c(abcijk) <- A(jk)A(bc) [1/2 h2c(mnjk) * t3c(abcimn)]
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); m = t3c_excits(idet,5); n = t3c_excits(idet,6);
-                      x3c(a,b,c,i,:,:) = x3c(a,b,c,i,:,:) + 0.5d0 * H2C_oooo(m,n,:,:) * t_amp ! (1)
+                      do j = 1, nob
+                          do k = j+1, nob
+                            if (pspace(a,b,c,i,k,j)) x3c(a,b,c,i,k,j) = x3c(a,b,c,i,k,j) + H2C_oooo(m,n,k,j) * t_amp ! (1)
+                          end do
+                      end do
 
                       ! x3c(abcijk) <- A(jk)A(bc) [A(kn) h2b(mnij) * t3c(abcmnk)]
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       m = t3c_excits(idet,4); n = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3c(a,b,c,:,:,k) = x3c(a,b,c,:,:,k) + H2B_oooo(m,n,:,:) * t_amp ! (1)
-                      x3c(a,b,c,:,:,n) = x3c(a,b,c,:,:,n) - H2B_oooo(m,k,:,:) * t_amp ! (kn)
+                      do j = 1, nob
+                          do i = 1, noa
+                            if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) + H2B_oooo(m,n,i,j) * t_amp ! (1)
+                            if (pspace(a,b,c,i,j,n)) x3c(a,b,c,i,j,n) = x3c(a,b,c,i,j,n) - H2B_oooo(m,k,i,j) * t_amp ! (kn)
+                          end do
+                      end do
 
                       ! x3c(abcijk) <- A(jk)A(bc) [1/2 h2c(bcef) * t3c(aefijk)]
                       a = t3c_excits(idet,1); e = t3c_excits(idet,2); f = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3c(a,:,:,i,j,k) = x3c(a,:,:,i,j,k) + 0.5d0 * H2C_vvvv(:,:,e,f) * t_amp ! (1)
+                      do b = 1, nub
+                          do c = b+1, nub
+                            if (pspace(a,c,b,i,j,k)) x3c(a,c,b,i,j,k) = x3c(a,c,b,i,j,k) + H2C_vvvv(c,b,e,f) * t_amp ! (1)
+                          end do
+                      end do
 
                       ! x3c(abcijk) <- A(jk)A(bc) [A(fc) h2b(abef) * t3c(efcijk)]
                       e = t3c_excits(idet,1); f = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3c(:,:,c,i,j,k) = x3c(:,:,c,i,j,k) + H2B_vvvv(:,:,e,f) * t_amp ! (1)
-                      x3c(:,:,f,i,j,k) = x3c(:,:,f,i,j,k) - H2B_vvvv(:,:,e,c) * t_amp ! (fc)
+                      do b = 1, nub
+                          do a = 1, nua
+                            if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) + H2B_vvvv(a,b,e,f) * t_amp ! (1)
+                            if (pspace(a,b,f,i,j,k)) x3c(a,b,f,i,j,k) = x3c(a,b,f,i,j,k) - H2B_vvvv(a,b,e,c) * t_amp ! (fc)
+                          end do
+                      end do
 
                       ! x3c(abcijk) <- A(jk)A(bc) [h2a(amie) * t3c(ebcmjk)]
                       e = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       m = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3c(:,b,c,:,j,k) = x3c(:,b,c,:,j,k) + H2A_voov(:,m,:,e) * t_amp ! (1)
+                      do i = 1, noa
+                          do a = 1, nua
+                            if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) + H2A_voov(a,m,i,e) * t_amp ! (1)
+                          end do
+                      end do
 
                       ! x3c(abcijk) <- A(jk)A(bc) [A(ec)(mk) h2c(bmje) * t3c(aecimk)]
                       a = t3c_excits(idet,1); e = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); m = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3c(a,:,c,i,:,k) = x3c(a,:,c,i,:,k) + H2C_voov(:,m,:,e) * t_amp ! (1)
-                      x3c(a,:,e,i,:,k) = x3c(a,:,e,i,:,k) - H2C_voov(:,m,:,c) * t_amp ! (ec)
-                      x3c(a,:,c,i,:,m) = x3c(a,:,c,i,:,m) - H2C_voov(:,k,:,e) * t_amp ! (mk)
-                      x3c(a,:,e,i,:,m) = x3c(a,:,e,i,:,m) + H2C_voov(:,k,:,c) * t_amp ! (ec)(mk)
+                      do j = 1, nob
+                          do b = 1, nub
+                            if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) + H2C_voov(b,m,j,e) * t_amp ! (1)
+                            if (pspace(a,b,e,i,j,k)) x3c(a,b,e,i,j,k) = x3c(a,b,e,i,j,k) - H2C_voov(b,m,j,c) * t_amp ! (ec)
+                            if (pspace(a,b,c,i,j,m)) x3c(a,b,c,i,j,m) = x3c(a,b,c,i,j,m) - H2C_voov(b,k,j,e) * t_amp ! (mk)
+                            if (pspace(a,b,e,i,j,m)) x3c(a,b,e,i,j,m) = x3c(a,b,e,i,j,m) + H2C_voov(b,k,j,c) * t_amp ! (ec)(mk)
+                          end do
+                      end do
 
                       ! x3c(abcijk) <- A(jk)A(bc) [A(ec) -h2b(mbie) * t3c(aecmjk)]
                       a = t3c_excits(idet,1); e = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       m = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3c(a,:,c,:,j,k) = x3c(a,:,c,:,j,k) - H2B_ovov(m,:,:,e) * t_amp ! (1)
-                      x3c(a,:,e,:,j,k) = x3c(a,:,e,:,j,k) + H2B_ovov(m,:,:,c) * t_amp ! (ec)
+                      do i = 1, noa
+                          do b = 1, nub
+                            if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) - H2B_ovov(m,b,i,e) * t_amp ! (1)
+                            if (pspace(a,b,e,i,j,k)) x3c(a,b,e,i,j,k) = x3c(a,b,e,i,j,k) + H2B_ovov(m,b,i,c) * t_amp ! (ec)
+                          end do
+                      end do
 
                       ! x3c(abcijk) <- A(jk)A(bc) [A(km) -h2b(amej) * t3c(ebcimk)]
                       e = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); m = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3c(:,b,c,i,:,k) = x3c(:,b,c,i,:,k) - H2B_vovo(:,m,e,:) * t_amp ! (1)
-                      x3c(:,b,c,i,:,m) = x3c(:,b,c,i,:,m) + H2B_vovo(:,k,e,:) * t_amp ! (km)
+                      do j = 1, nob
+                          do a = 1, nua
+                            if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) - H2B_vovo(a,m,e,j) * t_amp ! (1)
+                            if (pspace(a,b,c,i,j,m)) x3c(a,b,c,i,j,m) = x3c(a,b,c,i,j,m) + H2B_vovo(a,k,e,j) * t_amp ! (km)
+                          end do
+                      end do
 
                       ! I2C(abie) <- A(ab) [A(im) -h2b(nmfe) * t3c(fabnim)]
                       f = t3c_excits(idet,1); a = t3c_excits(idet,2); b = t3c_excits(idet,3);
@@ -1344,15 +1430,19 @@ module ccp_quadratic_loops
                       ! x3c(abcijk) <- A(jk)A(bc) [h2b(amie) * t3d(ebcmjk)]
                       e = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                       m = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                      x3c(:,b,c,:,j,k) = x3c(:,b,c,:,j,k) + H2B_voov(:,m,:,e) * t_amp ! (1)
-                      x3c(:,b,c,:,m,k) = x3c(:,b,c,:,m,k) - H2B_voov(:,j,:,e) * t_amp ! (jm)
-                      x3c(:,b,c,:,j,m) = x3c(:,b,c,:,j,m) - H2B_voov(:,k,:,e) * t_amp ! (km)
-                      x3c(:,e,c,:,j,k) = x3c(:,e,c,:,j,k) - H2B_voov(:,m,:,b) * t_amp ! (eb)
-                      x3c(:,e,c,:,m,k) = x3c(:,e,c,:,m,k) + H2B_voov(:,j,:,b) * t_amp ! (jm)(eb)
-                      x3c(:,e,c,:,j,m) = x3c(:,e,c,:,j,m) + H2B_voov(:,k,:,b) * t_amp ! (km)(eb)
-                      x3c(:,b,e,:,j,k) = x3c(:,b,e,:,j,k) - H2B_voov(:,m,:,c) * t_amp ! (ec)
-                      x3c(:,b,e,:,m,k) = x3c(:,b,e,:,m,k) + H2B_voov(:,j,:,c) * t_amp ! (jm)(ec)
-                      x3c(:,b,e,:,j,m) = x3c(:,b,e,:,j,m) + H2B_voov(:,k,:,c) * t_amp ! (km)(ec)
+                      do i = 1, noa
+                          do a = 1, nua
+                            if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) + H2B_voov(a,m,i,e) * t_amp ! (1)
+                            if (pspace(a,b,c,i,m,k)) x3c(a,b,c,i,m,k) = x3c(a,b,c,i,m,k) - H2B_voov(a,j,i,e) * t_amp ! (jm)
+                            if (pspace(a,b,c,i,j,m)) x3c(a,b,c,i,j,m) = x3c(a,b,c,i,j,m) - H2B_voov(a,k,i,e) * t_amp ! (km)
+                            if (pspace(a,e,c,i,j,k)) x3c(a,e,c,i,j,k) = x3c(a,e,c,i,j,k) - H2B_voov(a,m,i,b) * t_amp ! (eb)
+                            if (pspace(a,e,c,i,m,k)) x3c(a,e,c,i,m,k) = x3c(a,e,c,i,m,k) + H2B_voov(a,j,i,b) * t_amp ! (jm)(eb)
+                            if (pspace(a,e,c,i,j,m)) x3c(a,e,c,i,j,m) = x3c(a,e,c,i,j,m) + H2B_voov(a,k,i,b) * t_amp ! (km)(eb)
+                            if (pspace(a,b,e,i,j,k)) x3c(a,b,e,i,j,k) = x3c(a,b,e,i,j,k) - H2B_voov(a,m,i,c) * t_amp ! (ec)
+                            if (pspace(a,b,e,i,m,k)) x3c(a,b,e,i,m,k) = x3c(a,b,e,i,m,k) + H2B_voov(a,j,i,c) * t_amp ! (jm)(ec)
+                            if (pspace(a,b,e,i,j,m)) x3c(a,b,e,i,j,m) = x3c(a,b,e,i,j,m) + H2B_voov(a,k,i,c) * t_amp ! (km)(ec)
+                          end do
+                      end do
 
                       ! I2C(amij) <- A(ij) [A(n/ij)A(a/ef) h2c(mnef) * t3d(aefijn)]
                       a = t3d_excits(idet,1); e = t3d_excits(idet,2); f = t3d_excits(idet,3);
@@ -1485,7 +1575,11 @@ module ccp_quadratic_loops
                       ! x3d(abcijk) <- A(ijk)A(abc) [h2b(maei) * t3c(ebcmjk)]
                       e = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       m = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      x3d(:,b,c,:,j,k) = x3d(:,b,c,:,j,k) + H2B_ovvo(m,:,e,:) * t_amp ! (1)
+                      do i = 1, nob
+                          do a = 1, nub
+                            if (pspace(a,b,c,i,j,k)) x3d(a,b,c,i,j,k) = x3d(a,b,c,i,j,k) + H2B_ovvo(m,a,e,i) * t_amp ! (1)
+                          end do
+                      end do
 
                       ! I2C(abie) <- A(ab) [A(im) -h2b(nmfe) * t3c(fabnim)]
                       f = t3c_excits(idet,1); a = t3c_excits(idet,2); b = t3c_excits(idet,3);
@@ -1507,47 +1601,63 @@ module ccp_quadratic_loops
                       !               = -A(abc)A(ijk)[ A(m/jk) h1b(mi) * t3d(abcmjk) ]
                       a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                       m = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                      x3d(a,b,c,:,j,k) = x3d(a,b,c,:,j,k) - H1B_oo(m,:) * t_amp ! (1)
-                      x3d(a,b,c,:,m,k) = x3d(a,b,c,:,m,k) + H1B_oo(j,:) * t_amp ! (mj)
-                      x3d(a,b,c,:,j,m) = x3d(a,b,c,:,j,m) + H1B_oo(k,:) * t_amp ! (mk)
+                      do i = 1, nob
+                        if (pspace(a,b,c,i,j,k)) x3d(a,b,c,i,j,k) = x3d(a,b,c,i,j,k) - H1B_oo(m,i) * t_amp ! (1)
+                        if (pspace(a,b,c,i,m,k)) x3d(a,b,c,i,m,k) = x3d(a,b,c,i,m,k) + H1B_oo(j,i) * t_amp ! (mj)
+                        if (pspace(a,b,c,i,j,m)) x3d(a,b,c,i,j,m) = x3d(a,b,c,i,j,m) + H1B_oo(k,i) * t_amp ! (mk)
+                      end do
 
                       ! x3d(abcijk) <- A(abc)A(a/bc)A(bc)A(e/bc) h1b(ae) * t3d(ebcijk)
                       !              = A(abc)A(ijk)[ A(e/bc) h1b(ae) * t3d(ebcijk) ]
                       e = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                       i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                      x3d(:,b,c,i,j,k) = x3d(:,b,c,i,j,k) + H1B_vv(:, e) * t_amp ! (1)
-                      x3d(:,e,c,i,j,k) = x3d(:,e,c,i,j,k) - H1B_vv(:, b) * t_amp ! (be)
-                      x3d(:,b,e,i,j,k) = x3d(:,b,e,i,j,k) - H1B_vv(:, c) * t_amp ! (ce)
+                      do a = 1, nub
+                        if (pspace(a,b,c,i,j,k)) x3d(a,b,c,i,j,k) = x3d(a,b,c,i,j,k) + H1B_vv(a,e) * t_amp ! (1)
+                        if (pspace(a,e,c,i,j,k)) x3d(a,e,c,i,j,k) = x3d(a,e,c,i,j,k) - H1B_vv(a,b) * t_amp ! (be)
+                        if (pspace(a,b,e,i,j,k)) x3d(a,b,e,i,j,k) = x3d(a,b,e,i,j,k) - H1B_vv(a,c) * t_amp ! (ce)
+                      end do
 
                       ! x3d(abcijk) <- A(abc)A(k/ij)[ A(k/mn) h2c(mnij) * t3d(abcmnk) ]
                       !             = A(abc)A(ijk)[ 1/2 A(k/mn) h2c(mnij) * t3d(abcmnk) ]
                       a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                       m = t3d_excits(idet,4); n = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                      x3d(a,b,c,:,:,k) = x3d(a,b,c,:,:,k) + 0.5d0 * H2C_oooo(m,n,:,:) * t_amp ! (1)
-                      x3d(a,b,c,:,:,m) = x3d(a,b,c,:,:,m) - 0.5d0 * H2C_oooo(k,n,:,:) * t_amp ! (mk)
-                      x3d(a,b,c,:,:,n) = x3d(a,b,c,:,:,n) - 0.5d0 * H2C_oooo(m,k,:,:) * t_amp ! (nk)
+                      do i = 1, nob
+                          do j = i+1, nob
+                            if (pspace(a,b,c,j,i,k)) x3d(a,b,c,j,i,k) = x3d(a,b,c,j,i,k) + H2C_oooo(m,n,j,i) * t_amp ! (1)
+                            if (pspace(a,b,c,j,i,m)) x3d(a,b,c,j,i,m) = x3d(a,b,c,j,i,m) - H2C_oooo(k,n,j,i) * t_amp ! (mk)
+                            if (pspace(a,b,c,j,i,n)) x3d(a,b,c,j,i,n) = x3d(a,b,c,j,i,n) - H2C_oooo(m,k,j,i) * t_amp ! (nk)
+                          end do
+                      end do
 
                       ! x3d(abcijk) <- A(c/ab)A(ijk)[ A(c/ef) h2c(abef) * t3d(efcijk) ]
                       !              = A(abc)A(ijk)[ 1/2 A(c/ef) h2c(abef) * t3d(efcijk) ]
                       e = t3d_excits(idet,1); f = t3d_excits(idet,2); c = t3d_excits(idet,3);
                       i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                      x3d(:,:,c,i,j,k) = x3d(:,:,c,i,j,k) + 0.5d0 * H2C_vvvv(:,:,e,f) * t_amp ! (1)
-                      x3d(:,:,e,i,j,k) = x3d(:,:,e,i,j,k) - 0.5d0 * H2C_vvvv(:,:,c,f) * t_amp ! (ec)
-                      x3d(:,:,f,i,j,k) = x3d(:,:,f,i,j,k) - 0.5d0 * H2C_vvvv(:,:,e,c) * t_amp ! (fc)
+                      do a = 1, nub
+                          do b = a+1, nub
+                            if (pspace(b,a,c,i,j,k)) x3d(b,a,c,i,j,k) = x3d(b,a,c,i,j,k) + H2C_vvvv(b,a,e,f) * t_amp ! (1)
+                            if (pspace(b,a,e,i,j,k)) x3d(b,a,e,i,j,k) = x3d(b,a,e,i,j,k) - H2C_vvvv(b,a,c,f) * t_amp ! (ec)
+                            if (pspace(b,a,f,i,j,k)) x3d(b,a,f,i,j,k) = x3d(b,a,f,i,j,k) - H2C_vvvv(b,a,e,c) * t_amp ! (fc)
+                          end do
+                      end do
 
                       ! x3d(abcijk) <- A(a/bc)A(bc)A(jk)A(i/jk)[ A(e/bc)A(m/jk) h2c(amie) * t3d(ebcmjk) ]
                       !              = A(abc)A(ijk)[ A(e/bc)A(m/jk) h2c(amie) * t3d(ebcmjk) ]
                       e = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                       m = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                      x3d(:,b,c,:,j,k) = x3d(:,b,c,:,j,k) + H2C_voov(:,m,:,e) * t_amp ! (1)
-                      x3d(:,b,c,:,m,k) = x3d(:,b,c,:,m,k) - H2C_voov(:,j,:,e) * t_amp ! (mj)
-                      x3d(:,b,c,:,j,m) = x3d(:,b,c,:,j,m) - H2C_voov(:,k,:,e) * t_amp ! (mk)
-                      x3d(:,e,c,:,j,k) = x3d(:,e,c,:,j,k) - H2C_voov(:,m,:,b) * t_amp ! (eb)
-                      x3d(:,e,c,:,m,k) = x3d(:,e,c,:,m,k) + H2C_voov(:,j,:,b) * t_amp ! (eb)(mj)
-                      x3d(:,e,c,:,j,m) = x3d(:,e,c,:,j,m) + H2C_voov(:,k,:,b) * t_amp ! (eb)(mk)
-                      x3d(:,b,e,:,j,k) = x3d(:,b,e,:,j,k) - H2C_voov(:,m,:,c) * t_amp ! (ec)
-                      x3d(:,b,e,:,m,k) = x3d(:,b,e,:,m,k) + H2C_voov(:,j,:,c) * t_amp ! (ec)(mj)
-                      x3d(:,b,e,:,j,m) = x3d(:,b,e,:,j,m) + H2C_voov(:,k,:,c) * t_amp ! (ec)(mk)
+                      do i = 1, nob
+                          do a = 1, nub
+                            if (pspace(a,b,c,i,j,k)) x3d(a,b,c,i,j,k) = x3d(a,b,c,i,j,k) + H2C_voov(a,m,i,e) * t_amp ! (1)
+                            if (pspace(a,b,c,i,m,k)) x3d(a,b,c,i,m,k) = x3d(a,b,c,i,m,k) - H2C_voov(a,j,i,e) * t_amp ! (mj)
+                            if (pspace(a,b,c,i,j,m)) x3d(a,b,c,i,j,m) = x3d(a,b,c,i,j,m) - H2C_voov(a,k,i,e) * t_amp ! (mk)
+                            if (pspace(a,e,c,i,j,k)) x3d(a,e,c,i,j,k) = x3d(a,e,c,i,j,k) - H2C_voov(a,m,i,b) * t_amp ! (eb)
+                            if (pspace(a,e,c,i,m,k)) x3d(a,e,c,i,m,k) = x3d(a,e,c,i,m,k) + H2C_voov(a,j,i,b) * t_amp ! (eb)(mj)
+                            if (pspace(a,e,c,i,j,m)) x3d(a,e,c,i,j,m) = x3d(a,e,c,i,j,m) + H2C_voov(a,k,i,b) * t_amp ! (eb)(mk)
+                            if (pspace(a,b,e,i,j,k)) x3d(a,b,e,i,j,k) = x3d(a,b,e,i,j,k) - H2C_voov(a,m,i,c) * t_amp ! (ec)
+                            if (pspace(a,b,e,i,m,k)) x3d(a,b,e,i,m,k) = x3d(a,b,e,i,m,k) + H2C_voov(a,j,i,c) * t_amp ! (ec)(mj)
+                            if (pspace(a,b,e,i,j,m)) x3d(a,b,e,i,j,m) = x3d(a,b,e,i,j,m) + H2C_voov(a,k,i,c) * t_amp ! (ec)(mk)
+                          end do
+                      end do
 
                       ! I2C(amij) <- A(ij) [A(n/ij)A(a/ef) h2c(mnef) * t3d(aefijn)]
                       a = t3d_excits(idet,1); e = t3d_excits(idet,2); f = t3d_excits(idet,3);

@@ -781,6 +781,8 @@ module ccp3_loops
 
                                                 deltaD = deltaD + LM/D
 
+                                                if (abs(LM/D) == 0.0d0) cycle
+
                                                 if ( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a-1, 2*b-1, 2*c-1, 2*i-1, 2*j-1, 2*k-1/)
                                                     moments(idx_min) = LM/D
@@ -977,6 +979,8 @@ module ccp3_loops
                                                 -D3C_V(a,k,c)-D3C_V(b,k,c)
 
                                                 deltaD = deltaD + LM/D
+
+                                                if (abs(LM/D) == 0.0d0) cycle
 
                                                 if( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a-1, 2*b-1, 2*c, 2*i-1, 2*j-1, 2*k/)
@@ -1182,6 +1186,8 @@ module ccp3_loops
 
                                                 deltaD = deltaD + LM/D
 
+                                                if (abs(LM/D) == 0.0d0) cycle
+
                                                 if( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a-1, 2*b, 2*c, 2*i-1, 2*j, 2*k/)
                                                     moments(idx_min) = LM/D
@@ -1331,6 +1337,8 @@ module ccp3_loops
                                                 -D3D_V(a,k,b)-D3D_V(a,k,c)-D3D_V(b,k,c)
 
                                                 deltaD = deltaD + LM/D
+
+                                                if (abs(LM/D) == 0.0d0) cycle
 
                                                 if( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a, 2*b, 2*c, 2*i, 2*j, 2*k/)

@@ -341,7 +341,7 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, syst
                         new_pspace['aaa'][a, b, c, i, j, k] = ct_aaa
                         ct_aaa += 1
                     else:
-                        new_pspace['aaa'][a, b, c, i, j, k] = 1
+                        new_pspace['aaa'][a, b, c, i, j, k] = True
                    
         if num_alpha == 2:
             new_t3_excitations["aab"].append([a+1, b+1, c+1, i+1, j+1, k+1])
@@ -354,7 +354,7 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, syst
                         new_pspace['aab'][a, b, c, i, j, k] = ct_aab
                         ct_aab += 1
                     else:
-                        new_pspace['aab'][a, b, c, i, j, k] = 1
+                        new_pspace['aab'][a, b, c, i, j, k] = True
 
         if num_alpha == 1:
             new_t3_excitations["abb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
@@ -367,7 +367,7 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, syst
                         new_pspace['abb'][a, b, c, i, j, k] = ct_abb
                         ct_abb += 1
                     else:
-                        new_pspace['abb'][a, b, c, i, j, k] = 1
+                        new_pspace['abb'][a, b, c, i, j, k] = True
 
         if num_alpha == 0:
             new_t3_excitations["bbb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
@@ -380,7 +380,7 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, syst
                         new_pspace['bbb'][a, b, c, i, j, k] = ct_bbb
                         ct_bbb += 1
                     else:
-                        new_pspace['bbb'][a, b, c, i, j, k] = 1
+                        new_pspace['bbb'][a, b, c, i, j, k] = True
 
     # Update the t3 excitation lists with the new content from the moment selection
     new_t3_excitations = _add_t3_excitations(new_t3_excitations, t3_excitations, n3aaa, "aaa") 

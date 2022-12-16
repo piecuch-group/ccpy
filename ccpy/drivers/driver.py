@@ -6,7 +6,7 @@ import ccpy.cc
 import ccpy.left
 import ccpy.eomcc
 
-from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eomcc_davidson_lowmem, mrcc_jacobi, ccp_linear_jacobi
+from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eomcc_davidson_lowmem, mrcc_jacobi, ccp_linear_jacobi, ccp_quadratic_jacobi
 from ccpy.drivers.solvers import eccc_jacobi
 
 from ccpy.models.operators import ClusterOperator, FockOperator
@@ -80,7 +80,7 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, t3_excitati
                 system,
                 pspace,
             )
-        else: # Run the linear CC(P) solver (for CCSDT for now)
+        else:
 
             # Get dimensions of T3 spincases in P space
             n3aaa = t3_excitations["aaa"].shape[0]
@@ -91,32 +91,47 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, t3_excitati
 
             # If RHF, copy aab into abb and aaa in bbb
             if calculation.RHF_symmetry:
-                assert(n3aaa == n3bbb)
-                assert(n3aab == n3abb)
-                t3_excitations["bbb"] = t3_excitations["aaa"].copy() 
-                t3_excitations["abb"] = t3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]] # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
+                assert (n3aaa == n3bbb)
+                assert (n3aab == n3abb)
+                t3_excitations["bbb"] = t3_excitations["aaa"].copy()
+                t3_excitations["abb"] = t3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
 
             if T is None:
                 T = ClusterOperator(system,
                                     order=calculation.order,
                                     p_orders=[3],
                                     pspace_sizes=excitation_count)
-                
+
             # regardless of restart status, initialize residual anew
             dT = ClusterOperator(system,
                                  order=calculation.order,
                                  p_orders=[3],
                                  pspace_sizes=excitation_count)
 
-            T, corr_energy, is_converged = ccp_linear_jacobi(
-                update_function,
-                T,
-                dT,
-                hamiltonian,
-                calculation,
-                system,
-                t3_excitations,
-            )
+            if pspace is None: # Run the linear CC(P) solver (for CCSDT for now)
+
+                T, corr_energy, is_converged = ccp_linear_jacobi(
+                    update_function,
+                    T,
+                    dT,
+                    hamiltonian,
+                    calculation,
+                    system,
+                    t3_excitations,
+                )
+
+            else: # Run the quadratic CC(P) solver (for CCSDT for now)
+
+                T, corr_energy, is_converged = ccp_quadratic_jacobi(
+                    update_function,
+                    T,
+                    dT,
+                    hamiltonian,
+                    calculation,
+                    system,
+                    t3_excitations,
+                    pspace,
+                )
 
     total_energy = system.reference_energy + corr_energy
 

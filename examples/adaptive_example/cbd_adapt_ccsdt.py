@@ -1,16 +1,33 @@
 
-def test_gamess():
+def test_pyscf():
 
     from ccpy.models.calculation import Calculation
     from ccpy.adaptive.adapt_ccsdt import adapt_ccsdt
-    from ccpy.interfaces.gamess_tools import load_from_gamess
+    from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
+    from pyscf import gto, scf
 
-    system, H = load_from_gamess(
-            "/scratch/gururang/test_ccpq_2ba/cbd-R/rectangle-d2h.log",
-            "/scratch/gururang/test_ccpq_2ba/cbd-R/onebody.inp",
-            "/scratch/gururang/test_ccpq_2ba/cbd-R/twobody.inp",
-            nfrozen=4,
+    mol = gto.Mole()
+
+    mol.build(
+        atom="""C   0.68350000  0.78650000  0.00000000
+                C  -0.68350000  0.78650000  0.00000000
+                C   0.68350000 -0.78650000  0.00000000
+                C  -0.68350000 -0.78650000  0.00000000
+                H   1.45771544  1.55801763  0.00000000
+                H   1.45771544 -1.55801763  0.00000000
+                H  -1.45771544  1.55801763  0.00000000
+                H  -1.45771544 -1.55801763  0.00000000""",
+        basis="ccpvdz",
+        charge=0,
+        spin=0,
+        symmetry="D2H",
+        cart=False,
+        unit="Angstrom",
     )
+    mf = scf.ROHF(mol)
+    mf.kernel()
+
+    system, H = load_pyscf_integrals(mf, 4)
     system.print_info()
 
     calculation = Calculation(
@@ -27,6 +44,6 @@ def test_gamess():
 
 if __name__ == "__main__":
 
-    test_gamess()
+    test_pyscf()
 
 

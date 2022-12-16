@@ -16,7 +16,7 @@ if __name__ == "__main__":
     )
     system.print_info()
 
-    civecs = "civecs-hf.dat"
+    civecs = "civecs.dat"
 
     print("   Using P space file: ", civecs)
     pspace, excitations, excitation_count = get_pspace_from_cipsi(civecs, system, nexcit=3)
