@@ -1,1 +1,352 @@
 converged SCF energy = -198.420096282673
+   System Information:
+   ----------------------------------------------------
+     Number of correlated electrons = 14
+     Number of correlated orbitals = 28
+     Number of frozen orbitals = 2
+     Number of alpha occupied orbitals = 7
+     Number of alpha unoccupied orbitals = 21
+     Number of beta occupied orbitals = 7
+     Number of beta unoccupied orbitals = 21
+     Charge = 0
+     Point group = D2h
+     Symmetry of reference = AG
+     Spin multiplicity of reference = 1
+
+      MO #        Energy (a.u.)      Symmetry    Occupation
+-----------------------------------------------------------
+         1           -26.443066            AG           2.0
+         2           -26.443033           B1U           2.0
+         3            -1.597219            AG           2.0
+         4            -1.589112           B1U           2.0
+         5            -0.725614           B2U           2.0
+         6            -0.725614           B3U           2.0
+         7            -0.722377           B2G           2.0
+         8            -0.722377           B3G           2.0
+         9            -0.478973            AG           2.0
+        10            -0.250869           B1U           0.0
+        11             1.296261            AG           0.0
+        12             1.356322           B2U           0.0
+        13             1.356322           B3U           0.0
+        14             1.389531           B2G           0.0
+        15             1.389531           B3G           0.0
+        16             1.483239           B1U           0.0
+        17             1.541852            AG           0.0
+        18             1.637166           B1U           0.0
+        19             3.890281            AG           0.0
+        20             3.893612           B1U           0.0
+        21             3.896658           B2U           0.0
+        22             3.896658           B3U           0.0
+        23             3.897895           B2G           0.0
+        24             3.897895           B3G           0.0
+        25             3.913590            AG           0.0
+        26             3.913590           B1G           0.0
+        27             3.913591            AU           0.0
+        28             3.913591           B1U           0.0
+        29             7.541717            AG           0.0
+        30             7.601742           B1U           0.0
+
+   Nuclear Repulsion Energy = 15.178999760134326
+   Reference Energy = -198.42009628267277
+
+   The total number of triples of ground-state symmetry (AG) is 173960
+   The increment of 1% is 1739
+
+   Performing CC(P;Q) calculation with 0.0 % triples ( 0.0 triples )
+   ===========================================================================================
+
+   Symmetry AG - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry B1G - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry B2G - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry B3G - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry AU - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry B1U - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry B2U - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry B3U - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   --------------------------------------------------
+   Calculation type =  CCSDT_P_QUADRATIC
+   Maximum iterations = 500
+   Convergence tolerance = 1e-08
+   Energy shift = 0.0
+   DIIS size =  6
+   RHF symmetry = False
+   --------------------------------------------------
+
+   CC calculation started at 2022-12-16 12:18:00 
+
+   Energy of initial guess =         0.0000000000
+
+      Iter.     Residuum             δE                ΔE           Wall time
+    ----------------------------------------------------------------------------
+       0      0.7713827955     -0.5760307223     -0.5760307223     (0.0m 0.2s)
+       1      0.2113849695      0.0049097815     -0.5711209408     (0.0m 0.2s)
+       2      0.0735897040     -0.0237564015     -0.5948773423     (0.0m 0.2s)
+       3      0.0228918927      0.0075473495     -0.5873299928     (0.0m 0.2s)
+       4      0.0192884659     -0.0067608753     -0.5940908681     (0.0m 0.2s)
+       5      0.0085680639      0.0031478430     -0.5909430251     (0.0m 0.2s)
+       6      0.0061347935     -0.0022108081     -0.5931538333     (0.0m 0.2s)
+       7      0.0032414842      0.0011853141     -0.5919685192     (0.0m 0.2s)
+       8      0.0021042638     -0.0007576899     -0.5927262091     (0.0m 0.2s)
+       9      0.0012154289      0.0004304346     -0.5922957745     (0.0m 0.2s)
+      10      0.0000520521     -0.0001727962     -0.5924685707     (0.0m 0.2s)
+      11      0.0000146779      0.0000015466     -0.5924670242     (0.0m 0.2s)
+      12      0.0000017466      0.0000006816     -0.5924663426     (0.0m 0.2s)
+      13      0.0000003799      0.0000000529     -0.5924662897     (0.0m 0.2s)
+      14      0.0000001681      0.0000000076     -0.5924662820     (0.0m 0.2s)
+      15      0.0000000479     -0.0000000047     -0.5924662868     (0.0m 0.2s)
+      16      0.0000000133      0.0000000013     -0.5924662854     (0.0m 0.2s)
+      17      0.0000000043     -0.0000000004     -0.5924662858     (0.0m 0.2s)
+   CC calculation successfully converged! (0.00m  3.54s)
+
+   CC Calculation Summary
+  --------------------------------------------------
+   Reference energy                   -198.42009628
+   CC correlation energy                -0.59246629
+   Total CC energy                    -199.01256257
+
+   CC calculation ended at 2022-12-16 12:18:36
+
+   HBar CCSD construction finished in 0.00m 0.10s
+   --------------------------------------------------
+   Calculation type =  LEFT_CCSD
+   Maximum iterations = 500
+   Convergence tolerance = 1e-08
+   Energy shift = 0.0
+   DIIS size =  6
+   RHF symmetry = False
+   --------------------------------------------------
+
+   CC calculation started at 2022-12-16 12:18:00 
+
+   Energy of initial guess =         0.0000000000
+
+      Iter.     Residuum              ω                δω           Wall time
+    ----------------------------------------------------------------------------
+       0      0.9191251888      1.2753667184      1.2753667184     (0.0m 0.0s)
+       1      0.2190788945      0.3246429925     -0.9507237259     (0.0m 0.0s)
+       2      0.0912629515      0.1425270965     -0.1821158960     (0.0m 0.0s)
+       3      0.0766073971      0.1241155567     -0.0184115399     (0.0m 0.0s)
+       4      0.0527731039      0.0878125524     -0.0363030043     (0.0m 0.0s)
+       5      0.0381926538      0.0647748359     -0.0230377165     (0.0m 0.0s)
+       6      0.0272120858      0.0467870341     -0.0179878018     (0.0m 0.0s)
+       7      0.0006171875      0.0010984320     -0.0456886021     (0.0m 0.0s)
+       8      0.0002084568      0.0003709737     -0.0007274583     (0.0m 0.1s)
+       9      0.0001689644      0.0003006829     -0.0000702908     (0.0m 0.0s)
+      10      0.0001529468      0.0002721696     -0.0000285133     (0.0m 0.0s)
+      11      0.0001203222      0.0002141170     -0.0000580526     (0.0m 0.0s)
+      12      0.0000480761      0.0000855521     -0.0001285648     (0.0m 0.0s)
+      13      0.0000129283      0.0000230064     -0.0000625458     (0.0m 0.0s)
+      14      0.0000044834      0.0000079785     -0.0000150279     (0.0m 0.0s)
+      15      0.0000015916      0.0000028323     -0.0000051462     (0.0m 0.1s)
+      16      0.0000004650      0.0000008274     -0.0000020048     (0.0m 0.0s)
+      17      0.0000001377      0.0000002451     -0.0000005823     (0.0m 0.0s)
+      18      0.0000000651      0.0000001159     -0.0000001292     (0.0m 0.0s)
+      19      0.0000000409      0.0000000728     -0.0000000431     (0.0m 0.0s)
+      20      0.0000000328      0.0000000583     -0.0000000144     (0.0m 0.0s)
+      21      0.0000000277      0.0000000493     -0.0000000090     (0.0m 0.0s)
+      22      0.0000000228      0.0000000406     -0.0000000087     (0.0m 0.0s)
+      23      0.0000000153      0.0000000273     -0.0000000133     (0.0m 0.0s)
+      24      0.0000000062      0.0000000110     -0.0000000163     (0.0m 0.0s)
+      25      0.0000000017      0.0000000000     -0.0000000080     (0.0m 0.0s)
+   Left CC calculation successfully converged! (0.00m  1.24s)
+
+   Left-CC Calculation Summary
+  --------------------------------------------------
+   Converged        ω = 0.00000000       LR = 0.00000000
+
+   Left CC calculation ended at 2022-12-16 12:18:37
+
+   CC(P;3) Calculation Summary
+   -------------------------------------
+   Completed in  (0.00m  57.11s)
+
+   CC(P) = -199.0125625685
+   CC(P;3)_A = -199.0518443054     ΔE_A = -0.6317480227     δ_A = -0.0392817369
+   CC(P;3)_B = -199.0460996858     ΔE_B = -0.6260034032     δ_B = -0.0335371174
+   CC(P;3)_C = -199.0590750522     ΔE_C = -0.6389787695     δ_C = -0.0465124837
+   CC(P;3)_D = -199.0563392867     ΔE_D = -0.6362430040     δ_D = -0.0437767182
+
+   Selected moments account for 100.00% of the total CC(P;3)_D correction
+
+
+   Performing CC(P;Q) calculation with 90.0 % triples ( 156510.0 triples )
+   ===========================================================================================
+
+   Symmetry AG - Total number of triples in P space =  156510
+      Number of aaa =  4897
+      Number of aab =  73358
+      Number of abb =  73358
+      Number of bbb =  4897
+   Symmetry B1G - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry B2G - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry B3G - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry AU - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry B1U - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry B2U - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   Symmetry B3U - Total number of triples in P space =  0
+      Number of aaa =  0
+      Number of aab =  0
+      Number of abb =  0
+      Number of bbb =  0
+   --------------------------------------------------
+   Calculation type =  CCSDT_P_QUADRATIC
+   Maximum iterations = 500
+   Convergence tolerance = 1e-08
+   Energy shift = 0.0
+   DIIS size =  6
+   RHF symmetry = False
+   --------------------------------------------------
+
+   CC calculation started at 2022-12-16 12:19:00 
+
+   Energy of initial guess =         0.0000000000
+
+      Iter.     Residuum             δE                ΔE           Wall time
+    ----------------------------------------------------------------------------
+       0      0.7772700734     -0.5760307223     -0.5760307223     (0.0m 5.1s)
+       1      0.2545258520     -0.0470790841     -0.6231098064     (0.0m 5.2s)
+       2      0.0655681569     -0.0073211872     -0.6304309936     (0.0m 4.4s)
+       3      0.0260697698     -0.0056286893     -0.6360596829     (0.0m 4.2s)
+       4      0.0076714859     -0.0005734676     -0.6366331506     (0.0m 4.2s)
+       5      0.0048993058     -0.0012493375     -0.6378824881     (0.0m 4.3s)
+       6      0.0013835998      0.0001119225     -0.6377705655     (0.0m 4.2s)
+       7      0.0012613625     -0.0003363062     -0.6381068717     (0.0m 4.3s)
+       8      0.0006271014      0.0000945105     -0.6380123612     (0.0m 4.3s)
+       9      0.0006043370     -0.0001047086     -0.6381170698     (0.0m 4.2s)
+      10      0.0004039414      0.0000121547     -0.6381049151     (0.0m 5.1s)
+      11      0.0001961808     -0.0000012255     -0.6381061406     (0.0m 4.9s)
+      12      0.0000426874      0.0000010252     -0.6381051154     (0.0m 4.9s)
+      13      0.0000137521      0.0000006260     -0.6381044894     (0.0m 4.2s)
+      14      0.0000075176     -0.0000003256     -0.6381048150     (0.0m 4.3s)
+      15      0.0000021129     -0.0000002211     -0.6381050362     (0.0m 4.1s)
+      16      0.0000003368      0.0000000137     -0.6381050225     (0.0m 4.3s)
+      17      0.0000000862     -0.0000000006     -0.6381050231     (0.0m 4.4s)
+      18      0.0000000371      0.0000000047     -0.6381050185     (0.0m 4.5s)
+      19      0.0000000104      0.0000000015     -0.6381050170     (0.0m 4.1s)
+      20      0.0000000077     -0.0000000002     -0.6381050172     (0.0m 4.2s)
+   CC calculation successfully converged! (1.00m  33.21s)
+
+   CC Calculation Summary
+  --------------------------------------------------
+   Reference energy                   -198.42009628
+   CC correlation energy                -0.63810502
+   Total CC energy                    -199.05820130
+
+   CC calculation ended at 2022-12-16 12:21:32
+
+   HBar CCSD construction finished in 0.00m 0.11s
+   --------------------------------------------------
+   Calculation type =  LEFT_CCSD
+   Maximum iterations = 500
+   Convergence tolerance = 1e-08
+   Energy shift = 0.0
+   DIIS size =  6
+   RHF symmetry = False
+   --------------------------------------------------
+
+   CC calculation started at 2022-12-16 12:21:00 
+
+   Energy of initial guess =         0.0000000000
+
+      Iter.     Residuum              ω                δω           Wall time
+    ----------------------------------------------------------------------------
+       0      1.3519310692      1.6988514756      1.6988514756     (0.0m 0.0s)
+       1      0.4001057944      0.5694407473     -1.1294107284     (0.0m 0.1s)
+       2      0.1887189686      0.2951153448     -0.2743254024     (0.0m 0.0s)
+       3      0.1496345104      0.2503962730     -0.0447190718     (0.0m 0.1s)
+       4      0.1025213173      0.1800780339     -0.0703182391     (0.0m 0.0s)
+       5      0.0725399555      0.1318398787     -0.0482381552     (0.0m 0.0s)
+       6      0.0508316772      0.0946264005     -0.0372134782     (0.0m 0.1s)
+       7      0.0016836908      0.0033160094     -0.0913103911     (0.0m 0.1s)
+       8      0.0013244602      0.0026080655     -0.0007079439     (0.0m 0.1s)
+       9      0.0011483514      0.0022613158     -0.0003467496     (0.0m 0.1s)
+      10      0.0006408534      0.0012616961     -0.0009996197     (0.0m 0.0s)
+      11      0.0001292964      0.0002545915     -0.0010071046     (0.0m 0.0s)
+      12      0.0000397290      0.0000782248     -0.0001763667     (0.0m 0.1s)
+      13      0.0000120400      0.0000237066     -0.0000545182     (0.0m 0.1s)
+      14      0.0000046663      0.0000091879     -0.0000145187     (0.0m 0.0s)
+      15      0.0000020470      0.0000040305     -0.0000051574     (0.0m 0.0s)
+      16      0.0000007333      0.0000014438     -0.0000025867     (0.0m 0.0s)
+      17      0.0000003982      0.0000007841     -0.0000006597     (0.0m 0.0s)
+      18      0.0000003315      0.0000006528     -0.0000001313     (0.0m 0.0s)
+      19      0.0000002747      0.0000005409     -0.0000001119     (0.0m 0.1s)
+      20      0.0000001554      0.0000003060     -0.0000002348     (0.0m 0.1s)
+      21      0.0000000435      0.0000000856     -0.0000002204     (0.0m 0.1s)
+      22      0.0000000186      0.0000000366     -0.0000000491     (0.0m 0.1s)
+      23      0.0000000109      0.0000000215     -0.0000000150     (0.0m 0.0s)
+      24      0.0000000040      0.0000000079     -0.0000000137     (0.0m 0.1s)
+      25      0.0000000010      0.0000000000     -0.0000000058     (0.0m 0.0s)
+   Left CC calculation successfully converged! (0.00m  1.32s)
+
+   Left-CC Calculation Summary
+  --------------------------------------------------
+   Converged        ω = 0.00000000       LR = 0.00000000
+
+   Left CC calculation ended at 2022-12-16 12:21:34
+
+   CC(P;3) Calculation Summary
+   -------------------------------------
+   Completed in  (0.00m  0.49s)
+
+   CC(P) = -199.0582012999
+   CC(P;3)_A = -199.0582012997     ΔE_A = -0.6381050170     δ_A = 0.0000000002
+   CC(P;3)_B = -199.0582012997     ΔE_B = -0.6381050170     δ_B = 0.0000000002
+   CC(P;3)_C = -199.0582012996     ΔE_C = -0.6381050170     δ_C = 0.0000000002
+   CC(P;3)_D = -199.0582012996     ΔE_D = -0.6381050170     δ_D = 0.0000000002
+
