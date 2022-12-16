@@ -281,6 +281,91 @@ def count_excitations_in_pspace(pspace, system, ordered_index=True):
 
     return excitation_count
 
+def count_excitations_in_pspace_with_symmetry(pspace, system):
+
+    h_sym = len(system.point_group_irrep_to_number)
+
+    excitation_count = [[{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0},
+                        {'aaaa': 0, 'aaab': 0, 'aabb': 0, 'abbb': 0, 'bbbb': 0}] for i in range(h_sym)]
+
+    for n, p in enumerate(pspace):
+
+        if n == 0:
+
+            for a in range(system.nunoccupied_alpha):
+                for b in range(a + 1, system.nunoccupied_alpha):
+                    for c in range(b + 1, system.nunoccupied_alpha):
+                        for i in range(system.noccupied_alpha):
+                            for j in range(i + 1, system.noccupied_alpha):
+                                for k in range(j + 1, system.noccupied_alpha):
+
+                                    sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_alpha]]
+
+                                    if p['aaa'][a, b, c, i, j, k] == 1:
+                                        excitation_count[sym][n]['aaa'] += 1
+
+            for a in range(system.nunoccupied_alpha):
+                for b in range(a + 1, system.nunoccupied_alpha):
+                    for c in range(system.nunoccupied_beta):
+                        for i in range(system.noccupied_alpha):
+                            for j in range(i + 1, system.noccupied_alpha):
+                                for k in range(system.noccupied_beta):
+
+                                    sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
+
+                                    if p['aab'][a, b, c, i, j, k] == 1:
+                                        excitation_count[sym][n]['aab'] += 1
+
+            for a in range(system.nunoccupied_alpha):
+                for b in range(system.nunoccupied_beta):
+                    for c in range(b + 1, system.nunoccupied_beta):
+                        for i in range(system.noccupied_alpha):
+                            for j in range(system.noccupied_beta):
+                                for k in range(j + 1, system.noccupied_beta):
+
+                                    sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_beta]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
+
+                                    if p['abb'][a, b, c, i, j, k] == 1:
+                                        excitation_count[sym][n]['abb'] += 1
+
+            for a in range(system.nunoccupied_beta):
+                for b in range(a + 1, system.nunoccupied_beta):
+                    for c in range(b + 1, system.nunoccupied_beta):
+                        for i in range(system.noccupied_beta):
+                            for j in range(i + 1, system.noccupied_beta):
+                                for k in range(j + 1, system.noccupied_beta):
+
+                                    sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_beta]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_beta]]
+                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
+
+                                    if p['bbb'][a, b, c, i, j, k] == 1:
+                                        excitation_count[sym][n]['bbb'] += 1
+
+    return excitation_count
+
 
 def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, system, ordered_index=False):
     """Expand the size of the previous P space using the determinants contained in the list

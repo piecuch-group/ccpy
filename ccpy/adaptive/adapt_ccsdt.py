@@ -1,8 +1,8 @@
 import numpy as np
 
 from ccpy.models.calculation import Calculation
-from ccpy.utilities.pspace import count_excitations_in_pspace, add_spinorbital_triples_to_pspace
-from ccpy.utilities.symmetry_count import count_triples, count_quadruples
+from ccpy.utilities.pspace import count_excitations_in_pspace_with_symmetry, add_spinorbital_triples_to_pspace
+from ccpy.utilities.symmetry_count import count_triples
 from ccpy.drivers.driver import cc_driver, lcc_driver
 from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
 from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccp3
@@ -76,13 +76,14 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
         print("   ===========================================================================================\n")
 
         # Count the excitations in the current P space
-        excitation_count = count_excitations_in_pspace(pspace, system)
-        tot_p_space = excitation_count[0]['aaa'] + excitation_count[0]['aab'] + excitation_count[0]['abb'] + excitation_count[0]['bbb']
-        print("   Total number of triples in P space = ", tot_p_space)
-        print("   Number of aaa = ", excitation_count[0]['aaa'])
-        print("   Number of aab = ", excitation_count[0]['aab'])
-        print("   Number of abb = ", excitation_count[0]['abb'])
-        print("   Number of bbb = ", excitation_count[0]['bbb'])
+        excitation_count = count_excitations_in_pspace_with_symmetry(pspace, system)
+        for ind, excitation_count_irrep in enumerate(excitation_count):
+            tot_p_space = excitation_count_irrep[0]['aaa'] + excitation_count_irrep[0]['aab'] + excitation_count_irrep[0]['abb'] + excitation_count_irrep[0]['bbb']
+            print("   Symmetry", system.point_group_number_to_irrep[ind], "-", "Total number of triples in P space = ", tot_p_space)
+            print("      Number of aaa = ", excitation_count_irrep[0]['aaa'])
+            print("      Number of aab = ", excitation_count_irrep[0]['aab'])
+            print("      Number of abb = ", excitation_count_irrep[0]['abb'])
+            print("      Number of bbb = ", excitation_count_irrep[0]['bbb'])
         
         # Perform CC(P) calculation using previous T vector as initial guess
         if n > 0:
