@@ -151,7 +151,7 @@ def calc_ccsdpt(T, H, system, use_RHF=False):
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
     dA_aaa = ccsdpt_loops.ccsdpt_loops.ccsdpta_opt(
-        T.aa,
+        T.a, T.aa,
         H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
         H.aa.vovv, H.aa.ooov,
         H.a.oo, H.a.vv,
@@ -163,7 +163,7 @@ def calc_ccsdpt(T, H, system, use_RHF=False):
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     dA_aab = ccsdpt_loops.ccsdpt_loops.ccsdptb_opt(
-        T.aa, T.ab,
+        T.a, T.b, T.aa, T.ab,
         I2B_ovoo, I2B_vooo, I2A_vooo,
         H.ab.vvvo, H.ab.vvov, H.aa.vvov,
         H.ab.vovv, H.ab.ovvv, H.aa.vovv,
@@ -181,7 +181,7 @@ def calc_ccsdpt(T, H, system, use_RHF=False):
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
         dA_abb = ccsdpt_loops.ccsdpt_loops.ccsdptc_opt(
-            T.ab, T.bb,
+            T.a, T.b, T.ab, T.bb,
             I2B_vooo, I2C_vooo, I2B_ovoo,
             H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
             H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
@@ -195,7 +195,7 @@ def calc_ccsdpt(T, H, system, use_RHF=False):
 
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
         dA_bbb = ccsdpt_loops.ccsdpt_loops.ccsdptd_opt(
-            T.bb,
+            T.b, T.bb,
             H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
             H.bb.vovv, H.bb.ooov,
             H.b.oo, H.b.vv,
