@@ -1,7 +1,7 @@
 import numpy as np
 
 from ccpy.models.calculation import Calculation
-from ccpy.utilities.pspace import count_excitations_in_pspace_with_symmetry, add_spinorbital_triples_to_pspace
+from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace_with_symmetry, add_spinorbital_triples_to_pspace
 from ccpy.utilities.symmetry_count import count_triples
 from ccpy.drivers.driver import cc_driver, lcc_driver
 from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
@@ -22,8 +22,8 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
     # check if requested CC(P) calculation is implemented in modules
     # assuming the underlying CC(P) follows in the * in the calculation_type
     # input adapt_*, as in adapt_ccsdt -> "ccsdt_p:
-    #setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_slow")
-    #setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_linear")
+    # setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_slow")
+    # setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_linear")
     setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_quadratic")
 
     # make the left-CC calculation using the CC(P) parameters (maybe this isn't the best way)
@@ -37,12 +37,8 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
                             )
 
     # start with an empty P space
-    # pspace = get_empty_pspace(system, calculation.order)
-    pspace = [{"aaa" : np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha), fill_value=False, dtype=bool),
-               "aab" : np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta, system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta), fill_value=False, dtype=bool),
-               "abb" : np.full((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta, system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta), fill_value=False, dtype=bool),
-               "bbb" : np.full((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta, system.noccupied_beta, system.noccupied_beta, system.noccupied_beta), fill_value=False, dtype=bool)}
-    ]
+    pspace = get_empty_pspace(system, calculation.order, use_bool=True)
+
     # Start with empty t3_excitations; remember, a single entry of [1., 1., 1., 1., 1., 1.]
     # in t3_excitations[spincase] is the default to signal that there are 0 triples in that 
     # category
@@ -87,12 +83,12 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
         
         # Perform CC(P) calculation using previous T vector as initial guess
         if n > 0:
-            #T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace, T=T)
-            #T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations) # linear
+            # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace, T=T)
+            # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations) # linear
             T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations, pspace=pspace[0])
         else:
-            #T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace)
-            #T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations) # linear
+            # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace)
+            # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations) # linear
             T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations, pspace=pspace[0])
         #assert(is_converged)
 

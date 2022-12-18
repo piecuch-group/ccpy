@@ -214,7 +214,7 @@ def calc_ccsdpt(T, H, system, use_RHF=False):
 
     print('   CCSD(T) Calculation Summary')
     print('   -------------------------------------')
-    print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
+    print("   Completed in  ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
     print("   CCSD = {:>10.10f}".format(system.reference_energy + cc_energy))
     print(
         "   CCSD(T) = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(

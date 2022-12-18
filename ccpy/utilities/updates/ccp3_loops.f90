@@ -657,7 +657,7 @@ module ccp3_loops
 
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, num_add
-                        integer, intent(in) :: pspace(nua, nua, nua, noa, noa, noa)
+                        logical(kind=1), intent(in) :: pspace(nua, nua, nua, noa, noa, noa)
                         real(kind=8), intent(in) :: fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
                         H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
                         H2A_voov(1:nua,1:noa,1:noa,1:nua),&
@@ -722,7 +722,7 @@ module ccp3_loops
                                         do b = a+1, nua
                                             do c = b+1, nua
 
-                                                if (pspace(a, b, c, i, j, k) == 1) cycle
+                                                if (pspace(a, b, c, i, j, k)) cycle
 
                                                 temp1 = X3A(a,b,c) + X3A(b,c,a) + X3A(c,a,b)&
                                                 - X3A(a,c,b) - X3A(b,a,c) - X3A(c,b,a)
@@ -821,7 +821,7 @@ module ccp3_loops
 
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, nob, nub, num_add
-                        integer, intent(in) :: pspace(nua, nua, nub, noa, noa, nob)
+                        logical(kind=1), intent(in) :: pspace(nua, nua, nub, noa, noa, nob)
                         real(kind=8), intent(in) :: t2a(nua,nua,noa,noa),t2b(nua,nub,noa,nob),&
                         l1a(nua,noa),l1b(nub,nob),&
                         l2a(nua,nua,noa,noa),l2b(nua,nub,noa,nob),&
@@ -934,7 +934,7 @@ module ccp3_loops
                                         do b = a+1, nua
                                             do c = 1, nub
 
-                                                if (pspace(a, b, c, i, j, k) == 1) cycle
+                                                if (pspace(a, b, c, i, j, k)) cycle
 
                                                 temp1 = X3B(a,b,c) - X3B(b,a,c)
                                                 temp2 = L3B(a,b,c) - L3B(b,a,c)
@@ -1020,7 +1020,7 @@ module ccp3_loops
 
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, nob, nub, num_add
-                        integer, intent(in) :: pspace(nua, nub, nub, noa, nob, nob)
+                        logical(kind=1), intent(in) :: pspace(nua, nub, nub, noa, nob, nob)
                         real(kind=8), intent(in) :: t2b(nua,nub,noa,nob),&
                         t2c(nub,nub,nob,nob),l1a(nua,noa),l1b(nub,nob),&
                         l2b(nua,nub,noa,nob),l2c(nub,nub,nob,nob),&
@@ -1141,7 +1141,7 @@ module ccp3_loops
                                         do b = 1, nub
                                             do c = b+1, nub
 
-                                                if (pspace(a, b, c, i, j, k) == 1) cycle
+                                                if (pspace(a, b, c, i, j, k)) cycle
 
                                                 temp1 = X3C(a,b,c) - X3C(a,c,b)
                                                 temp2 = L3C(a,b,c) - L3C(a,c,b)
@@ -1216,7 +1216,7 @@ module ccp3_loops
 
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: nob, nub, num_add
-                        integer, intent(in) :: pspace(nub, nub, nub, nob, nob, nob)
+                        logical(kind=1), intent(in) :: pspace(nub, nub, nub, nob, nob, nob)
                         real(kind=8), intent(in) :: fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
                         H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
@@ -1280,7 +1280,7 @@ module ccp3_loops
                                         do b = a+1, nub
                                             do c = b+1, nub
 
-                                                if (pspace(a, b, c, i, j, k) == 1) cycle
+                                                if (pspace(a, b, c, i, j, k)) cycle
                                                 temp1 = X3D(a,b,c) + X3D(b,c,a) + X3D(c,a,b)&
                                                 - X3D(a,c,b) - X3D(b,a,c) - X3D(c,b,a)
 
