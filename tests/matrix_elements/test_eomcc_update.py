@@ -84,6 +84,77 @@ def get_T3_list(T):
 
     return T3_excitations, T3_amplitudes, pspace
 
+def get_R3_list(R):
+
+    nua, noa = R.a.shape
+    nub, nob = R.b.shape
+
+    R3_excitations = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
+    R3_amplitudes = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
+    pspace = {"aaa" : np.full((nua, nua, nua, noa, noa, noa), fill_value=False, dtype=bool),
+              "aab" : np.full((nua, nua, nub, noa, noa, nob), fill_value=False, dtype=bool),
+              "abb" : np.full((nua, nub, nub, noa, nob, nob), fill_value=False, dtype=bool),
+              "bbb" : np.full((nub, nub, nub, nob, nob, nob), fill_value=False, dtype=bool)}
+
+    for a in range(nua):
+        for b in range(a + 1, nua):
+            for c in range(b + 1, nua):
+                for i in range(noa):
+                    for j in range(i + 1, noa):
+                        for k in range(j + 1, noa):
+                            R3_excitations["aaa"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                            R3_amplitudes["aaa"].append(T.aaa[a, b, c, i, j, k])
+                            for perms_unocc in permutations((a, b, c)):
+                                for perms_occ in permutations((i, j, k)):
+                                    a1, b1, c1 = perms_unocc
+                                    i1, j1, k1 = perms_occ
+                                    pspace["aaa"][a1, b1, c1, i1, j1, k1] = True
+    for a in range(nua):
+        for b in range(a + 1, nua):
+            for c in range(nub):
+                for i in range(noa):
+                    for j in range(i + 1, noa):
+                        for k in range(nob):
+                            R3_excitations["aab"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                            R3_amplitudes["aab"].append(T.aab[a, b, c, i, j, k])
+                            for perms_unocc in permutations((a, b)):
+                                for perms_occ in permutations((i, j)):
+                                    a1, b1 = perms_unocc
+                                    i1, j1 = perms_occ
+                                    pspace["aab"][a1, b1, c, i1, j1, k] = True
+    for a in range(nua):
+        for b in range(nub):
+            for c in range(b + 1, nub):
+                for i in range(noa):
+                    for j in range(nob):
+                        for k in range(j + 1, nob):
+                            R3_excitations["abb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                            R3_amplitudes["abb"].append(T.abb[a, b, c, i, j, k])
+                            for perms_unocc in permutations((b, c)):
+                                for perms_occ in permutations((j, k)):
+                                    b1, c1 = perms_unocc
+                                    j1, k1 = perms_occ
+                                    pspace["abb"][a, b1, c1, i, j1, k1] = True
+    for a in range(nub):
+        for b in range(a + 1, nub):
+            for c in range(b + 1, nub):
+                for i in range(nob):
+                    for j in range(i + 1, nob):
+                        for k in range(j + 1, nob):
+                            R3_excitations["bbb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                            R3_amplitudes["bbb"].append(T.bbb[a, b, c, i, j, k])
+                            for perms_unocc in permutations((a, b, c)):
+                                for perms_occ in permutations((i, j, k)):
+                                    a1, b1, c1 = perms_unocc
+                                    i1, j1, k1 = perms_occ
+                                    pspace["bbb"][a1, b1, c1, i1, j1, k1] = True
+
+    for key in R3_excitations.keys():
+        R3_excitations[key] = np.asarray(R3_excitations[key])
+        R3_amplitudes[key] = np.asarray(R3_amplitudes[key])
+
+    return R3_excitations, R3_amplitudes, pspace
+
 
 
 if __name__ == "__main__":
@@ -119,11 +190,18 @@ if __name__ == "__main__":
     calculation = Calculation(calculation_type="ccsdt")
     T, cc_energy, converged = cc_driver(calculation, system, H)
 
-    T3_excitations, T3_amplitudes, pspace = get_T3_list(T)
-    excitation_count = [[T3_excitations["aaa"].shape[0],
-                         T3_excitations["aab"].shape[0],
-                         T3_excitations["abb"].shape[0],
-                         T3_excitations["bbb"].shape[0]]]
+    calculation=Calculation(calculation_type="eomccsdt")
+
+    T3_excitations, T3_amplitudes, pspace_t = get_T3_list(T)
+    R3_excitations, R3_amplitudes, pspace_r = get_R3_list(R)
+    excitation_count_t = [[T3_excitations["aaa"].shape[0],
+                           T3_excitations["aab"].shape[0],
+                           T3_excitations["abb"].shape[0],
+                           T3_excitations["bbb"].shape[0]]]
+    excitation_count_r = [[R3_excitations["aaa"].shape[0],
+                           R3_excitations["aab"].shape[0],
+                           R3_excitations["abb"].shape[0],
+                           R3_excitations["bbb"].shape[0]]]
 
     # Get the expected result for the contraction, computed using full T_ext
     print("   Exact H*T3 contraction", end="")

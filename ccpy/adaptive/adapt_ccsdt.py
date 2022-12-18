@@ -5,18 +5,18 @@ from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace_
 from ccpy.utilities.symmetry_count import count_triples
 from ccpy.drivers.driver import cc_driver, lcc_driver
 from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
-from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccp3
+from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccpert3_with_selection, calc_ccp3
 
-def adapt_ccsdt(calculation, system, hamiltonian, T=None, relaxed=True):
+def adapt_ccsdt(calculation, system, hamiltonian, T=None, pert_corr=False, relaxed=True):
 
     if relaxed:
-        T, ccp_energy, ccpq_energy = adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None)
+        T, ccp_energy, ccpq_energy = adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, T=None)
 
 
     return T, ccp_energy, ccpq_energy
 
 #[TODO]: Generalize this function to at least handling singles through quadruples, not just triples
-def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
+def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, T=None):
     """Performs the adaptive CC(P;Q) calculation specified by the user in the input."""
 
     # check if requested CC(P) calculation is implemented in modules
@@ -56,12 +56,13 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
 
     calculation.adaptive_percentages.insert(0, 0.0)
     num_calcs = len(calculation.adaptive_percentages)
-    num_dets_to_add = np.zeros(num_calcs - 1)
+    num_dets_to_add = np.zeros(num_calcs)
     for i in range(num_calcs - 1):
         if calculation.adaptive_percentages[i + 1] == 100.0:
             num_dets_to_add[i] = num_total - n1 * calculation.adaptive_percentages[i]
         else:
             num_dets_to_add[i] = n1 * (calculation.adaptive_percentages[i + 1] - calculation.adaptive_percentages[i])
+    num_dets_to_add[-1] = 1
 
     ccp_energy = np.zeros(num_calcs)
     ccpq_energy = np.zeros(num_calcs)
@@ -90,30 +91,37 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, T=None):
             # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace)
             # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations) # linear
             T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations, pspace=pspace[0])
-        #assert(is_converged)
 
-        # Build CCSD-like Hbar from CC(P) 
-        Hbar = build_hbar_ccsd(T, hamiltonian)
-
-        # Perform left-CCSD calculation
-        L, _, is_converged = lcc_driver(calculation_left, system, T, Hbar)
-        #assert(is_converged)
-
-        # Compute the moment correction
-        if n < num_calcs - 1:
-            # Compute the correction and return the moments as well as selected triples
+        if pert_corr:
+            # Compute the CCSD(T)-like correction and return the moments as well as selected triples
+            Eccp3, deltap3, moments, triples_list = calc_ccpert3_with_selection(T,
+                                                                                hamiltonian,
+                                                                                system,
+                                                                                pspace,
+                                                                                num_dets_to_add[n],
+                                                                                use_RHF=calculation.RHF_symmetry)
+            ccpq_energy[n] = Eccp3
+        else:
+            # Build CCSD-like Hbar from CC(P)
+            Hbar = build_hbar_ccsd(T, hamiltonian)
+            # Perform left-CCSD calculation
+            L, _, is_converged = lcc_driver(calculation_left, system, T, Hbar)
+            # Compute the CR-CC(2,3)-like correction and return the moments as well as selected triples
             Eccp3, deltap3, moments, triples_list = calc_ccp3_with_selection(T, L,
                                                                              Hbar, hamiltonian,
                                                                              system,
                                                                              pspace,
                                                                              num_dets_to_add[n],
                                                                              use_RHF=calculation.RHF_symmetry)
-            # add the triples
+            ccpq_energy[n] = Eccp3["D"]
+
+        # add the triples
+        if n < num_calcs - 1:
             pspace[0], t3_excitations = add_spinorbital_triples_to_pspace(triples_list, pspace[0], t3_excitations, system)
 
-        else:
-            Eccp3, deltap3 = calc_ccp3(T, L, Hbar, hamiltonian, system, pspace, use_RHF=calculation.RHF_symmetry)
+        #else:
+        #    Eccp3, deltap3 = calc_ccp3(T, L, Hbar, hamiltonian, system, pspace, use_RHF=calculation.RHF_symmetry)
 
-        ccpq_energy[n] = Eccp3["D"]
+
 
     return T, ccp_energy, ccpq_energy
