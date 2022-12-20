@@ -59,7 +59,7 @@ def update(T, dT, H, shift, flag_RHF, system):
     #X = get_3body_intermediates(T, H, system)
 
     # update T4
-    X = get_3body_intermediates(T, H, system, "aaaa")
+    #X = get_3body_intermediates(T, H, system, "aaaa")
     T, dT = update_t4a(T, dT, hbar, H, shift)
     T, dT = update_t4b(T, dT, hbar, H, shift)
     T, dT = update_t4c(T, dT, hbar, H, shift)

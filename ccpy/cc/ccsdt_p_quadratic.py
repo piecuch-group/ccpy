@@ -1,6 +1,5 @@
 """Module with functions that perform the CC with singles, doubles,
 and triples (CCSDT) calculation for a molecular system."""
-
 import numpy as np
 
 from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
@@ -20,6 +19,7 @@ def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace):
         do_t3["abb"] = False
     if np.array_equal(t3_excitations["bbb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
         do_t3["bbb"] = False
+    build_hbar = do_t3["aaa"] or do_t3["aab"] or do_t3["abb"] or do_t3["bbb"]
 
     # update T1
     T, dT = update_t1a(T, dT, H, shift, t3_excitations)
@@ -43,7 +43,8 @@ def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace):
 
     # CCSD intermediates
     #[TODO]: Should accept CCS HBar as input and build only terms with T2 in it
-    hbar = get_ccsd_intermediates(T, H)
+    if build_hbar:
+        hbar = get_ccsd_intermediates(T, H)
 
     # update T3
     if do_t3["aaa"]:
