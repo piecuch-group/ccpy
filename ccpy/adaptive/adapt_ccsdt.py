@@ -7,16 +7,19 @@ from ccpy.drivers.driver import cc_driver, lcc_driver
 from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
 from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccpert3_with_selection, calc_ccp3
 
-def adapt_ccsdt(calculation, system, hamiltonian, T=None, pert_corr=False, relaxed=True):
+from ccpy.moments.ccp3 import calc_ccp3_with_moments
+from ccpy.utilities.pspace import adaptive_triples_selection_from_moments
+
+def adapt_ccsdt(calculation, system, hamiltonian, T=None, pert_corr=False, on_the_fly=True, relaxed=True):
 
     if relaxed:
-        T, ccp_energy, ccpq_energy = adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, T=None)
+        T, ccp_energy, ccpq_energy = adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly, T=None)
 
 
     return T, ccp_energy, ccpq_energy
 
 #[TODO]: Generalize this function to at least handling singles through quadruples, not just triples
-def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, T=None):
+def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly, T=None):
     """Performs the adaptive CC(P;Q) calculation specified by the user in the input."""
 
     # check if requested CC(P) calculation is implemented in modules
@@ -107,21 +110,22 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, T=None):
             # Perform left-CCSD calculation
             L, _, is_converged = lcc_driver(calculation_left, system, T, Hbar)
             # Compute the CR-CC(2,3)-like correction and return the moments as well as selected triples
-            Eccp3, deltap3, moments, triples_list = calc_ccp3_with_selection(T, L,
-                                                                             Hbar, hamiltonian,
-                                                                             system,
-                                                                             pspace,
-                                                                             num_dets_to_add[n],
-                                                                             use_RHF=calculation.RHF_symmetry)
+            if on_the_fly:
+                Eccp3, deltap3, moments, triples_list = calc_ccp3_with_selection(T, L,
+                                                                                 Hbar, hamiltonian,
+                                                                                 system,
+                                                                                 pspace,
+                                                                                 num_dets_to_add[n],
+                                                                                 use_RHF=calculation.RHF_symmetry)
+            else:
+                Eccp3, deltap3, moments = calc_ccp3_with_moments(T, L, Hbar, hamiltonian, system, pspace, use_RHF=calculation.RHF_symmetry)
             ccpq_energy[n] = Eccp3["D"]
 
         # add the triples
         if n < num_calcs - 1:
-            pspace[0], t3_excitations = add_spinorbital_triples_to_pspace(triples_list, pspace[0], t3_excitations, system)
-
-        #else:
-        #    Eccp3, deltap3 = calc_ccp3(T, L, Hbar, hamiltonian, system, pspace, use_RHF=calculation.RHF_symmetry)
-
-
+            if on_the_fly:
+                pspace[0], t3_excitations = add_spinorbital_triples_to_pspace(triples_list, pspace[0], t3_excitations, system)
+            else:
+                pspace[0], t3_excitations = adaptive_triples_selection_from_moments(moments, pspace[0], t3_excitations, num_dets_to_add[n], system)
 
     return T, ccp_energy, ccpq_energy

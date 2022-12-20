@@ -20,6 +20,7 @@ MODULES := cc_loops \
 		   cct3_loops \
 		   cc_loops_t4 \
 		   ccp3_loops \
+		   ccp3_adaptive_loops \
 		   clusteranalysis \
 		   ecccp3_loops
 
