@@ -5,9 +5,7 @@ from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace_
 from ccpy.utilities.symmetry_count import count_triples
 from ccpy.drivers.driver import cc_driver, lcc_driver
 from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
-from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccpert3_with_selection, calc_ccp3
-
-from ccpy.moments.ccp3 import calc_ccp3_with_moments
+from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccp3_with_moments, calc_ccpert3_with_selection, calc_ccpert3_with_moments, calc_ccp3
 from ccpy.utilities.pspace import adaptive_triples_selection_from_moments
 
 def adapt_ccsdt(calculation, system, hamiltonian, T=None, pert_corr=False, on_the_fly=True, relaxed=True):
@@ -97,12 +95,19 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
 
         if pert_corr:
             # Compute the CCSD(T)-like correction and return the moments as well as selected triples
-            Eccp3, deltap3, moments, triples_list = calc_ccpert3_with_selection(T,
-                                                                                hamiltonian,
-                                                                                system,
-                                                                                pspace,
-                                                                                num_dets_to_add[n],
-                                                                                use_RHF=calculation.RHF_symmetry)
+            if on_the_fly:
+                Eccp3, deltap3, moments, triples_list = calc_ccpert3_with_selection(T,
+                                                                                    hamiltonian,
+                                                                                    system,
+                                                                                    pspace,
+                                                                                    num_dets_to_add[n],
+                                                                                    use_RHF=calculation.RHF_symmetry)
+            else:
+                Eccp3, deltap3, moments = calc_ccpert3_with_moments(T,
+                                                                    hamiltonian,
+                                                                    system,
+                                                                    pspace,
+                                                                    use_RHF=calculation.RHF_symmetry)
             ccpq_energy[n] = Eccp3
         else:
             # Build CCSD-like Hbar from CC(P)
