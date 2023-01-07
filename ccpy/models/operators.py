@@ -1,6 +1,8 @@
 import numpy as np
 from itertools import combinations_with_replacement
 
+# [TODO]: Make sparse array operator class that holds 1D array of amplitudes and COO array of indices
+
 class ActiveOperator:
 
     def __init__(self, system, order, spincase, num_active, matrix=None, data_type=np.float64):
@@ -77,7 +79,7 @@ class ActiveOperator:
             prev += ndim
 
 class ClusterOperator:
-    def __init__(self, system, order, p_orders=[None], pspace=[None], active_orders=[None], num_active=[None], data_type=np.float64):
+    def __init__(self, system, order, p_orders=[None], pspace_sizes=[None], active_orders=[None], num_active=[None], data_type=np.float64):
         self.order = order
         self.spin_cases = []
         self.dimensions = []
@@ -85,11 +87,16 @@ class ClusterOperator:
         # [TODO]: think of a nicer way to handle the active order cases
         ndim = 0
         act_cnt = 0
+        p_cnt = 0
         for i in range(1, order + 1):
 
             if i in active_orders:
                 nact = num_active[act_cnt]
                 act_cnt += 1
+
+            if i in p_orders:
+                excitation_count = pspace_sizes[p_cnt]
+                p_cnt += 1
 
             for j in range(i + 1):
                 name = get_operator_name(i, j)
@@ -102,10 +109,13 @@ class ClusterOperator:
                         self.dimensions.append(dim)
                     ndim += active_t.ndim
 
+                # This is trying to set a zero 1D vector for the P space components
                 elif i in p_orders:
-                    setattr(self, name, np.zeros(0, dtype=data_type))
-                    self.dimensions.append((0,))
-                    ndim += 0
+                   setattr(self, name, np.zeros(excitation_count[j], dtype=data_type))
+                   if excitation_count[j] == 0:
+                        setattr(self, name, np.zeros(shape=(1,), dtype=data_type))
+                   self.dimensions.append((excitation_count[j],))
+                   ndim += excitation_count[j]
 
                 else:
                     setattr(self, name, np.zeros(dimensions, dtype=data_type))
@@ -271,47 +281,12 @@ if __name__ == "__main__":
 
     print(system)
 
-    # print('Active t3 aaa')
-    # print('----------------')
-    # t3 = ActiveOperator(system, 3, 'aaa', 1)
-    # for slice, dim in zip(t3.slices, t3.dimensions):
-    #     print(slice, "->", dim)
-    # print("Flattened dimension = ", t3.ndim)
-    # print(t3.flatten().shape)
-
-    print('Active t3 aab')
-    print('----------------')
-    t3 = ActiveOperator(system, 3, 'aab', 1)
-    for slice, dim in zip(t3.slices, t3.dimensions):
-        print(slice, "->", dim)
-    print("Flattened dimension = ", t3.ndim)
-    print(t3.flatten().shape)
-    A = np.zeros(t3.ndim)
-    print(A.shape)
-    t3.unflatten(A)
-    print(t3.flatten().shape)
-
-    order = 3
-    T = ClusterOperator(system, order, active_orders=[3], num_active=[1])
-    print("Cluster operator order", order)
-    print("---------------------------")
-    for spin in T.spin_cases:
-        try:
-            print(spin, "->", getattr(T, spin).shape)
-        except:
-            for slice, dim in zip(getattr(T, spin).slices, getattr(T, spin).dimensions):
-                print(spin, "->", slice, "->", dim)
+    T = ClusterOperator(system, 3, p_orders=[3], pspace_sizes=[[100, 200, 200, 100]])
+    for key in T.spin_cases:
+        print(key, "->", getattr(T, key).shape)
+    print(T.dimensions)
+    print(T.dimensions[5], T.dimensions[6], T.dimensions[7], T.dimensions[8])
     print("Flattened dimension = ", T.ndim)
-    print(T.flatten().shape)
-
-    A = np.zeros(shape=T.ndim)
-
-    #print(T.dimensions)
-    #print(T.spin_cases)
-
-    T.unflatten(A)
-
-
     print(T.flatten().shape)
 
     num_particles = 1

@@ -6,7 +6,6 @@ module cc_loops2
 
       subroutine update_t1a(t1a,resid,X1A,fA_oo,fA_vv,shift,noa,nua)
 
-              implicit none
 
               integer, intent(in) :: noa, nua
               real(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
@@ -17,6 +16,7 @@ module cc_loops2
               integer :: i, a
               real(kind=8) :: denom, val
 
+              resid = 0.0d0
               do i = 1,noa
                 do a = 1,nua
                   denom = fA_oo(i,i) - fA_vv(a,a)
@@ -30,8 +30,6 @@ module cc_loops2
 
       subroutine update_t1b(t1b,resid,X1B,fB_oo,fB_vv,shift,nob,nub)
 
-              implicit none
-
               integer, intent(in) :: nob, nub
               real(8), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
                                   X1B(1:nub,1:nob), shift               
@@ -41,6 +39,7 @@ module cc_loops2
               integer :: i, a
               real(8) :: denom, val
 
+              resid = 0.0d0
               do i = 1,nob
                 do a = 1,nub
                   denom = fB_oo(i,i) - fB_vv(a,a)
@@ -54,8 +53,6 @@ module cc_loops2
 
       subroutine update_t2a(t2a,resid,X2A,fA_oo,fA_vv,shift,noa,nua)
 
-              implicit none
-
               integer, intent(in) :: noa, nua
               real(8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                   X2A(1:nua,1:nua,1:noa,1:noa), shift               
@@ -65,6 +62,7 @@ module cc_loops2
               integer :: i, j, a, b
               real(8) :: denom, val
 
+              resid = 0.0d0
               do i = 1,noa
                 do j = i+1,noa
                   do a = 1,nua
@@ -89,8 +87,6 @@ module cc_loops2
 
       subroutine update_t2b(t2b,resid,X2B,fA_oo,fA_vv,fB_oo,fB_vv,shift,noa,nua,nob,nub)
 
-              implicit none
-
               integer, intent(in) :: noa, nua, nob, nub
               real(8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                   fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
@@ -101,6 +97,7 @@ module cc_loops2
               integer :: i, j, a, b
               real(8) :: denom, val
 
+              resid = 0.0d0
               do j = 1,nob
                 do i = 1,noa
                   do b = 1,nub
@@ -118,8 +115,6 @@ module cc_loops2
 
       subroutine update_t2c(t2c,resid,X2C,fB_oo,fB_vv,shift,nob,nub)
 
-              implicit none
-
               integer, intent(in) :: nob, nub
               real(8), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
                                   X2C(1:nub,1:nub,1:nob,1:nob), shift               
@@ -129,6 +124,7 @@ module cc_loops2
               integer :: i, j, a, b
               real(8) :: denom, val
 
+              resid = 0.0d0
               do i = 1,nob
                 do j = i+1,nob
                   do a = 1,nub
@@ -154,8 +150,6 @@ module cc_loops2
 
       subroutine update_t3a_v2(t3a,resid,X3A,fA_oo,fA_vv,shift,noa,nua)
 
-              implicit none
-
               integer, intent(in) :: noa, nua
               real(8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                   X3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa), shift               
@@ -165,6 +159,7 @@ module cc_loops2
               integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
               real(8) :: denom, val
 
+              resid = 0.0d0
               do ii = 1,noa
                   do jj = ii+1,noa
                       do kk = jj+1,noa
@@ -307,8 +302,6 @@ module cc_loops2
 
       subroutine update_t3b_v2(t3b,resid,X3B,fA_oo,fA_vv,fB_oo,fB_vv,shift,noa,nua,nob,nub)
 
-              implicit none
-
               integer, intent(in) :: noa, nua, nob, nub
               real(8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                   fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
@@ -319,6 +312,7 @@ module cc_loops2
               integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
               real(8) :: denom, val
 
+              resid = 0.0d0
               do ii = 1,noa
                   do jj = ii+1,noa
                       do kk = 1,nob
@@ -353,8 +347,6 @@ module cc_loops2
 
       subroutine update_t3c_v2(t3c,resid,X3C,fA_oo,fA_vv,fB_oo,fB_vv,shift,noa,nua,nob,nub)
 
-              implicit none
-
               integer, intent(in) :: noa, nua, nob, nub
               real(8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                   fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
@@ -365,6 +357,7 @@ module cc_loops2
               integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
               real(8) :: denom, val
 
+              resid = 0.0d0
               do ii = 1,noa
                   do jj = 1,nob
                       do kk = jj+1,nob
@@ -399,8 +392,6 @@ module cc_loops2
 
       subroutine update_t3d_v2(t3d,resid,X3D,fB_oo,fB_vv,shift,nob,nub)
 
-              implicit none
-
               integer, intent(in) :: nob, nub
               real(8), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
                                   X3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob), shift               
@@ -410,6 +401,7 @@ module cc_loops2
               integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
               real(8) :: denom, val
 
+              resid = 0.0d0
               do ii = 1,nob
                   do jj = ii+1,nob
                       do kk = jj+1,nob

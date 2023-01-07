@@ -1,3 +1,4 @@
+from ccpy.utilities.pspace import count_excitations_in_pspace
 
 class Calculation:
 
@@ -14,7 +15,9 @@ class Calculation:
                        RHF_symmetry=False,
                        adaptive_percentages=None,
                        active_orders=None,
-                       num_active=None,):
+                       num_active=None,
+                       p_orders=None,
+                       pspace_sizes=None):
 
         if adaptive_percentages is None:
             adaptive_percentages = [None]
@@ -22,6 +25,10 @@ class Calculation:
             active_orders = [None]
         if num_active is None:
             num_active = [None]
+        if p_orders is None:
+            p_orders = [None]
+        if pspace_sizes is None:
+            pspace_sizes = [None]
 
         self.calculation_type = calculation_type.lower()
         self.multiplicity = multiplicity
@@ -40,11 +47,15 @@ class Calculation:
         self.num_particles = num_particles
         self.num_holes = num_holes
 
-        if calculation_type.lower() in ["ccsd", "eomccsd", "left_ccsd"]:
+        if calculation_type.lower() in ["ccsd", "eomccsd", "left_ccsd", "eccc2"]:
             self.order = 2
             self.num_particles = 2
             self.num_holes = 2
-        elif calculation_type.lower() in ["ccsdt", "eomccsdt", "left_ccsdt", "ccsdt_p", "left_ccsdt_p", "ccsdt_p_slow", "left_ccsdt_p_slow"]:
+        elif calculation_type.lower() in ["ccsdt", "eomccsdt", "left_ccsdt", "left_ccsdt_p", "ccsdt_p_slow", "left_ccsdt_p_slow"]:
+            self.order = 3
+            self.num_particles = 3
+            self.num_holes = 3
+        elif calculation_type.lower() in ["ccsdt_p", "ccsdt_p_linear", "ccsdt_p_linear_omp", "ccsdt_p_quadratic", "adapt_ccsdt"]:
             self.order = 3
             self.num_particles = 3
             self.num_holes = 3

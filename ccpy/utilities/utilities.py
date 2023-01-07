@@ -28,7 +28,7 @@ def print_memory_usage():
 
 def clean_up(fid, n):
     for i in range(n):
-        remove_files(fid + "-" + str(i + 1) + ".npy")
+        remove_file(fid + "-" + str(i + 1) + ".npy")
     return
 
 
