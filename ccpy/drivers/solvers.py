@@ -177,22 +177,17 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
     # Allocate residual R cluster operator
     dR = deepcopy(R[0])
     dR.unflatten(np.zeros(shape=dR.ndim))
-    # dR = ClusterOperator(system,
-    #                      order=R[0].order,
-    #                      active_orders=calculation.active_orders,
-    #                      num_active=calculation.num_active,
-    #                      data_type=R[0].a.dtype)
 
     for n in range(nroot):
         t0_root = time.time()
-        print("=======================================")
-        print("Solving for root - ", n + 1)
-        print("Energy of initial guess = {:>10.10f}".format(omega[n]))
+        print("   =======================================")
+        print("   Solving for root - ", n + 1)
+        print("   Energy of initial guess = {:>10.10f}".format(omega[n]))
         print_amplitudes(R[n], system, 2, nprint=5)
-        print("=======================================")
+        print("   =======================================")
         print_eomcc_iteration_header()
 
-        # Allocate the B and sigma matrices
+        # Allocate the B (correction/subspace) and sigma (HR) matrices
         sigma = np.zeros((R[n].ndim, calculation.maximum_iterations))
         B = np.zeros((R[n].ndim, calculation.maximum_iterations))
 
@@ -264,7 +259,79 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
 
     return R, omega, r0, is_converged
 
+def eccc_jacobi(update_t, T, dT, H, calculation, system, T_ext, VT_ext):
 
+    from ccpy.drivers.cc_energy import get_cc_energy
+    from ccpy.drivers.diis import DIIS
+
+    # instantiate the DIIS accelerator object
+    diis_engine = DIIS(T, calculation.diis_size, calculation.low_memory)
+
+    # Jacobi/DIIS iterations
+    num_throw_away = 3
+    ndiis_cycle = 0
+    energy = 0.0
+    energy_old = get_cc_energy(T, H)
+    is_converged = False
+
+    print("   Energy of initial guess = {:>20.10f}".format(energy_old))
+
+    t_start = time.time()
+    print_cc_iteration_header()
+    for niter in range(calculation.maximum_iterations):
+        # get iteration start time
+        t1 = time.time()
+
+        # Update the T vector
+        T, dT = update_t(T, dT, H, calculation.energy_shift, calculation.RHF_symmetry, system, T_ext, VT_ext)
+
+        # CC correlation energy
+        energy = get_cc_energy(T, H)
+
+        # change in energy
+        delta_energy = energy - energy_old
+
+        # check for exit condition
+        residuum = np.linalg.norm(dT.flatten())
+        if (
+            residuum < calculation.convergence_tolerance
+            and abs(delta_energy) < calculation.convergence_tolerance
+        ):
+            # print the iteration of convergence
+            elapsed_time = time.time() - t1
+            print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+
+            t_end = time.time()
+            minutes, seconds = divmod(t_end - t_start, 60)
+            print(
+                "   ec-CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)".format(
+                    minutes, seconds
+                )
+            )
+            is_converged = True
+            break
+
+        # Save T and dT vectors to disk for DIIS
+        if niter >= num_throw_away:
+            diis_engine.push(T, dT, niter)
+
+        # Do DIIS extrapolation
+        if niter >= calculation.diis_size + num_throw_away:
+            ndiis_cycle += 1
+            T.unflatten(diis_engine.extrapolate())
+
+        # Update old energy
+        energy_old = energy
+
+        elapsed_time = time.time() - t1
+        print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+    else:
+        print("ec-CC calculation did not converge.")
+
+    # Remove the t.npy and dt.npy files if out-of-core DIIS was used
+    diis_engine.cleanup()
+
+    return T, energy, is_converged
 
 def cc_jacobi(update_t, T, dT, H, calculation, system):
 
@@ -647,6 +714,156 @@ def ccp_jacobi(update_t, T, dT, H, calculation, system, pspace):
     diis_engine.cleanup()
 
     return T, energy, is_converged
+
+
+def ccp_linear_jacobi(update_t, T, dT, H, calculation, system, t3_excitations):
+
+    from ccpy.drivers.cc_energy import get_cc_energy
+    from ccpy.drivers.diis import DIIS
+
+    # instantiate the DIIS accelerator object
+    diis_engine = DIIS(T, calculation.diis_size, calculation.low_memory)
+
+    # Jacobi/DIIS iterations
+    num_throw_away = 3
+    ndiis_cycle = 0
+    energy = 0.0
+    energy_old = get_cc_energy(T, H)
+    is_converged = False
+
+    print("   Energy of initial guess = {:>20.10f}".format(energy_old))
+
+    t_start = time.time()
+    print_cc_iteration_header()
+    for niter in range(calculation.maximum_iterations):
+        # get iteration start time
+        t1 = time.time()
+
+        # Update the T vector
+        T, dT = update_t(T, dT, H, calculation.energy_shift, calculation.RHF_symmetry, system, t3_excitations)
+
+        # CC correlation energy
+        energy = get_cc_energy(T, H)
+
+        # change in energy
+        delta_energy = energy - energy_old
+
+        # check for exit condition
+        residuum = np.linalg.norm(dT.flatten())
+        if (
+            residuum < calculation.convergence_tolerance
+            and abs(delta_energy) < calculation.convergence_tolerance
+        ):
+            # print the iteration of convergence
+            elapsed_time = time.time() - t1
+            print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+
+            t_end = time.time()
+            minutes, seconds = divmod(t_end - t_start, 60)
+            print(
+                "   CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)".format(
+                    minutes, seconds
+                )
+            )
+            is_converged = True
+            break
+
+        # Save T and dT vectors to disk for DIIS
+        if niter >= num_throw_away:
+            diis_engine.push(T, dT, niter)
+
+        # Do DIIS extrapolation
+        if niter >= calculation.diis_size + num_throw_away:
+            ndiis_cycle += 1
+            T.unflatten(diis_engine.extrapolate())
+
+        # Update old energy
+        energy_old = energy
+
+        elapsed_time = time.time() - t1
+        print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+    else:
+        print("CC calculation did not converge.")
+
+    # Remove the t.npy and dt.npy files if out-of-core DIIS was used
+    diis_engine.cleanup()
+
+    return T, energy, is_converged
+
+def ccp_quadratic_jacobi(update_t, T, dT, H, calculation, system, t3_excitations, pspace):
+
+    from ccpy.drivers.cc_energy import get_cc_energy
+    from ccpy.drivers.diis import DIIS
+
+    # instantiate the DIIS accelerator object
+    diis_engine = DIIS(T, calculation.diis_size, calculation.low_memory)
+
+    # Jacobi/DIIS iterations
+    num_throw_away = 3
+    ndiis_cycle = 0
+    energy = 0.0
+    energy_old = get_cc_energy(T, H)
+    is_converged = False
+
+    print("   Energy of initial guess = {:>20.10f}".format(energy_old))
+
+    t_start = time.time()
+    print_cc_iteration_header()
+    for niter in range(calculation.maximum_iterations):
+        # get iteration start time
+        t1 = time.time()
+
+        # Update the T vector
+        T, dT = update_t(T, dT, H, calculation.energy_shift, calculation.RHF_symmetry, system, t3_excitations, pspace)
+
+        # CC correlation energy
+        energy = get_cc_energy(T, H)
+
+        # change in energy
+        delta_energy = energy - energy_old
+
+        # check for exit condition
+        residuum = np.linalg.norm(dT.flatten())
+        if (
+            residuum < calculation.convergence_tolerance
+            and abs(delta_energy) < calculation.convergence_tolerance
+        ):
+            # print the iteration of convergence
+            elapsed_time = time.time() - t1
+            print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+
+            t_end = time.time()
+            minutes, seconds = divmod(t_end - t_start, 60)
+            print(
+                "   CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)".format(
+                    minutes, seconds
+                )
+            )
+            is_converged = True
+            break
+
+        # Save T and dT vectors to disk for DIIS
+        if niter >= num_throw_away:
+            diis_engine.push(T, dT, niter)
+
+        # Do DIIS extrapolation
+        if niter >= calculation.diis_size + num_throw_away:
+            ndiis_cycle += 1
+            T.unflatten(diis_engine.extrapolate())
+
+        # Update old energy
+        energy_old = energy
+
+        elapsed_time = time.time() - t1
+        print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+    else:
+        print("CC calculation did not converge.")
+
+    # Remove the t.npy and dt.npy files if out-of-core DIIS was used
+    diis_engine.cleanup()
+
+    return T, energy, is_converged
+
 
 def mrcc_jacobi(update_t, compute_Heff, T, dT, H, model_space, calculation, system):
 

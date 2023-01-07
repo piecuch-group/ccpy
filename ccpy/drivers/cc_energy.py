@@ -1,6 +1,17 @@
 """Module containing function to calculate the CC correlation energy."""
 import numpy as np
 
+def get_ci_energy(C, H0):
+
+    e1a = np.einsum("me,em->", H0.a.ov, C.a, optimize=True)
+    e1b = np.einsum("me,em->", H0.b.ov, C.b, optimize=True)
+    e2a = 0.25 * np.einsum("mnef,efmn->", H0.aa.oovv, C.aa, optimize=True)
+    e2b = np.einsum("mnef,efmn->", H0.ab.oovv, C.ab, optimize=True)
+    e2c = 0.25 * np.einsum("mnef,efmn->", H0.bb.oovv, C.bb, optimize=True)
+
+    Ecorr = e1a + e1b + e2a + e2b + e2c
+
+    return Ecorr
 
 def get_cc_energy(T, H0):
     """Calculate the CC correlation energy <0|(H_N e^T)_C|0>.

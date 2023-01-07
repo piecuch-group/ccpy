@@ -56,7 +56,7 @@ def main(args):
     T, total_energy, is_converged = cc_driver(calculation, system, H)
 
     
-    Hbar = build_hbar_ccsdt(T, H)
+    Hbar = build_hbar_ccsd(T, H)
 
     num_roots = args.root
     calculation = Calculation(
