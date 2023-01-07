@@ -12,7 +12,7 @@ all:
 
 .PHONY: install
 install:
-	$(CONDA_PREFIX)/bin/pip install -e .
+	pip install -e .
 
 .PHONY: all-quality
 all-quality: format-check lint test
@@ -54,5 +54,5 @@ docs:
 
 .PHONY: bootstrap
 bootstrap:
-	$(CONDA_PREFIX)/bin/pip install -r requirements-dev.txt
-	$(CONDA_PREFIX)/bin/pip install -r requirements.txt
+	pip install -r requirements-dev.txt
+	pip install -r requirements.txt
