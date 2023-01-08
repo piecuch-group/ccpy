@@ -104,7 +104,7 @@ def update_t1a(T, dT, H, shift, t3_excitations):
     T.a, dT.a = ccp_quadratic_loops.ccp_quadratic_loops.update_t1a(
         T.a, 
         dT.a + H.a.vo,
-        t3_excitations["aaa"], t3_excitations["aab"], t3_excitations["abb"],
+        t3_excitations["aaa"].T, t3_excitations["aab"].T, t3_excitations["abb"].T,
         T.aaa, T.aab, T.abb,
         H.aa.oovv, H.ab.oovv, H.bb.oovv,
         H.a.oo, H.a.vv,
@@ -155,7 +155,7 @@ def update_t1b(T, dT, H, shift, t3_excitations):
     T.b, dT.b = ccp_quadratic_loops.ccp_quadratic_loops.update_t1b(
         T.b,
         dT.b + H.b.vo,
-        t3_excitations["aab"], t3_excitations["abb"], t3_excitations["bbb"],
+        t3_excitations["aab"].T, t3_excitations["abb"].T, t3_excitations["bbb"].T,
         T.aab, T.abb, T.bbb,
         H.aa.oovv, H.ab.oovv, H.bb.oovv,
         H.b.oo, H.b.vv,
@@ -212,7 +212,7 @@ def update_t2a(T, dT, H, H0, shift, t3_excitations):
     T.aa, dT.aa = ccp_quadratic_loops.ccp_quadratic_loops.update_t2a(
         T.aa,
         dT.aa + 0.25 * H0.aa.vvoo,
-        t3_excitations["aaa"], t3_excitations["aab"],
+        t3_excitations["aaa"].T, t3_excitations["aab"].T,
         T.aaa, T.aab,
         H.a.ov, H.b.ov,
         H0.aa.ooov + H.aa.ooov, H0.aa.vovv + H.aa.vovv,
@@ -295,7 +295,7 @@ def update_t2b(T, dT, H, H0, shift, t3_excitations):
     T.ab, dT.ab = ccp_quadratic_loops.ccp_quadratic_loops.update_t2b(
         T.ab,
         dT.ab + H0.ab.vvoo,
-        t3_excitations["aab"], t3_excitations["abb"],
+        t3_excitations["aab"].T, t3_excitations["abb"].T,
         T.aab, T.abb,
         H.a.ov, H.b.ov,
         H.aa.ooov + H0.aa.ooov, H.aa.vovv + H0.aa.vovv,
@@ -356,7 +356,7 @@ def update_t2c(T, dT, H, H0, shift, t3_excitations):
     T.bb, dT.bb = ccp_quadratic_loops.ccp_quadratic_loops.update_t2c(
         T.bb,
         dT.bb + 0.25 * H0.bb.vvoo,
-        t3_excitations["abb"], t3_excitations["bbb"],
+        t3_excitations["abb"].T, t3_excitations["bbb"].T,
         T.abb, T.bbb,
         H.a.ov, H.b.ov,
         H0.ab.oovo + H.ab.oovo, H0.ab.ovvv + H.ab.ovvv,
@@ -377,7 +377,7 @@ def update_t3a(T, dT, H, H0, shift, t3_excitations, pspace):
 
     T.aaa, dT.aaa = ccp_quadratic_loops.ccp_quadratic_loops.update_t3a_p(
         T.aaa,
-        t3_excitations["aaa"], t3_excitations["aab"],
+        t3_excitations["aaa"].T, t3_excitations["aab"].T,
         pspace["aaa"],
         T.aa,
         T.aab,
@@ -403,7 +403,7 @@ def update_t3b(T, dT, H, H0, shift, t3_excitations, pspace):
 
     T.aab, dT.aab = ccp_quadratic_loops.ccp_quadratic_loops.update_t3b_p(
         T.aab,
-        t3_excitations["aaa"], t3_excitations["aab"], t3_excitations["abb"],
+        t3_excitations["aaa"].T, t3_excitations["aab"].T, t3_excitations["abb"].T,
         pspace["aab"],
         T.aa, T.ab,
         T.aaa, T.abb,
@@ -430,7 +430,7 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations, pspace):
 
     T.abb, dT.abb = ccp_quadratic_loops.ccp_quadratic_loops.update_t3c_p(
         T.abb,
-        t3_excitations["aab"], t3_excitations["abb"], t3_excitations["bbb"],
+        t3_excitations["aab"].T, t3_excitations["abb"].T, t3_excitations["bbb"].T,
         pspace["abb"],
         T.ab, T.bb,
         T.aab, T.bbb,
@@ -455,7 +455,7 @@ def update_t3d(T, dT, H, H0, shift, t3_excitations, pspace):
 
     T.bbb, dT.bbb = ccp_quadratic_loops.ccp_quadratic_loops.update_t3d_p(
         T.bbb,
-        t3_excitations["abb"], t3_excitations["bbb"],
+        t3_excitations["abb"].T, t3_excitations["bbb"].T,
         pspace["bbb"],
         T.bb,
         T.abb,

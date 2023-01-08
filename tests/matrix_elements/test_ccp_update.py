@@ -103,7 +103,7 @@ if __name__ == "__main__":
     """
 
     mol.build(
-        atom=fluorine,
+        atom=methylene,
         basis="ccpvdz",
         symmetry="C2V",
         spin=0, 
