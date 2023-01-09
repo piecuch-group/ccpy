@@ -25,7 +25,7 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
     # input adapt_*, as in adapt_ccsdt -> "ccsdt_p:
     # setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_slow")
     # setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_linear")
-    setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_quadratic")
+    setattr(calculation, "calculation_type", calculation.calculation_type.split('_')[1] + "_p_quadratic_omp")
 
     # make the left-CC calculation using the CC(P) parameters (maybe this isn't the best way)
     calculation_left = Calculation(

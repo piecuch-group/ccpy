@@ -11,7 +11,7 @@ from ccpy.models.calculation import Calculation
 from ccpy.models.operators import ClusterOperator
 
 from ccpy.cc.ccsdt import update
-from ccpy.cc.ccsdt_p_quadratic import update as update_p
+from ccpy.cc.ccsdt_p_quadratic_omp import update as update_p
 
 def get_T3_list(T):
 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     )
     mf = scf.ROHF(mol).run()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=2)
+    system, H = load_pyscf_integrals(mf, nfrozen=1)
     system.print_info()
 
     calculation = Calculation(calculation_type="ccsdt")

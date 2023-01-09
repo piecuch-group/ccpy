@@ -658,8 +658,27 @@ module ccp_quadratic_loops_omp
                   real(kind=8) :: I2A_vvov(nua, nua, noa, nua), I2A_vooo(nua, noa, noa, noa)
                   real(kind=8) :: val, denom, t_amp, res_mm23
                   integer :: a, b, c, i, j, k, e, f, m, n, idet
+                  integer :: nu2array(2,nua*(nua-1)/2), no2array(2,noa*(noa-1)/2), ab, ij
 
                   real(kind=8) :: x3a(nua, nua, nua, noa, noa, noa)
+
+                  ab = 1
+                  do a = 1, nua
+                     do b = a + 1, nua
+                        nu2array(1,ab) = a
+                        nu2array(2,ab) = b
+                        ab = ab + 1
+                     end do
+                  end do
+
+                  ij = 1
+                  do i = 1, noa
+                     do j = i + 1, noa
+                        no2array(1,ij) = i
+                        no2array(2,ij) = j
+                        ij = ij + 1
+                     end do
+                  end do
 
                   ! Zero the projection container
                   x3a = 0.0d0
@@ -786,12 +805,14 @@ module ccp_quadratic_loops_omp
                   end do
 
                   !!! OMP parallel loops !!!
+                  !$omp parallel
 
                   ! x3a(abcijk) <- A(c/ab)A(ijk)[ A(c/ef) h2a(abef) * t3a(efcijk) ]
                   !              = A(abc)A(ijk)[ 1/2 A(c/ef) h2a(abef) * t3a(efcijk) ]
-                  !$omp parallel do
-                  do a = 1, nua
-                  do b = a+1, nua
+                  !$omp do
+                  do ab = 1, size(nu2array,2)
+                      a = nu2array(1,ab)
+                      b = nu2array(2,ab)
                       do idet = 1, n3aaa
                           t_amp = t3a_amps(idet)
 
@@ -803,14 +824,13 @@ module ccp_quadratic_loops_omp
                           if (pspace(b,a,f,i,j,k)) x3a(b,a,f,i,j,k) = x3a(b,a,f,i,j,k) - H2A_vvvv(b,a,e,c) * t_amp ! (fc)
                       end do
                   end do
-                  end do
-                  !$omp end parallel do
+                  !$omp end do
 
                   ! x3a(abcijk) <- A(a/bc)A(bc)A(jk)A(i/jk)[ A(e/bc)A(m/jk) h2a(amie) * t3a(ebcmjk) ]
                   !              = A(abc)A(ijk)[ A(e/bc)A(m/jk) h2a(amie) * t3a(ebcmjk) ]
-                  !$omp parallel do
-                  do a = 1, nua ! not cache friendly
-                  do i = 1, noa
+                  !$omp do collapse(2)
+                  do i = 1, noa 
+                  do a = 1, nua
                       do idet = 1, n3aaa
                           t_amp = t3a_amps(idet)
                           e = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
@@ -828,13 +848,13 @@ module ccp_quadratic_loops_omp
                       end do
                   end do
                   end do
-                  !$omp end parallel do
+                  !$omp end do
 
                   ! x3a(abcijk) <- A(c/ab)A(ab)A(ij)A(k/ij)[ h2b(cmke) * t3b(abeijm) ]
                   !              = A(abc)A(ijk)[ h2b(cmke) * t3b(abeijm) ]
-                  !$omp parallel do
-                  do c = 1, nua ! not cache friendly
+                  !$omp do collapse(2)
                   do k = 1, noa
+                  do c = 1, nua
                       do idet = 1, n3aab
                           t_amp = t3b_amps(idet)
 
@@ -845,8 +865,8 @@ module ccp_quadratic_loops_omp
                       end do
                   end do
                   end do
-                  !$omp end parallel do
-
+                  !$omp end do
+                  !$omp end parallel
                   !!!
 
                   ! Update loop

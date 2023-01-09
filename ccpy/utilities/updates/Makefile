@@ -46,11 +46,9 @@ else
 	MKLFOLDER := $(CONDA_PREFIX)/lib
 endif
 
-LDFLAGS :=
-
 # configuration for lab computers
 # the mkl library specifics are different for different computer. Just don't use this for now...
-#LIBS := -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
+LIBS := -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 
 .PHONY: all clean
 
