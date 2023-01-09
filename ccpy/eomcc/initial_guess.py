@@ -15,6 +15,9 @@ def get_initial_guess(calculation, system, H, nroot, noact=0, nuact=0, guess_ord
     if calc_type == "ee":
         Hmat = build_cis_hamiltonian(H, system)
         omega, V = spin_adapt_guess(system, Hmat, calculation.multiplicity)
+        idx = np.argsort(omega)
+        omega = omega[idx]
+        V = V[:, idx]
 
     elif calc_type == "ip":
         Hmat = build_1h_hamiltonian(H, system)
@@ -66,6 +69,7 @@ def spin_adapt_guess(system, H, multiplicity):
     for i in range(len(idx_s2)):
         W[:, i] = V_s2[:, idx_s2[i]]
 
+    # Transform from determinantal basis to basis of S2 eigenfunctions
     G = np.einsum("Ku,Nv,Lu,Mv,LM->KN", W, W, W, W, H, optimize=True)
 
     omega, V = np.linalg.eig(G)

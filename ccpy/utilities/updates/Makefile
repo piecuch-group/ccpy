@@ -15,6 +15,7 @@ MODULES := cc_loops \
 		   ccp_linear_loops \
 		   ccp_linear_loops_omp \
 		   ccp_quadratic_loops \
+		   ccp_quadratic_loops_omp \
 		   eomcc_active_loops \
 		   cc_active_loops \
 		   cct3_loops \
