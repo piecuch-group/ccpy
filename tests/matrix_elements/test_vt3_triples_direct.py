@@ -105,15 +105,49 @@ def contract_vt3_fly(H, H0, T, T3_excitations, T3_amplitudes):
         a, b, c, i, j, k = [x - 1 for x in T3_excitations["aaa"][idet]]
 
         for m in range(noa):
-            if m <= i: # m <-> i
-                t_amp = T.aaa[a, b, c, m, j, k]
-                resid_aaa[idet] -= H.a.oo[m, i] * t_amp
-            elif i < m < k: # m <-> j
-                t_amp = T.aaa[a, b, c, i, m, k]
-                resid_aaa[idet] -= H.a.oo[m, j] * t_amp
-            elif i >= k: # m <-> k
-                t_amp = T.aaa[a, b, c, i, j, m]
-                resid_aaa[idet] -= H.a.oo[m, k] * t_amp
+            d = a
+            b = e
+            c = f
+            j = m
+            k = n
+            hmatel = 0.0
+
+            # diagram 1: -A(abc)A(jk)A(i/jk)A(l/mn)[ d(j,m)d(k,n)d(b,e)d(c,f)d(a,d)h(l,i) ]
+            #           -> -d(a,d)d(b,e)d(c,f)* [A(ijk)(A/lmn) d(j,m)d(k,n)h(l,i)]
+            hmatel += kd(a, d) * kd(b, e) * kd(c, f) * (
+             # (1)
+             - kd(j, m) * kd(k, n) * H.a.oo[l, i]  # (1)
+             + kd(i, m) * kd(k, n) * H.a.oo[l, j]  # (ij)
+             + kd(j, m) * kd(i, n) * H.a.oo[l, k]  # (ik)
+             + kd(k, m) * kd(j, n) * H.a.oo[l, i]  # (jk)
+             - kd(i, m) * kd(j, n) * H.a.oo[l, k]  # (ij)(jk)
+             - kd(k, m) * kd(i, n) * H.a.oo[l, j]  # (ik)(jk)
+             # (lm)
+             + kd(j, l) * kd(k, n) * H.a.oo[m, i]  # (1)
+             - kd(i, l) * kd(k, n) * H.a.oo[m, j]  # (ij)
+             - kd(j, l) * kd(i, n) * H.a.oo[m, k]  # (ik)
+             - kd(k, l) * kd(j, n) * H.a.oo[m, i]  # (jk)
+             + kd(i, l) * kd(j, n) * H.a.oo[m, k]  # (ij)(jk)
+             + kd(k, l) * kd(i, n) * H.a.oo[m, j]  # (ik)(jk)
+             # (ln)
+             + kd(j, m) * kd(k, l) * H.a.oo[n, i]  # (1)
+             - kd(i, m) * kd(k, l) * H.a.oo[n, j]  # (ij)
+             - kd(j, m) * kd(i, l) * H.a.oo[n, k]  # (ik)
+             - kd(k, m) * kd(j, l) * H.a.oo[n, i]  # (jk)
+             + kd(i, m) * kd(j, l) * H.a.oo[n, k]  # (ij)(jk)
+             + kd(k, m) * kd(i, l) * H.a.oo[n, j]  # (ik)(jk)
+            )
+
+        #for m in range(noa):
+        #    if m <= i: # m <-> i
+        #        t_amp = T.aaa[a, b, c, m, j, k]
+        #        resid_aaa[idet] -= H.a.oo[m, i] * t_amp
+        #    elif i < m < k: # m <-> j
+        #        t_amp = T.aaa[a, b, c, i, m, k]
+        #        resid_aaa[idet] -= H.a.oo[m, j] * t_amp
+        #    elif i >= k: # m <-> k
+        #        t_amp = T.aaa[a, b, c, i, j, m]
+        #        resid_aaa[idet] -= H.a.oo[m, k] * t_amp
 
         # for jdet in range(len(T3_amplitudes["aaa"])):
 

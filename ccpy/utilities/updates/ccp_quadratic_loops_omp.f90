@@ -805,74 +805,69 @@ module ccp_quadratic_loops_omp
                   end do
 
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel
+                  !$omp parallel shared(x3a,pspace,resid,&
+                  !$omp t3a_excits,t3b_excits,t3a_amps,t3b_amps,t2a,&
+                  !$omp nu2array,no2array,&
+                  !$omp H2A_vvvv,H2A_voov,H2B_voov,I2A_vooo,I2A_vvov,&
+                  !$omp fA_oo,fA_vv,shift,noa,nua,n3aaa,n3aab)
 
-                  ! x3a(abcijk) <- A(c/ab)A(ijk)[ A(c/ef) h2a(abef) * t3a(efcijk) ]
-                  !              = A(abc)A(ijk)[ 1/2 A(c/ef) h2a(abef) * t3a(efcijk) ]
-                  !$omp do collapse(2)
+                  !$omp do
                   do ab = 1, size(nu2array,2)
-                      !a = nu2array(1,ab)
-                      !b = nu2array(2,ab)
-                      do idet = 1, n3aaa
-                          t_amp = t3a_amps(idet)
-                          a = nu2array(1,ab)
-                          b = nu2array(2,ab)
-
-                          e = t3a_excits(1,idet); f = t3a_excits(2,idet); c = t3a_excits(3,idet);
-                          i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
-
-                          if (pspace(b,a,c,i,j,k)) x3a(b,a,c,i,j,k) = x3a(b,a,c,i,j,k) + H2A_vvvv(b,a,e,f) * t_amp ! (1)
-                          if (pspace(b,a,e,i,j,k)) x3a(b,a,e,i,j,k) = x3a(b,a,e,i,j,k) - H2A_vvvv(b,a,c,f) * t_amp ! (ec)
-                          if (pspace(b,a,f,i,j,k)) x3a(b,a,f,i,j,k) = x3a(b,a,f,i,j,k) - H2A_vvvv(b,a,e,c) * t_amp ! (fc)
-                      end do
+                     do idet = 1, n3aaa
+                        t_amp = t3a_amps(idet)
+                        a = nu2array(1,ab)
+                        b = nu2array(2,ab)
+                        ! x3a(abcijk) <- A(c/ab)A(ijk)[ A(c/ef) h2a(abef) * t3a(efcijk) ]
+                        !              = A(abc)A(ijk)[ 1/2 A(c/ef) h2a(abef) * t3a(efcijk) ]
+                        e = t3a_excits(1,idet); f = t3a_excits(2,idet); c = t3a_excits(3,idet);
+                        i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
+                        if (pspace(b,a,c,i,j,k)) x3a(b,a,c,i,j,k) = x3a(b,a,c,i,j,k) + H2A_vvvv(b,a,e,f) * t_amp ! (1)
+                        if (pspace(b,a,e,i,j,k)) x3a(b,a,e,i,j,k) = x3a(b,a,e,i,j,k) - H2A_vvvv(b,a,c,f) * t_amp ! (ec)
+                        if (pspace(b,a,f,i,j,k)) x3a(b,a,f,i,j,k) = x3a(b,a,f,i,j,k) - H2A_vvvv(b,a,e,c) * t_amp ! (fc)
+                     end do
                   end do
                   !$omp end do
 
-                  ! x3a(abcijk) <- A(a/bc)A(bc)A(jk)A(i/jk)[ A(e/bc)A(m/jk) h2a(amie) * t3a(ebcmjk) ]
-                  !              = A(abc)A(ijk)[ A(e/bc)A(m/jk) h2a(amie) * t3a(ebcmjk) ]
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do i = 1, noa 
                   do a = 1, nua
-                      do idet = 1, n3aaa
-                          t_amp = t3a_amps(idet)
-                          e = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
-                          m = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
-
-                          if (pspace(a,b,c,i,j,k)) x3a(a,b,c,i,j,k) = x3a(a,b,c,i,j,k) + H2A_voov(a,m,i,e) * t_amp ! (1)
-                          if (pspace(a,b,c,i,m,k)) x3a(a,b,c,i,m,k) = x3a(a,b,c,i,m,k) - H2A_voov(a,j,i,e) * t_amp ! (mj)
-                          if (pspace(a,b,c,i,j,m)) x3a(a,b,c,i,j,m) = x3a(a,b,c,i,j,m) - H2A_voov(a,k,i,e) * t_amp ! (mk)
-                          if (pspace(a,e,c,i,j,k)) x3a(a,e,c,i,j,k) = x3a(a,e,c,i,j,k) - H2A_voov(a,m,i,b) * t_amp ! (eb)
-                          if (pspace(a,e,c,i,m,k)) x3a(a,e,c,i,m,k) = x3a(a,e,c,i,m,k) + H2A_voov(a,j,i,b) * t_amp ! (eb)(mj)
-                          if (pspace(a,e,c,i,j,m)) x3a(a,e,c,i,j,m) = x3a(a,e,c,i,j,m) + H2A_voov(a,k,i,b) * t_amp ! (eb)(mk)
-                          if (pspace(a,b,e,i,j,k)) x3a(a,b,e,i,j,k) = x3a(a,b,e,i,j,k) - H2A_voov(a,m,i,c) * t_amp ! (ec)
-                          if (pspace(a,b,e,i,m,k)) x3a(a,b,e,i,m,k) = x3a(a,b,e,i,m,k) + H2A_voov(a,j,i,c) * t_amp ! (ec)(mj)
-                          if (pspace(a,b,e,i,j,m)) x3a(a,b,e,i,j,m) = x3a(a,b,e,i,j,m) + H2A_voov(a,k,i,c) * t_amp ! (ec)(mk)
-                      end do
+                     do idet = 1, n3aaa
+                        t_amp = t3a_amps(idet)
+                        ! x3a(abcijk) <- A(a/bc)A(bc)A(jk)A(i/jk)[ A(e/bc)A(m/jk) h2a(amie) * t3a(ebcmjk) ]
+                        !              = A(abc)A(ijk)[ A(e/bc)A(m/jk) h2a(amie) * t3a(ebcmjk) ]
+                        e = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
+                        m = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
+                        if (pspace(a,b,c,i,j,k)) x3a(a,b,c,i,j,k) = x3a(a,b,c,i,j,k) + H2A_voov(a,m,i,e) * t_amp ! (1)
+                        if (pspace(a,b,c,i,m,k)) x3a(a,b,c,i,m,k) = x3a(a,b,c,i,m,k) - H2A_voov(a,j,i,e) * t_amp ! (mj)
+                        if (pspace(a,b,c,i,j,m)) x3a(a,b,c,i,j,m) = x3a(a,b,c,i,j,m) - H2A_voov(a,k,i,e) * t_amp ! (mk)
+                        if (pspace(a,e,c,i,j,k)) x3a(a,e,c,i,j,k) = x3a(a,e,c,i,j,k) - H2A_voov(a,m,i,b) * t_amp ! (eb)
+                        if (pspace(a,e,c,i,m,k)) x3a(a,e,c,i,m,k) = x3a(a,e,c,i,m,k) + H2A_voov(a,j,i,b) * t_amp ! (eb)(mj)
+                        if (pspace(a,e,c,i,j,m)) x3a(a,e,c,i,j,m) = x3a(a,e,c,i,j,m) + H2A_voov(a,k,i,b) * t_amp ! (eb)(mk)
+                        if (pspace(a,b,e,i,j,k)) x3a(a,b,e,i,j,k) = x3a(a,b,e,i,j,k) - H2A_voov(a,m,i,c) * t_amp ! (ec)
+                        if (pspace(a,b,e,i,m,k)) x3a(a,b,e,i,m,k) = x3a(a,b,e,i,m,k) + H2A_voov(a,j,i,c) * t_amp ! (ec)(mj)
+                        if (pspace(a,b,e,i,j,m)) x3a(a,b,e,i,j,m) = x3a(a,b,e,i,j,m) + H2A_voov(a,k,i,c) * t_amp ! (ec)(mk)
+                     end do
                   end do
                   end do
                   !$omp end do
 
-                  ! x3a(abcijk) <- A(c/ab)A(ab)A(ij)A(k/ij)[ h2b(cmke) * t3b(abeijm) ]
-                  !              = A(abc)A(ijk)[ h2b(cmke) * t3b(abeijm) ]
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do k = 1, noa
                   do c = 1, nua
-                      do idet = 1, n3aab
-                          t_amp = t3b_amps(idet)
-
-                          a = t3b_excits(1,idet); b = t3b_excits(2,idet); e = t3b_excits(3,idet);
-                          i = t3b_excits(4,idet); j = t3b_excits(5,idet); m = t3b_excits(6,idet);
-
-                          if (pspace(a,b,c,i,j,k)) x3a(a,b,c,i,j,k) = x3a(a,b,c,i,j,k) + H2B_voov(c,m,k,e) * t_amp ! (1)
-                      end do
+                     do idet = 1, n3aab
+                        t_amp = t3b_amps(idet)
+                        ! x3a(abcijk) <- A(c/ab)A(ab)A(ij)A(k/ij)[ h2b(cmke) * t3b(abeijm) ]
+                        !              = A(abc)A(ijk)[ h2b(cmke) * t3b(abeijm) ]
+                        a = t3b_excits(1,idet); b = t3b_excits(2,idet); e = t3b_excits(3,idet);
+                        i = t3b_excits(4,idet); j = t3b_excits(5,idet); m = t3b_excits(6,idet);
+                        if (pspace(a,b,c,i,j,k)) x3a(a,b,c,i,j,k) = x3a(a,b,c,i,j,k) + H2B_voov(c,m,k,e) * t_amp ! (1)
+                     end do
                   end do
                   end do
                   !$omp end do
 
-                  !$omp end parallel
-                  !!!! END OMP PARALLEL SECTION !!!!
-
                   ! Update loop
+                  !$omp do
                   do idet = 1, n3aaa
                       a = t3a_excits(1, idet); b = t3a_excits(2, idet); c = t3a_excits(3, idet);
                       i = t3a_excits(4, idet); j = t3a_excits(5, idet); k = t3a_excits(6, idet);
@@ -919,7 +914,10 @@ module ccp_quadratic_loops_omp
 
                       resid(idet) = val
                   end do
+                  !$omp end do
 
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
               end subroutine update_t3a_p
 
               subroutine update_t3b_p(t3b_amps, resid,&
@@ -1262,9 +1260,17 @@ module ccp_quadratic_loops_omp
                   end do
 
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel
+                  !$omp parallel shared(x3b,pspace,resid,&
+                  !$omp t3a_excits,t3b_excits,t3c_excits,&
+                  !$omp t3a_amps,t3b_amps,t3c_amps,t2a,t2b,&
+                  !$omp H2B_ovvo,H2A_vvvv,H2B_vvvv,H2A_voov,H2C_voov,&
+                  !$omp H2B_vovo,H2B_ovov,H2B_voov,&
+                  !$omp I2A_vooo,I2A_vvov,I2B_vooo,I2B_ovoo,I2B_vvov,I2B_vvvo,&
+                  !$omp nua2array,noa2array,&
+                  !$omp fA_oo,fB_oo,fA_vv,fB_vv,noa,nua,nob,nub,shift,&
+                  !$omp n3aaa,n3aab,n3abb)
 
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do k = 1, noa
                      do c = 1, nua
                         do idet = 1, n3aaa
@@ -1286,7 +1292,7 @@ module ccp_quadratic_loops_omp
                   end do
                   !$omp end do
 
-                  !$omp do collapse(2)
+                  !$omp do
                   do ab = 1, size(nua2array,2)
                      do idet = 1, n3aab
                         t_amp = t3b_amps(idet)
@@ -1300,7 +1306,7 @@ module ccp_quadratic_loops_omp
                   end do
                   !$omp end do
 
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do c = 1, nub
                      do b = 1, nua
                         do idet = 1, n3aab
@@ -1315,7 +1321,7 @@ module ccp_quadratic_loops_omp
                   end do
                   !$omp end do
 
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do i = 1, noa
                      do a = 1, nua
                         do idet = 1, n3aab
@@ -1332,7 +1338,7 @@ module ccp_quadratic_loops_omp
                   end do
                   !$omp end do
 
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do k = 1, nob
                      do c = 1, nub
                         do idet = 1, n3aab
@@ -1346,7 +1352,7 @@ module ccp_quadratic_loops_omp
                   end do
                   !$omp end do
 
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do k = 1, nob
                      do a = 1, nua
                         do idet = 1, n3aab
@@ -1361,7 +1367,7 @@ module ccp_quadratic_loops_omp
                   end do
                   !$omp end do
 
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do i = 1, noa
                      do c = 1, nub
                         do idet = 1, n3aab
@@ -1376,7 +1382,7 @@ module ccp_quadratic_loops_omp
                   end do
                   !$omp end do
 
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do i = 1, noa
                      do a = 1, nua
                         do idet = 1, n3abb
@@ -1393,10 +1399,8 @@ module ccp_quadratic_loops_omp
                   end do
                   !$omp end do
 
-                  !$omp end parallel
-                  !!!! END OMP PARALLEL SECTION !!!!
-
                   ! Update loop
+                  !$omp do
                   do idet = 1, n3aab
                       a = t3b_excits(1, idet); b = t3b_excits(2, idet); c = t3b_excits(3, idet);
                       i = t3b_excits(4, idet); j = t3b_excits(5, idet); k = t3b_excits(6, idet);
@@ -1443,6 +1447,10 @@ module ccp_quadratic_loops_omp
 
                       resid(idet) = val
                   end do
+                  !$omp end do
+
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
 
               end subroutine update_t3b_p
 
@@ -1786,9 +1794,17 @@ module ccp_quadratic_loops_omp
                   end do
 
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel
+                  !$omp parallel shared(x3c,pspace,resid,&
+                  !$omp t3b_excits,t3c_excits,t3d_excits,&
+                  !$omp t3b_amps,t3c_amps,t3d_amps,t2b,t2c,&
+                  !$omp H2B_ovvo,H2B_voov,H2C_vvvv,H2B_vvvv,&
+                  !$omp H2A_voov,H2C_voov,H2B_ovov,H2B_vovo,&
+                  !$omp I2C_vooo,I2C_vvov,I2B_vooo,I2B_ovoo,&
+                  !$omp I2B_vvov,I2B_vvvo,nub2array,nob2array,&
+                  !$omp fA_oo,fB_oo,fA_vv,fB_vv,nua,nub,noa,nob,&
+                  !$omp shift,n3aab,n3abb,n3bbb)
 
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do j = 1, nob
                      do b = 1, nub
                         do idet = 1, n3aab
@@ -1805,7 +1821,7 @@ module ccp_quadratic_loops_omp
                   end do
                   !$omp end do
 
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do i = 1, noa
                      do a = 1, nua
                         do idet = 1, n3bbb
@@ -1827,7 +1843,7 @@ module ccp_quadratic_loops_omp
                  end do
                  !$omp end do
 
-                 !$omp do collapse(2)
+                 !$omp do
                  do bc = 1, size(nub2array,2)
                     do idet = 1, n3abb
                        t_amp = t3c_amps(idet)
@@ -1841,7 +1857,7 @@ module ccp_quadratic_loops_omp
                  end do
                  !$omp end do
 
-                 !$omp do collapse(3)
+                 !$omp do collapse(2)
                  do b = 1, nub
                     do a = 1, nua
                        do idet = 1, n3abb
@@ -1856,7 +1872,7 @@ module ccp_quadratic_loops_omp
                  end do
                  !$omp end do
 
-                 !$omp do collapse(3)
+                 !$omp do collapse(2)
                  do i = 1, noa
                     do a = 1, nua
                        do idet = 1, n3abb
@@ -1870,7 +1886,7 @@ module ccp_quadratic_loops_omp
                  end do
                  !$omp end do
 
-                 !$omp do collapse(3)
+                 !$omp do collapse(2)
                  do j = 1, nob
                     do b = 1, nub
                        do idet = 1, n3abb
@@ -1887,7 +1903,7 @@ module ccp_quadratic_loops_omp
                  end do
                  !$omp end do
 
-                 !$omp do collapse(3)
+                 !$omp do collapse(2)
                  do i = 1, noa
                     do b = 1, nub
                        do idet = 1, n3abb
@@ -1902,7 +1918,7 @@ module ccp_quadratic_loops_omp
                  end do  
                  !$omp end do 
 
-                 !$omp do collapse(3)
+                 !$omp do collapse(2)
                  do j = 1, nob
                     do a = 1, nua
                        do idet = 1, n3abb
@@ -1917,10 +1933,8 @@ module ccp_quadratic_loops_omp
                  end do  
                  !$omp end do 
 
-                 !$omp end parallel
-                 !!!! END OMP PARALLEL SECTION !!!!
-
                   ! Update loop
+                  !$omp do
                   do idet = 1, n3abb
                       a = t3c_excits(1, idet); b = t3c_excits(2, idet); c = t3c_excits(3, idet);
                       i = t3c_excits(4, idet); j = t3c_excits(5, idet); k = t3c_excits(6, idet);
@@ -1967,6 +1981,10 @@ module ccp_quadratic_loops_omp
 
                       resid(idet) = val
                   end do
+                  !$omp end do
+
+                 !$omp end parallel
+                 !!!! END OMP PARALLEL SECTION !!!!
 
               end subroutine update_t3c_p
 
@@ -2156,9 +2174,12 @@ module ccp_quadratic_loops_omp
                   end do
 
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel
+                  !$omp parallel shared(x3d,pspace,resid,&
+                  !$omp t3c_excits,t3d_excits,t3c_amps,t3d_amps,t2c,&
+                  !$omp H2B_ovvo,H2C_vvvv,H2C_voov,I2C_vooo,I2C_vvov,&
+                  !$omp fB_oo,fB_vv,nob,nub,shift,n3abb,n3bbb)
 
-                  !$omp do collapse(3)
+                  !$omp do collapse(2)
                   do i = 1, nob
                      do a = 1, nub
                         do idet = 1, n3abb
@@ -2172,7 +2193,7 @@ module ccp_quadratic_loops_omp
                   end do
                   !$omp end do
 
-                  !$omp do collapse(2)
+                  !$omp do
                   do ab = 1, size(nub2array,2)
                      do idet = 1, n3bbb
                         t_amp = t3d_amps(idet)
@@ -2189,7 +2210,7 @@ module ccp_quadratic_loops_omp
                  end do
                  !$omp end do
 
-                 !$omp do collapse(3)
+                 !$omp do collapse(2)
                  do i = 1, nob
                     do a = 1, nub
                        do idet = 1, n3bbb
@@ -2212,10 +2233,8 @@ module ccp_quadratic_loops_omp
                   end do
                   !$omp end do
 
-                  !$omp end parallel
-                  !!!! END OMP PARALLEL SECTION !!!!
-
                   ! Update loop
+                  !$omp do
                   do idet = 1, n3bbb
                       a = t3d_excits(1, idet); b = t3d_excits(2, idet); c = t3d_excits(3, idet);
                       i = t3d_excits(4, idet); j = t3d_excits(5, idet); k = t3d_excits(6, idet);
@@ -2262,6 +2281,10 @@ module ccp_quadratic_loops_omp
 
                       resid(idet) = val
                   end do
+                  !$omp end do
+
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
 
               end subroutine update_t3d_p
 
