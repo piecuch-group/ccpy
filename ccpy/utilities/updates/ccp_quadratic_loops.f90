@@ -1299,7 +1299,7 @@ module ccp_quadratic_loops
                       ! x3c(abcijk) <- A(jk)A(bc) [A(ec) h1b(be) * t3c(aecijk)]
                       a = t3c_excits(1,idet); e = t3c_excits(2,idet); c = t3c_excits(3,idet);
                       i = t3c_excits(4,idet); j = t3c_excits(5,idet); k = t3c_excits(6,idet);
-                      do b = 1, nua
+                      do b = 1, nub
                         if (pspace(a,b,c,i,j,k)) x3c(a,b,c,i,j,k) = x3c(a,b,c,i,j,k) + H1B_vv(b,e) * t_amp ! (1)
                         if (pspace(a,b,e,i,j,k)) x3c(a,b,e,i,j,k) = x3c(a,b,e,i,j,k) - H1B_vv(b,c) * t_amp ! (ec)
                       end do

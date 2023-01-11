@@ -8,7 +8,7 @@ MODULES := cc_loops \
 		   mbgf_loops \
 		   mbpt_loops \
 		   eomcc_initial_guess \
-		   ccp_matrix \
+		   hbar_matrix_elements \
 		   ccp_loops \
 		   ccp_opt_loops \
 		   ccp_opt_loops_v2 \
