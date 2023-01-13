@@ -107,7 +107,7 @@ def contract_vt3_exact(H0, H, T):
     x3a += (3.0 / 36.0) * np.einsum("ae,ebcijk->abcijk", H.a.vv, T.aaa, optimize=True)
     x3a += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aaa, optimize=True) # (k/ij) = 3
     x3a += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aaa, optimize=True) # (c/ab) = 3
-    # x3a += 0.25 * np.einsum("cmke,abeijm->abcijk", H.aa.voov, T.aaa, optimize=True) # (c/ij)(k/ij) = 9
+    x3a += 0.25 * np.einsum("cmke,abeijm->abcijk", H.aa.voov, T.aaa, optimize=True) # (c/ij)(k/ij) = 9
     x3a += 0.25 * np.einsum("cmke,abeijm->abcijk", H.ab.voov, T.aab, optimize=True) # (c/ij)(k/ij) = 9
 
     x3a -= np.transpose(x3a, (0, 1, 2, 3, 5, 4)) # (jk)
@@ -115,8 +115,33 @@ def contract_vt3_exact(H0, H, T):
     x3a -= np.transpose(x3a, (0, 2, 1, 3, 4, 5)) # (bc)
     x3a -= np.transpose(x3a, (2, 1, 0, 3, 4, 5)) + np.transpose(x3a, (1, 0, 2, 3, 4, 5)) # (a/bc)
 
+    # MM(2,3)
+    x3b = 0.5 * np.einsum("bcek,aeij->abcijk", I2B_vvvo, T.aa, optimize=True)
+    x3b -= 0.5 * np.einsum("mcjk,abim->abcijk", I2B_ovoo, T.aa, optimize=True)
+    x3b += np.einsum("acie,bejk->abcijk", I2B_vvov, T.ab, optimize=True)
+    x3b -= np.einsum("amik,bcjm->abcijk", I2B_vooo, T.ab, optimize=True)
+    x3b += 0.5 * np.einsum("abie,ecjk->abcijk", I2A_vvov, T.ab, optimize=True)
+    x3b -= 0.5 * np.einsum("amij,bcmk->abcijk", I2A_vooo, T.ab, optimize=True)
+    # (Hbar*T3)
+    x3b -= 0.5 * np.einsum("mi,abcmjk->abcijk", H.a.oo, T.aab, optimize=True)
+    x3b -= 0.25 * np.einsum("mk,abcijm->abcijk", H.b.oo, T.aab, optimize=True)
+    #x3b += 0.5 * np.einsum("ae,ebcijk->abcijk", H.a.vv, T.aab, optimize=True)
+    #x3b += 0.25 * np.einsum("ce,abeijk->abcijk", H.b.vv, T.aab, optimize=True)
+    #x3b += 0.125 * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aab, optimize=True)
+    #x3b += 0.5 * np.einsum("mnjk,abcimn->abcijk", H.ab.oooo, T.aab, optimize=True)
+    #x3b += 0.125 * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aab, optimize=True)
+    #x3b += 0.5 * np.einsum("bcef,aefijk->abcijk", H.ab.vvvv, T.aab, optimize=True)
+    #x3b += np.einsum("amie,ebcmjk->abcijk", H.aa.voov, T.aab, optimize=True)
+    #x3b += np.einsum("amie,becjmk->abcijk", H.ab.voov, T.abb, optimize=True)
+    #x3b += 0.25 * np.einsum("mcek,abeijm->abcijk", H.ab.ovvo, T.aaa, optimize=True)
+    #x3b += 0.25 * np.einsum("cmke,abeijm->abcijk", H.bb.voov, T.aab, optimize=True)
+    #x3b -= 0.5 * np.einsum("amek,ebcijm->abcijk", H.ab.vovo, T.aab, optimize=True)
+    #x3b -= 0.5 * np.einsum("mcie,abemjk->abcijk", H.ab.ovov, T.aab, optimize=True)
 
-    return x3a
+    x3b -= np.transpose(x3b, (1, 0, 2, 3, 4, 5)) # (ab)
+    x3b -= np.transpose(x3b, (0, 1, 2, 4, 3, 5)) # (ij)
+
+    return x3a, x3b
 
 def contract_vt3_fly(H, H0, T, T3_excitations, T3_amplitudes):
 
@@ -154,7 +179,22 @@ def contract_vt3_fly(H, H0, T, T3_excitations, T3_amplitudes):
     )
     T3_amplitudes["aaa"] = t3a_amps.copy()
 
-    return t3_aaa, resid_aaa
+    t3_aab, resid_aab = ccp_quadratic_loops_direct.ccp_quadratic_loops_direct.update_t3b_p(
+        T3_amplitudes["aab"],
+        T3_excitations["aaa"].T, T3_excitations["aab"].T, T3_excitations["abb"].T,
+        T.aa, T.ab,
+        T3_amplitudes["aaa"], T3_amplitudes["abb"],
+        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+        H0.aa.oovv, H.aa.vvov, I2A_vooo, H.aa.oooo, H.aa.voov, H.aa.vvvv,
+        H0.ab.oovv, H.ab.vvov, H.ab.vvvo, I2B_vooo, I2B_ovoo, 
+        H.ab.oooo, H.ab.voov,H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
+        H0.bb.oovv, H.bb.voov,
+        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+        0.0
+    )
+    T3_amplitudes["aab"] = t3b_amps.copy()
+
+    return t3_aaa, resid_aaa, t3_aab, resid_aab
 
 # def contract_vt3_fly(H, H0, T, T3_excitations, T3_amplitudes):
 #
@@ -208,7 +248,7 @@ if __name__ == "__main__":
     """
 
     mol.build(
-        atom=fluorine,
+        atom=methylene,
         basis="ccpvdz",
         symmetry="C2V",
         spin=0, 
@@ -230,13 +270,13 @@ if __name__ == "__main__":
     # Get the expected result for the contraction, computed using full T_ext
     print("   Exact H*T3 contraction", end="")
     t1 = time.time()
-    x3_aaa_exact = contract_vt3_exact(H, hbar, T)
+    x3_aaa_exact, x3_aab_exact = contract_vt3_exact(H, hbar, T)
     print(" (Completed in ", time.time() - t1, "seconds)")
 
     # Get the on-the-fly contraction result
     print("   On-the-fly H*T3 contraction", end="")
     t1 = time.time()
-    t3_aaa, x3_aaa = contract_vt3_fly(hbar, H, T, T3_excitations, T3_amplitudes)
+    t3_aaa, x3_aaa, t3_aab, x3_aab = contract_vt3_fly(hbar, H, T, T3_excitations, T3_amplitudes)
     print(" (Completed in ", time.time() - t1, "seconds)")
 
     print("")
@@ -261,24 +301,23 @@ if __name__ == "__main__":
     else:
         print("T3A update FAILED!", "Cumulative Error = ", err_cum)
     
-
-    # flag = True
-    # err_cum = 0.0
-    # for idet in range(len(T3_amplitudes["aab"])):
-    #     a, b, c, i, j, k = [x - 1 for x in T3_excitations["aab"][idet]]
-    #     denom = (
-    #                 H.a.oo[i, i] + H.a.oo[j, j] + H.b.oo[k, k]
-    #                -H.a.vv[a, a] - H.a.vv[b, b] - H.b.vv[c, c]
-    #     )
-    #     error = (x3_aab[idet] - x3_aab_exact[a, b, c, i, j, k])/denom
-    #     err_cum += abs(error)
-    #     if abs(error) > 1.0e-010:
-    #         flag = False
-    # if flag:
-    #     print("T3B update passed!", "Cumulative Error = ", err_cum)
-    # else:
-    #     print("T3B update FAILED!", "Cumulative Error = ", err_cum)
-    #
+    flag = True
+    err_cum = 0.0
+    for idet in range(len(T3_amplitudes["aab"])):
+        a, b, c, i, j, k = [x - 1 for x in T3_excitations["aab"][idet]]
+        denom = (
+                    H.a.oo[i, i] + H.a.oo[j, j] + H.b.oo[k, k]
+                   -H.a.vv[a, a] - H.a.vv[b, b] - H.b.vv[c, c]
+        )
+        error = (x3_aab[idet] - x3_aab_exact[a, b, c, i, j, k])/denom
+        err_cum += abs(error)
+        if abs(error) > 1.0e-010:
+            flag = False
+    if flag:
+        print("T3B update passed!", "Cumulative Error = ", err_cum)
+    else:
+        print("T3B update FAILED!", "Cumulative Error = ", err_cum)
+    
     # flag = True
     # err_cum = 0.0
     # for idet in range(len(T3_amplitudes["abb"])):
