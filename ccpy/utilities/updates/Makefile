@@ -16,6 +16,7 @@ MODULES := cc_loops \
 		   ccp_linear_loops_omp \
 		   ccp_quadratic_loops \
 		   ccp_quadratic_loops_omp \
+		   ccp_quadratic_loops_direct \
 		   eomcc_active_loops \
 		   cc_active_loops \
 		   cct3_loops \
@@ -48,7 +49,7 @@ endif
 
 # configuration for lab computers
 # the mkl library specifics are different for different computer. Just don't use this for now...
-LIBS := -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
+LIBS :=# -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 
 .PHONY: all clean
 

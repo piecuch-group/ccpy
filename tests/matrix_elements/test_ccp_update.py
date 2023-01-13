@@ -11,7 +11,7 @@ from ccpy.models.calculation import Calculation
 from ccpy.models.operators import ClusterOperator
 
 from ccpy.cc.ccsdt import update
-from ccpy.cc.ccsdt_p_quadratic_omp import update as update_p
+from ccpy.cc.ccsdt_p_quadratic_direct import update as update_p
 
 def get_T3_list(T):
 
