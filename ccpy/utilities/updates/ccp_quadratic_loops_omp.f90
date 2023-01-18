@@ -88,6 +88,16 @@ module ccp_quadratic_loops_omp
                       ! store x1a in resid container
                       resid(:,:) = X1A(:,:)
 
+                      !!!! BEGIN OMP PARALLEL SECTION !!!!
+                      !!$omp parallel shared(t1a,&
+                      !!$omp t3a_amps,t3b_amps,t3c_amps,&
+                      !!$omp t3a_excits,t3b_excits,t3c_excits,&
+                      !!$omp H2A_oovv,H2B_oovv,H2C_oovv,&
+                      !!$omp fA_oo,fA_vv,&
+                      !!$omp n3aaa,n3aab,n3abb)&
+                      !!$omp private(idet,t_amp,i,a,m,n,e,f,denom,shift,val)
+
+                      !!$omp do reduction(+:resid)
                       do idet = 1, n3aaa
                           t_amp = t3a_amps(idet)
                           ! A(a/ef)A(i/mn) h2a(mnef) * t3a(aefimn)
@@ -103,7 +113,9 @@ module ccp_quadratic_loops_omp
                           resid(e,n) = resid(e,n) + H2A_oovv(m,i,a,f) * t_amp ! (ae)(in)
                           resid(f,n) = resid(f,n) + H2A_oovv(m,i,e,a) * t_amp ! (af)(in)
                       end do
+                      !!$omp end do
 
+                      !!$omp do reduction(+:resid)
                       do idet = 1, n3aab
                           t_amp = t3b_amps(idet)
                           ! A(ae)A(im) h2b(mnef) * t3b(aefimn)
@@ -114,7 +126,9 @@ module ccp_quadratic_loops_omp
                           resid(a,m) = resid(a,m) - H2B_oovv(i,n,e,f) * t_amp ! (im)
                           resid(e,m) = resid(e,m) + H2B_oovv(i,n,a,f) * t_amp ! (ae)(im)
                       end do
+                      !!$omp end do
 
+                      !!$omp do reduction(+:resid)
                       do idet = 1, n3abb
                           t_amp = t3c_amps(idet)
                           ! h2c(mnef) * t3c(aefimn)
@@ -122,7 +136,9 @@ module ccp_quadratic_loops_omp
                           i = t3c_excits(4,idet); m = t3c_excits(5,idet); n = t3c_excits(6,idet);
                           resid(a,i) = resid(a,i) + H2A_oovv(m,n,e,f) * t_amp ! (1)
                       end do
+                      !!$omp end do
 
+                      !!$omp do collapse(2)
                       do i = 1, noa
                           do a = 1, nua
                               denom = fA_oo(i,i) - fA_vv(a,a)
@@ -134,6 +150,9 @@ module ccp_quadratic_loops_omp
                               resid(a,i) = val
                           end do
                       end do
+                      !!$omp end do
+                      !!$omp end parallel
+                      !!!! END OMP PARALLEL SECTION !!!!
 
               end subroutine update_t1a
 
@@ -168,6 +187,16 @@ module ccp_quadratic_loops_omp
                       ! Store x1b in residual container
                       resid(:,:) = X1B(:,:)
 
+                      !!!! BEGIN OMP PARALLEL SECTION !!!!
+                      !!$omp parallel shared(t1b,&
+                      !!$omp t3b_amps,t3c_amps,t3d_amps,&
+                      !!$omp t3b_excits,t3c_excits,t3d_excits,&
+                      !!$omp H2A_oovv,H2B_oovv,H2C_oovv,&
+                      !!$omp fB_oo,fB_vv,&
+                      !!$omp n3aab,n3abb,n3bbb)&
+                      !!$omp private(idet,t_amp,i,a,m,n,e,f,denom,shift,val)
+
+                      !!$omp do reduction(+:resid)
                       do idet = 1, n3aab
                           t_amp = t3b_amps(idet)
                           ! h2a(mnef) * t3b(efamni)
@@ -175,7 +204,9 @@ module ccp_quadratic_loops_omp
                           m = t3b_excits(4,idet); n = t3b_excits(5,idet); i = t3b_excits(6,idet);
                           resid(a,i) = resid(a,i) + H2A_oovv(m,n,e,f) * t_amp ! (1)
                       end do
+                      !!$omp end do
 
+                      !!$omp do reduction(+:resid)
                       do idet = 1, n3abb
                           t_amp = t3c_amps(idet)
                           ! A(af)A(in) h2b(mnef) * t3c(efamni)
@@ -186,7 +217,9 @@ module ccp_quadratic_loops_omp
                           resid(a,n) = resid(a,n) - H2B_oovv(m,i,e,f) * t_amp ! (in)
                           resid(f,n) = resid(f,n) + H2B_oovv(m,i,e,a) * t_amp ! (af)(in)
                       end do
+                      !!$omp end do
 
+                      !!$omp do reduction(+:resid)
                       do idet = 1, n3bbb
                           t_amp = t3d_amps(idet)
                           ! A(a/ef)A(i/mn) h2c(mnef) * t3d(aefimn)
@@ -202,7 +235,9 @@ module ccp_quadratic_loops_omp
                           resid(e,n) = resid(e,n) + H2C_oovv(m,i,a,f) * t_amp ! (ae)(in)
                           resid(f,n) = resid(f,n) + H2C_oovv(m,i,e,a) * t_amp ! (af)(in)
                       end do
+                      !!$omp end do
 
+                      !!$omp do collapse(2)
                       do i = 1, nob
                           do a = 1, nub
                               denom = fB_oo(i,i) - fB_vv(a,a)
@@ -214,6 +249,9 @@ module ccp_quadratic_loops_omp
                               resid(a,i) = val
                           end do
                       end do
+                      !!$omp end do
+                      !!$omp end parallel
+                      !!!! END OMP PARALLEL SECTION !!!!
 
               end subroutine update_t1b
 
@@ -253,6 +291,14 @@ module ccp_quadratic_loops_omp
                   ! Store x2a in residual container
                   resid(:,:,:,:) = x2a(:,:,:,:)
 
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !!$omp parallel shared(t2a,&
+                  !!$omp t3a_excits,t3b_excits,t3a_amps,t3b_amps,&
+                  !!$omp H1A_ov,H2A_ooov,H2A_vovv,H2B_ooov,H2B_vovv,&
+                  !!$omp fA_oo,fA_vv)&
+                  !!$omp private(idet,i,j,a,b,m,n,e,f,n3aaa,n3aab,denom,shift,val,t_amp)
+
+                  !!$omp do reduction(+:resid)
                   do idet = 1, n3aaa
                       t_amp = t3a_amps(idet)
 
@@ -295,7 +341,9 @@ module ccp_quadratic_loops_omp
                       resid(:,f,n,j) = resid(:,f,n,j) + H2A_vovv(:,i,e,b) * t_amp ! (in)(bf)
                       resid(:,f,i,n) = resid(:,f,i,n) + H2A_vovv(:,j,e,b) * t_amp ! (jn)(bf)
                   end do
+                  !!$omp end do
 
+                  !!$omp do reduction(+:resid)
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
 
@@ -316,21 +364,24 @@ module ccp_quadratic_loops_omp
                       resid(:,b,i,j) = resid(:,b,i,j) + H2B_vovv(:,n,e,f) * t_amp ! (1)
                       resid(:,e,i,j) = resid(:,e,i,j) - H2B_vovv(:,n,b,f) * t_amp ! (be)
                   end do
+                  !$!omp end do
+                  !!$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
 
                   do i = 1, noa
                       do j = i + 1, noa
                           do a = 1, nua
                               do b = a + 1, nua
                                   denom = fA_oo(i,i) + fA_oo(j,j) - fA_vv(a,a) - fA_vv(b,b)
-
+                  
                                   val = resid(b,a,j,i) - resid(a,b,j,i) - resid(b,a,i,j) + resid(a,b,i,j)
                                   val = val/(denom - shift)
-
+                  
                                   t2a(b,a,j,i) =  t2a(b,a,j,i) + val
                                   t2a(a,b,j,i) = -t2a(b,a,j,i)
                                   t2a(b,a,i,j) = -t2a(b,a,j,i)
                                   t2a(a,b,i,j) =  t2a(b,a,j,i)
-
+                  
                                   resid(b,a,j,i) =  val
                                   resid(a,b,j,i) = -val
                                   resid(b,a,i,j) = -val
@@ -810,7 +861,8 @@ module ccp_quadratic_loops_omp
                   !$omp nu2array,no2array,&
                   !$omp H1A_oo,H1A_vv,H2A_oooo,&
                   !$omp H2A_vvvv,H2A_voov,H2B_voov,I2A_vooo,I2A_vvov,&
-                  !$omp fA_oo,fA_vv,shift,noa,nua,n3aaa,n3aab)
+                  !$omp fA_oo,fA_vv,shift,noa,nua,n3aaa,n3aab),&
+                  !$omp private(a,b,c,i,j,k,m,n,e,f,denom,t_amp,idet)
 
                   !$omp do
                   do i = 1, noa
@@ -1318,7 +1370,8 @@ module ccp_quadratic_loops_omp
                   !$omp I2A_vooo,I2A_vvov,I2B_vooo,I2B_ovoo,I2B_vvov,I2B_vvvo,&
                   !$omp nua2array,noa2array,&
                   !$omp fA_oo,fB_oo,fA_vv,fB_vv,noa,nua,nob,nub,shift,&
-                  !$omp n3aaa,n3aab,n3abb)
+                  !$omp n3aaa,n3aab,n3abb),&
+                  !$omp private(a,b,c,i,j,k,m,n,e,f,denom,t_amp,idet)
 
                   !$omp do
                   do i = 1, noa
@@ -1932,7 +1985,8 @@ module ccp_quadratic_loops_omp
                   !$omp I2C_vooo,I2C_vvov,I2B_vooo,I2B_ovoo,&
                   !$omp I2B_vvov,I2B_vvvo,nub2array,nob2array,&
                   !$omp fA_oo,fB_oo,fA_vv,fB_vv,nua,nub,noa,nob,&
-                  !$omp shift,n3aab,n3abb,n3bbb)
+                  !$omp shift,n3aab,n3abb,n3bbb),&
+                  !$omp private(a,b,c,i,j,k,m,n,e,f,denom,t_amp,idet)
 
                   !$omp do
                   do i = 1, noa
@@ -2388,7 +2442,8 @@ module ccp_quadratic_loops_omp
                   !$omp nob2array,nub2array,&
                   !$omp H1B_oo,H1B_vv,H2C_oooo,&
                   !$omp H2B_ovvo,H2C_vvvv,H2C_voov,I2C_vooo,I2C_vvov,&
-                  !$omp fB_oo,fB_vv,nob,nub,shift,n3abb,n3bbb)
+                  !$omp fB_oo,fB_vv,nob,nub,shift,n3abb,n3bbb),&
+                  !$omp private(a,b,c,i,j,k,m,n,e,f,denom,t_amp,idet)
 
                   !$omp do
                   do i = 1, nob

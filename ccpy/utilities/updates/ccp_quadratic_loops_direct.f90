@@ -667,37 +667,31 @@ module ccp_quadratic_loops_direct
                   !$omp private(hmatel,t_amp,denom,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet)
 
 
-                  !$omp do
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa
+                      a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
+                      i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
                       do jdet = 1, n3aaa
-                          hmatel = 0.0d0
-                          t_amp = t3a_amps(jdet)
-
-                          a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
-                          i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
                           d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
                           l = t3a_excits(4,jdet); m = t3a_excits(5,jdet); n = t3a_excits(6,jdet);
 
+                          hmatel = 0.0d0
+                          t_amp = t3a_amps(jdet)
                           hmatel = hmatel + aaa_oo_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h1a_oo,noa)
                           hmatel = hmatel + aaa_vv_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h1a_vv,nua)
                           hmatel = hmatel + aaa_oooo_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h2a_oooo,noa)
                           hmatel = hmatel + aaa_vvvv_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h2a_vvvv,nua)
                           hmatel = hmatel + aaa_voov_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h2a_voov,noa,nua)
-
-                          resid(idet) = resid(idet) + hmatel * t_amp
+                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
                       end do
                       do jdet = 1, n3aab
-                          hmatel = 0.0d0
-                          t_amp = t3b_amps(jdet)
-
-                          a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
-                          i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
                           d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
                           l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
 
+                          hmatel = 0.0d0
+                          t_amp = t3b_amps(jdet)
                           hmatel = hmatel + aaa_voov_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2b_voov,noa,nua,nob,nub)
-
-                          resid(idet) = resid(idet) + hmatel * t_amp
+                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
                       end do
                   end do
                   !$omp end do
@@ -934,20 +928,52 @@ module ccp_quadratic_loops_direct
                   !$omp n3aaa,n3aab,n3abb),&
                   !$omp private(hmatel,t_amp,denom,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet)
                   
-                  !$omp do
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
-                      do jdet = 1, n3aab
-                          hmatel = 0.0d0
-                          t_amp = t3b_amps(jdet)
+                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                      do jdet = 1, n3aaa
+                          d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                          l = t3a_excits(4,jdet); m = t3a_excits(5,jdet); n = t3a_excits(6,jdet);
 
-                          a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                          i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                          ! Check for 3 differences and early exit
+                          if ((d/=a .and. e/=b) .and. (d/=a .and. f/=b) .and. (e/=a .and. f/=b)) cycle
+                          if ((l/=i .and. m/=j) .and. (l/=i .and. n/=j) .and. (m/=i .and. n/=j)) cycle
+
+                          hmatel = 0.0d0
+                          t_amp = t3a_amps(jdet)
+                          hmatel = hmatel + aab_ovvo_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h2b_ovvo,noa,nua,nob,nub)
+                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                      end do
+                      do jdet = 1, n3aab
                           d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
                           l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
 
+                          hmatel = 0.0d0
+                          t_amp = t3b_amps(jdet)
                           hmatel = hmatel + aab_oo_aab(i,j,k,a,b,c,l,m,n,d,e,f,h1a_oo,h1b_oo,noa,nob)
+                          hmatel = hmatel + aab_vv_aab(i,j,k,a,b,c,l,m,n,d,e,f,h1a_vv,h1b_vv,nua,nub)
+                          hmatel = hmatel + aab_oooo_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2a_oooo,h2b_oooo,noa,nob)
+                          hmatel = hmatel + aab_vvvv_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2a_vvvv,h2b_vvvv,nua,nub)
+                          hmatel = hmatel + aab_voov_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2a_voov,h2c_voov,noa,nua,nob,nub)
+                          hmatel = hmatel + aab_vovo_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2b_vovo,nua,nob)
+                          hmatel = hmatel + aab_ovov_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2b_ovov,noa,nub)
+                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                      end do
+                      do jdet = 1, n3abb
+                          d = t3c_excits(1,jdet); e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                          l = t3c_excits(4,jdet); m = t3c_excits(5,jdet); n = t3c_excits(6,jdet);
 
-                          resid(idet) = resid(idet) + hmatel * t_amp
+                          ! Check for 3 differences and early exit
+                          if (d/=a .and. d/=b) cycle
+                          if (l/=i .and. l/=j) cycle
+                          if (c/=e .and. c/=f) cycle
+                          if (k/=m .and. k/=n) cycle
+
+                          hmatel = 0.0d0
+                          t_amp = t3c_amps(jdet)
+                          hmatel = hmatel + aab_voov_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_voov,noa,nua,nob,nub)
+                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
                       end do
                   end do
                   !$omp end do
@@ -1001,6 +1027,285 @@ module ccp_quadratic_loops_direct
                   !!!! END OMP PARALLEL SECTION !!!!
               end subroutine update_t3b_p
 
+              subroutine update_t3c_p(t3c_amps, resid,&
+                                      t3b_excits, t3c_excits, t3d_excits,&
+                                      t2b, t2c,&
+                                      t3b_amps, t3d_amps,&
+                                      H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
+                                      H2A_oovv, H2A_voov,&
+                                      H2B_oovv, H2B_vooo, H2B_ovoo, H2B_vvov, H2B_vvvo, H2B_oooo,&
+                                      H2B_voov, H2B_vovo, H2B_ovov, H2B_ovvo, H2B_vvvv,&
+                                      H2C_oovv, H2C_vooo, H2C_vvov, H2C_oooo, H2C_voov, H2C_vvvv,&
+                                      fA_oo, fA_vv, fB_oo, fB_vv,&
+                                      shift,&
+                                      n3aab, n3abb, n3bbb,&
+                                      noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub, n3aab, n3abb, n3bbb
+                  integer, intent(in) :: t3b_excits(6, n3aab), t3c_excits(6, n3abb), t3d_excits(6, n3bbb)
+                  real(kind=8), intent(in) :: t2b(1:nua,1:nub,1:noa,1:nob),&
+                                              t2c(1:nub,1:nub,1:nob,1:nob),&
+                                              t3b_amps(n3aab),&
+                                              t3d_amps(n3bbb),&
+                                              H1A_oo(1:noa,1:noa),&
+                                              H1A_vv(1:nua,1:nua),&
+                                              H1B_oo(1:nob,1:nob),&
+                                              H1B_vv(1:nub,1:nub),&
+                                              H2A_oovv(1:noa,1:noa,1:nua,1:nua),&
+                                              H2A_voov(1:nua,1:noa,1:noa,1:nua),&
+                                              H2B_oovv(1:noa,1:nob,1:nua,1:nub),&
+                                              H2B_vooo(1:nua,1:nob,1:noa,1:nob),&
+                                              H2B_ovoo(1:noa,1:nub,1:noa,1:nob),&
+                                              H2B_vvov(1:nua,1:nub,1:noa,1:nub),&
+                                              H2B_vvvo(1:nua,1:nub,1:nua,1:nob),&
+                                              H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
+                                              H2B_voov(1:nua,1:nob,1:noa,1:nub),&
+                                              H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
+                                              H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
+                                              H2B_ovvo(1:noa,1:nub,1:nua,1:nob),&
+                                              H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                                              H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
+                                              H2C_vooo(1:nub,1:nob,1:nob,1:nob),&
+                                              H2C_vvov(1:nub,1:nub,1:nob,1:nub),&
+                                              H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
+                                              H2C_voov(1:nub,1:nob,1:nob,1:nub),&
+                                              H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                                              fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
+                                              fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
+                                              shift
+
+                  real(kind=8), intent(inout) :: t3c_amps(n3abb)
+                  !f2py intent(in,out) :: t3c_amps(0:n3abb-1)
+
+                  real(kind=8), intent(out) :: resid(n3abb)
+
+                  real(kind=8) :: I2C_vooo(nub, nob, nob, nob),&
+                                  I2C_vvov(nub, nub, nob, nub),&
+                                  I2B_vooo(nua, nob, noa, nob),&
+                                  I2B_ovoo(noa, nub, noa, nob),&
+                                  I2B_vvov(nua, nub, noa, nub),&
+                                  I2B_vvvo(nua, nub, nua, nob)
+                  real(kind=8) :: denom, val, t_amp, res_mm23, hmatel
+                  integer :: i, j, k, l, a, b, c, d, m, n, e, f, idet, jdet
+
+                  ! Zero the residual
+                  resid = 0.0d0
+                  ! VT3 intermediates
+                  I2C_vooo(:,:,:,:) = 0.5d0 * H2C_vooo(:,:,:,:)
+                  I2C_vvov(:,:,:,:) = 0.5d0 * H2C_vvov(:,:,:,:)
+                  I2B_vooo(:,:,:,:) = H2B_vooo(:,:,:,:)
+                  I2B_ovoo(:,:,:,:) = H2B_ovoo(:,:,:,:)
+                  I2B_vvov(:,:,:,:) = H2B_vvov(:,:,:,:)
+                  I2B_vvvo(:,:,:,:) = H2B_vvvo(:,:,:,:)
+
+                  do idet = 1, n3aab
+                      t_amp = t3b_amps(idet)
+
+                      ! I2B(abej) <- A(af) -h2a(mnef) * t3b(afbmnj)
+                      a = t3b_excits(1,idet); f = t3b_excits(2,idet); b = t3b_excits(3,idet);
+                      m = t3b_excits(4,idet); n = t3b_excits(5,idet); j = t3b_excits(6,idet);
+                      I2B_vvvo(a,b,:,j) = I2B_vvvo(a,b,:,j) - H2A_oovv(m,n,:,f) * t_amp ! (1)
+                      I2B_vvvo(f,b,:,j) = I2B_vvvo(f,b,:,j) + H2A_oovv(m,n,:,a) * t_amp ! (af)
+
+                      ! I2B(mbij) <- A(in) h2a(mnef) * t3b(efbinj)
+                      e = t3b_excits(1,idet); f = t3b_excits(2,idet); b = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); n = t3b_excits(5,idet); j = t3b_excits(6,idet);
+                      I2B_ovoo(:,b,i,j) = I2B_ovoo(:,b,i,j) + H2A_oovv(:,n,e,f) * t_amp ! (1)
+                      I2B_ovoo(:,b,n,j) = I2B_ovoo(:,b,n,j) - H2A_oovv(:,i,e,f) * t_amp ! (in)
+
+                      ! I2B(abie) <- A(af)A(in) -h2b(nmfe) * t3b(afbinm)
+                      a = t3b_excits(1,idet); f = t3b_excits(2,idet); b = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); n = t3b_excits(5,idet); m = t3b_excits(6,idet);
+                      I2B_vvov(a,b,i,:) = I2B_vvov(a,b,i,:) - H2B_oovv(n,m,f,:) * t_amp ! (1)
+                      I2B_vvov(f,b,i,:) = I2B_vvov(f,b,i,:) + H2B_oovv(n,m,a,:) * t_amp ! (af)
+                      I2B_vvov(a,b,n,:) = I2B_vvov(a,b,n,:) + H2B_oovv(i,m,f,:) * t_amp ! (in)
+                      I2B_vvov(f,b,n,:) = I2B_vvov(f,b,n,:) - H2B_oovv(i,m,a,:) * t_amp ! (af)(in)
+
+                      ! I2B(amij) <- A(af)A(in) h2b(nmfe) * t3b(afeinj)
+                      a = t3b_excits(1,idet); f = t3b_excits(2,idet); e = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); n = t3b_excits(5,idet); j = t3b_excits(6,idet);
+                      I2B_vooo(a,:,i,j) = I2B_vooo(a,:,i,j) + H2B_oovv(n,:,f,e) * t_amp ! (1)
+                      I2B_vooo(f,:,i,j) = I2B_vooo(f,:,i,j) - H2B_oovv(n,:,a,e) * t_amp ! (af)
+                      I2B_vooo(a,:,n,j) = I2B_vooo(a,:,n,j) - H2B_oovv(i,:,f,e) * t_amp ! (in)
+                      I2B_vooo(f,:,n,j) = I2B_vooo(f,:,n,j) + H2B_oovv(i,:,a,e) * t_amp ! (af)(in)
+                  end do
+
+                  do idet = 1, n3abb
+                      t_amp = t3c_amps(idet)
+
+                      ! I2C(abie) <- A(ab) [A(im) -h2b(nmfe) * t3c(fabnim)]
+                      f = t3c_excits(1,idet); a = t3c_excits(2,idet); b = t3c_excits(3,idet);
+                      n = t3c_excits(4,idet); i = t3c_excits(5,idet); m = t3c_excits(6,idet);
+                      I2C_vvov(a,b,i,:) = I2C_vvov(a,b,i,:) - H2B_oovv(n,m,f,:) * t_amp ! (1)
+                      I2C_vvov(a,b,m,:) = I2C_vvov(a,b,m,:) + H2B_oovv(n,i,f,:) * t_amp ! (im)
+
+                      ! I2C(amij) <- A(ij) [A(ae) h2b(nmfe) * t3c(faenij)]
+                      f = t3c_excits(1,idet); a = t3c_excits(2,idet); e = t3c_excits(3,idet);
+                      n = t3c_excits(4,idet); i = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      I2C_vooo(a,:,i,j) = I2C_vooo(a,:,i,j) + H2B_oovv(n,:,f,e) * t_amp ! (1)
+                      I2C_vooo(e,:,i,j) = I2C_vooo(e,:,i,j) - H2B_oovv(n,:,f,a) * t_amp ! (ae)
+
+                      ! I2B(abej) <- A(bf)A(jn) -h2b(mnef) * t3c(afbmnj)
+                      a = t3c_excits(1,idet); f = t3c_excits(2,idet); b = t3c_excits(3,idet);
+                      m = t3c_excits(4,idet); n = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      I2B_vvvo(a,b,:,j) = I2B_vvvo(a,b,:,j) - H2B_oovv(m,n,:,f) * t_amp ! (1)
+                      I2B_vvvo(a,f,:,j) = I2B_vvvo(a,f,:,j) + H2B_oovv(m,n,:,b) * t_amp ! (bf)
+                      I2B_vvvo(a,b,:,n) = I2B_vvvo(a,b,:,n) + H2B_oovv(m,j,:,f) * t_amp ! (jn)
+                      I2B_vvvo(a,f,:,n) = I2B_vvvo(a,f,:,n) - H2B_oovv(m,j,:,b) * t_amp ! (bf)(jn)
+
+                      ! I2B(mbij) <- A(bf)A(jn) h2B(mnef) * t3c(efbinj)
+                      e = t3c_excits(1,idet); f = t3c_excits(2,idet); b = t3c_excits(3,idet);
+                      i = t3c_excits(4,idet); n = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      I2B_ovoo(:,b,i,j) = I2B_ovoo(:,b,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
+                      I2B_ovoo(:,f,i,j) = I2B_ovoo(:,f,i,j) - H2B_oovv(:,n,e,b) * t_amp ! (bf)
+                      I2B_ovoo(:,b,i,n) = I2B_ovoo(:,b,i,n) - H2B_oovv(:,j,e,f) * t_amp ! (jn)
+                      I2B_ovoo(:,f,i,n) = I2B_ovoo(:,f,i,n) + H2B_oovv(:,j,e,b) * t_amp ! (bf)(jn)
+
+                      ! I2B(abie) <- A(bf) -h2c(nmfe) * t3c(afbinm)
+                      a = t3c_excits(1,idet); f = t3c_excits(2,idet); b = t3c_excits(3,idet);
+                      i = t3c_excits(4,idet); n = t3c_excits(5,idet); m = t3c_excits(6,idet);
+                      I2B_vvov(a,b,i,:) = I2B_vvov(a,b,i,:) - H2C_oovv(n,m,f,:) * t_amp ! (1)
+                      I2B_vvov(a,f,i,:) = I2B_vvov(a,f,i,:) + H2C_oovv(n,m,b,:) * t_amp ! (bf)
+
+                      ! I2B(amij) <- A(jn) h2c(nmfe) * t3c(afeinj)
+                      a = t3c_excits(1,idet); f = t3c_excits(2,idet); e = t3c_excits(3,idet);
+                      i = t3c_excits(4,idet); n = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      I2B_vooo(a,:,i,j) = I2B_vooo(a,:,i,j) + H2C_oovv(n,:,f,e) * t_amp ! (1)
+                      I2B_vooo(a,:,i,n) = I2B_vooo(a,:,i,n) - H2C_oovv(j,:,f,e) * t_amp ! (jn)
+                  end do
+
+                  do idet = 1, n3bbb
+                      t_amp = t3d_amps(idet)
+
+                      ! I2C(amij) <- A(ij) [A(n/ij)A(a/ef) h2c(mnef) * t3d(aefijn)]
+                      a = t3d_excits(1,idet); e = t3d_excits(2,idet); f = t3d_excits(3,idet);
+                      i = t3d_excits(4,idet); j = t3d_excits(5,idet); n = t3d_excits(6,idet);
+                      I2C_vooo(a,:,i,j) = I2C_vooo(a,:,i,j) + H2C_oovv(:,n,e,f) * t_amp ! (1)
+                      I2C_vooo(a,:,n,j) = I2C_vooo(a,:,n,j) - H2C_oovv(:,i,e,f) * t_amp ! (in)
+                      I2C_vooo(a,:,i,n) = I2C_vooo(a,:,i,n) - H2C_oovv(:,j,e,f) * t_amp ! (jn)
+                      I2C_vooo(e,:,i,j) = I2C_vooo(e,:,i,j) - H2C_oovv(:,n,a,f) * t_amp ! (ae)
+                      I2C_vooo(e,:,n,j) = I2C_vooo(e,:,n,j) + H2C_oovv(:,i,a,f) * t_amp ! (in)(ae)
+                      I2C_vooo(e,:,i,n) = I2C_vooo(e,:,i,n) + H2C_oovv(:,j,a,f) * t_amp ! (jn)(ae)
+                      I2C_vooo(f,:,i,j) = I2C_vooo(f,:,i,j) - H2C_oovv(:,n,e,a) * t_amp ! (af)
+                      I2C_vooo(f,:,n,j) = I2C_vooo(f,:,n,j) + H2C_oovv(:,i,e,a) * t_amp ! (in)(af)
+                      I2C_vooo(f,:,i,n) = I2C_vooo(f,:,i,n) + H2C_oovv(:,j,e,a) * t_amp ! (jn)(af)
+
+                      ! I2C(abie) <- A(ab) [A(i/mn)A(f/ab) -h2c(mnef) * t3d(abfimn)]
+                      a = t3d_excits(1,idet); b = t3d_excits(2,idet); f = t3d_excits(3,idet);
+                      i = t3d_excits(4,idet); m = t3d_excits(5,idet); n = t3d_excits(6,idet);
+                      I2C_vvov(a,b,i,:) = I2C_vvov(a,b,i,:) - H2C_oovv(m,n,:,f) * t_amp ! (1)
+                      I2C_vvov(a,b,m,:) = I2C_vvov(a,b,m,:) + H2C_oovv(i,n,:,f) * t_amp ! (im)
+                      I2C_vvov(a,b,n,:) = I2C_vvov(a,b,n,:) + H2C_oovv(m,i,:,f) * t_amp ! (in)
+                      I2C_vvov(f,b,i,:) = I2C_vvov(f,b,i,:) + H2C_oovv(m,n,:,a) * t_amp ! (af)
+                      I2C_vvov(f,b,m,:) = I2C_vvov(f,b,m,:) - H2C_oovv(i,n,:,a) * t_amp ! (im)(af)
+                      I2C_vvov(f,b,n,:) = I2C_vvov(f,b,n,:) - H2C_oovv(m,i,:,a) * t_amp ! (in)(af)
+                      I2C_vvov(a,f,i,:) = I2C_vvov(a,f,i,:) + H2C_oovv(m,n,:,b) * t_amp ! (bf)
+                      I2C_vvov(a,f,m,:) = I2C_vvov(a,f,m,:) - H2C_oovv(i,n,:,b) * t_amp ! (im)(bf)
+                      I2C_vvov(a,f,n,:) = I2C_vvov(a,f,n,:) - H2C_oovv(m,i,:,b) * t_amp ! (in)(bf)
+                  end do
+
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3c_excits,t3d_excits,&
+                  !$omp t3b_amps,t3c_amps,t3d_amps,t2b,t2c,&
+                  !$omp H1A_oo,H1B_oo,H1A_vv,H1B_vv,H2B_oooo,H2C_oooo,&
+                  !$omp H2B_ovvo,H2B_voov,H2C_vvvv,H2B_vvvv,&
+                  !$omp H2A_voov,H2C_voov,H2B_ovov,H2B_vovo,&
+                  !$omp I2C_vooo,I2C_vvov,I2B_vooo,I2B_ovoo,&
+                  !$omp I2B_vvov,I2B_vvvo,&
+                  !$omp fA_oo,fB_oo,fA_vv,fB_vv,nua,nub,noa,nob,&
+                  !$omp shift,n3aab,n3abb,n3bbb),&
+                  !$omp private(a,b,c,d,i,j,k,l,m,n,e,f,denom,t_amp,hmatel,idet,jdet)
+
+                  !$omp do
+                  do idet = 1, n3abb
+                     a = t3c_excits(1,idet); b = t3c_excits(2,idet); c = t3c_excits(3,idet);
+                     i = t3c_excits(4,idet); j = t3c_excits(5,idet); k = t3c_excits(6,idet);
+                     do jdet = 1, n3aab
+                        d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
+                        l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
+
+                        hmatel = 0.0d0
+                        t_amp = t3b_amps(jdet)
+                        hmatel = hmatel + abb_ovvo_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2b_ovvo,noa,nua,nob,nub)
+                        if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                     end do
+                     do jdet = 1, n3abb
+                        d = t3c_excits(1,jdet); e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                        l = t3c_excits(4,jdet); m = t3c_excits(5,jdet); n = t3c_excits(6,jdet);
+
+                        hmatel = 0.0d0
+                        t_amp = t3c_amps(jdet)
+                        !hmatel = hmatel + abb_oo_abb(i,j,k,a,b,c,l,m,n,d,e,f,h1a_oo,h1b_oo,noa,nob)
+                        !hmatel = hmatel + abb_vv_abb(i,j,k,a,b,c,l,m,n,d,e,f,h1a_vv,h1b_vv,nua,nub)
+                        !hmatel = hmatel + abb_oooo_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_oooo,h2c_oooo,noa,nob)
+                        !hmatel = hmatel + abb_vvvv_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_vvvv,h2c_vvvv,nua,nub)
+                        !hmatel = hmatel + abb_voov_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2a_voov,h2c_voov,noa,nua,nob,nub)
+                        !hmatel = hmatel + abb_ovov_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_ovov,noa,nub)
+                        !hmatel = hmatel + abb_vovo_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_vovo,nua,nob)
+                        if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                     end do
+                     do jdet = 1, n3bbb
+                        d = t3d_excits(1,jdet); e = t3d_excits(2,jdet); f = t3d_excits(3,jdet);
+                        l = t3d_excits(4,jdet); m = t3d_excits(5,jdet); n = t3d_excits(6,jdet);
+
+                        hmatel = 0.0d0
+                        t_amp = t3d_amps(jdet)
+                        !hmatel = hmatel + abb_voov_bbb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_voov,noa,nua,nob,nub)
+                        if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                     end do
+                  end do
+                  !$omp end do
+
+                  !$omp do
+                  do idet = 1, n3abb
+                      a = t3c_excits(1,idet); b = t3c_excits(2,idet); c = t3c_excits(3,idet);
+                      i = t3c_excits(4,idet); j = t3c_excits(5,idet); k = t3c_excits(6,idet);
+
+                      res_mm23 = 0.0
+                      do e = 1, nua
+                          ! A(jk)A(bc) h2B(abej) * t2b(ecik)
+                          res_mm23 = res_mm23 + I2B_vvvo(a,b,e,j) * t2b(e,c,i,k)
+                          res_mm23 = res_mm23 - I2B_vvvo(a,b,e,k) * t2b(e,c,i,j)
+                          res_mm23 = res_mm23 - I2B_vvvo(a,c,e,j) * t2b(e,b,i,k)
+                          res_mm23 = res_mm23 + I2B_vvvo(a,c,e,k) * t2b(e,b,i,j)
+                      end do
+                      do e = 1, nub
+                          ! A(bc) h2B(abie) * t2c(ecjk)
+                          res_mm23 = res_mm23 + I2B_vvov(a,b,i,e) * t2c(e,c,j,k)
+                          res_mm23 = res_mm23 - I2B_vvov(a,c,i,e) * t2c(e,b,j,k)
+                          ! A(jk) h2C(cbke) * t2b(aeij)
+                          res_mm23 = res_mm23 + (I2C_vvov(c,b,k,e) - I2C_vvov(b,c,k,e)) * t2b(a,e,i,j)
+                          res_mm23 = res_mm23 - (I2C_vvov(c,b,j,e) - I2C_vvov(b,c,j,e)) * t2b(a,e,i,k)
+                      end do
+                      do m = 1, noa
+                          ! -A(kj)A(bc) h2b(mbij) * t2b(acmk)
+                          res_mm23 = res_mm23 - I2B_ovoo(m,b,i,j) * t2b(a,c,m,k)
+                          res_mm23 = res_mm23 + I2B_ovoo(m,c,i,j) * t2b(a,b,m,k)
+                          res_mm23 = res_mm23 + I2B_ovoo(m,b,i,k) * t2b(a,c,m,j)
+                          res_mm23 = res_mm23 - I2B_ovoo(m,c,i,k) * t2b(a,b,m,j)
+                      end do
+                      do m = 1, nob
+                          ! -A(jk) h2b(amij) * t2c(bcmk)
+                          res_mm23 = res_mm23 - I2B_vooo(a,m,i,j) * t2c(b,c,m,k)
+                          res_mm23 = res_mm23 + I2B_vooo(a,m,i,k) * t2c(b,c,m,j)
+                          ! -A(bc) h2c(cmkj) * t2b(abim)
+                          res_mm23 = res_mm23 - (I2C_vooo(c,m,k,j) - I2C_vooo(c,m,j,k)) * t2b(a,b,i,m)
+                          res_mm23 = res_mm23 + (I2C_vooo(b,m,k,j) - I2C_vooo(b,m,j,k)) * t2b(a,c,i,m)
+                      end do
+
+                      denom = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
+
+                      resid(idet) = resid(idet) + res_mm23
+
+                      t3c_amps(idet) = t3c_amps(idet) + resid(idet)/(denom - shift)
+                  end do
+                  !$omp end do
+
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+
+              end subroutine update_t3c_p
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!! HBAR MATRIX ELEMENTS !!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1126,18 +1431,29 @@ module ccp_quadratic_loops_direct
 
                   ! (1)
                   if (i==l .and. j==m .and. k==n) then
-                      ! (1)
-                      if (c==f) hmatel = hmatel + h(a,b,d,e) ! (1)
-                      if (a==f) hmatel = hmatel - h(c,b,d,e) ! (ac)
-                      if (b==f) hmatel = hmatel - h(a,c,d,e) ! (bc)
-                      ! (fd)
-                      if (c==d) hmatel = hmatel - h(a,b,f,e) ! (1)
-                      if (a==d) hmatel = hmatel + h(c,b,f,e) ! (ac)
-                      if (b==d) hmatel = hmatel + h(a,c,f,e) ! (bc)
-                      ! (fe)
-                      if (c==e) hmatel = hmatel - h(a,b,d,f) ! (1)
-                      if (a==e) hmatel = hmatel + h(c,b,d,f) ! (ac)
-                      if (b==e) hmatel = hmatel + h(a,c,d,f) ! (bc)
+                      if (a==f) then 
+                              hmatel = hmatel - h(c,b,d,e) ! (ac)
+                      elseif (a==d) then 
+                              hmatel = hmatel + h(c,b,f,e) ! (ac)
+                      elseif (a==e) then 
+                              hmatel = hmatel + h(c,b,d,f) ! (ac)
+                      end if
+
+                      if (b==f) then
+                              hmatel = hmatel - h(a,c,d,e) ! (bc)
+                      elseif (b==d) then 
+                              hmatel = hmatel + h(a,c,f,e) ! (bc)
+                      elseif (b==e) then 
+                              hmatel = hmatel + h(a,c,d,f) ! (bc)
+                      end if
+
+                      if (c==f) then
+                              hmatel = hmatel + h(a,b,d,e) ! (1)
+                      elseif (c==d) then
+                              hmatel = hmatel - h(a,b,f,e) ! (1)
+                      elseif (c==e) then 
+                              hmatel = hmatel - h(a,b,d,f) ! (1)
+                      end if
                   end if
           end function aaa_vvvv_aaa
 
@@ -1556,13 +1872,424 @@ module ccp_quadratic_loops_direct
 
                   ! (1)
                   if (a==d .and. b==e .and. c==f) then
-                    if (j==m .and. k==n) hmatel = hmatel - ha(l,i) ! (1)
-                    if (i==m .and. k==n) hmatel = hmatel + ha(l,j) ! (ij)
-                    if (j==l .and. k==n) hmatel = hmatel + ha(m,i) ! (lm)
-                    if (i==l .and. k==n) hmatel = hmatel - ha(m,j) ! (ij)(lm)
+                    if (k==n) then
+                            if (j==m) then
+                                    hmatel = hmatel - ha(l,i) ! (1)
+                            elseif (j==l) then 
+                                    hmatel = hmatel + ha(m,i) ! (lm)
+                            end if
 
+                            if (i==m) then
+                                    hmatel = hmatel + ha(l,j) ! (ij)
+                            elseif (i==l) then 
+                                    hmatel = hmatel - ha(m,j) ! (ij)(lm)
+                            end if
+                    end if
                     if (i==l .and. j==m) hmatel = hmatel - hb(n,k) ! (1)
                   end if
           end function aab_oo_aab
+
+          pure function aab_vv_aab(i, j, k, a, b, c, l, m, n, d, e, f, ha, hb, nua, nub) result(hmatel)
+                  ! Expression:
+                  ! A(ij)A(ab)A(ml)A(de) d(i,l)d(j,m)d(b,e)d(k,n)d(c,f) ha(a,d)
+                  ! A(ij)A(ab) d(i,l)d(j,m)d(a,d)d(b,e)d(k,n) hb(c,f)
+
+                  integer, intent(in) :: nua, nub
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: ha(1:nua,1:nua), hb(1:nub,1:nub)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  ! (1)
+                  if (i==l .and. j==m .and. k==n) then
+                     if (c==f) then
+                             if (a==e) then 
+                                     hmatel = hmatel - ha(b,d) ! (ab)
+                             elseif (a==d) then
+                                     hmatel = hmatel + ha(b,e) ! (ab)(de)
+                             end if
+
+                             if (b==e) then 
+                                     hmatel = hmatel + ha(a,d) ! (1)
+                             elseif (b==d) then
+                                     hmatel = hmatel - ha(a,e) ! (de)
+                             end if
+                     end if
+                     if (a==d .and. b==e) hmatel = hmatel + hb(c,f) ! (1)
+                  end if
+          end function aab_vv_aab
+
+          pure function aab_vvvv_aab(i, j, k, a, b, c, l, m, n, d, e, f, ha, hb, nua, nub) result(hmatel)
+                  ! Expression:
+                  ! A(ij) d(i,l)d(j,m)d(k,n)d(c,f) ha(a,b,d,e) 
+                  ! A(ij)A(ab)A(ed) d(i,l)d(j,m)d(k,n)d(a,d) hb(b,c,e,f)
+
+                  integer, intent(in) :: nua, nub
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: ha(1:nua,1:nua,1:nua,1:nua)
+                  real(kind=8), intent(in) :: hb(1:nua,1:nub,1:nua,1:nub)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  ! (1)
+                  if (i==l .and. j==m .and. k==n) then
+                     if (c==f) hmatel = hmatel + ha(a,b,d,e) ! (1)
+
+                     if (a==d) then
+                             hmatel = hmatel + hb(b,c,e,f) ! (1)
+                     elseif (a==e) then
+                             hmatel = hmatel - hb(b,c,d,f) ! (ed)
+                     endif 
+
+                     if (b==d) then 
+                             hmatel = hmatel - hb(a,c,e,f) ! (ab)
+                     elseif (b==e) then 
+                             hmatel = hmatel + hb(a,c,d,f) ! (ab)(ed)
+                     end if
+                  end if
+
+          end function aab_vvvv_aab
+
+          pure function aab_oooo_aab(i, j, k, a, b, c, l, m, n, d, e, f, ha, hb, noa, nob) result(hmatel)
+                  ! Expression:
+                  ! A(ab) d(a,d)d(b,e)d(c,f)d(k,n) ha(l,m,i,j)
+                  ! A(ab)A(ij)A(ml) d(i,l)d(a,d)d(b,e)d(c,f) hb(m,n,j,k)
+
+                  integer, intent(in) :: noa, nob
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: ha(1:noa,1:noa,1:noa,1:noa)
+                  real(kind=8), intent(in) :: hb(1:noa,1:nob,1:noa,1:nob)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  ! (1)
+                  if (a==d .and. b==e .and. c==f) then
+                     if (k==n) hmatel = hmatel + ha(l,m,i,j) ! (1)
+
+                     if (i==l) then 
+                             hmatel = hmatel + hb(m,n,j,k) ! (1)
+                     elseif (i==m) then
+                             hmatel = hmatel - hb(l,n,j,k) ! (lm)
+                     end if
+                     
+                     if (j==l) then 
+                             hmatel = hmatel - hb(m,n,i,k) ! (ij)
+                     elseif (j==m) then 
+                             hmatel = hmatel + hb(l,n,i,k) ! (ij)(lm)
+                     end if
+                  end if
+
+          end function aab_oooo_aab
+
+          pure function aab_ovov_aab(i, j, k, a, b, c, l, m, n, d, e, f, h, noa, nub) result(hmatel)
+                  ! Expression:
+                  ! -A(ab)A(ij)A(lm) d(a,d)d(b,e)d(k,n)d(j,m) h(l,c,i,f)
+
+                  integer, intent(in) :: noa, nub
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: h(1:noa,1:nub,1:noa,1:nub)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  ! (1)
+                  if (a==d .and. b==e .and. k==n) then
+                     if(j==m) then 
+                             hmatel = hmatel - h(l,c,i,f) ! (1)
+                     elseif (j==l) then 
+                             hmatel = hmatel + h(m,c,i,f) ! (lm)
+                     end if
+
+                     if (i==m) then 
+                             hmatel = hmatel + h(l,c,j,f) ! (ij)
+                     elseif (i==l) then 
+                             hmatel = hmatel - h(m,c,j,f) ! (ij)(lm)
+                     end if
+                  end if
+          end function aab_ovov_aab
+
+          pure function aab_vovo_aab(i, j, k, a, b, c, l, m, n, d, e, f, h, nua, nob) result(hmatel)
+                  ! Expression:
+                  ! -A(ij)A(ab)A(de) d(i,l)d(j,m)d(c,f)d(b,e) h(a,n,d,k)
+
+                  integer, intent(in) :: nua, nob
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: h(1:nua,1:nob,1:nua,1:nob)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  ! (1)
+                  if (i==l .and. j==m .and. c==f) then
+                     if (b==e) then 
+                             hmatel = hmatel - h(a,n,d,k) ! (1)
+                     elseif (b==d) then 
+                             hmatel = hmatel + h(a,n,e,k) ! (de)
+                     end if
+
+                     if (a==e) then 
+                             hmatel = hmatel + h(b,n,d,k) ! (ab)
+                     elseif (a==d) then 
+                             hmatel = hmatel - h(b,n,e,k) ! (ab)(de)
+                     end if
+                  end if
+          end function aab_vovo_aab
+
+          pure function aab_voov_aab(i, j, k, a, b, c, l, m, n, d, e, f, ha, hc, noa, nua, nob, nub) result(hmatel)
+                  ! Expression:
+                  ! A(ij)A(ab)A(lm)A(de) d(j,m)d(b,e)d(k,n)d(c,f) ha(a,l,i,d)
+                  ! A(ij)A(ab) d(i,l)d(j,m)d(b,e)d(a,d) hc(c,n,k,f)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: ha(1:nua,1:noa,1:noa,1:nua)
+                  real(kind=8), intent(in) :: hc(1:nub,1:nob,1:nob,1:nub)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  ! (1)
+                  if (i==l .and. j==m .and. b==e .and. a==d) hmatel = hmatel + hc(c,n,k,f) ! (1)
+
+                  ! (1)
+                  if (j==m .and. b==e .and. k==n .and. c==f) hmatel = hmatel + ha(a,l,i,d) ! (1)
+                  if (j==l .and. b==e .and. k==n .and. c==f) hmatel = hmatel - ha(a,m,i,d) ! (lm)
+                  if (j==m .and. b==d .and. k==n .and. c==f) hmatel = hmatel - ha(a,l,i,e) ! (de)
+                  if (j==l .and. b==d .and. k==n .and. c==f) hmatel = hmatel + ha(a,m,i,e) ! (lm)(de)
+                  ! (ij)
+                  if (i==m .and. b==e .and. k==n .and. c==f) hmatel = hmatel - ha(a,l,j,d) ! (1)
+                  if (i==l .and. b==e .and. k==n .and. c==f) hmatel = hmatel + ha(a,m,j,d) ! (lm)
+                  if (i==m .and. b==d .and. k==n .and. c==f) hmatel = hmatel + ha(a,l,j,e) ! (de)
+                  if (i==l .and. b==d .and. k==n .and. c==f) hmatel = hmatel - ha(a,m,j,e) ! (lm)(de)
+                  ! (ab)
+                  if (j==m .and. a==e .and. k==n .and. c==f) hmatel = hmatel - ha(b,l,i,d) ! (1)
+                  if (j==l .and. a==e .and. k==n .and. c==f) hmatel = hmatel + ha(b,m,i,d) ! (lm)
+                  if (j==m .and. a==d .and. k==n .and. c==f) hmatel = hmatel + ha(b,l,i,e) ! (de)
+                  if (j==l .and. a==d .and. k==n .and. c==f) hmatel = hmatel - ha(b,m,i,e) ! (lm)(de)
+                  ! (ij)(ab)
+                  if (i==m .and. a==e .and. k==n .and. c==f) hmatel = hmatel + ha(b,l,j,d) ! (1)
+                  if (i==l .and. a==e .and. k==n .and. c==f) hmatel = hmatel - ha(b,m,j,d) ! (lm)
+                  if (i==m .and. a==d .and. k==n .and. c==f) hmatel = hmatel - ha(b,l,j,e) ! (de)
+                  if (i==l .and. a==d .and. k==n .and. c==f) hmatel = hmatel + ha(b,m,j,e) ! (lm)(de)
+          end function aab_voov_aab
+
+          pure function aab_voov_abb(i, j, k, a, b, c, l, m, n, d, e, f, h, noa, nua, nob, nub) result(hmatel)
+                  ! Expression:
+                  ! A(ij)A(ab)A(mn)A(ef) d(i,l)d(k,n)d(a,d)d(c,f) h(b,m,j,e)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: h(1:nua,1:nob,1:noa,1:nub)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  if (a==d) then
+                     if (c==f) then
+                          if (i==l) then
+                             if (k==n) hmatel = hmatel + h(b,m,j,e) 
+                             if (k==m) hmatel = hmatel - h(b,n,j,e)
+                          elseif (j==l) then
+                             if (k==n) hmatel = hmatel - h(b,m,i,e)
+                             if (k==m) hmatel = hmatel + h(b,n,i,e) 
+                          end if
+                     elseif (c==e) then
+                          if (i==l) then
+                             if (k==n) hmatel = hmatel - h(b,m,j,f) 
+                             if (k==m) hmatel = hmatel + h(b,n,j,f) 
+                          elseif (j==l) then
+                             if (k==n) hmatel = hmatel + h(b,m,i,f) 
+                             if (k==m) hmatel = hmatel - h(b,n,i,f) 
+                          end if
+                     end if
+                  elseif (b==d) then
+                     if (c==f) then
+                          if (i==l) then
+                             if (k==n) hmatel = hmatel - h(a,m,j,e) 
+                             if (k==m) hmatel = hmatel + h(a,n,j,e) 
+                          elseif (j==l) then
+                             if (k==n) hmatel = hmatel + h(a,m,i,e) 
+                             if (k==m) hmatel = hmatel - h(a,n,i,e)
+                          end if 
+                     elseif (c==e) then
+                          if (i==l) then
+                             if (k==n) hmatel = hmatel + h(a,m,j,f) 
+                             if (k==m) hmatel = hmatel - h(a,n,j,f) 
+                          elseif (j==l) then
+                             if (k==n) hmatel = hmatel - h(a,m,i,f) 
+                             if (k==m) hmatel = hmatel + h(a,n,i,f)
+                          end if
+                     end if        
+                  end if
+          end function aab_voov_abb
+
+          pure function aab_ovvo_aaa(i, j, k, a, b, c, l, m, n, d, e, f, h, noa, nua, nob, nub) result(hmatel)
+                  ! Expression:
+                  ! A(ij)A(ab)A(n/lm)A(f/ed) d(i,l)d(j,m)d(a,d)d(b,e) h(n,c,f,k)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: h(1:noa,1:nub,1:nua,1:nob)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  ! (1)
+                  if (i==l .and. j==m .and. a==d .and. b==e) hmatel = hmatel + h(n,c,f,k) ! (1)
+                  if (i==n .and. j==m .and. a==d .and. b==e) hmatel = hmatel - h(l,c,f,k) ! (nl)
+                  if (i==l .and. j==n .and. a==d .and. b==e) hmatel = hmatel - h(m,c,f,k) ! (nm)
+                  if (i==l .and. j==m .and. a==f .and. b==e) hmatel = hmatel - h(n,c,d,k) ! (fd)
+                  if (i==n .and. j==m .and. a==f .and. b==e) hmatel = hmatel + h(l,c,d,k) ! (nl)(fd)
+                  if (i==l .and. j==n .and. a==f .and. b==e) hmatel = hmatel + h(m,c,d,k) ! (nm)(fd)
+                  if (i==l .and. j==m .and. a==d .and. b==f) hmatel = hmatel - h(n,c,e,k) ! (fe)
+                  if (i==n .and. j==m .and. a==d .and. b==f) hmatel = hmatel + h(l,c,e,k) ! (nl)(fe)
+                  if (i==l .and. j==n .and. a==d .and. b==f) hmatel = hmatel + h(m,c,e,k) ! (nm)(fe)
+                  ! (ij)
+                  if (j==l .and. i==m .and. a==d .and. b==e) hmatel = hmatel - h(n,c,f,k) ! (1)
+                  if (j==n .and. i==m .and. a==d .and. b==e) hmatel = hmatel + h(l,c,f,k) ! (nl)
+                  if (j==l .and. i==n .and. a==d .and. b==e) hmatel = hmatel + h(m,c,f,k) ! (nm)
+                  if (j==l .and. i==m .and. a==f .and. b==e) hmatel = hmatel + h(n,c,d,k) ! (fd)
+                  if (j==n .and. i==m .and. a==f .and. b==e) hmatel = hmatel - h(l,c,d,k) ! (nl)(fd)
+                  if (j==l .and. i==n .and. a==f .and. b==e) hmatel = hmatel - h(m,c,d,k) ! (nm)(fd)
+                  if (j==l .and. i==m .and. a==d .and. b==f) hmatel = hmatel + h(n,c,e,k) ! (fe)
+                  if (j==n .and. i==m .and. a==d .and. b==f) hmatel = hmatel - h(l,c,e,k) ! (nl)(fe)
+                  if (j==l .and. i==n .and. a==d .and. b==f) hmatel = hmatel - h(m,c,e,k) ! (nm)(fe)
+                  ! (ab)
+                  if (i==l .and. j==m .and. b==d .and. a==e) hmatel = hmatel - h(n,c,f,k) ! (1)
+                  if (i==n .and. j==m .and. b==d .and. a==e) hmatel = hmatel + h(l,c,f,k) ! (nl)
+                  if (i==l .and. j==n .and. b==d .and. a==e) hmatel = hmatel + h(m,c,f,k) ! (nm)
+                  if (i==l .and. j==m .and. b==f .and. a==e) hmatel = hmatel + h(n,c,d,k) ! (fd)
+                  if (i==n .and. j==m .and. b==f .and. a==e) hmatel = hmatel - h(l,c,d,k) ! (nl)(fd)
+                  if (i==l .and. j==n .and. b==f .and. a==e) hmatel = hmatel - h(m,c,d,k) ! (nm)(fd)
+                  if (i==l .and. j==m .and. b==d .and. a==f) hmatel = hmatel + h(n,c,e,k) ! (fe)
+                  if (i==n .and. j==m .and. b==d .and. a==f) hmatel = hmatel - h(l,c,e,k) ! (nl)(fe)
+                  if (i==l .and. j==n .and. b==d .and. a==f) hmatel = hmatel - h(m,c,e,k) ! (nm)(fe)
+                  ! (ij)(ab)
+                  if (j==l .and. i==m .and. b==d .and. a==e) hmatel = hmatel + h(n,c,f,k) ! (1)
+                  if (j==n .and. i==m .and. b==d .and. a==e) hmatel = hmatel - h(l,c,f,k) ! (nl)
+                  if (j==l .and. i==n .and. b==d .and. a==e) hmatel = hmatel - h(m,c,f,k) ! (nm)
+                  if (j==l .and. i==m .and. b==f .and. a==e) hmatel = hmatel - h(n,c,d,k) ! (fd)
+                  if (j==n .and. i==m .and. b==f .and. a==e) hmatel = hmatel + h(l,c,d,k) ! (nl)(fd)
+                  if (j==l .and. i==n .and. b==f .and. a==e) hmatel = hmatel + h(m,c,d,k) ! (nm)(fd)
+                  if (j==l .and. i==m .and. b==d .and. a==f) hmatel = hmatel - h(n,c,e,k) ! (fe)
+                  if (j==n .and. i==m .and. b==d .and. a==f) hmatel = hmatel + h(l,c,e,k) ! (nl)(fe)
+                  if (j==l .and. i==n .and. b==d .and. a==f) hmatel = hmatel + h(m,c,e,k) ! (nm)(fe)
+          end function aab_ovvo_aaa
+
+          pure function abb_ovvo_aab(i, j, k, a, b, c, l, m, n, d, e, f, h, noa, nua, nob, nub) result(hmatel)
+                  ! Expression:
+                  ! A(jk)A(bc)A(lm)A(ed) d(i,l)d(a,d)d(k,n)d(c,f) h(m,b,e,j)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: h(1:noa,1:nub,1:nua,1:nob)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  if (i==l) then ! (1)
+                     if (a==d) then ! (1)
+                        if (k==n) then ! (1)
+                           if (c==f) then ! (1)
+                                   hmatel = hmatel + h(m,b,e,j) 
+                           elseif (b==f) then ! (bc)
+                                   hmatel = hmatel - h(m,c,e,j) 
+                           end if
+                        elseif (j==n) then ! (jk)
+                           if (c==f) then ! (1)
+                                   hmatel = hmatel - h(m,b,e,k) 
+                           elseif (b==f) then ! (bc)
+                                   hmatel = hmatel + h(m,c,e,k) 
+                           end if
+                        end if 
+                     elseif (a==e) then ! (de)
+                        if (k==n) then ! (1)
+                           if (c==f) then ! (1)
+                                   hmatel = hmatel - h(m,b,d,j) 
+                           elseif (b==f) then ! (bc)
+                                   hmatel = hmatel + h(m,c,d,j) 
+                           end if
+                        elseif (j==n) then ! (jk)
+                           if (c==f) then ! (1)
+                                   hmatel = hmatel + h(m,b,d,k) 
+                           elseif (b==f) then ! (bc)
+                                   hmatel = hmatel - h(m,c,d,k) 
+                           end if
+                        end if
+                     end if
+                  elseif (i==m) then ! (lm)
+                     if (a==d) then ! (1)
+                        if (k==n) then ! (1)
+                           if (c==f) then ! (1)
+                                   hmatel = hmatel - h(l,b,e,j) 
+                           elseif (b==f) then ! (bc)
+                                   hmatel = hmatel + h(l,c,e,j) 
+                           end if
+                        elseif (j==n) then ! (jk)
+                           if (c==f) then ! (1)
+                                   hmatel = hmatel + h(l,b,e,k) 
+                           elseif (b==f) then ! (bc)
+                                   hmatel = hmatel - h(l,c,e,k) 
+                           end if
+                        end if 
+                     elseif (a==e) then ! (de)
+                        if (k==n) then ! (1)
+                           if (c==f) then ! (1)
+                                   hmatel = hmatel + h(l,b,d,j) 
+                           elseif (b==f) then ! (bc)
+                                   hmatel = hmatel - h(l,c,d,j) 
+                           end if
+                        elseif (j==n) then ! (jk)
+                           if (c==f) then ! (1)
+                                   hmatel = hmatel - h(l,b,d,k) 
+                           elseif (b==f) then ! (bc)
+                                   hmatel = hmatel + h(l,c,d,k) 
+                           end if
+                        end if
+                     end if
+                  end if
+                  ! (1)
+                  !if (i==l .and. a==d .and. k==n .and. c==f) hmatel = hmatel + h(m,b,e,j) ! (1)
+                  !if (i==m .and. a==d .and. k==n .and. c==f) hmatel = hmatel - h(l,b,e,j) ! (lm)
+                  !if (i==l .and. a==e .and. k==n .and. c==f) hmatel = hmatel - h(m,b,d,j) ! (de)
+                  !if (i==m .and. a==e .and. k==n .and. c==f) hmatel = hmatel + h(l,b,d,j) ! (lm)(de)
+                  ! (jk)
+                  !if (i==l .and. a==d .and. j==n .and. c==f) hmatel = hmatel - h(m,b,e,k) ! (1)
+                  !if (i==m .and. a==d .and. j==n .and. c==f) hmatel = hmatel + h(l,b,e,k) ! (lm)
+                  !if (i==l .and. a==e .and. j==n .and. c==f) hmatel = hmatel + h(m,b,d,k) ! (de)
+                  !if (i==m .and. a==e .and. j==n .and. c==f) hmatel = hmatel - h(l,b,d,k) ! (lm)(de)
+                  ! (bc)
+                  !if (i==l .and. a==d .and. k==n .and. b==f) hmatel = hmatel - h(m,c,e,j) ! (1)
+                  !if (i==m .and. a==d .and. k==n .and. b==f) hmatel = hmatel + h(l,c,e,j) ! (lm)
+                  !if (i==l .and. a==e .and. k==n .and. b==f) hmatel = hmatel + h(m,c,d,j) ! (de)
+                  !if (i==m .and. a==e .and. k==n .and. b==f) hmatel = hmatel - h(l,c,d,j) ! (lm)(de)
+                  ! (jk)(bc)
+                  !if (i==l .and. a==d .and. j==n .and. b==f) hmatel = hmatel + h(m,c,e,k) ! (1)
+                  !if (i==m .and. a==d .and. j==n .and. b==f) hmatel = hmatel - h(l,c,e,k) ! (lm)
+                  !if (i==l .and. a==e .and. j==n .and. b==f) hmatel = hmatel - h(m,c,d,k) ! (de)
+                  !if (i==m .and. a==e .and. j==n .and. b==f) hmatel = hmatel + h(l,c,d,k) ! (lm)(de)
+          end function abb_ovvo_aab
+
 
 end module ccp_quadratic_loops_direct
