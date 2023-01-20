@@ -230,7 +230,23 @@ def contract_vt3_exact(H0, H, T):
     x3c -= np.transpose(x3c, (0, 2, 1, 3, 4, 5)) # (bc)
     x3c -= np.transpose(x3c, (0, 1, 2, 3, 5, 4)) # (jk)
 
-    return x3a, x3b, x3c
+    # MM(2,3)
+    x3d = -0.25 * np.einsum("amij,bcmk->abcijk", I2C_vooo, T.bb, optimize=True)
+    x3d += 0.25 * np.einsum("abie,ecjk->abcijk", I2C_vvov, T.bb, optimize=True)
+    # (Hbar*T3)
+    x3d -= (1.0 / 12.0) * np.einsum("mk,abcijm->abcijk", H.b.oo, T.bbb, optimize=True)
+    x3d += (1.0 / 12.0) * np.einsum("ce,abeijk->abcijk", H.b.vv, T.bbb, optimize=True)
+    x3d += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.bb.oooo, T.bbb, optimize=True)
+    x3d += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.bb.vvvv, T.bbb, optimize=True)
+    x3d += 0.25 * np.einsum("maei,ebcmjk->abcijk", H.ab.ovvo, T.abb, optimize=True)
+    x3d += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.bb.voov, T.bbb, optimize=True)
+
+    x3d -= np.transpose(x3d, (0, 1, 2, 3, 5, 4)) # (jk)
+    x3d -= np.transpose(x3d, (0, 1, 2, 4, 3, 5)) + np.transpose(x3d, (0, 1, 2, 5, 4, 3)) # (i/jk)
+    x3d -= np.transpose(x3d, (0, 2, 1, 3, 4, 5)) # (bc)
+    x3d -= np.transpose(x3d, (2, 1, 0, 3, 4, 5)) + np.transpose(x3d, (1, 0, 2, 3, 4, 5)) # (a/bc)
+
+    return x3a, x3b, x3c, x3d
 
 def contract_vt3_fly(H, H0, T, T3_excitations, T3_amplitudes):
 
@@ -298,7 +314,20 @@ def contract_vt3_fly(H, H0, T, T3_excitations, T3_amplitudes):
     )
     T3_amplitudes["abb"] = t3c_amps.copy()
 
-    return t3_aaa, resid_aaa, t3_aab, resid_aab, t3_abb, resid_abb
+    t3_bbb, resid_bbb = ccp_quadratic_loops_direct.ccp_quadratic_loops_direct.update_t3d_p(
+        T3_amplitudes["bbb"],
+        T3_excitations["abb"].T, T3_excitations["bbb"].T,
+        T.bb,
+        T3_amplitudes["abb"],
+        H.b.oo, H.b.vv,
+        H0.ab.oovv, H.ab.ovvo,
+        H0.bb.oovv, I2C_vooo, H.bb.vvov, H.bb.oooo, H.bb.voov, H.bb.vvvv,
+        H0.b.oo, H0.b.vv,
+        0.0
+    )
+    T3_amplitudes["bbb"] = t3d_amps.copy()
+
+    return t3_aaa, resid_aaa, t3_aab, resid_aab, t3_abb, resid_abb, t3_bbb, resid_bbb
 
 if __name__ == "__main__":
 
@@ -317,9 +346,9 @@ if __name__ == "__main__":
     """
 
     mol.build(
-        atom=methylene,
+        atom=fluorine,
         basis="ccpvdz",
-        symmetry="C2V",
+        symmetry="D2H",
         spin=0, 
         charge=0,
         unit="Bohr",
@@ -327,7 +356,7 @@ if __name__ == "__main__":
     )
     mf = scf.ROHF(mol).run()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=1)
+    system, H = load_pyscf_integrals(mf, nfrozen=2)
     system.print_info()
 
     calculation = Calculation(calculation_type="ccsdt")
@@ -340,13 +369,13 @@ if __name__ == "__main__":
     # Get the expected result for the contraction, computed using full T_ext
     print("   Exact H*T3 contraction", end="")
     t1 = time.time()
-    x3_aaa_exact, x3_aab_exact, x3_abb_exact = contract_vt3_exact(H, hbar, T)
+    x3_aaa_exact, x3_aab_exact, x3_abb_exact, x3_bbb_exact = contract_vt3_exact(H, hbar, T)
     print(" (Completed in ", time.time() - t1, "seconds)")
 
     # Get the on-the-fly contraction result
     print("   On-the-fly H*T3 contraction", end="")
     t1 = time.time()
-    t3_aaa, x3_aaa, t3_aab, x3_aab, t3_abb, x3_abb = contract_vt3_fly(hbar, H, T, T3_excitations, T3_amplitudes)
+    t3_aaa, x3_aaa, t3_aab, x3_aab, t3_abb, x3_abb, t3_bbb, x3_bbb = contract_vt3_fly(hbar, H, T, T3_excitations, T3_amplitudes)
     print(" (Completed in ", time.time() - t1, "seconds)")
 
     print("")
@@ -404,20 +433,20 @@ if __name__ == "__main__":
     else:
         print("T3C update FAILED!", "Cumulative Error = ", err_cum)
 
-    # flag = True
-    # err_cum = 0.0
-    # for idet in range(len(T3_amplitudes["bbb"])):
-    #     a, b, c, i, j, k = [x - 1 for x in T3_excitations["bbb"][idet]]
-    #     denom = (
-    #                 H.b.oo[i, i] + H.b.oo[j, j] + H.b.oo[k, k]
-    #                -H.b.vv[a, a] - H.b.vv[b, b] - H.b.vv[c, c]
-    #     )
-    #     error = (x3_bbb[idet] - x3_bbb_exact[a, b, c, i, j, k])/denom
-    #     err_cum += abs(error)
-    #     if abs(error) > 1.0e-010:
-    #         flag = False
-    # if flag:
-    #     print("T3D update passed!", "Cumulative Error = ", err_cum)
-    # else:
-    #     print("T3D update FAILED!", "Cumulative Error = ", err_cum)
+    flag = True
+    err_cum = 0.0
+    for idet in range(len(T3_amplitudes["bbb"])):
+        a, b, c, i, j, k = [x - 1 for x in T3_excitations["bbb"][idet]]
+        denom = (
+                    H.b.oo[i, i] + H.b.oo[j, j] + H.b.oo[k, k]
+                   -H.b.vv[a, a] - H.b.vv[b, b] - H.b.vv[c, c]
+        )
+        error = (x3_bbb[idet] - x3_bbb_exact[a, b, c, i, j, k])/denom
+        err_cum += abs(error)
+        if abs(error) > 1.0e-010:
+            flag = False
+    if flag:
+        print("T3D update passed!", "Cumulative Error = ", err_cum)
+    else:
+        print("T3D update FAILED!", "Cumulative Error = ", err_cum)
 

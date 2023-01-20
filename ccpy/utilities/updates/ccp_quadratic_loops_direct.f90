@@ -1306,6 +1306,178 @@ module ccp_quadratic_loops_direct
                   !!!! END OMP PARALLEL SECTION !!!!
 
               end subroutine update_t3c_p
+
+
+              subroutine update_t3d_p(t3d_amps, resid,&
+                                      t3c_excits, t3d_excits,&
+                                      t2c,&
+                                      t3c_amps,&
+                                      H1B_oo, H1B_vv,&
+                                      H2B_oovv, H2B_ovvo,&
+                                      H2C_oovv, H2C_vooo, H2C_vvov, H2C_oooo, H2C_voov, H2C_vvvv,&
+                                      fB_oo, fB_vv,&
+                                      shift,&
+                                      n3abb, n3bbb,&
+                                      noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub, n3abb, n3bbb
+                  integer, intent(in) :: t3c_excits(6, n3abb), t3d_excits(6, n3bbb)
+                  real(kind=8), intent(in) :: t2c(nub, nub, nob, nob),&
+                                              t3c_amps(n3abb),&
+                                              H1B_oo(nob, nob), H1B_vv(nub, nub),&
+                                              H2B_oovv(noa, nob, nua, nub),&
+                                              H2B_ovvo(noa, nub, nua, nob),&
+                                              H2C_oovv(nob, nob, nub, nub),&
+                                              H2C_vooo(nub, nob, nob, nob),&
+                                              H2C_vvov(nub, nub, nob, nub),&
+                                              H2C_oooo(nob, nob, nob, nob),&
+                                              H2C_voov(nub, nob, nob, nub),&
+                                              H2C_vvvv(nub, nub, nub, nub),&
+                                              fB_vv(nub, nub), fB_oo(nob, nob),&
+                                              shift
+
+                  real(kind=8), intent(inout) :: t3d_amps(n3bbb)
+                  !f2py intent(in,out) :: t3d_amps(0:n3bbb-1)
+
+                  real(kind=8), intent(out) :: resid(n3bbb)
+
+                  real(kind=8) :: val, denom, t_amp, res_mm23, hmatel
+                  real(kind=8) :: I2C_vooo(nub, nob, nob, nob),&
+                                  I2C_vvov(nub, nub, nob, nub)
+                  integer :: a, b, c, d, i, j, k, l, e, f, m, n, idet, jdet
+
+                  ! Zero the residual
+                  resid = 0.0d0
+                  ! compute VT3 intermediates
+                  I2C_vooo(:,:,:,:) = 0.5d0 * H2C_vooo(:,:,:,:)
+                  I2C_vvov(:,:,:,:) = 0.5d0 * H2C_vvov(:,:,:,:)
+
+                  do idet = 1, n3abb
+                      t_amp = t3c_amps(idet)
+
+                      ! I2C(abie) <- A(ab) [A(im) -h2b(nmfe) * t3c(fabnim)]
+                      f = t3c_excits(1,idet); a = t3c_excits(2,idet); b = t3c_excits(3,idet);
+                      n = t3c_excits(4,idet); i = t3c_excits(5,idet); m = t3c_excits(6,idet);
+                      I2C_vvov(a,b,i,:) = I2C_vvov(a,b,i,:) - H2B_oovv(n,m,f,:) * t_amp ! (1)
+                      I2C_vvov(a,b,m,:) = I2C_vvov(a,b,m,:) + H2B_oovv(n,i,f,:) * t_amp ! (im)
+
+                      ! I2C(amij) <- A(ij) [A(ae) h2b(nmfe) * t3c(faenij)]
+                      f = t3c_excits(1,idet); a = t3c_excits(2,idet); e = t3c_excits(3,idet);
+                      n = t3c_excits(4,idet); i = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      I2C_vooo(a,:,i,j) = I2C_vooo(a,:,i,j) + H2B_oovv(n,:,f,e) * t_amp ! (1)
+                      I2C_vooo(e,:,i,j) = I2C_vooo(e,:,i,j) - H2B_oovv(n,:,f,a) * t_amp ! (ae)
+                  end do
+
+                  do idet = 1, n3bbb
+                      t_amp = t3d_amps(idet)
+
+                      ! I2C(amij) <- A(ij) [A(n/ij)A(a/ef) h2c(mnef) * t3d(aefijn)]
+                      a = t3d_excits(1,idet); e = t3d_excits(2,idet); f = t3d_excits(3,idet);
+                      i = t3d_excits(4,idet); j = t3d_excits(5,idet); n = t3d_excits(6,idet);
+                      I2C_vooo(a,:,i,j) = I2C_vooo(a,:,i,j) + H2C_oovv(:,n,e,f) * t_amp ! (1)
+                      I2C_vooo(a,:,n,j) = I2C_vooo(a,:,n,j) - H2C_oovv(:,i,e,f) * t_amp ! (in)
+                      I2C_vooo(a,:,i,n) = I2C_vooo(a,:,i,n) - H2C_oovv(:,j,e,f) * t_amp ! (jn)
+                      I2C_vooo(e,:,i,j) = I2C_vooo(e,:,i,j) - H2C_oovv(:,n,a,f) * t_amp ! (ae)
+                      I2C_vooo(e,:,n,j) = I2C_vooo(e,:,n,j) + H2C_oovv(:,i,a,f) * t_amp ! (in)(ae)
+                      I2C_vooo(e,:,i,n) = I2C_vooo(e,:,i,n) + H2C_oovv(:,j,a,f) * t_amp ! (jn)(ae)
+                      I2C_vooo(f,:,i,j) = I2C_vooo(f,:,i,j) - H2C_oovv(:,n,e,a) * t_amp ! (af)
+                      I2C_vooo(f,:,n,j) = I2C_vooo(f,:,n,j) + H2C_oovv(:,i,e,a) * t_amp ! (in)(af)
+                      I2C_vooo(f,:,i,n) = I2C_vooo(f,:,i,n) + H2C_oovv(:,j,e,a) * t_amp ! (jn)(af)
+
+                      ! I2C(abie) <- A(ab) [A(i/mn)A(f/ab) -h2c(mnef) * t3d(abfimn)]
+                      a = t3d_excits(1,idet); b = t3d_excits(2,idet); f = t3d_excits(3,idet);
+                      i = t3d_excits(4,idet); m = t3d_excits(5,idet); n = t3d_excits(6,idet);
+                      I2C_vvov(a,b,i,:) = I2C_vvov(a,b,i,:) - H2C_oovv(m,n,:,f) * t_amp ! (1)
+                      I2C_vvov(a,b,m,:) = I2C_vvov(a,b,m,:) + H2C_oovv(i,n,:,f) * t_amp ! (im)
+                      I2C_vvov(a,b,n,:) = I2C_vvov(a,b,n,:) + H2C_oovv(m,i,:,f) * t_amp ! (in)
+                      I2C_vvov(f,b,i,:) = I2C_vvov(f,b,i,:) + H2C_oovv(m,n,:,a) * t_amp ! (af)
+                      I2C_vvov(f,b,m,:) = I2C_vvov(f,b,m,:) - H2C_oovv(i,n,:,a) * t_amp ! (im)(af)
+                      I2C_vvov(f,b,n,:) = I2C_vvov(f,b,n,:) - H2C_oovv(m,i,:,a) * t_amp ! (in)(af)
+                      I2C_vvov(a,f,i,:) = I2C_vvov(a,f,i,:) + H2C_oovv(m,n,:,b) * t_amp ! (bf)
+                      I2C_vvov(a,f,m,:) = I2C_vvov(a,f,m,:) - H2C_oovv(i,n,:,b) * t_amp ! (im)(bf)
+                      I2C_vvov(a,f,n,:) = I2C_vvov(a,f,n,:) - H2C_oovv(m,i,:,b) * t_amp ! (in)(bf)
+                  end do
+
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3c_excits,t3d_excits,t3c_amps,t3d_amps,t2c,&
+                  !$omp H1B_oo,H1B_vv,H2C_oooo,&
+                  !$omp H2C_vvvv,H2C_voov,H2B_ovvo,I2C_vooo,I2C_vvov,&
+                  !$omp fB_oo,fB_vv,shift,noa,nua,nob,nub,n3abb,n3bbb),&
+                  !$omp private(hmatel,t_amp,denom,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet)
+
+                  !$omp do schedule(static)
+                  do idet = 1, n3bbb
+                      a = t3d_excits(1,idet); b = t3d_excits(2,idet); c = t3d_excits(3,idet);
+                      i = t3d_excits(4,idet); j = t3d_excits(5,idet); k = t3d_excits(6,idet);
+                      do jdet = 1, n3bbb
+                          d = t3d_excits(1,jdet); e = t3d_excits(2,jdet); f = t3d_excits(3,jdet);
+                          l = t3d_excits(4,jdet); m = t3d_excits(5,jdet); n = t3d_excits(6,jdet);
+
+                          hmatel = 0.0d0
+                          t_amp = t3d_amps(jdet)
+                          hmatel = hmatel + bbb_oo_bbb(i,j,k,a,b,c,l,m,n,d,e,f,h1b_oo,nob)
+                          hmatel = hmatel + bbb_vv_bbb(i,j,k,a,b,c,l,m,n,d,e,f,h1b_vv,nub)
+                          hmatel = hmatel + bbb_oooo_bbb(i,j,k,a,b,c,l,m,n,d,e,f,h2c_oooo,nob)
+                          hmatel = hmatel + bbb_vvvv_bbb(i,j,k,a,b,c,l,m,n,d,e,f,h2c_vvvv,nub)
+                          hmatel = hmatel + bbb_voov_bbb(i,j,k,a,b,c,l,m,n,d,e,f,h2c_voov,nob,nub)
+                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                      end do
+                      do jdet = 1, n3abb
+                          d = t3c_excits(1,jdet); e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                          l = t3c_excits(4,jdet); m = t3c_excits(5,jdet); n = t3c_excits(6,jdet);
+
+                          hmatel = 0.0d0
+                          t_amp = t3c_amps(jdet)
+                          hmatel = hmatel + bbb_ovvo_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_ovvo,noa,nua,nob,nub)
+                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                      end do
+                  end do
+                  !$omp end do
+                  
+                  !$omp do
+                  do idet = 1, n3bbb
+                      a = t3d_excits(1,idet); b = t3d_excits(2,idet); c = t3d_excits(3,idet);
+                      i = t3d_excits(4,idet); j = t3d_excits(5,idet); k = t3d_excits(6,idet);
+
+                      res_mm23 = 0.0d0
+                      do e = 1, nub
+                           ! A(i/jk)(c/ab) h2c(abie) * t2c(ecjk)
+                          res_mm23 = res_mm23 + (I2C_vvov(a,b,i,e) - I2C_vvov(b,a,i,e)) * t2c(e,c,j,k)
+                          res_mm23 = res_mm23 - (I2C_vvov(c,b,i,e) - I2C_vvov(b,c,i,e)) * t2c(e,a,j,k)
+                          res_mm23 = res_mm23 - (I2C_vvov(a,c,i,e) - I2C_vvov(c,a,i,e)) * t2c(e,b,j,k)
+                          res_mm23 = res_mm23 - (I2C_vvov(a,b,j,e) - I2C_vvov(b,a,j,e)) * t2c(e,c,i,k)
+                          res_mm23 = res_mm23 + (I2C_vvov(c,b,j,e) - I2C_vvov(b,c,j,e)) * t2c(e,a,i,k)
+                          res_mm23 = res_mm23 + (I2C_vvov(a,c,j,e) - I2C_vvov(c,a,j,e)) * t2c(e,b,i,k)
+                          res_mm23 = res_mm23 - (I2C_vvov(a,b,k,e) - I2C_vvov(b,a,k,e)) * t2c(e,c,j,i)
+                          res_mm23 = res_mm23 + (I2C_vvov(c,b,k,e) - I2C_vvov(b,c,k,e)) * t2c(e,a,j,i)
+                          res_mm23 = res_mm23 + (I2C_vvov(a,c,k,e) - I2C_vvov(c,a,k,e)) * t2c(e,b,j,i)
+                      end do
+                      do m = 1, nob
+                          ! -A(k/ij)A(a/bc) h2c(amij) * t2c(bcmk)
+                          res_mm23 = res_mm23 - (I2C_vooo(a,m,i,j) - I2C_vooo(a,m,j,i)) * t2c(b,c,m,k)
+                          res_mm23 = res_mm23 + (I2C_vooo(b,m,i,j) - I2C_vooo(b,m,j,i)) * t2c(a,c,m,k)
+                          res_mm23 = res_mm23 + (I2C_vooo(c,m,i,j) - I2C_vooo(c,m,j,i)) * t2c(b,a,m,k)
+                          res_mm23 = res_mm23 + (I2C_vooo(a,m,k,j) - I2C_vooo(a,m,j,k)) * t2c(b,c,m,i)
+                          res_mm23 = res_mm23 - (I2C_vooo(b,m,k,j) - I2C_vooo(b,m,j,k)) * t2c(a,c,m,i)
+                          res_mm23 = res_mm23 - (I2C_vooo(c,m,k,j) - I2C_vooo(c,m,j,k)) * t2c(b,a,m,i)
+                          res_mm23 = res_mm23 + (I2C_vooo(a,m,i,k) - I2C_vooo(a,m,k,i)) * t2c(b,c,m,j)
+                          res_mm23 = res_mm23 - (I2C_vooo(b,m,i,k) - I2C_vooo(b,m,k,i)) * t2c(a,c,m,j)
+                          res_mm23 = res_mm23 - (I2C_vooo(c,m,i,k) - I2C_vooo(c,m,k,i)) * t2c(b,a,m,j)
+                      end do
+
+                      denom = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
+
+                      resid(idet) = resid(idet) + res_mm23
+                      t3d_amps(idet) = t3d_amps(idet) + resid(idet)/(denom - shift)
+                  end do
+                  !$omp end do
+
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+
+              end subroutine update_t3d_p
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!! HBAR MATRIX ELEMENTS !!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1323,68 +1495,19 @@ module ccp_quadratic_loops_direct
 
                   hmatel = 0.0d0
 
-                  ! (1)
                   if (a==d .and. b==e .and. c==f) then
-                     ! (1)
-                     if (j==m) then ! (1)
-                        if (k==n) then ! (1)
-                            hmatel = hmatel - h(l,i)
-                        elseif (k==l) then ! (ln)
-                            hmatel = hmatel + h(n,i)
-                        end if
-                     elseif (j==l) then ! (lm)
-                        if (k==n) hmatel = hmatel + h(m,i) ! (1)
-                     end if
-                     ! (ij)
-                     if (i==m) then ! (1)
-                        if (k==n) then ! (1)
-                            hmatel = hmatel + h(l,j)
-                        elseif (k==l) then ! (ln)
-                            hmatel = hmatel - h(n,j)
-                        end if
-                     elseif (i==l) then ! (lm)
-                        if (k==n) hmatel = hmatel - h(m,j) ! (1)
-                     end if
-                     ! (ik)
-                     if (j==m) then ! (1)
-                        if (i==n) then ! (1)
-                            hmatel = hmatel + h(l,k)
-                        elseif (i==l) then ! (ln)
-                            hmatel = hmatel - h(n,k)
-                        end if
-                     elseif (j==l) then ! (lm)
-                        if (i==n) hmatel = hmatel - h(m,k) ! (1)
-                     end if
-                     ! (jk)
-                     if (k==m) then ! (1)
-                        if (j==n) then ! (1)
-                            hmatel = hmatel + h(l,i)
-                        elseif (j==l) then ! (ln)
-                            hmatel = hmatel - h(n,i)
-                        end if
-                     elseif (k==l) then ! (lm)
-                        if (j==n) hmatel = hmatel - h(m,i) ! (1)
-                     end if
-                     ! (jk)(ij)
-                     if (i==m) then ! (1)
-                        if (j==n) then ! (1)
-                            hmatel = hmatel - h(l,k)
-                        elseif (j==l) then ! (ln)
-                            hmatel = hmatel + h(n,k)
-                        end if
-                     elseif (i==l) then ! (lm)
-                        if (j==n) hmatel = hmatel + h(m,k) ! (1)
-                     end if
-                     ! (jk)(ik)
-                     if (k==m) then ! (1)
-                        if (i==n) then ! (1)
-                            hmatel = hmatel - h(l,j)
-                        elseif (i==l) then ! (ln)
-                            hmatel = hmatel + h(n,j)
-                        end if
-                     elseif (k==l) then ! (lm)
-                        if (i==n) hmatel = hmatel + h(m,j) ! (1)
-                     end if
+
+                          if (j==m .and. k==n) hmatel = hmatel - h(l,i) ! (1)
+                          if (j==l .and. k==n) hmatel = hmatel + h(m,i) ! (lm)
+                          if (i==m .and. k==n) hmatel = hmatel + h(l,j) ! (ij)
+                          if (i==l .and. k==n) hmatel = hmatel - h(m,j) ! (lm)(ij)
+
+                          if (j==m .and. i==l) hmatel = hmatel - h(n,k) ! (ln)(ik)
+                          if (k==m .and. j==l) hmatel = hmatel - h(n,i) ! (ln)
+                          if (i==m .and. j==n) hmatel = hmatel - h(l,k) ! (ij)
+                          if (i==l .and. j==n) hmatel = hmatel + h(m,k) ! (lm)(ij)
+                          if (k==m .and. i==l) hmatel = hmatel + h(n,j) ! (ln)(ik)
+
                   end if
           end function aaa_oo_aaa
 
@@ -1401,68 +1524,18 @@ module ccp_quadratic_loops_direct
 
                   hmatel = 0.0d0
 
-                  ! (1)
                   if (i==l .and. j==m .and. k==n) then
-                      ! (1)
-                      if (b==e) then
-                           if (c==f) then 
-                                   hmatel = hmatel + h(a,d)  
-                           elseif (c==d) then 
-                                   hmatel = hmatel - h(a,f)
-                           end if 
-                      elseif (b==d) then
-                           if (c==f) hmatel = hmatel - h(a,e)
-                      end if
-                      ! (ab)
-                      if (a==e) then
-                           if (c==f) then 
-                                   hmatel = hmatel - h(b,d)  
-                           elseif (c==d) then 
-                                   hmatel = hmatel + h(b,f)
-                           end if
-                      elseif (a==d) then
-                           if (c==f) hmatel = hmatel + h(b,e)
-                       end if
-                      ! (ac)
-                      if (b==e) then
-                           if (a==f) then 
-                                   hmatel = hmatel - h(c,d)  
-                           elseif (a==d) then 
-                                   hmatel = hmatel + h(c,f)
-                           end if
-                      elseif (b==d) then
-                           if (a==f) hmatel = hmatel + h(c,e)
-                      end if
-                      ! (bc)
-                      if (c==e) then
-                           if (b==f) then 
-                                   hmatel = hmatel - h(a,d)  
-                           elseif (b==d) then 
-                                   hmatel = hmatel + h(a,f)
-                           end if
-                      elseif (c==d) then
-                           if (b==f) hmatel = hmatel + h(a,e)
-                      end if
-                      ! (ab)(bc)
-                      if (a==e) then
-                           if (b==f) then 
-                                   hmatel = hmatel + h(c,d)  
-                           elseif (b==d) then 
-                                   hmatel = hmatel - h(c,f)
-                           end if
-                      elseif (a==d) then
-                           if (b==f) hmatel = hmatel - h(c,e)
-                      end if
-                      ! (ac)(bc)
-                      if (c==e) then
-                           if (a==f) then 
-                                   hmatel = hmatel + h(b,d)  
-                           elseif (a==d) then 
-                                   hmatel = hmatel - h(b,f)
-                           end if
-                      elseif (c==d) then
-                           if (a==f) hmatel = hmatel - h(b,e)
-                      end if
+
+                        if (b==e .and. c==f) hmatel = hmatel + h(a,d) ! (1)
+                        if (a==e .and. c==f) hmatel = hmatel - h(b,d) ! (ab)
+                        if (b==d .and. c==f) hmatel = hmatel - h(a,e) ! (de)
+                        if (a==d .and. c==f) hmatel = hmatel + h(b,e) ! (de)(ab)
+                        if (b==e .and. a==d) hmatel = hmatel + h(c,f) ! (df)(ac)
+
+                        if (a==e .and. b==f) hmatel = hmatel + h(c,d) ! (ab)
+                        if (a==d .and. b==f) hmatel = hmatel - h(c,e) ! (de)(ab)
+                        if (c==e .and. b==d) hmatel = hmatel + h(a,f) ! (df)
+                        if (c==e .and. a==d) hmatel = hmatel - h(b,f) ! (df)(ac)
                   end if
           end function aaa_vv_aaa
 
@@ -1565,330 +1638,87 @@ module ccp_quadratic_loops_direct
                   ! (1)
                   if (j==m .and. k==n .and. b==e .and. c==f) hmatel = hmatel + h(a,l,i,d) ! (1)
                   if (j==m .and. k==n .and. b==d .and. c==f) hmatel = hmatel - h(a,l,i,e) ! (de)
-                  if (j==m .and. k==n .and. b==e .and. c==d) hmatel = hmatel - h(a,l,i,f) ! (df)
                   if (j==l .and. k==n .and. b==e .and. c==f) hmatel = hmatel - h(a,m,i,d) ! (lm)
                   if (j==l .and. k==n .and. b==d .and. c==f) hmatel = hmatel + h(a,m,i,e) ! (de)(lm)
-                  if (j==l .and. k==n .and. b==e .and. c==d) hmatel = hmatel + h(a,m,i,f) ! (df)(lm)
-                  if (j==m .and. k==l .and. b==e .and. c==f) hmatel = hmatel - h(a,n,i,d) ! (ln)
-                  if (j==m .and. k==l .and. b==d .and. c==f) hmatel = hmatel + h(a,n,i,e) ! (de)(ln)
-                  if (j==m .and. k==l .and. b==e .and. c==d) hmatel = hmatel + h(a,n,i,f) ! (df)(ln)
                   if (j==m .and. k==n .and. a==e .and. c==f) hmatel = hmatel - h(b,l,i,d) ! (ab)
                   if (j==m .and. k==n .and. a==d .and. c==f) hmatel = hmatel + h(b,l,i,e) ! (de)(ab)
-                  if (j==m .and. k==n .and. a==e .and. c==d) hmatel = hmatel + h(b,l,i,f) ! (df)(ab)
                   if (j==l .and. k==n .and. a==e .and. c==f) hmatel = hmatel + h(b,m,i,d) ! (lm)(ab)
                   if (j==l .and. k==n .and. a==d .and. c==f) hmatel = hmatel - h(b,m,i,e) ! (de)(lm)(ab)
-                  if (j==l .and. k==n .and. a==e .and. c==d) hmatel = hmatel - h(b,m,i,f) ! (df)(lm)(ab)
-                  if (j==m .and. k==l .and. a==e .and. c==f) hmatel = hmatel + h(b,n,i,d) ! (ln)(ab)
-                  if (j==m .and. k==l .and. a==d .and. c==f) hmatel = hmatel - h(b,n,i,e) ! (de)(ln)(ab)
-                  if (j==m .and. k==l .and. a==e .and. c==d) hmatel = hmatel - h(b,n,i,f) ! (df)(ln)(ab)
-                  if (j==m .and. k==n .and. b==e .and. a==f) hmatel = hmatel - h(c,l,i,d) ! (ac)
-                  if (j==m .and. k==n .and. b==d .and. a==f) hmatel = hmatel + h(c,l,i,e) ! (de)(ac)
                   if (j==m .and. k==n .and. b==e .and. a==d) hmatel = hmatel + h(c,l,i,f) ! (df)(ac)
-                  if (j==l .and. k==n .and. b==e .and. a==f) hmatel = hmatel + h(c,m,i,d) ! (lm)(ac)
-                  if (j==l .and. k==n .and. b==d .and. a==f) hmatel = hmatel - h(c,m,i,e) ! (de)(lm)(ac)
                   if (j==l .and. k==n .and. b==e .and. a==d) hmatel = hmatel - h(c,m,i,f) ! (df)(lm)(ac)
-                  if (j==m .and. k==l .and. b==e .and. a==f) hmatel = hmatel + h(c,n,i,d) ! (ln)(ac)
-                  if (j==m .and. k==l .and. b==d .and. a==f) hmatel = hmatel - h(c,n,i,e) ! (de)(ln)(ac)
-                  if (j==m .and. k==l .and. b==e .and. a==d) hmatel = hmatel - h(c,n,i,f) ! (df)(ln)(ac)
                   if (i==m .and. k==n .and. b==e .and. c==f) hmatel = hmatel - h(a,l,j,d) ! (ij)
                   if (i==m .and. k==n .and. b==d .and. c==f) hmatel = hmatel + h(a,l,j,e) ! (de)(ij)
-                  if (i==m .and. k==n .and. b==e .and. c==d) hmatel = hmatel + h(a,l,j,f) ! (df)(ij)
                   if (i==l .and. k==n .and. b==e .and. c==f) hmatel = hmatel + h(a,m,j,d) ! (lm)(ij)
                   if (i==l .and. k==n .and. b==d .and. c==f) hmatel = hmatel - h(a,m,j,e) ! (de)(lm)(ij)
-                  if (i==l .and. k==n .and. b==e .and. c==d) hmatel = hmatel - h(a,m,j,f) ! (df)(lm)(ij)
-                  if (i==m .and. k==l .and. b==e .and. c==f) hmatel = hmatel + h(a,n,j,d) ! (ln)(ij)
-                  if (i==m .and. k==l .and. b==d .and. c==f) hmatel = hmatel - h(a,n,j,e) ! (de)(ln)(ij)
-                  if (i==m .and. k==l .and. b==e .and. c==d) hmatel = hmatel - h(a,n,j,f) ! (df)(ln)(ij)
                   if (i==m .and. k==n .and. a==e .and. c==f) hmatel = hmatel + h(b,l,j,d) ! (ab)(ij)
                   if (i==m .and. k==n .and. a==d .and. c==f) hmatel = hmatel - h(b,l,j,e) ! (de)(ab)(ij)
-                  if (i==m .and. k==n .and. a==e .and. c==d) hmatel = hmatel - h(b,l,j,f) ! (df)(ab)(ij)
                   if (i==l .and. k==n .and. a==e .and. c==f) hmatel = hmatel - h(b,m,j,d) ! (lm)(ab)(ij)
                   if (i==l .and. k==n .and. a==d .and. c==f) hmatel = hmatel + h(b,m,j,e) ! (de)(lm)(ab)(ij)
-                  if (i==l .and. k==n .and. a==e .and. c==d) hmatel = hmatel + h(b,m,j,f) ! (df)(lm)(ab)(ij)
-                  if (i==m .and. k==l .and. a==e .and. c==f) hmatel = hmatel - h(b,n,j,d) ! (ln)(ab)(ij)
-                  if (i==m .and. k==l .and. a==d .and. c==f) hmatel = hmatel + h(b,n,j,e) ! (de)(ln)(ab)(ij)
-                  if (i==m .and. k==l .and. a==e .and. c==d) hmatel = hmatel + h(b,n,j,f) ! (df)(ln)(ab)(ij)
-                  if (i==m .and. k==n .and. b==e .and. a==f) hmatel = hmatel + h(c,l,j,d) ! (ac)(ij)
-                  if (i==m .and. k==n .and. b==d .and. a==f) hmatel = hmatel - h(c,l,j,e) ! (de)(ac)(ij)
                   if (i==m .and. k==n .and. b==e .and. a==d) hmatel = hmatel - h(c,l,j,f) ! (df)(ac)(ij)
-                  if (i==l .and. k==n .and. b==e .and. a==f) hmatel = hmatel - h(c,m,j,d) ! (lm)(ac)(ij)
-                  if (i==l .and. k==n .and. b==d .and. a==f) hmatel = hmatel + h(c,m,j,e) ! (de)(lm)(ac)(ij)
                   if (i==l .and. k==n .and. b==e .and. a==d) hmatel = hmatel + h(c,m,j,f) ! (df)(lm)(ac)(ij)
-                  if (i==m .and. k==l .and. b==e .and. a==f) hmatel = hmatel - h(c,n,j,d) ! (ln)(ac)(ij)
-                  if (i==m .and. k==l .and. b==d .and. a==f) hmatel = hmatel + h(c,n,j,e) ! (de)(ln)(ac)(ij)
-                  if (i==m .and. k==l .and. b==e .and. a==d) hmatel = hmatel + h(c,n,j,f) ! (df)(ln)(ac)(ij)
-                  if (j==m .and. i==n .and. b==e .and. c==f) hmatel = hmatel - h(a,l,k,d) ! (ik)
-                  if (j==m .and. i==n .and. b==d .and. c==f) hmatel = hmatel + h(a,l,k,e) ! (de)(ik)
-                  if (j==m .and. i==n .and. b==e .and. c==d) hmatel = hmatel + h(a,l,k,f) ! (df)(ik)
-                  if (j==l .and. i==n .and. b==e .and. c==f) hmatel = hmatel + h(a,m,k,d) ! (lm)(ik)
-                  if (j==l .and. i==n .and. b==d .and. c==f) hmatel = hmatel - h(a,m,k,e) ! (de)(lm)(ik)
-                  if (j==l .and. i==n .and. b==e .and. c==d) hmatel = hmatel - h(a,m,k,f) ! (df)(lm)(ik)
                   if (j==m .and. i==l .and. b==e .and. c==f) hmatel = hmatel + h(a,n,k,d) ! (ln)(ik)
                   if (j==m .and. i==l .and. b==d .and. c==f) hmatel = hmatel - h(a,n,k,e) ! (de)(ln)(ik)
-                  if (j==m .and. i==l .and. b==e .and. c==d) hmatel = hmatel - h(a,n,k,f) ! (df)(ln)(ik)
-                  if (j==m .and. i==n .and. a==e .and. c==f) hmatel = hmatel + h(b,l,k,d) ! (ab)(ik)
-                  if (j==m .and. i==n .and. a==d .and. c==f) hmatel = hmatel - h(b,l,k,e) ! (de)(ab)(ik)
-                  if (j==m .and. i==n .and. a==e .and. c==d) hmatel = hmatel - h(b,l,k,f) ! (df)(ab)(ik)
-                  if (j==l .and. i==n .and. a==e .and. c==f) hmatel = hmatel - h(b,m,k,d) ! (lm)(ab)(ik)
-                  if (j==l .and. i==n .and. a==d .and. c==f) hmatel = hmatel + h(b,m,k,e) ! (de)(lm)(ab)(ik)
-                  if (j==l .and. i==n .and. a==e .and. c==d) hmatel = hmatel + h(b,m,k,f) ! (df)(lm)(ab)(ik)
                   if (j==m .and. i==l .and. a==e .and. c==f) hmatel = hmatel - h(b,n,k,d) ! (ln)(ab)(ik)
                   if (j==m .and. i==l .and. a==d .and. c==f) hmatel = hmatel + h(b,n,k,e) ! (de)(ln)(ab)(ik)
-                  if (j==m .and. i==l .and. a==e .and. c==d) hmatel = hmatel + h(b,n,k,f) ! (df)(ln)(ab)(ik)
-                  if (j==m .and. i==n .and. b==e .and. a==f) hmatel = hmatel + h(c,l,k,d) ! (ac)(ik)
-                  if (j==m .and. i==n .and. b==d .and. a==f) hmatel = hmatel - h(c,l,k,e) ! (de)(ac)(ik)
-                  if (j==m .and. i==n .and. b==e .and. a==d) hmatel = hmatel - h(c,l,k,f) ! (df)(ac)(ik)
-                  if (j==l .and. i==n .and. b==e .and. a==f) hmatel = hmatel - h(c,m,k,d) ! (lm)(ac)(ik)
-                  if (j==l .and. i==n .and. b==d .and. a==f) hmatel = hmatel + h(c,m,k,e) ! (de)(lm)(ac)(ik)
-                  if (j==l .and. i==n .and. b==e .and. a==d) hmatel = hmatel + h(c,m,k,f) ! (df)(lm)(ac)(ik)
-                  if (j==m .and. i==l .and. b==e .and. a==f) hmatel = hmatel - h(c,n,k,d) ! (ln)(ac)(ik)
-                  if (j==m .and. i==l .and. b==d .and. a==f) hmatel = hmatel + h(c,n,k,e) ! (de)(ln)(ac)(ik)
                   if (j==m .and. i==l .and. b==e .and. a==d) hmatel = hmatel + h(c,n,k,f) ! (df)(ln)(ac)(ik)
                   ! (bc)
-                  if (j==m .and. k==n .and. c==e .and. b==f) hmatel = hmatel - h(a,l,i,d) ! (1)
-                  if (j==m .and. k==n .and. c==d .and. b==f) hmatel = hmatel + h(a,l,i,e) ! (de)
                   if (j==m .and. k==n .and. c==e .and. b==d) hmatel = hmatel + h(a,l,i,f) ! (df)
-                  if (j==l .and. k==n .and. c==e .and. b==f) hmatel = hmatel + h(a,m,i,d) ! (lm)
-                  if (j==l .and. k==n .and. c==d .and. b==f) hmatel = hmatel - h(a,m,i,e) ! (de)(lm)
                   if (j==l .and. k==n .and. c==e .and. b==d) hmatel = hmatel - h(a,m,i,f) ! (df)(lm)
-                  if (j==m .and. k==l .and. c==e .and. b==f) hmatel = hmatel + h(a,n,i,d) ! (ln)
-                  if (j==m .and. k==l .and. c==d .and. b==f) hmatel = hmatel - h(a,n,i,e) ! (de)(ln)
-                  if (j==m .and. k==l .and. c==e .and. b==d) hmatel = hmatel - h(a,n,i,f) ! (df)(ln)
                   if (j==m .and. k==n .and. a==e .and. b==f) hmatel = hmatel + h(c,l,i,d) ! (ab)
                   if (j==m .and. k==n .and. a==d .and. b==f) hmatel = hmatel - h(c,l,i,e) ! (de)(ab)
-                  if (j==m .and. k==n .and. a==e .and. b==d) hmatel = hmatel - h(c,l,i,f) ! (df)(ab)
                   if (j==l .and. k==n .and. a==e .and. b==f) hmatel = hmatel - h(c,m,i,d) ! (lm)(ab)
                   if (j==l .and. k==n .and. a==d .and. b==f) hmatel = hmatel + h(c,m,i,e) ! (de)(lm)(ab)
-                  if (j==l .and. k==n .and. a==e .and. b==d) hmatel = hmatel + h(c,m,i,f) ! (df)(lm)(ab)
-                  if (j==m .and. k==l .and. a==e .and. b==f) hmatel = hmatel - h(c,n,i,d) ! (ln)(ab)
-                  if (j==m .and. k==l .and. a==d .and. b==f) hmatel = hmatel + h(c,n,i,e) ! (de)(ln)(ab)
-                  if (j==m .and. k==l .and. a==e .and. b==d) hmatel = hmatel + h(c,n,i,f) ! (df)(ln)(ab)
-                  if (j==m .and. k==n .and. c==e .and. a==f) hmatel = hmatel + h(b,l,i,d) ! (ac)
-                  if (j==m .and. k==n .and. c==d .and. a==f) hmatel = hmatel - h(b,l,i,e) ! (de)(ac)
                   if (j==m .and. k==n .and. c==e .and. a==d) hmatel = hmatel - h(b,l,i,f) ! (df)(ac)
-                  if (j==l .and. k==n .and. c==e .and. a==f) hmatel = hmatel - h(b,m,i,d) ! (lm)(ac)
-                  if (j==l .and. k==n .and. c==d .and. a==f) hmatel = hmatel + h(b,m,i,e) ! (de)(lm)(ac)
                   if (j==l .and. k==n .and. c==e .and. a==d) hmatel = hmatel + h(b,m,i,f) ! (df)(lm)(ac)
-                  if (j==m .and. k==l .and. c==e .and. a==f) hmatel = hmatel - h(b,n,i,d) ! (ln)(ac)
-                  if (j==m .and. k==l .and. c==d .and. a==f) hmatel = hmatel + h(b,n,i,e) ! (de)(ln)(ac)
-                  if (j==m .and. k==l .and. c==e .and. a==d) hmatel = hmatel + h(b,n,i,f) ! (df)(ln)(ac)
-                  if (i==m .and. k==n .and. c==e .and. b==f) hmatel = hmatel + h(a,l,j,d) ! (ij)
-                  if (i==m .and. k==n .and. c==d .and. b==f) hmatel = hmatel - h(a,l,j,e) ! (de)(ij)
                   if (i==m .and. k==n .and. c==e .and. b==d) hmatel = hmatel - h(a,l,j,f) ! (df)(ij)
-                  if (i==l .and. k==n .and. c==e .and. b==f) hmatel = hmatel - h(a,m,j,d) ! (lm)(ij)
-                  if (i==l .and. k==n .and. c==d .and. b==f) hmatel = hmatel + h(a,m,j,e) ! (de)(lm)(ij)
                   if (i==l .and. k==n .and. c==e .and. b==d) hmatel = hmatel + h(a,m,j,f) ! (df)(lm)(ij)
-                  if (i==m .and. k==l .and. c==e .and. b==f) hmatel = hmatel - h(a,n,j,d) ! (ln)(ij)
-                  if (i==m .and. k==l .and. c==d .and. b==f) hmatel = hmatel + h(a,n,j,e) ! (de)(ln)(ij)
-                  if (i==m .and. k==l .and. c==e .and. b==d) hmatel = hmatel + h(a,n,j,f) ! (df)(ln)(ij)
                   if (i==m .and. k==n .and. a==e .and. b==f) hmatel = hmatel - h(c,l,j,d) ! (ab)(ij)
                   if (i==m .and. k==n .and. a==d .and. b==f) hmatel = hmatel + h(c,l,j,e) ! (de)(ab)(ij)
-                  if (i==m .and. k==n .and. a==e .and. b==d) hmatel = hmatel + h(c,l,j,f) ! (df)(ab)(ij)
                   if (i==l .and. k==n .and. a==e .and. b==f) hmatel = hmatel + h(c,m,j,d) ! (lm)(ab)(ij)
                   if (i==l .and. k==n .and. a==d .and. b==f) hmatel = hmatel - h(c,m,j,e) ! (de)(lm)(ab)(ij)
-                  if (i==l .and. k==n .and. a==e .and. b==d) hmatel = hmatel - h(c,m,j,f) ! (df)(lm)(ab)(ij)
-                  if (i==m .and. k==l .and. a==e .and. b==f) hmatel = hmatel + h(c,n,j,d) ! (ln)(ab)(ij)
-                  if (i==m .and. k==l .and. a==d .and. b==f) hmatel = hmatel - h(c,n,j,e) ! (de)(ln)(ab)(ij)
-                  if (i==m .and. k==l .and. a==e .and. b==d) hmatel = hmatel - h(c,n,j,f) ! (df)(ln)(ab)(ij)
-                  if (i==m .and. k==n .and. c==e .and. a==f) hmatel = hmatel - h(b,l,j,d) ! (ac)(ij)
-                  if (i==m .and. k==n .and. c==d .and. a==f) hmatel = hmatel + h(b,l,j,e) ! (de)(ac)(ij)
                   if (i==m .and. k==n .and. c==e .and. a==d) hmatel = hmatel + h(b,l,j,f) ! (df)(ac)(ij)
-                  if (i==l .and. k==n .and. c==e .and. a==f) hmatel = hmatel + h(b,m,j,d) ! (lm)(ac)(ij)
-                  if (i==l .and. k==n .and. c==d .and. a==f) hmatel = hmatel - h(b,m,j,e) ! (de)(lm)(ac)(ij)
                   if (i==l .and. k==n .and. c==e .and. a==d) hmatel = hmatel - h(b,m,j,f) ! (df)(lm)(ac)(ij)
-                  if (i==m .and. k==l .and. c==e .and. a==f) hmatel = hmatel + h(b,n,j,d) ! (ln)(ac)(ij)
-                  if (i==m .and. k==l .and. c==d .and. a==f) hmatel = hmatel - h(b,n,j,e) ! (de)(ln)(ac)(ij)
-                  if (i==m .and. k==l .and. c==e .and. a==d) hmatel = hmatel - h(b,n,j,f) ! (df)(ln)(ac)(ij)
-                  if (j==m .and. i==n .and. c==e .and. b==f) hmatel = hmatel + h(a,l,k,d) ! (ik)
-                  if (j==m .and. i==n .and. c==d .and. b==f) hmatel = hmatel - h(a,l,k,e) ! (de)(ik)
-                  if (j==m .and. i==n .and. c==e .and. b==d) hmatel = hmatel - h(a,l,k,f) ! (df)(ik)
-                  if (j==l .and. i==n .and. c==e .and. b==f) hmatel = hmatel - h(a,m,k,d) ! (lm)(ik)
-                  if (j==l .and. i==n .and. c==d .and. b==f) hmatel = hmatel + h(a,m,k,e) ! (de)(lm)(ik)
-                  if (j==l .and. i==n .and. c==e .and. b==d) hmatel = hmatel + h(a,m,k,f) ! (df)(lm)(ik)
-                  if (j==m .and. i==l .and. c==e .and. b==f) hmatel = hmatel - h(a,n,k,d) ! (ln)(ik)
-                  if (j==m .and. i==l .and. c==d .and. b==f) hmatel = hmatel + h(a,n,k,e) ! (de)(ln)(ik)
                   if (j==m .and. i==l .and. c==e .and. b==d) hmatel = hmatel + h(a,n,k,f) ! (df)(ln)(ik)
-                  if (j==m .and. i==n .and. a==e .and. b==f) hmatel = hmatel - h(c,l,k,d) ! (ab)(ik)
-                  if (j==m .and. i==n .and. a==d .and. b==f) hmatel = hmatel + h(c,l,k,e) ! (de)(ab)(ik)
-                  if (j==m .and. i==n .and. a==e .and. b==d) hmatel = hmatel + h(c,l,k,f) ! (df)(ab)(ik)
-                  if (j==l .and. i==n .and. a==e .and. b==f) hmatel = hmatel + h(c,m,k,d) ! (lm)(ab)(ik)
-                  if (j==l .and. i==n .and. a==d .and. b==f) hmatel = hmatel - h(c,m,k,e) ! (de)(lm)(ab)(ik)
-                  if (j==l .and. i==n .and. a==e .and. b==d) hmatel = hmatel - h(c,m,k,f) ! (df)(lm)(ab)(ik)
                   if (j==m .and. i==l .and. a==e .and. b==f) hmatel = hmatel + h(c,n,k,d) ! (ln)(ab)(ik)
                   if (j==m .and. i==l .and. a==d .and. b==f) hmatel = hmatel - h(c,n,k,e) ! (de)(ln)(ab)(ik)
-                  if (j==m .and. i==l .and. a==e .and. b==d) hmatel = hmatel - h(c,n,k,f) ! (df)(ln)(ab)(ik)
-                  if (j==m .and. i==n .and. c==e .and. a==f) hmatel = hmatel - h(b,l,k,d) ! (ac)(ik)
-                  if (j==m .and. i==n .and. c==d .and. a==f) hmatel = hmatel + h(b,l,k,e) ! (de)(ac)(ik)
-                  if (j==m .and. i==n .and. c==e .and. a==d) hmatel = hmatel + h(b,l,k,f) ! (df)(ac)(ik)
-                  if (j==l .and. i==n .and. c==e .and. a==f) hmatel = hmatel + h(b,m,k,d) ! (lm)(ac)(ik)
-                  if (j==l .and. i==n .and. c==d .and. a==f) hmatel = hmatel - h(b,m,k,e) ! (de)(lm)(ac)(ik)
-                  if (j==l .and. i==n .and. c==e .and. a==d) hmatel = hmatel - h(b,m,k,f) ! (df)(lm)(ac)(ik)
-                  if (j==m .and. i==l .and. c==e .and. a==f) hmatel = hmatel + h(b,n,k,d) ! (ln)(ac)(ik)
-                  if (j==m .and. i==l .and. c==d .and. a==f) hmatel = hmatel - h(b,n,k,e) ! (de)(ln)(ac)(ik)
                   if (j==m .and. i==l .and. c==e .and. a==d) hmatel = hmatel - h(b,n,k,f) ! (df)(ln)(ac)(ik)
                   ! (jk)
-                  if (k==m .and. j==n .and. b==e .and. c==f) hmatel = hmatel - h(a,l,i,d) ! (1)
-                  if (k==m .and. j==n .and. b==d .and. c==f) hmatel = hmatel + h(a,l,i,e) ! (de)
-                  if (k==m .and. j==n .and. b==e .and. c==d) hmatel = hmatel + h(a,l,i,f) ! (df)
-                  if (k==l .and. j==n .and. b==e .and. c==f) hmatel = hmatel + h(a,m,i,d) ! (lm)
-                  if (k==l .and. j==n .and. b==d .and. c==f) hmatel = hmatel - h(a,m,i,e) ! (de)(lm)
-                  if (k==l .and. j==n .and. b==e .and. c==d) hmatel = hmatel - h(a,m,i,f) ! (df)(lm)
                   if (k==m .and. j==l .and. b==e .and. c==f) hmatel = hmatel + h(a,n,i,d) ! (ln)
                   if (k==m .and. j==l .and. b==d .and. c==f) hmatel = hmatel - h(a,n,i,e) ! (de)(ln)
-                  if (k==m .and. j==l .and. b==e .and. c==d) hmatel = hmatel - h(a,n,i,f) ! (df)(ln)
-                  if (k==m .and. j==n .and. a==e .and. c==f) hmatel = hmatel + h(b,l,i,d) ! (ab)
-                  if (k==m .and. j==n .and. a==d .and. c==f) hmatel = hmatel - h(b,l,i,e) ! (de)(ab)
-                  if (k==m .and. j==n .and. a==e .and. c==d) hmatel = hmatel - h(b,l,i,f) ! (df)(ab)
-                  if (k==l .and. j==n .and. a==e .and. c==f) hmatel = hmatel - h(b,m,i,d) ! (lm)(ab)
-                  if (k==l .and. j==n .and. a==d .and. c==f) hmatel = hmatel + h(b,m,i,e) ! (de)(lm)(ab)
-                  if (k==l .and. j==n .and. a==e .and. c==d) hmatel = hmatel + h(b,m,i,f) ! (df)(lm)(ab)
                   if (k==m .and. j==l .and. a==e .and. c==f) hmatel = hmatel - h(b,n,i,d) ! (ln)(ab)
                   if (k==m .and. j==l .and. a==d .and. c==f) hmatel = hmatel + h(b,n,i,e) ! (de)(ln)(ab)
-                  if (k==m .and. j==l .and. a==e .and. c==d) hmatel = hmatel + h(b,n,i,f) ! (df)(ln)(ab)
-                  if (k==m .and. j==n .and. b==e .and. a==f) hmatel = hmatel + h(c,l,i,d) ! (ac)
-                  if (k==m .and. j==n .and. b==d .and. a==f) hmatel = hmatel - h(c,l,i,e) ! (de)(ac)
-                  if (k==m .and. j==n .and. b==e .and. a==d) hmatel = hmatel - h(c,l,i,f) ! (df)(ac)
-                  if (k==l .and. j==n .and. b==e .and. a==f) hmatel = hmatel - h(c,m,i,d) ! (lm)(ac)
-                  if (k==l .and. j==n .and. b==d .and. a==f) hmatel = hmatel + h(c,m,i,e) ! (de)(lm)(ac)
-                  if (k==l .and. j==n .and. b==e .and. a==d) hmatel = hmatel + h(c,m,i,f) ! (df)(lm)(ac)
-                  if (k==m .and. j==l .and. b==e .and. a==f) hmatel = hmatel - h(c,n,i,d) ! (ln)(ac)
-                  if (k==m .and. j==l .and. b==d .and. a==f) hmatel = hmatel + h(c,n,i,e) ! (de)(ln)(ac)
                   if (k==m .and. j==l .and. b==e .and. a==d) hmatel = hmatel + h(c,n,i,f) ! (df)(ln)(ac)
                   if (i==m .and. j==n .and. b==e .and. c==f) hmatel = hmatel + h(a,l,k,d) ! (ij)
                   if (i==m .and. j==n .and. b==d .and. c==f) hmatel = hmatel - h(a,l,k,e) ! (de)(ij)
-                  if (i==m .and. j==n .and. b==e .and. c==d) hmatel = hmatel - h(a,l,k,f) ! (df)(ij)
                   if (i==l .and. j==n .and. b==e .and. c==f) hmatel = hmatel - h(a,m,k,d) ! (lm)(ij)
                   if (i==l .and. j==n .and. b==d .and. c==f) hmatel = hmatel + h(a,m,k,e) ! (de)(lm)(ij)
-                  if (i==l .and. j==n .and. b==e .and. c==d) hmatel = hmatel + h(a,m,k,f) ! (df)(lm)(ij)
-                  if (i==m .and. j==l .and. b==e .and. c==f) hmatel = hmatel - h(a,n,k,d) ! (ln)(ij)
-                  if (i==m .and. j==l .and. b==d .and. c==f) hmatel = hmatel + h(a,n,k,e) ! (de)(ln)(ij)
-                  if (i==m .and. j==l .and. b==e .and. c==d) hmatel = hmatel + h(a,n,k,f) ! (df)(ln)(ij)
                   if (i==m .and. j==n .and. a==e .and. c==f) hmatel = hmatel - h(b,l,k,d) ! (ab)(ij)
                   if (i==m .and. j==n .and. a==d .and. c==f) hmatel = hmatel + h(b,l,k,e) ! (de)(ab)(ij)
-                  if (i==m .and. j==n .and. a==e .and. c==d) hmatel = hmatel + h(b,l,k,f) ! (df)(ab)(ij)
                   if (i==l .and. j==n .and. a==e .and. c==f) hmatel = hmatel + h(b,m,k,d) ! (lm)(ab)(ij)
                   if (i==l .and. j==n .and. a==d .and. c==f) hmatel = hmatel - h(b,m,k,e) ! (de)(lm)(ab)(ij)
-                  if (i==l .and. j==n .and. a==e .and. c==d) hmatel = hmatel - h(b,m,k,f) ! (df)(lm)(ab)(ij)
-                  if (i==m .and. j==l .and. a==e .and. c==f) hmatel = hmatel + h(b,n,k,d) ! (ln)(ab)(ij)
-                  if (i==m .and. j==l .and. a==d .and. c==f) hmatel = hmatel - h(b,n,k,e) ! (de)(ln)(ab)(ij)
-                  if (i==m .and. j==l .and. a==e .and. c==d) hmatel = hmatel - h(b,n,k,f) ! (df)(ln)(ab)(ij)
-                  if (i==m .and. j==n .and. b==e .and. a==f) hmatel = hmatel - h(c,l,k,d) ! (ac)(ij)
-                  if (i==m .and. j==n .and. b==d .and. a==f) hmatel = hmatel + h(c,l,k,e) ! (de)(ac)(ij)
                   if (i==m .and. j==n .and. b==e .and. a==d) hmatel = hmatel + h(c,l,k,f) ! (df)(ac)(ij)
-                  if (i==l .and. j==n .and. b==e .and. a==f) hmatel = hmatel + h(c,m,k,d) ! (lm)(ac)(ij)
-                  if (i==l .and. j==n .and. b==d .and. a==f) hmatel = hmatel - h(c,m,k,e) ! (de)(lm)(ac)(ij)
                   if (i==l .and. j==n .and. b==e .and. a==d) hmatel = hmatel - h(c,m,k,f) ! (df)(lm)(ac)(ij)
-                  if (i==m .and. j==l .and. b==e .and. a==f) hmatel = hmatel + h(c,n,k,d) ! (ln)(ac)(ij)
-                  if (i==m .and. j==l .and. b==d .and. a==f) hmatel = hmatel - h(c,n,k,e) ! (de)(ln)(ac)(ij)
-                  if (i==m .and. j==l .and. b==e .and. a==d) hmatel = hmatel - h(c,n,k,f) ! (df)(ln)(ac)(ij)
-                  if (k==m .and. i==n .and. b==e .and. c==f) hmatel = hmatel + h(a,l,j,d) ! (ik)
-                  if (k==m .and. i==n .and. b==d .and. c==f) hmatel = hmatel - h(a,l,j,e) ! (de)(ik)
-                  if (k==m .and. i==n .and. b==e .and. c==d) hmatel = hmatel - h(a,l,j,f) ! (df)(ik)
-                  if (k==l .and. i==n .and. b==e .and. c==f) hmatel = hmatel - h(a,m,j,d) ! (lm)(ik)
-                  if (k==l .and. i==n .and. b==d .and. c==f) hmatel = hmatel + h(a,m,j,e) ! (de)(lm)(ik)
-                  if (k==l .and. i==n .and. b==e .and. c==d) hmatel = hmatel + h(a,m,j,f) ! (df)(lm)(ik)
                   if (k==m .and. i==l .and. b==e .and. c==f) hmatel = hmatel - h(a,n,j,d) ! (ln)(ik)
                   if (k==m .and. i==l .and. b==d .and. c==f) hmatel = hmatel + h(a,n,j,e) ! (de)(ln)(ik)
-                  if (k==m .and. i==l .and. b==e .and. c==d) hmatel = hmatel + h(a,n,j,f) ! (df)(ln)(ik)
-                  if (k==m .and. i==n .and. a==e .and. c==f) hmatel = hmatel - h(b,l,j,d) ! (ab)(ik)
-                  if (k==m .and. i==n .and. a==d .and. c==f) hmatel = hmatel + h(b,l,j,e) ! (de)(ab)(ik)
-                  if (k==m .and. i==n .and. a==e .and. c==d) hmatel = hmatel + h(b,l,j,f) ! (df)(ab)(ik)
-                  if (k==l .and. i==n .and. a==e .and. c==f) hmatel = hmatel + h(b,m,j,d) ! (lm)(ab)(ik)
-                  if (k==l .and. i==n .and. a==d .and. c==f) hmatel = hmatel - h(b,m,j,e) ! (de)(lm)(ab)(ik)
-                  if (k==l .and. i==n .and. a==e .and. c==d) hmatel = hmatel - h(b,m,j,f) ! (df)(lm)(ab)(ik)
                   if (k==m .and. i==l .and. a==e .and. c==f) hmatel = hmatel + h(b,n,j,d) ! (ln)(ab)(ik)
                   if (k==m .and. i==l .and. a==d .and. c==f) hmatel = hmatel - h(b,n,j,e) ! (de)(ln)(ab)(ik)
-                  if (k==m .and. i==l .and. a==e .and. c==d) hmatel = hmatel - h(b,n,j,f) ! (df)(ln)(ab)(ik)
-                  if (k==m .and. i==n .and. b==e .and. a==f) hmatel = hmatel - h(c,l,j,d) ! (ac)(ik)
-                  if (k==m .and. i==n .and. b==d .and. a==f) hmatel = hmatel + h(c,l,j,e) ! (de)(ac)(ik)
-                  if (k==m .and. i==n .and. b==e .and. a==d) hmatel = hmatel + h(c,l,j,f) ! (df)(ac)(ik)
-                  if (k==l .and. i==n .and. b==e .and. a==f) hmatel = hmatel + h(c,m,j,d) ! (lm)(ac)(ik)
-                  if (k==l .and. i==n .and. b==d .and. a==f) hmatel = hmatel - h(c,m,j,e) ! (de)(lm)(ac)(ik)
-                  if (k==l .and. i==n .and. b==e .and. a==d) hmatel = hmatel - h(c,m,j,f) ! (df)(lm)(ac)(ik)
-                  if (k==m .and. i==l .and. b==e .and. a==f) hmatel = hmatel + h(c,n,j,d) ! (ln)(ac)(ik)
-                  if (k==m .and. i==l .and. b==d .and. a==f) hmatel = hmatel - h(c,n,j,e) ! (de)(ln)(ac)(ik)
                   if (k==m .and. i==l .and. b==e .and. a==d) hmatel = hmatel - h(c,n,j,f) ! (df)(ln)(ac)(ik)
                   ! (jk)(bc), apply(jk)
-                  if (k==m .and. j==n .and. c==e .and. b==f) hmatel = hmatel + h(a,l,i,d) ! (1)
-                  if (k==m .and. j==n .and. c==d .and. b==f) hmatel = hmatel - h(a,l,i,e) ! (de)
-                  if (k==m .and. j==n .and. c==e .and. b==d) hmatel = hmatel - h(a,l,i,f) ! (df)
-                  if (k==l .and. j==n .and. c==e .and. b==f) hmatel = hmatel - h(a,m,i,d) ! (lm)
-                  if (k==l .and. j==n .and. c==d .and. b==f) hmatel = hmatel + h(a,m,i,e) ! (de)(lm)
-                  if (k==l .and. j==n .and. c==e .and. b==d) hmatel = hmatel + h(a,m,i,f) ! (df)(lm)
-                  if (k==m .and. j==l .and. c==e .and. b==f) hmatel = hmatel - h(a,n,i,d) ! (ln)
-                  if (k==m .and. j==l .and. c==d .and. b==f) hmatel = hmatel + h(a,n,i,e) ! (de)(ln)
                   if (k==m .and. j==l .and. c==e .and. b==d) hmatel = hmatel + h(a,n,i,f) ! (df)(ln)
-                  if (k==m .and. j==n .and. a==e .and. b==f) hmatel = hmatel - h(c,l,i,d) ! (ab)
-                  if (k==m .and. j==n .and. a==d .and. b==f) hmatel = hmatel + h(c,l,i,e) ! (de)(ab)
-                  if (k==m .and. j==n .and. a==e .and. b==d) hmatel = hmatel + h(c,l,i,f) ! (df)(ab)
-                  if (k==l .and. j==n .and. a==e .and. b==f) hmatel = hmatel + h(c,m,i,d) ! (lm)(ab)
-                  if (k==l .and. j==n .and. a==d .and. b==f) hmatel = hmatel - h(c,m,i,e) ! (de)(lm)(ab)
-                  if (k==l .and. j==n .and. a==e .and. b==d) hmatel = hmatel - h(c,m,i,f) ! (df)(lm)(ab)
                   if (k==m .and. j==l .and. a==e .and. b==f) hmatel = hmatel + h(c,n,i,d) ! (ln)(ab)
                   if (k==m .and. j==l .and. a==d .and. b==f) hmatel = hmatel - h(c,n,i,e) ! (de)(ln)(ab)
-                  if (k==m .and. j==l .and. a==e .and. b==d) hmatel = hmatel - h(c,n,i,f) ! (df)(ln)(ab)
-                  if (k==m .and. j==n .and. c==e .and. a==f) hmatel = hmatel - h(b,l,i,d) ! (ac)
-                  if (k==m .and. j==n .and. c==d .and. a==f) hmatel = hmatel + h(b,l,i,e) ! (de)(ac)
-                  if (k==m .and. j==n .and. c==e .and. a==d) hmatel = hmatel + h(b,l,i,f) ! (df)(ac)
-                  if (k==l .and. j==n .and. c==e .and. a==f) hmatel = hmatel + h(b,m,i,d) ! (lm)(ac)
-                  if (k==l .and. j==n .and. c==d .and. a==f) hmatel = hmatel - h(b,m,i,e) ! (de)(lm)(ac)
-                  if (k==l .and. j==n .and. c==e .and. a==d) hmatel = hmatel - h(b,m,i,f) ! (df)(lm)(ac)
-                  if (k==m .and. j==l .and. c==e .and. a==f) hmatel = hmatel + h(b,n,i,d) ! (ln)(ac)
-                  if (k==m .and. j==l .and. c==d .and. a==f) hmatel = hmatel - h(b,n,i,e) ! (de)(ln)(ac)
                   if (k==m .and. j==l .and. c==e .and. a==d) hmatel = hmatel - h(b,n,i,f) ! (df)(ln)(ac)
-                  if (i==m .and. j==n .and. c==e .and. b==f) hmatel = hmatel - h(a,l,k,d) ! (ij)
-                  if (i==m .and. j==n .and. c==d .and. b==f) hmatel = hmatel + h(a,l,k,e) ! (de)(ij)
                   if (i==m .and. j==n .and. c==e .and. b==d) hmatel = hmatel + h(a,l,k,f) ! (df)(ij)
-                  if (i==l .and. j==n .and. c==e .and. b==f) hmatel = hmatel + h(a,m,k,d) ! (lm)(ij)
-                  if (i==l .and. j==n .and. c==d .and. b==f) hmatel = hmatel - h(a,m,k,e) ! (de)(lm)(ij)
                   if (i==l .and. j==n .and. c==e .and. b==d) hmatel = hmatel - h(a,m,k,f) ! (df)(lm)(ij)
-                  if (i==m .and. j==l .and. c==e .and. b==f) hmatel = hmatel + h(a,n,k,d) ! (ln)(ij)
-                  if (i==m .and. j==l .and. c==d .and. b==f) hmatel = hmatel - h(a,n,k,e) ! (de)(ln)(ij)
-                  if (i==m .and. j==l .and. c==e .and. b==d) hmatel = hmatel - h(a,n,k,f) ! (df)(ln)(ij)
                   if (i==m .and. j==n .and. a==e .and. b==f) hmatel = hmatel + h(c,l,k,d) ! (ab)(ij)
                   if (i==m .and. j==n .and. a==d .and. b==f) hmatel = hmatel - h(c,l,k,e) ! (de)(ab)(ij)
-                  if (i==m .and. j==n .and. a==e .and. b==d) hmatel = hmatel - h(c,l,k,f) ! (df)(ab)(ij)
                   if (i==l .and. j==n .and. a==e .and. b==f) hmatel = hmatel - h(c,m,k,d) ! (lm)(ab)(ij)
                   if (i==l .and. j==n .and. a==d .and. b==f) hmatel = hmatel + h(c,m,k,e) ! (de)(lm)(ab)(ij)
-                  if (i==l .and. j==n .and. a==e .and. b==d) hmatel = hmatel + h(c,m,k,f) ! (df)(lm)(ab)(ij)
-                  if (i==m .and. j==l .and. a==e .and. b==f) hmatel = hmatel - h(c,n,k,d) ! (ln)(ab)(ij)
-                  if (i==m .and. j==l .and. a==d .and. b==f) hmatel = hmatel + h(c,n,k,e) ! (de)(ln)(ab)(ij)
-                  if (i==m .and. j==l .and. a==e .and. b==d) hmatel = hmatel + h(c,n,k,f) ! (df)(ln)(ab)(ij)
-                  if (i==m .and. j==n .and. c==e .and. a==f) hmatel = hmatel + h(b,l,k,d) ! (ac)(ij)
-                  if (i==m .and. j==n .and. c==d .and. a==f) hmatel = hmatel - h(b,l,k,e) ! (de)(ac)(ij)
                   if (i==m .and. j==n .and. c==e .and. a==d) hmatel = hmatel - h(b,l,k,f) ! (df)(ac)(ij)
-                  if (i==l .and. j==n .and. c==e .and. a==f) hmatel = hmatel - h(b,m,k,d) ! (lm)(ac)(ij)
-                  if (i==l .and. j==n .and. c==d .and. a==f) hmatel = hmatel + h(b,m,k,e) ! (de)(lm)(ac)(ij)
                   if (i==l .and. j==n .and. c==e .and. a==d) hmatel = hmatel + h(b,m,k,f) ! (df)(lm)(ac)(ij)
-                  if (i==m .and. j==l .and. c==e .and. a==f) hmatel = hmatel - h(b,n,k,d) ! (ln)(ac)(ij)
-                  if (i==m .and. j==l .and. c==d .and. a==f) hmatel = hmatel + h(b,n,k,e) ! (de)(ln)(ac)(ij)
-                  if (i==m .and. j==l .and. c==e .and. a==d) hmatel = hmatel + h(b,n,k,f) ! (df)(ln)(ac)(ij)
-                  if (k==m .and. i==n .and. c==e .and. b==f) hmatel = hmatel - h(a,l,j,d) ! (ik)
-                  if (k==m .and. i==n .and. c==d .and. b==f) hmatel = hmatel + h(a,l,j,e) ! (de)(ik)
-                  if (k==m .and. i==n .and. c==e .and. b==d) hmatel = hmatel + h(a,l,j,f) ! (df)(ik)
-                  if (k==l .and. i==n .and. c==e .and. b==f) hmatel = hmatel + h(a,m,j,d) ! (lm)(ik)
-                  if (k==l .and. i==n .and. c==d .and. b==f) hmatel = hmatel - h(a,m,j,e) ! (de)(lm)(ik)
-                  if (k==l .and. i==n .and. c==e .and. b==d) hmatel = hmatel - h(a,m,j,f) ! (df)(lm)(ik)
-                  if (k==m .and. i==l .and. c==e .and. b==f) hmatel = hmatel + h(a,n,j,d) ! (ln)(ik)
-                  if (k==m .and. i==l .and. c==d .and. b==f) hmatel = hmatel - h(a,n,j,e) ! (de)(ln)(ik)
                   if (k==m .and. i==l .and. c==e .and. b==d) hmatel = hmatel - h(a,n,j,f) ! (df)(ln)(ik)
-                  if (k==m .and. i==n .and. a==e .and. b==f) hmatel = hmatel + h(c,l,j,d) ! (ab)(ik)
-                  if (k==m .and. i==n .and. a==d .and. b==f) hmatel = hmatel - h(c,l,j,e) ! (de)(ab)(ik)
-                  if (k==m .and. i==n .and. a==e .and. b==d) hmatel = hmatel - h(c,l,j,f) ! (df)(ab)(ik)
-                  if (k==l .and. i==n .and. a==e .and. b==f) hmatel = hmatel - h(c,m,j,d) ! (lm)(ab)(ik)
-                  if (k==l .and. i==n .and. a==d .and. b==f) hmatel = hmatel + h(c,m,j,e) ! (de)(lm)(ab)(ik)
-                  if (k==l .and. i==n .and. a==e .and. b==d) hmatel = hmatel + h(c,m,j,f) ! (df)(lm)(ab)(ik)
                   if (k==m .and. i==l .and. a==e .and. b==f) hmatel = hmatel - h(c,n,j,d) ! (ln)(ab)(ik)
                   if (k==m .and. i==l .and. a==d .and. b==f) hmatel = hmatel + h(c,n,j,e) ! (de)(ln)(ab)(ik)
-                  if (k==m .and. i==l .and. a==e .and. b==d) hmatel = hmatel + h(c,n,j,f) ! (df)(ln)(ab)(ik)
-                  if (k==m .and. i==n .and. c==e .and. a==f) hmatel = hmatel + h(b,l,j,d) ! (ac)(ik)
-                  if (k==m .and. i==n .and. c==d .and. a==f) hmatel = hmatel - h(b,l,j,e) ! (de)(ac)(ik)
-                  if (k==m .and. i==n .and. c==e .and. a==d) hmatel = hmatel - h(b,l,j,f) ! (df)(ac)(ik)
-                  if (k==l .and. i==n .and. c==e .and. a==f) hmatel = hmatel - h(b,m,j,d) ! (lm)(ac)(ik)
-                  if (k==l .and. i==n .and. c==d .and. a==f) hmatel = hmatel + h(b,m,j,e) ! (de)(lm)(ac)(ik)
-                  if (k==l .and. i==n .and. c==e .and. a==d) hmatel = hmatel + h(b,m,j,f) ! (df)(lm)(ac)(ik)
-                  if (k==m .and. i==l .and. c==e .and. a==f) hmatel = hmatel - h(b,n,j,d) ! (ln)(ac)(ik)
-                  if (k==m .and. i==l .and. c==d .and. a==f) hmatel = hmatel + h(b,n,j,e) ! (de)(ln)(ac)(ik)
                   if (k==m .and. i==l .and. c==e .and. a==d) hmatel = hmatel + h(b,n,j,f) ! (df)(ln)(ac)(ik)
           end function aaa_voov_aaa
 
@@ -1905,45 +1735,14 @@ module ccp_quadratic_loops_direct
 
               hmatel = 0.0d0
 
-              ! (1)
               if (j==m .and. i==l .and. a==d .and. b==e) hmatel = hmatel + h(c,n,k,f) ! (1)
-              !if (j==m .and. k==l .and. a==d .and. b==e) hmatel = hmatel - h(c,n,i,f) ! (ik)
               if (k==m .and. i==l .and. a==d .and. b==e) hmatel = hmatel - h(c,n,j,f) ! (jk)
-              !if (j==m .and. i==l .and. c==d .and. b==e) hmatel = hmatel - h(a,n,k,f) ! (ac)
-              !if (j==m .and. k==l .and. c==d .and. b==e) hmatel = hmatel + h(a,n,i,f) ! (ik)(ac)
-              !if (k==m .and. i==l .and. c==d .and. b==e) hmatel = hmatel + h(a,n,j,f) ! (jk)(ac)
               if (j==m .and. i==l .and. a==d .and. c==e) hmatel = hmatel - h(b,n,k,f) ! (bc)
-              !if (j==m .and. k==l .and. a==d .and. c==e) hmatel = hmatel + h(b,n,i,f) ! (ik)(bc)
               if (k==m .and. i==l .and. a==d .and. c==e) hmatel = hmatel + h(b,n,j,f) ! (jk)(bc)
-              ! (ij)
-              !if (i==m .and. j==l .and. a==d .and. b==e) hmatel = hmatel - h(c,n,k,f) ! (ij)
-              !if (i==m .and. k==l .and. a==d .and. b==e) hmatel = hmatel + h(c,n,j,f) ! (ik)(ij)
               if (k==m .and. j==l .and. a==d .and. b==e) hmatel = hmatel + h(c,n,i,f) ! (jk)(ij)
-              !if (i==m .and. j==l .and. c==d .and. b==e) hmatel = hmatel + h(a,n,k,f) ! (ac)(ij)
-              !if (i==m .and. k==l .and. c==d .and. b==e) hmatel = hmatel - h(a,n,j,f) ! (ik)(ac)(ij)
-              !if (k==m .and. j==l .and. c==d .and. b==e) hmatel = hmatel - h(a,n,i,f) ! (jk)(ac)(ij)
-              !if (i==m .and. j==l .and. a==d .and. c==e) hmatel = hmatel + h(b,n,k,f) ! (bc)(ij)
-              !if (i==m .and. k==l .and. a==d .and. c==e) hmatel = hmatel - h(b,n,j,f) ! (ik)(bc)(ij)
               if (k==m .and. j==l .and. a==d .and. c==e) hmatel = hmatel - h(b,n,i,f) ! (jk)(bc)(ij)
-              ! (ab)
-              !if (j==m .and. i==l .and. b==d .and. a==e) hmatel = hmatel - h(c,n,k,f) ! (ab)
-              !if (j==m .and. k==l .and. b==d .and. a==e) hmatel = hmatel + h(c,n,i,f) ! (ik)(ab)
-              !if (k==m .and. i==l .and. b==d .and. a==e) hmatel = hmatel + h(c,n,j,f) ! (jk)(ab)
-              !if (j==m .and. i==l .and. c==d .and. a==e) hmatel = hmatel + h(b,n,k,f) ! (ac)(ab)
-              !if (j==m .and. k==l .and. c==d .and. a==e) hmatel = hmatel - h(b,n,i,f) ! (ik)(ac)(ab)
-              !if (k==m .and. i==l .and. c==d .and. a==e) hmatel = hmatel - h(b,n,j,f) ! (jk)(ac)(ab)
               if (j==m .and. i==l .and. b==d .and. c==e) hmatel = hmatel + h(a,n,k,f) ! (bc)(ab)
-              !if (j==m .and. k==l .and. b==d .and. c==e) hmatel = hmatel - h(a,n,i,f) ! (ik)(bc)(ab)
               if (k==m .and. i==l .and. b==d .and. c==e) hmatel = hmatel - h(a,n,j,f) ! (jk)(bc)(ab)
-              ! (ij)(ab)
-              !if (i==m .and. j==l .and. b==d .and. a==e) hmatel = hmatel + h(c,n,k,f) ! (ab)(ij)
-              !if (i==m .and. k==l .and. b==d .and. a==e) hmatel = hmatel - h(c,n,j,f) ! (ik)(ab)(ij)
-              !if (k==m .and. j==l .and. b==d .and. a==e) hmatel = hmatel - h(c,n,i,f) ! (jk)(ab)(ij)
-              !if (i==m .and. j==l .and. c==d .and. a==e) hmatel = hmatel - h(b,n,k,f) ! (ac)(ab)(ij)
-              !if (i==m .and. k==l .and. c==d .and. a==e) hmatel = hmatel + h(b,n,j,f) ! (ik)(ac)(ab)(ij)
-              !if (k==m .and. j==l .and. c==d .and. a==e) hmatel = hmatel + h(b,n,i,f) ! (jk)(ac)(ab)(ij)
-              !if (i==m .and. j==l .and. b==d .and. c==e) hmatel = hmatel - h(a,n,k,f) ! (bc)(ab)(ij)
-              !if (i==m .and. k==l .and. b==d .and. c==e) hmatel = hmatel + h(a,n,j,f) ! (ik)(bc)(ab)(ij)
               if (k==m .and. j==l .and. b==d .and. c==e) hmatel = hmatel + h(a,n,i,f) ! (jk)(bc)(ab)(ij)
 
           end function aaa_voov_aab
@@ -2659,5 +2458,270 @@ module ccp_quadratic_loops_direct
                   if (j==l .and. k==n .and. c==e .and. b==d) hmatel = hmatel - h(a,m,i,f) ! (lm)(df)
                   if (k==m .and. j==l .and. c==e .and. b==d) hmatel = hmatel + h(a,n,i,f) ! (ln)(df)
           end function abb_voov_bbb
+
+          pure function bbb_oo_bbb(i, j, k, a, b, c, l, m, n, d, e, f, h, nob) result(hmatel)
+                  ! Expression:
+                  ! -A(abc)A(jk)A(l/mn)A(i/jk) d(a,d)d(b,e)d(c,f)d(j,m)d(k,n) h(l,i)
+
+                  integer, intent(in) :: nob
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: h(1:nob,1:nob)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  if (a==d .and. b==e .and. c==f) then
+
+                          if (j==m .and. k==n) hmatel = hmatel - h(l,i) ! (1)
+                          if (j==l .and. k==n) hmatel = hmatel + h(m,i) ! (lm)
+                          if (i==m .and. k==n) hmatel = hmatel + h(l,j) ! (ij)
+                          if (i==l .and. k==n) hmatel = hmatel - h(m,j) ! (lm)(ij)
+
+                          if (j==m .and. i==l) hmatel = hmatel - h(n,k) ! (ln)(ik)
+                          if (k==m .and. j==l) hmatel = hmatel - h(n,i) ! (ln)
+                          if (i==m .and. j==n) hmatel = hmatel - h(l,k) ! (ij)
+                          if (i==l .and. j==n) hmatel = hmatel + h(m,k) ! (lm)(ij)
+                          if (k==m .and. i==l) hmatel = hmatel + h(n,j) ! (ln)(ik)
+
+                  end if
+          end function bbb_oo_bbb
+
+          pure function bbb_vv_bbb(i, j, k, a, b, c, l, m, n, d, e, f, h, nub) result(hmatel)
+                  ! Expression:
+                  ! A(ijk)A(bc)A(d/ef)A(a/bc) d(i,l)d(j,m)d(k,n)d(b,e)d(c,f) h(a,d)
+
+                  integer, intent(in) :: nub
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: h(1:nub,1:nub)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  if (i==l .and. j==m .and. k==n) then
+
+                        if (b==e .and. c==f) hmatel = hmatel + h(a,d) ! (1)
+                        if (a==e .and. c==f) hmatel = hmatel - h(b,d) ! (ab)
+                        if (b==d .and. c==f) hmatel = hmatel - h(a,e) ! (de)
+                        if (a==d .and. c==f) hmatel = hmatel + h(b,e) ! (de)(ab)
+                        if (b==e .and. a==d) hmatel = hmatel + h(c,f) ! (df)(ac)
+
+                        if (a==e .and. b==f) hmatel = hmatel + h(c,d) ! (ab)
+                        if (a==d .and. b==f) hmatel = hmatel - h(c,e) ! (de)(ab)
+                        if (c==e .and. b==d) hmatel = hmatel + h(a,f) ! (df)
+                        if (c==e .and. a==d) hmatel = hmatel - h(b,f) ! (df)(ac)
+                  end if
+          end function bbb_vv_bbb
+
+          pure function bbb_oooo_bbb(i, j, k, a, b, c, l, m, n, d, e, f, h, nob) result(hmatel)
+                  ! Expression:
+                  ! A(abc)A(k/ij)A(n/lm) d(a,d)d(b,e)d(c,f)d(k,n) h(l,m,i,j)
+
+                  integer, intent(in) :: nob
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: h(1:nob,1:nob,1:nob,1:nob)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  ! (1)
+                  if (a==d .and. b==e .and. c==f) then
+                      ! (1)
+                      if (k==n) then 
+                              hmatel = hmatel + h(l,m,i,j) ! (1)
+                      elseif (k==l) then 
+                              hmatel = hmatel - h(n,m,i,j) ! (ln)
+                      elseif (k==m) then 
+                              hmatel = hmatel - h(l,n,i,j) ! (mn)
+                      end if
+                      ! (ik)
+                      if (i==n) then 
+                              hmatel = hmatel - h(l,m,k,j) ! (1)
+                      elseif (i==l) then 
+                              hmatel = hmatel + h(n,m,k,j) ! (ln)
+                      elseif (i==m) then 
+                              hmatel = hmatel + h(l,n,k,j) ! (mn)
+                      end if
+                      ! (jk)
+                      if (j==n) then 
+                              hmatel = hmatel - h(l,m,i,k) ! (1)
+                      elseif (j==l) then 
+                              hmatel = hmatel + h(n,m,i,k) ! (ln)
+                      elseif (j==m) then 
+                              hmatel = hmatel + h(l,n,i,k) ! (mn)
+                      end if
+                  end if
+          end function bbb_oooo_bbb
+
+          pure function bbb_vvvv_bbb(i, j, k, a, b, c, l, m, n, d, e, f, h, nub) result(hmatel)
+                  ! Expression:
+                  ! A(ijk)A(c/ab)A(f/de) d(i,l)d(j,m)d(k,n)d(c,f) h(a,b,d,e)
+
+                  integer, intent(in) :: nub
+                  integer, intent(in) :: i, j, k, a, b, c
+                  integer, intent(in) :: l, m, n, d, e, f
+                  real(kind=8), intent(in) :: h(1:nub,1:nub,1:nub,1:nub)
+
+                  real(kind=8) :: hmatel
+
+                  hmatel = 0.0d0
+
+                  ! (1)
+                  if (i==l .and. j==m .and. k==n) then
+                      if (a==f) then 
+                              hmatel = hmatel - h(c,b,d,e) ! (ac)
+                      elseif (a==d) then 
+                              hmatel = hmatel + h(c,b,f,e) ! (ac)
+                      elseif (a==e) then 
+                              hmatel = hmatel + h(c,b,d,f) ! (ac)
+                      end if
+
+                      if (b==f) then
+                              hmatel = hmatel - h(a,c,d,e) ! (bc)
+                      elseif (b==d) then 
+                              hmatel = hmatel + h(a,c,f,e) ! (bc)
+                      elseif (b==e) then 
+                              hmatel = hmatel + h(a,c,d,f) ! (bc)
+                      end if
+
+                      if (c==f) then
+                              hmatel = hmatel + h(a,b,d,e) ! (1)
+                      elseif (c==d) then
+                              hmatel = hmatel - h(a,b,f,e) ! (1)
+                      elseif (c==e) then 
+                              hmatel = hmatel - h(a,b,d,f) ! (1)
+                      end if
+                  end if
+          end function bbb_vvvv_bbb
+
+          pure function bbb_voov_bbb(i, j, k, a, b, c, l, m, n, d, e, f, h, nob, nub) result(hmatel)
+              ! Expression:
+              ! A(jk)A(bc)A(i/jk)A(a/bc)A(l/mn)A(d/ef) d(j,m)d(k,n)d(b,e)d(c,f) h(a,l,i,d)
+
+              integer, intent(in) :: nob, nub
+              integer, intent(in) :: i, j, k, a, b, c
+              integer, intent(in) :: l, m, n, d, e, f
+              real(kind=8), intent(in) :: h(1:nub,1:nob,1:nob,1:nub)
+
+              real(kind=8) :: hmatel
+
+              hmatel = 0.0d0
+
+                  ! (1)
+                  if (j==m .and. k==n .and. b==e .and. c==f) hmatel = hmatel + h(a,l,i,d) ! (1)
+                  if (j==m .and. k==n .and. b==d .and. c==f) hmatel = hmatel - h(a,l,i,e) ! (de)
+                  if (j==l .and. k==n .and. b==e .and. c==f) hmatel = hmatel - h(a,m,i,d) ! (lm)
+                  if (j==l .and. k==n .and. b==d .and. c==f) hmatel = hmatel + h(a,m,i,e) ! (de)(lm)
+                  if (j==m .and. k==n .and. a==e .and. c==f) hmatel = hmatel - h(b,l,i,d) ! (ab)
+                  if (j==m .and. k==n .and. a==d .and. c==f) hmatel = hmatel + h(b,l,i,e) ! (de)(ab)
+                  if (j==l .and. k==n .and. a==e .and. c==f) hmatel = hmatel + h(b,m,i,d) ! (lm)(ab)
+                  if (j==l .and. k==n .and. a==d .and. c==f) hmatel = hmatel - h(b,m,i,e) ! (de)(lm)(ab)
+                  if (j==m .and. k==n .and. b==e .and. a==d) hmatel = hmatel + h(c,l,i,f) ! (df)(ac)
+                  if (j==l .and. k==n .and. b==e .and. a==d) hmatel = hmatel - h(c,m,i,f) ! (df)(lm)(ac)
+                  if (i==m .and. k==n .and. b==e .and. c==f) hmatel = hmatel - h(a,l,j,d) ! (ij)
+                  if (i==m .and. k==n .and. b==d .and. c==f) hmatel = hmatel + h(a,l,j,e) ! (de)(ij)
+                  if (i==l .and. k==n .and. b==e .and. c==f) hmatel = hmatel + h(a,m,j,d) ! (lm)(ij)
+                  if (i==l .and. k==n .and. b==d .and. c==f) hmatel = hmatel - h(a,m,j,e) ! (de)(lm)(ij)
+                  if (i==m .and. k==n .and. a==e .and. c==f) hmatel = hmatel + h(b,l,j,d) ! (ab)(ij)
+                  if (i==m .and. k==n .and. a==d .and. c==f) hmatel = hmatel - h(b,l,j,e) ! (de)(ab)(ij)
+                  if (i==l .and. k==n .and. a==e .and. c==f) hmatel = hmatel - h(b,m,j,d) ! (lm)(ab)(ij)
+                  if (i==l .and. k==n .and. a==d .and. c==f) hmatel = hmatel + h(b,m,j,e) ! (de)(lm)(ab)(ij)
+                  if (i==m .and. k==n .and. b==e .and. a==d) hmatel = hmatel - h(c,l,j,f) ! (df)(ac)(ij)
+                  if (i==l .and. k==n .and. b==e .and. a==d) hmatel = hmatel + h(c,m,j,f) ! (df)(lm)(ac)(ij)
+                  if (j==m .and. i==l .and. b==e .and. c==f) hmatel = hmatel + h(a,n,k,d) ! (ln)(ik)
+                  if (j==m .and. i==l .and. b==d .and. c==f) hmatel = hmatel - h(a,n,k,e) ! (de)(ln)(ik)
+                  if (j==m .and. i==l .and. a==e .and. c==f) hmatel = hmatel - h(b,n,k,d) ! (ln)(ab)(ik)
+                  if (j==m .and. i==l .and. a==d .and. c==f) hmatel = hmatel + h(b,n,k,e) ! (de)(ln)(ab)(ik)
+                  if (j==m .and. i==l .and. b==e .and. a==d) hmatel = hmatel + h(c,n,k,f) ! (df)(ln)(ac)(ik)
+                  ! (bc)
+                  if (j==m .and. k==n .and. c==e .and. b==d) hmatel = hmatel + h(a,l,i,f) ! (df)
+                  if (j==l .and. k==n .and. c==e .and. b==d) hmatel = hmatel - h(a,m,i,f) ! (df)(lm)
+                  if (j==m .and. k==n .and. a==e .and. b==f) hmatel = hmatel + h(c,l,i,d) ! (ab)
+                  if (j==m .and. k==n .and. a==d .and. b==f) hmatel = hmatel - h(c,l,i,e) ! (de)(ab)
+                  if (j==l .and. k==n .and. a==e .and. b==f) hmatel = hmatel - h(c,m,i,d) ! (lm)(ab)
+                  if (j==l .and. k==n .and. a==d .and. b==f) hmatel = hmatel + h(c,m,i,e) ! (de)(lm)(ab)
+                  if (j==m .and. k==n .and. c==e .and. a==d) hmatel = hmatel - h(b,l,i,f) ! (df)(ac)
+                  if (j==l .and. k==n .and. c==e .and. a==d) hmatel = hmatel + h(b,m,i,f) ! (df)(lm)(ac)
+                  if (i==m .and. k==n .and. c==e .and. b==d) hmatel = hmatel - h(a,l,j,f) ! (df)(ij)
+                  if (i==l .and. k==n .and. c==e .and. b==d) hmatel = hmatel + h(a,m,j,f) ! (df)(lm)(ij)
+                  if (i==m .and. k==n .and. a==e .and. b==f) hmatel = hmatel - h(c,l,j,d) ! (ab)(ij)
+                  if (i==m .and. k==n .and. a==d .and. b==f) hmatel = hmatel + h(c,l,j,e) ! (de)(ab)(ij)
+                  if (i==l .and. k==n .and. a==e .and. b==f) hmatel = hmatel + h(c,m,j,d) ! (lm)(ab)(ij)
+                  if (i==l .and. k==n .and. a==d .and. b==f) hmatel = hmatel - h(c,m,j,e) ! (de)(lm)(ab)(ij)
+                  if (i==m .and. k==n .and. c==e .and. a==d) hmatel = hmatel + h(b,l,j,f) ! (df)(ac)(ij)
+                  if (i==l .and. k==n .and. c==e .and. a==d) hmatel = hmatel - h(b,m,j,f) ! (df)(lm)(ac)(ij)
+                  if (j==m .and. i==l .and. c==e .and. b==d) hmatel = hmatel + h(a,n,k,f) ! (df)(ln)(ik)
+                  if (j==m .and. i==l .and. a==e .and. b==f) hmatel = hmatel + h(c,n,k,d) ! (ln)(ab)(ik)
+                  if (j==m .and. i==l .and. a==d .and. b==f) hmatel = hmatel - h(c,n,k,e) ! (de)(ln)(ab)(ik)
+                  if (j==m .and. i==l .and. c==e .and. a==d) hmatel = hmatel - h(b,n,k,f) ! (df)(ln)(ac)(ik)
+                  ! (jk)
+                  if (k==m .and. j==l .and. b==e .and. c==f) hmatel = hmatel + h(a,n,i,d) ! (ln)
+                  if (k==m .and. j==l .and. b==d .and. c==f) hmatel = hmatel - h(a,n,i,e) ! (de)(ln)
+                  if (k==m .and. j==l .and. a==e .and. c==f) hmatel = hmatel - h(b,n,i,d) ! (ln)(ab)
+                  if (k==m .and. j==l .and. a==d .and. c==f) hmatel = hmatel + h(b,n,i,e) ! (de)(ln)(ab)
+                  if (k==m .and. j==l .and. b==e .and. a==d) hmatel = hmatel + h(c,n,i,f) ! (df)(ln)(ac)
+                  if (i==m .and. j==n .and. b==e .and. c==f) hmatel = hmatel + h(a,l,k,d) ! (ij)
+                  if (i==m .and. j==n .and. b==d .and. c==f) hmatel = hmatel - h(a,l,k,e) ! (de)(ij)
+                  if (i==l .and. j==n .and. b==e .and. c==f) hmatel = hmatel - h(a,m,k,d) ! (lm)(ij)
+                  if (i==l .and. j==n .and. b==d .and. c==f) hmatel = hmatel + h(a,m,k,e) ! (de)(lm)(ij)
+                  if (i==m .and. j==n .and. a==e .and. c==f) hmatel = hmatel - h(b,l,k,d) ! (ab)(ij)
+                  if (i==m .and. j==n .and. a==d .and. c==f) hmatel = hmatel + h(b,l,k,e) ! (de)(ab)(ij)
+                  if (i==l .and. j==n .and. a==e .and. c==f) hmatel = hmatel + h(b,m,k,d) ! (lm)(ab)(ij)
+                  if (i==l .and. j==n .and. a==d .and. c==f) hmatel = hmatel - h(b,m,k,e) ! (de)(lm)(ab)(ij)
+                  if (i==m .and. j==n .and. b==e .and. a==d) hmatel = hmatel + h(c,l,k,f) ! (df)(ac)(ij)
+                  if (i==l .and. j==n .and. b==e .and. a==d) hmatel = hmatel - h(c,m,k,f) ! (df)(lm)(ac)(ij)
+                  if (k==m .and. i==l .and. b==e .and. c==f) hmatel = hmatel - h(a,n,j,d) ! (ln)(ik)
+                  if (k==m .and. i==l .and. b==d .and. c==f) hmatel = hmatel + h(a,n,j,e) ! (de)(ln)(ik)
+                  if (k==m .and. i==l .and. a==e .and. c==f) hmatel = hmatel + h(b,n,j,d) ! (ln)(ab)(ik)
+                  if (k==m .and. i==l .and. a==d .and. c==f) hmatel = hmatel - h(b,n,j,e) ! (de)(ln)(ab)(ik)
+                  if (k==m .and. i==l .and. b==e .and. a==d) hmatel = hmatel - h(c,n,j,f) ! (df)(ln)(ac)(ik)
+                  ! (jk)(bc), apply(jk)
+                  if (k==m .and. j==l .and. c==e .and. b==d) hmatel = hmatel + h(a,n,i,f) ! (df)(ln)
+                  if (k==m .and. j==l .and. a==e .and. b==f) hmatel = hmatel + h(c,n,i,d) ! (ln)(ab)
+                  if (k==m .and. j==l .and. a==d .and. b==f) hmatel = hmatel - h(c,n,i,e) ! (de)(ln)(ab)
+                  if (k==m .and. j==l .and. c==e .and. a==d) hmatel = hmatel - h(b,n,i,f) ! (df)(ln)(ac)
+                  if (i==m .and. j==n .and. c==e .and. b==d) hmatel = hmatel + h(a,l,k,f) ! (df)(ij)
+                  if (i==l .and. j==n .and. c==e .and. b==d) hmatel = hmatel - h(a,m,k,f) ! (df)(lm)(ij)
+                  if (i==m .and. j==n .and. a==e .and. b==f) hmatel = hmatel + h(c,l,k,d) ! (ab)(ij)
+                  if (i==m .and. j==n .and. a==d .and. b==f) hmatel = hmatel - h(c,l,k,e) ! (de)(ab)(ij)
+                  if (i==l .and. j==n .and. a==e .and. b==f) hmatel = hmatel - h(c,m,k,d) ! (lm)(ab)(ij)
+                  if (i==l .and. j==n .and. a==d .and. b==f) hmatel = hmatel + h(c,m,k,e) ! (de)(lm)(ab)(ij)
+                  if (i==m .and. j==n .and. c==e .and. a==d) hmatel = hmatel - h(b,l,k,f) ! (df)(ac)(ij)
+                  if (i==l .and. j==n .and. c==e .and. a==d) hmatel = hmatel + h(b,m,k,f) ! (df)(lm)(ac)(ij)
+                  if (k==m .and. i==l .and. c==e .and. b==d) hmatel = hmatel - h(a,n,j,f) ! (df)(ln)(ik)
+                  if (k==m .and. i==l .and. a==e .and. b==f) hmatel = hmatel - h(c,n,j,d) ! (ln)(ab)(ik)
+                  if (k==m .and. i==l .and. a==d .and. b==f) hmatel = hmatel + h(c,n,j,e) ! (de)(ln)(ab)(ik)
+                  if (k==m .and. i==l .and. c==e .and. a==d) hmatel = hmatel + h(b,n,j,f) ! (df)(ln)(ac)(ik)
+          end function bbb_voov_bbb
+
+          pure function bbb_ovvo_abb(i, j, k, a, b, c, l, m, n, d, e, f, h, noa, nua, nob, nub) result(hmatel)
+              ! Expression:
+              ! Found by spin-inverting the code in aaa_voov_aab (h2b_voov -> h2b_ovvo)
+
+              integer, intent(in) :: noa, nua, nob, nub
+              integer, intent(in) :: i, j, k, a, b, c
+              integer, intent(in) :: l, m, n, d, e, f
+              real(kind=8), intent(in) :: h(1:noa,1:nub,1:nua,1:nob)
+
+              real(kind=8) :: hmatel
+
+              hmatel = 0.0d0
+
+              if (j==m .and. k==n .and. c==f .and. b==e) hmatel = hmatel + h(l,a,d,i) ! (1)
+              if (i==m .and. k==n .and. c==f .and. b==e) hmatel = hmatel - h(l,a,d,j) 
+              if (j==m .and. k==n .and. c==f .and. a==e) hmatel = hmatel - h(l,b,d,i) 
+              if (i==m .and. k==n .and. c==f .and. a==e) hmatel = hmatel + h(l,b,d,j) 
+              if (i==m .and. j==n .and. c==f .and. b==e) hmatel = hmatel + h(l,a,d,k)
+              if (i==m .and. j==n .and. c==f .and. a==e) hmatel = hmatel - h(l,b,d,k) 
+              if (j==m .and. k==n .and. b==f .and. a==e) hmatel = hmatel + h(l,c,d,i) 
+              if (i==m .and. k==n .and. b==f .and. a==e) hmatel = hmatel - h(l,c,d,j) 
+              if (i==m .and. j==n .and. b==f .and. a==e) hmatel = hmatel + h(l,c,d,k) 
+
+          end function bbb_ovvo_abb
 
 end module ccp_quadratic_loops_direct

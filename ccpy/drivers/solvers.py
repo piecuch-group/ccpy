@@ -219,7 +219,7 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
             omega[n] = np.real(e[idx[-1]])
             r = np.dot(B[:, :curr_size], alpha)
 
-            # calculate residual vector
+            # calculate residual vector: r_i = S_{iK}*alpha_{K} - omega * r_i
             R[n].unflatten(np.dot(sigma[:, :curr_size], alpha) - omega[n] * r)
             residual = np.linalg.norm(R[n].flatten())
             deltaE = omega[n] - omega_old
