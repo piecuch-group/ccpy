@@ -5,9 +5,8 @@ import numpy as np
 from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.utilities.updates import ccp_quadratic_loops_direct
-from ccpy.drivers.cc_energy import get_cc_energy
 
-def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace):
+def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace=None):
 
     # determine whether t3 updates should be done. Stupid compatibility with
     # empty sections of t3_excitations
@@ -47,20 +46,19 @@ def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace):
     if build_hbar:
         hbar = get_ccsd_intermediates(T, H)
 
-    corr_energy = get_cc_energy(T, H)
     # update T3
     if do_t3["aaa"]:
-        T, dT = update_t3a(T, dT, hbar, H, shift, corr_energy, t3_excitations, pspace)
+        T, dT = update_t3a(T, dT, hbar, H, shift, t3_excitations)
     if do_t3["aab"]:
-        T, dT = update_t3b(T, dT, hbar, H, shift, t3_excitations, pspace)
+        T, dT = update_t3b(T, dT, hbar, H, shift, t3_excitations)
     if flag_RHF:
         T.abb = T.aab.copy()
         T.bbb = T.aaa.copy()
     else:
         if do_t3["abb"]:
-            T, dT = update_t3c(T, dT, hbar, H, shift, t3_excitations, pspace)
+            T, dT = update_t3c(T, dT, hbar, H, shift, t3_excitations)
         if do_t3["bbb"]:
-            T, dT = update_t3d(T, dT, hbar, H, shift, t3_excitations, pspace)
+            T, dT = update_t3d(T, dT, hbar, H, shift, t3_excitations)
 
     return T, dT
 
@@ -371,7 +369,7 @@ def update_t2c(T, dT, H, H0, shift, t3_excitations):
 
 
 # @profile
-def update_t3a(T, dT, H, H0, shift, corr_energy, t3_excitations, pspace):
+def update_t3a(T, dT, H, H0, shift, t3_excitations):
     """
     Update t3a amplitudes by calculating the projection <ijkabc|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -380,7 +378,6 @@ def update_t3a(T, dT, H, H0, shift, corr_energy, t3_excitations, pspace):
     T.aaa, dT.aaa = ccp_quadratic_loops_direct.ccp_quadratic_loops_direct.update_t3a_p(
         T.aaa,
         t3_excitations["aaa"].T, t3_excitations["aab"].T,
-        pspace["aaa"],
         T.aa,
         T.aab,
         H.a.oo, H.a.vv,
@@ -388,14 +385,14 @@ def update_t3a(T, dT, H, H0, shift, corr_energy, t3_excitations, pspace):
         H.aa.oooo, H.aa.voov, H.aa.vvvv,
         H0.ab.oovv, H.ab.voov,
         H0.a.oo, H0.a.vv,
-        shift, corr_energy
+        shift
     )
 
     return T, dT
 
 
 # @profile
-def update_t3b(T, dT, H, H0, shift, t3_excitations, pspace):
+def update_t3b(T, dT, H, H0, shift, t3_excitations):
     """
     Update t3b amplitudes by calculating the projection <ijk~abc~|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -406,23 +403,22 @@ def update_t3b(T, dT, H, H0, shift, t3_excitations, pspace):
     T.aab, dT.aab = ccp_quadratic_loops_direct.ccp_quadratic_loops_direct.update_t3b_p(
         T.aab,
         t3_excitations["aaa"].T, t3_excitations["aab"].T, t3_excitations["abb"].T,
-        pspace["aab"],
         T.aa, T.ab,
         T.aaa, T.abb,
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
         H0.aa.oovv, H.aa.vvov, I2A_vooo, H.aa.oooo, H.aa.voov, H.aa.vvvv,
-        H0.ab.oovv, H.ab.vvov, H.ab.vvvo, I2B_vooo, I2B_ovoo,
-        H.ab.oooo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
+        H0.ab.oovv, H.ab.vvov, H.ab.vvvo, I2B_vooo, I2B_ovoo, 
+        H.ab.oooo, H.ab.voov,H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
         H0.bb.oovv, H.bb.voov,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-        shift,
+        shift
     )
 
     return T, dT
 
 
 # @profile
-def update_t3c(T, dT, H, H0, shift, t3_excitations, pspace):
+def update_t3c(T, dT, H, H0, shift, t3_excitations):
     """
     Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -433,7 +429,6 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations, pspace):
     T.abb, dT.abb = ccp_quadratic_loops_direct.ccp_quadratic_loops_direct.update_t3c_p(
         T.abb,
         t3_excitations["aab"].T, t3_excitations["abb"].T, t3_excitations["bbb"].T,
-        pspace["abb"],
         T.ab, T.bb,
         T.aab, T.bbb,
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
@@ -444,12 +439,11 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations, pspace):
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
         shift
     )
-
     return T, dT
 
 
 # @profile
-def update_t3d(T, dT, H, H0, shift, t3_excitations, pspace):
+def update_t3d(T, dT, H, H0, shift, t3_excitations):
     """
     Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N e^(T1+T2+T3))_C|0>.
     """
@@ -458,7 +452,6 @@ def update_t3d(T, dT, H, H0, shift, t3_excitations, pspace):
     T.bbb, dT.bbb = ccp_quadratic_loops_direct.ccp_quadratic_loops_direct.update_t3d_p(
         T.bbb,
         t3_excitations["abb"].T, t3_excitations["bbb"].T,
-        pspace["bbb"],
         T.bb,
         T.abb,
         H.b.oo, H.b.vv,

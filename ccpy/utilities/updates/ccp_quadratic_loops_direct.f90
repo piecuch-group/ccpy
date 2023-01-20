@@ -729,8 +729,8 @@ module ccp_quadratic_loops_direct
                           res_mm23 = res_mm23 - (I2A_vooo(c,m,i,k) - I2A_vooo(c,m,k,i)) * t2a(b,a,m,j)
                       end do
 
-                      resid(idet) = resid(idet) + res_mm23
-                      t3a_amps(idet) = t3a_amps(idet) + resid(idet)/(denom - shift)
+                      resid(idet) = (resid(idet) + res_mm23)/(denom - shift)
+                      t3a_amps(idet) = t3a_amps(idet) + resid(idet)
 
                   end do
                   !$omp end do
@@ -1017,9 +1017,9 @@ module ccp_quadratic_loops_direct
                           res_mm23 = res_mm23 - I2B_vooo(b,m,j,k) * t2b(a,c,i,m)
                       end do
 
-                      resid(idet) = resid(idet) + res_mm23
+                      resid(idet) = (resid(idet) + res_mm23)/(denom - shift)
 
-                      t3b_amps(idet) = t3b_amps(idet) + resid(idet)/(denom - shift)
+                      t3b_amps(idet) = t3b_amps(idet) + resid(idet)
                   end do
                   !$omp end do
 
@@ -1296,9 +1296,9 @@ module ccp_quadratic_loops_direct
 
                       denom = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
 
-                      resid(idet) = resid(idet) + res_mm23
+                      resid(idet) = (resid(idet) + res_mm23)/(denom - shift)
 
-                      t3c_amps(idet) = t3c_amps(idet) + resid(idet)/(denom - shift)
+                      t3c_amps(idet) = t3c_amps(idet) + resid(idet)
                   end do
                   !$omp end do
 
@@ -1468,8 +1468,8 @@ module ccp_quadratic_loops_direct
 
                       denom = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
 
-                      resid(idet) = resid(idet) + res_mm23
-                      t3d_amps(idet) = t3d_amps(idet) + resid(idet)/(denom - shift)
+                      resid(idet) = (resid(idet) + res_mm23)/(denom - shift)
+                      t3d_amps(idet) = t3d_amps(idet) + resid(idet)
                   end do
                   !$omp end do
 

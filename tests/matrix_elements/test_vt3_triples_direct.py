@@ -363,8 +363,8 @@ if __name__ == "__main__":
     T, cc_energy, converged = cc_driver(calculation, system, H)
     hbar = get_ccsd_intermediates(T, H)
 
-    T3_excitations, T3_amplitudes = get_T3_list(T)
-    #T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[0.001,0.009,0.009,0.001])
+    #T3_excitations, T3_amplitudes = get_T3_list(T)
+    T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[0.005,0.045,0.045,0.005])
 
     # Get the expected result for the contraction, computed using full T_ext
     print("   Exact H*T3 contraction", end="")
