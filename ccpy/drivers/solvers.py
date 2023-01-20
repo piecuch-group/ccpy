@@ -187,9 +187,10 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
         print("   =======================================")
         print_eomcc_iteration_header()
 
-        # Allocate the B (correction/subspace) and sigma (HR) matrices
+        # Allocate the B (correction/subspace), sigma (HR), and G (interaction) matrices
         sigma = np.zeros((R[n].ndim, calculation.maximum_iterations))
         B = np.zeros((R[n].ndim, calculation.maximum_iterations))
+        G = np.zeros((calculation.maximum_iterations, calculation.maximum_iterations))
 
         # Initial values
         B[:, 0] = B0[:, n]
@@ -202,9 +203,11 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
             # store old energy
             omega_old = omega[n]
 
-            # solve projection subspace eigenproblem
-            G = np.dot(B[:, :curr_size].T, sigma[:, :curr_size])
-            e, alpha = np.linalg.eig(G)
+            # solve projection subspace eigenproblem: G_{IJ} = sum_K B_{KI} S_{KJ}
+            for p in range(curr_size):
+                G[curr_size - 1, p] = np.dot(B[:, curr_size - 1].T, sigma[:, p])
+                G[p, curr_size - 1] = np.dot(sigma[:, curr_size - 1].T, B[:, p])
+            e, alpha = np.linalg.eig(G[:curr_size, :curr_size])
 
             # select root based on maximum overlap with initial guess
             # < b0 | V_i > = < b0 | \sum_k alpha_{ik} |b_k>
@@ -240,6 +243,7 @@ def eomcc_davidson(HR, update_r, R, omega, T, H, calculation, system):
 
             B[:, curr_size] = q
             sigma[:, curr_size] = HR(dR, R[n], T, H, calculation.RHF_symmetry, system)
+
             curr_size += 1
 
         if is_converged[n]:
