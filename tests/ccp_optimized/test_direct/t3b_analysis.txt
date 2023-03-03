@@ -1,0 +1,52 @@
+- CPU time (in seconds) for CH2 / cc-pVDZ with nfrozen = 1
+- Computations performed with one thread on coupled
+- All t3b updates performed using H-major sorting
+
+All diagrams: 6.224603891372681
+
+Hotspot analysis
+----------------
+Remove 1/5 [h1a(oo)/h2a(oooo)]: 6.100596904754639  P
+Remove 2/6 [h1a(vv)/h2a(vvvv)]: 6.054986953735352  H
+Remove 3/7 [h1b(oo)/h2b(oooo)]: 6.011046886444092  P
+Remove 5/8 [h1b(vv)/h2b(vvvv)]: 4.318912744522095  H
+Remove 9   [h2a(voov)]:         5.873581886291504  
+Remove 10  [h2c(voov)]:         4.97755765914917   
+Remove 11  [h2b(ovov)]:         4.905262470245361  P
+Remove 12  [h2b(vovo)]:         5.979412078857422  H
+Remove 13  [h2b(ovvo)]:         5.824417352676392
+Remove 14  [h2b(voov)]:         5.966460704803467
+
+
+Key:
+H - benefits from H-major sorting
+P - benefits from P-major sorting
+
+Notes:
+------
+
+- P-major sorting seems like it could be advantageous, particularly for diagram 11,
+  although diagrams 1/5, 9, and 10 should benefit from it too. Here, the structure of
+  the updates changes. Instead of passing in sorted t3b_amps and t3b_excits, we pass in
+  some arbitrary ordering and first H-sort, compute, then P-sort, compute. In this scheme,
+  the ID arrays and auxiliary tables, such as XiXj_table and XaXb_table are entirely
+  contained in Fortran and can be allocatable arrays that are created and destroyed over
+  the course of the update. All the sorting is re-performed per iteration.
+
+- Surprisingly, h2c(voov) (1h(b)-1p(b) difference) is a hotspot. This diagram
+  requires that all alpha hole and particle indices are equal in both bra and ket.
+  We could significantly speed up this term by doing a diagram-optimal sorting
+  of t3b_excits such that the locater array ID is a noa*(noa-1)/2*nua*(nua-1)/2 x 2
+  integer array with ID(abij,1) and ID(abij,2) giving the list of |ijk~abc~> excitations
+  that share the same indices i,j,a,b. Then, the construction is given by
+
+  abij = XaXbXiXj_table(a,b,i,j)
+  do jdet = id3b_abij(abij,1), id3b_abij(abij,2)
+     f = t3b_excits(3,jdet); n = t3b_excits(6,jdet);
+     hmatel = h2c_voov(c,n,k,f)
+     resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+  end do
+
+  The storage overhead is roughly ~ 3 * noa**2 * nua**2.
+
+   

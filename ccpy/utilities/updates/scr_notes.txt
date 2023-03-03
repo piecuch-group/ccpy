@@ -1,0 +1,140 @@
+
+> t3b_excits hierarchically sorted in common a -> ijk
+> Basically, the ID array element ID(a,ijk) enumerates all
+  triples |ijk~def~> where one of (d,e) is equal to a. You
+  do not know a priori which one and considering both cases
+  gives you the antisymmetrizer term that we missed before.
+
+do idet = 1, n3aab
+
+   a = t3b_excits(1,idet); b = t3b_excits(2,idet);
+   ijk = xixjxk_table(i,j,k)
+   ab = XaXb_table(a,b)
+
+   ! loop extent = nub * nua**2 / nua = nub * nua
+   do jdet = ID(ijk,ab,1), ID(ijk,ab,2)
+      d = t3b_excits(jdet,1); e = t3b_excits(jdet,2); f = t3b_excits(jdet,3);
+      hmatel = 0.0d0
+      if (d==a) then
+         hmatel = hmatel + h2b_vvvv(b,c,e,f)
+      elseif (e==a) then
+         hmatel = hmatel - h2b_vvvv(b,c,d,f)
+      end if
+      if (d==b) then
+         hmatel = hmatel - h2b_vvvv(a,c,e,f)
+      elseif (e==b) then
+         hmatel = hmatel + h2b_vvvv(a,c,d,f)
+      end if
+   end do
+
+   resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+end do
+
+              subroutine sort_t3b_ijk_ab(t3b_excits, t3b_amps, ID, XiXjXk_table, XaXb_table, noa, nua, nob, nub, n3aab, resid)
+
+                      integer, intent(in) :: n3aab, noa, nua, nob, nub
+
+                      integer, intent(inout) :: t3b_excits(6,n3aab)
+                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
+                      real(kind=8), intent(inout), optional :: resid(n3aab)
+                      integer, intent(inout) :: XaXb_table(nua,nua)
+                      integer, intent(inout) :: XiXjXk_table(noa,noa,nob)
+                      integer, intent(inout) :: ID(nob*noa*(noa-1)/2,nua,2)
+
+                      integer :: i, j, k, a, b, c
+                      integer :: i1, i2, j1, j2, k1, k2, a1, a2, b1, b2, c1, c2
+                      integer:: ijk, ijk1, ijk2, ab1, ab2, kout, idet, num_abc_ijk
+                      integer :: ijk_locs(noa*(noa-1)/2*nob,2)
+                      integer, allocatable :: temp(:), idx(:)
+
+                      XaXb_table=0
+                      kout = 1
+                      do a = 1, nua
+                         XaXb_table(a,a:nua) = kout
+                         XaXb_table(a:nua,a) = kout
+                         kout = kout + 1
+                      end do
+                      XiXjXk_table=0
+                      kout = 1
+                      do k = 1, nob
+                         do i = 1, noa
+                            do j = i+1, noa
+                               XiXjXk_table(i,j,k) = kout
+                               XiXjXk_table(j,i,k) = -kout
+                               kout = kout + 1
+                            end do
+                         end do 
+                      end do
+
+                      allocate(temp(n3aab),idx(n3aab))
+                      do idet = 1, n3aab
+                         i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                         ijk = XiXjXk_table(i,j,k)
+                         temp(idet) = ijk
+                      end do
+                      call argsort(temp, idx)
+                      t3b_excits = t3b_excits(:,idx)
+                      t3b_amps = t3b_amps(idx)
+                      if (present(resid)) resid = resid(idx)
+                      deallocate(temp,idx)
+
+                      ijk_locs = 1
+                      do idet = 2, n3aab
+                         i1 = t3b_excits(4,idet-1); j1 = t3b_excits(5,idet-1); k1 = t3b_excits(6,idet-1);
+                         i2 = t3b_excits(4,idet);   j2 = t3b_excits(5,idet);   k2 = t3b_excits(6,idet);
+
+                         ijk1 = XiXjXk_table(i1,j1,k1)
+                         ijk2 = XiXjXk_table(i2,j2,k2)
+                         if (ijk1/=ijk2) then
+                                 ijk_locs(ijk1,2) = idet - 1
+                                 ijk_locs(ijk2,1) = idet
+                         end if
+                      end do
+                      ijk_locs(ijk2,2) = n3aab
+
+                      ID = 0
+                      do k = 1, nob
+                         do i = 1, noa
+                            do j = i+1, noa
+                               ijk = XiXjXk_table(i,j,k)
+                               if (ijk_locs(ijk,1) > ijk_locs(ijk,2)) cycle ! skip if ijk block is empty
+                            
+                               num_abc_ijk = ijk_locs(ijk,2) - ijk_locs(ijk,1) + 1
+        
+                               allocate(temp(num_abc_ijk), idx(num_abc_ijk))
+                               kout = 1
+                               do idet = ijk_locs(ijk,1), ijk_locs(ijk,2)
+                                  a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
+                                  ab = XaXb_table(a,b)
+                                  temp(kout) = ab
+                                  kout = kout + 1   
+                               end do
+            
+                               call argsort(temp,idx)
+                               idx = idx + ijk_locs(ijk,1) - 1
+                               t3b_excits(:,ijk_locs(ijk,1):ijk_locs(ijk,2)) = t3b_excits(:,idx)
+                               t3b_amps(ijk_locs(ijk,1):ijk_locs(ijk,2)) = t3b_amps(idx)
+                               if (present(resid))  resid(ijk_locs(ijk,1):ijk_locs(ijk,2)) = resid(idx)
+                               deallocate(temp,idx)
+        
+                               ID(ijk,:,1) = ijk_locs(ijk,1)
+                               do ab = 1, num_abc-1
+                                  idet = ab + ijk_locs(ijk,1)
+                                  a1 = t3b_excits(1,idet-1); b1 = t3b_excits(2,idet-1); 
+                                  a2 = t3b_excits(1,idet);   b2 = t3b_excits(2,idet); 
+                                  ab1 = XaXb_table(a1,b1)
+                                  ab2 = XaXb_table(a2,b2)
+
+                                  if (ab1/=ab2) then
+                                     ID(ijk,ab1,2) = idet-1
+                                     ID(ijk,ab2,1) = idet
+                                  end if
+                               end do
+                               ID(ijk,ab2,2) = ijk_locs(ijk,1) + num_abc_ijk - 1
+                            end do
+                         end do
+                      end do
+
+              end subroutine sort_t3b_ijk_ab
+                                  
+

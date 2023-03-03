@@ -1,4 +1,4 @@
-module ccp_quadratic_loops_direct
+module ccp_quadratic_loops_direct_opt
 
       use omp_lib
 
@@ -568,10 +568,10 @@ module ccp_quadratic_loops_direct
 
               end subroutine update_t2c
 
-              subroutine update_t3a_p(t3a_amps, resid,&
-                                      t3a_excits, t3b_excits,&
+              subroutine update_t3a_p(resid,&
+                                      t3a_amps, t3a_excits,&
+                                      t3b_amps, t3b_excits,&
                                       t2a,&
-                                      t3b_amps,&
                                       H1A_oo, H1A_vv,&
                                       H2A_oovv, H2A_vvov, H2A_vooo,&
                                       H2A_oooo, H2A_voov, H2A_vvvv,&
@@ -582,9 +582,7 @@ module ccp_quadratic_loops_direct
                                       noa, nua, nob, nub)
 
                   integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab
-                  integer, intent(in) :: t3a_excits(6, n3aaa), t3b_excits(6, n3aab)
                   real(kind=8), intent(in) :: t2a(nua, nua, noa, noa),&
-                                              t3b_amps(n3aab),&
                                               H1A_oo(noa, noa), H1A_vv(nua, nua),&
                                               H2A_oovv(noa, noa, nua, nua),&
                                               H2B_oovv(noa, nob, nua, nub),&
@@ -597,21 +595,33 @@ module ccp_quadratic_loops_direct
                                               fA_vv(nua, nua), fA_oo(noa, noa),&
                                               shift
 
+                  integer, intent(inout) :: t3a_excits(6,n3aaa)
+                  !f2py intent(in,out) :: t3a_excits(6,0:n3aaa-1)
+                  integer, intent(inout) :: t3b_excits(6,n3aab)
+                  !f2py intent(in,out) :: t3b_excits(6,0:n3aab-1)
                   real(kind=8), intent(inout) :: t3a_amps(n3aaa)
                   !f2py intent(in,out) :: t3a_amps(0:n3aaa-1)
+                  real(kind=8), intent(inout) :: t3b_amps(n3aab)
+                  !f2py intent(in,out) :: t3b_amps(0:n3aab-1)
 
                   real(kind=8), intent(out) :: resid(n3aaa)
+
+                  integer, allocatable :: id3a_h(:,:)
+                  integer, allocatable :: xixjxk_table(:,:,:)
+                  integer, allocatable :: id3b_h(:,:,:)
+                  integer, allocatable :: eck_table(:,:)
+                  integer, allocatable :: xixj_table(:,:)
 
                   real(kind=8) :: I2A_vvov(nua, nua, noa, nua), I2A_vooo(nua, noa, noa, noa)
                   real(kind=8) :: val, denom, t_amp, res_mm23, hmatel
                   integer :: a, b, c, d, i, j, k, l, e, f, m, n, idet, jdet
+                  integer :: ijk, ij, ik, jk, jb
+                  integer :: lmi, lmj, lmk, lij, lik, ljk
+                  real(kind=8) :: phase
 
-                  ! Zero the residual container
-                  resid = 0.0d0
                   ! Start the VT3 intermediates at Hbar (factor of 1/2 to compensate for antisymmetrization)
                   I2A_vooo(:,:,:,:) = 0.5d0 * H2A_vooo(:,:,:,:)
                   I2A_vvov(:,:,:,:) = 0.5d0 * H2A_vvov(:,:,:,:)
-
                   do idet = 1, n3aaa
                       t_amp = t3a_amps(idet)
 
@@ -658,42 +668,365 @@ module ccp_quadratic_loops_direct
                       I2A_vvov(a,b,m,:) = I2A_vvov(a,b,m,:) + H2B_oovv(i,n,:,f) * t_amp ! (im)
                   end do
 
+                  ! WARNING: resid should be lined up to match t3a_amps!
+                  ! Zero the residual container
+                  resid = 0.0d0
+
+                  ! Perform the sorting of t3a and t3b arrays
+                  allocate(id3a_h(noa*(noa-1)*(noa-2)/6,2))
+                  allocate(xixjxk_table(noa,noa,noa))
+                  id3a_h = 0; xixjxk_table = 0;
+                  call sort_t3a_h(t3a_excits, t3a_amps, id3a_h, xixjxk_table, noa, nua, n3aaa, resid)
+                  allocate(id3b_h(nub*nob,noa*(noa-1)/2,2))
+                  allocate(xixj_table(noa,noa))
+                  allocate(eck_table(nub,nob))
+                  id3b_h = 0; eck_table = 0; xixj_table = 0;
+                  call sort_t3b_h(t3b_excits, t3b_amps, id3b_h, eck_table, xixj_table, noa, nua, nob, nub, n3aab)
+
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp t3a_excits,t3b_excits,t3a_amps,t3b_amps,t2a,&
+                  !$omp id3a_h,xixjxk_table,&
+                  !$omp id3b_h,eck_table,xixj_table,&
                   !$omp H1A_oo,H1A_vv,H2A_oooo,&
                   !$omp H2A_vvvv,H2A_voov,H2B_voov,I2A_vooo,I2A_vvov,&
                   !$omp fA_oo,fA_vv,shift,noa,nua,nob,nub,n3aaa,n3aab),&
-                  !$omp private(hmatel,t_amp,denom,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet)
+                  !$omp private(hmatel,t_amp,denom,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp ij,ik,jk,jb,lmi,lmj,lmk,lij,lik,ljk,phase)
 
                   !$omp do schedule(static)
                   do idet = 1, n3aaa
                       a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
                       i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
-                      do jdet = 1, n3aaa
-                          d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
-                          l = t3a_excits(4,jdet); m = t3a_excits(5,jdet); n = t3a_excits(6,jdet);
 
-                          hmatel = 0.0d0
-                          t_amp = t3a_amps(jdet)
-                          hmatel = hmatel + aaa_oo_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h1a_oo,noa)
-                          hmatel = hmatel + aaa_vv_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h1a_vv,nua)
-                          hmatel = hmatel + aaa_oooo_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h2a_oooo,noa)
-                          hmatel = hmatel + aaa_vvvv_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h2a_vvvv,nua)
-                          hmatel = hmatel + aaa_voov_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h2a_voov,noa,nua)
-                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
-                      end do
-                      do jdet = 1, n3aab
-                          d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
-                          l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
+                      ijk = xixjxk_table(i,j,k)
+                      ! diagrams 1/3
+                      do l = 1, noa
+                         lij = xixjxk_table(l,i,j)
+                         lik = xixjxk_table(l,i,k)
+                         ljk = xixjxk_table(l,j,k)
 
-                          hmatel = 0.0d0
-                          t_amp = t3b_amps(jdet)
-                          hmatel = hmatel + aaa_voov_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2b_voov,noa,nua,nob,nub)
-                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                         if (lij/=0) then
+                            phase = 1.0d0 * lij/abs(lij)
+                            do jdet = id3a_h(abs(lij),1), id3a_h(abs(lij),2)
+                               d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                               if (a/=d .or. b/=e .or. c/=f) cycle ! skip any p(a) difference
+                               ! compute < ijkabc | h1a(oo) | lijabc >
+                               hmatel = -phase * h1a_oo(l,k)
+                               resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                            end do
+                         end if
+                         if (lik/=0) then
+                            phase = 1.0d0 * lik/abs(lik)
+                            do jdet = id3a_h(abs(lik),1), id3a_h(abs(lik),2)
+                               d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                               if (a/=d .or. b/=e .or. c/=f) cycle ! skip any p(a) difference
+                               ! compute < ijkabc | h1a(oo) | likabc >
+                               hmatel = phase * h1a_oo(l,j)
+                               resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                            end do
+                         end if
+                         if (ljk/=0) then
+                            phase = 1.0d0 * ljk/abs(ljk)
+                            do jdet = id3a_h(abs(ljk),1), id3a_h(abs(ljk),2)
+                               d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                               if (a/=d .or. b/=e .or. c/=f) cycle ! skip any p(a) difference
+                               ! compute < ijkabc | h1a(oo) | ljkabc >
+                               hmatel = -phase * h1a_oo(l,i)
+                               resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                            end do
+                         end if
+                         ! diagram 3
+                         do m = l+1, noa
+                            lmi = xixjxk_table(l,m,i)
+                            lmj = xixjxk_table(l,m,j)
+                            lmk = xixjxk_table(l,m,k)
+
+                            if (lmi/=0) then
+                               phase = 1.0d0 * lmi/abs(lmi)
+                               do jdet = id3a_h(abs(lmi),1), id3a_h(abs(lmi),2)
+                                  d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                                  if (a/=d .or. b/=e .or. c/=f) cycle ! skip any p(a) difference
+                                  ! compute < ijkabc | h2a(oooo) | lmiabc >
+                                  hmatel = phase * h2a_oooo(l,m,j,k)
+                                  resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                               end do
+                            end if
+                            if (lmj/=0) then
+                               phase = 1.0d0 * lmj/abs(lmj)
+                               do jdet = id3a_h(abs(lmj),1), id3a_h(abs(lmj),2)
+                                  d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                                  if (a/=d .or. b/=e .or. c/=f) cycle ! skip any p(a) difference
+                                  ! compute < ijkabc | h2a(oooo) | lmjabc >
+                                  hmatel = -phase * h2a_oooo(l,m,i,k)
+                                  resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                               end do
+                            end if
+                            if (lmk/=0) then
+                               phase = 1.0d0 * lmk/abs(lmk)
+                               do jdet = id3a_h(abs(lmk),1), id3a_h(abs(lmk),2)
+                                  d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                                  if (a/=d .or. b/=e .or. c/=f) cycle ! skip any p(a) difference
+                                  ! compute < ijkabc | h2a(oooo) | lmkabc >
+                                  hmatel = phase * h2a_oooo(l,m,i,j)
+                                  resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                               end do
+                            end if
+                         end do
                       end do
-                  end do
+                      ! diagram 2/4
+                      do jdet = id3a_h(ijk,1), id3a_h(ijk,2)
+                         d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                         if (nexc3(a,b,c,d,e,f)>2) cycle ! skip if p(a) difference is more than 2
+                         hmatel = 0.0d0
+                         if (d==a) then      ! case 1: d = a
+                            ! compute < ijkabc | h2a(vvvv) | ijkaef >
+                            hmatel = hmatel + h2a_vvvv(b,c,e,f)
+                         elseif (d==b) then  ! case 2: d = b
+                            ! compute < ijkabc | h2a(vvvv) | ijkbef >
+                            hmatel = hmatel - h2a_vvvv(a,c,e,f)
+                         elseif (d==c) then  ! case 3: d = c
+                            ! compute < ijkabc | h2a(vvvv) | ijkcef >
+                            hmatel = hmatel + h2a_vvvv(a,b,e,f)
+                         end if
+                         if (e==a) then      ! case 4: e = a
+                            ! compute < ijkabc | h2a(vvvv) | ijkdaf >
+                            hmatel = hmatel - h2a_vvvv(b,c,d,f)
+                         elseif (e==b) then  ! case 5: e = b
+                            ! compute < ijkabc | h2a(vvvv) | ijkdbf >
+                            hmatel = hmatel + h2a_vvvv(a,c,d,f)
+                         elseif (e==c) then  ! case 6: e = c
+                            ! compute < ijkabc | h2a(vvvv) | ijkdcf >
+                            hmatel = hmatel - h2a_vvvv(a,b,d,f)
+                         end if
+                         if (f==a) then      ! case 1: f = a
+                            ! compute < ijkabc | h2a(vvvv) | ijkdea >
+                            hmatel = hmatel + h2a_vvvv(b,c,d,e)
+                         elseif (f==b) then  ! case 2: f = b
+                            ! compute < ijkabc | h2a(vvvv) | ijkdeb >
+                            hmatel = hmatel - h2a_vvvv(a,c,d,e)
+                         elseif (f==c) then  ! case 3: f = c
+                            ! compute < ijkabc | h2a(vvvv) | ijkdec >
+                            hmatel = hmatel + h2a_vvvv(a,b,d,e)
+                         end if
+                         ! diagram 2
+                         if (nexc3(a,b,c,d,e,f)<2) then ! include h1a(vv) terms in this case
+                            if (d==a .and. e==b) then     ! case 1: (d,e) -> (a,b)
+                               ! compute < ijkabc | h1a(vv) | ijkabf >
+                               hmatel = hmatel + h1a_vv(c,f)
+                            elseif (d==a .and. e==c) then ! case 2: (d,e) -> (a,c)
+                               ! compute < ijkabc | h1a(vv) | ijkacf >
+                               hmatel = hmatel - h1a_vv(b,f)
+                            elseif (d==b .and. e==c) then ! case 3: (d,e) -> (b,c)
+                               ! compute < ijkabc | h1a(vv) | ijkbcf >
+                               hmatel = hmatel + h1a_vv(a,f)
+                            end if
+                            if (d==a .and. f==b) then     ! case 4: (d,f) -> (a,b)
+                               ! compute < ijkabc | h1a(vv) | ijkaeb >
+                               hmatel = hmatel - h1a_vv(c,e)
+                            elseif (d==a .and. f==c) then ! case 5: (d,f) -> (a,c)
+                               ! compute < ijkabc | h1a(vv) | ijkaec >
+                               hmatel = hmatel + h1a_vv(b,e)
+                            elseif (d==b .and. f==c) then ! case 6: (d,f) -> (b,c)
+                               ! compute < ijkabc | h1a(vv) | ijkbec >
+                               hmatel = hmatel - h1a_vv(a,e)
+                            end if
+                            if (e==a .and. f==b) then     ! case 7: (e,f) -> (a,b)
+                               ! compute < ijkabc | h1a(vv) | ijkdab >
+                               hmatel = hmatel + h1a_vv(c,d)
+                            elseif (e==a .and. f==c) then ! case 8: (e,f) -> (a,c)
+                               ! compute < ijkabc | h1a(vv) | ijkdac >
+                               hmatel = hmatel - h1a_vv(b,d)
+                            elseif (e==b .and. f==c) then ! case 9: (e,f) -> (b,c)
+                               ! compute < ijkabc | h1a(vv) | ijkdbc >
+                               hmatel = hmatel + h1a_vv(a,d)
+                            end if
+                         end if
+                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                      end do
+                      ! diagram 5
+                      do l = 1, noa
+                         lij = xixjxk_table(l,i,j)
+                         lik = xixjxk_table(l,i,k)
+                         ljk = xixjxk_table(l,j,k)
+                         if (lij/=0) then
+                            phase = 1.0d0 * lij/abs(lij)
+                            do jdet = id3a_h(abs(lij),1), id3a_h(abs(lij),2)
+                               d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                               if (nexc3(a,b,c,d,e,f)>1) cycle ! skip if p(a) difference is more than 1
+                               hmatel = 0.0d0
+                               if (d==a .and. e==b) then     ! case 1: (d,e) -> (a,b)
+                                  ! compute < ijkabc | h2a(voov) | lijabf >
+                                  hmatel = hmatel + phase * h2a_voov(c,l,k,f)
+                               elseif (d==a .and. e==c) then ! case 2: (d,e) -> (a,c)
+                                  ! compute < ijkabc | h2a(voov) | lijacf >
+                                  hmatel = hmatel - phase * h2a_voov(b,l,k,f)
+                               elseif (d==b .and. e==c) then ! case 3: (d,e) -> (b,c)
+                                  ! compute < ijkabc | h2a(voov) | lijbcf >
+                                  hmatel = hmatel + phase * h2a_voov(a,l,k,f)
+                               end if
+                               if (d==a .and. f==b) then     ! case 4: (d,f) -> (a,b)
+                                  ! compute < ijkabc | h2a(voov) | lijaeb >
+                                  hmatel = hmatel - phase * h2a_voov(c,l,k,e)
+                               elseif (d==a .and. f==c) then ! case 5: (d,f) -> (a,c)
+                                  ! compute < ijkabc | h2a(voov) | lijaec >
+                                  hmatel = hmatel + phase * h2a_voov(b,l,k,e)
+                               elseif (d==b .and. f==c) then ! case 6: (d,f) -> (b,c)
+                                  ! compute < ijkabc | h2a(voov) | lijbec >
+                                  hmatel = hmatel - phase * h2a_voov(a,l,k,e)
+                               end if
+                               if (e==a .and. f==b) then     ! case 7: (e,f) -> (a,b)
+                                  ! compute < ijkabc | h2a(voov) | lijdab >
+                                  hmatel = hmatel + phase * h2a_voov(c,l,k,d)
+                               elseif (e==a .and. f==c) then ! case 8: (e,f) -> (a,c)
+                                  ! compute < ijkabc | h2a(voov) | lijdac >
+                                  hmatel = hmatel - phase * h2a_voov(b,l,k,d)
+                               elseif (e==b .and. f==c) then ! case 9: (e,f) -> (b,c)
+                                  ! compute < ijkabc | h2a(voov) | lijdbc >
+                                  hmatel = hmatel + phase * h2a_voov(a,l,k,d)
+                               end if
+                               resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                            end do
+                         end if
+                         if (lik/=0) then
+                            ! WARNING: Phase reversal here, presumably to account for (l,i,k) = -(i,l,k)
+                            phase = -1.0d0 * lik/abs(lik) 
+                            do jdet = id3a_h(abs(lik),1), id3a_h(abs(lik),2)
+                               d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                               if (nexc3(a,b,c,d,e,f)>1) cycle ! skip if p(a) difference is more than 1
+                               hmatel = 0.0d0
+                               if (d==a .and. e==b) then     ! case 1: (d,e) -> (a,b)
+                                  ! compute < ijkabc | h2a(voov) | likabf >
+                                  hmatel = hmatel + phase * h2a_voov(c,l,j,f)
+                               elseif (d==a .and. e==c) then ! case 2: (d,e) -> (a,c)
+                                  ! compute < ijkabc | h2a(voov) | likacf >
+                                  hmatel = hmatel - phase * h2a_voov(b,l,j,f)
+                               elseif (d==b .and. e==c) then ! case 3: (d,e) -> (b,c)
+                                  ! compute < ijkabc | h2a(voov) | likbcf >
+                                  hmatel = hmatel + phase * h2a_voov(a,l,j,f)
+                               end if
+                               if (d==a .and. f==b) then     ! case 4: (d,f) -> (a,b)
+                                  ! compute < ijkabc | h2a(voov) | likaeb >
+                                  hmatel = hmatel - phase * h2a_voov(c,l,j,e)
+                               elseif (d==a .and. f==c) then ! case 5: (d,f) -> (a,c)
+                                  ! compute < ijkabc | h2a(voov) | likaec >
+                                  hmatel = hmatel + phase * h2a_voov(b,l,j,e)
+                               elseif (d==b .and. f==c) then ! case 6: (d,f) -> (b,c)
+                                  ! compute < ijkabc | h2a(voov) | likbec >
+                                  hmatel = hmatel - phase * h2a_voov(a,l,j,e)
+                               end if
+                               if (e==a .and. f==b) then     ! case 7: (e,f) -> (a,b)
+                                  ! compute < ijkabc | h2a(voov) | likdab >
+                                  hmatel = hmatel + phase * h2a_voov(c,l,j,d)
+                               elseif (e==a .and. f==c) then ! case 8: (e,f) -> (a,c)
+                                  ! compute < ijkabc | h2a(voov) | likdac >
+                                  hmatel = hmatel - phase * h2a_voov(b,l,j,d)
+                               elseif (e==b .and. f==c) then ! case 9: (e,f) -> (b,c)
+                                  ! compute < ijkabc | h2a(voov) | likdbc >
+                                  hmatel = hmatel + phase * h2a_voov(a,l,j,d)
+                               end if
+                               resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                            end do
+                         end if
+                         if (ljk/=0) then
+                            phase = 1.0d0 * ljk/abs(ljk)
+                            do jdet = id3a_h(abs(ljk),1), id3a_h(abs(ljk),2)
+                               d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                               if (nexc3(a,b,c,d,e,f)>1) cycle ! skip if p(a) difference is more than 1
+                               hmatel = 0.0d0
+                               if (d==a .and. e==b) then     ! case 1: (d,e) -> (a,b)
+                                  ! compute < ijkabc | h2a(voov) | ljkabf >
+                                  hmatel = hmatel + phase * h2a_voov(c,l,i,f)
+                               elseif (d==a .and. e==c) then ! case 2: (d,e) -> (a,c)
+                                  ! compute < ijkabc | h2a(voov) | ljkacf >
+                                  hmatel = hmatel - phase * h2a_voov(b,l,i,f)
+                               elseif (d==b .and. e==c) then ! case 3: (d,e) -> (b,c)
+                                  ! compute < ijkabc | h2a(voov) | ljkbcf >
+                                  hmatel = hmatel + phase * h2a_voov(a,l,i,f)
+                               end if
+                               if (d==a .and. f==b) then     ! case 4: (d,f) -> (a,b)
+                                  ! compute < ijkabc | h2a(voov) | ljkaeb >
+                                  hmatel = hmatel - phase * h2a_voov(c,l,i,e)
+                               elseif (d==a .and. f==c) then ! case 5: (d,f) -> (a,c)
+                                  ! compute < ijkabc | h2a(voov) | ljkaec >
+                                  hmatel = hmatel + phase * h2a_voov(b,l,i,e)
+                               elseif (d==b .and. f==c) then ! case 6: (d,f) -> (b,c)
+                                  ! compute < ijkabc | h2a(voov) | ljkbec >
+                                  hmatel = hmatel - phase * h2a_voov(a,l,i,e)
+                               end if
+                               if (e==a .and. f==b) then     ! case 7: (e,f) -> (a,b)
+                                  ! compute < ijkabc | h2a(voov) | ljkdab >
+                                  hmatel = hmatel + phase * h2a_voov(c,l,i,d)
+                               elseif (e==a .and. f==c) then ! case 8: (e,f) -> (a,c)
+                                  ! compute < ijkabc | h2a(voov) | ljkdac >
+                                  hmatel = hmatel - phase * h2a_voov(b,l,i,d)
+                               elseif (e==b .and. f==c) then ! case 9: (e,f) -> (b,c)
+                                  ! compute < ijkabc | h2a(voov) | ljkdbc >
+                                  hmatel = hmatel + phase * h2a_voov(a,l,i,d)
+                               end if
+                               resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                            end do
+                         end if
+                      end do
+                      !!!! diagram 6: A(i/jk)A(a/bc) h2b(amie) * t3b(abeijm)
+                      do n = 1, nob
+                         do f = 1, nub
+                            jb = eck_table(f,n)
+                            ij = xixj_table(i,j); ik = xixj_table(i,k); jk = xixj_table(j,k);
+                            do jdet = id3b_h(jb,ij,1), id3b_h(jb,ij,2)
+                               d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                               ! (d,e) must be an ordered subset of (a,b,c)
+                               hmatel = 0.0d0
+                               if (d==a .and. e==b) then
+                                  ! compute < ijkabc | h2b(voov) | ijn~abf~ >
+                                  hmatel = hmatel + h2b_voov(c,n,k,f)
+                               else if (d==a .and. e==c) then
+                                  ! compute < ijkabc | h2b(voov) | ijn~acf~ >
+                                  hmatel = hmatel - h2b_voov(b,n,k,f)
+                               else if (d==b .and. e==c) then
+                                  ! compute < ijkabc | h2b(voov) | ijn~bcf~ >
+                                  hmatel = hmatel + h2b_voov(a,n,k,f)
+                               end if
+                               resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                            end do
+                            do jdet = id3b_h(jb,ik,1), id3b_h(jb,ik,2)
+                               d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                               ! (d,e) must be an ordered subset of (a,b,c)
+                               hmatel = 0.0d0
+                               if (d==a .and. e==b) then
+                                  ! compute < ijkabc | h2b(voov) | ikn~abf~ >
+                                  hmatel = hmatel - h2b_voov(c,n,j,f)
+                               else if (d==a .and. e==c) then
+                                  ! compute < ijkabc | h2b(voov) | ikn~acf~ >
+                                  hmatel = hmatel + h2b_voov(b,n,j,f)
+                               else if (d==b .and. e==c) then
+                                  ! compute < ijkabc | h2b(voov) | ikn~bcf~ >
+                                  hmatel = hmatel - h2b_voov(a,n,j,f)
+                               end if
+                               resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                            end do
+                            do jdet = id3b_h(jb,jk,1), id3b_h(jb,jk,2)
+                               d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                               ! (d,e) must be an ordered subset of (a,b,c)
+                               hmatel = 0.0d0
+                               if (d==a .and. e==b) then
+                                  ! compute < ijkabc | h2b(voov) | jkn~abf~ >
+                                  hmatel = hmatel + h2b_voov(c,n,i,f)
+                               else if (d==a .and. e==c) then
+                                  ! compute < ijkabc | h2b(voov) | jkn~acf~ >
+                                  hmatel = hmatel - h2b_voov(b,n,i,f)
+                               else if (d==b .and. e==c) then
+                                  ! compute < ijkabc | h2b(voov) | jkn~bcf~ >
+                                  hmatel = hmatel + h2b_voov(a,n,i,f)
+                               end if
+                               resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                            end do
+                         end do
+                      end do
+
+                  end do ! end loop over idet
                   !$omp end do
+
 
                   !$omp do
                   do idet = 1, n3aaa
@@ -737,12 +1070,20 @@ module ccp_quadratic_loops_direct
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
 
+                  ! deallocate sorting arrays
+                  deallocate(id3a_h)
+                  deallocate(xixjxk_table)
+                  deallocate(id3b_h)
+                  deallocate(xixj_table)
+                  deallocate(eck_table)
+
               end subroutine update_t3a_p
 
-              subroutine update_t3b_p(t3b_amps, resid,&
-                                      t3a_excits, t3b_excits, t3c_excits,&
+              subroutine update_t3b_p(resid,&
+                                      t3a_amps, t3a_excits,&
+                                      t3b_amps, t3b_excits,& 
+                                      t3c_amps, t3c_excits,&
                                       t2a, t2b,&
-                                      t3a_amps, t3c_amps,&
                                       H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
                                       H2A_oovv, H2A_vvov, H2A_vooo, H2A_oooo, H2A_voov, H2A_vvvv,&
                                       H2B_oovv, H2B_vvov, H2B_vvvo, H2B_vooo, H2B_ovoo,&
@@ -754,10 +1095,8 @@ module ccp_quadratic_loops_direct
                                       noa, nua, nob, nub)
 
                   integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb
-                  integer, intent(in) :: t3a_excits(6, n3aaa), t3b_excits(6, n3aab), t3c_excits(6, n3abb)
                   real(kind=8), intent(in) :: t2a(1:nua,1:nua,1:noa,1:noa),&
                                               t2b(1:nua,1:nub,1:noa,1:nob),&
-                                              t3a_amps(n3aaa), t3c_amps(n3abb),&
                                               H1A_oo(1:noa,1:noa),&
                                               H1A_vv(1:nua,1:nua),&
                                               H1B_oo(1:nob,1:nob),&
@@ -785,10 +1124,38 @@ module ccp_quadratic_loops_direct
                                               fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
                                               shift
 
+                  integer, intent(inout) :: t3a_excits(6,n3aaa)
+                  !f2py intent(in,out) :: t3a_excits(0:5,0:n3aaa-1)
+                  integer, intent(inout) :: t3b_excits(6,n3aab)
+                  !f2py intent(in,out) :: t3b_excits(0:5,0:n3aab-1)
+                  integer, intent(inout) :: t3c_excits(6,n3abb)
+                  !f2py intent(in,out) :: t3c_excits(0:5,0:n3abb-1)
+                  real(kind=8), intent(inout) :: t3a_amps(n3aaa)
+                  !f2py intent(in,out) :: t3a_amps(0:n3aaa-1)
                   real(kind=8), intent(inout) :: t3b_amps(n3aab)
                   !f2py intent(in,out) :: t3b_amps(0:n3aab-1)
+                  real(kind=8), intent(inout) :: t3c_amps(n3abb)
+                  !f2py intent(in,out) :: t3c_amps(0:n3abb-1)
 
                   real(kind=8), intent(out) :: resid(n3aab)
+
+                  integer, allocatable :: id3a_h(:,:)
+                  integer, allocatable :: xixjxk_table(:,:,:)
+
+                  integer, allocatable :: id3b_h(:,:,:)
+                  integer, allocatable :: eck_table(:,:)
+                  integer, allocatable :: xixj_table(:,:)
+                  integer, allocatable :: id3b_abij(:,:)
+                  integer, allocatable :: xaxbxixj_table(:,:,:,:)
+                  integer, allocatable :: id3b_aijk(:,:)
+                  integer, allocatable :: xaxixjxk_table(:,:,:,:)
+                  integer, allocatable :: id3b_bijk(:,:)
+                  integer, allocatable :: xbxixjxk_table(:,:,:,:)
+
+                  integer, allocatable :: id3c_h(:,:,:)
+                  integer, allocatable :: eai_table(:,:)
+                  integer, allocatable :: xjxk_table(:,:)
+
 
                   real(kind=8) :: I2A_vooo(nua, noa, noa, noa),&
                                   I2A_vvov(nua, nua, noa, nua),&
@@ -798,9 +1165,14 @@ module ccp_quadratic_loops_direct
                                   I2B_vvvo(nua, nub, nua, nob)
                   real(kind=8) :: denom, val, t_amp, res_mm23, hmatel
                   integer :: i, j, k, l, a, b, c, d, m, n, e, f, idet, jdet
+                  integer :: ib, ij, jb, lm
+                  integer :: ai, bj, aj, bi, mn, m1, mk
+                  integer :: li, lj, lmn
+                  integer :: iabij, iaijk, ibijk
+                  real(kind=8) :: phase
 
-                  ! Zero the residual container
-                  resid = 0.0d0
+                  integer :: d1, e1, f1, l1, n1
+
                   ! compute VT3 intermediates
                   I2A_vooo(:,:,:,:) = 0.5d0 * H2A_vooo(:,:,:,:)
                   I2A_vvov(:,:,:,:) = 0.5d0 * H2A_vvov(:,:,:,:)
@@ -915,75 +1287,349 @@ module ccp_quadratic_loops_direct
                       I2B_vooo(a,:,i,n) = I2B_vooo(a,:,i,n) - H2C_oovv(j,:,f,e) * t_amp ! (jn)
                   end do
 
+                  ! Zero the residual container
+                  resid = 0.0d0
+                  ! Perform the sorting of t3a, t3b, and t3c arrays
+                  ! WARNING: DON'T ALLOCATE OR DEALLOCATE WITHIN $OMP PARALLEL SECTIONS!
+                  allocate(id3a_h(noa*(noa-1)*(noa-2)/6,2))
+                  allocate(xixjxk_table(noa,noa,noa))
+                  call sort_t3a_h(t3a_excits, t3a_amps, id3a_h, xixjxk_table, noa, nua, n3aaa)
+                  allocate(id3b_h(nub*nob,noa*(noa-1)/2,2))
+                  allocate(xixj_table(noa,noa))
+                  allocate(eck_table(nub,nob))
+                  call sort_t3b_h(t3b_excits, t3b_amps, id3b_h, eck_table, xixj_table, noa, nua, nob, nub, n3aab, resid)
+                  allocate(id3c_h(nua*noa,nob*(nob-1)/2,2))
+                  allocate(xjxk_table(nob,nob))
+                  allocate(eai_table(nua,noa))
+                  call sort_t3c_h(t3c_excits, t3c_amps, id3c_h, eai_table, xjxk_table, noa, nua, nob, nub, n3abb)
+
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp t3a_excits,t3b_excits,t3c_excits,&
                   !$omp t3a_amps,t3b_amps,t3c_amps,t2a,t2b,&
+                  !$omp id3a_h,xixjxk_table,&
+                  !$omp id3b_h,eck_table,xixj_table,&
+                  !$omp id3c_h,eai_table,xjxk_table,&
                   !$omp H1A_oo,H1A_vv,H1B_oo,H1B_vv,H2A_oooo,H2B_oooo,&
                   !$omp H2B_ovvo,H2A_vvvv,H2B_vvvv,H2A_voov,H2C_voov,&
                   !$omp H2B_vovo,H2B_ovov,H2B_voov,&
                   !$omp I2A_vooo,I2A_vvov,I2B_vooo,I2B_ovoo,I2B_vvov,I2B_vvvo,&
                   !$omp fA_oo,fB_oo,fA_vv,fB_vv,noa,nua,nob,nub,shift,&
                   !$omp n3aaa,n3aab,n3abb),&
-                  !$omp private(hmatel,t_amp,denom,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet)
+                  !$omp private(hmatel,phase,t_amp,denom,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp ib,ij,jb,lm,ai,bj,aj,bi,mn,m1,mk,li,lj,lmn)
                   
                   !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                       i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                      do jdet = 1, n3aaa
-                          d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
-                          l = t3a_excits(4,jdet); m = t3a_excits(5,jdet); n = t3a_excits(6,jdet);
+                      ib = eck_table(c,k)
+                      ij = xixj_table(i,j)
 
-                          ! Check for 3 differences and early exit
-                          if ((d/=a .and. e/=b) .and. (d/=a .and. f/=b) .and. (e/=a .and. f/=b)) cycle
-                          if ((l/=i .and. m/=j) .and. (l/=i .and. n/=j) .and. (m/=i .and. n/=j)) cycle
-
-                          hmatel = 0.0d0
-                          t_amp = t3a_amps(jdet)
-                          hmatel = hmatel + aab_ovvo_aaa(i,j,k,a,b,c,l,m,n,d,e,f,h2b_ovvo,noa,nua,nob,nub)
-                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                      !!!! diagram 1: -A(i/jk) h1a(mi)*t3b(abcmjk)    
+                      !!!! diagram 5: A(i/jk) 1/2 h2a(mnij)*t3b(abcmnk) 
+                      do l = 1, noa
+                         do m = l+1, noa
+                            lm = xixj_table(l,m)
+                            do jdet = id3b_h(ib,lm,1), id3b_h(ib,lm,2)
+                               d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                               if (a/=d .or. b/=e) cycle ! skip if any p(a) difference
+                               ! compute h2a(oooo)
+                               hmatel = h2a_oooo(l,m,i,j) 
+                               if (nexc2(i,j,l,m)<2) then ! compute h1a(oo)
+                                       if (j==m) then 
+                                               hmatel = hmatel - h1a_oo(l,i)
+                                       elseif (j==l) then
+                                               hmatel = hmatel + h1a_oo(m,i)
+                                       end if
+                                       if (i==m) then
+                                               hmatel = hmatel + h1a_oo(l,j)
+                                       elseif (i==l) then
+                                               hmatel = hmatel - h1a_oo(m,j)
+                                       end if
+                               end if
+                               resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                            end do
+                         end do
                       end do
-                      do jdet = 1, n3aab
-                          d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
-                          l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
-
-                          ! Check for 3 differences and early exit
-
-                          hmatel = 0.0d0
-                          t_amp = t3b_amps(jdet)
-                          hmatel = hmatel + aab_oo_aab(i,j,k,a,b,c,l,m,n,d,e,f,h1a_oo,h1b_oo,noa,nob) ! effect = 1s
-                          hmatel = hmatel + aab_vv_aab(i,j,k,a,b,c,l,m,n,d,e,f,h1a_vv,h1b_vv,nua,nub) ! effect = 1s
-                          hmatel = hmatel + aab_oooo_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2a_oooo,h2b_oooo,noa,nob) ! effect = 1s
-                          hmatel = hmatel + aab_vvvv_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2a_vvvv,h2b_vvvv,nua,nub) ! effect = 2s
-                          hmatel = hmatel + aab_voov_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2a_voov,h2c_voov,noa,nua,nob,nub) ! effect = 2s
-                          hmatel = hmatel + aab_vovo_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2b_vovo,nua,nob) ! effect = 1s
-                          hmatel = hmatel + aab_ovov_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2b_ovov,noa,nub) ! effect = 1s
-                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                      !!!! diagram 2: A(a/bc) h1a(ae)*t3b(ebcmjk)
+                      !!!! diagram 6: A(a/bc) 1/2 h2a(abef)*t3b(ebcmjk)
+                      do jdet = id3b_h(ib,ij,1), id3b_h(ib,ij,2)
+                         d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                         ! compute h2a(vvvv)
+                         hmatel = h2a_vvvv(a,b,d,e)
+                         if (nexc2(a,b,d,e)<2) then ! compute h1a(vv)
+                             if (a==e) then 
+                                     hmatel = hmatel - h1a_vv(b,d) 
+                             elseif (a==d) then
+                                     hmatel = hmatel + h1a_vv(b,e) 
+                             end if
+                             if (b==e) then 
+                                     hmatel = hmatel + h1a_vv(a,d)
+                             elseif (b==d) then
+                                     hmatel = hmatel - h1a_vv(a,e)
+                             end if
+                         end if
+                         resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
                       end do
-                      do jdet = 1, n3abb
-                          d = t3c_excits(1,jdet); e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
-                          l = t3c_excits(4,jdet); m = t3c_excits(5,jdet); n = t3c_excits(6,jdet);
-
-                          ! Check for 3 differences and early exit
-                          if (d/=a .and. d/=b) cycle
-                          if (l/=i .and. l/=j) cycle
-                          if (c/=e .and. c/=f) cycle
-                          if (k/=m .and. k/=n) cycle
-
-                          hmatel = 0.0d0
-                          t_amp = t3c_amps(jdet)
-                          hmatel = hmatel + aab_voov_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_voov,noa,nua,nob,nub) ! effect = 1s
-                          if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                      !!!! diagram 3: -h1b(mk)*t3b(abcijm)
+                      !!!! diagram 7: A(ij) h2b(mnjk)*t3b(abcimn)
+                      do n = 1, nob
+                         jb = eck_table(c,n)
+                         do jdet = id3b_h(jb,ij,1), id3b_h(jb,ij,2)
+                            d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                            if (a/=d .or. b/=e) cycle ! skip any p(a) difference
+                            ! compute < ijkabc | h1b(oo) | ijnabc >
+                            resid(idet) = resid(idet) - h1b_oo(n,k) * t3b_amps(jdet)
+                         end do
+                         do l = 1, noa
+                            ! l <-> i
+                            lj = xixj_table(l,j)
+                            if (lj/=0) then
+                               phase = 1.0d0 * lj/abs(lj)
+                               do jdet = id3b_h(jb,abs(lj),1), id3b_h(jb,abs(lj),2)
+                                   d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                                   if (a/=d .or. b/=e) cycle ! skip any p(a) difference
+                                   ! compute sign(lj) * < ijkabc | h2b(oooo) | ljnabc >
+                                   hmatel =  phase * h2b_oooo(l,n,i,k)
+                                   resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                               end do
+                            end if
+                            ! l <-> j
+                            li = xixj_table(l,i)
+                            if (li/=0) then
+                               phase = 1.0d0 * li/abs(li)
+                               do jdet = id3b_h(jb,abs(li),1), id3b_h(jb,abs(li),2)
+                                   d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                                   if (a/=d .or. b/=e) cycle ! skip any p(a) difference
+                                   ! compute sign(li) * < ijkabc | h2b(oooo) | ilnabc >
+                                   hmatel = -phase * h2b_oooo(l,n,j,k)
+                                   resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                               end do
+                            end if
+                         end do
                       end do
-                  end do
-                  !$omp end do
+                      !!!! diagram 5: h1b(ce)*t3b(abeijm)
+                      !!!! diagram 8: A(ab) h2b(bcef)*t3b(aefijk)
+                      !do f = 1, nub
+                      !   jb = Eck_table(f,k)
+                      !   do jdet = id3b_h(jb,ij,1), id3b_h(jb,ij,2)
+                      !      d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                      !      if (nexc2(a,b,d,e)>1) cycle ! skip if p(a) > 1
+                      !      hmatel = 0.0d0
+                      !      ! compute h2b(vvvv)
+                      !      if (a==d) then
+                      !              hmatel = hmatel + h2b_vvvv(b,c,e,f) ! (1)
+                      !      elseif (a==e) then
+                      !              hmatel = hmatel - h2b_vvvv(b,c,d,f) ! (ed)
+                      !      end if 
+                      !      if (b==d) then 
+                      !              hmatel = hmatel - h2b_vvvv(a,c,e,f) ! (ab)
+                      !      elseif (b==e) then 
+                      !              hmatel = hmatel + h2b_vvvv(a,c,d,f) ! (ab)(ed)
+                      !      end if
+                      !      if (a==d .and. b==e) hmatel = hmatel + h1b_vv(c,f) ! compute h1b(vv)
+                      !      resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                      !   end do
+                      !end do
+                      !!!! diagram 9: A(ij)A(ab) h2a(amie)*t3b(ebcmjk)
+                      do l = 1, noa
+                         ! l <-> j
+                         li = xixj_table(l,i)
+                         if (li/=0) then
+                            phase = 1.0d0 * li/abs(li)
+                            do jdet = id3b_h(ib,abs(li),1), id3b_h(ib,abs(li),2)
+                               d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); 
+                               if (nexc2(a,b,d,e)>1) cycle ! skip if p(a) > 1
+                               ! compute sign(li) * < ijkabc | h2a(voov) | ilkdec >
+                               hmatel = 0.0
+                               if (b==e) then ! (1)
+                                       hmatel = hmatel + h2a_voov(a,l,j,d)
+                               elseif (b==d) then ! (de)
+                                       hmatel = hmatel - h2a_voov(a,l,j,e)
+                               end if
+                               if (a==e) then ! (1)
+                                       hmatel = hmatel - h2a_voov(b,l,j,d)
+                                elseif (a==d) then ! (de)
+                                       hmatel = hmatel + h2a_voov(b,l,j,e)
+                               end if
+                               hmatel = -phase * hmatel
+                               resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                            end do
+                         end if
+                         ! l <-> i
+                         lj = xixj_table(l,j)
+                         if (lj/=0) then
+                            phase = 1.0d0 * lj/abs(lj)
+                            do jdet = id3b_h(ib,abs(lj),1), id3b_h(ib,abs(lj),2)
+                               d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); 
+                               if (nexc2(a,b,d,e)>1) cycle ! skip if p(a) > 1
+                               ! compute sign(lj) * < ijkabc | h2a(voov) | ljkdec >
+                               hmatel = 0.0d0
+                               if (b==e) then ! (1)
+                                       hmatel = hmatel - h2a_voov(a,l,i,d)
+                               elseif (b==d) then ! (de)
+                                       hmatel = hmatel + h2a_voov(a,l,i,e)
+                               end if
+                               if (a==e) then ! (1)
+                                       hmatel = hmatel + h2a_voov(b,l,i,d)
+                               elseif (a==d) then ! (de)
+                                       hmatel = hmatel - h2a_voov(b,l,i,e)
+                               end if
+                               hmatel = -phase * hmatel
+                               resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                            end do
+                         end if
+                      end do
+                      !!!! diagram 10: h2c(cmke)*t3b(abeijm)
+                      !do n = 1, nob
+                      !   do f = 1, nub
+                      !      jb = Eck_table(f,n)
+                      !      do jdet = id3b_h(jb,ij,1), id3b_h(jb,ij,2)
+                      !         d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                      !         if (a/=d .or. b/=e) cycle ! skip if any p(a) difference
+                      !         ! compute h2c(voov)
+                      !         hmatel = h2c_voov(c,n,k,f) ! (1)
+                      !         resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                      !      end do
+                      !   end do
+                      !end do
+                      !!!! diagram 11: -A(ij) h2b(mcie)*t3b(abemjk)
+                      do f = 1, nub
+                         jb = eck_table(f,k)
+                         do l = 1, noa
+                            ! l <-> j
+                            li = xixj_table(l,i)
+                            if (li/=0) then
+                               phase = 1.0d0 * li/abs(li)
+                               do jdet = id3b_h(jb,abs(li),1), id3b_h(jb,abs(li),2)
+                                  d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                                  if (a/=d .or. b/=e) cycle
+                                  ! compute sign(li) * < ijkabc | h2b(ovov) | ilkabf >
+                                  hmatel = phase * h2b_ovov(l,c,j,f)
+                                  resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                               end do
+                            end if
+                            ! l <-> i
+                            lj = xixj_table(l,j)
+                            if (lj/=0) then
+                               phase = 1.0d0 * lj/abs(lj)
+                               do jdet = id3b_h(jb,abs(lj),1), id3b_h(jb,abs(lj),2)
+                                  d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                                  if (a/=d .or. b/=e) cycle
+                                  ! compute sign(lj) * < ijkabc | h2b(ovov) | ljkabf >
+                                  hmatel = -phase * h2b_ovov(l,c,i,f)
+                                  resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                               end do
+                            end if
+                         end do
+                      end do
+                      !!!! diagram 12: -A(ab) h2b(amek)*t3b(ebcijm)
+                      do n = 1, nob
+                         jb = Eck_table(c,n)
+                         do jdet = id3b_h(jb,ij,1), id3b_h(jb,ij,2)
+                            d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                            if (nexc2(a,b,d,e)>1) cycle ! skip if p(a) > 1
+                            ! compute h2b(vovo)
+                            hmatel = 0.0d0
+                            if (b==e) then 
+                                    hmatel = hmatel - h2b_vovo(a,n,d,k) ! (1)
+                            elseif (b==d) then 
+                                    hmatel = hmatel + h2b_vovo(a,n,e,k) ! (de)
+                            end if
+                            if (a==e) then 
+                                    hmatel = hmatel + h2b_vovo(b,n,d,k) ! (ab)
+                            elseif (a==d) then 
+                                    hmatel = hmatel - h2b_vovo(b,n,e,k) ! (ab)(de)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                         end do
+                      end do
+                      !!!! diagram 13: h2b(mcek)*t3a(abeijm)
+                      do n = 1, noa
+                         lmn = xixjxk_table(i,j,n)
+                         if (lmn==0) cycle
+                         phase = 1.0d0 * lmn/abs(lmn)
+                         do jdet = id3a_h(abs(lmn),1), id3a_h(abs(lmn),2)
+                            d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                            ! (a,b) must be an ordered subset of (d,e,f)
+                            hmatel = 0.0d0
+                            ! case 1: a = d, b = e
+                            if (a==d .and. b==e) then
+                               ! compute sign(lmn) * < ijk~abc~ | h2b(ovvo) | ijnabf >
+                               hmatel = hmatel + phase * h2b_ovvo(n,c,f,k)
+                            end if
+                            ! case 2: a = e, b = f
+                            if (a==e .and. b==f) then
+                               ! compute sign(lmn) * < ijk~abc~ | h2b(ovvo) | ijndab >
+                               hmatel = hmatel + phase * h2b_ovvo(n,c,d,k)
+                            end if
+                            ! case 3: a = d, b = f
+                            if (a==d .and. b==f) then
+                               ! compute sign(lmn) * < ijk~abc~ | h2b(ovvo) | ijnaeb >
+                               hmatel = hmatel - phase * h2b_ovvo(n,c,e,k)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                         end do
+                      end do
+                      !!!! diagram 14: A(ab)A(ij) h2b(bmje)*t3c(aecimk)
+                      do m = 1, nob 
+                         if (m==k) cycle
+                         mk = xjxk_table(m,k)
+                         phase = 1.0d0 * mk/abs(mk)
+                         ai = eai_table(a,i); bj = eai_table(b,j); aj = eai_table(a,j); bi = eai_table(b,i);
+                         do jdet = id3c_h(ai,abs(mk),1), id3c_h(ai,abs(mk),2)
+                            e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                            ! c must equal one of (e,f)
+                            hmatel = 0.0d0
+                            ! compute sign(mk) * < ijk~abc~ | h2b(voov) | im~k~ae~f~ >
+                            if (c==e) then
+                               hmatel = hmatel - phase * h2b_voov(b,m,j,f)
+                            elseif (c==f) then
+                               hmatel = hmatel + phase * h2b_voov(b,m,j,e)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3c_amps(jdet)
+                         end do
+                         do jdet = id3c_h(bj,abs(mk),1), id3c_h(bj,abs(mk),2)
+                            e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                            ! c must equal one of (e,f)
+                            hmatel = 0.0d0
+                            ! compute sign(mk) * < ijk~abc~ | h2b(voov) | jm~k~be~f~ >
+                            if (c==e) then
+                                hmatel = hmatel - phase * h2b_voov(a,m,i,f)
+                            elseif (c==f) then
+                                hmatel = hmatel + phase * h2b_voov(a,m,i,e)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3c_amps(jdet)
+                         end do
+                         do jdet = id3c_h(aj,abs(mk),1), id3c_h(aj,abs(mk),2)
+                            e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                            ! c must equal one of (e,f)
+                            hmatel = 0.0d0
+                            ! compute sign(mk) * < ijk~abc~ | h2b(voov) | jm~k~ae~f~ >
+                            if (c==e) then
+                                hmatel = hmatel + phase * h2b_voov(b,m,i,f)
+                            elseif (c==f) then
+                                hmatel = hmatel - phase * h2b_voov(b,m,i,e)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3c_amps(jdet)
+                         end do
+                         do jdet = id3c_h(bi,abs(mk),1), id3c_h(bi,abs(mk),2)
+                            e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                            ! c must equal one of (e,f)
+                            hmatel = 0.0d0
+                            ! compute sign(mk) * < ijk~abc~ | h2b(voov) | im~k~be~f~ >
+                            if (c==e) then
+                                hmatel = hmatel + phase * h2b_voov(a,m,j,f)
+                            elseif (c==f) then
+                                hmatel = hmatel - phase * h2b_voov(a,m,j,e)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3c_amps(jdet)
+                         end do
+                      end do                     
 
-                  !$omp do
-                  do idet = 1, n3aab
-                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
 
+                      ! Add MM(2,3) contribution and get final residual
                       denom = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k) - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
 
                       res_mm23 = 0.0d0
@@ -1019,19 +1665,198 @@ module ccp_quadratic_loops_direct
                       end do
 
                       resid(idet) = (resid(idet) + res_mm23)/(denom - shift)
-
-                      t3b_amps(idet) = t3b_amps(idet) + resid(idet)
-                  end do
+                  end do ! end loop over idet
                   !$omp end do
-
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
+
+                  ! deallocate sorting arrays
+                  deallocate(id3a_h,xixjxk_table)
+                  deallocate(id3b_h,eck_table,xixj_table)
+                  deallocate(id3c_h,eai_table,xjxk_table)
+
+                  ! allocate new sorting arrays
+                  allocate(id3b_abij(nua*(nua-1)/2*noa*(noa-1)/2,2))
+                  allocate(xaxbxixj_table(nua,nua,noa,noa))
+                  xaxbxixj_table = 0
+                  call sort_t3b_abij(t3b_excits, t3b_amps, id3b_abij, xaxbxixj_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp id3b_abij,xaxbxixj_table,&
+                  !$omp H2C_voov,&
+                  !$omp fA_oo,fB_oo,fA_vv,fB_vv,noa,nua,nob,nub,shift,&
+                  !$omp n3aaa,n3aab,n3abb),&
+                  !$omp private(hmatel,denom,a,b,c,d,i,j,k,l,f,n,idet,jdet,&
+                  !$omp iabij)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aab
+                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                      iabij = xaxbxixj_table(a,b,i,j)
+                      denom = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k) - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
+                      !!!! diagram 10: h2c(cmke)*t3b(abeijm)
+                      do jdet = id3b_abij(iabij,1), id3b_abij(iabij,2)
+                         f = t3b_excits(3,jdet); n = t3b_excits(6,jdet);
+                         ! compute < ijk~abc~ | h2c(voov) | ijn~abf~ >
+                         hmatel = h2c_voov(c,n,k,f)
+                         resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)/(denom - shift)
+                      end do
+                  end do ! end loop over idet
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(id3b_abij,xaxbxixj_table)
+
+                  ! allocate new sorting arrays
+                  allocate(id3b_aijk(nua*noa*(noa-1)/2*nob,2))
+                  allocate(xaxixjxk_table(nua,noa,noa,nob))
+                  xaxixjxk_table = 0
+                  call sort_t3b_aijk(t3b_excits, t3b_amps, id3b_aijk, xaxixjxk_table, noa, nua, nob, nub, n3aab, resid)
+                  call test_sort_t3b_aijk(t3b_excits, id3b_aijk, xaxixjxk_table, noa, nua, nob, nub, n3aab)
+
+
+                      !      ! compute h2b(vvvv)
+                      !      if (a==d) then
+                      !              hmatel = hmatel + h2b_vvvv(b,c,e,f) ! (1)
+                      !      elseif (a==e) then
+                      !              hmatel = hmatel - h2b_vvvv(b,c,d,f) ! (ed)
+                      !      end if 
+                      !      if (b==d) then 
+                      !              hmatel = hmatel - h2b_vvvv(a,c,e,f) ! (ab)
+                      !      elseif (b==e) then 
+                      !              hmatel = hmatel + h2b_vvvv(a,c,d,f) ! (ab)(ed)
+                      !      end if
+                      !      if (a==d .and. b==e) hmatel = hmatel + h1b_vv(c,f) ! compute h1b(vv)
+                      !      resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp id3b_aijk,xaxixjxk_table,&
+                  !$omp H1B_vv,H2B_vvvv,&
+                  !$omp fA_oo,fB_oo,fA_vv,fB_vv,noa,nua,nob,nub,shift,&
+                  !$omp n3aaa,n3aab,n3abb),&
+                  !$omp private(hmatel,denom,a,b,c,d,i,j,k,l,f,n,idet,jdet,&
+                  !$omp iaijk)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aab
+                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                      iaijk = xaxixjxk_table(a,i,j,k)
+                      denom = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k) - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
+                      !!!! diagram 5: h1b(ce)*t3b(abeijm)
+                      !!!! diagram 8: A(ab) h2b(bcef)*t3b(aefijk)
+                      do jdet = id3b_aijk(iaijk,1), id3b_aijk(iaijk,2)
+                         e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
+                         ! compute < ijk~abc~ | h2b(vvvv) | ijk~aef~ >
+                         hmatel = h2b_vvvv(b,c,e,f)
+                         if (b==e) hmatel = hmatel + h1b_vv(c,f)
+                         resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)/(denom - shift)
+                      end do
+                  end do ! end loop over idet
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(id3b_aijk,xaxixjxk_table)
+
+                  ! allocate new sorting arrays
+                  allocate(id3b_bijk(nua*noa*(noa-1)/2*nob,2))
+                  allocate(xbxixjxk_table(nua,noa,noa,nob))
+                  xbxixjxk_table = 0
+                  call sort_t3b_bijk(t3b_excits, t3b_amps, id3b_bijk, xbxixjxk_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp id3b_bijk,xbxixjxk_table,&
+                  !$omp H1B_vv,H2B_vvvv,&
+                  !$omp fA_oo,fB_oo,fA_vv,fB_vv,noa,nua,nob,nub,shift,&
+                  !$omp n3aaa,n3aab,n3abb),&
+                  !$omp private(hmatel,denom,a,b,c,d,i,j,k,l,f,n,idet,jdet,&
+                  !$omp ibijk)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aab
+                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                      ibijk = xbxixjxk_table(a,i,j,k)
+                      denom = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k) - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
+                      !!!! diagram 5: h1b(ce)*t3b(abeijm)
+                      !!!! diagram 8: A(ab) h2b(bcef)*t3b(aefijk)
+                      do jdet = id3b_bijk(ibijk,1), id3b_bijk(ibijk,2)
+                         d = t3b_excits(1,jdet); f = t3b_excits(3,jdet);
+                         ! compute < ijk~abc~ | h2b(vvvv) | ijk~dbf~ >
+                         hmatel = h2b_vvvv(a,c,d,f)
+                         if (a==d) hmatel = hmatel + h1b_vv(c,f)
+                         resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)/(denom - shift)
+                      end do
+                  end do ! end loop over idet
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(id3b_bijk,xbxixjxk_table)
+
+                  ! Update t3b in SIMD; make sure resid and t3b_amps are aligned!
+                  t3b_amps = t3b_amps + resid
+
+                  !!$omp do
+                  !do idet = 1, n3aab
+                  !    a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
+                  !    i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+
+                  !    denom = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k) - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
+
+                  !    res_mm23 = 0.0d0
+                  !    do e = 1, nua
+                  !        ! A(ab) I2B(bcek) * t2a(aeij)
+                  !        res_mm23 = res_mm23 + I2B_vvvo(b,c,e,k) * t2a(a,e,i,j)
+                  !        res_mm23 = res_mm23 - I2B_vvvo(a,c,e,k) * t2a(b,e,i,j)
+                  !        ! A(ij) I2A(abie) * t2b(ecjk)
+                  !        res_mm23 = res_mm23 + (I2A_vvov(a,b,i,e) - I2A_vvov(b,a,i,e)) * t2b(e,c,j,k)
+                  !        res_mm23 = res_mm23 - (I2A_vvov(a,b,j,e) - I2A_vvov(b,a,j,e)) * t2b(e,c,i,k)
+                  !    end do
+                  !    do e = 1, nub
+                  !        ! A(ij)A(ab) I2B(acie) * t2b(bejk)
+                  !        res_mm23 = res_mm23 + I2B_vvov(a,c,i,e) * t2b(b,e,j,k)
+                  !        res_mm23 = res_mm23 - I2B_vvov(a,c,j,e) * t2b(b,e,i,k)
+                  !        res_mm23 = res_mm23 - I2B_vvov(b,c,i,e) * t2b(a,e,j,k)
+                  !        res_mm23 = res_mm23 + I2B_vvov(b,c,j,e) * t2b(a,e,i,k)
+                  !    end do
+                  !    do m = 1, noa
+                  !        ! -A(ij) h2b(mcjk) * t2a(abim) 
+                  !        res_mm23 = res_mm23 - I2B_ovoo(m,c,j,k) * t2a(a,b,i,m)
+                  !        res_mm23 = res_mm23 + I2B_ovoo(m,c,i,k) * t2a(a,b,j,m)
+                  !        ! -A(ab) h2a(amij) * t2b(bcmk)
+                  !        res_mm23 = res_mm23 - (I2A_vooo(a,m,i,j) - I2A_vooo(a,m,j,i)) * t2b(b,c,m,k)
+                  !        res_mm23 = res_mm23 + (I2A_vooo(b,m,i,j) - I2A_vooo(b,m,j,i)) * t2b(a,c,m,k)
+                  !    end do
+                  !    do m = 1, nob
+                  !        ! -A(ij)A(ab) h2b(amik) * t2b(bcjm)
+                  !        res_mm23 = res_mm23 - I2B_vooo(a,m,i,k) * t2b(b,c,j,m)
+                  !        res_mm23 = res_mm23 + I2B_vooo(b,m,i,k) * t2b(a,c,j,m)
+                  !        res_mm23 = res_mm23 + I2B_vooo(a,m,j,k) * t2b(b,c,i,m)
+                  !        res_mm23 = res_mm23 - I2B_vooo(b,m,j,k) * t2b(a,c,i,m)
+                  !    end do
+
+                  !    resid(idet) = (resid(idet) + res_mm23)/(denom - shift)
+
+                  !    t3b_amps(idet) = t3b_amps(idet) + resid(idet)
+                  !end do
+                  !!$omp end do
+
+
+
               end subroutine update_t3b_p
 
-              subroutine update_t3c_p(t3c_amps, resid,&
-                                      t3b_excits, t3c_excits, t3d_excits,&
+              subroutine update_t3c_p(resid,&
+                                      t3b_amps, t3b_excits,&
+                                      t3c_amps, t3c_excits,&
+                                      t3d_amps, t3d_excits,&
                                       t2b, t2c,&
-                                      t3b_amps, t3d_amps,&
                                       H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
                                       H2A_oovv, H2A_voov,&
                                       H2B_oovv, H2B_vooo, H2B_ovoo, H2B_vvov, H2B_vvvo, H2B_oooo,&
@@ -1043,11 +1868,8 @@ module ccp_quadratic_loops_direct
                                       noa, nua, nob, nub)
 
                   integer, intent(in) :: noa, nua, nob, nub, n3aab, n3abb, n3bbb
-                  integer, intent(in) :: t3b_excits(6, n3aab), t3c_excits(6, n3abb), t3d_excits(6, n3bbb)
                   real(kind=8), intent(in) :: t2b(1:nua,1:nub,1:noa,1:nob),&
                                               t2c(1:nub,1:nub,1:nob,1:nob),&
-                                              t3b_amps(n3aab),&
-                                              t3d_amps(n3bbb),&
                                               H1A_oo(1:noa,1:noa),&
                                               H1A_vv(1:nua,1:nua),&
                                               H1B_oo(1:nob,1:nob),&
@@ -1075,10 +1897,29 @@ module ccp_quadratic_loops_direct
                                               fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
                                               shift
 
+                  integer, intent(inout) :: t3b_excits(6,n3aab)
+                  !f2py intent(in,out) :: t3b_excits(0:5,0:n3aab-1)
+                  integer, intent(inout) :: t3c_excits(6,n3abb)
+                  !f2py intent(in,out) :: t3c_excits(0:5,0:n3abb-1)
+                  integer, intent(inout) :: t3d_excits(6,n3bbb)
+                  !f2py intent(in,out) :: t3d_excits(0:5,0:n3bbb-1)
+                  real(kind=8), intent(inout) :: t3b_amps(n3aab)
+                  !f2py intent(in,out) :: t3b_amps(0:n3aab-1)
                   real(kind=8), intent(inout) :: t3c_amps(n3abb)
                   !f2py intent(in,out) :: t3c_amps(0:n3abb-1)
+                  real(kind=8), intent(inout) :: t3d_amps(n3bbb)
+                  !f2py intent(in,out) :: t3d_amps(0:n3bbb-1)
 
                   real(kind=8), intent(out) :: resid(n3abb)
+
+                  integer, allocatable :: id3b_h(:,:,:)
+                  integer, allocatable :: eck_table(:,:)
+                  integer, allocatable :: xixj_table(:,:)
+                  integer, allocatable :: id3c_h(:,:,:)
+                  integer, allocatable :: eai_table(:,:)
+                  integer, allocatable :: xjxk_table(:,:)
+                  integer, allocatable :: id3d_h(:,:)
+                  integer, allocatable :: xixjxk_table(:,:,:)
 
                   real(kind=8) :: I2C_vooo(nub, nob, nob, nob),&
                                   I2C_vvov(nub, nub, nob, nub),&
@@ -1088,6 +1929,8 @@ module ccp_quadratic_loops_direct
                                   I2B_vvvo(nua, nub, nua, nob)
                   real(kind=8) :: denom, val, t_amp, res_mm23, hmatel
                   integer :: i, j, k, l, a, b, c, d, m, n, e, f, idet, jdet
+                  integer :: ia, jk, ja, mn
+                  integer :: bj, ck, bk, cj, lm, l1
 
                   ! Zero the residual
                   resid = 0.0d0
@@ -1205,10 +2048,25 @@ module ccp_quadratic_loops_direct
                       I2C_vvov(a,f,n,:) = I2C_vvov(a,f,n,:) - H2C_oovv(m,i,:,b) * t_amp ! (in)(bf)
                   end do
 
+                  ! Perform the sorting of t3b, t3c, and t3d arrays
+                  allocate(id3b_h(nub*nob,noa*(noa-1)/2,2))
+                  allocate(xixj_table(noa,noa))
+                  allocate(eck_table(nub,nob))
+                  call sort_t3b_h(t3b_excits, t3b_amps, id3b_h, eck_table, xixj_table, noa, nua, nob, nub, n3aab)
+                  allocate(id3c_h(nua*noa,nob*(nob-1)/2,2))
+                  allocate(xjxk_table(nob,nob))
+                  allocate(eai_table(nua,noa))
+                  call sort_t3c_h(t3c_excits, t3c_amps, id3c_h, eai_table, xjxk_table, noa, nua, nob, nub, n3abb, resid)
+                  allocate(id3d_h(nob*(nob-1)*(nob-2)/6,2))
+                  allocate(xixjxk_table(nob,nob,nob))
+                  call sort_t3a_h(t3d_excits, t3d_amps, id3d_h, xixjxk_table, nob, nub, n3bbb)
+
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp t3b_excits,t3c_excits,t3d_excits,&
                   !$omp t3b_amps,t3c_amps,t3d_amps,t2b,t2c,&
+                  !$omp id3b_h,eck_table,xixj_table,&
+                  !$omp id3c_h,eai_table,xjxk_table,&
                   !$omp H1A_oo,H1B_oo,H1A_vv,H1B_vv,H2B_oooo,H2C_oooo,&
                   !$omp H2B_ovvo,H2B_voov,H2C_vvvv,H2B_vvvv,&
                   !$omp H2A_voov,H2C_voov,H2B_ovov,H2B_vovo,&
@@ -1216,42 +2074,148 @@ module ccp_quadratic_loops_direct
                   !$omp I2B_vvov,I2B_vvvo,&
                   !$omp fA_oo,fB_oo,fA_vv,fB_vv,nua,nub,noa,nob,&
                   !$omp shift,n3aab,n3abb,n3bbb),&
-                  !$omp private(a,b,c,d,i,j,k,l,m,n,e,f,denom,t_amp,hmatel,idet,jdet)
+                  !$omp private(a,b,c,d,i,j,k,l,m,n,e,f,denom,t_amp,hmatel,idet,jdet,&
+                  !$omp ia,jk,ja,mn,bj,ck,bk,cj,lm,l1)
 
                   !$omp do
                   do idet = 1, n3abb
-                     a = t3c_excits(1,idet); b = t3c_excits(2,idet); c = t3c_excits(3,idet);
-                     i = t3c_excits(4,idet); j = t3c_excits(5,idet); k = t3c_excits(6,idet);
-                     do jdet = 1, n3aab
-                        d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
-                        l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
+                      a = t3c_excits(1,idet); b = t3c_excits(2,idet); c = t3c_excits(3,idet);
+                      i = t3c_excits(4,idet); j = t3c_excits(5,idet); k = t3c_excits(6,idet);
+                      ia = eai_table(a,i)
+                      jk = xjxk_table(j,k)
 
-                        ! Check for 3 differences and early exit
-                        if (f/=b .and. f/=c) cycle
-                        if (n/=j .and. n/=k) cycle
-                        if (a/=d .and. a/=e) cycle
-                        if (i/=l .and. i/=m) cycle
+                      ! diagram 1: h1b(oo)
+                      ! diagram 5: h2c(oooo)
+                      do m = 1, nob
+                         do n = m+1, nob
+                            mn = xjxk_table(m,n)
+                            do jdet = id3c_h(ia,mn,1), id3c_h(ia,mn,2)
+                               e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                               if (b/=e .or. c/=f) cycle ! skip if any p(b) difference
+                               ! compute h2c(oooo)
+                               hmatel = h2c_oooo(m,n,j,k)
+                               if (nexc2(j,k,m,n)<2) then ! compute h1b(oo)
+                                       if (k==n) then
+                                               hmatel = hmatel - h1b_oo(m,j)
+                                       elseif (k==m) then
+                                               hmatel = hmatel + h1b_oo(n,j)
+                                       end if
+                                       if (j==n) then
+                                               hmatel = hmatel + h1b_oo(m,k)
+                                       elseif (j==m) then
+                                               hmatel = hmatel - h1b_oo(n,k)
+                                       end if
+                               end if
+                               resid(idet) = resid(idet) + hmatel * t3c_amps(jdet)
+                            end do
+                         end do
+                      end do
+                      ! diagram 2: h1b(vv)
+                      ! diagram 6: h2c(vvvv)
+                      do jdet = id3c_h(ia,jk,1), id3c_h(ia,jk,2)
+                         e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                         ! compute h2c(vvvv)
+                         hmatel = h2c_vvvv(b,c,e,f)
+                         if (nexc2(b,c,e,f)<2) then ! compute h1b(vv)
+                             if (b==f) then 
+                                     hmatel = hmatel - h1b_vv(c,e) 
+                             elseif (b==e) then
+                                     hmatel = hmatel + h1b_vv(c,f) 
+                             end if
+                             if (c==f) then 
+                                     hmatel = hmatel + h1b_vv(b,e)
+                             elseif (c==e) then
+                                     hmatel = hmatel - h1b_vv(b,f)
+                             end if
+                         end if
+                         resid(idet) = resid(idet) + hmatel * t3c_amps(jdet)
+                      end do
+                      ! diagram 3: h1a(oo)
+                      ! diagram 7: h2b(oooo)
+                      do m = 1, nob
+                         do n = m+1, nob
+                            if (nexc2(j,k,m,n)>1) cycle ! skip if h(b) > 1
+                            mn = xjxk_table(m,n)
+                            do l = 1, noa
+                               ja = eai_table(a,l)
+                               do jdet = id3c_h(ja,mn,1), id3c_h(ja,mn,2)
+                                  e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                                  if (b/=e .or. c/=f) cycle ! skip any p(b) difference
+                                  hmatel = 0.0d0
+                                  ! compute h2b(oooo)
+                                  if (j==m) then 
+                                          hmatel = hmatel + h2b_oooo(l,n,i,k) ! (1)
+                                  elseif (j==n) then
+                                          hmatel = hmatel - h2b_oooo(l,m,i,k) ! (lm)
+                                  end if
+                                  if (k==m) then 
+                                          hmatel = hmatel - h2b_oooo(l,n,i,j) ! (ij)
+                                  elseif (k==n) then 
+                                          hmatel = hmatel + h2b_oooo(l,m,i,j) ! (ij)(lm)
+                                  end if
+                                  if (j==m .and. k==n) hmatel = hmatel - h1a_oo(l,i) ! compute h1a(oo)
+                                  resid(idet) = resid(idet) + hmatel * t3c_amps(jdet)
+                               end do
+                            end do
+                         end do
+                      end do
+                      ! diagram 5: h1a(vv)
+                      ! diagram 8: h2b(vvvv)
+                      do d = 1, nua
+                         ja = eai_table(d,i)
+                         do jdet = id3c_h(ja,jk,1), id3c_h(ja,jk,2)
+                            e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                            if (nexc2(b,c,e,f)>1) cycle ! skip if p(b) > 1
+                            hmatel = 0.0d0
+                            ! compute h2b(vvvv)
+                            if (b==e) then
+                                    hmatel = hmatel + h2b_vvvv(a,c,d,f) ! (1)
+                            elseif (b==f) then
+                                    hmatel = hmatel - h2b_vvvv(a,c,d,e) ! (ed)
+                            end if 
+                            if (c==e) then 
+                                    hmatel = hmatel - h2b_vvvv(a,b,d,f) ! (ab)
+                            elseif (c==f) then 
+                                    hmatel = hmatel + h2b_vvvv(a,b,d,e) ! (ab)(ed)
+                            end if
+                            if (b==e .and. c==f) hmatel = hmatel + h1a_vv(a,d) ! compute h1b(vv)
+                            resid(idet) = resid(idet) + hmatel * t3c_amps(jdet)
+                         end do
+                      end do
 
-                        hmatel = 0.0d0
-                        t_amp = t3b_amps(jdet)
-                        hmatel = hmatel + abb_ovvo_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2b_ovvo,noa,nua,nob,nub)
-                        if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
-                     end do
-                     do jdet = 1, n3abb
-                        d = t3c_excits(1,jdet); e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
-                        l = t3c_excits(4,jdet); m = t3c_excits(5,jdet); n = t3c_excits(6,jdet);
 
-                        hmatel = 0.0d0
-                        t_amp = t3c_amps(jdet)
-                        hmatel = hmatel + abb_oo_abb(i,j,k,a,b,c,l,m,n,d,e,f,h1a_oo,h1b_oo,noa,nob)
-                        hmatel = hmatel + abb_vv_abb(i,j,k,a,b,c,l,m,n,d,e,f,h1a_vv,h1b_vv,nua,nub)
-                        hmatel = hmatel + abb_oooo_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2c_oooo,h2b_oooo,noa,nob)
-                        hmatel = hmatel + abb_vvvv_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2c_vvvv,h2b_vvvv,nua,nub)
-                        hmatel = hmatel + abb_voov_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2a_voov,h2c_voov,noa,nua,nob,nub)
-                        hmatel = hmatel + abb_ovov_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_ovov,noa,nub)
-                        hmatel = hmatel + abb_vovo_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_vovo,nua,nob)
-                        if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
-                     end do
+                     !do jdet = 1, n3aab
+                     !   d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
+                     !   l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
+
+                     !   ! Check for 3 differences and early exit
+                     !   if (f/=b .and. f/=c) cycle
+                     !   if (n/=j .and. n/=k) cycle
+                     !   if (a/=d .and. a/=e) cycle
+                     !   if (i/=l .and. i/=m) cycle
+
+                     !   hmatel = 0.0d0
+                     !   t_amp = t3b_amps(jdet)
+                     !   hmatel = hmatel + abb_ovvo_aab(i,j,k,a,b,c,l,m,n,d,e,f,h2b_ovvo,noa,nua,nob,nub)
+                     !   if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                     !end do
+                     !do jdet = 1, n3abb
+                     !   d = t3c_excits(1,jdet); e = t3c_excits(2,jdet); f = t3c_excits(3,jdet);
+                     !   l = t3c_excits(4,jdet); m = t3c_excits(5,jdet); n = t3c_excits(6,jdet);
+
+                     !   hmatel = 0.0d0
+                     !   t_amp = t3c_amps(jdet)
+                     !   hmatel = hmatel + abb_oo_abb(i,j,k,a,b,c,l,m,n,d,e,f,h1a_oo,h1b_oo,noa,nob)
+                     !   hmatel = hmatel + abb_vv_abb(i,j,k,a,b,c,l,m,n,d,e,f,h1a_vv,h1b_vv,nua,nub)
+                     !   hmatel = hmatel + abb_oooo_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2c_oooo,h2b_oooo,noa,nob)
+                     !   hmatel = hmatel + abb_vvvv_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2c_vvvv,h2b_vvvv,nua,nub)
+                     !   hmatel = hmatel + abb_voov_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2a_voov,h2c_voov,noa,nua,nob,nub)
+                     !   hmatel = hmatel + abb_ovov_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_ovov,noa,nub)
+                     !   hmatel = hmatel + abb_vovo_abb(i,j,k,a,b,c,l,m,n,d,e,f,h2b_vovo,nua,nob)
+                     !   if (hmatel /= 0.0d0) resid(idet) = resid(idet) + hmatel * t_amp
+                     !end do
+
+
                      do jdet = 1, n3bbb
                         d = t3d_excits(1,jdet); e = t3d_excits(2,jdet); f = t3d_excits(3,jdet);
                         l = t3d_excits(4,jdet); m = t3d_excits(5,jdet); n = t3d_excits(6,jdet);
@@ -1315,6 +2279,11 @@ module ccp_quadratic_loops_direct
 
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
+
+                  ! deallocate sorting arrays
+                  deallocate(id3b_h,eck_table,xixj_table)
+                  deallocate(id3c_h,eai_table,xjxk_table)
+                  deallocate(id3d_h,xixjxk_table)
 
               end subroutine update_t3c_p
 
@@ -1490,619 +2459,601 @@ module ccp_quadratic_loops_direct
               end subroutine update_t3d_p
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!! HBAR MATRIX ELEMENTS !!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SORTING FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-          pure function aaa_oo_aaa(i, j, k, a, b, c, l, m, n, d, e, f, h, noa) result(hmatel)
-                  ! Expression:
-                  ! -A(abc)A(jk)A(l/mn)A(i/jk) d(a,d)d(b,e)d(c,f)d(j,m)d(k,n) h(l,i)
-
-                  integer, intent(in) :: noa
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: h(1:noa,1:noa)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  if (a==d .and. b==e .and. c==f) then
-
-                          if (j==m .and. k==n) hmatel = hmatel - h(l,i) ! (1)
-                          if (j==l .and. k==n) hmatel = hmatel + h(m,i) ! (lm)
-                          if (i==m .and. k==n) hmatel = hmatel + h(l,j) ! (ij)
-                          if (i==l .and. k==n) hmatel = hmatel - h(m,j) ! (lm)(ij)
-
-                          if (j==m .and. i==l) hmatel = hmatel - h(n,k) ! (ln)(ik)
-                          if (k==m .and. j==l) hmatel = hmatel - h(n,i) ! (ln)
-                          if (i==m .and. j==n) hmatel = hmatel - h(l,k) ! (ij)
-                          if (i==l .and. j==n) hmatel = hmatel + h(m,k) ! (lm)(ij)
-                          if (k==m .and. i==l) hmatel = hmatel + h(n,j) ! (ln)(ik)
-
-                  end if
-          end function aaa_oo_aaa
-
-          pure function aaa_vv_aaa(i, j, k, a, b, c, l, m, n, d, e, f, h, nua) result(hmatel)
-                  ! Expression:
-                  ! A(ijk)A(bc)A(d/ef)A(a/bc) d(i,l)d(j,m)d(k,n)d(b,e)d(c,f) h(a,d)
-
-                  integer, intent(in) :: nua
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: h(1:nua,1:nua)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  if (i==l .and. j==m .and. k==n) then
-
-                        if (b==e .and. c==f) hmatel = hmatel + h(a,d) ! (1)
-                        if (a==e .and. c==f) hmatel = hmatel - h(b,d) ! (ab)
-                        if (b==d .and. c==f) hmatel = hmatel - h(a,e) ! (de)
-                        if (a==d .and. c==f) hmatel = hmatel + h(b,e) ! (de)(ab)
-                        if (b==e .and. a==d) hmatel = hmatel + h(c,f) ! (df)(ac)
-
-                        if (a==e .and. b==f) hmatel = hmatel + h(c,d) ! (ab)
-                        if (a==d .and. b==f) hmatel = hmatel - h(c,e) ! (de)(ab)
-                        if (c==e .and. b==d) hmatel = hmatel + h(a,f) ! (df)
-                        if (c==e .and. a==d) hmatel = hmatel - h(b,f) ! (df)(ac)
-                  end if
-          end function aaa_vv_aaa
-
-          pure function aaa_oooo_aaa(i, j, k, a, b, c, l, m, n, d, e, f, h, noa) result(hmatel)
-                  ! Expression:
-                  ! A(abc)A(k/ij)A(n/lm) d(a,d)d(b,e)d(c,f)d(k,n) h(l,m,i,j)
-
-                  integer, intent(in) :: noa
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: h(1:noa,1:noa,1:noa,1:noa)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  ! (1)
-                  if (a==d .and. b==e .and. c==f) then
-                      ! (1)
-                      if (k==n) then 
-                              hmatel = hmatel + h(l,m,i,j) ! (1)
-                      elseif (k==l) then 
-                              hmatel = hmatel - h(n,m,i,j) ! (ln)
-                      elseif (k==m) then 
-                              hmatel = hmatel - h(l,n,i,j) ! (mn)
-                      end if
-                      ! (ik)
-                      if (i==n) then 
-                              hmatel = hmatel - h(l,m,k,j) ! (1)
-                      elseif (i==l) then 
-                              hmatel = hmatel + h(n,m,k,j) ! (ln)
-                      elseif (i==m) then 
-                              hmatel = hmatel + h(l,n,k,j) ! (mn)
-                      end if
-                      ! (jk)
-                      if (j==n) then 
-                              hmatel = hmatel - h(l,m,i,k) ! (1)
-                      elseif (j==l) then 
-                              hmatel = hmatel + h(n,m,i,k) ! (ln)
-                      elseif (j==m) then 
-                              hmatel = hmatel + h(l,n,i,k) ! (mn)
-                      end if
-                  end if
-          end function aaa_oooo_aaa
-
-          pure function aaa_vvvv_aaa(i, j, k, a, b, c, l, m, n, d, e, f, h, nua) result(hmatel)
-                  ! Expression:
-                  ! A(ijk)A(c/ab)A(f/de) d(i,l)d(j,m)d(k,n)d(c,f) h(a,b,d,e)
-
-                  integer, intent(in) :: nua
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: h(1:nua,1:nua,1:nua,1:nua)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  ! (1)
-                  if (i==l .and. j==m .and. k==n) then
-                      if (a==f) then 
-                              hmatel = hmatel - h(c,b,d,e) ! (ac)
-                      elseif (a==d) then 
-                              hmatel = hmatel + h(c,b,f,e) ! (ac)
-                      elseif (a==e) then 
-                              hmatel = hmatel + h(c,b,d,f) ! (ac)
-                      end if
-
-                      if (b==f) then
-                              hmatel = hmatel - h(a,c,d,e) ! (bc)
-                      elseif (b==d) then 
-                              hmatel = hmatel + h(a,c,f,e) ! (bc)
-                      elseif (b==e) then 
-                              hmatel = hmatel + h(a,c,d,f) ! (bc)
-                      end if
-
-                      if (c==f) then
-                              hmatel = hmatel + h(a,b,d,e) ! (1)
-                      elseif (c==d) then
-                              hmatel = hmatel - h(a,b,f,e) ! (1)
-                      elseif (c==e) then 
-                              hmatel = hmatel - h(a,b,d,f) ! (1)
-                      end if
-                  end if
-          end function aaa_vvvv_aaa
-
-          pure function aaa_voov_aaa(i, j, k, a, b, c, l, m, n, d, e, f, h, noa, nua) result(hmatel)
-              ! Expression:
-              ! A(jk)A(bc)A(i/jk)A(a/bc)A(l/mn)A(d/ef) d(j,m)d(k,n)d(b,e)d(c,f) h(a,l,i,d)
-
-              integer, intent(in) :: noa, nua
-              integer, intent(in) :: i, j, k, a, b, c
-              integer, intent(in) :: l, m, n, d, e, f
-              real(kind=8), intent(in) :: h(1:nua,1:noa,1:noa,1:nua)
-
-              real(kind=8) :: hmatel
-
-              hmatel = 0.0d0
-
-                  ! (1)
-                  if (j==m .and. k==n .and. b==e .and. c==f) hmatel = hmatel + h(a,l,i,d) ! (1)
-                  if (j==m .and. k==n .and. b==d .and. c==f) hmatel = hmatel - h(a,l,i,e) ! (de)
-                  if (j==l .and. k==n .and. b==e .and. c==f) hmatel = hmatel - h(a,m,i,d) ! (lm)
-                  if (j==l .and. k==n .and. b==d .and. c==f) hmatel = hmatel + h(a,m,i,e) ! (de)(lm)
-                  if (j==m .and. k==n .and. a==e .and. c==f) hmatel = hmatel - h(b,l,i,d) ! (ab)
-                  if (j==m .and. k==n .and. a==d .and. c==f) hmatel = hmatel + h(b,l,i,e) ! (de)(ab)
-                  if (j==l .and. k==n .and. a==e .and. c==f) hmatel = hmatel + h(b,m,i,d) ! (lm)(ab)
-                  if (j==l .and. k==n .and. a==d .and. c==f) hmatel = hmatel - h(b,m,i,e) ! (de)(lm)(ab)
-                  if (j==m .and. k==n .and. b==e .and. a==d) hmatel = hmatel + h(c,l,i,f) ! (df)(ac)
-                  if (j==l .and. k==n .and. b==e .and. a==d) hmatel = hmatel - h(c,m,i,f) ! (df)(lm)(ac)
-                  if (i==m .and. k==n .and. b==e .and. c==f) hmatel = hmatel - h(a,l,j,d) ! (ij)
-                  if (i==m .and. k==n .and. b==d .and. c==f) hmatel = hmatel + h(a,l,j,e) ! (de)(ij)
-                  if (i==l .and. k==n .and. b==e .and. c==f) hmatel = hmatel + h(a,m,j,d) ! (lm)(ij)
-                  if (i==l .and. k==n .and. b==d .and. c==f) hmatel = hmatel - h(a,m,j,e) ! (de)(lm)(ij)
-                  if (i==m .and. k==n .and. a==e .and. c==f) hmatel = hmatel + h(b,l,j,d) ! (ab)(ij)
-                  if (i==m .and. k==n .and. a==d .and. c==f) hmatel = hmatel - h(b,l,j,e) ! (de)(ab)(ij)
-                  if (i==l .and. k==n .and. a==e .and. c==f) hmatel = hmatel - h(b,m,j,d) ! (lm)(ab)(ij)
-                  if (i==l .and. k==n .and. a==d .and. c==f) hmatel = hmatel + h(b,m,j,e) ! (de)(lm)(ab)(ij)
-                  if (i==m .and. k==n .and. b==e .and. a==d) hmatel = hmatel - h(c,l,j,f) ! (df)(ac)(ij)
-                  if (i==l .and. k==n .and. b==e .and. a==d) hmatel = hmatel + h(c,m,j,f) ! (df)(lm)(ac)(ij)
-                  if (j==m .and. i==l .and. b==e .and. c==f) hmatel = hmatel + h(a,n,k,d) ! (ln)(ik)
-                  if (j==m .and. i==l .and. b==d .and. c==f) hmatel = hmatel - h(a,n,k,e) ! (de)(ln)(ik)
-                  if (j==m .and. i==l .and. a==e .and. c==f) hmatel = hmatel - h(b,n,k,d) ! (ln)(ab)(ik)
-                  if (j==m .and. i==l .and. a==d .and. c==f) hmatel = hmatel + h(b,n,k,e) ! (de)(ln)(ab)(ik)
-                  if (j==m .and. i==l .and. b==e .and. a==d) hmatel = hmatel + h(c,n,k,f) ! (df)(ln)(ac)(ik)
-                  ! (bc)
-                  if (j==m .and. k==n .and. c==e .and. b==d) hmatel = hmatel + h(a,l,i,f) ! (df)
-                  if (j==l .and. k==n .and. c==e .and. b==d) hmatel = hmatel - h(a,m,i,f) ! (df)(lm)
-                  if (j==m .and. k==n .and. a==e .and. b==f) hmatel = hmatel + h(c,l,i,d) ! (ab)
-                  if (j==m .and. k==n .and. a==d .and. b==f) hmatel = hmatel - h(c,l,i,e) ! (de)(ab)
-                  if (j==l .and. k==n .and. a==e .and. b==f) hmatel = hmatel - h(c,m,i,d) ! (lm)(ab)
-                  if (j==l .and. k==n .and. a==d .and. b==f) hmatel = hmatel + h(c,m,i,e) ! (de)(lm)(ab)
-                  if (j==m .and. k==n .and. c==e .and. a==d) hmatel = hmatel - h(b,l,i,f) ! (df)(ac)
-                  if (j==l .and. k==n .and. c==e .and. a==d) hmatel = hmatel + h(b,m,i,f) ! (df)(lm)(ac)
-                  if (i==m .and. k==n .and. c==e .and. b==d) hmatel = hmatel - h(a,l,j,f) ! (df)(ij)
-                  if (i==l .and. k==n .and. c==e .and. b==d) hmatel = hmatel + h(a,m,j,f) ! (df)(lm)(ij)
-                  if (i==m .and. k==n .and. a==e .and. b==f) hmatel = hmatel - h(c,l,j,d) ! (ab)(ij)
-                  if (i==m .and. k==n .and. a==d .and. b==f) hmatel = hmatel + h(c,l,j,e) ! (de)(ab)(ij)
-                  if (i==l .and. k==n .and. a==e .and. b==f) hmatel = hmatel + h(c,m,j,d) ! (lm)(ab)(ij)
-                  if (i==l .and. k==n .and. a==d .and. b==f) hmatel = hmatel - h(c,m,j,e) ! (de)(lm)(ab)(ij)
-                  if (i==m .and. k==n .and. c==e .and. a==d) hmatel = hmatel + h(b,l,j,f) ! (df)(ac)(ij)
-                  if (i==l .and. k==n .and. c==e .and. a==d) hmatel = hmatel - h(b,m,j,f) ! (df)(lm)(ac)(ij)
-                  if (j==m .and. i==l .and. c==e .and. b==d) hmatel = hmatel + h(a,n,k,f) ! (df)(ln)(ik)
-                  if (j==m .and. i==l .and. a==e .and. b==f) hmatel = hmatel + h(c,n,k,d) ! (ln)(ab)(ik)
-                  if (j==m .and. i==l .and. a==d .and. b==f) hmatel = hmatel - h(c,n,k,e) ! (de)(ln)(ab)(ik)
-                  if (j==m .and. i==l .and. c==e .and. a==d) hmatel = hmatel - h(b,n,k,f) ! (df)(ln)(ac)(ik)
-                  ! (jk)
-                  if (k==m .and. j==l .and. b==e .and. c==f) hmatel = hmatel + h(a,n,i,d) ! (ln)
-                  if (k==m .and. j==l .and. b==d .and. c==f) hmatel = hmatel - h(a,n,i,e) ! (de)(ln)
-                  if (k==m .and. j==l .and. a==e .and. c==f) hmatel = hmatel - h(b,n,i,d) ! (ln)(ab)
-                  if (k==m .and. j==l .and. a==d .and. c==f) hmatel = hmatel + h(b,n,i,e) ! (de)(ln)(ab)
-                  if (k==m .and. j==l .and. b==e .and. a==d) hmatel = hmatel + h(c,n,i,f) ! (df)(ln)(ac)
-                  if (i==m .and. j==n .and. b==e .and. c==f) hmatel = hmatel + h(a,l,k,d) ! (ij)
-                  if (i==m .and. j==n .and. b==d .and. c==f) hmatel = hmatel - h(a,l,k,e) ! (de)(ij)
-                  if (i==l .and. j==n .and. b==e .and. c==f) hmatel = hmatel - h(a,m,k,d) ! (lm)(ij)
-                  if (i==l .and. j==n .and. b==d .and. c==f) hmatel = hmatel + h(a,m,k,e) ! (de)(lm)(ij)
-                  if (i==m .and. j==n .and. a==e .and. c==f) hmatel = hmatel - h(b,l,k,d) ! (ab)(ij)
-                  if (i==m .and. j==n .and. a==d .and. c==f) hmatel = hmatel + h(b,l,k,e) ! (de)(ab)(ij)
-                  if (i==l .and. j==n .and. a==e .and. c==f) hmatel = hmatel + h(b,m,k,d) ! (lm)(ab)(ij)
-                  if (i==l .and. j==n .and. a==d .and. c==f) hmatel = hmatel - h(b,m,k,e) ! (de)(lm)(ab)(ij)
-                  if (i==m .and. j==n .and. b==e .and. a==d) hmatel = hmatel + h(c,l,k,f) ! (df)(ac)(ij)
-                  if (i==l .and. j==n .and. b==e .and. a==d) hmatel = hmatel - h(c,m,k,f) ! (df)(lm)(ac)(ij)
-                  if (k==m .and. i==l .and. b==e .and. c==f) hmatel = hmatel - h(a,n,j,d) ! (ln)(ik)
-                  if (k==m .and. i==l .and. b==d .and. c==f) hmatel = hmatel + h(a,n,j,e) ! (de)(ln)(ik)
-                  if (k==m .and. i==l .and. a==e .and. c==f) hmatel = hmatel + h(b,n,j,d) ! (ln)(ab)(ik)
-                  if (k==m .and. i==l .and. a==d .and. c==f) hmatel = hmatel - h(b,n,j,e) ! (de)(ln)(ab)(ik)
-                  if (k==m .and. i==l .and. b==e .and. a==d) hmatel = hmatel - h(c,n,j,f) ! (df)(ln)(ac)(ik)
-                  ! (jk)(bc), apply(jk)
-                  if (k==m .and. j==l .and. c==e .and. b==d) hmatel = hmatel + h(a,n,i,f) ! (df)(ln)
-                  if (k==m .and. j==l .and. a==e .and. b==f) hmatel = hmatel + h(c,n,i,d) ! (ln)(ab)
-                  if (k==m .and. j==l .and. a==d .and. b==f) hmatel = hmatel - h(c,n,i,e) ! (de)(ln)(ab)
-                  if (k==m .and. j==l .and. c==e .and. a==d) hmatel = hmatel - h(b,n,i,f) ! (df)(ln)(ac)
-                  if (i==m .and. j==n .and. c==e .and. b==d) hmatel = hmatel + h(a,l,k,f) ! (df)(ij)
-                  if (i==l .and. j==n .and. c==e .and. b==d) hmatel = hmatel - h(a,m,k,f) ! (df)(lm)(ij)
-                  if (i==m .and. j==n .and. a==e .and. b==f) hmatel = hmatel + h(c,l,k,d) ! (ab)(ij)
-                  if (i==m .and. j==n .and. a==d .and. b==f) hmatel = hmatel - h(c,l,k,e) ! (de)(ab)(ij)
-                  if (i==l .and. j==n .and. a==e .and. b==f) hmatel = hmatel - h(c,m,k,d) ! (lm)(ab)(ij)
-                  if (i==l .and. j==n .and. a==d .and. b==f) hmatel = hmatel + h(c,m,k,e) ! (de)(lm)(ab)(ij)
-                  if (i==m .and. j==n .and. c==e .and. a==d) hmatel = hmatel - h(b,l,k,f) ! (df)(ac)(ij)
-                  if (i==l .and. j==n .and. c==e .and. a==d) hmatel = hmatel + h(b,m,k,f) ! (df)(lm)(ac)(ij)
-                  if (k==m .and. i==l .and. c==e .and. b==d) hmatel = hmatel - h(a,n,j,f) ! (df)(ln)(ik)
-                  if (k==m .and. i==l .and. a==e .and. b==f) hmatel = hmatel - h(c,n,j,d) ! (ln)(ab)(ik)
-                  if (k==m .and. i==l .and. a==d .and. b==f) hmatel = hmatel + h(c,n,j,e) ! (de)(ln)(ab)(ik)
-                  if (k==m .and. i==l .and. c==e .and. a==d) hmatel = hmatel + h(b,n,j,f) ! (df)(ln)(ac)(ik)
-          end function aaa_voov_aaa
-
-          pure function aaa_voov_aab(i, j, k, a, b, c, l, m, n, d, e, f, h, noa, nua, nob, nub) result(hmatel)
-              ! Expression:
-              ! A(ij)A(ab)A(k/ij)A(c/ab) d(j,m)d(i,l)d(a,d)d(b,e) h(c,n,k,f)
-
-              integer, intent(in) :: noa, nua, nob, nub
-              integer, intent(in) :: i, j, k, a, b, c
-              integer, intent(in) :: l, m, n, d, e, f
-              real(kind=8), intent(in) :: h(1:nua,1:nob,1:noa,1:nub)
-
-              real(kind=8) :: hmatel
-
-              hmatel = 0.0d0
-
-              if (j==m .and. i==l .and. a==d .and. b==e) hmatel = hmatel + h(c,n,k,f) ! (1)
-              if (k==m .and. i==l .and. a==d .and. b==e) hmatel = hmatel - h(c,n,j,f) ! (jk)
-              if (j==m .and. i==l .and. a==d .and. c==e) hmatel = hmatel - h(b,n,k,f) ! (bc)
-              if (k==m .and. i==l .and. a==d .and. c==e) hmatel = hmatel + h(b,n,j,f) ! (jk)(bc)
-              if (k==m .and. j==l .and. a==d .and. b==e) hmatel = hmatel + h(c,n,i,f) ! (jk)(ij)
-              if (k==m .and. j==l .and. a==d .and. c==e) hmatel = hmatel - h(b,n,i,f) ! (jk)(bc)(ij)
-              if (j==m .and. i==l .and. b==d .and. c==e) hmatel = hmatel + h(a,n,k,f) ! (bc)(ab)
-              if (k==m .and. i==l .and. b==d .and. c==e) hmatel = hmatel - h(a,n,j,f) ! (jk)(bc)(ab)
-              if (k==m .and. j==l .and. b==d .and. c==e) hmatel = hmatel + h(a,n,i,f) ! (jk)(bc)(ab)(ij)
-
-          end function aaa_voov_aab
-
-          pure function aab_oo_aab(i, j, k, a, b, c, l, m, n, d, e, f, ha, hb, noa, nob) result(hmatel)
-                  ! Expression:
-                  ! -A(ab)A(ij)A(lm) d(a,d)d(b,e)d(c,f)d(j,m)d(k,n) ha(l,i)
-                  ! -A(ij)A(ab) d(a,d)d(b,e)d(c,f)d(i,l)d(j,m) hb(n,k)
-
-                  integer, intent(in) :: noa, nob
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: ha(1:noa,1:noa), hb(1:nob,1:nob)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  ! (1)
-                  if (a==d .and. b==e .and. c==f) then
-                    if (k==n) then
-                            if (j==m) then
-                                    hmatel = hmatel - ha(l,i) ! (1)
-                            elseif (j==l) then 
-                                    hmatel = hmatel + ha(m,i) ! (lm)
-                            end if
-
-                            if (i==m) then
-                                    hmatel = hmatel + ha(l,j) ! (ij)
-                            elseif (i==l) then 
-                                    hmatel = hmatel - ha(m,j) ! (ij)(lm)
-                            end if
-                    end if
-                    if (i==l .and. j==m) hmatel = hmatel - hb(n,k) ! (1)
-                  end if
-          end function aab_oo_aab
-
-          pure function aab_vv_aab(i, j, k, a, b, c, l, m, n, d, e, f, ha, hb, nua, nub) result(hmatel)
-                  ! Expression:
-                  ! A(ij)A(ab)A(ml)A(de) d(i,l)d(j,m)d(b,e)d(k,n)d(c,f) ha(a,d)
-                  ! A(ij)A(ab) d(i,l)d(j,m)d(a,d)d(b,e)d(k,n) hb(c,f)
-
-                  integer, intent(in) :: nua, nub
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: ha(1:nua,1:nua), hb(1:nub,1:nub)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  ! (1)
-                  if (i==l .and. j==m .and. k==n) then
-                     if (c==f) then
-                             if (a==e) then 
-                                     hmatel = hmatel - ha(b,d) ! (ab)
-                             elseif (a==d) then
-                                     hmatel = hmatel + ha(b,e) ! (ab)(de)
-                             end if
-
-                             if (b==e) then 
-                                     hmatel = hmatel + ha(a,d) ! (1)
-                             elseif (b==d) then
-                                     hmatel = hmatel - ha(a,e) ! (de)
-                             end if
-                     end if
-                     if (a==d .and. b==e) hmatel = hmatel + hb(c,f) ! (1)
-                  end if
-          end function aab_vv_aab
-
-          pure function aab_vvvv_aab(i, j, k, a, b, c, l, m, n, d, e, f, ha, hb, nua, nub) result(hmatel)
-                  ! Expression:
-                  ! A(ij) d(i,l)d(j,m)d(k,n)d(c,f) ha(a,b,d,e) 
-                  ! A(ij)A(ab)A(ed) d(i,l)d(j,m)d(k,n)d(a,d) hb(b,c,e,f)
-
-                  integer, intent(in) :: nua, nub
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: ha(1:nua,1:nua,1:nua,1:nua)
-                  real(kind=8), intent(in) :: hb(1:nua,1:nub,1:nua,1:nub)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  ! (1)
-                  if (i==l .and. j==m .and. k==n) then
-                     if (c==f) hmatel = hmatel + ha(a,b,d,e) ! (1)
-
-                     if (a==d) then
-                             hmatel = hmatel + hb(b,c,e,f) ! (1)
-                     elseif (a==e) then
-                             hmatel = hmatel - hb(b,c,d,f) ! (ed)
-                     endif 
-
-                     if (b==d) then 
-                             hmatel = hmatel - hb(a,c,e,f) ! (ab)
-                     elseif (b==e) then 
-                             hmatel = hmatel + hb(a,c,d,f) ! (ab)(ed)
-                     end if
-                  end if
-
-          end function aab_vvvv_aab
-
-          pure function aab_oooo_aab(i, j, k, a, b, c, l, m, n, d, e, f, ha, hb, noa, nob) result(hmatel)
-                  ! Expression:
-                  ! A(ab) d(a,d)d(b,e)d(c,f)d(k,n) ha(l,m,i,j)
-                  ! A(ab)A(ij)A(ml) d(i,l)d(a,d)d(b,e)d(c,f) hb(m,n,j,k)
-
-                  integer, intent(in) :: noa, nob
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: ha(1:noa,1:noa,1:noa,1:noa)
-                  real(kind=8), intent(in) :: hb(1:noa,1:nob,1:noa,1:nob)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  ! (1)
-                  if (a==d .and. b==e .and. c==f) then
-                     if (k==n) hmatel = hmatel + ha(l,m,i,j) ! (1)
-
-                     if (i==l) then 
-                             hmatel = hmatel + hb(m,n,j,k) ! (1)
-                     elseif (i==m) then
-                             hmatel = hmatel - hb(l,n,j,k) ! (lm)
-                     end if
-                     
-                     if (j==l) then 
-                             hmatel = hmatel - hb(m,n,i,k) ! (ij)
-                     elseif (j==m) then 
-                             hmatel = hmatel + hb(l,n,i,k) ! (ij)(lm)
-                     end if
-                  end if
-
-          end function aab_oooo_aab
-
-          pure function aab_ovov_aab(i, j, k, a, b, c, l, m, n, d, e, f, h, noa, nub) result(hmatel)
-                  ! Expression:
-                  ! -A(ab)A(ij)A(lm) d(a,d)d(b,e)d(k,n)d(j,m) h(l,c,i,f)
-
-                  integer, intent(in) :: noa, nub
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: h(1:noa,1:nub,1:noa,1:nub)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  ! (1)
-                  if (a==d .and. b==e .and. k==n) then
-                     if(j==m) then 
-                             hmatel = hmatel - h(l,c,i,f) ! (1)
-                     elseif (j==l) then 
-                             hmatel = hmatel + h(m,c,i,f) ! (lm)
-                     end if
-
-                     if (i==m) then 
-                             hmatel = hmatel + h(l,c,j,f) ! (ij)
-                     elseif (i==l) then 
-                             hmatel = hmatel - h(m,c,j,f) ! (ij)(lm)
-                     end if
-                  end if
-          end function aab_ovov_aab
-
-          pure function aab_vovo_aab(i, j, k, a, b, c, l, m, n, d, e, f, h, nua, nob) result(hmatel)
-                  ! Expression:
-                  ! -A(ij)A(ab)A(de) d(i,l)d(j,m)d(c,f)d(b,e) h(a,n,d,k)
-
-                  integer, intent(in) :: nua, nob
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: h(1:nua,1:nob,1:nua,1:nob)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  ! (1)
-                  if (i==l .and. j==m .and. c==f) then
-                     if (b==e) then 
-                             hmatel = hmatel - h(a,n,d,k) ! (1)
-                     elseif (b==d) then 
-                             hmatel = hmatel + h(a,n,e,k) ! (de)
-                     end if
-
-                     if (a==e) then 
-                             hmatel = hmatel + h(b,n,d,k) ! (ab)
-                     elseif (a==d) then 
-                             hmatel = hmatel - h(b,n,e,k) ! (ab)(de)
-                     end if
-                  end if
-          end function aab_vovo_aab
-
-          pure function aab_voov_aab(i, j, k, a, b, c, l, m, n, d, e, f, ha, hc, noa, nua, nob, nub) result(hmatel)
-                  ! Expression:
-                  ! A(ij)A(ab)A(lm)A(de) d(j,m)d(b,e)d(k,n)d(c,f) ha(a,l,i,d)
-                  ! A(ij)A(ab) d(i,l)d(j,m)d(b,e)d(a,d) hc(c,n,k,f)
-
-                  integer, intent(in) :: noa, nua, nob, nub
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: ha(1:nua,1:noa,1:noa,1:nua)
-                  real(kind=8), intent(in) :: hc(1:nub,1:nob,1:nob,1:nub)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  if (k==n .and. c==f) then
-                          ! (1)
-                          if (j==m) then ! (1)
-                                  if (b==e) then ! (1)
-                                          hmatel = hmatel + ha(a,l,i,d)
-                                  elseif (b==d) then ! (de)
-                                          hmatel = hmatel - ha(a,l,i,e)
-                                  end if
-                          elseif (j==l) then ! (lm)
-                                  if (b==e) then ! (1)
-                                          hmatel = hmatel - ha(a,m,i,d)
-                                  elseif (b==d) then ! (de)
-                                          hmatel = hmatel + ha(a,m,i,e)
-                                  end if
-                          end if
-                          ! (ij)
-                          if (i==m) then ! (1)
-                                  if (b==e) then ! (1)
-                                          hmatel = hmatel - ha(a,l,j,d)
-                                  elseif (b==d) then ! (de)
-                                          hmatel = hmatel + ha(a,l,j,e)
-                                  end if
-                          elseif (i==l) then ! (lm)
-                                  if (b==e) then ! (1)
-                                          hmatel = hmatel + ha(a,m,j,d)
-                                  elseif (b==d) then ! (de)
-                                          hmatel = hmatel - ha(a,m,j,e)
-                                  end if
-                          end if
-                          ! (ab)
-                          if (j==m) then ! (1)
-                                  if (a==e) then ! (1)
-                                          hmatel = hmatel - ha(b,l,i,d)
-                                  elseif (a==d) then ! (de)
-                                          hmatel = hmatel + ha(b,l,i,e)
-                                  end if
-                          elseif (j==l) then ! (lm)
-                                  if (a==e) then ! (1)
-                                          hmatel = hmatel + ha(b,m,i,d)
-                                  elseif (a==d) then ! (de)
-                                          hmatel = hmatel - ha(b,m,i,e)
-                                  end if
-                          end if
-                          ! (ij)(ab)
-                          if (i==m) then ! (1)
-                                  if (a==e) then ! (1)
-                                          hmatel = hmatel + ha(b,l,j,d)
-                                  elseif (a==d) then ! (de)
-                                          hmatel = hmatel - ha(b,l,j,e)
-                                  end if
-                          elseif (i==l) then ! (lm)
-                                  if (a==e) then ! (1)
-                                          hmatel = hmatel - ha(b,m,j,d)
-                                  elseif (a==d) then ! (de)
-                                          hmatel = hmatel + ha(b,m,j,e)
-                                  end if
-                          end if
-                  end if
-                  ! (1)
-                  if (i==l .and. j==m .and. b==e .and. a==d) hmatel = hmatel + hc(c,n,k,f) ! (1)
-          end function aab_voov_aab
-
-          pure function aab_voov_abb(i, j, k, a, b, c, l, m, n, d, e, f, h, noa, nua, nob, nub) result(hmatel)
-                  ! Expression:
-                  ! A(ij)A(ab)A(mn)A(ef) d(i,l)d(k,n)d(a,d)d(c,f) h(b,m,j,e)
-
-                  integer, intent(in) :: noa, nua, nob, nub
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: h(1:nua,1:nob,1:noa,1:nub)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  if (a==d) then
-                     if (c==f) then
-                          if (i==l) then
-                             if (k==n) hmatel = hmatel + h(b,m,j,e) 
-                             if (k==m) hmatel = hmatel - h(b,n,j,e)
-                          elseif (j==l) then
-                             if (k==n) hmatel = hmatel - h(b,m,i,e)
-                             if (k==m) hmatel = hmatel + h(b,n,i,e) 
-                          end if
-                     elseif (c==e) then
-                          if (i==l) then
-                             if (k==n) hmatel = hmatel - h(b,m,j,f) 
-                             if (k==m) hmatel = hmatel + h(b,n,j,f) 
-                          elseif (j==l) then
-                             if (k==n) hmatel = hmatel + h(b,m,i,f) 
-                             if (k==m) hmatel = hmatel - h(b,n,i,f) 
-                          end if
-                     end if
-                  elseif (b==d) then
-                     if (c==f) then
-                          if (i==l) then
-                             if (k==n) hmatel = hmatel - h(a,m,j,e) 
-                             if (k==m) hmatel = hmatel + h(a,n,j,e) 
-                          elseif (j==l) then
-                             if (k==n) hmatel = hmatel + h(a,m,i,e) 
-                             if (k==m) hmatel = hmatel - h(a,n,i,e)
-                          end if 
-                     elseif (c==e) then
-                          if (i==l) then
-                             if (k==n) hmatel = hmatel + h(a,m,j,f) 
-                             if (k==m) hmatel = hmatel - h(a,n,j,f) 
-                          elseif (j==l) then
-                             if (k==n) hmatel = hmatel - h(a,m,i,f) 
-                             if (k==m) hmatel = hmatel + h(a,n,i,f)
-                          end if
-                     end if        
-                  end if
-          end function aab_voov_abb
-
-          pure function aab_ovvo_aaa(i, j, k, a, b, c, l, m, n, d, e, f, h, noa, nua, nob, nub) result(hmatel)
-                  ! Expression:
-                  ! A(ij)A(ab)A(n/lm)A(f/ed) d(i,l)d(j,m)d(a,d)d(b,e) h(n,c,f,k)
-
-                  integer, intent(in) :: noa, nua, nob, nub
-                  integer, intent(in) :: i, j, k, a, b, c
-                  integer, intent(in) :: l, m, n, d, e, f
-                  real(kind=8), intent(in) :: h(1:noa,1:nub,1:nua,1:nob)
-
-                  real(kind=8) :: hmatel
-
-                  hmatel = 0.0d0
-
-                  ! (1)
-                  if (i==l .and. j==m .and. a==d .and. b==e) hmatel = hmatel + h(n,c,f,k) ! (1)
-                  if (i==l .and. j==n .and. a==d .and. b==e) hmatel = hmatel - h(m,c,f,k) ! (nm)
-                  if (i==l .and. j==m .and. a==d .and. b==f) hmatel = hmatel - h(n,c,e,k) ! (fe)
-                  if (i==l .and. j==n .and. a==d .and. b==f) hmatel = hmatel + h(m,c,e,k) ! (nm)(fe)
-                  if (j==n .and. i==m .and. a==d .and. b==e) hmatel = hmatel + h(l,c,f,k) ! (nl)
-                  if (j==n .and. i==m .and. a==d .and. b==f) hmatel = hmatel - h(l,c,e,k) ! (nl)(fe)
-                  if (i==l .and. j==m .and. b==f .and. a==e) hmatel = hmatel + h(n,c,d,k) ! (fd)
-                  if (i==l .and. j==n .and. b==f .and. a==e) hmatel = hmatel - h(m,c,d,k) ! (nm)(fd)
-                  if (j==n .and. i==m .and. b==f .and. a==e) hmatel = hmatel + h(l,c,d,k) ! (nl)(fd)
-          end function aab_ovvo_aaa
+              subroutine sort_t3a_h(t3a_excits, t3a_amps, ID, XiXjXk_table, noa, nua, n3aaa, resid)
+
+                      integer, intent(in) :: n3aaa, noa, nua
+
+                      integer, intent(inout) :: t3a_excits(6,n3aaa)
+                      real(kind=8), intent(inout) :: t3a_amps(n3aaa)
+                      real(kind=8), optional, intent(inout) :: resid(n3aaa)
+                      integer, intent(inout) :: XiXjXk_table(noa,noa,noa)
+                      integer, intent(inout) :: ID(noa*(noa-1)*(noa-2)/6,2)
+
+                      integer :: i, j, k, a, b, c
+                      integer :: i1, j1, k1, a1, b1, c1
+                      integer :: i2, j2, k2, a2, b2, c2
+                      integer :: kout, ijk, ijk1, ijk2, idet
+                      integer, allocatable :: temp(:), idx(:)
+
+                      XiXjXk_table = 0
+                      kout = 1
+                      do i = 1, noa
+                         do j = i+1, noa
+                            do k = j+1, noa
+                               XiXjXk_table(i,j,k) = kout
+                               XiXjXk_table(j,k,i) = kout
+                               XiXjXk_table(k,i,j) = kout
+                               XiXjXk_table(i,k,j) = -kout
+                               XiXjXk_table(j,i,k) = -kout
+                               XiXjXk_table(k,j,i) = -kout
+                               kout = kout + 1
+                            end do
+                         end do
+                      end do
+
+                      allocate(temp(n3aaa),idx(n3aaa))
+                      do idet = 1, n3aaa
+                         i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
+                         ijk = XiXjXk_table(i,j,k)
+                         temp(idet) = ijk
+                      end do
+                      call argsort(temp, idx)
+                      t3a_excits = t3a_excits(:,idx)
+                      t3a_amps = t3a_amps(idx)
+                      if (present(resid)) resid = resid(idx)
+                      deallocate(temp,idx)
+
+                      ID = 1
+                      do idet = 2, n3aaa
+                         i1 = t3a_excits(4,idet-1); j1 = t3a_excits(5,idet-1); k1 = t3a_excits(6,idet-1);
+                         i2 = t3a_excits(4,idet);   j2 = t3a_excits(5,idet);   k2 = t3a_excits(6,idet);
+
+                         ijk1 = XiXjXk_table(i1,j1,k1)
+                         ijk2 = XiXjXk_table(i2,j2,k2)
+                         if (ijk1 /= ijk2) then
+                                 ID(ijk1,2) = idet - 1
+                                 ID(ijk2,1) = idet
+                         end if
+                      end do
+                      ID(ijk2,2) = n3aaa
+
+              end subroutine sort_t3a_h
+
+              subroutine sort_t3b_h(t3b_excits, t3b_amps, ID, Eck_table, XiXj_table, noa, nua, nob, nub, n3aab, resid)
+
+                      integer, intent(in) :: n3aab, noa, nua, nob, nub
+
+                      integer, intent(inout) :: t3b_excits(6,n3aab)
+                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
+                      real(kind=8), intent(inout), optional :: resid(n3aab)
+                      integer, intent(inout) :: Eck_table(nub,nob)
+                      integer, intent(inout) :: XiXj_table(noa,noa)
+                      integer, intent(inout) :: ID(nub*nob,noa*(noa-1)/2,2)
+
+                      integer :: i, j, k, a, b, c
+                      integer :: i1, i2, j1, j2, c1, c2, k1, k2
+                      integer:: ij, ib, ib1, ib2, ij1, ij2, kout, idet, num_ij_ib
+                      integer :: beta_locs(nub*nob,2)
+                      integer, allocatable :: temp(:), idx(:)
+
+                      Eck_table=0
+                      kout = 1
+                      do c = 1, nub
+                         do k = 1, nob
+                            Eck_table(c,k) = kout
+                            kout = kout + 1
+                         end do
+                      end do
+                      XiXj_table=0
+                      kout = 1
+                      do i = 1, noa
+                         do j = i+1, noa
+                            XiXj_table(i,j) = kout
+                            XiXj_table(j,i) = -kout
+                            kout = kout + 1
+                         end do
+                      end do
+
+                      allocate(temp(n3aab),idx(n3aab))
+                      do idet = 1, n3aab
+                         c = t3b_excits(3,idet); k = t3b_excits(6,idet);
+                         ib = Eck_table(c,k)
+                         temp(idet) = ib
+                      end do
+                      call argsort(temp, idx)
+                      t3b_excits = t3b_excits(:,idx)
+                      t3b_amps = t3b_amps(idx)
+                      if (present(resid)) resid = resid(idx)
+                      deallocate(temp,idx)
+
+                      beta_locs = 1
+                      do idet = 2, n3aab
+                         c1 = t3b_excits(3,idet-1); k1 = t3b_excits(6,idet-1);
+                         c2 = t3b_excits(3,idet);   k2 = t3b_excits(6,idet);
+                         ib1 = Eck_table(c1,k1)
+                         ib2 = Eck_table(c2,k2)
+                         if (ib1/=ib2) then
+                                 beta_locs(ib1,2) = idet - 1
+                                 beta_locs(ib2,1) = idet
+                         end if
+                      end do
+                      beta_locs(ib2,2) = n3aab
+
+                      ID = 0
+                      do c = 1,nub
+                         do k = 1,nob
+                            ib = Eck_table(c,k)
+                            if (beta_locs(ib,1) > beta_locs(ib,2)) cycle ! skip if beta block is empty
+
+                            num_ij_ib = beta_locs(ib,2) - beta_locs(ib,1) + 1
+
+                            allocate(temp(num_ij_ib), idx(num_ij_ib))
+                            kout = 1
+                            do idet = beta_locs(ib,1), beta_locs(ib,2)
+                               i = t3b_excits(4,idet); j = t3b_excits(5,idet);
+                               ij = XiXj_table(i,j)
+                               temp(kout) = ij
+                               kout = kout + 1
+                            end do
+                            call argsort(temp,idx)
+                            idx = idx + beta_locs(ib,1) - 1
+                            t3b_excits(:,beta_locs(ib,1):beta_locs(ib,2)) = t3b_excits(:,idx)
+                            t3b_amps(beta_locs(ib,1):beta_locs(ib,2)) = t3b_amps(idx)
+                            if (present(resid)) resid(beta_locs(ib,1):beta_locs(ib,2)) = resid(idx)
+                            deallocate(temp,idx)
+
+                            ID(ib,:,1) = beta_locs(ib,1)
+                            do ij = 1, num_ij_ib-1
+                               idet = ij + beta_locs(ib,1)
+                               i1 = t3b_excits(4,idet-1); j1 = t3b_excits(5,idet-1);
+                               i2 = t3b_excits(4,idet);   j2 = t3b_excits(5,idet);
+                               ij1 = XiXj_table(i1,j1)
+                               ij2 = XiXj_table(i2,j2)
+                               
+                               if (ij1/=ij2) then
+                                       ID(ib,ij1,2) = idet-1
+                                       ID(ib,ij2,1) = idet
+                               end if
+                            end do
+                            ID(ib,ij2,2) = beta_locs(ib,1) + num_ij_ib - 1
+                         end do
+                      end do
+
+              end subroutine sort_t3b_h
+
+              subroutine sort_t3b_p(t3b_excits, t3b_amps, ID, Eck_table, XaXb_table, noa, nua, nob, nub, n3aab, resid)
+
+                      integer, intent(in) :: n3aab, noa, nua, nob, nub
+
+                      integer, intent(inout) :: t3b_excits(6,n3aab)
+                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
+                      real(kind=8), intent(inout), optional :: resid(n3aab)
+                      integer, intent(inout) :: Eck_table(nub,nob)
+                      integer, intent(inout) :: XaXb_table(nua,nua)
+                      integer, intent(inout) :: ID(nub*nob,nua*(nua-1)/2,2)
+
+                      integer :: i, j, k, a, b, c
+                      integer :: a1, a2, b1, b2, c1, c2, k1, k2
+                      integer:: ab, ib, ib1, ib2, ab1, ab2, kout, idet, num_ab_ib
+                      integer :: beta_locs(nub*nob,2)
+                      integer, allocatable :: temp(:), idx(:)
+
+                      Eck_table=0
+                      kout = 1
+                      do c = 1, nub
+                         do k = 1, nob
+                            Eck_table(c,k) = kout
+                            kout = kout + 1
+                         end do
+                      end do
+                      XaXb_table=0
+                      kout = 1
+                      do a = 1, nua
+                         do b = a+1, nua
+                            XaXb_table(a,b) = kout
+                            XaXb_table(b,a) = -kout
+                            kout = kout + 1
+                         end do
+                      end do
+
+                      allocate(temp(n3aab),idx(n3aab))
+                      do idet = 1, n3aab
+                         c = t3b_excits(3,idet); k = t3b_excits(6,idet);
+                         ib = Eck_table(c,k)
+                         temp(idet) = ib
+                      end do
+                      call argsort(temp, idx)
+                      t3b_excits = t3b_excits(:,idx)
+                      t3b_amps = t3b_amps(idx)
+                      if (present(resid)) resid = resid(idx)
+                      deallocate(temp,idx)
+
+                      beta_locs = 1
+                      do idet = 2, n3aab
+                         c1 = t3b_excits(3,idet-1); k1 = t3b_excits(6,idet-1);
+                         c2 = t3b_excits(3,idet);   k2 = t3b_excits(6,idet);
+                         ib1 = Eck_table(c1,k1)
+                         ib2 = Eck_table(c2,k2)
+                         if (ib1/=ib2) then
+                                 beta_locs(ib1,2) = idet - 1
+                                 beta_locs(ib2,1) = idet
+                         end if
+                      end do
+                      beta_locs(ib2,2) = n3aab
+
+                      ID = 0
+                      do c = 1,nub
+                         do k = 1,nob
+                            ib = Eck_table(c,k)
+                            if (beta_locs(ib,1) > beta_locs(ib,2)) cycle ! skip if beta block is empty
+
+                            num_ab_ib = beta_locs(ib,2) - beta_locs(ib,1) + 1
+
+                            allocate(temp(num_ab_ib), idx(num_ab_ib))
+                            kout = 1
+                            do idet = beta_locs(ib,1), beta_locs(ib,2)
+                               a = t3b_excits(1,idet); b = t3b_excits(2,idet);
+                               ab = XaXb_table(a,b)
+                               temp(kout) = ab
+                               kout = kout + 1
+                            end do
+                            call argsort(temp,idx)
+                            idx = idx + beta_locs(ib,1) - 1
+                            t3b_excits(:,beta_locs(ib,1):beta_locs(ib,2)) = t3b_excits(:,idx)
+                            t3b_amps(beta_locs(ib,1):beta_locs(ib,2)) = t3b_amps(idx)
+                            if (present(resid)) resid(beta_locs(ib,1):beta_locs(ib,2)) = resid(idx)
+                            deallocate(temp,idx)
+
+                            ID(ib,:,1) = beta_locs(ib,1)
+                            do ab = 1, num_ab_ib-1
+                               idet = ab + beta_locs(ib,1)
+                               a1 = t3b_excits(1,idet-1); b1 = t3b_excits(2,idet-1);
+                               a2 = t3b_excits(1,idet);   b2 = t3b_excits(2,idet);
+                               ab1 = XaXb_table(a1,b1)
+                               ab2 = XaXb_table(a2,b2)
+                               
+                               if (ab1/=ab2) then
+                                       ID(ib,ab1,2) = idet-1
+                                       ID(ib,ab2,1) = idet
+                               end if
+                            end do
+                            ID(ib,ab2,2) = beta_locs(ib,1) + num_ab_ib - 1
+                         end do
+                      end do
+
+              end subroutine sort_t3b_p
+
+              subroutine sort_t3b_abij(t3b_excits, t3b_amps, ID, XaXbXiXj_table, noa, nua, nob, nub, n3aab, resid)
+
+                      integer, intent(in) :: n3aab, noa, nua, nob, nub
+
+                      integer, intent(inout) :: t3b_excits(6,n3aab)
+                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
+                      real(kind=8), intent(inout), optional :: resid(n3aab)
+                      integer, intent(inout) :: XaXbXiXj_table(nua,nua,noa,noa)
+                      integer, intent(inout) :: ID(nua*(nua-1)/2*noa*(noa-1)/2,2)
+
+                      integer :: kout, idet
+                      integer :: i, j, a, b
+                      integer :: i1, j1, a1, b1, i2, j2, a2, b2
+                      integer :: abij, abij1, abij2
+                      integer, allocatable :: temp(:), idx(:)
+
+                      XaXbXiXj_table=0
+                      kout = 1
+                      do i = 1, noa
+                         do j = i+1, noa
+                            do a = 1, nua
+                               do b = a+1, nua
+                                  XaXbXiXj_table(a,b,i,j) = kout
+                                  XaXbXiXj_table(a,b,j,i) = -kout
+                                  XaXbXiXj_table(b,a,i,j) = -kout
+                                  XaXbXiXj_table(b,a,j,i) = kout
+                                  kout = kout + 1
+                               end do
+                            end do
+                         end do
+                      end do
+
+                      allocate(temp(n3aab),idx(n3aab))
+                      do idet = 1, n3aab
+                         a = t3b_excits(1,idet); b = t3b_excits(2,idet); i = t3b_excits(4,idet); j = t3b_excits(5,idet);
+                         abij = XaXbXiXj_table(a,b,i,j)
+                         temp(idet) = abij
+                      end do
+                      call argsort(temp, idx)
+                      t3b_excits = t3b_excits(:,idx)
+                      t3b_amps = t3b_amps(idx)
+                      if (present(resid)) resid = resid(idx)
+                      deallocate(temp,idx)
+
+                      ID = 1
+                      do idet = 2, n3aab
+                         a1 = t3b_excits(1,idet-1); b1 = t3b_excits(2,idet-1); i1 = t3b_excits(4,idet-1); j1 = t3b_excits(5,idet-1);
+                         a2 = t3b_excits(1,idet);   b2 = t3b_excits(2,idet);   i2 = t3b_excits(4,idet);   j2 = t3b_excits(5,idet);
+                         abij1 = XaXbXiXj_table(a1,b1,i1,j1)
+                         abij2 = XaXbXiXj_table(a2,b2,i2,j2)
+                         if (abij1/=abij2) then
+                                 ID(abij1,2) = idet - 1
+                                 ID(abij2,1) = idet
+                         end if
+                      end do
+                      ID(abij2,2) = n3aab
+
+              end subroutine sort_t3b_abij
+
+              subroutine sort_t3b_aijk(t3b_excits, t3b_amps, ID, XaXiXjXk_table, noa, nua, nob, nub, n3aab, resid)
+
+                      integer, intent(in) :: n3aab, noa, nua, nob, nub
+
+                      integer, intent(inout) :: t3b_excits(6,n3aab)
+                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
+                      real(kind=8), intent(inout), optional :: resid(n3aab)
+                      integer, intent(inout) :: XaXiXjXk_table(nua,noa,noa,nob)
+                      integer, intent(inout) :: ID(nua*noa*(noa-1)/2*nob,2)
+
+                      integer :: kout, idet
+                      integer :: i, j, k, a
+                      integer :: i1, j1, k1, a1, i2, j2, k2, a2
+                      integer :: aijk, aijk1, aijk2
+                      integer, allocatable :: temp(:), idx(:)
+
+                      XaXiXjXk_table=0
+                      kout = 1
+                      do k = 1, nob
+                         do i = 1, noa
+                            do j = i+1, noa
+                               do a = 1, nua
+                                  XaXiXjXk_table(a,i,j,k) = kout
+                                  XaXiXjXk_table(a,j,i,k) = -kout
+                                  kout = kout + 1
+                               end do
+                            end do
+                         end do
+                      end do
+
+                      allocate(temp(n3aab),idx(n3aab))
+                      do idet = 1, n3aab
+                         a = t3b_excits(1,idet); i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                         aijk = XaXiXjXk_table(a,i,j,k)
+                         temp(idet) = aijk
+                      end do
+                      call argsort(temp, idx)
+                      t3b_excits = t3b_excits(:,idx)
+                      t3b_amps = t3b_amps(idx)
+                      if (present(resid)) resid = resid(idx)
+                      deallocate(temp,idx)
+
+                      ID = 1
+                      do idet = 2, n3aab
+                         a1 = t3b_excits(1,idet-1); i1 = t3b_excits(4,idet-1); j1 = t3b_excits(5,idet-1); k1 = t3b_excits(6,idet-1);
+                         a2 = t3b_excits(1,idet);   i2 = t3b_excits(4,idet);   j2 = t3b_excits(5,idet);   k2 = t3b_excits(6,idet);
+                         aijk1 = XaXiXjXk_table(a1,i1,j1,k1)
+                         aijk2 = XaXiXjXk_table(a2,i2,j2,k2)
+                         if (aijk1/=aijk2) then
+                                 ID(aijk1,2) = idet - 1
+                                 ID(aijk2,1) = idet
+                         end if
+                      end do
+                      ID(aijk2,2) = n3aab
+
+              end subroutine sort_t3b_aijk
+
+              subroutine sort_t3b_bijk(t3b_excits, t3b_amps, ID, XbXiXjXk_table, noa, nua, nob, nub, n3aab, resid)
+
+                      integer, intent(in) :: n3aab, noa, nua, nob, nub
+
+                      integer, intent(inout) :: t3b_excits(6,n3aab)
+                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
+                      real(kind=8), intent(inout), optional :: resid(n3aab)
+                      integer, intent(inout) :: XbXiXjXk_table(nua,noa,noa,nob)
+                      integer, intent(inout) :: ID(nua*noa*(noa-1)/2*nob,2)
+
+                      integer :: kout, idet
+                      integer :: i, j, k, b
+                      integer :: i1, j1, k1, b1, i2, j2, k2, b2
+                      integer :: bijk, bijk1, bijk2
+                      integer, allocatable :: temp(:), idx(:)
+
+                      XbXiXjXk_table=0
+                      kout = 1
+                      do k = 1, nob
+                         do i = 1, noa
+                            do j = i+1, noa
+                               do b = 1, nua
+                                  XbXiXjXk_table(b,i,j,k) = kout
+                                  XbXiXjXk_table(b,j,i,k) = -kout
+                                  kout = kout + 1
+                               end do
+                            end do
+                         end do
+                      end do
+
+                      allocate(temp(n3aab),idx(n3aab))
+                      do idet = 1, n3aab
+                         b = t3b_excits(2,idet); i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                         bijk = XbXiXjXk_table(b,i,j,k)
+                         temp(idet) = bijk
+                      end do
+                      call argsort(temp, idx)
+                      t3b_excits = t3b_excits(:,idx)
+                      t3b_amps = t3b_amps(idx)
+                      if (present(resid)) resid = resid(idx)
+                      deallocate(temp,idx)
+
+                      ID = 1
+                      do idet = 2, n3aab
+                         b1 = t3b_excits(2,idet-1); i1 = t3b_excits(4,idet-1); j1 = t3b_excits(5,idet-1); k1 = t3b_excits(6,idet-1);
+                         b2 = t3b_excits(2,idet);   i2 = t3b_excits(4,idet);   j2 = t3b_excits(5,idet);   k2 = t3b_excits(6,idet);
+                         bijk1 = XbXiXjXk_table(b1,i1,j1,k1)
+                         bijk2 = XbXiXjXk_table(b2,i2,j2,k2)
+                         if (bijk1/=bijk2) then
+                                 ID(bijk1,2) = idet - 1
+                                 ID(bijk2,1) = idet
+                         end if
+                      end do
+                      ID(bijk2,2) = n3aab
+
+              end subroutine sort_t3b_bijk
+
+
+              subroutine sort_t3c_h(t3c_excits, t3c_amps, ID, Eai_table, XjXk_table, noa, nua, nob, nub, n3abb, resid)
+
+                      integer, intent(in) :: n3abb, noa, nua, nob, nub
+
+                      integer, intent(inout) :: t3c_excits(6,n3abb)
+                      real(kind=8), intent(inout) :: t3c_amps(n3abb)
+                      real(kind=8), intent(inout), optional :: resid(n3abb)
+                      integer, intent(inout) :: Eai_table(nua,noa)
+                      integer, intent(inout) :: XjXk_table(nob,nob)
+                      integer, intent(inout) :: ID(nua*noa,nob*(nob-1)/2,2)
+
+                      integer :: i, j, k, a, b, c
+                      integer :: j1, j2, k1, k2, a1, a2, i1, i2
+                      integer:: jk, ia, ia1, ia2, jk1, jk2, kout, idet, num_jk_ia
+                      integer :: alpha_locs(nua*noa,2)
+                      integer, allocatable :: temp(:), idx(:)
+
+                      Eai_table=0
+                      kout = 1
+                      do a = 1, nua
+                         do i = 1, noa
+                            Eai_table(a,i) = kout
+                            kout = kout + 1
+                         end do
+                      end do
+                      XjXk_table=0
+                      kout = 1
+                      do j = 1, nob
+                         do k = j+1, nob
+                            XjXk_table(j,k) = kout
+                            XjXk_table(k,j) = -kout
+                            kout = kout + 1
+                         end do
+                      end do
+
+                      allocate(temp(n3abb),idx(n3abb))
+                      do idet = 1, n3abb
+                         a = t3c_excits(1,idet); i = t3c_excits(4,idet);
+                         ia = Eai_table(a,i)
+                         temp(idet) = ia
+                      end do
+                      call argsort(temp, idx)
+                      t3c_excits = t3c_excits(:,idx)
+                      t3c_amps = t3c_amps(idx)
+                      if (present(resid)) resid = resid(idx)
+                      deallocate(temp,idx)
+
+                      alpha_locs = 1
+                      do idet = 2, n3abb
+                         a1 = t3c_excits(1,idet-1); i1 = t3c_excits(4,idet-1);
+                         a2 = t3c_excits(1,idet);   i2 = t3c_excits(4,idet);
+                         ia1 = Eai_table(a1,i1)
+                         ia2 = Eai_table(a2,i2)
+                         if (ia1/=ia2) then
+                                 alpha_locs(ia1,2) = idet - 1
+                                 alpha_locs(ia2,1) = idet
+                         end if
+                      end do
+                      alpha_locs(ia2,2) = n3abb
+
+                      ID = 0
+                      do a = 1,nua
+                         do i = 1,noa
+                            ia = Eai_table(a,i)
+                            if (alpha_locs(ia,1) > alpha_locs(ia,2)) cycle ! skip if alpha block is empty
+
+                            num_jk_ia = alpha_locs(ia,2) - alpha_locs(ia,1) + 1
+
+                            allocate(temp(num_jk_ia), idx(num_jk_ia))
+                            kout = 1
+                            do idet = alpha_locs(ia,1), alpha_locs(ia,2)
+                               j = t3c_excits(5,idet); k = t3c_excits(6,idet);
+                               jk = XjXk_table(j,k)
+                               temp(kout) = jk
+                               kout = kout + 1
+                            end do
+                            call argsort(temp,idx)
+                            idx = idx + alpha_locs(ia,1) - 1
+                            t3c_excits(:,alpha_locs(ia,1):alpha_locs(ia,2)) = t3c_excits(:,idx)
+                            t3c_amps(alpha_locs(ia,1):alpha_locs(ia,2)) = t3c_amps(idx)
+                            if (present(resid)) resid(alpha_locs(ia,1):alpha_locs(ia,2)) = resid(idx)
+                            deallocate(temp,idx)
+
+                            ID(ia,:,1) = alpha_locs(ia,1)
+                            do jk = 1, num_jk_ia-1
+                               idet = jk + alpha_locs(ia,1)
+                               j1 = t3c_excits(5,idet-1); k1 = t3c_excits(6,idet-1);
+                               j2 = t3c_excits(5,idet);   k2 = t3c_excits(6,idet);
+                               jk1 = XjXk_table(j1,k1)
+                               jk2 = XjXk_table(j2,k2)
+                               
+                               if (jk1/=jk2) then
+                                       ID(ia,jk1,2) = idet-1
+                                       ID(ia,jk2,1) = idet
+                               end if
+                            end do
+                            ID(ia,jk2,2) = alpha_locs(ia,1) + num_jk_ia - 1
+                         end do
+                      end do
+
+              end subroutine sort_t3c_h
+
+              subroutine argsort(r,d)
+
+                      integer, intent(in), dimension(:) :: r
+                      integer, intent(out), dimension(size(r)) :: d
+            
+                      integer, dimension(size(r)) :: il
+
+                      integer :: stepsize
+                      integer :: i, j, n, left, k, ksize
+            
+                      n = size(r)
+            
+                      do i=1,n
+                          d(i)=i
+                      end do
+            
+                      if ( n==1 ) return
+                    
+                      stepsize = 1
+                      do while (stepsize<n)
+                          do left=1,n-stepsize,stepsize*2
+                              i = left
+                              j = left+stepsize
+                              ksize = min(stepsize*2,n-left+1)
+                              k=1
+                        
+                              do while ( i<left+stepsize .and. j<left+ksize )
+                                  if ( r(d(i))<r(d(j)) ) then
+                                      il(k)=d(i)
+                                      i=i+1
+                                      k=k+1
+                                  else
+                                      il(k)=d(j)
+                                      j=j+1
+                                      k=k+1
+                                  endif
+                              enddo
+                        
+                              if ( i<left+stepsize ) then
+                                  ! fill up remaining from left
+                                  il(k:ksize) = d(i:left+stepsize-1)
+                              else
+                                  ! fill up remaining from right
+                                  il(k:ksize) = d(j:left+ksize-1)
+                              endif
+                              d(left:left+ksize-1) = il(1:ksize)
+                          end do
+                          stepsize=stepsize*2
+                      end do
+
+          end subroutine argsort
+
 
           pure function abb_ovvo_aab(i, j, k, a, b, c, l, m, n, d, e, f, h, noa, nua, nob, nub) result(hmatel)
                   ! Expression:
@@ -2735,33 +3686,142 @@ module ccp_quadratic_loops_direct
 
           end function bbb_ovvo_abb
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CONNECTION ARRAYS !!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          pure function nexc2(i, j, k, l)
+              ! Counts the number of differences that occur between
+              ! the set of integers (i,j) and (k,l).
+              integer, intent(in) :: i, j, k, l
 
-         !pure function aab_connect_aab(t3b_excits, noa, nua, nob, nub, n3aab) result(C)
+              integer :: nexc2
 
-         !     integer, intent(in) :: noa, nob, nua, nub, n3aab
-         !     integer, intent(in) :: t3b_excits(6,n3aab)
+              nexc2 = count((/i,j/)==(/k,l/))&
+                     +count((/j,i/)==(/k,l/))
+              nexc2 = 2 - nexc2
+          end function nexc2
 
-         !     integer :: C(n3aab,n3aab)
+          pure function nexc3(i, j, k, l, m, n)
+              ! Counts the number of differences that occur between
+              ! the set of integers (i,j,k) and (l,m,n).
+              integer, intent(in) :: i, j, k, l, m, n
 
-         !     integer :: idet, jdet, a, b, c, d, i, j, k, l
+              integer :: nexc3
 
-         !     do idet = 1, n3aab
-         !        do jdet = 1, n3aab
+              nexc3 = count((/i,j,k/)==(/l,m,n/))&
+                     +count((/i,k,j/)==(/l,m,n/))&
+                     +count((/j,k,i/)==(/l,m,n/))&
+                     +count((/j,i,k/)==(/l,m,n/))&
+                     +count((/k,i,j/)==(/l,m,n/))&
+                     +count((/k,j,i/)==(/l,m,n/))
+              nexc3 = shiftr(6 - nexc3, 1)
+          end function nexc3
 
-                    ! check if nexcit > 2
+          subroutine test_sort_t3b_abij(t3b_excits, ID, XaXbXiXj_table, noa, nua, nob, nub, n3aab)
 
-                    ! check if 2p(a)
+                      integer, intent(in) :: n3aab, noa, nua, nob, nub
+                      integer, intent(in) :: t3b_excits(6,n3aab)
+                      integer, intent(in) :: XaXbXiXj_table(nua,nua,noa,noa)
+                      integer, intent(in) :: ID(noa*(noa-1)/2*nua*(nua-1)/2,2)
 
-                    ! check if 2h(a)
+                      integer :: i, j, k, a, b, c
+                      integer :: a1, b1, c1, i1, j1, k1
+                      integer :: idet, abij, abij2
 
-                    
+                      integer :: expected_totals(noa*(noa-1)/2*nua*(nua-1)/2)
+                      integer :: totals(noa*(noa-1)/2*nua*(nua-1)/2)
 
-         !        end do
-         !     end do
+                      print*, "NOCC = ", noa, "NUNOCC = ", nua, "N_IJ = ", noa*(noa-1)/2, "N_AB = ", nua*(nua-1)/2
 
+                      expected_totals = 0
+                      do idet = 1, n3aab
+                         a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
+                         i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                         abij = XaXbXiXj_table(a,b,i,j)
+                         expected_totals(abij) = expected_totals(abij) + 1
+                      end do
 
-         !end function aab_connect_aab       
-end module ccp_quadratic_loops_direct
+                      totals = 0
+                      do i = 1, noa
+                         do j = i+1, noa
+                            do a = 1, nua
+                               do b = a+1, nua
+                                       abij = XaXbXiXj_table(a,b,i,j)
+                                       print*, "(a,b,i,j) = ", a,b,i,j
+                                       print*, "--------------"
+                                       do idet = ID(abij,1), ID(abij,2)
+                                          a1 = t3b_excits(1,idet); b1 = t3b_excits(2,idet); c1 = t3b_excits(3,idet);
+                                          i1 = t3b_excits(4,idet); j1 = t3b_excits(5,idet); k1 = t3b_excits(6,idet);
+                                          abij2 = XaXbXiXj_table(a1,b1,i1,j1)
+                                          totals(abij2) = totals(abij2) + 1
+                                          if (abij/=abij2) then
+                                                  print*, "FAIL abij/=abij2"
+                                                  return
+                                          end if
+                                          print*,"    ",a1,b1,c1,i1,j1,k1
+                                       end do
+                                       print*,"    expected_total(abij) = ", expected_totals(abij), "Got(abij) = ", totals(abij)
+                                       if (expected_totals(abij)/=totals(abij)) then
+                                                  print*,"FAIL totals"
+                                                  return
+                                       end if
+                               end do
+                            end do
+                         end do
+                      end do
+
+         end subroutine test_sort_t3b_abij
+
+          subroutine test_sort_t3b_aijk(t3b_excits, ID, XaXiXjXk_table, noa, nua, nob, nub, n3aab)
+
+                      integer, intent(in) :: n3aab, noa, nua, nob, nub
+                      integer, intent(in) :: t3b_excits(6,n3aab)
+                      integer, intent(in) :: XaXiXjXk_table(nua,noa,noa,nob)
+                      integer, intent(in) :: ID(nua*noa*(noa-1)/2*nob,2)
+
+                      integer :: i, j, k, a, b, c
+                      integer :: a1, b1, c1, i1, j1, k1
+                      integer :: idet, aijk, aijk2
+
+                      integer :: expected_totals(nua*noa*(noa-1)/2*nob)
+                      integer :: totals(nua*noa*(noa-1)/2*nob)
+
+                      print*, "NOCC = ", noa, "NUNOCC = ", nua, "N_IJ = ", noa*(noa-1)/2, "N_AB = ", nua*(nua-1)/2
+
+                      expected_totals = 0
+                      do idet = 1, n3aab
+                         a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
+                         i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                         aijk = XaXiXjXk_table(a,i,j,k)
+                         expected_totals(aijk) = expected_totals(aijk) + 1
+                      end do
+
+                      totals = 0
+                      do i = 1, noa
+                         do j = i+1, noa
+                            do k = 1, nob
+                               do a = 1, nua
+                                       aijk = XaXiXjXk_table(a,i,j,k)
+                                       print*, "(a,i,j,k) = ", a,i,j,k
+                                       print*, "--------------"
+                                       do idet = ID(aijk,1), ID(aijk,2)
+                                          a1 = t3b_excits(1,idet); b1 = t3b_excits(2,idet); c1 = t3b_excits(3,idet);
+                                          i1 = t3b_excits(4,idet); j1 = t3b_excits(5,idet); k1 = t3b_excits(6,idet);
+                                          aijk2 = XaXiXjXk_table(a1,i1,j1,k1)
+                                          totals(aijk2) = totals(aijk2) + 1
+                                          if (aijk/=aijk2) then
+                                                  print*, "FAIL aijk/=aijk2"
+                                                  print*,"    ",a1,b1,c1,i1,j1,k1
+                                                  return
+                                          end if
+                                          print*,"    ",a1,b1,c1,i1,j1,k1
+                                       end do
+                                       print*,"    expected_total(aijk) = ", expected_totals(aijk), "Got(aijk) = ", totals(aijk)
+                                       if (expected_totals(aijk)/=totals(aijk)) then
+                                                  print*,"FAIL totals"
+                                                  return
+                                       end if
+                               end do
+                            end do
+                         end do
+                      end do
+
+         end subroutine test_sort_t3b_aijk
+end module ccp_quadratic_loops_direct_opt

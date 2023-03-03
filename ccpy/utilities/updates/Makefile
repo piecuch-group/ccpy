@@ -9,6 +9,7 @@ MODULES := cc_loops \
 		   mbpt_loops \
 		   eomcc_initial_guess \
 		   hbar_matrix_elements \
+		   sort_t3 \
 		   ccp_loops \
 		   ccp_opt_loops \
 		   ccp_opt_loops_v2 \
@@ -17,6 +18,8 @@ MODULES := cc_loops \
 		   ccp_quadratic_loops \
 		   ccp_quadratic_loops_omp \
 		   ccp_quadratic_loops_direct \
+		   ccp_quadratic_loops_direct_h \
+		   ccp_quadratic_loops_direct_opt \
 		   eomcc_active_loops \
 		   cc_active_loops \
 		   cct3_loops \

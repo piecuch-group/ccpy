@@ -10,7 +10,6 @@ from ccpy.drivers.driver import cc_driver
 from ccpy.models.calculation import Calculation
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.utilities.updates import ccp_quadratic_loops_direct
-from ccpy.utilities.updates import ccp_quadratic_loops_direct_v2
 
 def get_T3_list_fraction(T, fraction):
 
@@ -140,65 +139,6 @@ def get_T3_list(T):
         T3_amplitudes[key] = np.asarray(T3_amplitudes[key])
 
     return T3_excitations, T3_amplitudes
-
-def aab_connect_aab(T3_excitations):
-
-    n3aab = T3_excitations["aab"].shape[0]
-
-    C = np.zeros((n3aab, n3aab))
-
-    print("Building aab-aab connection array...")
-    tic = time.time()
-    for idet in range(n3aab):
-        a, b, c, i, j, k = [x - 1 for x in T3_excitations["aab"][idet]]
-        print(idet+1,"/",n3aab)
-        for jdet in range(n3aab):
-            d, e, f, l, m, n = [x - 1 for x in T3_excitations["aab"][jdet]]
-
-            nexc_ha = len(set([i, j]) - set([l, m]))
-            nexc_hb = len(set([k]) - set([n]))
-            nexc_pa = len(set([a, b]) - set([d, e]))
-            nexc_pb = len(set([c]) - set([f]))
-
-            nexc = nexc_ha + nexc_hb + nexc_pa + nexc_pb
-            
-            if nexc > 2: continue
-    
-            if nexc == 2:
-                # 2p(a)
-                if nexc_pa == 2: C[idet, jdet] = 1
-                # 1p(a)1p(b)
-                if nexc_pa == 1 and nexc_pb == 1: C[idet, jdet] = 2
-                # 2h(a)
-                if nexc_ha == 2: C[idet, jdet] = 3
-                # 1h(a)1h(b)
-                if nexc_ha == 1 and nexc_hb == 1: C[idet, jdet] = 4
-
-                # 1h(a)1p(a)
-                if nexc_ha == 1 and nexc_pa == 1: C[idet, jdet] = 5
-                # 1h(b)1p(b)
-                if nexc_hb == 1 and nexc_pb == 1: C[idet, jdet] = 6
-                # 1h(a)1p(b)
-                if nexc_ha == 1 and nexc_pb == 1: C[idet, jdet] = 7
-                # 1h(b)1p(a)
-                if nexc_hb == 1 and nexc_pa == 1: C[idet, jdet] = 8
-
-            elif nexc == 1:
-                # 1p(a)
-                if nexc_pa == 1: C[idet, jdet] = 9
-                # 1p(b)
-                if nexc_pb == 1: C[idet, jdet] = 10
-                # 1h(a)
-                if nexc_ha == 1: C[idet, jdet] = 11
-                # 1h(b)
-                if nexc_hb == 1: C[idet, jdet] = 12
-
-            else: # diagonal
-                C[idet, jdet] = 13
-    print("completed in", time.time() - tic, "seconds")
-
-    return C
-                
 
 def contract_vt3_exact(H0, H, T):
 
