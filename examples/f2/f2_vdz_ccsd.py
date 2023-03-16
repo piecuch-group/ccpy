@@ -60,6 +60,7 @@ def main(args):
         num_active=num_active,
         convergence_tolerance=1.0e-08,
         diis_size=6,
+        energy_shift=0.01,
     )
 
     T, total_energy, is_converged = cc_driver(calculation, system, H)

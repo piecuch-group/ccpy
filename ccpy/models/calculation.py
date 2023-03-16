@@ -47,7 +47,7 @@ class Calculation:
         self.num_particles = num_particles
         self.num_holes = num_holes
 
-        if calculation_type.lower() in ["ccsd", "eomccsd", "left_ccsd", "eccc2"]:
+        if calculation_type.lower() in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2"]:
             self.order = 2
             self.num_particles = 2
             self.num_holes = 2

@@ -1,9 +1,11 @@
 """In this script, we test out the idea of using the 'amplitude-driven' approach
 to constructing the sparse triples projection < ijkabc | (H(2) * T3)_C | 0 >, where
 T3 is sparse and defined over a given list of triples."""
-import numpy as np
 import time
+
+import numpy as np
 from itertools import permutations
+import random
 
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.drivers.driver import cc_driver
@@ -21,74 +23,131 @@ def get_T3_list_fraction(T, fraction):
     nua, noa = T.a.shape
     nub, nob = T.b.shape
 
+    n3a = int(nua*(nua - 1)*(nua - 2)/6 * noa*(noa - 1)*(noa - 2)/6); n3a_p = int(fraction[0] * n3a);
+    n3b = int(nua*(nua - 1)/2 * nub * noa*(noa - 1)/2 * nob); n3b_p = int(fraction[1] * n3b);
+    n3c = int(nua * nub*(nub - 1)/2 * noa * nob*(nob - 1)/2); n3c_p = int(fraction[2] * n3c);
+    n3d = int(nub*(nub - 1)*(nub - 2)/6 * nob*(nob - 1)*(nob - 2)/6); n3d_p = int(fraction[3] * n3d);
+
     T3_excitations = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
     T3_amplitudes = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
 
     num_triples = 0
 
-    rand_arr = np.random.rand(nua, nua, nua, noa, noa, noa)
+    rand_arr = np.asarray(random.sample(range(n3a), n3a_p))
+    idx = np.argsort(rand_arr)
+    rand_arr = rand_arr[idx]
+    nct1 = 0
+    nct2 = 0
     for a in range(nua):
         for b in range(a + 1, nua):
             for c in range(b + 1, nua):
                 for i in range(noa):
                     for j in range(i + 1, noa):
                         for k in range(j + 1, noa):
-                            if rand_arr[a, b, c, i, j, k] <= fraction[0]:
+
+                            if nct2 == n3a_p:
+                                for ip, jp, kp in permutations((i, j, k)):
+                                    for ap, bp, cp in permutations((a, b, c)):
+                                        T.aaa[ap, bp, cp, ip, jp, kp] *= 0.0
+                                continue
+
+                            if nct1 == rand_arr[nct2]:
                                 num_triples += 1
+                                nct2 += 1
                                 T3_excitations["aaa"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                                 T3_amplitudes["aaa"].append(T.aaa[a, b, c, i, j, k])
                             else:
                                 for ip, jp, kp in permutations((i, j, k)):
                                     for ap, bp, cp in permutations((a, b, c)):
                                         T.aaa[ap, bp, cp, ip, jp, kp] *= 0.0
+                            nct1 += 1
 
-    rand_arr = np.random.rand(nua, nua, nub, noa, noa, nob)
+    rand_arr = np.asarray(random.sample(range(n3b), n3b_p))
+    idx = np.argsort(rand_arr)
+    rand_arr = rand_arr[idx]
+    nct1 = 0
+    nct2 = 0
     for a in range(nua):
         for b in range(a + 1, nua):
             for c in range(nub):
                 for i in range(noa):
                     for j in range(i + 1, noa):
                         for k in range(nob):
-                            if rand_arr[a, b, c, i, j, k] <= fraction[1]:
+
+                            if nct2 == n3b_p:
+                                for ip, jp in permutations((i, j)):
+                                    for ap, bp in permutations((a, b)):
+                                        T.aab[ap, bp, c, ip, jp, k] *= 0.0
+                                continue
+
+                            if nct1 == rand_arr[nct2]:
                                 num_triples += 1
+                                nct2 += 1
                                 T3_excitations["aab"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                                 T3_amplitudes["aab"].append(T.aab[a, b, c, i, j, k])
                             else:
                                 for ip, jp in permutations((i, j)):
                                     for ap, bp in permutations((a, b)):
                                         T.aab[ap, bp, c, ip, jp, k] *= 0.0
+                            nct1 += 1
 
-    rand_arr = np.random.rand(nua, nub, nub, noa, nob, nob)
+    rand_arr = np.asarray(random.sample(range(n3c), n3c_p))
+    idx = np.argsort(rand_arr)
+    rand_arr = rand_arr[idx]
+    nct1 = 0
+    nct2 = 0
     for a in range(nua):
         for b in range(nub):
             for c in range(b + 1, nub):
                 for i in range(noa):
                     for j in range(nob):
                         for k in range(j + 1, nob):
-                            if rand_arr[a, b, c, i, j, k] <= fraction[2]:
+
+                            if nct2 == n3c_p:
+                                for jp, kp in permutations((j, k)):
+                                    for bp, cp in permutations((b, c)):
+                                        T.abb[a, bp, cp, i, jp, kp] *= 0.0
+                                continue
+
+                            if nct1 == rand_arr[nct2]:
                                 num_triples += 1
+                                nct2 += 1
                                 T3_excitations["abb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                                 T3_amplitudes["abb"].append(T.abb[a, b, c, i, j, k])
                             else:
                                 for jp, kp in permutations((j, k)):
                                     for bp, cp in permutations((b, c)):
                                         T.abb[a, bp, cp, i, jp, kp] *= 0.0
+                            nct1 += 1
 
-    rand_arr = np.random.rand(nub, nub, nub, nob, nob, nob)
+    rand_arr = np.asarray(random.sample(range(n3d), n3d_p))
+    idx = np.argsort(rand_arr)
+    rand_arr = rand_arr[idx]
+    nct1 = 0
+    nct2 = 0
     for a in range(nub):
         for b in range(a + 1, nub):
             for c in range(b + 1, nub):
                 for i in range(nob):
                     for j in range(i + 1, nob):
                         for k in range(j + 1, nob):
-                            if rand_arr[a, b, c, i, j, k] <= fraction[3]:
+
+                            if nct2 == n3d_p:
+                                for ip, jp, kp in permutations((i, j, k)):
+                                    for ap, bp, cp in permutations((a, b, c)):
+                                        T.bbb[ap, bp, cp, ip, jp, kp] *= 0.0
+                                continue
+
+                            if nct1 == rand_arr[nct2]:
                                 num_triples += 1
+                                nct2 += 1
                                 T3_excitations["bbb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                                 T3_amplitudes["bbb"].append(T.bbb[a, b, c, i, j, k])
                             else:
                                 for ip, jp, kp in permutations((i, j, k)):
                                     for ap, bp, cp in permutations((a, b, c)):
                                         T.bbb[ap, bp, cp, ip, jp, kp] *= 0.0
+                            nct1 += 1
 
     print("P space contains", num_triples, "triples.")
 
@@ -386,9 +445,9 @@ if __name__ == "__main__":
     """
 
     mol.build(
-        atom=methylene,
+        atom=fluorine,
         basis="cc-pvdz",
-        symmetry="C2V",
+        symmetry="D2H",
         spin=0, 
         charge=0,
         unit="Bohr",
@@ -396,15 +455,15 @@ if __name__ == "__main__":
     )
     mf = scf.ROHF(mol).run()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=1)
+    system, H = load_pyscf_integrals(mf, nfrozen=2)
     system.print_info()
 
     calculation = Calculation(calculation_type="ccsdt")
     T, cc_energy, converged = cc_driver(calculation, system, H)
     hbar = get_ccsd_intermediates(T, H)
 
-    T3_excitations, T3_amplitudes = get_T3_list(T)
-    #T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[0.005,0.045,0.045,0.005])
+    #T3_excitations, T3_amplitudes = get_T3_list(T)
+    T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[1,1,1,1])
 
     T3_excitations["aaa"] = T3_excitations["aaa"].T
     T3_excitations["aab"] = T3_excitations["aab"].T

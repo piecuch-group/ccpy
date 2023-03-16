@@ -47,13 +47,32 @@ def load_pyscf_integrals(
 
     kinetic_aoints = molecule.intor_symmetric("int1e_kin")
     nuclear_aoints = molecule.intor_symmetric("int1e_nuc")
+
+    #
+    #eri_aoints = np.transpose(molecule.intor("int2e", aosym="s1"), (0, 2, 1, 3))
+    #overlap_aoints = molecule.intor_symmetric("int1e_ovlp")
+    #evalS, U = np.linalg.eigh(overlap_aoints)
+    #diagS_minushalf = np.diag(evalS**(-0.5))
+    #X = np.dot(U, np.dot(diagS_minushalf, U.T))
+
+    # Replace the MO coefficient solution by the eigenvectors of Z, not F
+    #hcore = kinetic_aoints + nuclear_aoints
+    #e_core, mo_coeff = np.linalg.eigh(np.dot(X.T, np.dot(hcore, X)))
+    #idx = np.argsort(e_core)
+    #e_core = e_core[idx]
+    #mo_coeff = np.dot(X, mo_coeff[:, idx])
+
+    # Perform AO-to-MO transformation
     e1int = np.einsum(
-        "pi,pq,qj->ij", mo_coeff, kinetic_aoints + nuclear_aoints, mo_coeff
+        "pi,pq,qj->ij", mo_coeff, kinetic_aoints + nuclear_aoints, mo_coeff, optimize=True
     )
     e2int = np.transpose(
         np.reshape(ao2mo.kernel(molecule, mo_coeff, compact=False), 4 * (norbitals,)),
         (0, 2, 1, 3),
     )
+    #e2int = np.einsum(
+    #     "pi,qj,rk,sl,pqrs->ijkl", mo_coeff, mo_coeff, mo_coeff, mo_coeff, eri_aoints, optimize=True
+    #)
 
     # Check that the HF energy calculated using the integrals matches the PySCF result
     hf_energy = get_hf_energy(e1int, e2int, system, notation="physics")

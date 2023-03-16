@@ -1144,8 +1144,26 @@ module ccp_quadratic_loops_direct_opt
                   real(kind=8), allocatable :: t3_amps_buff(:)
                   integer, allocatable :: t3_excits_buff(:,:)
 
-                  integer, allocatable :: loc_arr(:,:)
-                  integer, allocatable :: idx_table(:,:,:,:)
+                  integer, allocatable :: id3a_h(:,:)
+                  integer, allocatable :: xixjxk_table(:,:,:)
+
+                  integer, allocatable :: id3b_h(:,:,:)
+                  integer, allocatable :: eck_table(:,:)
+                  integer, allocatable :: xixj_table(:,:)
+                  integer, allocatable :: id3b_abij(:,:)
+                  integer, allocatable :: xaxbxixj_table(:,:,:,:)
+                  integer, allocatable :: id3b_abk(:,:)
+                  integer, allocatable :: xaxbxk_table(:,:,:)
+                  integer, allocatable :: id3b_aijk(:,:)
+                  integer, allocatable :: xaxixjxk_table(:,:,:,:)
+                  integer, allocatable :: id3b_bijk(:,:)
+                  integer, allocatable :: xbxixjxk_table(:,:,:,:)
+                  !integer, allocatable :: id3b_ijk_ab(:,:,:)
+                  !integer, allocatable :: xaxb_table(:,:)
+
+                  integer, allocatable :: id3c_h(:,:,:)
+                  integer, allocatable :: eai_table(:,:)
+                  integer, allocatable :: xjxk_table(:,:)
 
                   real(kind=8) :: I2A_vooo(nua, noa, noa, noa),&
                                   I2A_vvov(nua, nua, noa, nua),&
@@ -1155,7 +1173,14 @@ module ccp_quadratic_loops_direct_opt
                                   I2B_vvvo(nua, nub, nua, nob)
                   real(kind=8) :: denom, val, t_amp, res_mm23, hmatel
                   integer :: i, j, k, l, a, b, c, d, m, n, e, f, idet, jdet
-                  integer :: idx
+                  integer :: ib, ij, jb, lm
+                  integer :: ai, bj, aj, bi, mn, mk
+                  integer :: li, lj, lmn
+                  integer :: iabij, iabk
+                  integer :: iaijk, ibijk
+                  real(kind=8) :: phase
+
+                  integer :: d1, e1, f1, l1, n1
 
                   ! compute VT3 intermediates
                   I2A_vooo(:,:,:,:) = 0.5d0 * H2A_vooo(:,:,:,:)
@@ -1274,353 +1299,30 @@ module ccp_quadratic_loops_direct_opt
                   ! Zero the residual container
                   resid = 0.0d0
 
-                  !!!! diagram 1: -A(i/jk) h1a(mi)*t3b(abcmjk)    
-                  !!!! diagram 5: A(i/jk) 1/2 h2a(mnij)*t3b(abcmnk)
-                  !!! ABCK LOOP !!! 
-                  ! allocate new sorting arrays
-                  allocate(loc_arr(nua*(nua-1)/2*nub*nob,2))
-                  allocate(idx_table(nua,nua,nub,noa))
-                  idx_table = 0
-                  call sort_t3b_abck(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     idx = idx_table(a,b,c,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        l = t3b_excits(4,jdet); m = t3b_excits(5,jdet);
-                        ! compute < ijk~abc~ | h2a(oooo) | lmk~abc~ >
-                        hmatel = h2a_oooo(l,m,i,j)
-                        ! compute < ijk~abc~ | h1a(vv) | lmk~abc~ > = -A(ij)A(lm) h1a_oo(l,i) * delta(m,j)
-                        if (m==j) hmatel = hmatel - h1a_oo(l,i)
-                        if (m==i) hmatel = hmatel + h1a_oo(l,j)
-                        if (l==j) hmatel = hmatel + h1a_oo(m,i)
-                        if (l==i) hmatel = hmatel - h1a_oo(m,j)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                  end do
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-
-                  !!!! diagram 2: A(a/bc) h1a(ae)*t3b(ebcmjk)
-                  !!!! diagram 6: A(a/bc) 1/2 h2a(abef)*t3b(ebcmjk)
-                  !!! CIJK LOOP !!!
-                  ! allocate new sorting arrays
-                  allocate(loc_arr(nub*noa*(noa-1)/2*nob,2))
-                  allocate(idx_table(nub,noa,noa,nob))
-                  idx_table = 0
-                  call sort_t3b_cijk(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     idx = idx_table(c,i,j,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
-                        ! compute < ijk~abc~ | h2a(vvvv) | ijk~dec~ >
-                        hmatel = h2a_vvvv(a,b,d,e)
-                        ! compute < ijk~abc~ | h1a(vv) | ijk~dec > = A(ab)A(de) h1a_vv(a,d)*delta(b,e)
-                        if (b==e) hmatel = hmatel + h1a_vv(a,d)
-                        if (a==e) hmatel = hmatel - h1a_vv(b,d)
-                        if (b==d) hmatel = hmatel - h1a_vv(a,e)
-                        if (a==d) hmatel = hmatel + h1a_vv(b,e)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                  end do
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-
-                  !!!! diagram 3: -h1b(mk)*t3b(abcijm)
-                  !!!! diagram 7: A(ij) h2b(mnjk)*t3b(abcimn)
-                  !!! ABCI LOOP !!!
-                  ! allocate new sorting arrays
-                  allocate(loc_arr(nua*(nua-1)/2*nub*noa,2))
-                  allocate(idx_table(nua,nua,nub,noa))
-                  idx_table = 0
-                  call sort_t3b_abci(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(a,b,c,i)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
-                        ! compute < ijk~abc~ | h2b(oooo) | imn~abc~ >
-                        hmatel = h2b_oooo(m,n,j,k)
-                        ! compute < ijk~abc~ | h1b(oo) | imn~abc~ >
-                        if (m==j) hmatel = hmatel - h1b_oo(n,k)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                     ! (ij)
-                     idx = idx_table(a,b,c,j)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
-                           ! compute < ijk~abc~ | h2b(oooo) | jmn~abc~ >
-                           hmatel = -h2b_oooo(m,n,i,k)
-                           ! compute < ijk~abc~ | h1b(oo) | jmn~abc~ >
-                           if (m==i) hmatel = hmatel + h1b_oo(n,k)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if    
-                  end do
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table) 
-                  !!! ABCJ LOOP !!!
-                  ! allocate new sorting arrays
-                  allocate(loc_arr(nua*(nua-1)/2*nub*noa,2))
-                  allocate(idx_table(nua,nua,nub,noa))
-                  idx_table = 0
-                  call sort_t3b_abcj(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(a,b,c,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        l = t3b_excits(4,jdet); n = t3b_excits(6,jdet);
-                        ! compute < ijk~abc~ | h2b(oooo) | ljn~abc~ >
-                        hmatel = h2b_oooo(l,n,i,k)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                     ! (ij)
-                     idx = idx_table(a,b,c,i)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           l = t3b_excits(4,jdet); n = t3b_excits(6,jdet);
-                           ! compute < ijk~abc~ | h2b(oooo) | lin~abc~ >
-                           hmatel = -h2b_oooo(l,n,j,k)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                  end do
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table) 
-
-                  !!!! diagram 9: A(ij)A(ab) h2a(amie)*t3b(ebcmjk)
-                  !!! BCJK LOOP !!!
-                  ! allocate new sorting arrays
-                  allocate(loc_arr(nua*nub*noa*nob,2))
-                  allocate(idx_table(nua,nub,noa,nob))
-                  idx_table = 0
-                  call sort_t3b_bcjk(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(b,c,j,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        d = t3b_excits(1,jdet); l = t3b_excits(4,jdet);
-                        ! compute < ijk~abc~ | h2a(voov) | ljk~dbc~ >
-                        hmatel = h2a_voov(a,l,i,d)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                     ! (ab)
-                     idx = idx_table(a,c,j,k)
-                     if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(1,jdet); l = t3b_excits(4,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | ljk~dac~ >
-                           hmatel = -h2a_voov(b,l,i,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if 
-                     ! (ij)
-                     idx = idx_table(b,c,i,k)
-                     if (idx/=0) then ! protect against case where i = 1 because j = 2, noa
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(1,jdet); l = t3b_excits(4,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | lik~dbc~ >
-                           hmatel = -h2a_voov(a,l,j,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if 
-                     ! (ij)(ab)
-                     idx = idx_table(a,c,i,k)
-                     if (idx/=0) then ! protect against case where a = 1 because b = 2, nua and i = 1 because j = 2, noa
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(1,jdet); l = t3b_excits(4,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | lik~dac~ >
-                           hmatel = h2a_voov(b,l,j,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if 
-                  end do
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-                  !!! BCIK LOOP !!!
-                  ! allocate new sorting arrays
-                  allocate(loc_arr(nua*nub*noa*nob,2))
-                  allocate(idx_table(nua,nub,noa,nob))
-                  idx_table = 0
-                  call sort_t3b_bcik(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(b,c,i,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        d = t3b_excits(1,jdet); l = t3b_excits(5,jdet);
-                        ! compute < ijk~abc~ | h2a(voov) | ilk~dbc~ >
-                        hmatel = h2a_voov(a,l,j,d)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                     ! (ij)
-                     idx = idx_table(b,c,j,k)
-                     if (idx/=0) then ! protect against where j = noa because i = 1, noa-1 
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(1,jdet); l = t3b_excits(5,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | jlk~dbc~ >
-                           hmatel = -h2a_voov(a,l,i,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                     ! (ab)
-                     idx = idx_table(a,c,i,k)
-                     if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(1,jdet); l = t3b_excits(5,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | ilk~dac~ >
-                           hmatel = -h2a_voov(b,l,j,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                     ! (ij)(ab)
-                     idx = idx_table(a,c,j,k)
-                     if (idx/=0) then ! protect against case where j = noa because i = 1, noa-1 and where a = 1 because b = 2, nua
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(1,jdet); l = t3b_excits(5,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | jlk~dac~ >
-                           hmatel = h2a_voov(b,l,i,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                  end do
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-                  !!! ACIK LOOP !!!
-                  ! allocate new sorting arrays
-                  allocate(loc_arr(nua*nub*noa*nob,2))
-                  allocate(idx_table(nua,nub,noa,nob))
-                  idx_table = 0
-                  call sort_t3b_acik(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(a,c,i,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        d = t3b_excits(2,jdet); l = t3b_excits(5,jdet);
-                        ! compute < ijk~abc~ | h2a(voov) | ilk~adc~  >
-                        hmatel = h2a_voov(b,l,j,d)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                     ! (ij)
-                     idx = idx_table(a,c,j,k)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(2,jdet); l = t3b_excits(5,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | jlk~adc~  >
-                           hmatel = -h2a_voov(b,l,i,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                     ! (ab)
-                     idx = idx_table(b,c,i,k)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(2,jdet); l = t3b_excits(5,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | ilk~bdc~  >
-                           hmatel = -h2a_voov(a,l,j,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                     ! (ij)(ab)
-                     idx = idx_table(b,c,j,k)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(2,jdet); l = t3b_excits(5,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | jlk~bdc~  >
-                           hmatel = h2a_voov(a,l,i,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                  end do
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-                  !!! ACJK LOOP !!!
-                  ! allocate new sorting arrays
-                  allocate(loc_arr(nua*nub*noa*nob,2))
-                  allocate(idx_table(nua,nub,noa,nob))
-                  idx_table = 0
-                  call sort_t3b_acjk(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(a,c,j,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        d = t3b_excits(2,jdet); l = t3b_excits(4,jdet);
-                        ! compute < ijk~abc~ | h2a(voov) | ljk~adc~  >
-                        hmatel = h2a_voov(b,l,i,d)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                     ! (ij)
-                     idx = idx_table(a,c,i,k)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(2,jdet); l = t3b_excits(4,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | lik~adc~  >
-                           hmatel = -h2a_voov(b,l,j,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                     ! (ab)
-                     idx = idx_table(b,c,j,k)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(2,jdet); l = t3b_excits(4,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | ljk~bdc~  >
-                           hmatel = -h2a_voov(a,l,i,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                     ! (ij)(ab)
-                     idx = idx_table(b,c,i,k)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(2,jdet); l = t3b_excits(4,jdet);
-                           ! compute < ijk~abc~ | h2a(voov) | lik~abc~  >
-                           hmatel = h2a_voov(a,l,j,d)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                  end do
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-
                   !!!! diagram 5: h1b(ce)*t3b(abeijm)
                   !!!! diagram 8: A(ab) h2b(bcef)*t3b(aefijk)
                   ! NOTE: h1b(vv) only needs to be considered in either one of aijk or bijk loops, but not both
                   !!! AIJK LOOP !!!
                   ! allocate new sorting arrays
-                  allocate(loc_arr(nua*noa*(noa-1)/2*nob,2))
-                  allocate(idx_table(nua,noa,noa,nob))
-                  idx_table = 0
-                  call sort_t3b_aijk(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  allocate(id3b_aijk(nua*noa*(noa-1)/2*nob,2))
+                  allocate(xaxixjxk_table(nua,noa,noa,nob))
+                  xaxixjxk_table = 0
+                  call sort_t3b_aijk(t3b_excits, t3b_amps, id3b_aijk, xaxixjxk_table, noa, nua, nob, nub, n3aab, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp t3b_excits,&
                   !$omp t3b_amps,&
-                  !$omp loc_arr,idx_table,&
+                  !$omp id3b_aijk,xaxixjxk_table,&
                   !$omp H1B_vv,H2B_vvvv,&
                   !$omp noa,nua,nob,nub,n3aab),&
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
-                  !$omp idx)
+                  !$omp iaijk)
                   !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                       i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                      idx = idx_table(a,i,j,k)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      iaijk = xaxixjxk_table(a,i,j,k)
+                      do jdet = id3b_aijk(iaijk,1), id3b_aijk(iaijk,2)
                          d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
                          l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
                          ! compute < ijk~abc~ | h2b(vvvv) | ijk~aef~ >
@@ -1628,9 +1330,9 @@ module ccp_quadratic_loops_direct_opt
                          if (b==e) hmatel = hmatel + h1b_vv(c,f)
                          resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
                       end do
-                      idx = idx_table(b,i,j,k)
-                      if (idx/=0) then ! protect against case where b = nua because a = 1, nua-1
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      iaijk = xaxixjxk_table(b,i,j,k)
+                      if (iaijk/=0) then ! protect against case where b = nua because a = 1, nua-1
+                         do jdet = id3b_aijk(iaijk,1), id3b_aijk(iaijk,2)
                             d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
                             l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
                             ! compute < ijk~abc~ | h2b(vvvv) | ijk~bef~ >
@@ -1644,37 +1346,37 @@ module ccp_quadratic_loops_direct_opt
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
+                  deallocate(id3b_aijk,xaxixjxk_table)
                   !!! BIJK LOOP !!!
                   ! allocate new sorting arrays
-                  allocate(loc_arr(nua*noa*(noa-1)/2*nob,2))
-                  allocate(idx_table(nua,noa,noa,nob))
-                  idx_table = 0
-                  call sort_t3b_bijk(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  allocate(id3b_bijk(nua*noa*(noa-1)/2*nob,2))
+                  allocate(xbxixjxk_table(nua,noa,noa,nob))
+                  xbxixjxk_table = 0
+                  call sort_t3b_bijk(t3b_excits, t3b_amps, id3b_bijk, xbxixjxk_table, noa, nua, nob, nub, n3aab, resid)
                   !!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp t3b_excits,&
                   !$omp t3b_amps,&
-                  !$omp loc_arr,idx_table,&
+                  !$omp id3b_bijk,xbxixjxk_table,&
                   !$omp H2B_vvvv,&
                   !$omp noa,nua,nob,nub,n3aab),&
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
-                  !$omp idx)
+                  !$omp ibijk)
                   !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                       i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                      idx = idx_table(b,i,j,k)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      ibijk = xbxixjxk_table(b,i,j,k)
+                      do jdet = id3b_bijk(ibijk,1), id3b_bijk(ibijk,2)
                          d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
                          l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
                          ! compute < ijk~abc~ | h2b(vvvv) | ijk~dbf~ >
                          hmatel = h2b_vvvv(a,c,d,f)
                          resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
                       end do
-                      idx = idx_table(a,i,j,k)
-                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      ibijk = xbxixjxk_table(a,i,j,k)
+                      if (ibijk/=0) then ! protect against case where a = 1 because b = 2, nua
+                         do jdet = id3b_bijk(ibijk,1), id3b_bijk(ibijk,2)
                             d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
                             l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
                             ! compute < ijk~abc~ | h2b(vvvv) | ijk~daf~ >
@@ -1687,30 +1389,30 @@ module ccp_quadratic_loops_direct_opt
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
+                  deallocate(id3b_bijk,xbxixjxk_table)
 
                   !!!! diagram 10: h2c(cmke)*t3b(abeijm)
                   ! allocate sorting arrays
-                  allocate(loc_arr(nua*(nua-1)/2*noa*(noa-1)/2,2))
-                  allocate(idx_table(nua,nua,noa,noa))
-                  idx_table = 0
-                  call sort_t3b_abij(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  allocate(id3b_abij(nua*(nua-1)/2*noa*(noa-1)/2,2))
+                  allocate(xaxbxixj_table(nua,nua,noa,noa))
+                  xaxbxixj_table = 0
+                  call sort_t3b_abij(t3b_excits, t3b_amps, id3b_abij, xaxbxixj_table, noa, nua, nob, nub, n3aab, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp t3b_excits,&
                   !$omp t3b_amps,&
-                  !$omp loc_arr,idx_table,&
+                  !$omp id3b_abij,xaxbxixj_table,&
                   !$omp H2C_voov,&
                   !$omp noa,nua,nob,nub,&
                   !$omp n3aab),&
                   !$omp private(hmatel,a,b,c,i,j,k,f,n,idet,jdet,&
-                  !$omp idx)
+                  !$omp iabij)
                   !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                       i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                      idx = idx_table(a,b,i,j)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      iabij = xaxbxixj_table(a,b,i,j)
+                      do jdet = id3b_abij(iabij,1), id3b_abij(iabij,2)
                          f = t3b_excits(3,jdet); n = t3b_excits(6,jdet);
                          ! compute < ijk~abc~ | h2c(voov) | ijn~abf~ > = h2c_voov(c,n,k,f)
                          hmatel = h2c_voov(c,n,k,f)
@@ -1721,473 +1423,378 @@ module ccp_quadratic_loops_direct_opt
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
+                  deallocate(id3b_abij,xaxbxixj_table)
 
                   !!!! diagram 11: -A(ij) h2b(mcie)*t3b(abemjk)
-                  !!! ABIK LOOP !!!
                   ! allocate sorting arrays
-                  allocate(loc_arr(nua*(nua-1)/2*noa*nob,2)) 
-                  allocate(idx_table(nua,nua,noa,nob))
-                  idx_table = 0
-                  call sort_t3b_abik(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(a,b,i,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        f = t3b_excits(3,jdet); m = t3b_excits(5,jdet);
-                        ! compute < ijk~abc~ | h2b(ovov) | imk~abf~ >
-                        hmatel = -h2b_ovov(m,c,j,f)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                     ! (ij)
-                     idx = idx_table(a,b,j,k)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           f = t3b_excits(3,jdet); m = t3b_excits(5,jdet);
-                           ! compute < ijk~abc~ | h2b(ovov) | jmk~abf~ >
-                           hmatel = h2b_ovov(m,c,i,f)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                  end do 
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-                  !!! ABJK LOOP !!!
-                  ! allocate sorting arrays
-                  allocate(loc_arr(nua*(nua-1)/2*noa*nob,2)) 
-                  allocate(idx_table(nua,nua,noa,nob))
-                  idx_table = 0
-                  call sort_t3b_abjk(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(a,b,j,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        f = t3b_excits(3,jdet); l = t3b_excits(4,jdet);
-                        ! compute < ijk~abc~ | h2b(ovov) | ljk~abf~ >
-                        hmatel = -h2b_ovov(l,c,i,f)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                     ! (ij)
-                     idx = idx_table(a,b,i,k)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           f = t3b_excits(3,jdet); l = t3b_excits(4,jdet);
-                           ! compute < ijk~abc~ | h2b(ovov) | lik~abf~ >
-                           hmatel = h2b_ovov(l,c,j,f)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                  end do 
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-                  
-                  !!!! diagram 12: -A(ab) h2b(amek)*t3b(ebcijm)
-                  !!! BCIJ LOOP !!!
-                  ! allocate sorting arrays
-                  allocate(loc_arr(nua*nub*noa*(noa-1)/2,2)) 
-                  allocate(idx_table(nua,nub,noa,noa))
-                  idx_table = 0
-                  call sort_t3b_bcij(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(b,c,i,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        d = t3b_excits(1,jdet); n = t3b_excits(6,jdet);
-                        ! compute < ijk~abc~ | h2b(vovo) | ijn~dbc~ >
-                        hmatel = -h2b_vovo(a,n,d,k)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                     ! (ab)
-                     idx = idx_table(a,c,i,j)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           d = t3b_excits(1,jdet); n = t3b_excits(6,jdet);
-                           ! compute < ijk~abc~ | h2b(vovo) | ijn~dac~ >
-                           hmatel = h2b_vovo(b,n,d,k)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                  end do 
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-                  !!! ACIJ LOOP !!!
-                  ! allocate sorting arrays
-                  allocate(loc_arr(nua*nub*noa*(noa-1)/2,2)) 
-                  allocate(idx_table(nua,nub,noa,noa))
-                  idx_table = 0
-                  call sort_t3b_acij(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(a,c,i,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        e = t3b_excits(2,jdet); n = t3b_excits(6,jdet);
-                        ! compute < ijk~abc~ | h2b(vovo) | ijn~aec~ >
-                        hmatel = -h2b_vovo(b,n,e,k)
-                        resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                     end do
-                     ! (ab)
-                     idx = idx_table(b,c,i,j)
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           e = t3b_excits(2,jdet); n = t3b_excits(6,jdet);
-                           ! compute < ijk~abc~ | h2b(vovo) | ijn~bec~ >
-                           hmatel = h2b_vovo(a,n,e,k)
-                           resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                        end do
-                     end if
-                  end do 
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-
-                  !!!! diagram 13: h2b(mcek)*t3a(abeijm) !!!!
-                  ! allocate and initialize the copy of t3a
-                  allocate(t3_amps_buff(n3aaa))
-                  allocate(t3_excits_buff(6,n3aaa))
-                  t3_amps_buff(:) = t3a_amps(:)
-                  t3_excits_buff(:,:) = t3a_excits(:,:)
-                  ! allocate sorting arrays (can be reused for each permutation)
-                  allocate(loc_arr((nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2,2))
-                  allocate(idx_table(nua,nua,noa,noa))
-                  !!! ABIJ LOOP !!!
-                  call sort_t3a_abij(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     idx = idx_table(a,b,i,j)
-                     if (idx==0) cycle 
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
-                        ! compute < ijk~abc~ | h2b(ovvo) | ijnabf >
-                        hmatel = h2b_ovvo(n,c,f,k)
-                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                     end do
-                  end do 
-                  !!! ACIJ LOOP !!!
-                  call sort_t3a_acij(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     idx = idx_table(a,b,i,j) 
-                     if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        e = t3_excits_buff(2,jdet); n = t3_excits_buff(6,jdet);
-                        ! compute < ijk~abc~ | h2b(ovvo) | ijnaeb >
-                        hmatel = -h2b_ovvo(n,c,e,k)
-                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                     end do
-                  end do 
-                  !!! BCIJ LOOP !!!
-                  call sort_t3a_bcij(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     idx = idx_table(a,b,i,j) 
-                     if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        d = t3_excits_buff(1,jdet); n = t3_excits_buff(6,jdet);
-                        ! compute < ijk~abc~ | h2b(ovvo) | ijndab >
-                        hmatel = h2b_ovvo(n,c,d,k)
-                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                     end do
-                  end do 
-                  !!! ABIK LOOP !!!
-                  call sort_t3a_abik(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     idx = idx_table(a,b,i,j) 
-                     if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        f = t3_excits_buff(3,jdet); m = t3_excits_buff(5,jdet);
-                        ! compute < ijk~abc~ | h2b(ovvo) | imjabf >
-                        hmatel = -h2b_ovvo(m,c,f,k)
-                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                     end do
-                  end do 
-                  !!! ACIK LOOP !!!
-                  call sort_t3a_acik(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     idx = idx_table(a,b,i,j) 
-                     if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        e = t3_excits_buff(2,jdet); m = t3_excits_buff(5,jdet);
-                        ! compute < ijk~abc~ | h2b(ovvo) | imjaeb >
-                        hmatel = h2b_ovvo(m,c,e,k)
-                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                     end do
-                  end do 
-                  !!! BCIK LOOP !!!
-                  call sort_t3a_bcik(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     idx = idx_table(a,b,i,j) 
-                     if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        d = t3_excits_buff(1,jdet); m = t3_excits_buff(5,jdet);
-                        ! compute < ijk~abc~ | h2b(ovvo) | imjdab >
-                        hmatel = -h2b_ovvo(m,c,d,k)
-                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                     end do
-                  end do 
-                  !!! ABJK LOOP !!!
-                  call sort_t3a_abjk(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     idx = idx_table(a,b,i,j) 
-                     if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        f = t3_excits_buff(3,jdet); l = t3_excits_buff(4,jdet);
-                        ! compute < ijk~abc~ | h2b(ovvo) | lijabf >
-                        hmatel = h2b_ovvo(l,c,f,k)
-                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                     end do
-                  end do 
-                  !!! ACJK LOOP !!!
-                  call sort_t3a_acjk(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     idx = idx_table(a,b,i,j) 
-                     if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        e = t3_excits_buff(2,jdet); l = t3_excits_buff(4,jdet);
-                        ! compute < ijk~abc~ | h2b(ovvo) | lijaeb >
-                        hmatel = -h2b_ovvo(l,c,e,k)
-                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                     end do
-                  end do 
-                  !!! BCJK LOOP !!!
-                  call sort_t3a_bcjk(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     idx = idx_table(a,b,i,j) 
-                     if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        d = t3_excits_buff(1,jdet); l = t3_excits_buff(4,jdet);
-                        ! compute < ijk~abc~ | h2b(ovvo) | lijdab >
-                        hmatel = h2b_ovvo(l,c,d,k)
-                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                     end do
-                  end do
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-                  ! deallocate t3 buffer arrays
-                  deallocate(t3_amps_buff,t3_excits_buff) 
-
-                  !!!! diagram 14: A(ab)A(ij) h2b(bmje)*t3c(aecimk)
-                  ! allocate and initialize the copy of t3a
-                  allocate(t3_amps_buff(n3abb))
-                  allocate(t3_excits_buff(6,n3abb))
-                  t3_amps_buff(:) = t3c_amps(:)
-                  t3_excits_buff(:,:) = t3c_excits(:,:)
-                  ! allocate sorting arrays (can be reused for each permutation)
-                  allocate(loc_arr(nua*nub*noa*nob,2))
-                  allocate(idx_table(nua,nub,noa,nob))
-                  !!! ACIK LOOP !!!
-                  call sort_t3c_acik(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, nob, nub, n3abb)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(a,c,i,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           e = t3_excits_buff(2,jdet); m = t3_excits_buff(5,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | im~k~ae~c~ >
-                           hmatel = h2b_voov(b,m,j,e)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ab)
-                     idx = idx_table(b,c,i,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           e = t3_excits_buff(2,jdet); m = t3_excits_buff(5,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | im~k~be~c~ >
-                           hmatel = -h2b_voov(a,m,j,e)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ij)
-                     idx = idx_table(a,c,j,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           e = t3_excits_buff(2,jdet); m = t3_excits_buff(5,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | jm~k~ae~c~ >
-                           hmatel = -h2b_voov(b,m,i,e)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ab)(ij)
-                     idx = idx_table(b,c,j,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           e = t3_excits_buff(2,jdet); m = t3_excits_buff(5,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | jm~k~be~c~ >
-                           hmatel = h2b_voov(a,m,i,e)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                  end do
-                  !!! ABIK LOOP !!!
-                  call sort_t3c_abik(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, nob, nub, n3abb)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(a,c,i,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           f = t3_excits_buff(3,jdet); m = t3_excits_buff(5,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | im~k~ac~f~ >
-                           hmatel = -h2b_voov(b,m,j,f)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ab)
-                     idx = idx_table(b,c,i,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           f = t3_excits_buff(3,jdet); m = t3_excits_buff(5,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | im~k~bc~f~ >
-                           hmatel = h2b_voov(a,m,j,f)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ij)
-                     idx = idx_table(a,c,j,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           f = t3_excits_buff(3,jdet); m = t3_excits_buff(5,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | jm~k~ac~f~ >
-                           hmatel = h2b_voov(b,m,i,f)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ab)(ij)
-                     idx = idx_table(b,c,j,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           f = t3_excits_buff(3,jdet); m = t3_excits_buff(5,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | jm~k~bc~f~ >
-                           hmatel = -h2b_voov(a,m,i,f)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                  end do
-                  !!! ACIJ LOOP !!!
-                  call sort_t3c_acij(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, nob, nub, n3abb)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(a,c,i,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           e = t3_excits_buff(2,jdet); n = t3_excits_buff(6,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | ik~n~ae~c~ >
-                           hmatel = -h2b_voov(b,n,j,e)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ab)
-                     idx = idx_table(b,c,i,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           e = t3_excits_buff(2,jdet); n = t3_excits_buff(6,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | ik~n~be~c~ >
-                           hmatel = h2b_voov(a,n,j,e)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ij)
-                     idx = idx_table(a,c,j,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           e = t3_excits_buff(2,jdet); n = t3_excits_buff(6,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | jk~n~ae~c~ >
-                           hmatel = h2b_voov(b,n,i,e)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ab)(ij)
-                     idx = idx_table(b,c,j,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           e = t3_excits_buff(2,jdet); n = t3_excits_buff(6,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | jk~n~be~c~ >
-                           hmatel = -h2b_voov(a,n,i,e)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                  end do
-                  !!! ABIJ LOOP !!!
-                  call sort_t3c_abij(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, nob, nub, n3abb)
-                  do idet = 1, n3aab
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                     ! (1)
-                     idx = idx_table(a,c,i,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | ik~n~ac~f~ >
-                           hmatel = h2b_voov(b,n,j,f)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ab)
-                     idx = idx_table(b,c,i,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | ik~n~bc~f~ >
-                           hmatel = -h2b_voov(a,n,j,f)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ij)
-                     idx = idx_table(a,c,j,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | jk~n~ac~f~ >
-                           hmatel = -h2b_voov(b,n,i,f)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                     ! (ab)(ij)
-                     idx = idx_table(b,c,j,k) 
-                     if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
-                           ! compute < ijk~abc~ | h2b(voov) | jk~n~bc~f~ >
-                           hmatel = h2b_voov(a,n,i,f)
-                           resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                        end do
-                     end if
-                  end do
-                  ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
-                  ! deallocate t3 buffer arrays
-                  deallocate(t3_amps_buff,t3_excits_buff) 
-
+                  allocate(id3b_abk(nua*(nua-1)/2*nob,2))
+                  allocate(xaxbxk_table(nua,nua,nob))
+                  xaxbxk_table = 0
+                  call sort_t3b_abk(t3b_excits, t3b_amps, id3b_abk, xaxbxk_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp id3b_abk,xaxbxk_table,&
+                  !$omp H2B_ovov,&
+                  !$omp noa,nua,nob,nub,&
+                  !$omp n3aab),&
+                  !$omp private(hmatel,a,b,c,i,j,k,f,l,m,idet,jdet,&
+                  !$omp iabk)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                       i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                      iabk = xaxbxk_table(a,b,k)
+                      do jdet = id3b_abk(iabk,1), id3b_abk(iabk,2)
+                         f = t3b_excits(3,jdet); l = t3b_excits(4,jdet); m = t3b_excits(5,jdet);
+                         if (nexc2(i,j,l,m)>=2) cycle
+                         ! compute < ijk~abc~ | h2b(ovov) | lmk~abf~ > = -A(ij)A(lm)h2b_ovov(l,c,i,f)
+                         hmatel = 0.0d0
+                         if (j==m) hmatel = hmatel - h2b_ovov(l,c,i,f)
+                         if (i==m) hmatel = hmatel + h2b_ovov(l,c,j,f)
+                         if (j==l) hmatel = hmatel + h2b_ovov(m,c,i,f)
+                         if (i==l) hmatel = hmatel - h2b_ovov(m,c,j,f)
+                         resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                      end do
+                  end do ! end loop over idet
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(id3b_abk,xaxbxk_table)
+
+                  ! Perform the "master sort": sort t3b into the ck_ij order
+                  allocate(id3b_h(nub*nob,noa*(noa-1)/2,2))
+                  allocate(xixj_table(noa,noa))
+                  allocate(eck_table(nub,nob))
+                  call sort_t3b_h(t3b_excits, t3b_amps, id3b_h, eck_table, xixj_table, noa, nua, nob, nub, n3aab, resid)
+
+
+                  !!!! diagram 13: h2b(mcek)*t3a(abeijm)
+                  ! allocate sorting arrays
+                  allocate(t3_amps_buff(n3aaa))
+                  allocate(t3_excits_buff(6,n3aaa))
+                  allocate(id3a_h(noa*(noa-1)*(noa-2)/6,2))
+                  allocate(xixjxk_table(noa,noa,noa))
+                  t3_amps_buff(:) = t3a_amps(:)
+                  t3_excits_buff(:,:) = t3a_excits(:,:)
+                  call sort_t3a_h(t3_excits_buff, t3_amps_buff, id3a_h, xixjxk_table, noa, nua, n3aaa)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3_excits_buff,&
+                  !$omp t3_amps_buff,&
+                  !$omp id3a_h,xixjxk_table,&
+                  !$omp eck_table,xixj_table,&
+                  !$omp H2B_ovvo,&
+                  !$omp noa,nua,nob,nub,&
+                  !$omp n3aab),&
+                  !$omp private(hmatel,a,b,c,d,e,f,i,j,k,n,idet,jdet,&
+                  !$omp ib,ij,lmn,phase)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aab
+                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                      ib = eck_table(c,k)
+                      ij = xixj_table(i,j)
+                      do n = 1, noa
+                         lmn = xixjxk_table(i,j,n)
+                         if (lmn==0) cycle
+                         phase = 1.0d0 * lmn/abs(lmn)
+                         do jdet = id3a_h(abs(lmn),1), id3a_h(abs(lmn),2)
+                            d = t3_excits_buff(1,jdet); e = t3_excits_buff(2,jdet); f = t3_excits_buff(3,jdet);
+                            ! (a,b) must be an ordered subset of (d,e,f)
+                            hmatel = 0.0d0
+                            ! case 1: a = d, b = e
+                            if (a==d .and. b==e) then
+                               ! compute sign(lmn) * < ijk~abc~ | h2b(ovvo) | ijnabf >
+                               hmatel = hmatel + phase * h2b_ovvo(n,c,f,k)
+                            end if
+                            ! case 2: a = e, b = f
+                            if (a==e .and. b==f) then
+                               ! compute sign(lmn) * < ijk~abc~ | h2b(ovvo) | ijndab >
+                               hmatel = hmatel + phase * h2b_ovvo(n,c,d,k)
+                            end if
+                            ! case 3: a = d, b = f
+                            if (a==d .and. b==f) then
+                               ! compute sign(lmn) * < ijk~abc~ | h2b(ovvo) | ijnaeb >
+                               hmatel = hmatel - phase * h2b_ovvo(n,c,e,k)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                         end do
+                      end do
+                  end do ! end loop over idet
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(t3_amps_buff,t3_excits_buff,id3a_h,xixjxk_table)
+
+                  ! allocate sorting arrays
+                  allocate(t3_amps_buff(n3abb))
+                  allocate(t3_excits_buff(6,n3abb))
+                  allocate(id3c_h(nua*noa,nob*(nob-1)/2,2))
+                  allocate(xjxk_table(nob,nob))
+                  allocate(eai_table(nua,noa))
+                  t3_amps_buff(:) = t3c_amps(:)
+                  t3_excits_buff(:,:) = t3c_excits(:,:)
+                  call sort_t3c_h(t3_excits_buff, t3_amps_buff, id3c_h, eai_table, xjxk_table, noa, nua, nob, nub, n3abb)
+                  !!!! diagram 14: A(ab)A(ij) h2b(bmje)*t3c(aecimk)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3_excits_buff,&
+                  !$omp t3_amps_buff,&
+                  !$omp id3c_h,eai_table,xjxk_table,&
+                  !$omp eck_table,xixj_table,&
+                  !$omp H2B_voov,&
+                  !$omp noa,nua,nob,nub,&
+                  !$omp n3aab),&
+                  !$omp private(hmatel,a,b,c,i,j,k,m,e,f,idet,jdet,&
+                  !$omp ib,ij,ai,aj,bi,bj,mk,phase)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aab
+                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                      ib = eck_table(c,k)
+                      ij = xixj_table(i,j)
+                      do m = 1, nob 
+                         if (m==k) cycle
+                         mk = xjxk_table(m,k)
+                         phase = 1.0d0 * mk/abs(mk)
+                         ai = eai_table(a,i); bj = eai_table(b,j); aj = eai_table(a,j); bi = eai_table(b,i);
+                         do jdet = id3c_h(ai,abs(mk),1), id3c_h(ai,abs(mk),2)
+                            e = t3_excits_buff(2,jdet); f = t3_excits_buff(3,jdet);
+                            ! c must equal one of (e,f)
+                            hmatel = 0.0d0
+                            ! compute sign(mk) * < ijk~abc~ | h2b(voov) | im~k~ae~f~ >
+                            if (c==e) then
+                               hmatel = hmatel - phase * h2b_voov(b,m,j,f)
+                            elseif (c==f) then
+                               hmatel = hmatel + phase * h2b_voov(b,m,j,e)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                         end do
+                         do jdet = id3c_h(bj,abs(mk),1), id3c_h(bj,abs(mk),2)
+                            e = t3_excits_buff(2,jdet); f = t3_excits_buff(3,jdet);
+                            ! c must equal one of (e,f)
+                            hmatel = 0.0d0
+                            ! compute sign(mk) * < ijk~abc~ | h2b(voov) | jm~k~be~f~ >
+                            if (c==e) then
+                                hmatel = hmatel - phase * h2b_voov(a,m,i,f)
+                            elseif (c==f) then
+                                hmatel = hmatel + phase * h2b_voov(a,m,i,e)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                         end do
+                         do jdet = id3c_h(aj,abs(mk),1), id3c_h(aj,abs(mk),2)
+                            e = t3_excits_buff(2,jdet); f = t3_excits_buff(3,jdet);
+                            ! c must equal one of (e,f)
+                            hmatel = 0.0d0
+                            ! compute sign(mk) * < ijk~abc~ | h2b(voov) | jm~k~ae~f~ >
+                            if (c==e) then
+                                hmatel = hmatel + phase * h2b_voov(b,m,i,f)
+                            elseif (c==f) then
+                                hmatel = hmatel - phase * h2b_voov(b,m,i,e)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                         end do
+                         do jdet = id3c_h(bi,abs(mk),1), id3c_h(bi,abs(mk),2)
+                            e = t3_excits_buff(2,jdet); f = t3_excits_buff(3,jdet);
+                            ! c must equal one of (e,f)
+                            hmatel = 0.0d0
+                            ! compute sign(mk) * < ijk~abc~ | h2b(voov) | im~k~be~f~ >
+                            if (c==e) then
+                                hmatel = hmatel + phase * h2b_voov(a,m,j,f)
+                            elseif (c==f) then
+                                hmatel = hmatel - phase * h2b_voov(a,m,j,e)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                         end do
+                      end do                     
+                  end do ! end loop over idet
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(t3_amps_buff,t3_excits_buff,id3c_h,eai_table,xjxk_table)
+
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3a_excits,t3b_excits,t3c_excits,&
+                  !$omp t3a_amps,t3b_amps,t3c_amps,t2a,t2b,&
+                  !$omp id3a_h,xixjxk_table,&
+                  !$omp id3b_h,eck_table,xixj_table,&
+                  !$omp id3c_h,eai_table,xjxk_table,&
+                  !$omp H1A_oo,H1A_vv,H1B_oo,H1B_vv,H2A_oooo,H2B_oooo,&
+                  !$omp H2B_ovvo,H2A_vvvv,H2B_vvvv,H2A_voov,H2C_voov,&
+                  !$omp H2B_vovo,H2B_ovov,H2B_voov,&
+                  !$omp I2A_vooo,I2A_vvov,I2B_vooo,I2B_ovoo,I2B_vvov,I2B_vvvo,&
+                  !$omp fA_oo,fB_oo,fA_vv,fB_vv,noa,nua,nob,nub,shift,&
+                  !$omp n3aaa,n3aab,n3abb),&
+                  !$omp private(hmatel,phase,t_amp,denom,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp ib,ij,jb,lm,mn,li,lj)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aab
+                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                      ib = eck_table(c,k)
+                      ij = xixj_table(i,j)
+
+                      !!!! diagram 1: -A(i/jk) h1a(mi)*t3b(abcmjk)    
+                      !!!! diagram 5: A(i/jk) 1/2 h2a(mnij)*t3b(abcmnk) 
+                      do l = 1, noa
+                         do m = l+1, noa
+                            lm = xixj_table(l,m)
+                            do jdet = id3b_h(ib,lm,1), id3b_h(ib,lm,2)
+                               d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                               if (a/=d .or. b/=e) cycle ! skip if any p(a) difference
+                               ! compute h2a(oooo)
+                               hmatel = h2a_oooo(l,m,i,j) 
+                               if (nexc2(i,j,l,m)<2) then ! compute h1a(oo)
+                                       if (j==m) then 
+                                               hmatel = hmatel - h1a_oo(l,i)
+                                       elseif (j==l) then
+                                               hmatel = hmatel + h1a_oo(m,i)
+                                       end if
+                                       if (i==m) then
+                                               hmatel = hmatel + h1a_oo(l,j)
+                                       elseif (i==l) then
+                                               hmatel = hmatel - h1a_oo(m,j)
+                                       end if
+                               end if
+                               resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                            end do
+                         end do
+                      end do
+                      !!!! diagram 2: A(a/bc) h1a(ae)*t3b(ebcmjk)
+                      !!!! diagram 6: A(a/bc) 1/2 h2a(abef)*t3b(ebcmjk)
+                      do jdet = id3b_h(ib,ij,1), id3b_h(ib,ij,2)
+                         d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                         ! compute h2a(vvvv)
+                         hmatel = h2a_vvvv(a,b,d,e)
+                         if (nexc2(a,b,d,e)<2) then ! compute h1a(vv)
+                             if (a==e) then 
+                                     hmatel = hmatel - h1a_vv(b,d) 
+                             elseif (a==d) then
+                                     hmatel = hmatel + h1a_vv(b,e) 
+                             end if
+                             if (b==e) then 
+                                     hmatel = hmatel + h1a_vv(a,d)
+                             elseif (b==d) then
+                                     hmatel = hmatel - h1a_vv(a,e)
+                             end if
+                         end if
+                         resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                      end do
+                      !!!! diagram 3: -h1b(mk)*t3b(abcijm)
+                      !!!! diagram 7: A(ij) h2b(mnjk)*t3b(abcimn)
+                      do n = 1, nob
+                         jb = eck_table(c,n)
+                         do jdet = id3b_h(jb,ij,1), id3b_h(jb,ij,2)
+                            d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                            if (a/=d .or. b/=e) cycle ! skip any p(a) difference
+                            ! compute < ijkabc | h1b(oo) | ijnabc >
+                            resid(idet) = resid(idet) - h1b_oo(n,k) * t3b_amps(jdet)
+                         end do
+                         do l = 1, noa
+                            ! l <-> i
+                            lj = xixj_table(l,j)
+                            if (lj/=0) then
+                               phase = 1.0d0 * lj/abs(lj)
+                               do jdet = id3b_h(jb,abs(lj),1), id3b_h(jb,abs(lj),2)
+                                   d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                                   if (a/=d .or. b/=e) cycle ! skip any p(a) difference
+                                   ! compute sign(lj) * < ijkabc | h2b(oooo) | ljnabc >
+                                   hmatel =  phase * h2b_oooo(l,n,i,k)
+                                   resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                               end do
+                            end if
+                            ! l <-> j
+                            li = xixj_table(l,i)
+                            if (li/=0) then
+                               phase = 1.0d0 * li/abs(li)
+                               do jdet = id3b_h(jb,abs(li),1), id3b_h(jb,abs(li),2)
+                                   d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                                   if (a/=d .or. b/=e) cycle ! skip any p(a) difference
+                                   ! compute sign(li) * < ijkabc | h2b(oooo) | ilnabc >
+                                   hmatel = -phase * h2b_oooo(l,n,j,k)
+                                   resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                               end do
+                            end if
+                         end do
+                      end do
+                      !!!! diagram 9: A(ij)A(ab) h2a(amie)*t3b(ebcmjk)
+                      do l = 1, noa
+                         ! l <-> j
+                         li = xixj_table(l,i)
+                         if (li/=0) then
+                            phase = 1.0d0 * li/abs(li)
+                            do jdet = id3b_h(ib,abs(li),1), id3b_h(ib,abs(li),2)
+                               d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); 
+                               if (nexc2(a,b,d,e)>1) cycle ! skip if p(a) > 1
+                               ! compute sign(li) * < ijkabc | h2a(voov) | ilkdec >
+                               hmatel = 0.0
+                               if (b==e) then ! (1)
+                                       hmatel = hmatel + h2a_voov(a,l,j,d)
+                               elseif (b==d) then ! (de)
+                                       hmatel = hmatel - h2a_voov(a,l,j,e)
+                               end if
+                               if (a==e) then ! (1)
+                                       hmatel = hmatel - h2a_voov(b,l,j,d)
+                                elseif (a==d) then ! (de)
+                                       hmatel = hmatel + h2a_voov(b,l,j,e)
+                               end if
+                               hmatel = -phase * hmatel
+                               resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                            end do
+                         end if
+                         ! l <-> i
+                         lj = xixj_table(l,j)
+                         if (lj/=0) then
+                            phase = 1.0d0 * lj/abs(lj)
+                            do jdet = id3b_h(ib,abs(lj),1), id3b_h(ib,abs(lj),2)
+                               d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); 
+                               if (nexc2(a,b,d,e)>1) cycle ! skip if p(a) > 1
+                               ! compute sign(lj) * < ijkabc | h2a(voov) | ljkdec >
+                               hmatel = 0.0d0
+                               if (b==e) then ! (1)
+                                       hmatel = hmatel - h2a_voov(a,l,i,d)
+                               elseif (b==d) then ! (de)
+                                       hmatel = hmatel + h2a_voov(a,l,i,e)
+                               end if
+                               if (a==e) then ! (1)
+                                       hmatel = hmatel + h2a_voov(b,l,i,d)
+                               elseif (a==d) then ! (de)
+                                       hmatel = hmatel - h2a_voov(b,l,i,e)
+                               end if
+                               hmatel = -phase * hmatel
+                               resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                            end do
+                         end if
+                      end do
+                      !!!! diagram 12: -A(ab) h2b(amek)*t3b(ebcijm)
+                      do n = 1, nob
+                         jb = Eck_table(c,n)
+                         do jdet = id3b_h(jb,ij,1), id3b_h(jb,ij,2)
+                            d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
+                            if (nexc2(a,b,d,e)>1) cycle ! skip if p(a) > 1
+                            ! compute h2b(vovo)
+                            hmatel = 0.0d0
+                            if (b==e) then 
+                                    hmatel = hmatel - h2b_vovo(a,n,d,k) ! (1)
+                            elseif (b==d) then 
+                                    hmatel = hmatel + h2b_vovo(a,n,e,k) ! (de)
+                            end if
+                            if (a==e) then 
+                                    hmatel = hmatel + h2b_vovo(b,n,d,k) ! (ab)
+                            elseif (a==d) then 
+                                    hmatel = hmatel - h2b_vovo(b,n,e,k) ! (ab)(de)
+                            end if
+                            resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                         end do
+                      end do
 
                       ! Add MM(2,3) contribution and get final residual
                       denom = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k) - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
@@ -2225,7 +1832,12 @@ module ccp_quadratic_loops_direct_opt
                       end do
 
                       resid(idet) = (resid(idet) + res_mm23)/(denom - shift)
-                  end do
+                  end do ! end loop over idet
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(id3b_h,eck_table,xixj_table)
 
                   ! Update t3b in SIMD; make sure resid and t3b_amps are aligned!
                   t3b_amps = t3b_amps + resid
@@ -2836,520 +2448,6 @@ module ccp_quadratic_loops_direct_opt
 
               end subroutine sort_t3a_h
 
-              subroutine sort_t3a_abij(t3a_excits, t3a_amps, ID, XaXbXiXj_table, noa, nua, n3aaa, resid)
-
-                      integer, intent(in) :: n3aaa, noa, nua
-
-                      integer, intent(inout) :: t3a_excits(6,n3aaa)
-                      real(kind=8), intent(inout) :: t3a_amps(n3aaa)
-                      real(kind=8), intent(inout), optional :: resid(n3aaa)
-                      integer, intent(inout) :: XaXbXiXj_table(nua,nua,noa,noa)
-                      integer, intent(inout) :: ID((nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2,2)
-
-                      integer :: kout, idet
-                      integer :: i, j, a, b
-                      integer :: i1, j1, a1, b1, i2, j2, a2, b2
-                      integer :: abij, abij1, abij2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXbXiXj_table=0
-                      kout = 1
-                      do i = 1, noa-2
-                         do j = i+1, noa-1
-                            do a = 1, nua-2
-                               do b = a+1, nua-1
-                                  XaXbXiXj_table(a,b,i,j) = kout
-                                  XaXbXiXj_table(a,b,j,i) = -kout
-                                  XaXbXiXj_table(b,a,i,j) = -kout
-                                  XaXbXiXj_table(b,a,j,i) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-                      allocate(temp(n3aaa),idx(n3aaa))
-                      do idet = 1, n3aaa
-                         a = t3a_excits(1,idet); b = t3a_excits(2,idet); i = t3a_excits(4,idet); j = t3a_excits(5,idet);
-                         abij = XaXbXiXj_table(a,b,i,j)
-                         temp(idet) = abij
-                      end do
-                      call argsort(temp, idx)
-                      t3a_excits = t3a_excits(:,idx)
-                      t3a_amps = t3a_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-                      ID = 1
-                      do idet = 2, n3aaa
-                         a1 = t3a_excits(1,idet-1); b1 = t3a_excits(2,idet-1); i1 = t3a_excits(4,idet-1); j1 = t3a_excits(5,idet-1);
-                         a2 = t3a_excits(1,idet);   b2 = t3a_excits(2,idet);   i2 = t3a_excits(4,idet);   j2 = t3a_excits(5,idet);
-                         abij1 = XaXbXiXj_table(a1,b1,i1,j1)
-                         abij2 = XaXbXiXj_table(a2,b2,i2,j2)
-                         if (abij1/=abij2) then
-                                 ID(abij1,2) = idet - 1
-                                 ID(abij2,1) = idet
-                         end if
-                      end do
-                      ID(abij2,2) = n3aaa
-
-              end subroutine sort_t3a_abij
-
-              subroutine sort_t3a_abik(t3a_excits, t3a_amps, ID, XaXbXiXk_table, noa, nua, n3aaa, resid)
-
-                      integer, intent(in) :: n3aaa, noa, nua
-
-                      integer, intent(inout) :: t3a_excits(6,n3aaa)
-                      real(kind=8), intent(inout) :: t3a_amps(n3aaa)
-                      real(kind=8), intent(inout), optional :: resid(n3aaa)
-                      integer, intent(inout) :: XaXbXiXk_table(nua,nua,noa,noa)
-                      integer, intent(inout) :: ID((nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2,2)
-
-                      integer :: kout, idet
-                      integer :: i, k, a, b
-                      integer :: i1, k1, a1, b1, i2, k2, a2, b2
-                      integer :: abik, abik1, abik2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXbXiXk_table=0
-                      kout = 1
-                      do i = 1, noa-2
-                         do k = i+2, noa
-                            do a = 1, nua-2
-                               do b = a+1, nua-1
-                                  XaXbXiXk_table(a,b,i,k) = kout
-                                  XaXbXiXk_table(a,b,k,i) = kout
-                                  XaXbXiXk_table(b,a,i,k) = -kout
-                                  XaXbXiXk_table(b,a,k,i) = -kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-                      allocate(temp(n3aaa),idx(n3aaa))
-                      do idet = 1, n3aaa
-                         a = t3a_excits(1,idet); b = t3a_excits(2,idet); i = t3a_excits(4,idet); k = t3a_excits(6,idet);
-                         abik = XaXbXiXk_table(a,b,i,k)
-                         temp(idet) = abik
-                      end do
-                      call argsort(temp, idx)
-                      t3a_excits = t3a_excits(:,idx)
-                      t3a_amps = t3a_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-                      ID = 1
-                      do idet = 2, n3aaa
-                         a1 = t3a_excits(1,idet-1); b1 = t3a_excits(2,idet-1); i1 = t3a_excits(4,idet-1); k1 = t3a_excits(6,idet-1);
-                         a2 = t3a_excits(1,idet);   b2 = t3a_excits(2,idet);   i2 = t3a_excits(4,idet);   k2 = t3a_excits(6,idet);
-                         abik1 = XaXbXiXk_table(a1,b1,i1,k1)
-                         abik2 = XaXbXiXk_table(a2,b2,i2,k2)
-                         if (abik1/=abik2) then
-                                 ID(abik1,2) = idet - 1
-                                 ID(abik2,1) = idet
-                         end if
-                      end do
-                      ID(abik2,2) = n3aaa
-
-              end subroutine sort_t3a_abik
-
-              subroutine sort_t3a_abjk(t3a_excits, t3a_amps, ID, XaXbXjXk_table, noa, nua, n3aaa, resid)
-
-                      integer, intent(in) :: n3aaa, noa, nua
-
-                      integer, intent(inout) :: t3a_excits(6,n3aaa)
-                      real(kind=8), intent(inout) :: t3a_amps(n3aaa)
-                      real(kind=8), intent(inout), optional :: resid(n3aaa)
-                      integer, intent(inout) :: XaXbXjXk_table(nua,nua,noa,noa)
-                      integer, intent(inout) :: ID((nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2,2)
-
-                      integer :: kout, idet
-                      integer :: j, k, a, b
-                      integer :: j1, k1, a1, b1, j2, k2, a2, b2
-                      integer :: abjk, abjk1, abjk2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXbXjXk_table=0
-                      kout = 1
-                      do j = 2, noa-1
-                         do k = j+1, noa
-                            do a = 1, nua-2
-                               do b = a+1, nua-1
-                                  XaXbXjXk_table(a,b,j,k) = kout
-                                  XaXbXjXk_table(a,b,k,j) = -kout
-                                  XaXbXjXk_table(b,a,j,k) = -kout
-                                  XaXbXjXk_table(b,a,k,j) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-                      allocate(temp(n3aaa),idx(n3aaa))
-                      do idet = 1, n3aaa
-                         a = t3a_excits(1,idet); b = t3a_excits(2,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
-                         abjk = XaXbXjXk_table(a,b,j,k)
-                         temp(idet) = abjk
-                      end do
-                      call argsort(temp, idx)
-                      t3a_excits = t3a_excits(:,idx)
-                      t3a_amps = t3a_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-                      ID = 1
-                      do idet = 2, n3aaa
-                         a1 = t3a_excits(1,idet-1); b1 = t3a_excits(2,idet-1); j1 = t3a_excits(5,idet-1); k1 = t3a_excits(6,idet-1);
-                         a2 = t3a_excits(1,idet);   b2 = t3a_excits(2,idet);   j2 = t3a_excits(5,idet);   k2 = t3a_excits(6,idet);
-                         abjk1 = XaXbXjXk_table(a1,b1,j1,k1)
-                         abjk2 = XaXbXjXk_table(a2,b2,j2,k2)
-                         if (abjk1/=abjk2) then
-                                 ID(abjk1,2) = idet - 1
-                                 ID(abjk2,1) = idet
-                         end if
-                      end do
-                      ID(abjk2,2) = n3aaa
-
-              end subroutine sort_t3a_abjk
-
-              subroutine sort_t3a_acij(t3a_excits, t3a_amps, ID, XaXcXiXj_table, noa, nua, n3aaa, resid)
-
-                      integer, intent(in) :: n3aaa, noa, nua
-
-                      integer, intent(inout) :: t3a_excits(6,n3aaa)
-                      real(kind=8), intent(inout) :: t3a_amps(n3aaa)
-                      real(kind=8), intent(inout), optional :: resid(n3aaa)
-                      integer, intent(inout) :: XaXcXiXj_table(nua,nua,noa,noa)
-                      integer, intent(inout) :: ID((nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2,2)
-
-                      integer :: kout, idet
-                      integer :: i, j, a, c
-                      integer :: i1, j1, a1, c1, i2, j2, a2, c2
-                      integer :: acij, acij1, acij2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXcXiXj_table=0
-                      kout = 1
-                      do i = 1, noa-2
-                         do j = i+1, noa-1
-                            do a = 1, nua-2
-                               do c = a+2, nua
-                                  XaXcXiXj_table(a,c,i,j) = kout
-                                  XaXcXiXj_table(a,c,j,i) = -kout
-                                  XaXcXiXj_table(c,a,i,j) = kout
-                                  XaXcXiXj_table(c,a,j,i) = -kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-                      allocate(temp(n3aaa),idx(n3aaa))
-                      do idet = 1, n3aaa
-                         a = t3a_excits(1,idet); c = t3a_excits(3,idet); i = t3a_excits(4,idet); j = t3a_excits(5,idet);
-                         acij = XaXcXiXj_table(a,c,i,j)
-                         temp(idet) = acij
-                      end do
-                      call argsort(temp, idx)
-                      t3a_excits = t3a_excits(:,idx)
-                      t3a_amps = t3a_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-                      ID = 1
-                      do idet = 2, n3aaa
-                         a1 = t3a_excits(1,idet-1); c1 = t3a_excits(3,idet-1); i1 = t3a_excits(4,idet-1); j1 = t3a_excits(5,idet-1);
-                         a2 = t3a_excits(1,idet);   c2 = t3a_excits(3,idet);   i2 = t3a_excits(4,idet);   j2 = t3a_excits(5,idet);
-                         acij1 = XaXcXiXj_table(a1,c1,i1,j1)
-                         acij2 = XaXcXiXj_table(a2,c2,i2,j2)
-                         if (acij1/=acij2) then
-                                 ID(acij1,2) = idet - 1
-                                 ID(acij2,1) = idet
-                         end if
-                      end do
-                      ID(acij2,2) = n3aaa
-
-              end subroutine sort_t3a_acij
-
-              subroutine sort_t3a_acik(t3a_excits, t3a_amps, ID, XaXcXiXk_table, noa, nua, n3aaa, resid)
-
-                      integer, intent(in) :: n3aaa, noa, nua
-
-                      integer, intent(inout) :: t3a_excits(6,n3aaa)
-                      real(kind=8), intent(inout) :: t3a_amps(n3aaa)
-                      real(kind=8), intent(inout), optional :: resid(n3aaa)
-                      integer, intent(inout) :: XaXcXiXk_table(nua,nua,noa,noa)
-                      integer, intent(inout) :: ID((nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2,2)
-
-                      integer :: kout, idet
-                      integer :: i, k, a, c
-                      integer :: i1, k1, a1, c1, i2, k2, a2, c2
-                      integer :: acik, acik1, acik2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXcXiXk_table=0
-                      kout = 1
-                      do i = 1, noa-2
-                         do k = i+2, noa
-                            do a = 1, nua-2
-                               do c = a+2, nua
-                                  XaXcXiXk_table(a,c,i,k) = kout
-                                  XaXcXiXk_table(a,c,k,i) = kout
-                                  XaXcXiXk_table(c,a,i,k) = kout
-                                  XaXcXiXk_table(c,a,k,i) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-                      allocate(temp(n3aaa),idx(n3aaa))
-                      do idet = 1, n3aaa
-                         a = t3a_excits(1,idet); c = t3a_excits(3,idet); i = t3a_excits(4,idet); k = t3a_excits(6,idet);
-                         acik = XaXcXiXk_table(a,c,i,k)
-                         temp(idet) = acik
-                      end do
-                      call argsort(temp, idx)
-                      t3a_excits = t3a_excits(:,idx)
-                      t3a_amps = t3a_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-                      ID = 1
-                      do idet = 2, n3aaa
-                         a1 = t3a_excits(1,idet-1); c1 = t3a_excits(3,idet-1); i1 = t3a_excits(4,idet-1); k1 = t3a_excits(6,idet-1);
-                         a2 = t3a_excits(1,idet);   c2 = t3a_excits(3,idet);   i2 = t3a_excits(4,idet);   k2 = t3a_excits(6,idet);
-                         acik1 = XaXcXiXk_table(a1,c1,i1,k1)
-                         acik2 = XaXcXiXk_table(a2,c2,i2,k2)
-                         if (acik1/=acik2) then
-                                 ID(acik1,2) = idet - 1
-                                 ID(acik2,1) = idet
-                         end if
-                      end do
-                      ID(acik2,2) = n3aaa
-
-              end subroutine sort_t3a_acik
-
-              subroutine sort_t3a_acjk(t3a_excits, t3a_amps, ID, XaXcXjXk_table, noa, nua, n3aaa, resid)
-
-                      integer, intent(in) :: n3aaa, noa, nua
-
-                      integer, intent(inout) :: t3a_excits(6,n3aaa)
-                      real(kind=8), intent(inout) :: t3a_amps(n3aaa)
-                      real(kind=8), intent(inout), optional :: resid(n3aaa)
-                      integer, intent(inout) :: XaXcXjXk_table(nua,nua,noa,noa)
-                      integer, intent(inout) :: ID((nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2,2)
-
-                      integer :: kout, idet
-                      integer :: j, k, a, c
-                      integer :: j1, k1, a1, c1, j2, k2, a2, c2
-                      integer :: acjk, acjk1, acjk2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXcXjXk_table=0
-                      kout = 1
-                      do j = 2, noa-1
-                         do k = j+1, noa
-                            do a = 1, nua-2
-                               do c = a+2, nua
-                                  XaXcXjXk_table(a,c,j,k) = kout
-                                  XaXcXjXk_table(a,c,k,j) = -kout
-                                  XaXcXjXk_table(c,a,j,k) = kout
-                                  XaXcXjXk_table(c,a,k,j) = -kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-                      allocate(temp(n3aaa),idx(n3aaa))
-                      do idet = 1, n3aaa
-                         a = t3a_excits(1,idet); c = t3a_excits(3,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
-                         acjk = XaXcXjXk_table(a,c,j,k)
-                         temp(idet) = acjk
-                      end do
-                      call argsort(temp, idx)
-                      t3a_excits = t3a_excits(:,idx)
-                      t3a_amps = t3a_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-                      ID = 1
-                      do idet = 2, n3aaa
-                         a1 = t3a_excits(1,idet-1); c1 = t3a_excits(3,idet-1); j1 = t3a_excits(5,idet-1); k1 = t3a_excits(6,idet-1);
-                         a2 = t3a_excits(1,idet);   c2 = t3a_excits(3,idet);   j2 = t3a_excits(5,idet);   k2 = t3a_excits(6,idet);
-                         acjk1 = XaXcXjXk_table(a1,c1,j1,k1)
-                         acjk2 = XaXcXjXk_table(a2,c2,j2,k2)
-                         if (acjk1/=acjk2) then
-                                 ID(acjk1,2) = idet - 1
-                                 ID(acjk2,1) = idet
-                         end if
-                      end do
-                      ID(acjk2,2) = n3aaa
-
-              end subroutine sort_t3a_acjk
-
-              subroutine sort_t3a_bcij(t3a_excits, t3a_amps, ID, XbXcXiXj_table, noa, nua, n3aaa, resid)
-
-                      integer, intent(in) :: n3aaa, noa, nua
-
-                      integer, intent(inout) :: t3a_excits(6,n3aaa)
-                      real(kind=8), intent(inout) :: t3a_amps(n3aaa)
-                      real(kind=8), intent(inout), optional :: resid(n3aaa)
-                      integer, intent(inout) :: XbXcXiXj_table(nua,nua,noa,noa)
-                      integer, intent(inout) :: ID((nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2,2)
-
-                      integer :: kout, idet
-                      integer :: i, j, b, c
-                      integer :: i1, j1, b1, c1, i2, j2, b2, c2
-                      integer :: bcij, bcij1, bcij2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XbXcXiXj_table=0
-                      kout = 1
-                      do i = 1, noa-2
-                         do j = i+1, noa-1
-                            do b = 2, nua-1
-                               do c = b+1, nua
-                                  XbXcXiXj_table(b,c,i,j) = kout
-                                  XbXcXiXj_table(b,c,j,i) = -kout
-                                  XbXcXiXj_table(c,b,i,j) = -kout
-                                  XbXcXiXj_table(c,b,j,i) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-                      allocate(temp(n3aaa),idx(n3aaa))
-                      do idet = 1, n3aaa
-                         b = t3a_excits(2,idet); c = t3a_excits(3,idet); i = t3a_excits(4,idet); j = t3a_excits(5,idet);
-                         bcij = XbXcXiXj_table(b,c,i,j)
-                         temp(idet) = bcij
-                      end do
-                      call argsort(temp, idx)
-                      t3a_excits = t3a_excits(:,idx)
-                      t3a_amps = t3a_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-                      ID = 1
-                      do idet = 2, n3aaa
-                         b1 = t3a_excits(2,idet-1); c1 = t3a_excits(3,idet-1); i1 = t3a_excits(4,idet-1); j1 = t3a_excits(5,idet-1);
-                         b2 = t3a_excits(2,idet);   c2 = t3a_excits(3,idet);   i2 = t3a_excits(4,idet);   j2 = t3a_excits(5,idet);
-                         bcij1 = XbXcXiXj_table(b1,c1,i1,j1)
-                         bcij2 = XbXcXiXj_table(b2,c2,i2,j2)
-                         if (bcij1/=bcij2) then
-                                 ID(bcij1,2) = idet - 1
-                                 ID(bcij2,1) = idet
-                         end if
-                      end do
-                      ID(bcij2,2) = n3aaa
-
-              end subroutine sort_t3a_bcij
-
-              subroutine sort_t3a_bcik(t3a_excits, t3a_amps, ID, XbXcXiXk_table, noa, nua, n3aaa, resid)
-
-                      integer, intent(in) :: n3aaa, noa, nua
-
-                      integer, intent(inout) :: t3a_excits(6,n3aaa)
-                      real(kind=8), intent(inout) :: t3a_amps(n3aaa)
-                      real(kind=8), intent(inout), optional :: resid(n3aaa)
-                      integer, intent(inout) :: XbXcXiXk_table(nua,nua,noa,noa)
-                      integer, intent(inout) :: ID((nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2,2)
-
-                      integer :: kout, idet
-                      integer :: i, k, b, c
-                      integer :: i1, k1, b1, c1, i2, k2, b2, c2
-                      integer :: bcik, bcik1, bcik2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XbXcXiXk_table=0
-                      kout = 1
-                      do i = 1, noa-2
-                         do k = i+2, noa
-                            do b = 2, nua-1
-                               do c = b+1, nua
-                                  XbXcXiXk_table(b,c,i,k) = kout
-                                  XbXcXiXk_table(b,c,k,i) = -kout
-                                  XbXcXiXk_table(c,b,i,k) = kout
-                                  XbXcXiXk_table(c,b,k,i) = -kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-                      allocate(temp(n3aaa),idx(n3aaa))
-                      do idet = 1, n3aaa
-                         b = t3a_excits(2,idet); c = t3a_excits(3,idet); i = t3a_excits(4,idet); k = t3a_excits(6,idet);
-                         bcik = XbXcXiXk_table(b,c,i,k)
-                         temp(idet) = bcik
-                      end do
-                      call argsort(temp, idx)
-                      t3a_excits = t3a_excits(:,idx)
-                      t3a_amps = t3a_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-                      ID = 1
-                      do idet = 2, n3aaa
-                         b1 = t3a_excits(2,idet-1); c1 = t3a_excits(3,idet-1); i1 = t3a_excits(4,idet-1); k1 = t3a_excits(6,idet-1);
-                         b2 = t3a_excits(2,idet);   c2 = t3a_excits(3,idet);   i2 = t3a_excits(4,idet);   k2 = t3a_excits(6,idet);
-                         bcik1 = XbXcXiXk_table(b1,c1,i1,k1)
-                         bcik2 = XbXcXiXk_table(b2,c2,i2,k2)
-                         if (bcik1/=bcik2) then
-                                 ID(bcik1,2) = idet - 1
-                                 ID(bcik2,1) = idet
-                         end if
-                      end do
-                      ID(bcik2,2) = n3aaa
-
-              end subroutine sort_t3a_bcik
-
-              subroutine sort_t3a_bcjk(t3a_excits, t3a_amps, ID, XbXcXjXk_table, noa, nua, n3aaa, resid)
-
-                      integer, intent(in) :: n3aaa, noa, nua
-
-                      integer, intent(inout) :: t3a_excits(6,n3aaa)
-                      real(kind=8), intent(inout) :: t3a_amps(n3aaa)
-                      real(kind=8), intent(inout), optional :: resid(n3aaa)
-                      integer, intent(inout) :: XbXcXjXk_table(nua,nua,noa,noa)
-                      integer, intent(inout) :: ID((nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2,2)
-
-                      integer :: kout, idet
-                      integer :: j, k, b, c
-                      integer :: j1, k1, b1, c1, j2, k2, b2, c2
-                      integer :: bcjk, bcjk1, bcjk2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XbXcXjXk_table=0
-                      kout = 1
-                      do j = 2, noa-1
-                         do k = j+1, noa
-                            do b = 2, nua-1
-                               do c = b+1, nua
-                                  XbXcXjXk_table(b,c,j,k) = kout
-                                  XbXcXjXk_table(b,c,k,j) = -kout
-                                  XbXcXjXk_table(c,b,j,k) = -kout
-                                  XbXcXjXk_table(c,b,k,j) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-                      allocate(temp(n3aaa),idx(n3aaa))
-                      do idet = 1, n3aaa
-                         b = t3a_excits(2,idet); c = t3a_excits(3,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
-                         bcjk = XbXcXjXk_table(b,c,j,k)
-                         temp(idet) = bcjk
-                      end do
-                      call argsort(temp, idx)
-                      t3a_excits = t3a_excits(:,idx)
-                      t3a_amps = t3a_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-                      ID = 1
-                      do idet = 2, n3aaa
-                         b1 = t3a_excits(2,idet-1); c1 = t3a_excits(3,idet-1); j1 = t3a_excits(5,idet-1); k1 = t3a_excits(6,idet-1);
-                         b2 = t3a_excits(2,idet);   c2 = t3a_excits(3,idet);   j2 = t3a_excits(5,idet);   k2 = t3a_excits(6,idet);
-                         bcjk1 = XbXcXjXk_table(b1,c1,j1,k1)
-                         bcjk2 = XbXcXjXk_table(b2,c2,j2,k2)
-                         if (bcjk1/=bcjk2) then
-                                 ID(bcjk1,2) = idet - 1
-                                 ID(bcjk2,1) = idet
-                         end if
-                      end do
-                      ID(bcjk2,2) = n3aaa
-
-              end subroutine sort_t3a_bcjk
-
-
               subroutine sort_t3b_h(t3b_excits, t3b_amps, ID, Eck_table, XiXj_table, noa, nua, nob, nub, n3aab, resid)
 
                       integer, intent(in) :: n3aab, noa, nua, nob, nub
@@ -3554,177 +2652,6 @@ module ccp_quadratic_loops_direct_opt
 
               end subroutine sort_t3b_p
 
-              subroutine sort_t3b_abck(t3b_excits, t3b_amps, ID, XaXbXcXk_table, noa, nua, nob, nub, n3aab, resid)
-
-                      integer, intent(in) :: n3aab, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3b_excits(6,n3aab)
-                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
-                      real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XaXbXcXk_table(nua,nua,nub,nob)
-                      integer, intent(inout) :: ID(nua*(nua-1)/2*nub*nob,2)
-
-                      integer :: kout, idet
-                      integer :: a, b, c, k
-                      integer :: a1, b1, c1, k1, a2, b2, c2, k2
-                      integer :: abck, abck1, abck2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXbXcXk_table=0
-                      kout = 1
-                      do k = 1, nob
-                         do c = 1, nub
-                            do a = 1, nua
-                               do b = a+1, nua
-                                  XaXbXcXk_table(a,b,c,k) = kout
-                                  XaXbXcXk_table(b,a,c,k) = -kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aab),idx(n3aab))
-                      do idet = 1, n3aab
-                         a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet); k = t3b_excits(6,idet);
-                         abck = XaXbXcXk_table(a,b,c,k)
-                         temp(idet) = abck
-                      end do
-                      call argsort(temp, idx)
-                      t3b_excits = t3b_excits(:,idx)
-                      t3b_amps = t3b_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aab
-                         a1 = t3b_excits(1,idet-1); b1 = t3b_excits(2,idet-1); c1 = t3b_excits(3,idet-1); k1 = t3b_excits(6,idet-1);
-                         a2 = t3b_excits(1,idet);   b2 = t3b_excits(2,idet);   c2 = t3b_excits(3,idet);   k2 = t3b_excits(6,idet);
-                         abck1 = XaXbXcXk_table(a1,b1,c1,k1)
-                         abck2 = XaXbXcXk_table(a2,b2,c2,k2)
-                         if (abck1/=abck2) then
-                                 ID(abck1,2) = idet - 1
-                                 ID(abck2,1) = idet
-                         end if
-                      end do
-                      ID(abck2,2) = n3aab
-
-              end subroutine sort_t3b_abck
-
-              subroutine sort_t3b_abci(t3b_excits, t3b_amps, ID, XaXbXcXi_table, noa, nua, nob, nub, n3aab, resid)
-
-                      integer, intent(in) :: n3aab, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3b_excits(6,n3aab)
-                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
-                      real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XaXbXcXi_table(nua,nua,nub,noa)
-                      integer, intent(inout) :: ID(nua*(nua-1)/2*nub*noa,2)
-
-                      integer :: kout, idet
-                      integer :: a, b, c, i
-                      integer :: a1, b1, c1, i1, a2, b2, c2, i2
-                      integer :: abci, abci1, abci2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXbXcXi_table=0
-                      kout = 1
-                      do i = 1, noa-1
-                         do c = 1, nub
-                            do a = 1, nua
-                               do b = a+1, nua
-                                  XaXbXcXi_table(a,b,c,i) = kout
-                                  XaXbXcXi_table(b,a,c,i) = -kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aab),idx(n3aab))
-                      do idet = 1, n3aab
-                         a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet); i = t3b_excits(4,idet);
-                         abci = XaXbXcXi_table(a,b,c,i)
-                         temp(idet) = abci
-                      end do
-                      call argsort(temp, idx)
-                      t3b_excits = t3b_excits(:,idx)
-                      t3b_amps = t3b_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aab
-                         a1 = t3b_excits(1,idet-1); b1 = t3b_excits(2,idet-1); c1 = t3b_excits(3,idet-1); i1 = t3b_excits(4,idet-1);
-                         a2 = t3b_excits(1,idet);   b2 = t3b_excits(2,idet);   c2 = t3b_excits(3,idet);   i2 = t3b_excits(4,idet);
-                         abci1 = XaXbXcXi_table(a1,b1,c1,i1)
-                         abci2 = XaXbXcXi_table(a2,b2,c2,i2)
-                         if (abci1/=abci2) then
-                                 ID(abci1,2) = idet - 1
-                                 ID(abci2,1) = idet
-                         end if
-                      end do
-                      ID(abci2,2) = n3aab
-
-              end subroutine sort_t3b_abci
-
-              subroutine sort_t3b_abcj(t3b_excits, t3b_amps, ID, XaXbXcXj_table, noa, nua, nob, nub, n3aab, resid)
-
-                      integer, intent(in) :: n3aab, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3b_excits(6,n3aab)
-                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
-                      real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XaXbXcXj_table(nua,nua,nub,noa)
-                      integer, intent(inout) :: ID(nua*(nua-1)/2*nub*noa,2)
-
-                      integer :: kout, idet
-                      integer :: a, b, c, j
-                      integer :: a1, b1, c1, j1, a2, b2, c2, j2
-                      integer :: abcj, abcj1, abcj2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXbXcXj_table=0
-                      kout = 1
-                      do j = 2, noa
-                         do c = 1, nub
-                            do a = 1, nua
-                               do b = a+1, nua
-                                  XaXbXcXj_table(a,b,c,j) = kout
-                                  XaXbXcXj_table(b,a,c,j) = -kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aab),idx(n3aab))
-                      do idet = 1, n3aab
-                         a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet); j = t3b_excits(5,idet);
-                         abcj = XaXbXcXj_table(a,b,c,j)
-                         temp(idet) = abcj
-                      end do
-                      call argsort(temp, idx)
-                      t3b_excits = t3b_excits(:,idx)
-                      t3b_amps = t3b_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aab
-                         a1 = t3b_excits(1,idet-1); b1 = t3b_excits(2,idet-1); c1 = t3b_excits(3,idet-1); j1 = t3b_excits(5,idet-1);
-                         a2 = t3b_excits(1,idet);   b2 = t3b_excits(2,idet);   c2 = t3b_excits(3,idet);   j2 = t3b_excits(5,idet);
-                         abcj1 = XaXbXcXj_table(a1,b1,c1,j1)
-                         abcj2 = XaXbXcXj_table(a2,b2,c2,j2)
-                         if (abcj1/=abcj2) then
-                                 ID(abcj1,2) = idet - 1
-                                 ID(abcj2,1) = idet
-                         end if
-                      end do
-                      ID(abcj2,2) = n3aab
-
-              end subroutine sort_t3b_abcj
-
               subroutine sort_t3b_abij(t3b_excits, t3b_amps, ID, XaXbXiXj_table, noa, nua, nob, nub, n3aab, resid)
 
                       integer, intent(in) :: n3aab, noa, nua, nob, nub
@@ -3784,41 +2711,39 @@ module ccp_quadratic_loops_direct_opt
 
               end subroutine sort_t3b_abij
 
-              subroutine sort_t3b_abik(t3b_excits, t3b_amps, ID, XaXbXiXk_table, noa, nua, nob, nub, n3aab, resid)
+              subroutine sort_t3b_abk(t3b_excits, t3b_amps, ID, XaXbXk_table, noa, nua, nob, nub, n3aab, resid)
 
                       integer, intent(in) :: n3aab, noa, nua, nob, nub
 
                       integer, intent(inout) :: t3b_excits(6,n3aab)
                       real(kind=8), intent(inout) :: t3b_amps(n3aab)
                       real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XaXbXiXk_table(nua,nua,noa,nob)
-                      integer, intent(inout) :: ID(nua*(nua-1)/2*noa*nob,2)
+                      integer, intent(inout) :: XaXbXk_table(nua,nua,nob)
+                      integer, intent(inout) :: ID(nua*(nua-1)/2*nob,2)
 
                       integer :: kout, idet
-                      integer :: a, b, i, k
-                      integer :: a1, b1, i1, k1, a2, b2, i2, k2
-                      integer :: abik, abik1, abik2
+                      integer :: a, b, k
+                      integer :: a1, b1, k1, a2, b2, k2
+                      integer :: abk, abk1, abk2
                       integer, allocatable :: temp(:), idx(:)
 
-                      XaXbXiXk_table=0
+                      XaXbXk_table=0
                       kout = 1
                       do k = 1, nob
-                         do i = 1, noa-1
-                            do a = 1, nua
-                               do b = a+1, nua
-                                  XaXbXiXk_table(a,b,i,k) = kout
-                                  XaXbXiXk_table(b,a,i,k) = -kout
-                                  kout = kout + 1
-                               end do
+                         do a = 1, nua
+                            do b = a+1, nua
+                               XaXbXk_table(a,b,k) = kout
+                               XaXbXk_table(b,a,k) = -kout
+                               kout = kout + 1
                             end do
                          end do
                       end do
 
                       allocate(temp(n3aab),idx(n3aab))
                       do idet = 1, n3aab
-                         a = t3b_excits(1,idet); b = t3b_excits(2,idet); i = t3b_excits(4,idet); k = t3b_excits(6,idet);
-                         abik = XaXbXiXk_table(a,b,i,k)
-                         temp(idet) = abik
+                         a = t3b_excits(1,idet); b = t3b_excits(2,idet); k = t3b_excits(6,idet);
+                         abk = XaXbXk_table(a,b,k)
+                         temp(idet) = abk
                       end do
                       call argsort(temp, idx)
                       t3b_excits = t3b_excits(:,idx)
@@ -3828,75 +2753,18 @@ module ccp_quadratic_loops_direct_opt
 
                       ID = 1
                       do idet = 2, n3aab
-                         a1 = t3b_excits(1,idet-1); b1 = t3b_excits(2,idet-1); i1 = t3b_excits(4,idet-1); k1 = t3b_excits(6,idet-1);
-                         a2 = t3b_excits(1,idet);   b2 = t3b_excits(2,idet);   i2 = t3b_excits(4,idet);   k2 = t3b_excits(6,idet);
-                         abik1 = XaXbXiXk_table(a1,b1,i1,k1)
-                         abik2 = XaXbXiXk_table(a2,b2,i2,k2)
-                         if (abik1/=abik2) then
-                                 ID(abik1,2) = idet - 1
-                                 ID(abik2,1) = idet
+                         a1 = t3b_excits(1,idet-1); b1 = t3b_excits(2,idet-1); k1 = t3b_excits(6,idet-1);
+                         a2 = t3b_excits(1,idet);   b2 = t3b_excits(2,idet);   k2 = t3b_excits(6,idet);
+                         abk1 = XaXbXk_table(a1,b1,k1)
+                         abk2 = XaXbXk_table(a2,b2,k2)
+                         if (abk1/=abk2) then
+                                 ID(abk1,2) = idet - 1
+                                 ID(abk2,1) = idet
                          end if
                       end do
-                      ID(abik2,2) = n3aab
+                      ID(abk2,2) = n3aab
 
-              end subroutine sort_t3b_abik
-
-              subroutine sort_t3b_abjk(t3b_excits, t3b_amps, ID, XaXbXjXk_table, noa, nua, nob, nub, n3aab, resid)
-
-                      integer, intent(in) :: n3aab, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3b_excits(6,n3aab)
-                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
-                      real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XaXbXjXk_table(nua,nua,noa,nob)
-                      integer, intent(inout) :: ID(nua*(nua-1)/2*noa*nob,2)
-
-                      integer :: kout, idet
-                      integer :: a, b, j, k
-                      integer :: a1, b1, j1, k1, a2, b2, j2, k2
-                      integer :: abjk, abjk1, abjk2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXbXjXk_table=0
-                      kout = 1
-                      do k = 1, nob
-                         do j = 2, noa
-                            do a = 1, nua
-                               do b = a+1, nua
-                                  XaXbXjXk_table(a,b,j,k) = kout
-                                  XaXbXjXk_table(b,a,j,k) = -kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aab),idx(n3aab))
-                      do idet = 1, n3aab
-                         a = t3b_excits(1,idet); b = t3b_excits(2,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                         abjk = XaXbXjXk_table(a,b,j,k)
-                         temp(idet) = abjk
-                      end do
-                      call argsort(temp, idx)
-                      t3b_excits = t3b_excits(:,idx)
-                      t3b_amps = t3b_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aab
-                         a1 = t3b_excits(1,idet-1); b1 = t3b_excits(2,idet-1); j1 = t3b_excits(5,idet-1); k1 = t3b_excits(6,idet-1);
-                         a2 = t3b_excits(1,idet);   b2 = t3b_excits(2,idet);   j2 = t3b_excits(5,idet);   k2 = t3b_excits(6,idet);
-                         abjk1 = XaXbXjXk_table(a1,b1,j1,k1)
-                         abjk2 = XaXbXjXk_table(a2,b2,j2,k2)
-                         if (abjk1/=abjk2) then
-                                 ID(abjk1,2) = idet - 1
-                                 ID(abjk2,1) = idet
-                         end if
-                      end do
-                      ID(abjk2,2) = n3aab
-
-              end subroutine sort_t3b_abjk
+              end subroutine sort_t3b_abk
 
               subroutine sort_t3b_aijk(t3b_excits, t3b_amps, ID, XaXiXjXk_table, noa, nua, nob, nub, n3aab, resid)
 
@@ -4012,401 +2880,6 @@ module ccp_quadratic_loops_direct_opt
 
               end subroutine sort_t3b_bijk
 
-              subroutine sort_t3b_cijk(t3b_excits, t3b_amps, ID, XcXiXjXk_table, noa, nua, nob, nub, n3aab, resid)
-
-                      integer, intent(in) :: n3aab, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3b_excits(6,n3aab)
-                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
-                      real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XcXiXjXk_table(nub,noa,noa,nob)
-                      integer, intent(inout) :: ID(nub*noa*(noa-1)/2*nob,2)
-
-                      integer :: kout, idet
-                      integer :: i, j, k, c
-                      integer :: i1, j1, k1, c1, i2, j2, k2, c2
-                      integer :: cijk, cijk1, cijk2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XcXiXjXk_table=0
-                      kout = 1
-                      do k = 1, nob
-                         do i = 1, noa
-                            do j = i+1, noa
-                               do c = 1, nub
-                                  XcXiXjXk_table(c,i,j,k) = kout
-                                  XcXiXjXk_table(c,j,i,k) = -kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aab),idx(n3aab))
-                      do idet = 1, n3aab
-                         c = t3b_excits(3,idet); i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                         cijk = XcXiXjXk_table(c,i,j,k)
-                         temp(idet) = cijk
-                      end do
-                      call argsort(temp, idx)
-                      t3b_excits = t3b_excits(:,idx)
-                      t3b_amps = t3b_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aab
-                         c1 = t3b_excits(3,idet-1); i1 = t3b_excits(4,idet-1); j1 = t3b_excits(5,idet-1); k1 = t3b_excits(6,idet-1);
-                         c2 = t3b_excits(3,idet);   i2 = t3b_excits(4,idet);   j2 = t3b_excits(5,idet);   k2 = t3b_excits(6,idet);
-                         cijk1 = XcXiXjXk_table(c1,i1,j1,k1)
-                         cijk2 = XcXiXjXk_table(c2,i2,j2,k2)
-                         if (cijk1/=cijk2) then
-                                 ID(cijk1,2) = idet - 1
-                                 ID(cijk2,1) = idet
-                         end if
-                      end do
-                      ID(cijk2,2) = n3aab
-
-              end subroutine sort_t3b_cijk
-
-              subroutine sort_t3b_bcjk(t3b_excits, t3b_amps, ID, XbXcXjXk_table, noa, nua, nob, nub, n3aab, resid)
-
-                      integer, intent(in) :: n3aab, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3b_excits(6,n3aab)
-                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
-                      real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XbXcXjXk_table(nua,nub,noa,nob)
-                      integer, intent(inout) :: ID(nua*nub*noa*nob,2)
-
-                      integer :: kout, idet
-                      integer :: b, c, j, k
-                      integer :: b1, c1, j1, k1, b2, c2, j2, k2
-                      integer :: bcjk, bcjk1, bcjk2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XbXcXjXk_table=0
-                      kout = 1
-                      do k = 1, nob
-                         do j = 2, noa
-                            do c = 1, nub
-                               do b = 2, nua
-                                  XbXcXjXk_table(b,c,j,k) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aab),idx(n3aab))
-                      do idet = 1, n3aab
-                         b = t3b_excits(2,idet); c = t3b_excits(3,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                         bcjk = XbXcXjXk_table(b,c,j,k)
-                         temp(idet) = bcjk
-                      end do
-                      call argsort(temp, idx)
-                      t3b_excits = t3b_excits(:,idx)
-                      t3b_amps = t3b_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aab
-                         b1 = t3b_excits(2,idet-1); c1 = t3b_excits(3,idet-1); j1 = t3b_excits(5,idet-1); k1 = t3b_excits(6,idet-1);
-                         b2 = t3b_excits(2,idet);   c2 = t3b_excits(3,idet);   j2 = t3b_excits(5,idet);   k2 = t3b_excits(6,idet);
-                         bcjk1 = XbXcXjXk_table(b1,c1,j1,k1)
-                         bcjk2 = XbXcXjXk_table(b2,c2,j2,k2)
-                         if (bcjk1/=bcjk2) then
-                                 ID(bcjk1,2) = idet - 1
-                                 ID(bcjk2,1) = idet
-                         end if
-                      end do
-                      ID(bcjk2,2) = n3aab
-
-              end subroutine sort_t3b_bcjk
-
-              subroutine sort_t3b_bcik(t3b_excits, t3b_amps, ID, XbXcXiXk_table, noa, nua, nob, nub, n3aab, resid)
-
-                      integer, intent(in) :: n3aab, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3b_excits(6,n3aab)
-                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
-                      real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XbXcXiXk_table(nua,nub,noa,nob)
-                      integer, intent(inout) :: ID(nua*nub*noa*nob,2)
-
-                      integer :: kout, idet
-                      integer :: b, c, i, k
-                      integer :: b1, c1, i1, k1, b2, c2, i2, k2
-                      integer :: bcik, bcik1, bcik2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XbXcXiXk_table=0
-                      kout = 1
-                      do k = 1, nob
-                         do i = 1, noa-1
-                            do c = 1, nub
-                               do b = 2, nua
-                                  XbXcXiXk_table(b,c,i,k) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aab),idx(n3aab))
-                      do idet = 1, n3aab
-                         b = t3b_excits(2,idet); c = t3b_excits(3,idet); i = t3b_excits(4,idet); k = t3b_excits(6,idet);
-                         bcik = XbXcXiXk_table(b,c,i,k)
-                         temp(idet) = bcik
-                      end do
-                      call argsort(temp, idx)
-                      t3b_excits = t3b_excits(:,idx)
-                      t3b_amps = t3b_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aab
-                         b1 = t3b_excits(2,idet-1); c1 = t3b_excits(3,idet-1); i1 = t3b_excits(4,idet-1); k1 = t3b_excits(6,idet-1);
-                         b2 = t3b_excits(2,idet);   c2 = t3b_excits(3,idet);   i2 = t3b_excits(4,idet);   k2 = t3b_excits(6,idet);
-                         bcik1 = XbXcXiXk_table(b1,c1,i1,k1)
-                         bcik2 = XbXcXiXk_table(b2,c2,i2,k2)
-                         if (bcik1/=bcik2) then
-                                 ID(bcik1,2) = idet - 1
-                                 ID(bcik2,1) = idet
-                         end if
-                      end do
-                      ID(bcik2,2) = n3aab
-
-              end subroutine sort_t3b_bcik
-
-              subroutine sort_t3b_acjk(t3b_excits, t3b_amps, ID, XaXcXjXk_table, noa, nua, nob, nub, n3aab, resid)
-
-                      integer, intent(in) :: n3aab, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3b_excits(6,n3aab)
-                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
-                      real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XaXcXjXk_table(nua,nub,noa,nob)
-                      integer, intent(inout) :: ID(nua*nub*noa*nob,2)
-
-                      integer :: kout, idet
-                      integer :: a, c, j, k
-                      integer :: a1, c1, j1, k1, a2, c2, j2, k2
-                      integer :: acjk, acjk1, acjk2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXcXjXk_table=0
-                      kout = 1
-                      do k = 1, nob
-                         do j = 2, noa
-                            do c = 1, nub
-                               do a = 1, nua-1
-                                  XaXcXjXk_table(a,c,j,k) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aab),idx(n3aab))
-                      do idet = 1, n3aab
-                         a = t3b_excits(1,idet); c = t3b_excits(3,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
-                         acjk = XaXcXjXk_table(a,c,j,k)
-                         temp(idet) = acjk
-                      end do
-                      call argsort(temp, idx)
-                      t3b_excits = t3b_excits(:,idx)
-                      t3b_amps = t3b_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aab
-                         a1 = t3b_excits(1,idet-1); c1 = t3b_excits(3,idet-1); j1 = t3b_excits(5,idet-1); k1 = t3b_excits(6,idet-1);
-                         a2 = t3b_excits(1,idet);   c2 = t3b_excits(3,idet);   j2 = t3b_excits(5,idet);   k2 = t3b_excits(6,idet);
-                         acjk1 = XaXcXjXk_table(a1,c1,j1,k1)
-                         acjk2 = XaXcXjXk_table(a2,c2,j2,k2)
-                         if (acjk1/=acjk2) then
-                                 ID(acjk1,2) = idet - 1
-                                 ID(acjk2,1) = idet
-                         end if
-                      end do
-                      ID(acjk2,2) = n3aab
-
-              end subroutine sort_t3b_acjk
-
-              subroutine sort_t3b_acik(t3b_excits, t3b_amps, ID, XaXcXiXk_table, noa, nua, nob, nub, n3aab, resid)
-
-                      integer, intent(in) :: n3aab, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3b_excits(6,n3aab)
-                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
-                      real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XaXcXiXk_table(nua,nub,noa,nob)
-                      integer, intent(inout) :: ID(nua*nub*noa*nob,2)
-
-                      integer :: kout, idet
-                      integer :: a, c, i, k
-                      integer :: a1, c1, i1, k1, a2, c2, i2, k2
-                      integer :: acik, acik1, acik2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXcXiXk_table=0
-                      kout = 1
-                      do k = 1, nob
-                         do i = 1, noa-1
-                            do c = 1, nub
-                               do a = 1, nua-1
-                                  XaXcXiXk_table(a,c,i,k) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aab),idx(n3aab))
-                      do idet = 1, n3aab
-                         a = t3b_excits(1,idet); c = t3b_excits(3,idet); i = t3b_excits(4,idet); k = t3b_excits(6,idet);
-                         acik = XaXcXiXk_table(a,c,i,k)
-                         temp(idet) = acik
-                      end do
-                      call argsort(temp, idx)
-                      t3b_excits = t3b_excits(:,idx)
-                      t3b_amps = t3b_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aab
-                         a1 = t3b_excits(1,idet-1); c1 = t3b_excits(3,idet-1); i1 = t3b_excits(4,idet-1); k1 = t3b_excits(6,idet-1);
-                         a2 = t3b_excits(1,idet);   c2 = t3b_excits(3,idet);   i2 = t3b_excits(4,idet);   k2 = t3b_excits(6,idet);
-                         acik1 = XaXcXiXk_table(a1,c1,i1,k1)
-                         acik2 = XaXcXiXk_table(a2,c2,i2,k2)
-                         if (acik1/=acik2) then
-                                 ID(acik1,2) = idet - 1
-                                 ID(acik2,1) = idet
-                         end if
-                      end do
-                      ID(acik2,2) = n3aab
-
-              end subroutine sort_t3b_acik
-
-              subroutine sort_t3b_bcij(t3b_excits, t3b_amps, ID, XbXcXiXj_table, noa, nua, nob, nub, n3aab, resid)
-
-                      integer, intent(in) :: n3aab, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3b_excits(6,n3aab)
-                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
-                      real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XbXcXiXj_table(nua,nub,noa,noa)
-                      integer, intent(inout) :: ID(nua*nub*noa*(noa-1)/2,2)
-
-                      integer :: kout, idet
-                      integer :: b, c, i, j
-                      integer :: b1, c1, i1, j1, b2, c2, i2, j2
-                      integer :: bcij, bcij1, bcij2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XbXcXiXj_table=0
-                      kout = 1
-                      do i = 1, noa
-                         do j = i+1, noa
-                            do c = 1, nub
-                               do b = 2, nua
-                                  XbXcXiXj_table(b,c,i,j) = kout
-                                  XbXcXiXj_table(b,c,j,i) = -kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aab),idx(n3aab))
-                      do idet = 1, n3aab
-                         b = t3b_excits(2,idet); c = t3b_excits(3,idet); i = t3b_excits(4,idet); j = t3b_excits(5,idet);
-                         bcij = XbXcXiXj_table(b,c,i,j)
-                         temp(idet) = bcij
-                      end do
-                      call argsort(temp, idx)
-                      t3b_excits = t3b_excits(:,idx)
-                      t3b_amps = t3b_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aab
-                         b1 = t3b_excits(2,idet-1); c1 = t3b_excits(3,idet-1); i1 = t3b_excits(4,idet-1); j1 = t3b_excits(5,idet-1);
-                         b2 = t3b_excits(2,idet);   c2 = t3b_excits(3,idet);   i2 = t3b_excits(4,idet);   j2 = t3b_excits(5,idet);
-                         bcij1 = XbXcXiXj_table(b1,c1,i1,j1)
-                         bcij2 = XbXcXiXj_table(b2,c2,i2,j2)
-                         if (bcij1/=bcij2) then
-                                 ID(bcij1,2) = idet - 1
-                                 ID(bcij2,1) = idet
-                         end if
-                      end do
-                      ID(bcij2,2) = n3aab
-
-              end subroutine sort_t3b_bcij
-
-              subroutine sort_t3b_acij(t3b_excits, t3b_amps, ID, XaXcXiXj_table, noa, nua, nob, nub, n3aab, resid)
-
-                      integer, intent(in) :: n3aab, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3b_excits(6,n3aab)
-                      real(kind=8), intent(inout) :: t3b_amps(n3aab)
-                      real(kind=8), intent(inout), optional :: resid(n3aab)
-                      integer, intent(inout) :: XaXcXiXj_table(nua,nub,noa,noa)
-                      integer, intent(inout) :: ID(nua*nub*noa*(noa-1)/2,2)
-
-                      integer :: kout, idet
-                      integer :: a, c, i, j
-                      integer :: a1, c1, i1, j1, a2, c2, i2, j2
-                      integer :: acij, acij1, acij2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXcXiXj_table=0
-                      kout = 1
-                      do i = 1, noa
-                         do j = i+1, noa
-                            do c = 1, nub
-                               do a = 1, nua-1
-                                  XaXcXiXj_table(a,c,i,j) = kout
-                                  XaXcXiXj_table(a,c,j,i) = -kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aab),idx(n3aab))
-                      do idet = 1, n3aab
-                         a = t3b_excits(1,idet); c = t3b_excits(3,idet); i = t3b_excits(4,idet); j = t3b_excits(5,idet);
-                         acij = XaXcXiXj_table(a,c,i,j)
-                         temp(idet) = acij
-                      end do
-                      call argsort(temp, idx)
-                      t3b_excits = t3b_excits(:,idx)
-                      t3b_amps = t3b_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aab
-                         a1 = t3b_excits(1,idet-1); c1 = t3b_excits(3,idet-1); i1 = t3b_excits(4,idet-1); j1 = t3b_excits(5,idet-1);
-                         a2 = t3b_excits(1,idet);   c2 = t3b_excits(3,idet);   i2 = t3b_excits(4,idet);   j2 = t3b_excits(5,idet);
-                         acij1 = XaXcXiXj_table(a1,c1,i1,j1)
-                         acij2 = XaXcXiXj_table(a2,c2,i2,j2)
-                         if (acij1/=acij2) then
-                                 ID(acij1,2) = idet - 1
-                                 ID(acij2,1) = idet
-                         end if
-                      end do
-                      ID(acij2,2) = n3aab
-
-              end subroutine sort_t3b_acij
-
               subroutine sort_t3c_h(t3c_excits, t3c_amps, ID, Eai_table, XjXk_table, noa, nua, nob, nub, n3abb, resid)
 
                       integer, intent(in) :: n3abb, noa, nua, nob, nub
@@ -4508,230 +2981,6 @@ module ccp_quadratic_loops_direct_opt
                       end do
 
               end subroutine sort_t3c_h
-
-              subroutine sort_t3c_abij(t3c_excits, t3c_amps, ID, XaXbXiXj_table, noa, nua, nob, nub, n3abb, resid)
-
-                      integer, intent(in) :: n3abb, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3c_excits(6,n3abb)
-                      real(kind=8), intent(inout) :: t3c_amps(n3abb)
-                      real(kind=8), intent(inout), optional :: resid(n3abb)
-                      integer, intent(inout) :: XaXbXiXj_table(nua,nub,noa,nob)
-                      integer, intent(inout) :: ID(nua*nub*noa*nob,2)
-
-                      integer :: kout, idet
-                      integer :: a, b, i, j
-                      integer :: a1, b1, i1, j1, a2, b2, i2, j2
-                      integer :: abij, abij1, abij2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXbXiXj_table=0
-                      kout = 1
-                      do j = 1, nob-1
-                         do i = 1, noa
-                            do b = 1, nub-1
-                               do a = 1, nua
-                                  XaXbXiXj_table(a,b,i,j) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3abb),idx(n3abb))
-                      do idet = 1, n3abb
-                         a = t3c_excits(1,idet); b = t3c_excits(2,idet); i = t3c_excits(4,idet); j = t3c_excits(5,idet);
-                         abij = XaXbXiXj_table(a,b,i,j)
-                         temp(idet) = abij
-                      end do
-                      call argsort(temp, idx)
-                      t3c_excits = t3c_excits(:,idx)
-                      t3c_amps = t3c_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3abb
-                         a1 = t3c_excits(1,idet-1); b1 = t3c_excits(2,idet-1); i1 = t3c_excits(4,idet-1); j1 = t3c_excits(5,idet-1);
-                         a2 = t3c_excits(1,idet);   b2 = t3c_excits(2,idet);   i2 = t3c_excits(4,idet);   j2 = t3c_excits(5,idet);
-                         abij1 = XaXbXiXj_table(a1,b1,i1,j1)
-                         abij2 = XaXbXiXj_table(a2,b2,i2,j2)
-                         if (abij1/=abij2) then
-                                 ID(abij1,2) = idet - 1
-                                 ID(abij2,1) = idet
-                         end if
-                      end do
-                      ID(abij2,2) = n3abb
-
-              end subroutine sort_t3c_abij
-
-              subroutine sort_t3c_abik(t3c_excits, t3c_amps, ID, XaXbXiXk_table, noa, nua, nob, nub, n3abb, resid)
-
-                      integer, intent(in) :: n3abb, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3c_excits(6,n3abb)
-                      real(kind=8), intent(inout) :: t3c_amps(n3abb)
-                      real(kind=8), intent(inout), optional :: resid(n3abb)
-                      integer, intent(inout) :: XaXbXiXk_table(nua,nub,noa,nob)
-                      integer, intent(inout) :: ID(nua*nub*noa*nob,2)
-
-                      integer :: kout, idet
-                      integer :: a, b, i, k
-                      integer :: a1, b1, i1, k1, a2, b2, i2, k2
-                      integer :: abik, abik1, abik2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXbXiXk_table=0
-                      kout = 1
-                      do k = 2, nob
-                         do i = 1, noa
-                            do b = 1, nub-1
-                               do a = 1, nua
-                                  XaXbXiXk_table(a,b,i,k) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3abb),idx(n3abb))
-                      do idet = 1, n3abb
-                         a = t3c_excits(1,idet); b = t3c_excits(2,idet); i = t3c_excits(4,idet); k = t3c_excits(6,idet);
-                         abik = XaXbXiXk_table(a,b,i,k)
-                         temp(idet) = abik
-                      end do
-                      call argsort(temp, idx)
-                      t3c_excits = t3c_excits(:,idx)
-                      t3c_amps = t3c_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3abb
-                         a1 = t3c_excits(1,idet-1); b1 = t3c_excits(2,idet-1); i1 = t3c_excits(4,idet-1); k1 = t3c_excits(6,idet-1);
-                         a2 = t3c_excits(1,idet);   b2 = t3c_excits(2,idet);   i2 = t3c_excits(4,idet);   k2 = t3c_excits(6,idet);
-                         abik1 = XaXbXiXk_table(a1,b1,i1,k1)
-                         abik2 = XaXbXiXk_table(a2,b2,i2,k2)
-                         if (abik1/=abik2) then
-                                 ID(abik1,2) = idet - 1
-                                 ID(abik2,1) = idet
-                         end if
-                      end do
-                      ID(abik2,2) = n3abb
-
-              end subroutine sort_t3c_abik
-              
-              subroutine sort_t3c_acij(t3c_excits, t3c_amps, ID, XaXcXiXj_table, noa, nua, nob, nub, n3abb, resid)
-
-                      integer, intent(in) :: n3abb, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3c_excits(6,n3abb)
-                      real(kind=8), intent(inout) :: t3c_amps(n3abb)
-                      real(kind=8), intent(inout), optional :: resid(n3abb)
-                      integer, intent(inout) :: XaXcXiXj_table(nua,nub,noa,nob)
-                      integer, intent(inout) :: ID(nua*nub*noa*nob,2)
-
-                      integer :: kout, idet
-                      integer :: a, c, i, j
-                      integer :: a1, c1, i1, j1, a2, c2, i2, j2
-                      integer :: acij, acij1, acij2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXcXiXj_table=0
-                      kout = 1
-                      do j = 1, nob-1
-                         do i = 1, noa
-                            do c = 2, nub
-                               do a = 1, nua
-                                  XaXcXiXj_table(a,c,i,j) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3abb),idx(n3abb))
-                      do idet = 1, n3abb
-                         a = t3c_excits(1,idet); c = t3c_excits(3,idet); i = t3c_excits(4,idet); j = t3c_excits(5,idet);
-                         acij = XaXcXiXj_table(a,c,i,j)
-                         temp(idet) = acij
-                      end do
-                      call argsort(temp, idx)
-                      t3c_excits = t3c_excits(:,idx)
-                      t3c_amps = t3c_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3abb
-                         a1 = t3c_excits(1,idet-1); c1 = t3c_excits(3,idet-1); i1 = t3c_excits(4,idet-1); j1 = t3c_excits(5,idet-1);
-                         a2 = t3c_excits(1,idet);   c2 = t3c_excits(3,idet);   i2 = t3c_excits(4,idet);   j2 = t3c_excits(5,idet);
-                         acij1 = XaXcXiXj_table(a1,c1,i1,j1)
-                         acij2 = XaXcXiXj_table(a2,c2,i2,j2)
-                         if (acij1/=acij2) then
-                                 ID(acij1,2) = idet - 1
-                                 ID(acij2,1) = idet
-                         end if
-                      end do
-                      ID(acij2,2) = n3abb
-
-              end subroutine sort_t3c_acij
-
-              subroutine sort_t3c_acik(t3c_excits, t3c_amps, ID, XaXcXiXk_table, noa, nua, nob, nub, n3abb, resid)
-
-                      integer, intent(in) :: n3abb, noa, nua, nob, nub
-
-                      integer, intent(inout) :: t3c_excits(6,n3abb)
-                      real(kind=8), intent(inout) :: t3c_amps(n3abb)
-                      real(kind=8), intent(inout), optional :: resid(n3abb)
-                      integer, intent(inout) :: XaXcXiXk_table(nua,nub,noa,nob)
-                      integer, intent(inout) :: ID(nua*nub*noa*nob,2)
-
-                      integer :: kout, idet
-                      integer :: a, c, i, k
-                      integer :: a1, c1, i1, k1, a2, c2, i2, k2
-                      integer :: acik, acik1, acik2
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XaXcXiXk_table=0
-                      kout = 1
-                      do k = 2, nob
-                         do i = 1, noa
-                            do c = 2, nub
-                               do a = 1, nua
-                                  XaXcXiXk_table(a,c,i,k) = kout
-                                  kout = kout + 1
-                               end do
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3abb),idx(n3abb))
-                      do idet = 1, n3abb
-                         a = t3c_excits(1,idet); c = t3c_excits(3,idet); i = t3c_excits(4,idet); k = t3c_excits(6,idet);
-                         acik = XaXcXiXk_table(a,c,i,k)
-                         temp(idet) = acik
-                      end do
-                      call argsort(temp, idx)
-                      t3c_excits = t3c_excits(:,idx)
-                      t3c_amps = t3c_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3abb
-                         a1 = t3c_excits(1,idet-1); c1 = t3c_excits(3,idet-1); i1 = t3c_excits(4,idet-1); k1 = t3c_excits(6,idet-1);
-                         a2 = t3c_excits(1,idet);   c2 = t3c_excits(3,idet);   i2 = t3c_excits(4,idet);   k2 = t3c_excits(6,idet);
-                         acik1 = XaXcXiXk_table(a1,c1,i1,k1)
-                         acik2 = XaXcXiXk_table(a2,c2,i2,k2)
-                         if (acik1/=acik2) then
-                                 ID(acik1,2) = idet - 1
-                                 ID(acik2,1) = idet
-                         end if
-                      end do
-                      ID(acik2,2) = n3abb
-
-              end subroutine sort_t3c_acik
 
               subroutine argsort(r,d)
 
@@ -5445,5 +3694,62 @@ module ccp_quadratic_loops_direct_opt
               nexc3 = shiftr(6 - nexc3, 1)
           end function nexc3
 
+      ! [TODO]:
+      ! Before going futher, we should make a generic routine for a collective
+      ! sort, meaning something like
+         subroutine sort4_t3b(t3b_excits, t3b_amps, id_arr, table, dims, t3_shape, id_len, n3aab, resid)
+
+              integer, intent(in) :: n3aab, id_len
+              integer, intent(in) :: t3_shape(6)
+              integer, intent(in) :: dims(4) ! length of this defines the integer in sort*_t3b
+
+              integer, intent(inout) :: t3b_excits(6,n3aab)
+              real(kind=8), intent(inout) :: t3b_amps(n3aab)
+              real(kind=8), intent(inout), optional :: resid(n3aab)
+              integer, intent(inout) :: table(t3_shape(dims(1)),t3_shape(dims(2)),t3_shape(dims(3)),t3_shape(dims(4))
+              integer, intent(inout) :: id_arr(id_len,2)
+
+              integer :: kout, idet
+              integer :: i, j, k, a
+              integer :: i1, j1, k1, a1, i2, j2, k2, a2
+              integer :: aijk, aijk1, aijk2
+              integer, allocatable :: temp(:), idx(:)
+
+              ! Need information about which dimensions are ordered
+              table = 0
+              kout = 1
+              do i1 = 1, t3_shape(dims(1))
+                 do i2 = 1, t3_shape(dims(2))
+                    do i3 = 1, t3_shape(dims(3))
+                       do i4 = 1, t3_shape(dims(4))
+                          table(i1,i2,i3,i4) = kout
+                          kout = kout + 1
+                       end do
+                    end do
+                 end do
+              end do
+
+              allocate(temp(n3aab),idx(n3aab))
+              do idet = 1, n3aab
+                 temp(idet) = XaXiXjXk_table(t3_excits(dims(1),idet),t3_excits(dims(2),idet),t3_excits(dims(3),idet),t3_excits(dims(4),idet))
+              end do
+              call argsort(temp, idx)
+              t3b_excits = t3b_excits(:,idx)
+              t3b_amps = t3b_amps(idx)
+              if (present(resid)) resid = resid(idx)
+              deallocate(temp,idx)
+
+              id_arr = 1
+              do idet = 2, n3aab
+                 p = XaXiXjXk_table(t3_excits(dims(1),idet-1),t3_excits(dims(2),idet-1),t3_excits(dims(3),idet-1),t3_excits(dims(4),idet-1))
+                 q = XaXiXjXk_table(t3_excits(dims(1),idet),t3_excits(dims(2),idet),t3_excits(dims(3),idet),t3_excits(dims(4),idet))
+                 if ( p /= q ) then
+                         ID(p,2) = idet - 1
+                         ID(q,1) = idet
+                 end if
+              end do
+              ID(q,2) = n3aab
+
+         end subroutine sort4_t3b
 
 end module ccp_quadratic_loops_direct_opt
