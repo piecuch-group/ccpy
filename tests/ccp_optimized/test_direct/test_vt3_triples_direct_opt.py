@@ -462,8 +462,8 @@ if __name__ == "__main__":
     T, cc_energy, converged = cc_driver(calculation, system, H)
     hbar = get_ccsd_intermediates(T, H)
 
-    #T3_excitations, T3_amplitudes = get_T3_list(T)
-    T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[1,1,1,1])
+    T3_excitations, T3_amplitudes = get_T3_list(T)
+    #T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[1,1,1,1])
 
     T3_excitations["aaa"] = T3_excitations["aaa"].T
     T3_excitations["aab"] = T3_excitations["aab"].T

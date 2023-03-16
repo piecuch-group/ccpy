@@ -1282,6 +1282,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nua,nub,noa))
                   idx_table = 0
                   call sort_t3b_abck(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H1A_oo,H2A_oooo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1298,6 +1308,9 @@ module ccp_quadratic_loops_direct_opt
                         resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
                      end do
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -1309,6 +1322,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nub,noa,noa,nob))
                   idx_table = 0
                   call sort_t3b_cijk(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H1A_vv,H2A_vvvv,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1325,6 +1348,9 @@ module ccp_quadratic_loops_direct_opt
                         resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
                      end do
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -1336,6 +1362,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nua,nub,noa))
                   idx_table = 0
                   call sort_t3b_abci(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H1B_oo,H2B_oooo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1362,6 +1398,9 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if    
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table) 
                   !!! ABCJ LOOP !!!
@@ -1370,6 +1409,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nua,nub,noa))
                   idx_table = 0
                   call sort_t3b_abcj(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_oooo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1392,6 +1441,9 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECITON !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table) 
 
@@ -1402,6 +1454,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nub,noa,nob))
                   idx_table = 0
                   call sort_t3b_bcjk(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1444,6 +1506,9 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if 
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   !!! BCIK LOOP !!!
@@ -1452,6 +1517,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nub,noa,nob))
                   idx_table = 0
                   call sort_t3b_bcik(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1494,6 +1569,9 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   !!! ACIK LOOP !!!
@@ -1502,6 +1580,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nub,noa,nob))
                   idx_table = 0
                   call sort_t3b_acik(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1544,6 +1632,9 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   !!! ACJK LOOP !!!
@@ -1552,6 +1643,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nub,noa,nob))
                   idx_table = 0
                   call sort_t3b_acjk(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1594,12 +1695,14 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
                   !!!! diagram 5: h1b(ce)*t3b(abeijm)
                   !!!! diagram 8: A(ab) h2b(bcef)*t3b(aefijk)
-                  ! NOTE: h1b(vv) only needs to be considered in either one of aijk or bijk loops, but not both
                   !!! AIJK LOOP !!!
                   ! allocate new sorting arrays
                   allocate(loc_arr(nua*noa*(noa-1)/2*nob,2))
@@ -1639,7 +1742,7 @@ module ccp_quadratic_loops_direct_opt
                             resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
                          end do
                       end if
-                  end do ! end loop over idet
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -1730,6 +1833,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nua,noa,nob))
                   idx_table = 0
                   call sort_t3b_abik(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_ovov,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1752,6 +1865,9 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   !!! ABJK LOOP !!!
@@ -1760,6 +1876,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nua,noa,nob))
                   idx_table = 0
                   call sort_t3b_abjk(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_ovov,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1782,6 +1908,9 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   
@@ -1792,6 +1921,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nub,noa,noa))
                   idx_table = 0
                   call sort_t3b_bcij(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_vovo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1814,6 +1953,9 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   !!! ACIJ LOOP !!!
@@ -1822,6 +1964,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nub,noa,noa))
                   idx_table = 0
                   call sort_t3b_acij(t3b_excits, t3b_amps, loc_arr, idx_table, noa, nua, nob, nub, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_vovo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1844,6 +1996,9 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -1858,6 +2013,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nua,noa,noa))
                   !!! ABIJ LOOP !!!
                   call sort_t3a_abij(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_ovvo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1870,8 +2035,21 @@ module ccp_quadratic_loops_direct_opt
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call sort_t3a_acij(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_ovvo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1884,8 +2062,21 @@ module ccp_quadratic_loops_direct_opt
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call sort_t3a_bcij(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_ovvo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1898,8 +2089,21 @@ module ccp_quadratic_loops_direct_opt
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call sort_t3a_abik(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_ovvo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1912,8 +2116,21 @@ module ccp_quadratic_loops_direct_opt
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call sort_t3a_acik(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_ovvo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1926,8 +2143,21 @@ module ccp_quadratic_loops_direct_opt
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call sort_t3a_bcik(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_ovvo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1940,8 +2170,21 @@ module ccp_quadratic_loops_direct_opt
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call sort_t3a_abjk(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_ovvo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1954,8 +2197,21 @@ module ccp_quadratic_loops_direct_opt
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call sort_t3a_acjk(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_ovvo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1968,8 +2224,21 @@ module ccp_quadratic_loops_direct_opt
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do 
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call sort_t3a_bcjk(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, n3aaa)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_ovvo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -1982,6 +2251,9 @@ module ccp_quadratic_loops_direct_opt
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
@@ -1998,6 +2270,16 @@ module ccp_quadratic_loops_direct_opt
                   allocate(idx_table(nua,nub,noa,nob))
                   !!! ACIK LOOP !!!
                   call sort_t3c_acik(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, nob, nub, n3abb)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_voov,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -2042,8 +2324,21 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call sort_t3c_abik(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, nob, nub, n3abb)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_voov,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -2088,8 +2383,21 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call sort_t3c_acij(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, nob, nub, n3abb)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_voov,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -2134,8 +2442,21 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIJ LOOP !!!
                   call sort_t3c_abij(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, noa, nua, nob, nub, n3abb)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,t3_excits_buff,&
+                  !$omp t3b_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_voov,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -2180,11 +2501,24 @@ module ccp_quadratic_loops_direct_opt
                         end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
                   deallocate(t3_amps_buff,t3_excits_buff) 
 
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3b_excits,&
+                  !$omp t2a,t2b,&
+                  !$omp I2A_vvov,I2A_vooo,I2B_vvvo,I2B_vvov,I2B_vooo,I2B_ovoo,&
+                  !$omp fA_oo,fB_oo,fA_vv,fB_vv,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(idet,a,b,c,d,i,j,k,l,m,n,e,f,&
+                  !$omp res_mm23,denom,shift)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
                       i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
@@ -2226,6 +2560,9 @@ module ccp_quadratic_loops_direct_opt
 
                       resid(idet) = (resid(idet) + res_mm23)/(denom - shift)
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
 
                   ! Update t3b in SIMD; make sure resid and t3b_amps are aligned!
                   t3b_amps = t3b_amps + resid
