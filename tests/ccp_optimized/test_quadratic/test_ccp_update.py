@@ -106,7 +106,7 @@ def get_T3_list(T, fraction=[1.0,1.0,1.0,1.0]):
 
 if __name__ == "__main__":
 
-    test_values = False
+    test_values = True
 
     from pyscf import gto, scf
     mol = gto.Mole()
@@ -123,17 +123,17 @@ if __name__ == "__main__":
     """
 
     mol.build(
-        atom=methylene,
+        atom=fluorine,
         basis="ccpvdz",
-        symmetry="C2V",
+        symmetry="D2H",
         spin=0, 
         charge=0,
         unit="Bohr",
-        cart=False,
+        cart=True,
     )
     mf = scf.ROHF(mol).run()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=1)
+    system, H = load_pyscf_integrals(mf, nfrozen=2)
     system.print_info()
 
     calculation = Calculation(calculation_type="ccsdt")
@@ -149,24 +149,24 @@ if __name__ == "__main__":
     nua, noa = T.a.shape
     nub, nob = T.b.shape
 
-    x1a_oo = np.zeros((noa, noa))
-    for idet in range(len(T3_excitations["aaa"])):
-        e, f, g, m, n, o = [x - 1 for x in T3_excitations["aaa"][idet]]
-        l_amp = T3_amplitudes["aaa"][idet]
+    #x1a_oo = np.zeros((noa, noa))
+    #for idet in range(len(T3_excitations["aaa"])):
+    #    e, f, g, m, n, o = [x - 1 for x in T3_excitations["aaa"][idet]]
+    #    l_amp = T3_amplitudes["aaa"][idet]
 
-        for i in range(noa):
-            if pspace["aaa"][e, f, g, i, n, o]:
-                x1a_oo[m, i] += l_amp * T.aaa[e, f, g, i, n, o]
-                x1a_oo[n, i] -= l_amp * T.aaa[e, f, g, i, n, o]
-                x1a_oo[o, i] -= l_amp * T.aaa[e, f, g, i, n, o]
+    #    for i in range(noa):
+    #        if pspace["aaa"][e, f, g, i, n, o]:
+    #            x1a_oo[m, i] += l_amp * T.aaa[e, f, g, i, n, o]
+    #            x1a_oo[n, i] -= l_amp * T.aaa[e, f, g, i, n, o]
+    #            x1a_oo[o, i] -= l_amp * T.aaa[e, f, g, i, n, o]
 
-                x1a_oo[m, n] -= l_amp * T.aaa[e, f, g, i, n, o]
-                x1a_oo[n, n] += l_amp * T.aaa[e, f, g, i, n, o]
-                x1a_oo[o, n] += l_amp * T.aaa[e, f, g, i, n, o]
+    #            x1a_oo[m, n] -= l_amp * T.aaa[e, f, g, i, n, o]
+    #            x1a_oo[n, n] += l_amp * T.aaa[e, f, g, i, n, o]
+    #            x1a_oo[o, n] += l_amp * T.aaa[e, f, g, i, n, o]
 
-                x1a_oo[m, o] -= l_amp * T.aaa[e, f, g, i, n, o]
-                x1a_oo[n, o] += l_amp * T.aaa[e, f, g, i, m, o]
-                x1a_oo[o, o] += l_amp * T.aaa[e, f, g, i, n, m]
+    #            x1a_oo[m, o] -= l_amp * T.aaa[e, f, g, i, n, o]
+    #            x1a_oo[n, o] += l_amp * T.aaa[e, f, g, i, m, o]
+    #            x1a_oo[o, o] += l_amp * T.aaa[e, f, g, i, n, m]
 
     # x1a_oo = np.zeros((noa, noa))
     # for idet in range(len(T3_excitations["aaa"])):
@@ -192,26 +192,26 @@ if __name__ == "__main__":
     #         # x1a_oo[n1, o2] += l_amp * t_amp # (m,n1)(i,o2)
     #         # x1a_oo[o1, o2] += l_amp * t_amp # (m,o1)(i,o2)
 
-    x1a_oo_exact = (1.0/12.0) * np.einsum("efgmno,efgino->mi", T.aaa, T.aaa, optimize=True)
+    #x1a_oo_exact = (1.0/12.0) * np.einsum("efgmno,efgino->mi", T.aaa, T.aaa, optimize=True)
 
-    print(np.linalg.norm(x1a_oo.flatten() - x1a_oo_exact.flatten()))
-    for m in range(noa):
-        for i in range(noa):
-            if abs(x1a_oo[m, i] - x1a_oo_exact[m, i]) > 1.0e-012:
-                print(m+1, i+1, "Expected = ", x1a_oo_exact[m, i], "Got = ", x1a_oo[m, i])
+    #print(np.linalg.norm(x1a_oo.flatten() - x1a_oo_exact.flatten()))
+    #for m in range(noa):
+    #    for i in range(noa):
+    #        if abs(x1a_oo[m, i] - x1a_oo_exact[m, i]) > 1.0e-012:
+    #            print(m+1, i+1, "Expected = ", x1a_oo_exact[m, i], "Got = ", x1a_oo[m, i])
 
-    # # Get the on-the-fly contraction result
-    # print("   On-the-fly H*T3 contraction (Fortran)", end="")
-    # dT_p = ClusterOperator(system, order=3, p_orders=[3], pspace_sizes=excitation_count)
-    # T_p = ClusterOperator(system, order=3, p_orders=[3], pspace_sizes=excitation_count)
-    # T_p.unflatten(
-    #     np.hstack((T.a.flatten(), T.b.flatten(),
-    #                T.aa.flatten(), T.ab.flatten(), T.bb.flatten(),
-    #                T3_amplitudes["aaa"], T3_amplitudes["aab"], T3_amplitudes["abb"], T3_amplitudes["bbb"]))
-    # )
-    # t1 = time.time()
-    # T_p, dT_p = update_p(T_p, dT_p, H, 0.0, False, system, T3_excitations, pspace)
-    # print(" (Completed in ", time.time() - t1, "seconds)")
+    # Get the on-the-fly contraction result
+    print("   On-the-fly H*T3 contraction (Fortran)", end="")
+    dT_p = ClusterOperator(system, order=3, p_orders=[3], pspace_sizes=excitation_count)
+    T_p = ClusterOperator(system, order=3, p_orders=[3], pspace_sizes=excitation_count)
+    T_p.unflatten(
+         np.hstack((T.a.flatten(), T.b.flatten(),
+                    T.aa.flatten(), T.ab.flatten(), T.bb.flatten(),
+                    T3_amplitudes["aaa"], T3_amplitudes["aab"], T3_amplitudes["abb"], T3_amplitudes["bbb"]))
+    )
+    t1 = time.time()
+    T_p, dT_p = update_p(T_p, dT_p, H, 0.0, False, system, T3_excitations, pspace)
+    print(" (Completed in ", time.time() - t1, "seconds)")
 
 
 

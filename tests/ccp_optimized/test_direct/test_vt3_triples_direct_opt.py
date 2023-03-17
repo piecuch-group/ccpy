@@ -445,9 +445,9 @@ if __name__ == "__main__":
     """
 
     mol.build(
-        atom=fluorine,
+        atom=methylene,
         basis="cc-pvdz",
-        symmetry="D2H",
+        symmetry="C2V",
         spin=0, 
         charge=0,
         unit="Bohr",
@@ -455,15 +455,15 @@ if __name__ == "__main__":
     )
     mf = scf.ROHF(mol).run()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=2)
+    system, H = load_pyscf_integrals(mf, nfrozen=1)
     system.print_info()
 
     calculation = Calculation(calculation_type="ccsdt")
     T, cc_energy, converged = cc_driver(calculation, system, H)
     hbar = get_ccsd_intermediates(T, H)
 
-    T3_excitations, T3_amplitudes = get_T3_list(T)
-    #T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[1,1,1,1])
+    #T3_excitations, T3_amplitudes = get_T3_list(T)
+    T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[0.5,0.8,0.8,0.5])
 
     T3_excitations["aaa"] = T3_excitations["aaa"].T
     T3_excitations["aab"] = T3_excitations["aab"].T

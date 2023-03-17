@@ -1297,7 +1297,7 @@ module ccp_quadratic_loops_direct_opt
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
                      idx = idx_table(a,b,c,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         l = t3b_excits(4,jdet); m = t3b_excits(5,jdet);
                         ! compute < ijk~abc~ | h2a(oooo) | lmk~abc~ >
                         hmatel = h2a_oooo(l,m,i,j)
@@ -1338,7 +1338,7 @@ module ccp_quadratic_loops_direct_opt
                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
                      idx = idx_table(c,i,j,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         d = t3b_excits(1,jdet); e = t3b_excits(2,jdet);
                         ! compute < ijk~abc~ | h2a(vvvv) | ijk~dec~ >
                         hmatel = h2a_vvvv(a,b,d,e)
@@ -1380,7 +1380,7 @@ module ccp_quadratic_loops_direct_opt
                      ! (1)
                      idx = idx_table(a,b,c,i)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
                         ! compute < ijk~abc~ | h2b(oooo) | imn~abc~ >
                         hmatel = h2b_oooo(m,n,j,k)
@@ -1392,7 +1392,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,c,j)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
                            ! compute < ijk~abc~ | h2b(oooo) | jmn~abc~ >
                            hmatel = -h2b_oooo(m,n,i,k)
@@ -1429,7 +1429,7 @@ module ccp_quadratic_loops_direct_opt
                      ! (1)
                      idx = idx_table(a,b,c,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         l = t3b_excits(4,jdet); n = t3b_excits(6,jdet);
                         ! compute < ijk~abc~ | h2b(oooo) | ljn~abc~ >
                         hmatel = h2b_oooo(l,n,i,k)
@@ -1439,7 +1439,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,c,i)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            l = t3b_excits(4,jdet); n = t3b_excits(6,jdet);
                            ! compute < ijk~abc~ | h2b(oooo) | lin~abc~ >
                            hmatel = -h2b_oooo(l,n,j,k)
@@ -1476,7 +1476,7 @@ module ccp_quadratic_loops_direct_opt
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         d = t3b_excits(1,jdet); l = t3b_excits(4,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ljk~dbc~ >
                         hmatel = h2a_voov(a,l,i,d)
@@ -1486,7 +1486,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(1,jdet); l = t3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ljk~dac~ >
                            hmatel = -h2a_voov(b,l,i,d)
@@ -1497,7 +1497,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then ! protect against case where i = 1 because j = 2, noa
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(1,jdet); l = t3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~dbc~ >
                            hmatel = -h2a_voov(a,l,j,d)
@@ -1508,7 +1508,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua and i = 1 because j = 2, noa
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(1,jdet); l = t3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~dac~ >
                            hmatel = h2a_voov(b,l,j,d)
@@ -1543,7 +1543,7 @@ module ccp_quadratic_loops_direct_opt
                      ! (1)
                      idx = idx_table(b,c,i,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         d = t3b_excits(1,jdet); l = t3b_excits(5,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ilk~dbc~ >
                         hmatel = h2a_voov(a,l,j,d)
@@ -1553,7 +1553,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then ! protect against where j = noa because i = 1, noa-1 
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(1,jdet); l = t3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~dbc~ >
                            hmatel = -h2a_voov(a,l,i,d)
@@ -1564,7 +1564,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(1,jdet); l = t3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ilk~dac~ >
                            hmatel = -h2a_voov(b,l,j,d)
@@ -1575,7 +1575,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then ! protect against case where j = noa because i = 1, noa-1 and where a = 1 because b = 2, nua
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(1,jdet); l = t3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~dac~ >
                            hmatel = h2a_voov(b,l,i,d)
@@ -1610,7 +1610,7 @@ module ccp_quadratic_loops_direct_opt
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         d = t3b_excits(2,jdet); l = t3b_excits(5,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ilk~adc~  >
                         hmatel = h2a_voov(b,l,j,d)
@@ -1620,7 +1620,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(2,jdet); l = t3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~adc~  >
                            hmatel = -h2a_voov(b,l,i,d)
@@ -1631,7 +1631,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(2,jdet); l = t3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ilk~bdc~  >
                            hmatel = -h2a_voov(a,l,j,d)
@@ -1642,7 +1642,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(2,jdet); l = t3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~bdc~  >
                            hmatel = h2a_voov(a,l,i,d)
@@ -1677,7 +1677,7 @@ module ccp_quadratic_loops_direct_opt
                      ! (1)
                      idx = idx_table(a,c,j,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         d = t3b_excits(2,jdet); l = t3b_excits(4,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ljk~adc~  >
                         hmatel = h2a_voov(b,l,i,d)
@@ -1687,7 +1687,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(2,jdet); l = t3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~adc~  >
                            hmatel = -h2a_voov(b,l,j,d)
@@ -1698,7 +1698,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(2,jdet); l = t3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ljk~bdc~  >
                            hmatel = -h2a_voov(a,l,i,d)
@@ -1709,7 +1709,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(2,jdet); l = t3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~abc~  >
                            hmatel = h2a_voov(a,l,j,d)
@@ -1746,7 +1746,7 @@ module ccp_quadratic_loops_direct_opt
                       i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
                       idx = idx_table(a,i,j,k)
                       do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                         !if (jdet==0) cycle
+                         if (jdet==0) cycle
                          d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
                          l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
                          ! compute < ijk~abc~ | h2b(vvvv) | ijk~aef~ >
@@ -1757,7 +1757,7 @@ module ccp_quadratic_loops_direct_opt
                       idx = idx_table(b,i,j,k)
                       if (idx/=0) then ! protect against case where b = nua because a = 1, nua-1
                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                            !if (jdet==0) cycle
+                            if (jdet==0) cycle
                             d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
                             l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
                             ! compute < ijk~abc~ | h2b(vvvv) | ijk~bef~ >
@@ -1793,7 +1793,7 @@ module ccp_quadratic_loops_direct_opt
                       i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
                       idx = idx_table(b,i,j,k)
                       do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                         !if (jdet==0) cycle
+                         if (jdet==0) cycle
                          d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
                          l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
                          ! compute < ijk~abc~ | h2b(vvvv) | ijk~dbf~ >
@@ -1803,7 +1803,7 @@ module ccp_quadratic_loops_direct_opt
                       idx = idx_table(a,i,j,k)
                       if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                            !if (jdet==0) cycle
+                            if (jdet==0) cycle
                             d = t3b_excits(1,jdet); e = t3b_excits(2,jdet); f = t3b_excits(3,jdet);
                             l = t3b_excits(4,jdet); m = t3b_excits(5,jdet); n = t3b_excits(6,jdet);
                             ! compute < ijk~abc~ | h2b(vvvv) | ijk~daf~ >
@@ -1840,7 +1840,7 @@ module ccp_quadratic_loops_direct_opt
                       i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
                       idx = idx_table(a,b,i,j)
                       do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                         !if (jdet==0) cycle
+                         if (jdet==0) cycle
                          f = t3b_excits(3,jdet); n = t3b_excits(6,jdet);
                          ! compute < ijk~abc~ | h2c(voov) | ijn~abf~ > = h2c_voov(c,n,k,f)
                          hmatel = h2c_voov(c,n,k,f)
@@ -1876,7 +1876,7 @@ module ccp_quadratic_loops_direct_opt
                      ! (1)
                      idx = idx_table(a,b,i,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         f = t3b_excits(3,jdet); m = t3b_excits(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovov) | imk~abf~ >
                         hmatel = -h2b_ovov(m,c,j,f)
@@ -1886,7 +1886,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            f = t3b_excits(3,jdet); m = t3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2b(ovov) | jmk~abf~ >
                            hmatel = h2b_ovov(m,c,i,f)
@@ -1921,7 +1921,7 @@ module ccp_quadratic_loops_direct_opt
                      ! (1)
                      idx = idx_table(a,b,j,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         f = t3b_excits(3,jdet); l = t3b_excits(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovov) | ljk~abf~ >
                         hmatel = -h2b_ovov(l,c,i,f)
@@ -1931,7 +1931,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            f = t3b_excits(3,jdet); l = t3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2b(ovov) | lik~abf~ >
                            hmatel = h2b_ovov(l,c,j,f)
@@ -1968,7 +1968,7 @@ module ccp_quadratic_loops_direct_opt
                      ! (1)
                      idx = idx_table(b,c,i,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         d = t3b_excits(1,jdet); n = t3b_excits(6,jdet);
                         ! compute < ijk~abc~ | h2b(vovo) | ijn~dbc~ >
                         hmatel = -h2b_vovo(a,n,d,k)
@@ -1978,7 +1978,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            d = t3b_excits(1,jdet); n = t3b_excits(6,jdet);
                            ! compute < ijk~abc~ | h2b(vovo) | ijn~dac~ >
                            hmatel = h2b_vovo(b,n,d,k)
@@ -2013,7 +2013,7 @@ module ccp_quadratic_loops_direct_opt
                      ! (1)
                      idx = idx_table(a,c,i,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         e = t3b_excits(2,jdet); n = t3b_excits(6,jdet);
                         ! compute < ijk~abc~ | h2b(vovo) | ijn~aec~ >
                         hmatel = -h2b_vovo(b,n,e,k)
@@ -2023,7 +2023,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            e = t3b_excits(2,jdet); n = t3b_excits(6,jdet);
                            ! compute < ijk~abc~ | h2b(vovo) | ijn~bec~ >
                            hmatel = h2b_vovo(a,n,e,k)
@@ -2064,7 +2064,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,i,j)
                      if (idx==0) cycle 
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | ijnabf >
                         hmatel = h2b_ovvo(n,c,f,k)
@@ -2092,7 +2092,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         e = t3_excits_buff(2,jdet); n = t3_excits_buff(6,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | ijnaeb >
                         hmatel = -h2b_ovvo(n,c,e,k)
@@ -2120,7 +2120,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         d = t3_excits_buff(1,jdet); n = t3_excits_buff(6,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | ijndab >
                         hmatel = h2b_ovvo(n,c,d,k)
@@ -2148,7 +2148,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         f = t3_excits_buff(3,jdet); m = t3_excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | imjabf >
                         hmatel = -h2b_ovvo(m,c,f,k)
@@ -2176,7 +2176,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         e = t3_excits_buff(2,jdet); m = t3_excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | imjaeb >
                         hmatel = h2b_ovvo(m,c,e,k)
@@ -2204,7 +2204,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         d = t3_excits_buff(1,jdet); m = t3_excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | imjdab >
                         hmatel = -h2b_ovvo(m,c,d,k)
@@ -2232,7 +2232,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         f = t3_excits_buff(3,jdet); l = t3_excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | lijabf >
                         hmatel = h2b_ovvo(l,c,f,k)
@@ -2260,7 +2260,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         e = t3_excits_buff(2,jdet); l = t3_excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | lijaeb >
                         hmatel = -h2b_ovvo(l,c,e,k)
@@ -2288,7 +2288,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                        !if (jdet==0) cycle
+                        if (jdet==0) cycle
                         d = t3_excits_buff(1,jdet); l = t3_excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | lijdab >
                         hmatel = h2b_ovvo(l,c,d,k)
@@ -2331,7 +2331,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            e = t3_excits_buff(2,jdet); m = t3_excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~ae~c~ >
                            hmatel = h2b_voov(b,m,j,e)
@@ -2342,7 +2342,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            e = t3_excits_buff(2,jdet); m = t3_excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~be~c~ >
                            hmatel = -h2b_voov(a,m,j,e)
@@ -2353,7 +2353,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            e = t3_excits_buff(2,jdet); m = t3_excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~ae~c~ >
                            hmatel = -h2b_voov(b,m,i,e)
@@ -2364,7 +2364,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            e = t3_excits_buff(2,jdet); m = t3_excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~be~c~ >
                            hmatel = h2b_voov(a,m,i,e)
@@ -2394,7 +2394,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            f = t3_excits_buff(3,jdet); m = t3_excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~ac~f~ >
                            hmatel = -h2b_voov(b,m,j,f)
@@ -2405,7 +2405,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            f = t3_excits_buff(3,jdet); m = t3_excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~bc~f~ >
                            hmatel = h2b_voov(a,m,j,f)
@@ -2416,7 +2416,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            f = t3_excits_buff(3,jdet); m = t3_excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~ac~f~ >
                            hmatel = h2b_voov(b,m,i,f)
@@ -2427,7 +2427,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            f = t3_excits_buff(3,jdet); m = t3_excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~bc~f~ >
                            hmatel = -h2b_voov(a,m,i,f)
@@ -2457,7 +2457,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            e = t3_excits_buff(2,jdet); n = t3_excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~ae~c~ >
                            hmatel = -h2b_voov(b,n,j,e)
@@ -2468,7 +2468,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            e = t3_excits_buff(2,jdet); n = t3_excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~be~c~ >
                            hmatel = h2b_voov(a,n,j,e)
@@ -2479,7 +2479,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            e = t3_excits_buff(2,jdet); n = t3_excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~ae~c~ >
                            hmatel = h2b_voov(b,n,i,e)
@@ -2490,7 +2490,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            e = t3_excits_buff(2,jdet); n = t3_excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~be~c~ >
                            hmatel = -h2b_voov(a,n,i,e)
@@ -2520,7 +2520,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~ac~f~ >
                            hmatel = h2b_voov(b,n,j,f)
@@ -2531,7 +2531,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !!if (jdet==0) cycle
+                           if (jdet==0) cycle
                            f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~bc~f~ >
                            hmatel = -h2b_voov(a,n,j,f)
@@ -2542,7 +2542,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~ac~f~ >
                            hmatel = -h2b_voov(b,n,i,f)
@@ -2553,7 +2553,7 @@ module ccp_quadratic_loops_direct_opt
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
-                           !if (jdet==0) cycle
+                           if (jdet==0) cycle
                            f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~bc~f~ >
                            hmatel = h2b_voov(a,n,i,f)
@@ -3276,7 +3276,7 @@ module ccp_quadratic_loops_direct_opt
                       if (present(resid)) resid = resid(idx)
                       deallocate(temp,idx)
 
-                      ID = 0; ID(:,1) = 1;
+                      ID = 0
                       do idet = 1, n3aaa-1
                          a1 = t3a_excits(1,idet); b1 = t3a_excits(2,idet); i1 = t3a_excits(4,idet); j1 = t3a_excits(5,idet);
                          a2 = t3a_excits(1,idet+1);   b2 = t3a_excits(2,idet+1);   i2 = t3a_excits(4,idet+1);   j2 = t3a_excits(5,idet+1);
@@ -3347,7 +3347,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aaa-1
                          a1 = t3a_excits(1,idet); b1 = t3a_excits(2,idet); i1 = t3a_excits(4,idet); k1 = t3a_excits(6,idet);
                          a2 = t3a_excits(1,idet+1);   b2 = t3a_excits(2,idet+1);   i2 = t3a_excits(4,idet+1);   k2 = t3a_excits(6,idet+1);
@@ -3418,7 +3417,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aaa-1
                          a1 = t3a_excits(1,idet); b1 = t3a_excits(2,idet); j1 = t3a_excits(5,idet); k1 = t3a_excits(6,idet);
                          a2 = t3a_excits(1,idet+1);   b2 = t3a_excits(2,idet+1);   j2 = t3a_excits(5,idet+1);   k2 = t3a_excits(6,idet+1);
@@ -3489,7 +3487,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aaa-1
                          a1 = t3a_excits(1,idet); c1 = t3a_excits(3,idet); i1 = t3a_excits(4,idet); j1 = t3a_excits(5,idet);
                          a2 = t3a_excits(1,idet+1);   c2 = t3a_excits(3,idet+1);   i2 = t3a_excits(4,idet+1);   j2 = t3a_excits(5,idet+1);
@@ -3560,7 +3557,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aaa-1
                          a1 = t3a_excits(1,idet); c1 = t3a_excits(3,idet); i1 = t3a_excits(4,idet); k1 = t3a_excits(6,idet);
                          a2 = t3a_excits(1,idet+1);   c2 = t3a_excits(3,idet+1);   i2 = t3a_excits(4,idet+1);   k2 = t3a_excits(6,idet+1);
@@ -3631,7 +3627,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aaa-1
                          a1 = t3a_excits(1,idet); c1 = t3a_excits(3,idet); j1 = t3a_excits(5,idet); k1 = t3a_excits(6,idet);
                          a2 = t3a_excits(1,idet+1);   c2 = t3a_excits(3,idet+1);   j2 = t3a_excits(5,idet+1);   k2 = t3a_excits(6,idet+1);
@@ -3702,7 +3697,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aaa-1
                          b1 = t3a_excits(2,idet); c1 = t3a_excits(3,idet); i1 = t3a_excits(4,idet); j1 = t3a_excits(5,idet);
                          b2 = t3a_excits(2,idet+1);   c2 = t3a_excits(3,idet+1);   i2 = t3a_excits(4,idet+1);   j2 = t3a_excits(5,idet+1);
@@ -3773,7 +3767,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aaa-1
                          b1 = t3a_excits(2,idet); c1 = t3a_excits(3,idet); i1 = t3a_excits(4,idet); k1 = t3a_excits(6,idet);
                          b2 = t3a_excits(2,idet+1);   c2 = t3a_excits(3,idet+1);   i2 = t3a_excits(4,idet+1);   k2 = t3a_excits(6,idet+1);
@@ -3844,7 +3837,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aaa-1
                          b1 = t3a_excits(2,idet); c1 = t3a_excits(3,idet); j1 = t3a_excits(5,idet); k1 = t3a_excits(6,idet);
                          b2 = t3a_excits(2,idet+1);   c2 = t3a_excits(3,idet+1);   j2 = t3a_excits(5,idet+1);   k2 = t3a_excits(6,idet+1);
@@ -4119,7 +4111,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          a1 = t3b_excits(1,idet); b1 = t3b_excits(2,idet); c1 = t3b_excits(3,idet); k1 = t3b_excits(6,idet);
                          a2 = t3b_excits(1,idet+1);   b2 = t3b_excits(2,idet+1);   c2 = t3b_excits(3,idet+1);   k2 = t3b_excits(6,idet+1);
@@ -4189,7 +4180,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          a1 = t3b_excits(1,idet);     b1 = t3b_excits(2,idet);     c1 = t3b_excits(3,idet);     i1 = t3b_excits(4,idet);
                          a2 = t3b_excits(1,idet+1);   b2 = t3b_excits(2,idet+1);   c2 = t3b_excits(3,idet+1);   i2 = t3b_excits(4,idet+1);
@@ -4259,7 +4249,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          a1 = t3b_excits(1,idet); b1 = t3b_excits(2,idet); c1 = t3b_excits(3,idet); j1 = t3b_excits(5,idet);
                          a2 = t3b_excits(1,idet+1);   b2 = t3b_excits(2,idet+1);   c2 = t3b_excits(3,idet+1);   j2 = t3b_excits(5,idet+1);
@@ -4331,7 +4320,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          a1 = t3b_excits(1,idet); b1 = t3b_excits(2,idet); i1 = t3b_excits(4,idet); j1 = t3b_excits(5,idet);
                          a2 = t3b_excits(1,idet+1);   b2 = t3b_excits(2,idet+1);   i2 = t3b_excits(4,idet+1);   j2 = t3b_excits(5,idet+1);
@@ -4401,7 +4389,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          a1 = t3b_excits(1,idet); b1 = t3b_excits(2,idet); i1 = t3b_excits(4,idet); k1 = t3b_excits(6,idet);
                          a2 = t3b_excits(1,idet+1);   b2 = t3b_excits(2,idet+1);   i2 = t3b_excits(4,idet+1);   k2 = t3b_excits(6,idet+1);
@@ -4471,7 +4458,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          a1 = t3b_excits(1,idet); b1 = t3b_excits(2,idet); j1 = t3b_excits(5,idet); k1 = t3b_excits(6,idet);
                          a2 = t3b_excits(1,idet+1);   b2 = t3b_excits(2,idet+1);   j2 = t3b_excits(5,idet+1);   k2 = t3b_excits(6,idet+1);
@@ -4541,7 +4527,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          a1 = t3b_excits(1,idet); i1 = t3b_excits(4,idet); j1 = t3b_excits(5,idet); k1 = t3b_excits(6,idet);
                          a2 = t3b_excits(1,idet+1);   i2 = t3b_excits(4,idet+1);   j2 = t3b_excits(5,idet+1);   k2 = t3b_excits(6,idet+1);
@@ -4611,7 +4596,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          b1 = t3b_excits(2,idet); i1 = t3b_excits(4,idet); j1 = t3b_excits(5,idet); k1 = t3b_excits(6,idet);
                          b2 = t3b_excits(2,idet+1);   i2 = t3b_excits(4,idet+1);   j2 = t3b_excits(5,idet+1);   k2 = t3b_excits(6,idet+1);
@@ -4681,7 +4665,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          c1 = t3b_excits(3,idet); i1 = t3b_excits(4,idet); j1 = t3b_excits(5,idet); k1 = t3b_excits(6,idet);
                          c2 = t3b_excits(3,idet+1);   i2 = t3b_excits(4,idet+1);   j2 = t3b_excits(5,idet+1);   k2 = t3b_excits(6,idet+1);
@@ -4750,7 +4733,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          b1 = t3b_excits(2,idet); c1 = t3b_excits(3,idet); j1 = t3b_excits(5,idet); k1 = t3b_excits(6,idet);
                          b2 = t3b_excits(2,idet+1);   c2 = t3b_excits(3,idet+1);   j2 = t3b_excits(5,idet+1);   k2 = t3b_excits(6,idet+1);
@@ -4819,7 +4801,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          b1 = t3b_excits(2,idet); c1 = t3b_excits(3,idet); i1 = t3b_excits(4,idet); k1 = t3b_excits(6,idet);
                          b2 = t3b_excits(2,idet+1);   c2 = t3b_excits(3,idet+1);   i2 = t3b_excits(4,idet+1);   k2 = t3b_excits(6,idet+1);
@@ -4888,7 +4869,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          a1 = t3b_excits(1,idet); c1 = t3b_excits(3,idet); j1 = t3b_excits(5,idet); k1 = t3b_excits(6,idet);
                          a2 = t3b_excits(1,idet+1);   c2 = t3b_excits(3,idet+1);   j2 = t3b_excits(5,idet+1);   k2 = t3b_excits(6,idet+1);
@@ -4957,7 +4937,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          a1 = t3b_excits(1,idet); c1 = t3b_excits(3,idet); i1 = t3b_excits(4,idet); k1 = t3b_excits(6,idet);
                          a2 = t3b_excits(1,idet+1);   c2 = t3b_excits(3,idet+1);   i2 = t3b_excits(4,idet+1);   k2 = t3b_excits(6,idet+1);
@@ -5027,7 +5006,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          b1 = t3b_excits(2,idet); c1 = t3b_excits(3,idet); i1 = t3b_excits(4,idet); j1 = t3b_excits(5,idet);
                          b2 = t3b_excits(2,idet+1);   c2 = t3b_excits(3,idet+1);   i2 = t3b_excits(4,idet+1);   j2 = t3b_excits(5,idet+1);
@@ -5097,7 +5075,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3aab-1
                          a1 = t3b_excits(1,idet); c1 = t3b_excits(3,idet); i1 = t3b_excits(4,idet); j1 = t3b_excits(5,idet);
                          a2 = t3b_excits(1,idet+1);   c2 = t3b_excits(3,idet+1);   i2 = t3b_excits(4,idet+1);   j2 = t3b_excits(5,idet+1);
@@ -5268,7 +5245,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3abb-1
                          a1 = t3c_excits(1,idet); b1 = t3c_excits(2,idet); i1 = t3c_excits(4,idet); j1 = t3c_excits(5,idet);
                          a2 = t3c_excits(1,idet+1);   b2 = t3c_excits(2,idet+1);   i2 = t3c_excits(4,idet+1);   j2 = t3c_excits(5,idet+1);
@@ -5337,7 +5313,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3abb-1
                          a1 = t3c_excits(1,idet); b1 = t3c_excits(2,idet); i1 = t3c_excits(4,idet); k1 = t3c_excits(6,idet);
                          a2 = t3c_excits(1,idet+1);   b2 = t3c_excits(2,idet+1);   i2 = t3c_excits(4,idet+1);   k2 = t3c_excits(6,idet+1);
@@ -5406,7 +5381,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3abb-1
                          a1 = t3c_excits(1,idet); c1 = t3c_excits(3,idet); i1 = t3c_excits(4,idet); j1 = t3c_excits(5,idet);
                          a2 = t3c_excits(1,idet+1);   c2 = t3c_excits(3,idet+1);   i2 = t3c_excits(4,idet+1);   j2 = t3c_excits(5,idet+1);
@@ -5475,7 +5449,6 @@ module ccp_quadratic_loops_direct_opt
                       deallocate(temp,idx)
 
                       ID = 0
-                      ID = 0; ID(:,1) = 1;
                       do idet = 1, n3abb-1
                          a1 = t3c_excits(1,idet); c1 = t3c_excits(3,idet); i1 = t3c_excits(4,idet); k1 = t3c_excits(6,idet);
                          a2 = t3c_excits(1,idet+1);   c2 = t3c_excits(3,idet+1);   i2 = t3c_excits(4,idet+1);   k2 = t3c_excits(6,idet+1);
