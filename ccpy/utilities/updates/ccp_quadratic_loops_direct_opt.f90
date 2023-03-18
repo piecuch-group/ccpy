@@ -973,6 +973,157 @@ module ccp_quadratic_loops_direct_opt
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
+                  !!!! diagram 4: 1/2 A(c/ab) h2a(abef) * t3a(ebcijk) 
+                  ! allocate new sorting arrays
+                  allocate(loc_arr(noa*(noa-1)*(noa-2)/6*nua,2))
+                  allocate(idx_table(noa,noa,noa,nua))
+                  !!! IJKA LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
+                  call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, noa*(noa-1)*(noa-2)/6*nua, n3aaa, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3a_excits,&
+                  !$omp t3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H1A_vv,H2A_vvvv,&
+                  !$omp noa,nua,n3aaa),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa
+                     a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
+                     i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,a)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkaef >
+                        hmatel = h2a_vvvv(b,c,e,f)
+                        resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                     end do
+                     ! (ab)
+                     idx = idx_table(i,j,k,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkbef >
+                        hmatel = -h2a_vvvv(a,c,e,f)
+                        resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(i,j,k,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkcef >
+                        hmatel = -h2a_vvvv(b,a,e,f)
+                        resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  !!! IJKB LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/2,nua-1/), noa, noa, noa, nua)
+                  call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, noa*(noa-1)*(noa-2)/6*nua, n3aaa, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3a_excits,&
+                  !$omp t3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H1A_vv,H2A_vvvv,&
+                  !$omp noa,nua,n3aaa),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa
+                     a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
+                     i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,b)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = t3a_excits(1,jdet); f = t3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdbf >
+                        hmatel = h2a_vvvv(a,c,d,f)
+                        resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                     end do
+                     ! (ab)
+                     idx = idx_table(i,j,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = t3a_excits(1,jdet); f = t3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdaf >
+                        hmatel = -h2a_vvvv(b,c,d,f)
+                        resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(i,j,k,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = t3a_excits(1,jdet); f = t3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdcf >
+                        hmatel = -h2a_vvvv(a,b,d,f)
+                        resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                     end do
+                     end if 
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  !!! IJKC LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
+                  call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, noa*(noa-1)*(noa-2)/6*nua, n3aaa, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3a_excits,&
+                  !$omp t3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H1A_vv,H2A_vvvv,&
+                  !$omp noa,nua,n3aaa),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa
+                     a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
+                     i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,c)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = t3a_excits(1,jdet); e = t3a_excits(2,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdec >
+                        hmatel = h2a_vvvv(a,b,d,e)
+                        resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                     end do
+                     ! (ac)
+                     idx = idx_table(i,j,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = t3a_excits(1,jdet); e = t3a_excits(2,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdea >
+                        hmatel = -h2a_vvvv(c,b,d,e)
+                        resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(i,j,k,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = t3a_excits(1,jdet); e = t3a_excits(2,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdeb >
+                        hmatel = -h2a_vvvv(a,c,d,e)
+                        resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+
                   !!!! diagram 5: A(i/jk)A(a/bc) h2a(amie) * t3a(ebcmjk)
                   ! allocate sorting arrays (can be reused for each permutation)
                   allocate(loc_arr((nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2,2))
@@ -1853,137 +2004,137 @@ module ccp_quadratic_loops_direct_opt
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
-
-    !x3a += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aaa, optimize=True) # (c/ab) = 3
-    !x3a += 0.25 * np.einsum("cmke,abeijm->abcijk", H.ab.voov, T.aab, optimize=True) # (c/ij)(k/ij) = 9
-
-                  ! Perform the sorting of t3a and t3b arrays
-                  allocate(id3a_h(noa*(noa-1)*(noa-2)/6,2))
-                  allocate(xixjxk_table(noa,noa,noa))
-                  id3a_h = 0; xixjxk_table = 0;
-                  call sort_t3a_h(t3a_excits, t3a_amps, id3a_h, xixjxk_table, noa, nua, n3aaa, resid)
-                  allocate(id3b_h(nub*nob,noa*(noa-1)/2,2))
-                  allocate(xixj_table(noa,noa))
-                  allocate(eck_table(nub,nob))
+                  !!!! diagram 6: A(i/jk)A(a/bc) h2b(amie) * t3b(abeijm)
+                  ! allocate and copy over t3b arrays
                   allocate(t3_amps_buff(n3aab),t3_excits_buff(6,n3aab))
-                  id3b_h = 0; eck_table = 0; xixj_table = 0;
                   t3_amps_buff(:) = t3b_amps(:)
                   t3_excits_buff(:,:) = t3b_excits(:,:)
-                  call sort_t3b_h(t3_excits_buff, t3_amps_buff, id3b_h, eck_table, xixj_table, noa, nua, nob, nub, n3aab)
+                  ! allocate sorting arrays (can be reused for each permutation)
+                  allocate(loc_arr(nua*(nua-1)/2*noa*(noa-1)/2,2))
+                  allocate(idx_table(nua,nua,noa,noa))
+                  !!! ABIJ LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
+                  call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nua*(nua-1)/2*noa*(noa-1)/2, n3aab)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp t3a_excits,t3_excits_buff,&
+                  !$omp t3a_amps,t3_amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_voov,&
+                  !$omp noa,nua,nob,nub,n3aaa),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa
+                     a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
+                     i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ijn~abf~ >
+                        hmatel = h2b_voov(c,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | jkn~abf~ >
+                        hmatel = h2b_voov(c,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ikn~abf~ >
+                        hmatel = -h2b_voov(c,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ijn~bcf~ >
+                        hmatel = h2b_voov(a,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)(ac)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | jkn~bcf~ >
+                        hmatel = h2b_voov(a,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)(ac)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ikn~bcf~ >
+                        hmatel = -h2b_voov(a,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ijn~acf~ >
+                        hmatel = -h2b_voov(b,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)(bc)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | jkn~acf~ >
+                        hmatel = -h2b_voov(b,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)(bc)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = t3_excits_buff(3,jdet); n = t3_excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ikn~acf~ >
+                        hmatel = h2b_voov(b,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
+                     end do
+                     end if
+                  end do   
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
 
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
-                  !$omp t3a_excits,t3_excits_buff,t3a_amps,t3_amps_buff,t2a,&
-                  !$omp id3a_h,xixjxk_table,&
-                  !$omp id3b_h,eck_table,xixj_table,&
-                  !$omp H1A_oo,H1A_vv,H2A_oooo,&
-                  !$omp H2A_vvvv,H2A_voov,H2B_voov,I2A_vooo,I2A_vvov,&
-                  !$omp fA_oo,fA_vv,shift,noa,nua,nob,nub,n3aaa,n3aab),&
-                  !$omp private(hmatel,t_amp,denom,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
-                  !$omp ij,ik,jk,jb,lmi,lmj,lmk,lij,lik,ljk,phase)
+                  !$omp t3a_excits,&
+                  !$omp t2a,&
+                  !$omp I2A_vvov,I2A_vooo,&
+                  !$omp fA_oo,fA_vv,&
+                  !$omp noa,nua,n3aaa),&
+                  !$omp private(idet,a,b,c,d,i,j,k,l,m,n,e,f,&
+                  !$omp res_mm23,denom,shift)
                   !$omp do schedule(static)
-                  do idet = 1, n3aaa
-                      a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
-                      i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
-
-                      ijk = xixjxk_table(i,j,k)
-                      ! diagram 2/4
-                      do jdet = id3a_h(ijk,1), id3a_h(ijk,2)
-                         d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
-                         if (nexc3(a,b,c,d,e,f)>2) cycle ! skip if p(a) difference is more than 2
-                         hmatel = 0.0d0
-                         if (d==a) then      ! case 1: d = a
-                            ! compute < ijkabc | h2a(vvvv) | ijkaef >
-                            hmatel = hmatel + h2a_vvvv(b,c,e,f)
-                         elseif (d==b) then  ! case 2: d = b
-                            ! compute < ijkabc | h2a(vvvv) | ijkbef >
-                            hmatel = hmatel - h2a_vvvv(a,c,e,f)
-                         elseif (d==c) then  ! case 3: d = c
-                            ! compute < ijkabc | h2a(vvvv) | ijkcef >
-                            hmatel = hmatel + h2a_vvvv(a,b,e,f)
-                         end if
-                         if (e==a) then      ! case 4: e = a
-                            ! compute < ijkabc | h2a(vvvv) | ijkdaf >
-                            hmatel = hmatel - h2a_vvvv(b,c,d,f)
-                         elseif (e==b) then  ! case 5: e = b
-                            ! compute < ijkabc | h2a(vvvv) | ijkdbf >
-                            hmatel = hmatel + h2a_vvvv(a,c,d,f)
-                         elseif (e==c) then  ! case 6: e = c
-                            ! compute < ijkabc | h2a(vvvv) | ijkdcf >
-                            hmatel = hmatel - h2a_vvvv(a,b,d,f)
-                         end if
-                         if (f==a) then      ! case 1: f = a
-                            ! compute < ijkabc | h2a(vvvv) | ijkdea >
-                            hmatel = hmatel + h2a_vvvv(b,c,d,e)
-                         elseif (f==b) then  ! case 2: f = b
-                            ! compute < ijkabc | h2a(vvvv) | ijkdeb >
-                            hmatel = hmatel - h2a_vvvv(a,c,d,e)
-                         elseif (f==c) then  ! case 3: f = c
-                            ! compute < ijkabc | h2a(vvvv) | ijkdec >
-                            hmatel = hmatel + h2a_vvvv(a,b,d,e)
-                         end if
-                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
-                      end do
-                      !!!! diagram 6: A(i/jk)A(a/bc) h2b(amie) * t3b(abeijm)
-                      do n = 1, nob
-                         do f = 1, nub
-                            jb = eck_table(f,n)
-                            ij = xixj_table(i,j); ik = xixj_table(i,k); jk = xixj_table(j,k);
-                            do jdet = id3b_h(jb,ij,1), id3b_h(jb,ij,2)
-                               d = t3_excits_buff(1,jdet); e = t3_excits_buff(2,jdet);
-                               ! (d,e) must be an ordered subset of (a,b,c)
-                               hmatel = 0.0d0
-                               if (d==a .and. e==b) then
-                                  ! compute < ijkabc | h2b(voov) | ijn~abf~ >
-                                  hmatel = hmatel + h2b_voov(c,n,k,f)
-                               else if (d==a .and. e==c) then
-                                  ! compute < ijkabc | h2b(voov) | ijn~acf~ >
-                                  hmatel = hmatel - h2b_voov(b,n,k,f)
-                               else if (d==b .and. e==c) then
-                                  ! compute < ijkabc | h2b(voov) | ijn~bcf~ >
-                                  hmatel = hmatel + h2b_voov(a,n,k,f)
-                               end if
-                               resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                            end do
-                            do jdet = id3b_h(jb,ik,1), id3b_h(jb,ik,2)
-                               d = t3_excits_buff(1,jdet); e = t3_excits_buff(2,jdet);
-                               ! (d,e) must be an ordered subset of (a,b,c)
-                               hmatel = 0.0d0
-                               if (d==a .and. e==b) then
-                                  ! compute < ijkabc | h2b(voov) | ikn~abf~ >
-                                  hmatel = hmatel - h2b_voov(c,n,j,f)
-                               else if (d==a .and. e==c) then
-                                  ! compute < ijkabc | h2b(voov) | ikn~acf~ >
-                                  hmatel = hmatel + h2b_voov(b,n,j,f)
-                               else if (d==b .and. e==c) then
-                                  ! compute < ijkabc | h2b(voov) | ikn~bcf~ >
-                                  hmatel = hmatel - h2b_voov(a,n,j,f)
-                               end if
-                               resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                            end do
-                            do jdet = id3b_h(jb,jk,1), id3b_h(jb,jk,2)
-                               d = t3_excits_buff(1,jdet); e = t3_excits_buff(2,jdet);
-                               ! (d,e) must be an ordered subset of (a,b,c)
-                               hmatel = 0.0d0
-                               if (d==a .and. e==b) then
-                                  ! compute < ijkabc | h2b(voov) | jkn~abf~ >
-                                  hmatel = hmatel + h2b_voov(c,n,i,f)
-                               else if (d==a .and. e==c) then
-                                  ! compute < ijkabc | h2b(voov) | jkn~acf~ >
-                                  hmatel = hmatel - h2b_voov(b,n,i,f)
-                               else if (d==b .and. e==c) then
-                                  ! compute < ijkabc | h2b(voov) | jkn~bcf~ >
-                                  hmatel = hmatel + h2b_voov(a,n,i,f)
-                               end if
-                               resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
-                            end do
-                         end do
-                      end do
-
-                  end do ! end loop over idet
-                  !$omp end do
-
-                  !$omp do
                   do idet = 1, n3aaa
                       a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
                       i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
@@ -2017,22 +2168,13 @@ module ccp_quadratic_loops_direct_opt
                       end do
 
                       resid(idet) = (resid(idet) + res_mm23)/(denom - shift)
-                      t3a_amps(idet) = t3a_amps(idet) + resid(idet)
-
                   end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
 
-                  ! deallocate sorting arrays
-                  deallocate(id3a_h)
-                  deallocate(xixjxk_table)
-                  deallocate(id3b_h)
-                  deallocate(xixj_table)
-                  deallocate(eck_table)
-                  ! deallocate t3 buffer arrays
-                  deallocate(t3_amps_buff)
-                  deallocate(t3_excits_buff)
+                  ! Update t3a in SIMD; make sure resid and t3a_amps are aligned!
+                  t3a_amps = t3a_amps + resid
 
               end subroutine update_t3a_p
 

@@ -446,8 +446,8 @@ if __name__ == "__main__":
 
     mol.build(
         atom=fluorine,
-        basis="6-31g",
-        symmetry="C2V",
+        basis="cc-pvdz",
+        symmetry="D2H",
         spin=0, 
         charge=0,
         unit="Bohr",
@@ -463,7 +463,7 @@ if __name__ == "__main__":
     hbar = get_ccsd_intermediates(T, H)
 
     #T3_excitations, T3_amplitudes = get_T3_list(T)
-    T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[0.8,0.8,1,1])
+    T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[1,1,1,1])
 
     T3_excitations["aaa"] = T3_excitations["aaa"].T
     T3_excitations["aab"] = T3_excitations["aab"].T
