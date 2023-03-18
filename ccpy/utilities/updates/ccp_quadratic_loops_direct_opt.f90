@@ -607,23 +607,13 @@ module ccp_quadratic_loops_direct_opt
                   integer, allocatable :: idx_table(:,:,:,:)
                   integer, allocatable :: loc_arr(:,:)
 
-                  integer, allocatable :: id3a_h(:,:)
-                  integer, allocatable :: xixjxk_table(:,:,:)
-                  integer, allocatable :: id3b_h(:,:,:)
-                  integer, allocatable :: eck_table(:,:)
-                  integer, allocatable :: xixj_table(:,:)
-
                   real(kind=8), allocatable :: t3_amps_buff(:)
                   integer, allocatable :: t3_excits_buff(:,:)
 
                   real(kind=8) :: I2A_vvov(nua, nua, noa, nua), I2A_vooo(nua, noa, noa, noa)
-                  real(kind=8) :: val, denom, t_amp, res_mm23, hmatel
+                  real(kind=8) :: val, denom, t_amp, res_mm23, hmatel, hmatel1
                   integer :: a, b, c, d, i, j, k, l, e, f, m, n, idet, jdet
                   integer :: idx
-
-                  integer :: ijk, ij, ik, jk, jb
-                  integer :: lmi, lmj, lmk, lij, lik, ljk
-                  real(kind=8) :: phase
 
                   ! Start the VT3 intermediates at Hbar (factor of 1/2 to compensate for antisymmetrization)
                   I2A_vooo(:,:,:,:) = 0.5d0 * H2A_vooo(:,:,:,:)
@@ -678,106 +668,8 @@ module ccp_quadratic_loops_direct_opt
                   resid = 0.0d0
 
                   !!!! diagram 1: -A(i/jk) h1a(mi) * t3a(abcmjk)
-                  !!!! diagram 2: A(a/bc) h1a(ae) * t3a(ebcijk)
-                  ! allocate sorting arrays
-                  allocate(id3a_h(noa*(noa-1)*(noa-2)/6,2))
-                  allocate(xixjxk_table(noa,noa,noa))
-                  id3a_h = 0; xixjxk_table = 0;
-                  call sort_t3a_h(t3a_excits, t3a_amps, id3a_h, xixjxk_table, noa, nua, n3aaa, resid)
-                  !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits,t3a_amps,&
-                  !$omp id3a_h,xixjxk_table,&
-                  !$omp H1A_oo,H1A_vv,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
-                  !$omp ijk,lij,lik,ljk,phase)
-                  !$omp do schedule(static)
-                  do idet = 1, n3aaa
-                     a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
-                     i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
-                     ijk = xixjxk_table(i,j,k)
-                     ! diagram 1: h1a(oo)
-                     do l = 1, noa
-                        lij = xixjxk_table(l,i,j)
-                        lik = xixjxk_table(l,i,k)
-                        ljk = xixjxk_table(l,j,k)
-                        if (lij/=0) then
-                           phase = 1.0d0 * lij/abs(lij)
-                           do jdet = id3a_h(abs(lij),1), id3a_h(abs(lij),2)
-                              d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
-                              if (a/=d .or. b/=e .or. c/=f) cycle ! skip any p(a) difference
-                              ! compute < ijkabc | h1a(oo) | lijabc >
-                              hmatel = -phase * h1a_oo(l,k)
-                              resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
-                          end do
-                        end if
-                        if (lik/=0) then
-                           phase = 1.0d0 * lik/abs(lik)
-                           do jdet = id3a_h(abs(lik),1), id3a_h(abs(lik),2)
-                              d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
-                              if (a/=d .or. b/=e .or. c/=f) cycle ! skip any p(a) difference
-                              ! compute < ijkabc | h1a(oo) | likabc >
-                              hmatel = phase * h1a_oo(l,j)
-                              resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
-                           end do
-                        end if
-                        if (ljk/=0) then
-                           phase = 1.0d0 * ljk/abs(ljk)
-                           do jdet = id3a_h(abs(ljk),1), id3a_h(abs(ljk),2)
-                              d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
-                              if (a/=d .or. b/=e .or. c/=f) cycle ! skip any p(a) difference
-                              ! compute < ijkabc | h1a(oo) | ljkabc >
-                              hmatel = -phase * h1a_oo(l,i)
-                              resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
-                           end do
-                        end if
-                     end do
-                     ! diagram 2: h1a(vv)
-                     do jdet = id3a_h(ijk,1), id3a_h(ijk,2)
-                        d = t3a_excits(1,jdet); e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
-                        if (nexc3(a,b,c,d,e,f)>=2) cycle
-                        hmatel = 0.0d0
-                        if (d==a .and. e==b) then     ! case 1: (d,e) -> (a,b)
-                                ! compute < ijkabc | h1a(vv) | ijkabf >
-                                hmatel = hmatel + h1a_vv(c,f)
-                        elseif (d==a .and. e==c) then ! case 2: (d,e) -> (a,c)
-                                ! compute < ijkabc | h1a(vv) | ijkacf >
-                                hmatel = hmatel - h1a_vv(b,f)
-                        elseif (d==b .and. e==c) then ! case 3: (d,e) -> (b,c)
-                                ! compute < ijkabc | h1a(vv) | ijkbcf >
-                                hmatel = hmatel + h1a_vv(a,f)
-                        end if
-                        if (d==a .and. f==b) then     ! case 4: (d,f) -> (a,b)
-                                ! compute < ijkabc | h1a(vv) | ijkaeb >
-                                hmatel = hmatel - h1a_vv(c,e)
-                        elseif (d==a .and. f==c) then ! case 5: (d,f) -> (a,c)
-                                ! compute < ijkabc | h1a(vv) | ijkaec >
-                                hmatel = hmatel + h1a_vv(b,e)
-                        elseif (d==b .and. f==c) then ! case 6: (d,f) -> (b,c)
-                                ! compute < ijkabc | h1a(vv) | ijkbec >
-                                hmatel = hmatel - h1a_vv(a,e)
-                        end if
-                        if (e==a .and. f==b) then     ! case 7: (e,f) -> (a,b)
-                                ! compute < ijkabc | h1a(vv) | ijkdab >
-                                hmatel = hmatel + h1a_vv(c,d)
-                        elseif (e==a .and. f==c) then ! case 8: (e,f) -> (a,c)
-                                ! compute < ijkabc | h1a(vv) | ijkdac >
-                                hmatel = hmatel - h1a_vv(b,d)
-                        elseif (e==b .and. f==c) then ! case 9: (e,f) -> (b,c)
-                                ! compute < ijkabc | h1a(vv) | ijkdbc >
-                                hmatel = hmatel + h1a_vv(a,d)
-                        end if
-                        resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
-                     end do
-                  end do
-                  !$omp end do
-                  !$omp end parallel
-                  !!!! END OMP PARALLEL SECTION !!!!
-                  ! deallocate sorting arrays
-                  deallocate(id3a_h,xixjxk_table)
-
-                  !!!! diagram 3: 1/2 A(i/jk) h2a(mnij) * t3a(abcmnk) 
+                  !!!! diagram 3: 1/2 A(i/jk) h2a(mnij) * t3a(abcmnk)
+                  ! NOTE: WITHIN THESE LOOPS, H1A(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2  
                   ! allocate new sorting arrays
                   allocate(loc_arr(nua*(nua-1)*(nua-2)/6*noa,2))
                   allocate(idx_table(nua,nua,nua,noa))
@@ -791,7 +683,7 @@ module ccp_quadratic_loops_direct_opt
                   !$omp loc_arr,idx_table,&
                   !$omp H1A_oo,H2A_oooo,&
                   !$omp noa,nua,n3aaa),&
-                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
                   do idet = 1, n3aaa
@@ -804,10 +696,12 @@ module ccp_quadratic_loops_direct_opt
                         ! compute < ijkabc | h2a(oooo) | lmkabc >
                         hmatel = h2a_oooo(l,m,i,j)
                         ! compute < ijkabc | h1a(oo) | lmkabc > = -A(ij)A(lm) h1a_oo(l,i) * delta(m,j)
-                        !if (m==j) hmatel = hmatel - h1a_oo(l,i) ! (1)
-                        !if (m==i) hmatel = hmatel + h1a_oo(l,j) ! (ij)
-                        !if (l==j) hmatel = hmatel + h1a_oo(m,i) ! (lm)
-                        !if (l==i) hmatel = hmatel - h1a_oo(m,j) ! (ij)(lm)
+                        hmatel1 = 0.0d0
+                        if (m==j) hmatel1 = hmatel1 - h1a_oo(l,i) ! (1)      < ijkabc | h1a(oo) | ljkabc > 
+                        if (m==i) hmatel1 = hmatel1 + h1a_oo(l,j) ! (ij)     < ijkabc | h1a(oo) | likabc > 
+                        if (l==j) hmatel1 = hmatel1 + h1a_oo(m,i) ! (lm)     < ijkabc | h1a(oo) | jmkabc >
+                        if (l==i) hmatel1 = hmatel1 - h1a_oo(m,j) ! (ij)(lm) < ijkabc | h1a(oo) | imkabc >
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      ! (ik)
@@ -818,10 +712,12 @@ module ccp_quadratic_loops_direct_opt
                            ! compute < ijkabc | h2a(oooo) | lmiabc >
                            hmatel = -h2a_oooo(l,m,k,j)
                            ! compute < ijkabc | h1a(oo) | lmiabc > = A(jk)A(lm) h1a_oo(l,k) * delta(m,j)
-                           !if (m==j) hmatel = hmatel + h1a_oo(l,k) ! (1)
-                           !if (m==k) hmatel = hmatel - h1a_oo(l,j) ! (jk)
-                           !if (l==j) hmatel = hmatel - h1a_oo(m,k) ! (lm)
-                           !if (l==k) hmatel = hmatel + h1a_oo(m,j) ! (jk)(lm)
+                           hmatel1 = 0.0d0
+                           if (m==j) hmatel1 = hmatel1 + h1a_oo(l,k) ! (1)      < ijkabc | h1a(oo) | ljiabc >
+                           if (m==k) hmatel1 = hmatel1 - h1a_oo(l,j) ! (jk)     < ijkabc | h1a(oo) | lkiabc >
+                           if (l==j) hmatel1 = hmatel1 - h1a_oo(m,k) ! (lm)
+                           if (l==k) hmatel1 = hmatel1 + h1a_oo(m,j) ! (jk)(lm)
+                           hmatel = hmatel + 0.5d0 * hmatel1
                            resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                         end do
                      end if
@@ -833,10 +729,12 @@ module ccp_quadratic_loops_direct_opt
                            ! compute < ijkabc | h2a(oooo) | lmjabc >
                            hmatel = -h2a_oooo(l,m,i,k)
                            ! compute < ijkabc | h1a(oo) | lmjabc > = A(ik)A(lm) h1a_oo(l,i) * delta(m,k)
-                           !if (m==k) hmatel = hmatel + h1a_oo(l,i) ! (1)
-                           !if (m==i) hmatel = hmatel - h1a_oo(l,k) ! (ik)
-                           !if (l==k) hmatel = hmatel - h1a_oo(m,i) ! (lm)
-                           !if (l==i) hmatel = hmatel + h1a_oo(m,k) ! (ik)(lm)
+                           hmatel1 = 0.0d0
+                           if (m==k) hmatel1 = hmatel1 + h1a_oo(l,i) ! (1)      < ijkabc | h1a(oo) | lkjabc >
+                           if (m==i) hmatel1 = hmatel1 - h1a_oo(l,k) ! (ik)
+                           if (l==k) hmatel1 = hmatel1 - h1a_oo(m,i) ! (lm)
+                           if (l==i) hmatel1 = hmatel1 + h1a_oo(m,k) ! (ik)(lm)
+                           hmatel = hmatel + 0.5d0 * hmatel1
                            resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                         end do
                      end if
@@ -854,7 +752,7 @@ module ccp_quadratic_loops_direct_opt
                   !$omp loc_arr,idx_table,&
                   !$omp H1A_oo,H2A_oooo,&
                   !$omp noa,nua,n3aaa),&
-                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
                   do idet = 1, n3aaa
@@ -867,10 +765,12 @@ module ccp_quadratic_loops_direct_opt
                         ! compute < ijkabc | h2a(oooo) | imnabc >
                         hmatel = h2a_oooo(m,n,j,k)
                         ! compute < ijkabc | h1a(oo) | imnabc > = -A(jk)A(mn) h1a_oo(m,j) * delta(n,k)
-                        !if (n==k) hmatel = hmatel - h1a_oo(m,j)
-                        !if (n==j) hmatel = hmatel + h1a_oo(m,k)
-                        !if (m==k) hmatel = hmatel + h1a_oo(n,j)
-                        !if (m==j) hmatel = hmatel - h1a_oo(n,k)
+                        hmatel1 = 0.0d0
+                        if (n==k) hmatel1 = hmatel1 - h1a_oo(m,j)  ! < ijkabc | h1a(oo) | imkabc >
+                        if (n==j) hmatel1 = hmatel1 + h1a_oo(m,k)
+                        if (m==k) hmatel1 = hmatel1 + h1a_oo(n,j)
+                        if (m==j) hmatel1 = hmatel1 - h1a_oo(n,k)
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      ! (ij)
@@ -881,10 +781,12 @@ module ccp_quadratic_loops_direct_opt
                            ! compute < ijkabc | h2a(oooo) | jmnabc >
                            hmatel = -h2a_oooo(m,n,i,k)
                            ! compute < ijkabc | h1a(oo) | jmnabc > = A(ik)A(mn) h1a_oo(m,i) * delta(n,k)
-                           !if (n==k) hmatel = hmatel + h1a_oo(m,i)
-                           !if (n==i) hmatel = hmatel - h1a_oo(m,k)
-                           !if (m==k) hmatel = hmatel - h1a_oo(n,i)
-                           !if (m==i) hmatel = hmatel + h1a_oo(n,k)
+                           hmatel1 = 0.0d0
+                           if (n==k) hmatel1 = hmatel1 + h1a_oo(m,i)
+                           if (n==i) hmatel1 = hmatel1 - h1a_oo(m,k)
+                           if (m==k) hmatel1 = hmatel1 - h1a_oo(n,i)
+                           if (m==i) hmatel1 = hmatel1 + h1a_oo(n,k)
+                           hmatel = hmatel + 0.5d0 * hmatel1
                            resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                         end do
                      end if
@@ -896,10 +798,12 @@ module ccp_quadratic_loops_direct_opt
                            ! compute < ijkabc | h2a(oooo) | kmnabc >
                            hmatel = -h2a_oooo(m,n,j,i)
                            ! compute < ijkabc | h1a(oo) | kmnabc > = A(ij)A(mn) h1a_oo(m,j) * delta(n,i)
-                           !if (n==i) hmatel = hmatel - h1a_oo(m,j)
-                           !if (n==j) hmatel = hmatel + h1a_oo(m,i)
-                           !if (m==i) hmatel = hmatel + h1a_oo(n,j)
-                           !if (m==j) hmatel = hmatel - h1a_oo(n,i)
+                           hmatel1 = 0.0d0
+                           if (n==i) hmatel1 = hmatel1 - h1a_oo(m,j)
+                           if (n==j) hmatel1 = hmatel1 + h1a_oo(m,i)
+                           if (m==i) hmatel1 = hmatel1 + h1a_oo(n,j)
+                           if (m==j) hmatel1 = hmatel1 - h1a_oo(n,i)
+                           hmatel = hmatel + 0.5d0 * hmatel1
                            resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                         end do
                      end if
@@ -930,10 +834,12 @@ module ccp_quadratic_loops_direct_opt
                         ! compute < ijkabc | h2a(oooo) | ljnabc >
                         hmatel = h2a_oooo(l,n,i,k)
                         ! compute < ijkabc | h1a(oo) | ljnabc > = -A(ik)A(ln) h1a_oo(l,i) * delta(n,k)
-                        !if (n==k) hmatel = hmatel - h1a_oo(l,i)
-                        !if (n==i) hmatel = hmatel + h1a_oo(l,k)
-                        !if (l==k) hmatel = hmatel + h1a_oo(n,i)
-                        !if (l==i) hmatel = hmatel - h1a_oo(n,k)
+                        hmatel1 = 0.0d0
+                        if (n==k) hmatel1 = hmatel1 - h1a_oo(l,i)
+                        if (n==i) hmatel1 = hmatel1 + h1a_oo(l,k)
+                        if (l==k) hmatel1 = hmatel1 + h1a_oo(n,i)
+                        if (l==i) hmatel1 = hmatel1 - h1a_oo(n,k)
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      ! (ij)
@@ -944,10 +850,12 @@ module ccp_quadratic_loops_direct_opt
                            ! compute < ijkabc | h2a(oooo) | linabc >
                            hmatel = -h2a_oooo(l,n,j,k)
                            ! compute < ijkabc | h1a(oo) | linabc > = A(jk)A(ln) h1a_oo(l,j) * delta(n,k)
-                           !if (n==k) hmatel = hmatel + h1a_oo(l,j)
-                           !if (n==j) hmatel = hmatel - h1a_oo(l,k)
-                           !if (l==k) hmatel = hmatel - h1a_oo(n,j)
-                           !if (l==j) hmatel = hmatel + h1a_oo(n,k)
+                           hmatel1 = 0.0d0
+                           if (n==k) hmatel1 = hmatel1 + h1a_oo(l,j)
+                           if (n==j) hmatel1 = hmatel1 - h1a_oo(l,k)
+                           if (l==k) hmatel1 = hmatel1 - h1a_oo(n,j)
+                           if (l==j) hmatel1 = hmatel1 + h1a_oo(n,k)
+                           hmatel = hmatel + 0.5d0 * hmatel1
                            resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                         end do
                      end if
@@ -959,10 +867,12 @@ module ccp_quadratic_loops_direct_opt
                            ! compute < ijkabc | h2a(oooo) | lknabc >
                            hmatel = -h2a_oooo(l,n,i,j)
                            ! compute < ijkabc | h1a(oo) | lknabc > = A(ij)A(ln) h1a_oo(l,i) * delta(n,j)
-                           !if (n==j) hmatel = hmatel + h1a_oo(l,i)
-                           !if (n==i) hmatel = hmatel - h1a_oo(l,j)
-                           !if (l==j) hmatel = hmatel - h1a_oo(n,i)
-                           !if (l==i) hmatel = hmatel + h1a_oo(n,j)
+                           hmatel1 = 0.0d0
+                           if (n==j) hmatel1 = hmatel1 + h1a_oo(l,i)
+                           if (n==i) hmatel1 = hmatel1 - h1a_oo(l,j)
+                           if (l==j) hmatel1 = hmatel1 - h1a_oo(n,i)
+                           if (l==i) hmatel1 = hmatel1 + h1a_oo(n,j)
+                           hmatel = hmatel + 0.5d0 * hmatel1
                            resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                         end do
                      end if
@@ -973,7 +883,9 @@ module ccp_quadratic_loops_direct_opt
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
+                  !!!! diagram 2: A(a/bc) h1a(ae) * t3a(ebcijk)
                   !!!! diagram 4: 1/2 A(c/ab) h2a(abef) * t3a(ebcijk) 
+                  ! NOTE: WITHIN THESE LOOPS, H1A(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2  
                   ! allocate new sorting arrays
                   allocate(loc_arr(noa*(noa-1)*(noa-2)/6*nua,2))
                   allocate(idx_table(noa,noa,noa,nua))
@@ -987,7 +899,7 @@ module ccp_quadratic_loops_direct_opt
                   !$omp loc_arr,idx_table,&
                   !$omp H1A_vv,H2A_vvvv,&
                   !$omp noa,nua,n3aaa),&
-                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
                   do idet = 1, n3aaa
@@ -999,6 +911,13 @@ module ccp_quadratic_loops_direct_opt
                         e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkaef >
                         hmatel = h2a_vvvv(b,c,e,f)
+                        ! compute < ijkabc | h1a(vv) | ijkaef > = A(bc)A(ef) h1a_vv(b,e) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 + h1a_vv(b,e) ! (1)
+                        if (b==f) hmatel1 = hmatel1 - h1a_vv(c,e) ! (bc)
+                        if (c==e) hmatel1 = hmatel1 - h1a_vv(b,f) ! (ef)
+                        if (b==e) hmatel1 = hmatel1 + h1a_vv(c,f) ! (bc)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      ! (ab)
@@ -1008,6 +927,13 @@ module ccp_quadratic_loops_direct_opt
                         e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkbef >
                         hmatel = -h2a_vvvv(a,c,e,f)
+                        ! compute < ijkabc | h1a(vv) | ijkbef > = -A(ac)A(ef) h1a_vv(a,e) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 - h1a_vv(a,e) ! (1)
+                        if (a==f) hmatel1 = hmatel1 + h1a_vv(c,e) ! (ac)
+                        if (c==e) hmatel1 = hmatel1 + h1a_vv(a,f) ! (ef)
+                        if (a==e) hmatel1 = hmatel1 - h1a_vv(c,f) ! (ac)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      end if
@@ -1018,6 +944,13 @@ module ccp_quadratic_loops_direct_opt
                         e = t3a_excits(2,jdet); f = t3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkcef >
                         hmatel = -h2a_vvvv(b,a,e,f)
+                        ! compute < ijkabc | h1a(vv) | ijkcef > = -A(ab)A(ef) h1a_vv(b,e) * delta(a,f)
+                        hmatel1 = 0.0d0
+                        if (a==f) hmatel1 = hmatel1 - h1a_vv(b,e) ! (1)
+                        if (b==f) hmatel1 = hmatel1 + h1a_vv(a,e) ! (ab)
+                        if (a==e) hmatel1 = hmatel1 + h1a_vv(b,f) ! (ef)
+                        if (b==e) hmatel1 = hmatel1 - h1a_vv(a,f) ! (ab)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      end if
@@ -1035,7 +968,7 @@ module ccp_quadratic_loops_direct_opt
                   !$omp loc_arr,idx_table,&
                   !$omp H1A_vv,H2A_vvvv,&
                   !$omp noa,nua,n3aaa),&
-                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
                   do idet = 1, n3aaa
@@ -1047,6 +980,13 @@ module ccp_quadratic_loops_direct_opt
                         d = t3a_excits(1,jdet); f = t3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdbf >
                         hmatel = h2a_vvvv(a,c,d,f)
+                        ! compute < ijkabc | h1a(vv) | ijkdbf > = A(ac)A(df) h1a_vv(a,d) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 + h1a_vv(a,d) ! (1)
+                        if (a==f) hmatel1 = hmatel1 - h1a_vv(c,d) ! (ac)
+                        if (c==d) hmatel1 = hmatel1 - h1a_vv(a,f) ! (df)
+                        if (a==d) hmatel1 = hmatel1 + h1a_vv(c,f) ! (ac)(df)
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      ! (ab)
@@ -1056,6 +996,13 @@ module ccp_quadratic_loops_direct_opt
                         d = t3a_excits(1,jdet); f = t3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdaf >
                         hmatel = -h2a_vvvv(b,c,d,f)
+                        ! compute < ijkabc | h1a(vv) | ijkdaf > = -A(bc)A(df) h1a_vv(b,d) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 - h1a_vv(b,d) ! (1)
+                        if (b==f) hmatel1 = hmatel1 + h1a_vv(c,d) ! (bc)
+                        if (c==d) hmatel1 = hmatel1 + h1a_vv(b,f) ! (df)
+                        if (b==d) hmatel1 = hmatel1 - h1a_vv(c,f) ! (bc)(df)
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      end if
@@ -1066,6 +1013,13 @@ module ccp_quadratic_loops_direct_opt
                         d = t3a_excits(1,jdet); f = t3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdcf >
                         hmatel = -h2a_vvvv(a,b,d,f)
+                        ! compute < ijkabc | h1a(vv) | ijkdcf > = -A(ab)A(df) h1a_vv(a,d) * delta(b,f)
+                        hmatel1 = 0.0d0
+                        if (b==f) hmatel1 = hmatel1 - h1a_vv(a,d) ! (1)
+                        if (a==f) hmatel1 = hmatel1 + h1a_vv(b,d) ! (ab)
+                        if (b==d) hmatel1 = hmatel1 + h1a_vv(a,f) ! (df)
+                        if (a==d) hmatel1 = hmatel1 - h1a_vv(b,f) ! (ab)(df)
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      end if 
@@ -1083,7 +1037,7 @@ module ccp_quadratic_loops_direct_opt
                   !$omp loc_arr,idx_table,&
                   !$omp H1A_vv,H2A_vvvv,&
                   !$omp noa,nua,n3aaa),&
-                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
                   do idet = 1, n3aaa
@@ -1095,6 +1049,13 @@ module ccp_quadratic_loops_direct_opt
                         d = t3a_excits(1,jdet); e = t3a_excits(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdec >
                         hmatel = h2a_vvvv(a,b,d,e)
+                        ! compute < ijkabc | h1a(vv) | ijkdec > = A(ab)A(de) h1a_vv(a,d) * delta(b,e)
+                        hmatel1 = 0.0d0
+                        if (b==e) hmatel1 = hmatel1 + h1a_vv(a,d) ! (1)
+                        if (a==e) hmatel1 = hmatel1 - h1a_vv(b,d) ! (ab)
+                        if (b==d) hmatel1 = hmatel1 - h1a_vv(a,e) ! (de)
+                        if (a==d) hmatel1 = hmatel1 + h1a_vv(b,e) ! (ab)(de)
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      ! (ac)
@@ -1104,6 +1065,13 @@ module ccp_quadratic_loops_direct_opt
                         d = t3a_excits(1,jdet); e = t3a_excits(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdea >
                         hmatel = -h2a_vvvv(c,b,d,e)
+                        ! compute < ijkabc | h1a(vv) | ijkdea > = -A(bc)A(de) h1a_vv(c,d) * delta(b,e)
+                        hmatel1 = 0.0d0
+                        if (b==e) hmatel1 = hmatel1 - h1a_vv(c,d) ! (1)
+                        if (c==e) hmatel1 = hmatel1 + h1a_vv(b,d) ! (bc)
+                        if (b==d) hmatel1 = hmatel1 + h1a_vv(c,e) ! (de)
+                        if (c==d) hmatel1 = hmatel1 - h1a_vv(b,e) ! (bc)(de)
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      end if
@@ -1114,6 +1082,13 @@ module ccp_quadratic_loops_direct_opt
                         d = t3a_excits(1,jdet); e = t3a_excits(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdeb >
                         hmatel = -h2a_vvvv(a,c,d,e)
+                        ! compute < ijkabc | h1a(vv) | ijkdeb > = -A(ac)A(de) h1a_vv(a,d) * delta(c,e)
+                        hmatel1 = 0.0d0
+                        if (c==e) hmatel1 = hmatel1 - h1a_vv(a,d) ! (1)
+                        if (a==e) hmatel1 = hmatel1 + h1a_vv(c,d) ! (ac)
+                        if (c==d) hmatel1 = hmatel1 + h1a_vv(a,e) ! (de)
+                        if (a==d) hmatel1 = hmatel1 - h1a_vv(c,e) ! (ac)(de)
+                        hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * t3a_amps(jdet)
                      end do
                      end if
@@ -4007,7 +3982,7 @@ module ccp_quadratic_loops_direct_opt
                   ! deallocate sorting arrays
                   deallocate(id3c_h,eai_table,xjxk_table)
 
-                  ! Update t3b in SIMD; make sure resid and t3b_amps are aligned!
+                  ! Update t3c in SIMD; make sure resid and t3c_amps are aligned!
                   t3c_amps = t3c_amps + resid
 
               end subroutine update_t3c_p
@@ -4308,66 +4283,6 @@ module ccp_quadratic_loops_direct_opt
                
               
 
-
-              subroutine sort_t3a_h(t3a_excits, t3a_amps, ID, XiXjXk_table, noa, nua, n3aaa, resid)
-
-                      integer, intent(in) :: n3aaa, noa, nua
-
-                      integer, intent(inout) :: t3a_excits(6,n3aaa)
-                      real(kind=8), intent(inout) :: t3a_amps(n3aaa)
-                      real(kind=8), optional, intent(inout) :: resid(n3aaa)
-                      integer, intent(inout) :: XiXjXk_table(noa,noa,noa)
-                      integer, intent(inout) :: ID(noa*(noa-1)*(noa-2)/6,2)
-
-                      integer :: i, j, k, a, b, c
-                      integer :: i1, j1, k1, a1, b1, c1
-                      integer :: i2, j2, k2, a2, b2, c2
-                      integer :: kout, ijk, ijk1, ijk2, idet
-                      integer, allocatable :: temp(:), idx(:)
-
-                      XiXjXk_table = 0
-                      kout = 1
-                      do i = 1, noa
-                         do j = i+1, noa
-                            do k = j+1, noa
-                               XiXjXk_table(i,j,k) = kout
-                               XiXjXk_table(j,k,i) = kout
-                               XiXjXk_table(k,i,j) = kout
-                               XiXjXk_table(i,k,j) = -kout
-                               XiXjXk_table(j,i,k) = -kout
-                               XiXjXk_table(k,j,i) = -kout
-                               kout = kout + 1
-                            end do
-                         end do
-                      end do
-
-                      allocate(temp(n3aaa),idx(n3aaa))
-                      do idet = 1, n3aaa
-                         i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
-                         ijk = XiXjXk_table(i,j,k)
-                         temp(idet) = ijk
-                      end do
-                      call argsort(temp, idx)
-                      t3a_excits = t3a_excits(:,idx)
-                      t3a_amps = t3a_amps(idx)
-                      if (present(resid)) resid = resid(idx)
-                      deallocate(temp,idx)
-
-                      ID = 1
-                      do idet = 2, n3aaa
-                         i1 = t3a_excits(4,idet-1); j1 = t3a_excits(5,idet-1); k1 = t3a_excits(6,idet-1);
-                         i2 = t3a_excits(4,idet);   j2 = t3a_excits(5,idet);   k2 = t3a_excits(6,idet);
-
-                         ijk1 = XiXjXk_table(i1,j1,k1)
-                         ijk2 = XiXjXk_table(i2,j2,k2)
-                         if (ijk1 /= ijk2) then
-                                 ID(ijk1,2) = idet - 1
-                                 ID(ijk2,1) = idet
-                         end if
-                      end do
-                      ID(ijk2,2) = n3aaa
-
-              end subroutine sort_t3a_h
 
               subroutine sort_t3b_h(t3b_excits, t3b_amps, ID, Eck_table, XiXj_table, noa, nua, nob, nub, n3aab, resid)
 
