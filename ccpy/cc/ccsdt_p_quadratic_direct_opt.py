@@ -49,17 +49,13 @@ def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace=None):
     # update T3
     if do_t3["aaa"]:
         T, dT, t3_excitations = update_t3a(T, dT, hbar, H, shift, t3_excitations)
-        T.bbb = T.aaa.copy()
-        t3_excitations["bbb"] = t3_excitations["aaa"].copy()
     if do_t3["aab"]:
         T, dT, t3_excitations = update_t3b(T, dT, hbar, H, shift, t3_excitations)
-        T.abb = T.aab.copy()
-        t3_excitations["abb"] = t3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])] 
-    #if flag_RHF:
-    #    T.abb = T.aab.copy()
-    #    t3_excitations["abb"] = t3_excitations["aab"][:, np.array([1, 2, 0, 5, 3, 4])] 
-    #    T.bbb = T.aaa.copy()
-    #    t3_excitations["bbb"] = t3_excitations["aaa"].copy()
+    if flag_RHF:
+       T.abb = T.aab.copy()
+       t3_excitations["abb"] = t3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
+       T.bbb = T.aaa.copy()
+       t3_excitations["bbb"] = t3_excitations["aaa"].copy()
 
     return T, dT
 

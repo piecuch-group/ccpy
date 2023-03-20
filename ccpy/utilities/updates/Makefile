@@ -24,16 +24,8 @@ EXT_SUFFIX := $(shell python -c "import sysconfig; print(sysconfig.get_config_va
 SOURCES := $(addsuffix .f90, $(MODULES))
 TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 
-#FFLAGS := -fopenmp \
-#		-fdefault-integer-8 \
-#		-fcheck=all -fbacktrace \
-#		-march=native \
-#		-fPIC \
-#		-shared \
-#		-ffixed-line-length-132 \
-#		-O3 \
-#		-std=f2018
-FFLAGS := -std=f2018 -O3 -ffree-line-length-512 -fopenmp -lgomp
+# If OpenMP is not available, remove the last two flags, -fopenmp, -lgomp
+FFLAGS := -std=f2018 -O3 -ffree-line-length-512# -fopenmp -lgomp
 
 ifeq ($(CONDA_PREFIX),)
 	MKLFOLDER := $(MKLROOT)/lib/intel64

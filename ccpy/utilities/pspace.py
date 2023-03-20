@@ -457,7 +457,7 @@ def count_excitations_in_pspace_with_symmetry(pspace, system):
     return excitation_count
 
 
-def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, system, ordered_index=False):
+def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, RHF_symmetry):
     """Expand the size of the previous P space using the determinants contained in the list
     of triples (stored as a, b, c, i, j, k) in triples_list. The variable triples_list stores
     triples in spinorbital form, where all orbital indices start from 1 and odd indices
@@ -488,18 +488,14 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, syst
         "bbb" : []
     }
 
-    if ordered_index:
-        ct_aaa = np.max(pspace["aaa"].flatten()) + 1
-        ct_aab = np.max(pspace["aab"].flatten()) + 1
-        ct_abb = np.max(pspace["abb"].flatten()) + 1
-        ct_bbb = np.max(pspace["bbb"].flatten()) + 1
-
     num_add = triples_list.shape[0]
+
     n3aaa = 0
     n3aab = 0
     n3abb = 0
     n3bbb = 0
     for n in range(num_add):
+
         num_alpha = int(sum([x % 2 for x in triples_list[n, :]]) / 2)
         idx = [spatial_orb_idx(p) - 1 for p in triples_list[n, :]]
         a, b, c, i, j, k = idx
@@ -511,11 +507,16 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, syst
                 for perms_occ in permutations((i, j, k)):
                     a, b, c = perms_unocc
                     i, j, k = perms_occ
-                    if ordered_index:
-                        new_pspace['aaa'][a, b, c, i, j, k] = ct_aaa
-                        ct_aaa += 1
-                    else:
-                        new_pspace['aaa'][a, b, c, i, j, k] = True
+                    new_pspace['aaa'][a, b, c, i, j, k] = True
+
+            if RHF_symmetry: # include the same bbb excitations if RHF symmetry is applied
+                new_t3_excitations["bbb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
+                n3bbb += 1
+                for perms_unocc in permutations((a, b, c)):
+                    for perms_occ in permutations((i, j, k)):
+                        a, b, c = perms_unocc
+                        i, j, k = perms_occ
+                        new_pspace['bbb'][a, b, c, i, j, k] = True
                    
         if num_alpha == 2:
             new_t3_excitations["aab"].append([a+1, b+1, c+1, i+1, j+1, k+1])
@@ -524,36 +525,35 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, syst
                 for perms_occ in permutations((i, j)):
                     a, b = perms_unocc
                     i, j = perms_occ
-                    if ordered_index:
-                        new_pspace['aab'][a, b, c, i, j, k] = ct_aab
-                        ct_aab += 1
-                    else:
-                        new_pspace['aab'][a, b, c, i, j, k] = True
+                    new_pspace['aab'][a, b, c, i, j, k] = True
 
-        if num_alpha == 1:
-            new_t3_excitations["abb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
-            n3abb += 1
-            for perms_unocc in permutations((b, c)):
-                for perms_occ in permutations((j, k)):
-                    b, c = perms_unocc
-                    j, k = perms_occ
-                    if ordered_index:
-                        new_pspace['abb'][a, b, c, i, j, k] = ct_abb
-                        ct_abb += 1
-                    else:
+            if RHF_symmetry: # include the same abb excitations if RHF symmetry is applied
+                new_t3_excitations["abb"].append([c + 1, a + 1, b + 1, k + 1, i + 1, j + 1])
+                n3abb += 1
+                for perms_unocc in permutations((a, b)):
+                    for perms_occ in permutations((i, j)):
+                        a, b = perms_unocc
+                        i, j = perms_occ
+                        new_pspace['abb'][c, a, b, k, i, j] = True
+
+        if not RHF_symmetry: # only consider adding abb and bbb excitations if not using RHF
+
+            if num_alpha == 1:
+                new_t3_excitations["abb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                n3abb += 1
+                for perms_unocc in permutations((b, c)):
+                    for perms_occ in permutations((j, k)):
+                        b, c = perms_unocc
+                        j, k = perms_occ
                         new_pspace['abb'][a, b, c, i, j, k] = True
 
-        if num_alpha == 0:
-            new_t3_excitations["bbb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
-            n3bbb += 1
-            for perms_unocc in permutations((a, b, c)):
-                for perms_occ in permutations((i, j, k)):
-                    a, b, c = perms_unocc
-                    i, j, k = perms_occ
-                    if ordered_index:
-                        new_pspace['bbb'][a, b, c, i, j, k] = ct_bbb
-                        ct_bbb += 1
-                    else:
+            if num_alpha == 0:
+                new_t3_excitations["bbb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                n3bbb += 1
+                for perms_unocc in permutations((a, b, c)):
+                    for perms_occ in permutations((i, j, k)):
+                        a, b, c = perms_unocc
+                        i, j, k = perms_occ
                         new_pspace['bbb'][a, b, c, i, j, k] = True
 
     # Update the t3 excitation lists with the new content from the moment selection
@@ -565,7 +565,7 @@ def add_spinorbital_triples_to_pspace(triples_list, pspace, t3_excitations, syst
     return new_pspace, new_t3_excitations
 
 
-def adaptive_triples_selection_from_moments(moments, pspace, t3_excitations, num_add, system):
+def adaptive_triples_selection_from_moments(moments, pspace, t3_excitations, num_add, system, RHF_symmetry):
 
     def _add_t3_excitations(new_t3_excitations, old_t3_excitations, num_add, spincase):
         if num_add > 0:
@@ -599,11 +599,16 @@ def adaptive_triples_selection_from_moments(moments, pspace, t3_excitations, num
     n3bbb = system.noccupied_beta**3 * system.nunoccupied_beta**3
 
     # Create full moment vector and populate it with different spin cases
-    mvec = np.zeros(n3aaa + n3aab + n3abb + n3bbb)
-    mvec[:n3aaa] = moments["aaa"].flatten()
-    mvec[n3aaa:n3aaa+n3aab] = moments["aab"].flatten()
-    mvec[n3aaa+n3aab:n3aaa+n3aab+n3abb] = moments["abb"].flatten()
-    mvec[n3aaa+n3aab+n3abb:] = moments["bbb"].flatten()
+    if RHF_symmetry:
+        mvec = np.zeros(n3aaa + n3aab)
+        mvec[:n3aaa] = moments["aaa"].flatten()
+        mvec[n3aaa:] = moments["aab"].flatten()
+    else:
+        mvec = np.zeros(n3aaa + n3aab + n3abb + n3bbb)
+        mvec[:n3aaa] = moments["aaa"].flatten()
+        mvec[n3aaa:n3aaa + n3aab] = moments["aab"].flatten()
+        mvec[n3aaa + n3aab:n3aaa + n3aab + n3abb] = moments["abb"].flatten()
+        mvec[n3aaa + n3aab + n3abb:] = moments["bbb"].flatten()
 
     idx = np.flip(np.argsort(abs(mvec))) # sort the moments in descending order by absolute value
 
@@ -673,40 +678,6 @@ def adaptive_triples_selection_from_moments(moments, pspace, t3_excitations, num
     new_t3_excitations = _add_t3_excitations(new_t3_excitations, t3_excitations, n3d, "bbb")
 
     return new_pspace, new_t3_excitations
-
-
-def add_spinorbital_quadruples_to_pspace(quadruples_list, pspace):
-    """Expand the size of the previous P space using the determinants contained in the list
-    of quadruples (stored as a, b, c, d, i, j, k, l) in quadruples_list. The variable quadruples_list stores
-    quadruples in spinorbital form, where all orbital indices start from 1 and odd indices
-    correspond to alpha orbitals while even indices corresopnd to beta orbitals."""
-
-    # should these be copied?
-    new_pspace = {
-        "aaaa": pspace["aaaa"],
-        "aaab": pspace["aaab"],
-        "aabb": pspace["aabb"],
-        "abbb": pspace["abbb"],
-        "bbbb": pspace["bbbb"],
-    }
-
-    num_add = quadruples_list.shape[0]
-    for n in range(num_add):
-        num_alpha = int(sum([x % 2 for x in quadruples_list[n, :]]) / 2)
-        idx = [spatial_orb_idx(p) - 1 for p in quadruples_list[n, :]]
-        a, b, c, d, i, j, k, l = idx
-        if num_alpha == 4:
-            new_pspace['aaaa'][a, b, c, d, i, j, k, l] = 1
-        elif num_alpha == 3:
-            new_pspace['aaab'][a, b, c, d, i, j, k, l] = 1
-        elif num_alpha == 2:
-            new_pspace['aabb'][a, b, c, d, i, j, k, l] = 1
-        elif num_alpha == 1:
-            new_pspace['abbb'][a, b, c, d, i, j, k, l] = 1
-        else:
-            new_pspace['bbbb'][a, b, c, d, i, j, k, l] = 1
-
-    return new_pspace
 
 
 def get_active_pspace(system, nact_o, nact_u, num_active=1):

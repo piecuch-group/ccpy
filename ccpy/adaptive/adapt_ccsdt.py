@@ -5,7 +5,7 @@ from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace_
 from ccpy.utilities.symmetry_count import count_triples
 from ccpy.drivers.driver import cc_driver, lcc_driver
 from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
-from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccp3_with_moments, calc_ccpert3_with_selection, calc_ccpert3_with_moments, calc_ccp3
+from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccp3_with_moments, calc_ccpert3_with_selection, calc_ccpert3_with_moments
 from ccpy.utilities.pspace import adaptive_triples_selection_from_moments
 
 def adapt_ccsdt(calculation, system, hamiltonian, T=None, pert_corr=False, on_the_fly=True, relaxed=True):
@@ -51,6 +51,8 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
     # get total number of external determinants in the problem (e.g., triples)
     count_sym, _ = count_triples(system)
     num_total = count_sym[system.point_group_irrep_to_number[system.reference_symmetry]]
+
+    # Get the increment of 1% triples
     n1 = int(0.01 * num_total)
     print("   The total number of triples of ground-state symmetry ({}) is {}".format(system.reference_symmetry, num_total))
     print("   The increment of 1% is {}".format(n1))
@@ -65,12 +67,18 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
             num_dets_to_add[i] = n1 * (calculation.adaptive_percentages[i + 1] - calculation.adaptive_percentages[i])
     num_dets_to_add[-1] = 1
 
+    # half the number of determinants to add for RHF symmetry case
+    if calculation.RHF_symmetry:
+        for i in range(num_calcs - 1):
+            num_dets_to_add[i] = int(num_dets_to_add[i] / 2)
+
     ccp_energy = np.zeros(num_calcs)
     ccpq_energy = np.zeros(num_calcs)
     for n in range(num_calcs):
 
         percentage = calculation.adaptive_percentages[n]
-        print("\n   Performing CC(P;Q) calculation with", percentage, "% triples (", n1 * percentage, "triples )")
+        print("\n   ===========================================================================================")
+        print("        Performing CC(P;Q) calculation with", percentage, "% triples (", n1 * percentage, "triples )")
         print("   ===========================================================================================\n")
 
         # Count the excitations in the current P space
@@ -86,11 +94,9 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
         # Perform CC(P) calculation using previous T vector as initial guess
         if n > 0:
             # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace, T=T)
-            # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations) # linear
             T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations, pspace=pspace[0])
         else:
             # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace)
-            # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations) # linear
             T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations, pspace=pspace[0])
 
         if pert_corr:
@@ -129,7 +135,7 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
         # add the triples
         if n < num_calcs - 1:
             if on_the_fly:
-                pspace[0], t3_excitations = add_spinorbital_triples_to_pspace(triples_list, pspace[0], t3_excitations, system)
+                pspace[0], t3_excitations = add_spinorbital_triples_to_pspace(triples_list, pspace[0], t3_excitations, calculation.RHF_symmetry)
             else:
                 pspace[0], t3_excitations = adaptive_triples_selection_from_moments(moments, pspace[0], t3_excitations, num_dets_to_add[n], system)
 
