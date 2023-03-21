@@ -1,6 +1,7 @@
 import time
-
 import numpy as np
+
+from ccpy.constants.constants import hartreetoeV
 from ccpy.drivers.cc_energy import get_cc_energy
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
 from ccpy.utilities.updates import crcc_loops
@@ -160,6 +161,10 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
     delta_vee_B = [x + y for x, y in zip(omega, dcorrection_B)]
     delta_vee_C = [x + y for x, y in zip(omega, dcorrection_C)]
     delta_vee_D = [x + y for x, y in zip(omega, dcorrection_D)]
+    delta_vee_eV_A = [hartreetoeV * x for x in delta_vee_A]
+    delta_vee_eV_B = [hartreetoeV * x for x in delta_vee_B]
+    delta_vee_eV_C = [hartreetoeV * x for x in delta_vee_C]
+    delta_vee_eV_D = [hartreetoeV * x for x in delta_vee_D]
 
     print('   CR-EOMCC(2,3) / δ-CR-EOMCC(2,3) Calculation Summary')
     print('   -------------------------------------------------')
@@ -167,7 +172,7 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
     for n in range(nroot):
         print("   State", n + 1)
         print("   ---------")
-        print("   EOMCCSD = {:>10.10f}    ω = {:>10.10f}".format(system.reference_energy + cc_energy + omega[n], omega[n]))
+        print("   EOMCCSD = {:>10.10f}    ω = {:>10.10f}     VEE = {:>10.5f} eV".format(system.reference_energy + cc_energy + omega[n], omega[n], hartreetoeV * omega[n]))
         print(
             "   CR-EOMCC(2,3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
                 total_energy_A[n], energy_A[n], correction_A[n]
@@ -184,28 +189,28 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
             )
         )
         print(
-            "   CR-EOMCC(2,3)_D = {:>10.10f}     ΔE_D = {:>10.10f}     δ_D = {:>10.10f}\n".format(
+            "   CR-EOMCC(2,3)_D = {:>10.10f}     ΔE_D = {:>10.10f}     δ_D = {:>10.10f}".format(
                 total_energy_D[n], energy_D[n], correction_D[n]
             )
         )
         print(
-            "   δ-CR-EOMCC(2,3)_A = {:>10.10f}     δ_A = {:>10.10f}".format(
-                delta_vee_A[n], dcorrection_A[n]
+            "   δ-CR-EOMCC(2,3)_A = {:>10.10f}     δ_A = {:>10.10f}     VEE = {:>10.5f} eV".format(
+                delta_vee_A[n], dcorrection_A[n], delta_vee_eV_A[n]
             )
         )
         print(
-            "   δ-CR-EOMCC(2,3)_B = {:>10.10f}     δ_B = {:>10.10f}".format(
-                delta_vee_B[n], dcorrection_B[n]
+            "   δ-CR-EOMCC(2,3)_B = {:>10.10f}     δ_B = {:>10.10f}     VEE = {:>10.5f} eV".format(
+                delta_vee_B[n], dcorrection_B[n], delta_vee_eV_B[n]
             )
         )
         print(
-            "   δ-CR-EOMCC(2,3)_C = {:>10.10f}     δ_C = {:>10.10f}".format(
-                delta_vee_C[n], dcorrection_C[n]
+            "   δ-CR-EOMCC(2,3)_C = {:>10.10f}     δ_C = {:>10.10f}     VEE = {:>10.5f} eV".format(
+                delta_vee_C[n], dcorrection_C[n], delta_vee_eV_C[n]
             )
         )
         print(
-            "   δ-CR-EOMCC(2,3)_D = {:>10.10f}     δ_D = {:>10.10f}".format(
-                delta_vee_D[n], dcorrection_D[n]
+            "   δ-CR-EOMCC(2,3)_D = {:>10.10f}     δ_D = {:>10.10f}     VEE = {:>10.5f} eV\n".format(
+                delta_vee_D[n], dcorrection_D[n], delta_vee_eV_D[n]
             )
         )
 
