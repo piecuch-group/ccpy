@@ -50,7 +50,7 @@ A list of all CC/EOMCC routines available in CCpy:
   - CR-CC(2,4)
   - CCSDTQ
   - EOMCCSD
-  - CR-EOMCC(2,3)
+  - CR-EOMCC(2,3) and its size-intensive δ-CR-EOMCC(2,3) extension
   - EOMCCSDt
   - EOMCCSDT
   - ec-CC-II
