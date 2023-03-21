@@ -1,5 +1,61 @@
 module ccp3_adaptive_loops
 
+    ! Now the computational bottleneck is here, but we have a few tricks to play to help improve the speed and memory.
+    !
+    ! (1) The main time-killer is here:
+    !    if ( abs(LM/D) > abs(moments(idx_min)) ) then
+    !        triples_list(idx_min, :) = (/2*a-1, 2*b-1, 2*c-1, 2*i-1, 2*j-1, 2*k-1/)
+    !        moments(idx_min) = LM/D
+    !        idx_min = minloc(abs(moments), dim=1)
+    !    end if
+    ! what's happening is that you are grabbing the triples index (which is not strided nicely, should transpose)
+    ! and performing a minloc search (brute force) for every i,j,k,a,b,c in the Q space, which is basically
+    ! all triples. The common solution for this kind of problem where you want the largest N elements of a continuous
+    ! stream of data is something called a min heap. A heap is a data structure that allows for efficient pop, replace,
+    ! insert operations. In particular, the min heap can pop and replace the smallest element in O(1) time complexity,
+    ! making it ideal for repeated usage in this loop.
+    !
+    ! (2) These routines are still making usage of a 6D logical pspace array. Although the 1-bit size of each
+    !     element makes it 64 times smaller than an array the size of T3, we should still aim for better. Here,
+    !     there exist a lot of solutions and the right one largely depends on the ability of the min heap described
+    !     in (1) to relieve the main bottleneck. If you have time to spare, you could do a completely memory-less
+    !     algorithm in the following way. Suppose t3_excits(6,n3) is sorted in (i,j,k)->(a,b,c) order to begin with.
+    !     Then, the following would work
+    !
+    !     ! given loc_arr and idx_table adapted to (i,j,k)->(a,b,c) ordering
+    !     do i = 1, noa
+    !        do j = i+1, noa
+    !           do k = j+1, noa
+    !
+    !              ! Take some time to generate the Q space array on-the-fly for a given (i,j,k) block
+    !              allocate(qspace(nua,nua,nua))
+    !              idx = idx_table(i,j,k)
+    !              if (idx==0) then
+    !                 qspace = .true.
+    !              else
+    !                 qspace = .false.
+    !              end if
+    !              do idet = loc_arr(idx,1), loc_arr(idx,2)
+    !                 a = t3_excits(1,idet); b = t3_excits(2,idet); c = t3_excits(3,idet);
+    !                 qspace(a,b,c) = .false.
+    !              end do
+    !
+    !              ! perform moment update loop
+    !              do a = 1, nua
+    !                 do b = a+1, nua
+    !                    do c = b+1, nua
+    !                        ...
+    !                    end do
+    !                 end do
+    !              end do
+    !           end do
+    !        end do
+    !     end do
+    !
+    ! Otherwise, another straightforward solution would be to create the Q space once and store it on disk. Then,
+    ! read it in for every (i,j,k) in the loop so that the memory pressure is not too great. Use it and put it away.
+
+
     implicit none
 
     contains

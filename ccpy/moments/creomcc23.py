@@ -16,10 +16,16 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
     assert(len(omega) == nroot)
     assert(len(r0) == nroot)
 
+    # Containers for the CR-EOMCC(2,3) correction
     correction_A = [0.0] * nroot
     correction_B = [0.0] * nroot
     correction_C = [0.0] * nroot
     correction_D = [0.0] * nroot
+    # Containers for the delta-CR-EOMCC(2,3) correction
+    dcorrection_A = [0.0] * nroot
+    dcorrection_B = [0.0] * nroot
+    dcorrection_C = [0.0] * nroot
+    dcorrection_D = [0.0] * nroot
 
     # if list of L vectors including ground state is passed in, take just the excited states
     if len(L) == nroot + 1:
@@ -38,7 +44,8 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
         I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
         chi2A_vvvo, chi2A_ovoo = calc_eomm23a_intermediates(T, R[n], H)
         # perform correction in-loop
-        dA_aaa, dB_aaa, dC_aaa, dD_aaa = crcc_loops.crcc_loops.creomcc23a_opt(omega[n], r0[n], T.aa, R[n].aa, L[n].a, L[n].aa,
+        dA_aaa, dB_aaa, dC_aaa, dD_aaa, ddA_aaa, ddB_aaa, ddC_aaa, ddD_aaa = crcc_loops.crcc_loops.creomcc23a_opt(
+                                                                   omega[n], r0[n], T.aa, R[n].aa, L[n].a, L[n].aa,
                                                                    H.aa.vooo, I2A_vvov, H.aa.vvov, chi2A_vvvo,
                                                                    chi2A_ovoo, H0.aa.oovv, H.a.ov, H.aa.vovv,
                                                                    H.aa.ooov, H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
@@ -59,7 +66,8 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
             chi2B_vooo,
         ) = calc_eomcc23b_intermediates(T, R[n], H)
         # perform correction in-loop
-        dA_aab, dB_aab, dC_aab, dD_aab = crcc_loops.crcc_loops.creomcc23b_opt(omega[n], r0[n], T.aa, T.ab, R[n].aa, R[n].ab, L[n].a, L[n].b, L[n].aa, L[n].ab,
+        dA_aab, dB_aab, dC_aab, dD_aab, ddA_aab, ddB_aab, ddC_aab, ddD_aab = crcc_loops.crcc_loops.creomcc23b_opt(
+                                                                   omega[n], r0[n], T.aa, T.ab, R[n].aa, R[n].ab, L[n].a, L[n].b, L[n].aa, L[n].ab,
                                                                    I2B_ovoo, I2B_vooo, I2A_vooo, H.ab.vvvo, H.ab.vvov,
                                                                    H.aa.vvov, H.ab.vovv, H.ab.ovvv, H.aa.vovv,
                                                                    H.ab.ooov, H.ab.oovo, H.aa.ooov,
@@ -77,6 +85,11 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
             correction_B[n] = 2.0 * dB_aaa + 2.0 * dB_aab
             correction_C[n] = 2.0 * dC_aaa + 2.0 * dC_aab
             correction_D[n] = 2.0 * dD_aaa + 2.0 * dD_aab
+
+            dcorrection_A[n] = 2.0 * ddA_aaa + 2.0 * ddA_aab
+            dcorrection_B[n] = 2.0 * ddB_aaa + 2.0 * ddB_aab
+            dcorrection_C[n] = 2.0 * ddC_aaa + 2.0 * ddC_aab
+            dcorrection_D[n] = 2.0 * ddD_aaa + 2.0 * ddD_aab
         else:
             #### abb correction ####
             # calculate intermediates
@@ -91,7 +104,8 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
                 chi2B_vvvo,
                 chi2B_ovoo,
             ) = calc_eomcc23c_intermediates(T, R[n], H)
-            dA_abb, dB_abb, dC_abb, dD_abb = crcc_loops.crcc_loops.creomcc23c_opt(omega[n], r0[n], T.ab, T.bb, R[n].ab, R[n].bb, L[n].a, L[n].b, L[n].ab, L[n].bb,
+            dA_abb, dB_abb, dC_abb, dD_abb, ddA_abb, ddB_abb, ddC_abb, ddD_abb = crcc_loops.crcc_loops.creomcc23c_opt(
+                                                                                  omega[n], r0[n], T.ab, T.bb, R[n].ab, R[n].bb, L[n].a, L[n].b, L[n].ab, L[n].bb,
                                                                                   I2B_vooo, I2C_vooo, I2B_ovoo, H.ab.vvov, H.bb.vvov,
                                                                                   H.ab.vvvo, H.ab.ovvv, H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
                                                                                   H.bb.ooov, chi2B_vvov, chi2B_vooo, chi2C_vvvo, chi2C_vooo,
@@ -107,7 +121,8 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
             # calculate intermediates
             I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
             chi2C_vvvo, chi2C_ovoo = calc_eomm23d_intermediates(T, R[n], H)
-            dA_bbb, dB_bbb, dC_bbb, dD_bbb = crcc_loops.crcc_loops.creomcc23d_opt(omega[n], r0[n], T.bb, R[n].bb, L[n].b, L[n].bb,
+            dA_bbb, dB_bbb, dC_bbb, dD_bbb, ddA_bbb, ddB_bbb, ddC_bbb, ddD_bbb = crcc_loops.crcc_loops.creomcc23d_opt(
+                                                                                  omega[n], r0[n], T.bb, R[n].bb, L[n].b, L[n].bb,
                                                                                   H.bb.vooo, I2C_vvov, H.bb.vvov,
                                                                                   chi2C_vvvo, chi2C_ovoo, H0.bb.oovv,
                                                                                   H.b.ov, H.bb.vovv, H.bb.ooov, H0.b.oo,
@@ -119,6 +134,11 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
             correction_B[n] = dB_aaa + dB_aab + dB_abb + dB_bbb
             correction_C[n] = dC_aaa + dC_aab + dC_abb + dC_bbb
             correction_D[n] = dD_aaa + dD_aab + dD_abb + dD_bbb
+
+            dcorrection_A[n] = ddA_aaa + ddA_aab + ddA_abb + ddA_bbb
+            dcorrection_B[n] = ddB_aaa + ddB_aab + ddB_abb + ddB_bbb
+            dcorrection_C[n] = ddC_aaa + ddC_aab + ddC_abb + ddC_bbb
+            dcorrection_D[n] = ddD_aaa + ddD_aab + ddD_abb + ddD_bbb
 
     t_end = time.time()
     minutes, seconds = divmod(t_end - t_start, 60)
@@ -136,8 +156,13 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
     total_energy_C = [system.reference_energy + x for x in energy_C]
     total_energy_D = [system.reference_energy + x for x in energy_D]
 
-    print('   CR-EOMCC(2,3) Calculation Summary')
-    print('   -------------------------------------')
+    delta_vee_A = [x + y for x, y in zip(omega, dcorrection_A)]
+    delta_vee_B = [x + y for x, y in zip(omega, dcorrection_B)]
+    delta_vee_C = [x + y for x, y in zip(omega, dcorrection_C)]
+    delta_vee_D = [x + y for x, y in zip(omega, dcorrection_D)]
+
+    print('   CR-EOMCC(2,3) / δ-CR-EOMCC(2,3) Calculation Summary')
+    print('   -------------------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
     for n in range(nroot):
         print("   State", n + 1)
@@ -161,6 +186,26 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
         print(
             "   CR-EOMCC(2,3)_D = {:>10.10f}     ΔE_D = {:>10.10f}     δ_D = {:>10.10f}\n".format(
                 total_energy_D[n], energy_D[n], correction_D[n]
+            )
+        )
+        print(
+            "   δ-CR-EOMCC(2,3)_A = {:>10.10f}     δ_A = {:>10.10f}".format(
+                delta_vee_A[n], dcorrection_A[n]
+            )
+        )
+        print(
+            "   δ-CR-EOMCC(2,3)_B = {:>10.10f}     δ_B = {:>10.10f}".format(
+                delta_vee_B[n], dcorrection_B[n]
+            )
+        )
+        print(
+            "   δ-CR-EOMCC(2,3)_C = {:>10.10f}     δ_C = {:>10.10f}".format(
+                delta_vee_C[n], dcorrection_C[n]
+            )
+        )
+        print(
+            "   δ-CR-EOMCC(2,3)_D = {:>10.10f}     δ_D = {:>10.10f}".format(
+                delta_vee_D[n], dcorrection_D[n]
             )
         )
 

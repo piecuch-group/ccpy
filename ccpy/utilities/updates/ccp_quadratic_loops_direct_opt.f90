@@ -36,7 +36,7 @@ module ccp_quadratic_loops_direct_opt
 
                       ! store x1a in resid container
                       resid(:,:) = X1A(:,:)
-
+                      ! compute < ia | (H(2) * T3)_C | 0 >
                       do idet = 1, n3aaa
                           t_amp = t3a_amps(idet)
                           ! A(a/ef)A(i/mn) h2a(mnef) * t3a(aefimn)
@@ -52,7 +52,6 @@ module ccp_quadratic_loops_direct_opt
                           resid(e,n) = resid(e,n) + H2A_oovv(m,i,a,f) * t_amp ! (ae)(in)
                           resid(f,n) = resid(f,n) + H2A_oovv(m,i,e,a) * t_amp ! (af)(in)
                       end do
-
                       do idet = 1, n3aab
                           t_amp = t3b_amps(idet)
                           ! A(ae)A(im) h2b(mnef) * t3b(aefimn)
@@ -63,7 +62,6 @@ module ccp_quadratic_loops_direct_opt
                           resid(a,m) = resid(a,m) - H2B_oovv(i,n,e,f) * t_amp ! (im)
                           resid(e,m) = resid(e,m) + H2B_oovv(i,n,a,f) * t_amp ! (ae)(im)
                       end do
-
                       do idet = 1, n3abb
                           t_amp = t3c_amps(idet)
                           ! h2c(mnef) * t3c(aefimn)
@@ -71,15 +69,12 @@ module ccp_quadratic_loops_direct_opt
                           i = t3c_excits(4,idet); m = t3c_excits(5,idet); n = t3c_excits(6,idet);
                           resid(a,i) = resid(a,i) + H2A_oovv(m,n,e,f) * t_amp ! (1)
                       end do
-
+                      ! update loop
                       do i = 1, noa
                           do a = 1, nua
                               denom = fA_oo(i,i) - fA_vv(a,a)
-
                               val = resid(a,i)/(denom - shift)
-
                               t1a(a,i) = t1a(a,i) + val
-
                               resid(a,i) = val
                           end do
                       end do
@@ -116,7 +111,7 @@ module ccp_quadratic_loops_direct_opt
 
                       ! Store x1b in residual container
                       resid(:,:) = X1B(:,:)
-
+                      ! compute < i~a~ | (H(2) * T3)_C | 0 >
                       do idet = 1, n3aab
                           t_amp = t3b_amps(idet)
                           ! h2a(mnef) * t3b(efamni)
@@ -124,7 +119,6 @@ module ccp_quadratic_loops_direct_opt
                           m = t3b_excits(4,idet); n = t3b_excits(5,idet); i = t3b_excits(6,idet);
                           resid(a,i) = resid(a,i) + H2A_oovv(m,n,e,f) * t_amp ! (1)
                       end do
-
                       do idet = 1, n3abb
                           t_amp = t3c_amps(idet)
                           ! A(af)A(in) h2b(mnef) * t3c(efamni)
@@ -135,7 +129,6 @@ module ccp_quadratic_loops_direct_opt
                           resid(a,n) = resid(a,n) - H2B_oovv(m,i,e,f) * t_amp ! (in)
                           resid(f,n) = resid(f,n) + H2B_oovv(m,i,e,a) * t_amp ! (af)(in)
                       end do
-
                       do idet = 1, n3bbb
                           t_amp = t3d_amps(idet)
                           ! A(a/ef)A(i/mn) h2c(mnef) * t3d(aefimn)
@@ -151,15 +144,12 @@ module ccp_quadratic_loops_direct_opt
                           resid(e,n) = resid(e,n) + H2C_oovv(m,i,a,f) * t_amp ! (ae)(in)
                           resid(f,n) = resid(f,n) + H2C_oovv(m,i,e,a) * t_amp ! (af)(in)
                       end do
-
+                      ! update loop
                       do i = 1, nob
                           do a = 1, nub
                               denom = fB_oo(i,i) - fB_vv(a,a)
-
                               val = resid(a,i)/(denom - shift)
-
                               t1b(a,i) = t1b(a,i) + val
-
                               resid(a,i) = val
                           end do
                       end do
@@ -201,7 +191,7 @@ module ccp_quadratic_loops_direct_opt
 
                   ! Store x2a in residual container
                   resid(:,:,:,:) = x2a(:,:,:,:)
-
+                  ! compute < ijab | (H(2) * T3)_C | 0 >
                   do idet = 1, n3aaa
                       t_amp = t3a_amps(idet)
 
@@ -244,7 +234,6 @@ module ccp_quadratic_loops_direct_opt
                       resid(:,f,n,j) = resid(:,f,n,j) + H2A_vovv(:,i,e,b) * t_amp ! (in)(bf)
                       resid(:,f,i,n) = resid(:,f,i,n) + H2A_vovv(:,j,e,b) * t_amp ! (jn)(bf)
                   end do
-
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
 
@@ -265,7 +254,7 @@ module ccp_quadratic_loops_direct_opt
                       resid(:,b,i,j) = resid(:,b,i,j) + H2B_vovv(:,n,e,f) * t_amp ! (1)
                       resid(:,e,i,j) = resid(:,e,i,j) - H2B_vovv(:,n,b,f) * t_amp ! (be)
                   end do
-
+                  ! update loop
                   do i = 1, noa
                       do j = i + 1, noa
                           do a = 1, nua
@@ -288,7 +277,8 @@ module ccp_quadratic_loops_direct_opt
                           end do
                       end do
                   end do
-
+                  ! (H(2) * T3)_C terms are vectorized and generally broadcast to diagonal elements, which should
+                  ! be 0. Set them to 0 manually (you need to do this).
                   do a = 1, nua
                      resid(a,a,:,:) = 0.0d0
                   end do
@@ -338,7 +328,7 @@ module ccp_quadratic_loops_direct_opt
 
                   ! Store x2b in residual container
                   resid(:,:,:,:) = x2b(:,:,:,:)
-
+                  ! compute < ij~ab~ | (H(2) * T3)_C | 0 >
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
 
@@ -379,7 +369,6 @@ module ccp_quadratic_loops_direct_opt
                       resid(e,b,m,j) = resid(e,b,m,j) + H1A_ov(i,a) * t_amp ! (im)(ae)
 
                   end do
-
                   do idet = 1, n3abb
                       t_amp = t3c_amps(idet)
 
@@ -419,16 +408,14 @@ module ccp_quadratic_loops_direct_opt
                       resid(a,e,i,j) = resid(a,e,i,j) - H1B_ov(m,b) * t_amp ! (be)
                       resid(a,e,i,m) = resid(a,e,i,m) + H1B_ov(j,b) * t_amp ! (jm)(be)
                   end do
-
+                  ! update loop
                   do j = 1, nob
                       do i = 1, noa
                           do b = 1, nub
                               do a = 1, nua
                                   denom = fA_oo(i,i) + fB_oo(j,j) - fA_vv(a,a) - fB_vv(b,b)
                                   val = resid(a,b,i,j)/(denom - shift)
-
                                   t2b(a,b,i,j) = t2b(a,b,i,j) + val
-
                                   resid(a,b,i,j) = val
                               end do
                           end do
@@ -471,7 +458,7 @@ module ccp_quadratic_loops_direct_opt
 
                   ! store x2c in residual container
                   resid(:,:,:,:) = x2c(:,:,:,:)
-
+                  ! comptue < i~j~a~b~ | (H(2) * T3)_C | 0 >
                   do idet = 1, n3abb
                       t_amp = t3c_amps(idet)
 
@@ -492,7 +479,6 @@ module ccp_quadratic_loops_direct_opt
                       resid(a,b,:,j) = resid(a,b,:,j) - H2B_oovo(n,m,f,:) * t_amp ! (1)
                       resid(a,b,:,m) = resid(a,b,:,m) + H2B_oovo(n,j,f,:) * t_amp ! (jm)
                   end do
-
                   do idet = 1, n3bbb
                       t_amp = t3d_amps(idet)
 
@@ -535,7 +521,7 @@ module ccp_quadratic_loops_direct_opt
                       resid(:,f,n,j) = resid(:,f,n,j) + H2C_vovv(:,i,e,b) * t_amp ! (in)(bf)
                       resid(:,f,i,n) = resid(:,f,i,n) + H2C_vovv(:,j,e,b) * t_amp ! (jn)(bf)
                   end do
-
+                  ! update loop
                   do i = 1, nob
                       do j = i + 1, nob
                           do a = 1, nub
@@ -558,7 +544,8 @@ module ccp_quadratic_loops_direct_opt
                           end do
                       end do
                   end do
-
+                  ! (H(2) * T3)_C terms are vectorized and generally broadcast to diagonal elements, which should
+                  ! be 0. Set them to 0 manually (you need to do this).
                   do a = 1, nub
                      resid(a,a,:,:) = 0.0d0
                   end do
@@ -4120,41 +4107,41 @@ module ccp_quadratic_loops_direct_opt
               n = size(r)
 
               do i=1,n
-              d(i)=i
+                 d(i)=i
               end do
 
-              if ( n==1 ) return
+              if (n==1) return
 
               stepsize = 1
-              do while (stepsize<n)
-              do left=1,n-stepsize,stepsize*2
-              i = left
-              j = left+stepsize
-              ksize = min(stepsize*2,n-left+1)
-              k=1
+              do while (stepsize < n)
+                 do left = 1, n-stepsize,stepsize*2
+                    i = left
+                    j = left+stepsize
+                    ksize = min(stepsize*2,n-left+1)
+                    k=1
 
-              do while ( i<left+stepsize .and. j<left+ksize )
-              if ( r(d(i))<r(d(j)) ) then
-                      il(k)=d(i)
-                      i=i+1
-                      k=k+1
-              else
-                      il(k)=d(j)
-                      j=j+1
-                      k=k+1
-              endif
-              enddo
+                    do while (i < left+stepsize .and. j < left+ksize)
+                       if (r(d(i)) < r(d(j))) then
+                          il(k) = d(i)
+                          i = i+1
+                          k = k+1
+                       else
+                          il(k) = d(j)
+                          j = j+1
+                          k = k+1
+                       endif
+                    enddo
 
-              if ( i<left+stepsize ) then
-                      ! fill up remaining from left
-                      il(k:ksize) = d(i:left+stepsize-1)
-              else
-                      ! fill up remaining from right
-                      il(k:ksize) = d(j:left+ksize-1)
-              endif
-              d(left:left+ksize-1) = il(1:ksize)
-              end do
-              stepsize=stepsize*2
+                    if (i < left+stepsize) then
+                       ! fill up remaining from left
+                       il(k:ksize) = d(i:left+stepsize-1)
+                    else
+                       ! fill up remaining from right
+                       il(k:ksize) = d(j:left+ksize-1)
+                    endif
+                    d(left:left+ksize-1) = il(1:ksize)
+                 end do
+                 stepsize = stepsize*2
               end do
 
       end subroutine argsort

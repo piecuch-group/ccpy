@@ -629,6 +629,7 @@ module crcc_loops
               end subroutine crcc23D_opt
 
               subroutine creomcc23A_opt(deltaA,deltaB,deltaC,deltaD,&
+                              ddeltaA,ddeltaB,ddeltaC,ddeltaD,&
                               omega,r0,t2a,r2a,l1a,l2a,&
                               H2A_vooo,I2A_vvov,H2A_vvov,&
                               chi2A_vvvo,chi2A_ovoo,&
@@ -641,6 +642,7 @@ module crcc_loops
                               D3A_O,D3A_v,noa,nua)
 
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        real(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
                         integer, intent(in) :: noa, nua
                         real(kind=8), intent(in) :: fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
                         H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
@@ -657,7 +659,7 @@ module crcc_loops
                         real(kind=8), intent(in) :: r0, omega
 
                         integer :: i, j, k, a, b, c, nua2
-                        real(kind=8) :: D, temp1, temp2, temp3, temp4, LM,&
+                        real(kind=8) :: D, temp1, temp2, temp3, temp4, LM, LM1,&
                                 Y3A(nua,nua,nua), X3A(nua,nua,nua), L3A(nua,nua,nua)
 
                         ! reordered arrays for DGEMMs
@@ -675,6 +677,11 @@ module crcc_loops
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
+
+                        ddeltaA = 0.0d0
+                        ddeltaB = 0.0d0
+                        ddeltaC = 0.0d0
+                        ddeltaD = 0.0d0
 
                         nua2 = nua*nua
                         do i = 1 , noa
@@ -753,17 +760,20 @@ module crcc_loops
                                                 temp4 = Y3A(a,b,c) + Y3A(b,c,a) + Y3A(c,a,b)&
                                                 - Y3A(a,c,b) - Y3A(b,a,c) - Y3A(c,b,a)
 
-                                                LM = (r0*temp1+temp4)*(temp2+temp3)                                        
+                                                LM = (r0*temp1+temp4)*(temp2+temp3)
+                                                LM1 = temp4*(temp2+temp3)
         
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
 
                                                 deltaA = deltaA + LM/(omega+D)
+                                                ddeltaA = ddeltaA + LM1/(omega+D)
 
                                                 D = H1A_oo(i,i) + H1A_oo(j,j) + H1A_oo(k,k)&
                                                 - H1A_vv(a,a) - H1A_vv(b,b) - H1A_vv(c,c)
 
                                                 deltaB = deltaB + LM/(omega+D)
+                                                ddeltaB = ddeltaB + LM1/(omega+D)
 
                                                 D = D &
                                                 -H2A_voov(a,i,i,a) - H2A_voov(b,i,i,b) - H2A_voov(c,i,i,c)&
@@ -773,6 +783,7 @@ module crcc_loops
                                                 -H2A_vvvv(b,a,b,a) - H2A_vvvv(c,a,c,a) - H2A_vvvv(c,b,c,b)
 
                                                 deltaC = deltaC + LM/(omega+D)
+                                                ddeltaC = ddeltaC + LM1/(omega+D)
 
                                                 D = D &
                                                 +D3A_O(a,i,j)+D3A_O(a,i,k)+D3A_O(a,j,k)&
@@ -783,17 +794,17 @@ module crcc_loops
                                                 -D3A_V(a,k,b)-D3A_V(a,k,c)-D3A_V(b,k,c)
 
                                                 deltaD = deltaD + LM/(omega+D)
-
+                                                ddeltaD = ddeltaD + LM1/(omega+D)
                                             end do
                                         end do 
                                     end do 
                                 end do 
                             end do 
                         end do
-
               end subroutine creomcc23A_opt
 
               subroutine creomcc23B_opt(deltaA,deltaB,deltaC,deltaD,&
+                              ddeltaA,ddeltaB,ddeltaC,ddeltaD,&
                               omega,r0,&
                               t2a,t2b,r2a,r2b,l1a,l1b,l2a,l2b,&
                               I2B_ovoo,I2B_vooo,I2A_vooo,&
@@ -815,6 +826,7 @@ module crcc_loops
                               noa,nua,nob,nub)
                         
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        real(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
                         integer, intent(in) :: noa, nua, nob, nub
                         real(kind=8), intent(in) :: t2a(nua,nua,noa,noa),t2b(nua,nub,noa,nob),&
                         l1a(nua,noa),l1b(nub,nob),&
@@ -853,7 +865,7 @@ module crcc_loops
                         real(kind=8), intent(in) :: omega, r0
 
                         integer :: i, j, k, a, b, c, nuanub, nua2
-                        real(kind=8) :: D, temp1, temp2, temp3, temp4, LM,&
+                        real(kind=8) :: D, temp1, temp2, temp3, temp4, LM, LM1,&
                                 X3B(nua,nua,nub), L3B(nua,nua,nub), Y3B(nua,nua,nub)
 
                         ! arrays for reordering 
@@ -886,6 +898,11 @@ module crcc_loops
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
+
+                        ddeltaA = 0.0d0
+                        ddeltaB = 0.0d0
+                        ddeltaC = 0.0d0
+                        ddeltaD = 0.0d0
 
                         nuanub = nua*nub
                         nua2 = nua*nua
@@ -984,16 +1001,19 @@ module crcc_loops
                                                 temp4 = Y3B(a,b,c) - Y3B(b,a,c)
 
                                                 LM = (r0*temp1+temp4)*(temp2+temp3)
+                                                LM1 = temp4*(temp2+temp3)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
 
                                                 deltaA = deltaA + LM/(omega+D)
+                                                ddeltaA = ddeltaA + LM1/(omega+D)
 
                                                 D = H1A_oo(i,i) + H1A_oo(j,j) + H1B_oo(k,k)&
                                                 - H1A_vv(a,a) - H1A_vv(b,b) - H1B_vv(c,c)
 
                                                 deltaB = deltaB + LM/(omega+D)
+                                                ddeltaB = ddeltaB + LM1/(omega+D)
 
                                                 D = D &
                                                 -H2A_voov(a,i,i,a)-H2A_voov(b,i,i,b)+H2B_ovov(i,c,i,c)&
@@ -1003,6 +1023,7 @@ module crcc_loops
                                                 -H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
      
                                                 deltaC = deltaC + LM/(omega+D)
+                                                ddeltaC = ddeltaC + LM1/(omega+D)
 
                                                 D = D &
                                                 +D3A_O(a,i,j)+D3B_O(a,i,k)+D3B_O(a,j,k)&
@@ -1013,18 +1034,17 @@ module crcc_loops
                                                 -D3C_V(a,k,c)-D3C_V(b,k,c)
 
                                                 deltaD = deltaD + LM/(omega+D)
-
+                                                ddeltaD = ddeltaD + LM1/(omega+D)
                                             end do
                                         end do 
                                     end do 
                                 end do 
                             end do 
                         end do
-
-
               end subroutine creomcc23B_opt
 
               subroutine creomcc23C_opt(deltaA,deltaB,deltaC,deltaD,&
+                              ddeltaA,ddeltaB,ddeltaC,ddeltaD,&
                               omega,r0,&
                               t2b,t2c,r2b,r2c,l1a,l1b,l2b,l2c,&
                               I2B_vooo,I2C_vooo,I2B_ovoo,&
@@ -1046,6 +1066,7 @@ module crcc_loops
                               noa,nua,nob,nub)
                         
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        real(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
                         integer, intent(in) :: noa, nua, nob, nub
                         real(kind=8), intent(in) :: t2b(nua,nub,noa,nob),&
                         t2c(nub,nub,nob,nob),r2b(nua,nub,noa,nob),r2c(nub,nub,nob,nob),&
@@ -1084,7 +1105,7 @@ module crcc_loops
                         real(kind=8), intent(in) :: omega, r0
 
                         integer :: i, j, k, a, b, c, nuanub, nub2
-                        real(kind=8) :: D, LM, temp1, temp2, temp3, temp4,&
+                        real(kind=8) :: D, LM, LM1, temp1, temp2, temp3, temp4,&
                                 X3C(nua,nub,nub), L3C(nua,nub,nub), Y3C(nua,nub,nub)
 
                         ! arrays for reordering
@@ -1110,7 +1131,12 @@ module crcc_loops
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
+
+                        ddeltaA = 0.0d0
+                        ddeltaB = 0.0d0
+                        ddeltaC = 0.0d0
+                        ddeltaD = 0.0d0
+
                         nuanub = nua*nub
                         nub2 = nub*nub
 
@@ -1208,7 +1234,6 @@ module crcc_loops
                                 ! Diagram 6: -A(jk)A(bc) H2B_ooov(i,j,m,b)*l2b(a,c,m,k) -> -A(jk)A(bc) H2B_ooov(i,k,m,c)*l2b(a,b,m,j)
                                 call dgemm('n','n',nuanub,nub,noa,-1.0d0,l2b(:,:,:,j),nuanub,H2B_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
                                 call dgemm('n','n',nuanub,nub,noa,1.0d0,l2b(:,:,:,k),nuanub,H2B_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
-        
 
                                     do a = 1, nua
                                         do b = 1, nub
@@ -1229,16 +1254,19 @@ module crcc_loops
                                                 temp4 = Y3C(a,b,c) - Y3C(a,c,b)
 
                                                 LM = (r0*temp1+temp4)*(temp2+temp3)
+                                                LM1 = temp4*(temp2+temp3)
 
                                                 D = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                 - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
 
                                                 deltaA = deltaA + LM/(omega+D)
+                                                ddeltaA = ddeltaA + LM1/(omega+D)
 
                                                 D = H1A_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)&
                                                 - H1A_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c)
 
                                                 deltaB = deltaB + LM/(omega+D)
+                                                ddeltaB = ddeltaB + LM1/(omega+D)
 
                                                 D = D &
                                                 -H2A_voov(a,i,i,a)+H2B_ovov(i,b,i,b)+H2B_ovov(i,c,i,c)&
@@ -1248,6 +1276,8 @@ module crcc_loops
                                                 -H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
      
                                                 deltaC = deltaC + LM/(omega+D)
+                                                ddeltaC = ddeltaC + LM1/(omega+D)
+
                                                 D = D &
                                                 +D3B_O(a,i,j)+D3B_O(a,i,k)&
                                                 +D3C_O(b,i,j)+D3C_O(b,i,k)+D3D_O(b,j,k)&
@@ -1257,17 +1287,17 @@ module crcc_loops
                                                 -D3C_V(a,k,b)-D3C_V(a,k,c)-D3D_V(b,k,c)
 
                                                 deltaD = deltaD + LM/(omega+D)
-
+                                                ddeltaD = ddeltaD + LM1/(omega+D)
                                             end do
                                         end do 
                                     end do 
                                 end do 
                             end do 
                         end do
-
               end subroutine creomcc23C_opt
 
               subroutine creomcc23D_opt(deltaA,deltaB,deltaC,deltaD,&
+                              ddeltaA,ddeltaB,ddeltaC,ddeltaD,&
                               omega,r0,&
                               t2c,r2c,l1b,l2c,&
                               H2C_vooo,I2C_vvov,H2C_vvov,&
@@ -1278,6 +1308,7 @@ module crcc_loops
                               D3D_O,D3D_V,nob,nub)
 
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        real(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
                         integer, intent(in) :: nob, nub
                         real(kind=8), intent(in) :: fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
                         H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
@@ -1294,7 +1325,7 @@ module crcc_loops
                         real(kind=8), intent(in) :: omega, r0
 
                         integer :: i, j, k, a, b, c, nub2
-                        real(kind=8) :: D, temp1, temp2, temp3, temp4, LM,&
+                        real(kind=8) :: D, temp1, temp2, temp3, temp4, LM, LM1,&
                                 X3D(nub,nub,nub), L3D(nub,nub,nub), Y3D(nub,nub,nub)
 
                         ! reordered arrays for DGEMMs
@@ -1312,6 +1343,11 @@ module crcc_loops
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
+
+                        ddeltaA = 0.0d0
+                        ddeltaB = 0.0d0
+                        ddeltaC = 0.0d0
+                        ddeltaD = 0.0d0
 
                         nub2 = nub*nub
                         do i = 1 , nob
@@ -1390,17 +1426,20 @@ module crcc_loops
                                                 temp4 = Y3D(a,b,c) + Y3D(b,c,a) + Y3D(c,a,b)&
                                                 - Y3D(a,c,b) - Y3D(b,a,c) - Y3D(c,b,a)
 
-                                                LM = (r0*temp1+temp4)*(temp2+temp3)                                        
+                                                LM = (r0*temp1+temp4)*(temp2+temp3)
+                                                LM1 = temp4*(temp2+temp3)
         
                                                 D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                 - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
 
                                                 deltaA = deltaA + LM/(omega+D)
+                                                ddeltaA = ddeltaA + LM1/(omega+D)
 
                                                 D = H1B_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)&
                                                 - H1B_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c)
 
                                                 deltaB = deltaB + LM/(omega+D)
+                                                ddeltaB = ddeltaB + LM1/(omega+D)
 
                                                 D = D &
                                                 -H2C_voov(a,i,i,a) - H2C_voov(b,i,i,b) - H2C_voov(c,i,i,c)&
@@ -1410,6 +1449,7 @@ module crcc_loops
                                                 -H2C_vvvv(b,a,b,a) - H2C_vvvv(c,a,c,a) - H2C_vvvv(c,b,c,b)
 
                                                 deltaC = deltaC + LM/(omega+D)
+                                                ddeltaC = ddeltaC + LM1/(omega+D)
 
                                                 D = D &
                                                 +D3D_O(a,i,j)+D3D_O(a,i,k)+D3D_O(a,j,k)&
@@ -1420,11 +1460,10 @@ module crcc_loops
                                                 -D3D_V(a,k,b)-D3D_V(a,k,c)-D3D_V(b,k,c)
 
                                                 deltaD = deltaD + LM/(omega+D)
-
+                                                ddeltaD = ddeltaD + LM1/(omega+D)
                                             end do
                                         end do 
-                                    end do 
-
+                                    end do
                                 end do 
                             end do 
                         end do
