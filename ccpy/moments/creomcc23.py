@@ -161,6 +161,7 @@ def calc_creomcc23(T, R, L, r0, omega, H, H0, system, use_RHF=False):
     delta_vee_B = [x + y for x, y in zip(omega, dcorrection_B)]
     delta_vee_C = [x + y for x, y in zip(omega, dcorrection_C)]
     delta_vee_D = [x + y for x, y in zip(omega, dcorrection_D)]
+
     delta_vee_eV_A = [hartreetoeV * x for x in delta_vee_A]
     delta_vee_eV_B = [hartreetoeV * x for x in delta_vee_B]
     delta_vee_eV_C = [hartreetoeV * x for x in delta_vee_C]
