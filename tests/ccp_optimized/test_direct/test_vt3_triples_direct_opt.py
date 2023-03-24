@@ -411,22 +411,23 @@ def contract_vt3_fly(H, H0, T, T3_excitations, T3_amplitudes):
     T3_amplitudes["abb"] = t3c_amps.copy()
     T3_excitations["abb"] = t3c_excits.copy()
 
-    #tic = time.time()
-    #t3_bbb, resid_bbb = ccp_quadratic_loops_direct_h.ccp_quadratic_loops_direct_h.update_t3d_p(
-    #    T3_amplitudes["bbb"],
-    #    T3_excitations["abb"].T, T3_excitations["bbb"].T,
-    #    T.bb,
-    #    T3_amplitudes["abb"],
-    #    H.b.oo, H.b.vv,
-    #    H0.ab.oovv, H.ab.ovvo,
-    #    H0.bb.oovv, I2C_vooo, H.bb.vvov, H.bb.oooo, H.bb.voov, H.bb.vvvv,
-    #    H0.b.oo, H0.b.vv,
-    #    0.0
-    #)
-    #print("t3d took", time.time() - tic)
-    #T3_amplitudes["bbb"] = t3d_amps.copy()
+    tic = time.time()
+    resid_bbb, t3_bbb, t3_excits_bbb = ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t3d_p(
+        T3_amplitudes["abb"], T3_excitations["abb"],
+        T3_amplitudes["bbb"], T3_excitations["bbb"],
+        T.bb,
+        H.b.oo, H.b.vv,
+        H0.bb.oovv, H.bb.vvov, I2C_vooo,
+        H.bb.oooo, H.bb.voov, H.bb.vvvv,
+        H0.ab.oovv, H.ab.ovvo,
+        H0.b.oo, H0.b.vv,
+        0.0,
+    )
+    print("t3d took", time.time() - tic)
+    T3_amplitudes["bbb"] = t3d_amps.copy()
+    T3_excitations["bbb"] = t3d_excits.copy()
 
-    return t3_aaa, t3_excits_aaa, resid_aaa, t3_aab, t3_excits_aab, resid_aab, t3_abb, t3_excits_abb, resid_abb#, t3_bbb, resid_bbb
+    return t3_aaa, t3_excits_aaa, resid_aaa, t3_aab, t3_excits_aab, resid_aab, t3_abb, t3_excits_abb, resid_abb, t3_bbb, t3_excits_bbb, resid_bbb
 
 if __name__ == "__main__":
 
@@ -477,7 +478,7 @@ if __name__ == "__main__":
     hbar = get_ccsd_intermediates(T, H)
 
     #T3_excitations, T3_amplitudes = get_T3_list(T)
-    T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[1,1,1,1])
+    T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[0.5,0.5,0.5,0.5])
 
     T3_excitations["aaa"] = T3_excitations["aaa"].T
     T3_excitations["aab"] = T3_excitations["aab"].T
@@ -495,7 +496,8 @@ if __name__ == "__main__":
     t1 = time.time()
     # WARNING: When you sort and re-sort excitation lists on-the-fly, you have to make sure that the amps
     # come with a matching excitation list.
-    t3_aaa, t3_excits_aaa, x3_aaa, t3_aab, t3_excits_aab, x3_aab, t3_abb, t3_excits_abb, x3_abb = contract_vt3_fly(hbar, H, T, T3_excitations, T3_amplitudes)
+    t3_aaa, t3_excits_aaa, x3_aaa, t3_aab, t3_excits_aab, x3_aab, t3_abb, t3_excits_abb, x3_abb, t3_bbb, t3_excits_bbb, x3_bbb = \
+                                                                                        contract_vt3_fly(hbar, H, T, T3_excitations, T3_amplitudes)
     print(" (Completed in ", time.time() - t1, "seconds)")
 
     print("")
@@ -553,20 +555,20 @@ if __name__ == "__main__":
     else:
        print("T3C update FAILED!", "Cumulative Error = ", err_cum)
 
-    #flag = True
-    #err_cum = 0.0
-    #for idet in range(len(T3_amplitudes["bbb"])):
-    #    a, b, c, i, j, k = [x - 1 for x in T3_excitations["bbb"][idet]]
-    #    denom = (
-    #                H.b.oo[i, i] + H.b.oo[j, j] + H.b.oo[k, k]
-    #               -H.b.vv[a, a] - H.b.vv[b, b] - H.b.vv[c, c]
-    #    )
-    #    error = x3_bbb[idet] - x3_bbb_exact[a, b, c, i, j, k]/denom
-    #    err_cum += abs(error)
-    #    if abs(error) > 1.0e-010:
-    #        flag = False
-    #if flag:
-    #    print("T3D update passed!", "Cumulative Error = ", err_cum)
-    #else:
-    #    print("T3D update FAILED!", "Cumulative Error = ", err_cum)
+    flag = True
+    err_cum = 0.0
+    for idet in range(len(T3_amplitudes["bbb"])):
+       a, b, c, i, j, k = [x - 1 for x in t3_excits_bbb[:, idet]]
+       denom = (
+                   H.b.oo[i, i] + H.b.oo[j, j] + H.b.oo[k, k]
+                  -H.b.vv[a, a] - H.b.vv[b, b] - H.b.vv[c, c]
+       )
+       error = x3_bbb[idet] - x3_bbb_exact[a, b, c, i, j, k]/denom
+       err_cum += abs(error)
+       if abs(error) > 1.0e-010:
+           flag = False
+    if flag:
+       print("T3D update passed!", "Cumulative Error = ", err_cum)
+    else:
+       print("T3D update FAILED!", "Cumulative Error = ", err_cum)
 
