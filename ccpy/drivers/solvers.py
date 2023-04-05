@@ -10,7 +10,7 @@ from ccpy.utilities.utilities import remove_file
 from ccpy.models.operators import ClusterOperator, FockOperator
 
 
-def eomcc_davidson(HR, update_r, R, dR, omega, T, H, system, options):
+def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     """
     Diagonalize the similarity-transformed Hamiltonian HBar using the
     non-Hermitian Davidson algorithm.
@@ -30,7 +30,8 @@ def eomcc_davidson(HR, update_r, R, dR, omega, T, H, system, options):
     G = np.zeros((options["maximum_iterations"], options["maximum_iterations"]))
 
     # Initial values
-    B[:, 0] = R.flatten()
+    B[:, 0] = B0
+    R.unflatten(B[:, 0])
     sigma[:, 0] = HR(dR, R, T, H, options["RHF_symmetry"], system)
     dR.unflatten(dR.flatten() * 0.0)
 
@@ -86,8 +87,8 @@ def eomcc_davidson(HR, update_r, R, dR, omega, T, H, system, options):
 
         curr_size += 1
 
-        # store the actual root you've solved for
-        R.unflatten(r)
+    # store the actual root you've solved for
+    R.unflatten(r)
 
     return R, omega, is_converged
 
@@ -251,7 +252,7 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
     # Jacobi/DIIS iterations
     ndiis_cycle = 0
     energy = 0.0
-    energy_old = get_lcc_energy(L, LH)
+    energy_old = get_lcc_energy(L, LH) + omega
     is_converged = False
     LR = 0.0
 
@@ -314,7 +315,6 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
         # biorthogonalize to R for excited states
         if not ground_state:
             LR = LR_function(L)
-            print("LR = ", LR)
             L.unflatten(1.0 / LR * L.flatten())
 
         elapsed_time = time.time() - t1

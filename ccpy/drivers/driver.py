@@ -12,7 +12,7 @@ from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, left_ccp
 from ccpy.drivers.cc_energy import get_LR, get_r0
 
 from ccpy.models.operators import ClusterOperator, FockOperator
-from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc_calculation_summary, leftcc_calculation_summary
+from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc_calculation_summary, leftcc_calculation_summary, print_ee_amplitudes
 
 # [TODO]: - make CC(P) solver able to read in previous T vector of smaller P space as initial guess
 #         - clean up CC(P) solvers to remove options for previous linear and quadratic solvers
@@ -186,7 +186,18 @@ class Driver:
 
         # Run the initial guess function
         omega, V = guess_function(self.system, self.hamiltonian, multiplicity)
-        V, _ = np.linalg.qr(V[:, state_index])
+
+        for i in state_index:
+            if self.R[i] is None:
+                self.R[i] = ClusterOperator(self.system,
+                                            order=self.operator_params["order"],
+                                            active_orders=self.operator_params["active_orders"],
+                                            num_active=self.operator_params["number_active_indices"])
+                self.R[i].unflatten(V[:, i - 1], order=1)
+                self.vertical_excitation_energy[i] = omega[i - 1]
+
+        # Form the initial subspace vectors
+        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
 
         # Print the options as a header
         self.print_options()
@@ -197,24 +208,17 @@ class Driver:
                              active_orders=self.operator_params["active_orders"],
                              num_active=self.operator_params["number_active_indices"])
         
+        ct = 0
         for i in state_index:
-            print("   EOMCC calculation started on", get_timestamp())
-            # if R[i] doesn't exist, then set it equal to initial guess
-            if self.R[i] is None:
-                self.R[i] = ClusterOperator(self.system,
-                                            order=self.operator_params["order"],
-                                            active_orders=self.operator_params["active_orders"],
-                                            num_active=self.operator_params["number_active_indices"])
-                self.R[i].unflatten(V[:, i - 1], order=1)
-                self.vertical_excitation_energy[i] = omega[i - 1]
-
-            self.R[i], self.vertical_excitation_energy[i], is_converged = eomcc_davidson(HR_function, update_function,
+            print("   EOMCC calculation for root %d started on" % i, get_timestamp())
+            self.R[i], self.vertical_excitation_energy[i], is_converged = eomcc_davidson(HR_function, update_function, B0[:, ct],
                                                                               self.R[i], dR, self.vertical_excitation_energy[i],
                                                                               self.T, self.hamiltonian, self.system, self.options)
             # Compute r0 a posteriori
             self.r0[i] = get_r0(self.R[i], self.hamiltonian, self.vertical_excitation_energy[i])
-            eomcc_calculation_summary(self.vertical_excitation_energy[i], self.r0[i], is_converged)
-            print("   EOMCC calculation ended on", get_timestamp())
+            eomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.r0[i], is_converged, self.system)
+            print("   EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
+            ct += 1
 
     def run_leftcc(self, method, state_index=[0], t3_excitations=None, l3_excitations=None, pspace=None):
         # check if requested CC calculation is implemented in modules
@@ -238,7 +242,7 @@ class Driver:
                              active_orders=self.operator_params["active_orders"],
                              num_active=self.operator_params["number_active_indices"])
         for i in state_index:
-            print("   Left CC alculation started on", get_timestamp())
+            print("   Left CC calculation for root %d started on" % i, get_timestamp())
             # decide whether this is a ground-state calculation
             if i == 0: 
                 ground_state = True
@@ -262,20 +266,19 @@ class Driver:
             # Zero out the residual
             LH.unflatten(0.0 * LH.flatten())
 
-            #if pspace is None:
-            self.L[i], _, LR, is_converged = left_cc_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian, 
+            if pspace is None:
+                self.L[i], _, LR, is_converged = left_cc_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian, 
                                                             LR_function, self.vertical_excitation_energy[i],
                                                             ground_state, self.system, self.options)
-            #else:
-            #    self.L[i], self.vertical_excitation_energy[i], LR, is_converged = left_ccp_jacobi(update_function,
-            #                                                                                      self.L[i], LH, self.T, self.hamiltonian, 
-            #                                                                                      LR_function, self.vertical_excitation_energy[i],
-            #                                                                                      ground_state, self.system, self.options, pspace)
+            else:
+                self.L[i], _, LR, is_converged = left_ccp_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian, 
+                                                                 LR_function, self.vertical_excitation_energy[i],
+                                                                 ground_state, self.system, self.options, pspace)
             if not ground_state:
                 self.L[i].unflatten(1.0 / LR_function(self.L[i]) * self.L[i].flatten())
 
-            leftcc_calculation_summary(self.vertical_excitation_energy[i], LR, is_converged)
-            print("   Left CC calculation ended on", get_timestamp())
+            leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system)
+            print("   Left CC calculation for root %d ended on" % i, get_timestamp(), "\n")
 
 
 def eccc_driver(calculation, system, hamiltonian, external_wavefunction, T=None):

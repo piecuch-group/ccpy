@@ -25,7 +25,7 @@ def cc_calculation_summary(reference_energy, cc_energy):
     print(DATA_FMT.format("   Total CC energy", reference_energy + cc_energy))
     print("")
 
-def eomcc_calculation_summary(omega, r0, is_converged):
+def eomcc_calculation_summary(R, omega, r0, is_converged, system):
     print("\n   EOMCC Calculation Summary")
     print("  --------------------------------------------------------")
     if is_converged:
@@ -33,9 +33,10 @@ def eomcc_calculation_summary(omega, r0, is_converged):
     else:
         convergence_label = 'not converged'
     print("   Root", convergence_label, "   omega = %.8f" % omega, "  r0 = %.8f" % r0)
+    print_ee_amplitudes(R, system, R.order, 10, 0.05)
     print("")
 
-def leftcc_calculation_summary(omega, LR, is_converged):
+def leftcc_calculation_summary(L, omega, LR, is_converged, system):
     print("\n   Left CC Calculation Summary")
     print("  --------------------------------------------------------")
     if is_converged:
@@ -43,6 +44,7 @@ def leftcc_calculation_summary(omega, LR, is_converged):
     else:
         convergence_label = 'not converged'
     print("   Root", convergence_label, "   omega = %.8f" % omega, "  LR = %.8f" % LR)
+    print_ee_amplitudes(L, system, L.order, 10, 0.05)
     print("")
 
 def print_cc_iteration_header():
