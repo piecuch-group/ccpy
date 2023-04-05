@@ -67,7 +67,7 @@ module ccp_quadratic_loops_direct_opt
                           ! h2c(mnef) * t3c(aefimn)
                           a = t3c_excits(1,idet); e = t3c_excits(2,idet); f = t3c_excits(3,idet);
                           i = t3c_excits(4,idet); m = t3c_excits(5,idet); n = t3c_excits(6,idet);
-                          resid(a,i) = resid(a,i) + H2A_oovv(m,n,e,f) * t_amp ! (1)
+                          resid(a,i) = resid(a,i) + H2C_oovv(m,n,e,f) * t_amp ! (1)
                       end do
                       ! update loop
                       do i = 1, noa
@@ -4554,6 +4554,8 @@ module ccp_quadratic_loops_direct_opt
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
+                  call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
+                  call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, (nub-1)*(nub-2)/2*(nob-1)*(nob-2)/2, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp t3c_excits,t3_excits_buff,&
@@ -4564,8 +4566,6 @@ module ccp_quadratic_loops_direct_opt
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
-                  call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
-                  call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, (nub-1)*(nub-2)/2*(nob-1)*(nob-2)/2, n3bbb)
                   do idet = 1, n3abb
                       a = t3c_excits(1,idet); b = t3c_excits(2,idet); c = t3c_excits(3,idet);
                       i = t3c_excits(4,idet); j = t3c_excits(5,idet); k = t3c_excits(6,idet);
@@ -6658,7 +6658,7 @@ module ccp_quadratic_loops_direct_opt
               integer :: p, q, r, s
 
               idx_table = 0
-              ! 16 possible cases
+              ! 5 possible cases. Always organize so that ordered indices appear first.
               if (rng1(1) < 0 .and. rng2(1) < 0 .and. rng3(1) < 0 .and. rng4(1) < 0) then ! p < q < r < s
                  kout = 1 
                  do p = rng1(1), rng1(2)

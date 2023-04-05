@@ -93,7 +93,7 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
         
         # Perform CC(P) calculation using previous T vector as initial guess
         if n > 0:
-            # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace, T=T)
+            # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace, T_init=T)
             T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations, pspace=pspace[0])
         else:
             # T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, pspace=pspace)

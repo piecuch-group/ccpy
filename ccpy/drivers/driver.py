@@ -11,12 +11,13 @@ from ccpy.drivers.solvers import eccc_jacobi
 
 from ccpy.models.operators import ClusterOperator, FockOperator
 from ccpy.utilities.printing import CCPrinter
-from ccpy.utilities.pspace import count_excitations_in_pspace
 
 from copy import deepcopy
 
+# [TODO]: - make CC(P) solver able to read in previous T vector of smaller P space as initial guess
+#         - clean up CC(P) solvers to remove options for previous linear and quadratic solvers
 
-def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, t3_excitations=None):
+def cc_driver(calculation, system, hamiltonian, T_init=None, pspace=None, t3_excitations=None):
     """Performs the calculation specified by the user in the input."""
 
     # check if requested CC calculation is implemented in modules
@@ -41,11 +42,13 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, t3_excitati
 
 
     if pspace is None and t3_excitations is None:  # Run the standard CC solver if no explicit P space is used
-        if T is None:
+        if T_init is None:
             T = ClusterOperator(system,
                                 order=calculation.order,
                                 active_orders=calculation.active_orders,
                                 num_active=calculation.num_active)
+        else:
+            T = T_init
 
         # regardless of restart status, initialize residual anew
         dT = ClusterOperator(system,
@@ -65,8 +68,10 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, t3_excitati
     
         if t3_excitations is None: # Run the slow CC(P) solver
 
-            if T is None:
+            if T_init is None:
                 T = ClusterOperator(system, order=calculation.order)
+            else:
+                T = T_init
 
             # regardless of restart status, initialize residual anew
             dT = ClusterOperator(system, order=calculation.order)
@@ -96,11 +101,12 @@ def cc_driver(calculation, system, hamiltonian, T=None, pspace=None, t3_excitati
                 t3_excitations["bbb"] = t3_excitations["aaa"].copy()
                 t3_excitations["abb"] = t3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
 
-            if T is None:
-                T = ClusterOperator(system,
-                                    order=calculation.order,
-                                    p_orders=[3],
-                                    pspace_sizes=excitation_count)
+            T = ClusterOperator(system,
+                                order=calculation.order,
+                                p_orders=[3],
+                                pspace_sizes=excitation_count)
+            if T_init is not None:
+                T.unflatten(T_init.flatten())
 
             # regardless of restart status, initialize residual anew
             dT = ClusterOperator(system,
