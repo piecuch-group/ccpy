@@ -1,5 +1,6 @@
 """Module containing function to calculate the CC correlation energy."""
 import numpy as np
+from ccpy.models.operators import ClusterOperator, FockOperator
 
 def get_ci_energy(C, H0):
 
@@ -68,3 +69,30 @@ def get_r0(R, H, omega):
     r0 += 0.25 * np.einsum("mnef,efmn->", H.bb.oovv, R.bb, optimize=True)
 
     return r0 / omega
+
+def get_LR(R, L):
+
+    # explicitly enforce biorthonormality
+    if isinstance(L, ClusterOperator):
+        LR =  np.einsum("em,em->", R.a, L.a, optimize=True)
+        LR += np.einsum("em,em->", R.b, L.b, optimize=True)
+        LR += 0.25 * np.einsum("efmn,efmn->", R.aa, L.aa, optimize=True)
+        LR += np.einsum("efmn,efmn->", R.ab, L.ab, optimize=True)
+        LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
+
+        if L.order == 3 and R.order == 3:
+            LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.aaa, L.aaa, optimize=True)
+            LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.aab, L.aab, optimize=True)
+            LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
+            LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
+
+    if isinstance(L, FockOperator):
+
+        LR = -np.einsum("m,m->", R.a, L.a, optimize=True)
+        LR -= np.einsum("m,m->", R.b, L.b, optimize=True)
+        LR -= 0.5 * np.einsum("fnm,fnm->", R.aa, L.aa, optimize=True)
+        LR -= np.einsum("fnm,fnm->", R.ab, L.ab, optimize=True)
+        LR -= np.einsum("fnm,fnm->", R.ba, L.ba, optimize=True)
+        LR -= 0.5 * np.einsum("fnm,fnm->", R.bb, L.bb, optimize=True)
+
+    return LR

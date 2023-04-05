@@ -462,9 +462,9 @@ if __name__ == "__main__":
     mol.build(
         atom=fluorine,
         basis="6-31g",
-        symmetry="D2H",
-        spin=0, 
-        charge=0,
+        symmetry="C2V",
+        spin=1, 
+        charge=1,
         unit="Bohr",
         cart=False,
     )

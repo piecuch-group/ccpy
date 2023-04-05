@@ -3,191 +3,6 @@ import numpy as np
 
 WHITESPACE = "  "
 
-
-def ccpy_header():
-
-    print("CCpy: Coupled-Cluster Package for Electronic Structure Calculations")
-    print(WHITESPACE, "Authors:")
-    print(WHITESPACE, " Karthik Gururangan (gururang@msu.edu)")
-    print(WHITESPACE, " J. Emiliano Deustua (edeustua@caltech.edu)")
-    print(WHITESPACE, " Affiliated with the Piecuch Group at Michigan State University")
-    print("\n")
-
-
-class SystemPrinter:
-    def __init__(self, system):
-        self.system = system
-
-    def header(self):
-
-        print(WHITESPACE, "System Information:")
-        print(WHITESPACE, "----------------------------------------------------")
-        print(WHITESPACE, "  Number of correlated electrons =", self.system.nelectrons)
-        print(WHITESPACE, "  Number of correlated orbitals =", self.system.norbitals)
-        print(WHITESPACE, "  Number of frozen orbitals =", self.system.nfrozen)
-        print(
-            WHITESPACE,
-            "  Number of alpha occupied orbitals =",
-            self.system.noccupied_alpha,
-        )
-        print(
-            WHITESPACE,
-            "  Number of alpha unoccupied orbitals =",
-            self.system.nunoccupied_alpha,
-        )
-        print(
-            WHITESPACE,
-            "  Number of beta occupied orbitals =",
-            self.system.noccupied_beta,
-        )
-        print(
-            WHITESPACE,
-            "  Number of beta unoccupied orbitals =",
-            self.system.nunoccupied_beta,
-        )
-        print(WHITESPACE, "  Charge =", self.system.charge)
-        print(WHITESPACE, "  Point group =", self.system.point_group)
-        print(WHITESPACE, "  Symmetry of reference =", self.system.reference_symmetry)
-        print(
-            WHITESPACE, "  Spin multiplicity of reference =", self.system.multiplicity
-        )
-        print("")
-
-        HEADER_FMT = "{:>10} {:>20} {:>13} {:>13}"
-        MO_FMT = "{:>10} {:>20.6f} {:>13} {:>13.1f}"
-
-        header = HEADER_FMT.format("MO #", "Energy (a.u.)", "Symmetry", "Occupation")
-        print(header)
-        print(len(header) * "-")
-        for i in range(self.system.norbitals + self.system.nfrozen):
-            print(
-                MO_FMT.format(
-                    i + 1,
-                    self.system.mo_energies[i],
-                    self.system.orbital_symmetries_all[i],
-                    self.system.mo_occupation[i],
-                )
-            )
-        print("")
-        print(WHITESPACE, "Nuclear Repulsion Energy =", self.system.nuclear_repulsion)
-        print(WHITESPACE, "Reference Energy =", self.system.reference_energy)
-        print("")
-        return
-
-class CCPrinter:
-    def __init__(self, calculation):
-        self.calculation = calculation
-
-    def cc_header(self):
-        print(WHITESPACE, "--------------------------------------------------")
-        print(
-            WHITESPACE, "Calculation type = ", self.calculation.calculation_type.upper()
-        )
-        print(WHITESPACE, "Maximum iterations =", self.calculation.maximum_iterations)
-        print(
-            WHITESPACE,
-            "Convergence tolerance =",
-            self.calculation.convergence_tolerance,
-        )
-        print(WHITESPACE, "Energy shift =", self.calculation.energy_shift)
-        print(WHITESPACE, "DIIS size = ", self.calculation.diis_size)
-        print(WHITESPACE, "RHF symmetry =", self.calculation.RHF_symmetry)
-        #if self.calculation.active_orders != [None]:
-        #    print(WHITESPACE, "Number active occupied =", calculation.)
-
-        print(WHITESPACE, "--------------------------------------------------")
-        print("")
-        print(
-            WHITESPACE,
-            "CC calculation started at",
-            datetime.datetime.strptime(
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "%Y-%m-%d %H:%M"
-            ),
-            "\n",
-        )
-
-    def eomcc_header(self):
-        print(WHITESPACE, "--------------------------------------------------")
-        print(
-            WHITESPACE, "Calculation type = ", self.calculation.calculation_type.upper()
-        )
-        print(WHITESPACE, "Maximum iterations =", self.calculation.maximum_iterations)
-        print(
-            WHITESPACE,
-            "Convergence tolerance =",
-            self.calculation.convergence_tolerance,
-        )
-        print(WHITESPACE, "State target multiplicity =", self.calculation.multiplicity)
-        print(WHITESPACE, "RHF symmetry =", self.calculation.RHF_symmetry)
-
-        print(WHITESPACE, "--------------------------------------------------")
-        print("")
-        print(
-            WHITESPACE,
-            "EOMCC calculation started at",
-            datetime.datetime.strptime(
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "%Y-%m-%d %H:%M"
-            ),
-            "\n",
-        )
-
-    @staticmethod
-    def cc_calculation_summary(reference_energy, cc_energy):
-        DATA_FMT = "{:<30} {:>20.8f}"
-        print("\n   CC Calculation Summary")
-        print("  --------------------------------------------------")
-        print(DATA_FMT.format("   Reference energy", reference_energy))
-        print(DATA_FMT.format("   CC correlation energy", cc_energy))
-        print(DATA_FMT.format("   Total CC energy", reference_energy + cc_energy))
-        print(
-            "\n   CC calculation ended at",
-            datetime.datetime.strptime(
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "%Y-%m-%d %H:%M:%S",
-            ),
-        )
-        print("")
-
-    @staticmethod
-    def eomcc_calculation_summary(omega, r0, is_converged):
-        DATA_FMT = "{:>7} {:<10} {} {:.8f} {:>10} {:.8f}     {}"
-        print("\n   EOMCC Calculation Summary")
-        print("  --------------------------------------------------------")
-        for n in range(len(omega)):
-            if is_converged[n]:
-                convergence_label = ''
-            else:
-                convergence_label = 'not converged'
-            print(DATA_FMT.format("State", n + 1, "ω =", omega[n], "r0 =", r0[n], convergence_label))
-        print(
-            "\n   EOMCC calculation ended at",
-            datetime.datetime.strptime(
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "%Y-%m-%d %H:%M:%S",
-            ),
-        )
-        print("")
-
-    @staticmethod
-    def leftcc_calculation_summary(omega, LR, is_converged):
-        DATA_FMT = "{:>12} {:>10} {:.8f} {:>10} {:.8f}"
-        print("\n   Left-CC Calculation Summary")
-        print("  --------------------------------------------------")
-        if is_converged:
-            convergence_label = 'Converged'
-        else:
-            convergence_label = 'Not converged'
-        print(DATA_FMT.format(convergence_label, "ω =", omega, "LR =", LR))
-        print(
-            "\n   Left CC calculation ended at",
-            datetime.datetime.strptime(
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "%Y-%m-%d %H:%M:%S",
-            ),
-        )
-        print("")
-
-
 ITERATION_HEADER_FMT = "{:>10} {:>12} {:>14} {:>17} {:>19}"
 ITERATION_FMT = "{:>8} {:>17.10f} {:>17.10f} {:>17.10f} {:>15}"
 
@@ -198,6 +13,37 @@ EOMCC_ITERATION_HEADER = ITERATION_HEADER_FMT.format(
     "Iter.", "Residuum", "ω", "δω", "Wall time"
 )
 
+def get_timestamp():
+    return datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "%Y-%m-%d %H:%M")
+
+def cc_calculation_summary(reference_energy, cc_energy):
+    DATA_FMT = "{:<30} {:>20.8f}"
+    print("\n   CC Calculation Summary")
+    print("  --------------------------------------------------")
+    print(DATA_FMT.format("   Reference energy", reference_energy))
+    print(DATA_FMT.format("   CC correlation energy", cc_energy))
+    print(DATA_FMT.format("   Total CC energy", reference_energy + cc_energy))
+    print("")
+
+def eomcc_calculation_summary(omega, r0, is_converged):
+    print("\n   EOMCC Calculation Summary")
+    print("  --------------------------------------------------------")
+    if is_converged:
+        convergence_label = 'converged'
+    else:
+        convergence_label = 'not converged'
+    print("   Root", convergence_label, "   omega = %.8f" % omega, "  r0 = %.8f" % r0)
+    print("")
+
+def leftcc_calculation_summary(omega, LR, is_converged):
+    print("\n   Left CC Calculation Summary")
+    print("  --------------------------------------------------------")
+    if is_converged:
+        convergence_label = 'converged'
+    else:
+        convergence_label = 'not converged'
+    print("   Root", convergence_label, "   omega = %.8f" % omega, "  LR = %.8f" % LR)
+    print("")
 
 def print_cc_iteration_header():
     print("\n", CC_ITERATION_HEADER)
@@ -206,7 +52,6 @@ def print_cc_iteration_header():
 def print_eomcc_iteration_header():
     print("\n", EOMCC_ITERATION_HEADER)
     print('    '+(len(EOMCC_ITERATION_HEADER)) * "-")
-
 
 def print_cc_iteration(
     iteration_idx, residuum, delta_energy, correlation_energy, elapsed_time
@@ -579,6 +424,65 @@ def print_ea_amplitudes(R, system, order, nprint, thresh_print):
     return
 
 
+class SystemPrinter:
+    def __init__(self, system):
+        self.system = system
+
+    def header(self):
+
+        print(WHITESPACE, "System Information:")
+        print(WHITESPACE, "----------------------------------------------------")
+        print(WHITESPACE, "  Number of correlated electrons =", self.system.nelectrons)
+        print(WHITESPACE, "  Number of correlated orbitals =", self.system.norbitals)
+        print(WHITESPACE, "  Number of frozen orbitals =", self.system.nfrozen)
+        print(
+            WHITESPACE,
+            "  Number of alpha occupied orbitals =",
+            self.system.noccupied_alpha,
+        )
+        print(
+            WHITESPACE,
+            "  Number of alpha unoccupied orbitals =",
+            self.system.nunoccupied_alpha,
+        )
+        print(
+            WHITESPACE,
+            "  Number of beta occupied orbitals =",
+            self.system.noccupied_beta,
+        )
+        print(
+            WHITESPACE,
+            "  Number of beta unoccupied orbitals =",
+            self.system.nunoccupied_beta,
+        )
+        print(WHITESPACE, "  Charge =", self.system.charge)
+        print(WHITESPACE, "  Point group =", self.system.point_group)
+        print(WHITESPACE, "  Symmetry of reference =", self.system.reference_symmetry)
+        print(
+            WHITESPACE, "  Spin multiplicity of reference =", self.system.multiplicity
+        )
+        print("")
+
+        HEADER_FMT = "{:>10} {:>20} {:>13} {:>13}"
+        MO_FMT = "{:>10} {:>20.6f} {:>13} {:>13.1f}"
+
+        header = HEADER_FMT.format("MO #", "Energy (a.u.)", "Symmetry", "Occupation")
+        print(header)
+        print(len(header) * "-")
+        for i in range(self.system.norbitals + self.system.nfrozen):
+            print(
+                MO_FMT.format(
+                    i + 1,
+                    self.system.mo_energies[i],
+                    self.system.orbital_symmetries_all[i],
+                    self.system.mo_occupation[i],
+                )
+            )
+        print("")
+        print(WHITESPACE, "Nuclear Repulsion Energy =", self.system.nuclear_repulsion)
+        print(WHITESPACE, "Reference Energy =", self.system.reference_energy)
+        print("")
+        return
 # def print_amplitudes(R, system, order, nprint=10, thresh_print=1.0e-01):
 #
 #     from ccpy.models.operators import ClusterOperator, FockOperator
