@@ -1,4 +1,5 @@
 """Main calculation driver module of CCpy."""
+import time
 import numpy as np
 from importlib import import_module
 from functools import partial
@@ -175,7 +176,10 @@ class Driver:
         hbar_build_function = getattr(hbar_mod, 'build_hbar_' + method.lower())
 
         # Replace the driver hamiltonian with the Hbar
-        self.hamiltonian = hbar_build_function(self.T, self.hamiltonian)
+        print("")
+        print("   HBar construction began on", get_timestamp(), end="")
+        self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.system)
+        print("... completed on", get_timestamp(), "\n")
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
 

@@ -11,13 +11,14 @@ if __name__ == "__main__":
             nfrozen=0,
     )
     system.print_info()
+    system.set_active_space(nact_occupied=1, nact_unoccupied=3)
 
     mycc = Driver(system, H)
     mycc.options["maximum_iterations"] = 200
 
-    mycc.run_cc(method="ccsd")
-    mycc.run_hbar(method="ccsd")
-    mycc.run_eomcc(method="eomccsd", state_index=[1, 2, 3])
-    mycc.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3])
-    mycc.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3])
+    mycc.run_cc(method="ccsdt1")
+    mycc.run_hbar(method="ccsdt1")
+    mycc.run_eomcc(method="eomccsdt1", state_index=[1, 2, 3])
+    #mycc.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3])
+    #mycc.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3])
 

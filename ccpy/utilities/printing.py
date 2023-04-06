@@ -14,7 +14,7 @@ EOMCC_ITERATION_HEADER = ITERATION_HEADER_FMT.format(
 )
 
 def get_timestamp():
-    return datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "%Y-%m-%d %H:%M")
+        return datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "%Y-%m-%d %H:%M:%S")
 
 def cc_calculation_summary(reference_energy, cc_energy):
     DATA_FMT = "{:<30} {:>20.8f}"
