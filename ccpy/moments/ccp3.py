@@ -8,7 +8,7 @@ from ccpy.utilities.updates import ccp3_loops, ccsdpt_loops, ccp3_adaptive_loops
 from ccpy.left.left_cc_intermediates import build_left_ccsdt_intermediates
 
 
-def calc_ccp3_full(T, L, H, H0, system, pspace, use_RHF=False):
+def calc_ccp3_full(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
@@ -61,13 +61,10 @@ def calc_ccp3_full(T, L, H, H0, system, pspace, use_RHF=False):
     t_end = time.time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
-    # print the results
-    cc_energy = get_cc_energy(T, H0)
-
-    energy_A = cc_energy + correction_A
-    energy_B = cc_energy + correction_B
-    energy_C = cc_energy + correction_C
-    energy_D = cc_energy + correction_D
+    energy_A = corr_energy + correction_A
+    energy_B = corr_energy + correction_B
+    energy_C = corr_energy + correction_C
+    energy_D = corr_energy + correction_D
 
     total_energy_A = system.reference_energy + energy_A
     total_energy_B = system.reference_energy + energy_B
@@ -77,7 +74,7 @@ def calc_ccp3_full(T, L, H, H0, system, pspace, use_RHF=False):
     print('   CC(P;3) Calculation Summary')
     print('   -------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
-    print("   CC(P) = {:>10.10f}".format(system.reference_energy + cc_energy))
+    print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CC(P;3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A
@@ -105,7 +102,7 @@ def calc_ccp3_full(T, L, H, H0, system, pspace, use_RHF=False):
     return Eccp3, deltap3
 
 
-def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False):
+def calc_ccp3_2ba(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
@@ -203,13 +200,10 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False):
     t_end = time.time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
-    # print the results
-    cc_energy = get_cc_energy(T, H0)
-
-    energy_A = cc_energy + correction_A
-    energy_B = cc_energy + correction_B
-    energy_C = cc_energy + correction_C
-    energy_D = cc_energy + correction_D
+    energy_A = corr_energy + correction_A
+    energy_B = corr_energy + correction_B
+    energy_C = corr_energy + correction_C
+    energy_D = corr_energy + correction_D
 
     total_energy_A = system.reference_energy + energy_A
     total_energy_B = system.reference_energy + energy_B
@@ -219,7 +213,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False):
     print('   CC(P;3) Calculation Summary')
     print('   -------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
-    print("   CC(P) = {:>10.10f}".format(system.reference_energy + cc_energy))
+    print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CC(P;3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A

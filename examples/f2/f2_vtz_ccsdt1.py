@@ -16,18 +16,18 @@ if __name__ == "__main__":
     mol.build(
         atom="""F 0.0 0.0 -2.66816
                 F 0.0 0.0  2.66816""",
-        basis="ccpvtz",
+        basis="ccpvdz",
         charge=0,
         spin=0,
         symmetry="D2H",
-        cart=False,
+        cart=True,
         unit='Bohr',
     )
     mf = scf.ROHF(mol)
     mf.kernel()
 
     system, H = load_pyscf_integrals(mf, nfrozen=2)
-    system.set_active_space(nact_unoccupied=9, nact_occupied=5)
+    system.set_active_space(nact_unoccupied=2, nact_occupied=2)
     system.print_info()
 
     # check that CC(P;3) and CC(t;3) give the same answer

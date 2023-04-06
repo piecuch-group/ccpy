@@ -2,11 +2,10 @@
 import time
 
 import numpy as np
-from ccpy.drivers.cc_energy import get_cc_energy
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
 from ccpy.utilities.updates import crcc_loops, ccsdpt_loops
 
-def calc_crcc23(T, L, H, H0, system, use_RHF=False):
+def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF=False):
     """
     Calculate the ground-state CR-CC(2,3) correction to the CCSD energy.
     """
@@ -24,7 +23,7 @@ def calc_crcc23(T, L, H, H0, system, use_RHF=False):
     # perform correction in-loop
     dA_aaa, dB_aaa, dC_aaa, dD_aaa = crcc_loops.crcc_loops.crcc23a_opt(
                                         T.aa, L.a, L.aa,
-                                        H.aa.vooo, I2A_vvov, H0.aa.oovv, H.a.ov,
+                                        H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
                                         H.aa.vovv, H.aa.ooov, H0.a.oo, H0.a.vv,
                                         H.a.oo, H.a.vv, H.aa.voov, H.aa.oooo,
                                         H.aa.vvvv,
@@ -42,7 +41,7 @@ def calc_crcc23(T, L, H, H0, system, use_RHF=False):
                                         H.ab.vvvo, H.ab.vvov, H.aa.vvov,
                                         H.ab.vovv, H.ab.ovvv, H.aa.vovv,
                                         H.ab.ooov, H.ab.oovo, H.aa.ooov,
-                                        H.a.ov, H.b.ov, H0.aa.oovv, H0.ab.oovv,
+                                        H.a.ov, H.b.ov, H.aa.oovv, H.ab.oovv,
                                         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
                                         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                         H.aa.voov, H.aa.oooo, H.aa.vvvv, H.ab.ovov,
@@ -68,7 +67,7 @@ def calc_crcc23(T, L, H, H0, system, use_RHF=False):
                                         H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
                                         H.bb.ooov,
                                         H.a.ov, H.b.ov,
-                                        H0.ab.oovv, H0.bb.oovv,
+                                        H.ab.oovv, H.bb.oovv,
                                         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
                                         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                         H.aa.voov, H.ab.ovov, H.ab.vovo, H.ab.oooo,
@@ -81,7 +80,7 @@ def calc_crcc23(T, L, H, H0, system, use_RHF=False):
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
         dA_bbb, dB_bbb, dC_bbb, dD_bbb = crcc_loops.crcc_loops.crcc23d_opt(
                                         T.bb, L.b, L.bb,
-                                        H.bb.vooo, I2C_vvov, H0.bb.oovv, H.b.ov,
+                                        H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
                                         H.bb.vovv, H.bb.ooov, H0.b.oo, H0.b.vv,
                                         H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
                                         d3bbb_o, d3bbb_v,
@@ -96,13 +95,10 @@ def calc_crcc23(T, L, H, H0, system, use_RHF=False):
     t_end = time.time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
-    # print the results
-    cc_energy = get_cc_energy(T, H0)
-
-    energy_A = cc_energy + correction_A
-    energy_B = cc_energy + correction_B
-    energy_C = cc_energy + correction_C
-    energy_D = cc_energy + correction_D
+    energy_A = corr_energy + correction_A
+    energy_B = corr_energy + correction_B
+    energy_C = corr_energy + correction_C
+    energy_D = corr_energy + correction_D
 
     total_energy_A = system.reference_energy + energy_A
     total_energy_B = system.reference_energy + energy_B
@@ -112,7 +108,7 @@ def calc_crcc23(T, L, H, H0, system, use_RHF=False):
     print('   CR-CC(2,3) Calculation Summary')
     print('   -------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
-    print("   CCSD = {:>10.10f}".format(system.reference_energy + cc_energy))
+    print("   CCSD = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CR-CC(2,3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A
@@ -140,7 +136,7 @@ def calc_crcc23(T, L, H, H0, system, use_RHF=False):
     return Ecrcc23, delta23
 
 
-def calc_ccsdpt(T, H, system, use_RHF=False):
+def calc_ccsdpt(T, corr_energy, H, system, use_RHF=False):
     """
     Calculate the ground-state CCSD(T) correction to the CCSD energy.
     """
@@ -208,14 +204,13 @@ def calc_ccsdpt(T, H, system, use_RHF=False):
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results
-    cc_energy = get_cc_energy(T, H)
-    energy_A = cc_energy + correction_A
+    energy_A = corr_energy + correction_A
     total_energy_A = system.reference_energy + energy_A
 
     print('   CCSD(T) Calculation Summary')
     print('   -------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
-    print("   CCSD = {:>10.10f}".format(system.reference_energy + cc_energy))
+    print("   CCSD = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CCSD(T) = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A

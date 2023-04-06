@@ -11,8 +11,9 @@ import ccpy.eomcc
 from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eccc_jacobi
 from ccpy.drivers.cc_energy import get_LR, get_r0
 
+from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator, FockOperator
-from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc_calculation_summary, leftcc_calculation_summary, print_ee_amplitudes
+from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc_calculation_summary, leftcc_calculation_summary
 
 # [TODO]: - make CC(P) solver able to read in previous T vector of smaller P space as initial guess
 #         - clean up CC(P) solvers to remove options for previous linear and quadratic solvers
@@ -22,6 +23,7 @@ class Driver:
     def __init__(self, system, hamiltonian):
         self.system = system
         self.hamiltonian = hamiltonian
+        self.flag_hbar = False
         self.options = {"method" : None,
                         "maximum_iterations": 80,
                         "convergence_tolerance" : 1.0e-07,
@@ -41,6 +43,15 @@ class Driver:
         self.correlation_energy = 0.0
         self.vertical_excitation_energy = np.zeros(100)
         self.r0 = np.zeros(100)
+        self.deltapq = [None] * 100
+        self.ddeltapq = [None] * 100
+
+        # Store alpha and beta fock matrices for later usage before HBar overwrites bare Hamiltonian
+        self.fock = Integral.from_empty(system, 1, data_type=self.hamiltonian.a.oo.dtype)
+        self.fock.a.oo = self.hamiltonian.a.oo.copy()
+        self.fock.b.oo = self.hamiltonian.b.oo.copy()
+        self.fock.a.vv = self.hamiltonian.a.vv.copy()
+        self.fock.b.vv = self.hamiltonian.b.vv.copy()
 
     def set_operator_params(self, method):
         if method in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2"]:
@@ -103,7 +114,7 @@ class Driver:
                                  active_orders=self.operator_params["active_orders"],
                                  num_active=self.operator_params["number_active_indices"])
             # Run the CC calculation
-            self.T, self.corr_energy, _ = cc_jacobi(update_function,
+            self.T, self.correlation_energy, _ = cc_jacobi(update_function,
                                                     self.T,
                                                     dT,
                                                     self.hamiltonian,
@@ -120,7 +131,7 @@ class Driver:
             excitation_count = [[n3aaa, n3aab, n3abb, n3bbb]]
 
             # If RHF, copy aab into abb and aaa in bbb
-            if calculation.RHF_symmetry:
+            if self.options["RHF_symmetry"]:
                 assert (n3aaa == n3bbb)
                 assert (n3aab == n3abb)
                 t3_excitations["bbb"] = t3_excitations["aaa"].copy()
@@ -161,9 +172,14 @@ class Driver:
 
         # Replace the driver hamiltonian with the Hbar
         self.hamiltonian = hbar_build_function(self.T, self.hamiltonian)
+        # Set flag indicating that hamiltonian is set to Hbar is now true
+        self.flag_hbar = True
 
     def run_eomcc(self, method, state_index, t3_excitations=None, r3_excitations=None, guess_method="cis", multiplicity=None):
         """Performs the EOMCC calculation specified by the user in the input."""
+
+        if not self.flag_hbar:
+            print("WARNING: HBar is not computed prior to running EOMCC!")
 
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.eomcc.MODULES:
@@ -221,6 +237,10 @@ class Driver:
             ct += 1
 
     def run_leftcc(self, method, state_index=[0], t3_excitations=None, l3_excitations=None, pspace=None):
+
+        if not self.flag_hbar:
+            print("WARNING: HBar is not computed prior to running left CC!")
+
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.left.MODULES:
             raise NotImplementedError(
@@ -280,160 +300,172 @@ class Driver:
             leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system)
             print("   Left CC calculation for root %d ended on" % i, get_timestamp(), "\n")
 
+    def run_eccc(self, method, external_wavefunction):
+        from ccpy.extcorr.external_correction import cluster_analysis
 
-def eccc_driver(calculation, system, hamiltonian, external_wavefunction, T=None):
-    """Performs the calculation specified by the user in the input."""
-    from ccpy.extcorr.external_correction import cluster_analysis
+        # Get the external T vector corresponding to the cluster analysis
+        T_ext, VT_ext = cluster_analysis(external_wavefunction, self.hamiltonian, self.system)
 
-    # Get the external T vector corresponding to the cluster analysis
-    T_ext, VT_ext = cluster_analysis(external_wavefunction, hamiltonian, system)
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.cc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
 
-    # check if requested CC calculation is implemented in modules
-    if calculation.calculation_type not in ccpy.cc.MODULES:
-        raise NotImplementedError(
-            "{} not implemented".format(calculation.calculation_type)
-        )
+        # import the specific CC method module and get its update function
+        cc_mod = import_module("ccpy.cc." + method.lower())
+        update_function = getattr(cc_mod, 'update')
 
-    # [TODO]: Check if calculation parameters (e.g, active orbitals) make sense
+        # Print the options as a header
+        print("   ec-CC calculation started on", get_timestamp())
+        self.print_options()
 
-    # import the specific CC method module and get its update function
-    cc_mod = import_module("ccpy.cc." + calculation.calculation_type.lower())
-    update_function = getattr(cc_mod, 'update')
-
-    cc_printer = CCPrinter(calculation)
-    cc_printer.cc_header()
-
-    # initialize the cluster operator anew, or use restart
-    #[TODO]: This is not compatible if the initial T is a lower order than the
-    # one used in the calculation. For example, we could not start a CCSDT
-    # calculation using the CCSD cluster amplitudes.
-
-    if T is None:
-        T = ClusterOperator(system,
-                            order=calculation.order,
-                            active_orders=calculation.active_orders,
-                            num_active=calculation.num_active)
-
-        # Set the initial T1 and T2 components to that from cluster analysis
-        setattr(T, 'a', T_ext.a)
-        setattr(T, 'b', T_ext.b)
-        setattr(T, 'aa', T_ext.aa)
-        setattr(T, 'ab', T_ext.ab)
-        setattr(T, 'bb', T_ext.bb)
-
-    # regardless of restart status, initialize residual anew
-    dT = ClusterOperator(system,
-                         order=calculation.order,
-                         active_orders=calculation.active_orders,
-                         num_active=calculation.num_active)
-
-    T, corr_energy, is_converged = eccc_jacobi(
-                                           update_function,
-                                           T,
-                                           dT,
-                                           hamiltonian,
-                                           calculation,
-                                           system,
-                                           T_ext,
-                                           VT_ext)
-
-    total_energy = system.reference_energy + corr_energy
-
-    cc_printer.cc_calculation_summary(system.reference_energy, corr_energy)
-
-    return T, total_energy, is_converged, T_ext
-
-
-
-def eomcc_driver(calculation, system, hamiltonian, T, R, omega):
-    """Performs the EOMCC calculation specified by the user in the input."""
-
-    # check if requested CC calculation is implemented in modules
-    if calculation.calculation_type not in ccpy.eomcc.MODULES:
-        raise NotImplementedError(
-            "{} not implemented".format(calculation.calculation_type)
-        )
-
-    # import the specific CC method module and get its update function
-    module = import_module("ccpy.eomcc." + calculation.calculation_type.lower())
-    HR_function = getattr(module, 'HR')
-    update_function = getattr(module, 'update')
-
-    cc_printer = CCPrinter(calculation)
-    cc_printer.eomcc_header()
-
-    R, omega, r0, is_converged = eomcc_davidson(
-                                           HR_function,
-                                           update_function,
-                                           R,
-                                           omega,
-                                           T,
-                                           hamiltonian,
-                                           calculation,
-                                           system,
-                                           )
-
-    cc_printer.eomcc_calculation_summary(omega, r0, is_converged)
-
-    return R, omega, r0, is_converged
-
-def mrcc_driver(calculation, system, hamiltonian, model_space, two_body_approximation=True):
-    """Performs the calculation specified by the user in the input."""
-
-    # check if requested CC calculation is implemented in modules
-    if calculation.calculation_type not in ccpy.mrcc.MODULES:
-        raise NotImplementedError(
-            "{} not implemented".format(calculation.calculation_type)
-        )
-
-    # [TODO]: Check if calculation parameters (e.g, active orbitals) make sense
-
-    # import the specific CC method module and get its update function
-    cc_mod = import_module("ccpy.mrcc." + calculation.calculation_type.lower())
-    heff_mod = import_module("ccpy.mrcc.effective_hamiltonian")
-    update_function = getattr(cc_mod, 'update')
-
-    if two_body_approximation: # use the Heff matrix elements computed using T(p) = T1(p) + T2(p)
-        compute_Heff_function = getattr(heff_mod, 'compute_Heff_mkmrccsd')
-    else:
-        compute_Heff_function = getattr(heff_mod, 'compute_Heff_' + calculation.calculation_type.lower())
-
-    cc_printer = CCPrinter(calculation)
-    cc_printer.cc_header()
-
-    # initialize the cluster operator anew, or use restart
-    #[TODO]: This is not compatible if the initial T is a lower order than the
-    # one used in the calculation. For example, we could not start a CCSDT
-    # calculation using the CCSD cluster amplitudes.
-    T = [None for i in range(len(model_space))]
-    dT = [None for i in range(len(model_space))]
-    for p in range(len(model_space)):
-        if T[p] is None:
-            T[p] = ClusterOperator(system,
-                                order=calculation.order,
-                                active_orders=calculation.active_orders,
-                                num_active=calculation.num_active)
+        if self.T is None:
+            self.T = ClusterOperator(self.system,
+                                     order=self.operator_params["order"],
+                                     active_orders=self.operator_params["active_orders"],
+                                     num_active=self.operator_params["number_active_indices"])
+            # Set the initial T1 and T2 components to that from cluster analysis
+            setattr(self.T, 'a', T_ext.a)
+            setattr(self.T, 'b', T_ext.b)
+            setattr(self.T, 'aa', T_ext.aa)
+            setattr(self.T, 'ab', T_ext.ab)
+            setattr(self.T, 'bb', T_ext.bb)
 
         # regardless of restart status, initialize residual anew
-        dT[p] = ClusterOperator(system,
-                            order=calculation.order,
-                            active_orders=calculation.active_orders,
-                            num_active=calculation.num_active)
+        dT = ClusterOperator(self.system,
+                             order=self.operator_params["order"],
+                             active_orders=self.operator_params["active_orders"],
+                             num_active=self.operator_params["number_active_indices"])
+        # Run the CC calculation
+        self.T, self.correlation_energy, _ = eccc_jacobi(update_function,
+                                                  self.T,
+                                                  dT,
+                                                  self.hamiltonian,
+                                                  T_ext, VT_ext,
+                                                  self.system,
+                                                  self.options,
+                                               )
 
-    T, total_energy, is_converged = mrcc_jacobi(
-                                           update_function,
-                                           compute_Heff_function,
-                                           T,
-                                           dT,
-                                           model_space,
-                                           hamiltonian,
-                                           calculation,
-                                           system,
-                                           )
+        cc_calculation_summary(self.system.reference_energy, self.correlation_energy)
+        print("   ec-CC calculation ended on", get_timestamp())
+
+    def run_ccp3(self, method, state_index=[0], two_body_approx=True, t3_excitations=None, l3_excitations=None, r3_excitations=None, pspace=None):
+
+        if method.lower() == "crcc23":
+            if not self.flag_hbar:
+                print("WARNING: HBar is not computed prior to running CR-CC(2,3)!")
+            from ccpy.moments.crcc23 import calc_crcc23
+            from ccpy.moments.creomcc23 import calc_creomcc23
+
+            for i in state_index:
+                # Perform ground-state correction
+                if i == 0:
+                    _, self.deltapq[0] = calc_crcc23(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+                else:
+                    # Perform excited-state corrections
+                    _, self.deltapq[i], self.ddeltapq[i] = calc_creomcc23(self.T, self.R[i], self.L[i], self.r0[i],
+                                                                          self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                                          self.system, self.options["RHF_symmetry"])
+        elif method.lower() == "ccsd(t)":
+            if self.flag_hbar:
+                print("WARNING: HBar has replaced bare integrals prior to running CCSD(T)!")
+            from ccpy.moments.crcc23 import calc_ccsdpt
+
+            _, self.deltapq[0] = calc_ccsdpt(self.T, self.correlation_energy, self.hamiltonian, self.system, self.options["RHF_symmetry"])
+
+        elif method.lower() == "crcc24":
+            if not self.flag_hbar:
+                print("WARNING: HBar is not computed prior to running CR-CC(2,4)!")
+            from ccpy.moments.crcc24 import calc_crcc24
+
+            # Perform ground-state correction
+            _, self.deltapq[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+
+        elif method.lower() == "cct3":
+            if not self.flag_hbar:
+                print("WARNING: HBar is not computed prior to running CC(t;3)!")
+            from ccpy.moments.cct3 import calc_cct3
+
+            # Perform ground-state correction
+            _, self.deltapq[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
+                                           self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
+
+        elif method.lower() == "ccp3":
+            if not self.flag_hbar:
+                print("WARNING: HBar is not computed prior to running CC(P;3)!")
+            if pspace is None:
+                print("WARNING: P space array is not set upon entering CC(P;3)!")
+            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full
+
+            # Perform ground-state correction
+            if two_body_approx: # Use the 2BA (requires only L1, L2 and HBar of CCSD)
+                _, self.deltapq[0] = calc_ccp3_2ba(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
+            else: # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
+                _, self.delta_pq[0] = calc_ccp3_full(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
+        else:
+            raise NotImplementedError("Triples correction {} not implemented".format(method.lower()))
 
 
-    #total_energy = system.reference_energy + corr_energy
 
-    #cc_printer.cc_calculation_summary(system.reference_energy, corr_energy)
 
-    return T, total_energy, is_converged
+# def mrcc_driver(calculation, system, hamiltonian, model_space, two_body_approximation=True):
+#     """Performs the calculation specified by the user in the input."""
+#
+#     # check if requested CC calculation is implemented in modules
+#     if calculation.calculation_type not in ccpy.mrcc.MODULES:
+#         raise NotImplementedError(
+#             "{} not implemented".format(calculation.calculation_type)
+#         )
+#
+#     # [TODO]: Check if calculation parameters (e.g, active orbitals) make sense
+#
+#     # import the specific CC method module and get its update function
+#     cc_mod = import_module("ccpy.mrcc." + calculation.calculation_type.lower())
+#     heff_mod = import_module("ccpy.mrcc.effective_hamiltonian")
+#     update_function = getattr(cc_mod, 'update')
+#
+#     if two_body_approximation: # use the Heff matrix elements computed using T(p) = T1(p) + T2(p)
+#         compute_Heff_function = getattr(heff_mod, 'compute_Heff_mkmrccsd')
+#     else:
+#         compute_Heff_function = getattr(heff_mod, 'compute_Heff_' + calculation.calculation_type.lower())
+#
+#     cc_printer = CCPrinter(calculation)
+#     cc_printer.cc_header()
+#
+#     # initialize the cluster operator anew, or use restart
+#     #[TODO]: This is not compatible if the initial T is a lower order than the
+#     # one used in the calculation. For example, we could not start a CCSDT
+#     # calculation using the CCSD cluster amplitudes.
+#     T = [None for i in range(len(model_space))]
+#     dT = [None for i in range(len(model_space))]
+#     for p in range(len(model_space)):
+#         if T[p] is None:
+#             T[p] = ClusterOperator(system,
+#                                 order=calculation.order,
+#                                 active_orders=calculation.active_orders,
+#                                 num_active=calculation.num_active)
+#
+#         # regardless of restart status, initialize residual anew
+#         dT[p] = ClusterOperator(system,
+#                             order=calculation.order,
+#                             active_orders=calculation.active_orders,
+#                             num_active=calculation.num_active)
+#
+#     T, total_energy, is_converged = mrcc_jacobi(
+#                                            update_function,
+#                                            compute_Heff_function,
+#                                            T,
+#                                            dT,
+#                                            model_space,
+#                                            hamiltonian,
+#                                            calculation,
+#                                            system,
+#                                            )
+#
+#
+#     #total_energy = system.reference_energy + corr_energy
+#
+#     #cc_printer.cc_calculation_summary(system.reference_energy, corr_energy)
+#
+#     return T, total_energy, is_converged

@@ -92,13 +92,13 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
 
     return R, omega, is_converged
 
-def eccc_jacobi(update_t, T, dT, H, calculation, system, T_ext, VT_ext):
+def eccc_jacobi(update_t, T, dT, H, T_ext, VT_ext, system, options):
 
     from ccpy.drivers.cc_energy import get_cc_energy
     from ccpy.drivers.diis import DIIS
 
     # instantiate the DIIS accelerator object
-    diis_engine = DIIS(T, calculation.diis_size, calculation.low_memory)
+    diis_engine = DIIS(T, options["diis_size"], options["diis_out_of_core"])
 
     # Jacobi/DIIS iterations
     num_throw_away = 3
@@ -111,12 +111,12 @@ def eccc_jacobi(update_t, T, dT, H, calculation, system, T_ext, VT_ext):
 
     t_start = time.time()
     print_cc_iteration_header()
-    for niter in range(calculation.maximum_iterations):
+    for niter in range(options["maximum_iterations"]):
         # get iteration start time
         t1 = time.time()
 
         # Update the T vector
-        T, dT = update_t(T, dT, H, calculation.energy_shift, calculation.RHF_symmetry, system, T_ext, VT_ext)
+        T, dT = update_t(T, dT, H, options["energy_shift"], options["RHF_symmetry"], system, T_ext, VT_ext)
 
         # CC correlation energy
         energy = get_cc_energy(T, H)
@@ -127,8 +127,8 @@ def eccc_jacobi(update_t, T, dT, H, calculation, system, T_ext, VT_ext):
         # check for exit condition
         residuum = np.linalg.norm(dT.flatten())
         if (
-            residuum < calculation.convergence_tolerance
-            and abs(delta_energy) < calculation.convergence_tolerance
+            residuum < options["convergence_tolerance"]
+            and abs(delta_energy) < options["convergence_tolerance"]
         ):
             # print the iteration of convergence
             elapsed_time = time.time() - t1
@@ -149,7 +149,7 @@ def eccc_jacobi(update_t, T, dT, H, calculation, system, T_ext, VT_ext):
             diis_engine.push(T, dT, niter)
 
         # Do DIIS extrapolation
-        if niter >= calculation.diis_size + num_throw_away:
+        if niter >= options["diis_size"] + num_throw_away:
             ndiis_cycle += 1
             T.unflatten(diis_engine.extrapolate())
 
@@ -501,7 +501,7 @@ def ccp_jacobi(update_t, T, dT, H, system, t3_excitations, options):
             diis_engine.push(T, dT, niter)
 
         # Do DIIS extrapolation
-        if niter >= calculation.diis_size + num_throw_away:
+        if niter >= options["diis_size"] + num_throw_away:
             ndiis_cycle += 1
             T.unflatten(diis_engine.extrapolate())
 
@@ -518,108 +518,107 @@ def ccp_jacobi(update_t, T, dT, H, system, t3_excitations, options):
 
     return T, energy, is_converged
 
-
-def mrcc_jacobi(update_t, compute_Heff, T, dT, H, model_space, calculation, system):
-
-    from ccpy.drivers.diis import DIIS
-
-    model_space_dim = len(model_space)
-
-    # instantiate the DIIS accelerator object
-    diis_engine = []
-    for p in range(model_space_dim):
-        diis_engine.append(DIIS(T, calculation.diis_size, calculation.low_memory))
-
-    # Jacobi/DIIS iterations
-    num_throw_away = 3
-    ndiis_cycle = 0
-    is_converged = False
-
-    # Form the effective Hamiltonian
-    Heff = compute_Heff(H, T, model_space)
-
-    # Diagonalize effective Hamiltonian
-    energies, coeffs = np.linalg.eig(Heff)
-    idx = np.argsort(energies)
-    energy = energies[idx[0]]
-    coeff = coeffs[:, idx[0]]
-
-    coeff_guess = coeff.copy()
-
-    print("   Energy of initial guess = {:>20.10f}".format(energy))
-
-    t_start = time.time()
-    print_cc_iteration_header()
-    for niter in range(calculation.maximum_iterations):
-        # get iteration start time
-        t1 = time.time()
-
-        # update old eigenpair
-        energy_old = energy
-        coeff_old = coeff.copy()
-
-        # Update the T vector
-        T, dT = update_t(T, dT, H, model_space, Heff, coeff, calculation.energy_shift, calculation.RHF_symmetry, system)
-
-        # Form the effective Hamiltonian
-        Heff = compute_Heff(H, T, model_space)
-
-        # Diagonalize effective Hamiltonian and get eigenpair of interest
-        energies, coeffs = np.linalg.eig(Heff)
-        overlaps = np.zeros(model_space_dim)
-        for p in range(model_space_dim):
-            overlaps[p] = np.dot(coeff_guess.T, coeffs[:, p])
-        idx = np.argsort(overlaps)
-        energy = energies[idx[-1]]
-        coeff = coeffs[:, idx[-1]]
-
-        # change in energy
-        delta_energy = energy - energy_old
-        # change in eigenvector
-        delta_coeff = np.linalg.norm(coeff - coeff_old)
-        # change in T vectors
-        residuum = 0.0
-        for p in range(model_space_dim):
-            residuum += np.linalg.norm(dT[p].flatten())
-
-        # check for exit condition
-        if (
-            residuum < calculation.convergence_tolerance
-            and abs(delta_energy) < calculation.convergence_tolerance
-            and abs(delta_coeff) < calculation.convergence_tolerance
-        ):
-            # print the iteration of convergence
-            elapsed_time = time.time() - t1
-            print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
-
-            t_end = time.time()
-            minutes, seconds = divmod(t_end - t_start, 60)
-            print(
-                "   MRCC calculation successfully converged! ({:0.2f}m  {:0.2f}s)".format(
-                    minutes, seconds
-                )
-            )
-            is_converged = True
-            break
-
-        # Save T and dT vectors to disk for DIIS
-        if niter >= num_throw_away:
-            for p in range(model_space_dim):
-                diis_engine[p].push(T[p], dT[p], niter)
-
-        # Do DIIS extrapolation
-        if niter >= calculation.diis_size + num_throw_away:
-            ndiis_cycle += 1
-            for p in range(model_space_dim):
-                T[p].unflatten(diis_engine[p].extrapolate())
-
-        elapsed_time = time.time() - t1
-        print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
-    else:
-        print("MRCC calculation did not converge.")
-
-    # Remove the t.npy and dt.npy files if out-of-core DIIS was used
-    for p in range(model_space_dim):
-        diis_engine[p].cleanup()
-
-    return T, energy, is_converged
+# def mrcc_jacobi(update_t, compute_Heff, T, dT, H, model_space, calculation, system):
+#
+#     from ccpy.drivers.diis import DIIS
+#
+#     model_space_dim = len(model_space)
+#
+#     # instantiate the DIIS accelerator object
+#     diis_engine = []
+#     for p in range(model_space_dim):
+#         diis_engine.append(DIIS(T, calculation.diis_size, calculation.low_memory))
+#
+#     # Jacobi/DIIS iterations
+#     num_throw_away = 3
+#     ndiis_cycle = 0
+#     is_converged = False
+#
+#     # Form the effective Hamiltonian
+#     Heff = compute_Heff(H, T, model_space)
+#
+#     # Diagonalize effective Hamiltonian
+#     energies, coeffs = np.linalg.eig(Heff)
+#     idx = np.argsort(energies)
+#     energy = energies[idx[0]]
+#     coeff = coeffs[:, idx[0]]
+#
+#     coeff_guess = coeff.copy()
+#
+#     print("   Energy of initial guess = {:>20.10f}".format(energy))
+#
+#     t_start = time.time()
+#     print_cc_iteration_header()
+#     for niter in range(calculation.maximum_iterations):
+#         # get iteration start time
+#         t1 = time.time()
+#
+#         # update old eigenpair
+#         energy_old = energy
+#         coeff_old = coeff.copy()
+#
+#         # Update the T vector
+#         T, dT = update_t(T, dT, H, model_space, Heff, coeff, calculation.energy_shift, calculation.RHF_symmetry, system)
+#
+#         # Form the effective Hamiltonian
+#         Heff = compute_Heff(H, T, model_space)
+#
+#         # Diagonalize effective Hamiltonian and get eigenpair of interest
+#         energies, coeffs = np.linalg.eig(Heff)
+#         overlaps = np.zeros(model_space_dim)
+#         for p in range(model_space_dim):
+#             overlaps[p] = np.dot(coeff_guess.T, coeffs[:, p])
+#         idx = np.argsort(overlaps)
+#         energy = energies[idx[-1]]
+#         coeff = coeffs[:, idx[-1]]
+#
+#         # change in energy
+#         delta_energy = energy - energy_old
+#         # change in eigenvector
+#         delta_coeff = np.linalg.norm(coeff - coeff_old)
+#         # change in T vectors
+#         residuum = 0.0
+#         for p in range(model_space_dim):
+#             residuum += np.linalg.norm(dT[p].flatten())
+#
+#         # check for exit condition
+#         if (
+#             residuum < calculation.convergence_tolerance
+#             and abs(delta_energy) < calculation.convergence_tolerance
+#             and abs(delta_coeff) < calculation.convergence_tolerance
+#         ):
+#             # print the iteration of convergence
+#             elapsed_time = time.time() - t1
+#             print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+#
+#             t_end = time.time()
+#             minutes, seconds = divmod(t_end - t_start, 60)
+#             print(
+#                 "   MRCC calculation successfully converged! ({:0.2f}m  {:0.2f}s)".format(
+#                     minutes, seconds
+#                 )
+#             )
+#             is_converged = True
+#             break
+#
+#         # Save T and dT vectors to disk for DIIS
+#         if niter >= num_throw_away:
+#             for p in range(model_space_dim):
+#                 diis_engine[p].push(T[p], dT[p], niter)
+#
+#         # Do DIIS extrapolation
+#         if niter >= calculation.diis_size + num_throw_away:
+#             ndiis_cycle += 1
+#             for p in range(model_space_dim):
+#                 T[p].unflatten(diis_engine[p].extrapolate())
+#
+#         elapsed_time = time.time() - t1
+#         print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+#     else:
+#         print("MRCC calculation did not converge.")
+#
+#     # Remove the t.npy and dt.npy files if out-of-core DIIS was used
+#     for p in range(model_space_dim):
+#         diis_engine[p].cleanup()
+#
+#     return T, energy, is_converged

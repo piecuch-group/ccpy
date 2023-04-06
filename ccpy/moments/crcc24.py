@@ -2,12 +2,11 @@
 import time
 import numpy as np
 
-from ccpy.drivers.cc_energy import get_cc_energy
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
 from ccpy.utilities.updates import crcc24_opt_loops
 from ccpy.utilities.updates import crcc24_loops
 
-def calc_crcc24(T, L, H, H0, system, use_RHF=False):
+def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     """
     Calculate the ground-state CR-CC(2,4) correction to the CCSD energy.
     """
@@ -189,13 +188,10 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     t_end = time.time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
-    # print the results
-    cc_energy = get_cc_energy(T, H0)
-
-    energy_A = cc_energy + correction_A
-    energy_B = cc_energy + correction_B
-    energy_C = cc_energy + correction_C
-    energy_D = cc_energy + correction_D
+    energy_A = corr_energy + correction_A
+    energy_B = corr_energy + correction_B
+    energy_C = corr_energy + correction_C
+    energy_D = corr_energy + correction_D
 
     total_energy_A = system.reference_energy + energy_A
     total_energy_B = system.reference_energy + energy_B
@@ -205,7 +201,7 @@ def calc_crcc24(T, L, H, H0, system, use_RHF=False):
     print('   CR-CC(2,4) Calculation Summary')
     print('   -------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
-    print("   CCSD = {:>10.10f}".format(system.reference_energy + cc_energy))
+    print("   CCSD = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CR-CC(2,4)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A
