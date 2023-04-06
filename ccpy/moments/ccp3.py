@@ -27,7 +27,7 @@ def calc_ccp3_full(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
     MM23A = build_M3A_full(T, H, H0)
     L3A = build_L3A_full(L, H, X)
     dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_loops.ccp3_loops.crcc23a_p_full(
-        pspace[0]["aaa"],
+        pspace["aaa"],
         MM23A, L3A, 0.0,
         H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
         H.aa.voov, H.aa.oooo, H.aa.vvvv,
@@ -39,7 +39,7 @@ def calc_ccp3_full(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
     MM23B = build_M3B_full(T, H, H0)
     L3B = build_L3B_full(L, H, X)
     dA_aab, dB_aab, dC_aab, dD_aab = ccp3_loops.ccp3_loops.crcc23b_p_full(
-        pspace[0]["aab"],
+        pspace["aab"],
         MM23B, L3B, 0.0,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
@@ -119,9 +119,9 @@ def calc_ccp3_2ba(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
     dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_loops.ccp3_loops.crcc23a_p(
-            pspace[0]['aaa'],
+            pspace['aaa'],
             T.aa, L.a, L.aa,
-            H.aa.vooo, I2A_vvov, H0.aa.oovv, H.a.ov,
+            H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
             H.aa.vovv, H.aa.ooov, H0.a.oo, H0.a.vv,
             H.a.oo, H.a.vv, H.aa.voov, H.aa.oooo,
             H.aa.vvvv,
@@ -136,13 +136,13 @@ def calc_ccp3_2ba(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
 
     dA_aab, dB_aab, dC_aab, dD_aab = ccp3_loops.ccp3_loops.crcc23b_p(
-            pspace[0]['aab'],
+            pspace['aab'],
             T.aa, T.ab, L.a, L.b, L.aa, L.ab,
             I2B_ovoo, I2B_vooo, I2A_vooo,
             H.ab.vvvo, H.ab.vvov, H.aa.vvov,
             H.ab.vovv, H.ab.ovvv, H.aa.vovv,
             H.ab.ooov, H.ab.oovo, H.aa.ooov,
-            H.a.ov, H.b.ov, H0.aa.oovv, H0.ab.oovv,
+            H.a.ov, H.b.ov, H.aa.oovv, H.ab.oovv,
             H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
             H.a.oo, H.a.vv, H.b.oo, H.b.vv,
             H.aa.voov, H.aa.oooo, H.aa.vvvv, H.ab.ovov,
@@ -163,14 +163,14 @@ def calc_ccp3_2ba(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
 
         dA_abb, dB_abb, dC_abb, dD_abb = ccp3_loops.ccp3_loops.crcc23c_p(
-                pspace[0]['abb'],
+                pspace['abb'],
                 T.ab, T.bb, L.a, L.b, L.ab, L.bb,
                 I2B_vooo, I2C_vooo, I2B_ovoo,
                 H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
                 H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
                 H.bb.ooov,
                 H.a.ov, H.b.ov,
-                H0.ab.oovv, H0.bb.oovv,
+                H.ab.oovv, H.bb.oovv,
                 H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
                 H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                 H.aa.voov, H.ab.ovov, H.ab.vovo, H.ab.oooo,
@@ -183,9 +183,9 @@ def calc_ccp3_2ba(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
 
         dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_loops.ccp3_loops.crcc23d_p(
-                pspace[0]['bbb'],
+                pspace['bbb'],
                 T.bb, L.b, L.bb,
-                H.bb.vooo, I2C_vvov, H0.bb.oovv, H.b.ov,
+                H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
                 H.bb.vovv, H.bb.ooov, H0.b.oo, H0.b.vv,
                 H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
                 d3bbb_o, d3bbb_v,

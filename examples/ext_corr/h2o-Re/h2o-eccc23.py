@@ -1,9 +1,7 @@
-from ccpy.models.calculation import Calculation
 from ccpy.interfaces.gamess_tools import load_from_gamess
-from ccpy.drivers.driver import eccc_driver, lcc_driver
-from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
-from ccpy.moments.ccp3 import calc_ccp3
+from ccpy.drivers.driver import Driver
 from ccpy.utilities.pspace import get_pspace_from_cipsi
+
 
 if __name__ == "__main__":
 
@@ -18,14 +16,13 @@ if __name__ == "__main__":
 
     civecs = "ndet_1000000/civecs.dat"
 
-    calculation = Calculation(calculation_type="eccc2")
-    T, total_energy, converged = eccc_driver(calculation, system, H, external_wavefunction=civecs)
+    mycc = Driver(system, H)
+    mycc.run_eccc(method="eccc2", external_wavefunction=civecs)
+    mycc.run_hbar(method="ccsd")
+    mycc.run_leftcc(method="left_ccsd")
 
-    Hbar = build_hbar_ccsd(T, H)
+    pspace, excitations, excitation_count = get_pspace_from_cipsi(civecs, system, nexcit=3, ordered_index=False)
 
-    calculation = Calculation(calculation_type="left_ccsd")
-    L, _, converged = lcc_driver(calculation, system, T, Hbar)
+    mycc.run_ccp3(method="ccp3", pspace=pspace[0])
 
-    pspace, excitation_count = get_pspace_from_cipsi(civecs, system, nexcit=3, ordered_index=False)
-    Ecrcc23, _ = calc_ccp3(T, L, Hbar, H, system, pspace)
 

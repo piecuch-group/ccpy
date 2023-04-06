@@ -21,7 +21,7 @@ from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc
 
 class Driver:
 
-    def __init__(self, system, hamiltonian):
+    def __init__(self, system, hamiltonian, max_number_states=100):
         self.system = system
         self.hamiltonian = hamiltonian
         self.flag_hbar = False
@@ -39,13 +39,13 @@ class Driver:
                                 "number_active_indices" : [None],
                                 "pspace_orders" : [None]}
         self.T = None
-        self.L = [None] * 100
-        self.R = [None] * 100
+        self.L = [None] * max_number_states
+        self.R = [None] * max_number_states
         self.correlation_energy = 0.0
-        self.vertical_excitation_energy = np.zeros(100)
-        self.r0 = np.zeros(100)
-        self.deltapq = [None] * 100
-        self.ddeltapq = [None] * 100
+        self.vertical_excitation_energy = np.zeros(max_number_states)
+        self.r0 = np.zeros(max_number_states)
+        self.deltapq = [None] * max_number_states
+        self.ddeltapq = [None] * max_number_states
 
         # Store alpha and beta fock matrices for later usage before HBar overwrites bare Hamiltonian
         self.fock = Integral.from_empty(system, 1, data_type=self.hamiltonian.a.oo.dtype)
@@ -54,35 +54,63 @@ class Driver:
         self.fock.a.vv = self.hamiltonian.a.vv.copy()
         self.fock.b.vv = self.hamiltonian.b.vv.copy()
 
-        #self.fock.aa.oovv = self.hamiltonian.aa.oovv.copy()
-        #self.fock.ab.oovv = self.hamiltonian.ab.oovv.copy()
-        #self.fock.bb.oovv = self.hamiltonian.bb.oovv.copy()
-
     def set_operator_params(self, method):
-        if method in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2"]:
+        if method.lower() in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2"]:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
-        elif method in ["ccsdt", "eomccsdt", "left_ccsdt", "left_ccsdt_p_slow"]:
+        elif method.lower() in ["ccsdt", "eomccsdt", "left_ccsdt", "left_ccsdt_p_slow"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
-        elif method in ["ccsdtq"]:
+        elif method.lower() in ["ccsdtq"]:
             self.operator_params["order"] = 4
             self.operator_params["number_particles"] = 4
             self.operator_params["number_holes"] = 4
-        elif method in ["ccsdt1", "eomccsdt1"]:
+        elif method.lower() in ["ccsdt1", "eomccsdt1"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
             self.operator_params["active_orders"] = [3]
             self.operator_params["number_active_indices"] = [1]
-        elif method in ["ccsdt_p"]:
+        elif method.lower() in ["ccsdt_p"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
             self.operator_params["pspace_orders"] = [3]
-
+        elif method.lower() in ["ipeom2", "left_ipeom2"]:
+            self.order = 2
+            self.num_particles = 1
+            self.num_holes = 2
+        elif method.lower() in ["ipeom3", "left_ipeom3"]:
+            self.order = 3
+            self.num_particles = 2
+            self.num_holes = 3
+        elif method.lower() in ["eaeom2", "left_eaeom2"]:
+            self.order = 2
+            self.num_particles = 2
+            self.num_holes = 1
+        elif method.lower() in ["eaeom3", "left_eaeom3"]:
+            self.order = 3
+            self.num_particles = 3
+            self.num_holes = 2
+        elif method.lower() in ["dipeom3", "left_dipeom3"]:
+            self.order = 3
+            self.num_particles = 1
+            self.num_holes = 3
+        elif method.lower() in ["dipeom4", "left_dipeom4"]:
+            self.order = 4
+            self.num_particles = 2
+            self.num_holes = 4
+        elif method.lower() in ["deaeom3", "left_deaeom3"]:
+            self.order = 3
+            self.num_particles = 3
+            self.num_holes = 1
+        elif method.lower() in ["deaeom4", "left_deaeom4"]:
+            self.order = 4
+            self.num_particles = 4
+            self.num_holes = 2
+            
     def print_options(self):
         print("   ------------------------------------------")
         for option_key, option_value in self.options.items():
@@ -307,7 +335,7 @@ class Driver:
             leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system)
             print("   Left CC calculation for root %d ended on" % i, get_timestamp(), "\n")
 
-    def run_eccc(self, method, external_wavefunction):
+    def run_eccc(self, method, external_wavefunction, t3_excitations=None):
         from ccpy.extcorr.external_correction import cluster_analysis
 
         # Get the external T vector corresponding to the cluster analysis
@@ -318,6 +346,9 @@ class Driver:
             raise NotImplementedError(
                 "{} not implemented".format(method.lower())
             )
+        # Set operator parameters needed to build T
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
 
         # import the specific CC method module and get its update function
         cc_mod = import_module("ccpy.cc." + method.lower())
