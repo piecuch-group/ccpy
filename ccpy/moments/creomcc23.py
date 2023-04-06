@@ -38,7 +38,7 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
     dA_aaa, dB_aaa, dC_aaa, dD_aaa, ddA_aaa, ddB_aaa, ddC_aaa, ddD_aaa = crcc_loops.crcc_loops.creomcc23a_opt(
                                                                omega, r0, T.aa, R.aa, L.a, L.aa,
                                                                H.aa.vooo, I2A_vvov, H.aa.vvov, chi2A_vvvo,
-                                                               chi2A_ovoo, H0.aa.oovv, H.a.ov, H.aa.vovv,
+                                                               chi2A_ovoo, H.aa.oovv, H.a.ov, H.aa.vovv,
                                                                H.aa.ooov, H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
                                                                H.aa.voov, H.aa.oooo, H.aa.vvvv,
                                                                d3aaa_o, d3aaa_v,
@@ -64,7 +64,7 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
                                                                H.ab.ooov, H.ab.oovo, H.aa.ooov,
                                                                chi2B_vvvo, chi2B_ovoo, chi2A_vvvo, chi2A_vooo,
                                                                chi2B_vvov, chi2B_vooo, H.ab.ovoo, H.aa.vooo, H.ab.vooo,
-                                                               H.a.ov, H.b.ov, H0.aa.oovv, H0.ab.oovv, H0.a.oo, H0.a.vv,
+                                                               H.a.ov, H.b.ov, H.aa.oovv, H.ab.oovv, H0.a.oo, H0.a.vv,
                                                                H0.b.oo, H0.b.vv, H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                                H.aa.voov, H.aa.oooo, H.aa.vvvv, H.ab.ovov, H.ab.vovo,
                                                                H.ab.oooo, H.ab.vvvv, H.bb.voov,
@@ -101,7 +101,7 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
                                                                               H.ab.vvvo, H.ab.ovvv, H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
                                                                               H.bb.ooov, chi2B_vvov, chi2B_vooo, chi2C_vvvo, chi2C_vooo,
                                                                               chi2B_vvvo, chi2B_ovoo, H.ab.vooo, H.bb.vooo, H.ab.ovoo,
-                                                                              H.a.ov, H.b.ov, H0.ab.oovv, H.bb.oovv, H0.a.oo, H0.a.vv,
+                                                                              H.a.ov, H.b.ov, H.ab.oovv, H.bb.oovv, H0.a.oo, H0.a.vv,
                                                                               H0.b.oo, H0.b.vv, H.a.oo, H.a.vv, H.b.oo, H.b.vv, H.aa.voov,
                                                                               H.ab.ovov, H.ab.vovo, H.ab.oooo, H.ab.vvvv, H.bb.voov,
                                                                               H.bb.oooo, H.bb.vvvv,
@@ -115,7 +115,7 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
         dA_bbb, dB_bbb, dC_bbb, dD_bbb, ddA_bbb, ddB_bbb, ddC_bbb, ddD_bbb = crcc_loops.crcc_loops.creomcc23d_opt(
                                                                               omega, r0, T.bb, R.bb, L.b, L.bb,
                                                                               H.bb.vooo, I2C_vvov, H.bb.vvov,
-                                                                              chi2C_vvvo, chi2C_ovoo, H0.bb.oovv,
+                                                                              chi2C_vvvo, chi2C_ovoo, H.bb.oovv,
                                                                               H.b.ov, H.bb.vovv, H.bb.ooov, H0.b.oo,
                                                                               H0.b.vv, H.b.oo, H.b.vv, H.bb.voov,
                                                                               H.bb.oooo, H.bb.vvvv,
@@ -134,30 +134,30 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
     t_end = time.time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
-    energy_A = [cc_energy + x + y for x, y in zip(omega, correction_A)]
-    energy_B = [cc_energy + x + y for x, y in zip(omega, correction_B)]
-    energy_C = [cc_energy + x + y for x, y in zip(omega, correction_C)]
-    energy_D = [cc_energy + x + y for x, y in zip(omega, correction_D)]
+    energy_A = corr_energy + omega + correction_A
+    energy_B = corr_energy + omega + correction_B
+    energy_C = corr_energy + omega + correction_C
+    energy_D = corr_energy + omega + correction_D
 
-    total_energy_A = [system.reference_energy + x for x in energy_A]
-    total_energy_B = [system.reference_energy + x for x in energy_B]
-    total_energy_C = [system.reference_energy + x for x in energy_C]
-    total_energy_D = [system.reference_energy + x for x in energy_D]
+    total_energy_A = system.reference_energy + energy_A
+    total_energy_B = system.reference_energy + energy_B
+    total_energy_C = system.reference_energy + energy_C
+    total_energy_D = system.reference_energy + energy_D
 
-    delta_vee_A = [x + y for x, y in zip(omega, dcorrection_A)]
-    delta_vee_B = [x + y for x, y in zip(omega, dcorrection_B)]
-    delta_vee_C = [x + y for x, y in zip(omega, dcorrection_C)]
-    delta_vee_D = [x + y for x, y in zip(omega, dcorrection_D)]
+    delta_vee_A = omega + dcorrection_A
+    delta_vee_B = omega + dcorrection_B
+    delta_vee_C = omega + dcorrection_C
+    delta_vee_D = omega + dcorrection_D
 
-    delta_vee_eV_A = [hartreetoeV * x for x in delta_vee_A]
-    delta_vee_eV_B = [hartreetoeV * x for x in delta_vee_B]
-    delta_vee_eV_C = [hartreetoeV * x for x in delta_vee_C]
-    delta_vee_eV_D = [hartreetoeV * x for x in delta_vee_D]
+    delta_vee_eV_A = hartreetoeV * delta_vee_A 
+    delta_vee_eV_B = hartreetoeV * delta_vee_B
+    delta_vee_eV_C = hartreetoeV * delta_vee_C
+    delta_vee_eV_D = hartreetoeV * delta_vee_D
 
     print('   CR-EOMCC(2,3) / δ-CR-EOMCC(2,3) Calculation Summary')
     print('   -------------------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
-    print("   EOMCCSD = {:>10.10f}    ω = {:>10.10f}     VEE = {:>10.5f} eV".format(system.reference_energy + cc_energy + omega, omega, hartreetoeV * omega))
+    print("   EOMCCSD = {:>10.10f}    ω = {:>10.10f}     VEE = {:>10.5f} eV".format(system.reference_energy + corr_energy + omega, omega, hartreetoeV * omega))
     print(
         "   CR-EOMCC(2,3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A

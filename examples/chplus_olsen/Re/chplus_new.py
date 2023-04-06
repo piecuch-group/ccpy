@@ -13,8 +13,11 @@ if __name__ == "__main__":
     system.print_info()
 
     mycc = Driver(system, H)
+    mycc.options["maximum_iterations"] = 200
+
     mycc.run_cc(method="ccsd")
     mycc.run_hbar(method="ccsd")
-    mycc.run_eomcc(method="eomccsd", state_index=[1, 2])
-    mycc.run_leftcc(method="left_ccsd", state_index=[0, 1, 2])
+    mycc.run_eomcc(method="eomccsd", state_index=[1, 2, 3])
+    mycc.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3])
+    mycc.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3])
 
