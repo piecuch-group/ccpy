@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def load_from_gamess(
+def load_gamess_integrals(
     gamess_logfile,
     onebody_file,
     twobody_file,

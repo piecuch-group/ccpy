@@ -23,11 +23,7 @@ def main():
     mf = scf.ROHF(mol)
     mf.kernel()
 
-    system, H = load_pyscf_integrals(mf, nfrozen=2)
-    system.set_active_space(nact_occupied=2, nact_unoccupied=2)
-    system.print_info()
-
-    mycc = Driver(system, H)
+    mycc = Driver.from_pyscf(mf, nfrozen=2)
     mycc.run_cc(method="ccsd")
     mycc.run_hbar(method="ccsd")
     mycc.run_leftcc(method="left_ccsd")

@@ -1,5 +1,4 @@
 """Main calculation driver module of CCpy."""
-import time
 import numpy as np
 from importlib import import_module
 from functools import partial
@@ -16,10 +15,24 @@ from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator, FockOperator
 from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc_calculation_summary, leftcc_calculation_summary
 
+from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
+from ccpy.interfaces.gamess_tools import load_gamess_integrals
+
 # [TODO]: - make CC(P) solver able to read in previous T vector of smaller P space as initial guess
 #         - clean up CC(P) solvers to remove options for previous linear and quadratic solvers
 
 class Driver:
+
+    @classmethod
+    def from_pyscf(cls, meanfield, nfrozen, normal_ordered=True, dump_integrals=False, sorted=True):
+        return cls(
+            *load_pyscf_integrals(meanfield, nfrozen, normal_ordered=normal_ordered, dump_integrals=dump_integrals,
+                                  sorted=sorted))
+
+    @classmethod
+    def from_gamess(cls, logfile, onebody, twobody, nfrozen, normal_ordered=True, sorted=True, data_type=np.float64):
+        return cls(*load_gamess_integrals(logfile, onebody, twobody, nfrozen, normal_ordered=normal_ordered, sorted=sorted,
+                                   data_type=data_type))
 
     def __init__(self, system, hamiltonian, max_number_states=100):
         self.system = system

@@ -1,13 +1,5 @@
 from pyscf import gto, scf
-
-from ccpy.models.calculation import Calculation
-from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
-from ccpy.drivers.driver import cc_driver, lcc_driver
-
-from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
-
-from ccpy.moments.cct3 import calc_cct3
-
+from ccpy.drivers.driver import Driver
 
 if __name__ == "__main__":
 
@@ -32,12 +24,11 @@ if __name__ == "__main__":
     mf = scf.ROHF(mol)
     mf.kernel()
 
-    system, H = load_pyscf_integrals(mf, 4)
+    driver = Driver.from_pyscf(mf, nfrozen=4)
+    driver.system.set_active_space(nact_occupied=1, nact_unoccupied=1)
+    driver.run_cc(method="ccsdt1")
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="cct3")
 
-    calculation = Calculation(
-        calculation_type="ccsdt",
-        convergence_tolerance=1.0e-08
-    )
-
-    T, total_energy, is_converged = cc_driver(calculation, system, H)
 
