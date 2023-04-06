@@ -53,6 +53,10 @@ class Driver:
         self.fock.a.vv = self.hamiltonian.a.vv.copy()
         self.fock.b.vv = self.hamiltonian.b.vv.copy()
 
+        #self.fock.aa.oovv = self.hamiltonian.aa.oovv.copy()
+        #self.fock.ab.oovv = self.hamiltonian.ab.oovv.copy()
+        #self.fock.bb.oovv = self.hamiltonian.bb.oovv.copy()
+
     def set_operator_params(self, method):
         if method in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2"]:
             self.operator_params["order"] = 2
@@ -269,7 +273,6 @@ class Driver:
             else:
                 ground_state = False
                 LR_function = partial(get_LR, self.R[i])
-                #LR_function = lambda x: np.dot(x.flatten().T, self.R[i].flatten())
 
             # initialize the left CC operator anew, or use restart
             if self.L[i] is None:
@@ -288,8 +291,8 @@ class Driver:
 
             if pspace is None:
                 self.L[i], _, LR, is_converged = left_cc_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian, 
-                                                            LR_function, self.vertical_excitation_energy[i],
-                                                            ground_state, self.system, self.options)
+                                                                LR_function, self.vertical_excitation_energy[i],
+                                                                ground_state, self.system, self.options)
             else:
                 self.L[i], _, LR, is_converged = left_ccp_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian, 
                                                                  LR_function, self.vertical_excitation_energy[i],
@@ -353,38 +356,31 @@ class Driver:
     def run_ccp3(self, method, state_index=[0], two_body_approx=True, t3_excitations=None, l3_excitations=None, r3_excitations=None, pspace=None):
 
         if method.lower() == "crcc23":
-            if not self.flag_hbar:
-                print("WARNING: HBar is not computed prior to running CR-CC(2,3)!")
+            assert(self.flag_hbar)
             from ccpy.moments.crcc23 import calc_crcc23
             from ccpy.moments.creomcc23 import calc_creomcc23
-
             for i in state_index:
                 # Perform ground-state correction
                 if i == 0:
-                    _, self.deltapq[0] = calc_crcc23(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+                    _, self.deltapq[i] = calc_crcc23(self.T, self.L[i], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
                 else:
                     # Perform excited-state corrections
                     _, self.deltapq[i], self.ddeltapq[i] = calc_creomcc23(self.T, self.R[i], self.L[i], self.r0[i],
                                                                           self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                           self.system, self.options["RHF_symmetry"])
         elif method.lower() == "ccsd(t)":
-            if self.flag_hbar:
-                print("WARNING: HBar has replaced bare integrals prior to running CCSD(T)!")
+            assert(not self.flag_hbar)
             from ccpy.moments.crcc23 import calc_ccsdpt
-
             _, self.deltapq[0] = calc_ccsdpt(self.T, self.correlation_energy, self.hamiltonian, self.system, self.options["RHF_symmetry"])
 
         elif method.lower() == "crcc24":
-            if not self.flag_hbar:
-                print("WARNING: HBar is not computed prior to running CR-CC(2,4)!")
+            assert(self.flag_hbar)
             from ccpy.moments.crcc24 import calc_crcc24
-
             # Perform ground-state correction
             _, self.deltapq[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
 
         elif method.lower() == "cct3":
-            if not self.flag_hbar:
-                print("WARNING: HBar is not computed prior to running CC(t;3)!")
+            assert(self.flag_hbar)
             from ccpy.moments.cct3 import calc_cct3
 
             # Perform ground-state correction
@@ -392,8 +388,7 @@ class Driver:
                                            self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
 
         elif method.lower() == "ccp3":
-            if not self.flag_hbar:
-                print("WARNING: HBar is not computed prior to running CC(P;3)!")
+            assert(self.flag_hbar)
             if pspace is None:
                 print("WARNING: P space array is not set upon entering CC(P;3)!")
             from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full

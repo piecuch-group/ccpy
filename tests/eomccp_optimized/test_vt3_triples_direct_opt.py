@@ -8,9 +8,10 @@ from itertools import permutations
 import random
 
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
-from ccpy.drivers.driver import cc_driver
+from ccpy.drivers.driver import cc_driver, eomcc_driver
+from ccpy.eomcc.initial_guess import get_initial_guess
 from ccpy.models.calculation import Calculation
-from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
+from ccpy.hbar.hbar_ccsdt import build_hbar_ccsdt
 from ccpy.utilities.updates import eomccp_quadratic_loops_direct_opt
 
 #print(ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t3a_p.__doc__)
@@ -18,7 +19,7 @@ from ccpy.utilities.updates import eomccp_quadratic_loops_direct_opt
 #print(ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t3c_p.__doc__)
 #print(ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t3d_p.__doc__)
 
-def get_T3_list_fraction(T, fraction):
+def get_T3_list_fraction(T, R, fraction):
 
     nua, noa = T.a.shape
     nub, nob = T.b.shape
@@ -30,6 +31,9 @@ def get_T3_list_fraction(T, fraction):
 
     T3_excitations = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
     T3_amplitudes = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
+
+    R3_excitations = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
+    R3_amplitudes = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
 
     num_triples = 0
 
@@ -49,6 +53,7 @@ def get_T3_list_fraction(T, fraction):
                                 for ip, jp, kp in permutations((i, j, k)):
                                     for ap, bp, cp in permutations((a, b, c)):
                                         T.aaa[ap, bp, cp, ip, jp, kp] *= 0.0
+                                        R.aaa[ap, bp, cp, ip, jp, kp] *= 0.0
                                 continue
 
                             if nct1 == rand_arr[nct2]:
@@ -56,10 +61,14 @@ def get_T3_list_fraction(T, fraction):
                                 nct2 += 1
                                 T3_excitations["aaa"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                                 T3_amplitudes["aaa"].append(T.aaa[a, b, c, i, j, k])
+
+                                R3_excitations["aaa"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                                R3_amplitudes["aaa"].append(R.aaa[a, b, c, i, j, k])
                             else:
                                 for ip, jp, kp in permutations((i, j, k)):
                                     for ap, bp, cp in permutations((a, b, c)):
                                         T.aaa[ap, bp, cp, ip, jp, kp] *= 0.0
+                                        R.aaa[ap, bp, cp, ip, jp, kp] *= 0.0
                             nct1 += 1
 
     rand_arr = np.asarray(random.sample(range(n3b), n3b_p))
@@ -78,6 +87,7 @@ def get_T3_list_fraction(T, fraction):
                                 for ip, jp in permutations((i, j)):
                                     for ap, bp in permutations((a, b)):
                                         T.aab[ap, bp, c, ip, jp, k] *= 0.0
+                                        R.aab[ap, bp, c, ip, jp, k] *= 0.0
                                 continue
 
                             if nct1 == rand_arr[nct2]:
@@ -85,10 +95,14 @@ def get_T3_list_fraction(T, fraction):
                                 nct2 += 1
                                 T3_excitations["aab"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                                 T3_amplitudes["aab"].append(T.aab[a, b, c, i, j, k])
+
+                                R3_excitations["aab"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                                R3_amplitudes["aab"].append(R.aab[a, b, c, i, j, k])
                             else:
                                 for ip, jp in permutations((i, j)):
                                     for ap, bp in permutations((a, b)):
                                         T.aab[ap, bp, c, ip, jp, k] *= 0.0
+                                        R.aab[ap, bp, c, ip, jp, k] *= 0.0
                             nct1 += 1
 
     rand_arr = np.asarray(random.sample(range(n3c), n3c_p))
@@ -107,6 +121,7 @@ def get_T3_list_fraction(T, fraction):
                                 for jp, kp in permutations((j, k)):
                                     for bp, cp in permutations((b, c)):
                                         T.abb[a, bp, cp, i, jp, kp] *= 0.0
+                                        R.abb[a, bp, cp, i, jp, kp] *= 0.0
                                 continue
 
                             if nct1 == rand_arr[nct2]:
@@ -114,10 +129,14 @@ def get_T3_list_fraction(T, fraction):
                                 nct2 += 1
                                 T3_excitations["abb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                                 T3_amplitudes["abb"].append(T.abb[a, b, c, i, j, k])
+
+                                R3_excitations["abb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                                R3_amplitudes["abb"].append(R.abb[a, b, c, i, j, k])
                             else:
                                 for jp, kp in permutations((j, k)):
                                     for bp, cp in permutations((b, c)):
                                         T.abb[a, bp, cp, i, jp, kp] *= 0.0
+                                        R.abb[a, bp, cp, i, jp, kp] *= 0.0
                             nct1 += 1
 
     rand_arr = np.asarray(random.sample(range(n3d), n3d_p))
@@ -136,6 +155,7 @@ def get_T3_list_fraction(T, fraction):
                                 for ip, jp, kp in permutations((i, j, k)):
                                     for ap, bp, cp in permutations((a, b, c)):
                                         T.bbb[ap, bp, cp, ip, jp, kp] *= 0.0
+                                        R.bbb[ap, bp, cp, ip, jp, kp] *= 0.0
                                 continue
 
                             if nct1 == rand_arr[nct2]:
@@ -143,10 +163,14 @@ def get_T3_list_fraction(T, fraction):
                                 nct2 += 1
                                 T3_excitations["bbb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                                 T3_amplitudes["bbb"].append(T.bbb[a, b, c, i, j, k])
+
+                                R3_excitations["bbb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                                R3_amplitudes["bbb"].append(R.bbb[a, b, c, i, j, k])
                             else:
                                 for ip, jp, kp in permutations((i, j, k)):
                                     for ap, bp, cp in permutations((a, b, c)):
                                         T.bbb[ap, bp, cp, ip, jp, kp] *= 0.0
+                                        R.bbb[ap, bp, cp, ip, jp, kp] *= 0.0
                             nct1 += 1
 
     print("P space contains", num_triples, "triples.")
@@ -155,15 +179,21 @@ def get_T3_list_fraction(T, fraction):
         T3_excitations[key] = np.asarray(T3_excitations[key])
         T3_amplitudes[key] = np.asarray(T3_amplitudes[key])
 
-    return T3_excitations, T3_amplitudes
+        R3_excitations[key] = np.asarray(R3_excitations[key])
+        R3_amplitudes[key] = np.asarray(R3_amplitudes[key])
 
-def get_T3_list(T):
+    return T3_excitations, T3_amplitudes, R3_excitations, R3_amplitudes
+
+def get_T3_list(T, R):
 
     nua, noa = T.a.shape
     nub, nob = T.b.shape
 
     T3_excitations = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
     T3_amplitudes = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
+
+    R3_excitations = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
+    R3_amplitudes = {"aaa" : [], "aab" : [], "abb" : [], "bbb" : []}
 
     for a in range(nua):
         for b in range(a + 1, nua):
@@ -173,6 +203,9 @@ def get_T3_list(T):
                         for k in range(j + 1, noa):
                             T3_excitations["aaa"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                             T3_amplitudes["aaa"].append(T.aaa[a, b, c, i, j, k])
+
+                            R3_excitations["aaa"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                            R3_amplitudes["aaa"].append(R.aaa[a, b, c, i, j, k])
     for a in range(nua):
         for b in range(a + 1, nua):
             for c in range(nub):
@@ -181,6 +214,9 @@ def get_T3_list(T):
                         for k in range(nob):
                             T3_excitations["aab"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                             T3_amplitudes["aab"].append(T.aab[a, b, c, i, j, k])
+
+                            R3_excitations["aab"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                            R3_amplitudes["aab"].append(R.aab[a, b, c, i, j, k])
     for a in range(nua):
         for b in range(nub):
             for c in range(b + 1, nub):
@@ -189,6 +225,9 @@ def get_T3_list(T):
                         for k in range(j + 1, nob):
                             T3_excitations["abb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                             T3_amplitudes["abb"].append(T.abb[a, b, c, i, j, k])
+
+                            R3_excitations["abb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                            R3_amplitudes["abb"].append(R.abb[a, b, c, i, j, k])
     for a in range(nub):
         for b in range(a + 1, nub):
             for c in range(b + 1, nub):
@@ -198,141 +237,25 @@ def get_T3_list(T):
                             T3_excitations["bbb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
                             T3_amplitudes["bbb"].append(T.bbb[a, b, c, i, j, k])
 
+                            R3_excitations["bbb"].append([a+1, b+1, c+1, i+1, j+1, k+1])
+                            R3_amplitudes["bbb"].append(R.bbb[a, b, c, i, j, k])
+
     for key in T3_excitations.keys():
         T3_excitations[key] = np.asarray(T3_excitations[key])
         T3_amplitudes[key] = np.asarray(T3_amplitudes[key])
 
-    return T3_excitations, T3_amplitudes
+        R3_excitations[key] = np.asarray(R3_excitations[key])
+        R3_amplitudes[key] = np.asarray(R3_amplitudes[key])
 
-def contract_vt3_exact(H0, H, T):
+    return T3_excitations, T3_amplitudes, R3_excitations, R3_amplitudes
 
-    nua, noa = T.a.shape
-    nub, nob = T.b.shape
+def build_HR_1A_exact(R, T, H):
+    X1A = 0.25 * np.einsum("mnef,aefimn->ai", H.aa.oovv, R.aaa, optimize=True)
+    X1A += np.einsum("mnef,aefimn->ai", H.ab.oovv, R.aab, optimize=True)
+    X1A += 0.25 * np.einsum("mnef,aefimn->ai", H.bb.oovv, R.abb, optimize=True)
+    return X1A
 
-    I2A_vvov = (
-        H.aa.vvov - 0.5 * np.einsum("mnef,abfimn->abie", H.aa.oovv, T.aaa, optimize=True)
-                  - np.einsum("mnef,abfimn->abie", H.ab.oovv, T.aab, optimize=True)
-    )
-    I2A_vooo = (
-        H.aa.vooo + 0.5 * np.einsum("mnef,aefijn->amij", H.aa.oovv, T.aaa, optimize=True)
-                  + np.einsum("mnef,aefijn->amij", H.ab.oovv, T.aab, optimize=True)
-                  - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    )
-    I2B_vvvo =(
-        H.ab.vvvo - 0.5 * np.einsum("mnef,afbmnj->abej", H.aa.oovv, T.aab, optimize=True)
-                  - np.einsum("mnef,afbmnj->abej", H.ab.oovv, T.abb, optimize=True)
-    )
-    I2B_ovoo = (
-        H.ab.ovoo + 0.5 * np.einsum("mnef,efbinj->mbij", H.aa.oovv, T.aab, optimize=True)
-                  + np.einsum("mnef,efbinj->mbij", H.ab.oovv, T.abb, optimize=True)
-                  - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    )
-    I2B_vvov = (
-        H.ab.vvov - np.einsum("nmfe,afbinm->abie", H.ab.oovv, T.aab, optimize=True)
-                  - 0.5 * np.einsum("nmfe,afbinm->abie", H.bb.oovv, T.abb, optimize=True)
-    )
-    I2B_vooo = (
-        H.ab.vooo + np.einsum("nmfe,afeinj->amij", H.ab.oovv, T.aab, optimize=True)
-                  + 0.5 * np.einsum("nmfe,afeinj->amij", H.bb.oovv, T.abb, optimize=True)
-                  - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
-    )
-    I2C_vvov = (
-        H.bb.vvov - 0.5 * np.einsum("mnef,abfimn->abie", H.bb.oovv, T.bbb, optimize=True)
-                  - np.einsum("nmfe,fbanmi->abie", H.ab.oovv, T.abb, optimize=True)
-    )
-    I2C_vooo = (
-        H.bb.vooo + 0.5 * np.einsum("mnef,aefijn->amij", H.bb.oovv, T.bbb, optimize=True)
-                  + np.einsum("nmfe,feanji->amij", H.ab.oovv, T.abb, optimize=True)
-                  - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
-    )
-
-    # MM(2,3)
-    x3a = -0.25 * np.einsum("amij,bcmk->abcijk", I2A_vooo, T.aa, optimize=True)
-    x3a += 0.25 * np.einsum("abie,ecjk->abcijk", I2A_vvov, T.aa, optimize=True)
-    # (Hbar*T3)
-    x3a -= (3.0 / 36.0) * np.einsum("mi,abcmjk->abcijk", H.a.oo, T.aaa, optimize=True)
-    x3a += (3.0 / 36.0) * np.einsum("ae,ebcijk->abcijk", H.a.vv, T.aaa, optimize=True)
-    x3a += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aaa, optimize=True) # (k/ij) = 3
-    x3a += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aaa, optimize=True) # (c/ab) = 3
-    x3a += 0.25 * np.einsum("cmke,abeijm->abcijk", H.aa.voov, T.aaa, optimize=True) # (c/ij)(k/ij) = 9
-    x3a += 0.25 * np.einsum("cmke,abeijm->abcijk", H.ab.voov, T.aab, optimize=True) # (c/ij)(k/ij) = 9
-
-    x3a -= np.transpose(x3a, (0, 1, 2, 3, 5, 4)) # (jk)
-    x3a -= np.transpose(x3a, (0, 1, 2, 4, 3, 5)) + np.transpose(x3a, (0, 1, 2, 5, 4, 3)) # (i/jk)
-    x3a -= np.transpose(x3a, (0, 2, 1, 3, 4, 5)) # (bc)
-    x3a -= np.transpose(x3a, (2, 1, 0, 3, 4, 5)) + np.transpose(x3a, (1, 0, 2, 3, 4, 5)) # (a/bc)
-
-    # MM(2,3)
-    x3b = 0.5 * np.einsum("bcek,aeij->abcijk", I2B_vvvo, T.aa, optimize=True)
-    x3b -= 0.5 * np.einsum("mcjk,abim->abcijk", I2B_ovoo, T.aa, optimize=True)
-    x3b += np.einsum("acie,bejk->abcijk", I2B_vvov, T.ab, optimize=True)
-    x3b -= np.einsum("amik,bcjm->abcijk", I2B_vooo, T.ab, optimize=True)
-    x3b += 0.5 * np.einsum("abie,ecjk->abcijk", I2A_vvov, T.ab, optimize=True)
-    x3b -= 0.5 * np.einsum("amij,bcmk->abcijk", I2A_vooo, T.ab, optimize=True)
-    # (Hbar*T3)
-    x3b -= 0.5 * np.einsum("mi,abcmjk->abcijk", H.a.oo, T.aab, optimize=True)
-    x3b -= 0.25 * np.einsum("mk,abcijm->abcijk", H.b.oo, T.aab, optimize=True)
-    x3b += 0.5 * np.einsum("ae,ebcijk->abcijk", H.a.vv, T.aab, optimize=True)
-    x3b += 0.25 * np.einsum("ce,abeijk->abcijk", H.b.vv, T.aab, optimize=True)
-    x3b += 0.125 * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aab, optimize=True)
-    x3b += 0.5 * np.einsum("mnjk,abcimn->abcijk", H.ab.oooo, T.aab, optimize=True)
-    x3b += 0.125 * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aab, optimize=True)
-    x3b += 0.5 * np.einsum("bcef,aefijk->abcijk", H.ab.vvvv, T.aab, optimize=True)
-    x3b += np.einsum("amie,ebcmjk->abcijk", H.aa.voov, T.aab, optimize=True)
-    x3b += np.einsum("amie,becjmk->abcijk", H.ab.voov, T.abb, optimize=True)
-    x3b += 0.25 * np.einsum("mcek,abeijm->abcijk", H.ab.ovvo, T.aaa, optimize=True)
-    x3b += 0.25 * np.einsum("cmke,abeijm->abcijk", H.bb.voov, T.aab, optimize=True)
-    x3b -= 0.5 * np.einsum("amek,ebcijm->abcijk", H.ab.vovo, T.aab, optimize=True)
-    x3b -= 0.5 * np.einsum("mcie,abemjk->abcijk", H.ab.ovov, T.aab, optimize=True)
-
-    x3b -= np.transpose(x3b, (1, 0, 2, 3, 4, 5)) # (ab)
-    x3b -= np.transpose(x3b, (0, 1, 2, 4, 3, 5)) # (ij)
-
-    # MM(2,3)
-    x3c = 0.5 * np.einsum("abie,ecjk->abcijk", I2B_vvov, T.bb, optimize=True)
-    x3c -= 0.5 * np.einsum("amij,bcmk->abcijk", I2B_vooo, T.bb, optimize=True)
-    x3c += 0.5 * np.einsum("cbke,aeij->abcijk", I2C_vvov, T.ab, optimize=True)
-    x3c -= 0.5 * np.einsum("cmkj,abim->abcijk", I2C_vooo, T.ab, optimize=True)
-    x3c += np.einsum("abej,ecik->abcijk", I2B_vvvo, T.ab, optimize=True)
-    x3c -= np.einsum("mbij,acmk->abcijk", I2B_ovoo, T.ab, optimize=True)
-    # (Hbar*T3)
-    x3c -= 0.25 * np.einsum("mi,abcmjk->abcijk", H.a.oo, T.abb, optimize=True)
-    x3c -= 0.5 * np.einsum("mj,abcimk->abcijk", H.b.oo, T.abb, optimize=True)
-    x3c += 0.25 * np.einsum("ae,ebcijk->abcijk", H.a.vv, T.abb, optimize=True)
-    x3c += 0.5 * np.einsum("be,aecijk->abcijk", H.b.vv, T.abb, optimize=True)
-    x3c += 0.125 * np.einsum("mnjk,abcimn->abcijk", H.bb.oooo, T.abb, optimize=True)
-    x3c += 0.5 * np.einsum("mnij,abcmnk->abcijk", H.ab.oooo, T.abb, optimize=True)
-    x3c += 0.125 * np.einsum("bcef,aefijk->abcijk", H.bb.vvvv, T.abb, optimize=True)
-    x3c += 0.5 * np.einsum("abef,efcijk->abcijk", H.ab.vvvv, T.abb, optimize=True)
-    x3c += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.aa.voov, T.abb, optimize=True)
-    x3c += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.ab.voov, T.bbb, optimize=True)
-    x3c += np.einsum("mbej,aecimk->abcijk", H.ab.ovvo, T.aab, optimize=True)
-    x3c += np.einsum("bmje,aecimk->abcijk", H.bb.voov, T.abb, optimize=True)
-    x3c -= 0.5 * np.einsum("mbie,aecmjk->abcijk", H.ab.ovov, T.abb, optimize=True)
-    x3c -= 0.5 * np.einsum("amej,ebcimk->abcijk", H.ab.vovo, T.abb, optimize=True)
-
-    x3c -= np.transpose(x3c, (0, 2, 1, 3, 4, 5)) # (bc)
-    x3c -= np.transpose(x3c, (0, 1, 2, 3, 5, 4)) # (jk)
-
-    # MM(2,3)
-    x3d = -0.25 * np.einsum("amij,bcmk->abcijk", I2C_vooo, T.bb, optimize=True)
-    x3d += 0.25 * np.einsum("abie,ecjk->abcijk", I2C_vvov, T.bb, optimize=True)
-    # (Hbar*T3)
-    x3d -= (1.0 / 12.0) * np.einsum("mk,abcijm->abcijk", H.b.oo, T.bbb, optimize=True)
-    x3d += (1.0 / 12.0) * np.einsum("ce,abeijk->abcijk", H.b.vv, T.bbb, optimize=True)
-    x3d += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.bb.oooo, T.bbb, optimize=True)
-    x3d += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.bb.vvvv, T.bbb, optimize=True)
-    x3d += 0.25 * np.einsum("maei,ebcmjk->abcijk", H.ab.ovvo, T.abb, optimize=True)
-    x3d += 0.25 * np.einsum("amie,ebcmjk->abcijk", H.bb.voov, T.bbb, optimize=True)
-
-    x3d -= np.transpose(x3d, (0, 1, 2, 3, 5, 4)) # (jk)
-    x3d -= np.transpose(x3d, (0, 1, 2, 4, 3, 5)) + np.transpose(x3d, (0, 1, 2, 5, 4, 3)) # (i/jk)
-    x3d -= np.transpose(x3d, (0, 2, 1, 3, 4, 5)) # (bc)
-    x3d -= np.transpose(x3d, (2, 1, 0, 3, 4, 5)) + np.transpose(x3d, (1, 0, 2, 3, 4, 5)) # (a/bc)
-
-    return x3a, x3b, x3c, x3d
-
-def contract_vt3_fly(H, H0, T, T3_excitations, T3_amplitudes):
+def contract_HR_fly(H, H0, T, T3_excitations, T3_amplitudes, R3_excitations, R3_amplitudes):
 
     nua, noa = T.a.shape
     nub, nob = T.b.shape
@@ -475,10 +398,10 @@ if __name__ == "__main__":
 
     calculation = Calculation(calculation_type="ccsdt")
     T, cc_energy, converged = cc_driver(calculation, system, H)
-    hbar = get_ccsd_intermediates(T, H)
+    hbar = build_hbar_ccsdt(T, H)
 
-    #T3_excitations, T3_amplitudes = get_T3_list(T)
-    T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[0.5,0.5,0.5,0.5])
+    T3_excitations, T3_amplitudes, R3_excitations, R3_amplitudes = get_T3_list(T, R)
+    #T3_excitations, T3_amplitudes = get_T3_list_fraction(T, fraction=[0.5,0.5,0.5,0.5])
 
     T3_excitations["aaa"] = T3_excitations["aaa"].T
     T3_excitations["aab"] = T3_excitations["aab"].T

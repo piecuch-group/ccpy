@@ -191,16 +191,16 @@ def print_ee_amplitudes(R, system, order, nprint, thresh_print):
         for b in range(a + 1, system.nunoccupied_alpha):
             for i in range(system.noccupied_alpha):
                 for j in range(i + 1, system.noccupied_alpha):
-                    R.aa[b, a, j, i] = -1.0 * R.aa[a, b, i, j]
+                    R.aa[b, a, j, i] = R.aa[a, b, i, j]
                     R.aa[a, b, j, i] = -1.0 * R.aa[a, b, i, j]
-                    R.aa[b, a, i, j] = R.aa[a, b, i, j]
+                    R.aa[b, a, i, j] = -1.0 * R.aa[a, b, i, j]
     for a in range(system.nunoccupied_beta):
         for b in range(a + 1, system.nunoccupied_beta):
             for i in range(system.noccupied_beta):
                 for j in range(i + 1, system.noccupied_beta):
-                    R.bb[b, a, j, i] = -1.0 * R.bb[a, b, i, j]
+                    R.bb[b, a, j, i] = R.bb[a, b, i, j]
                     R.bb[a, b, j, i] = -1.0 * R.bb[a, b, i, j]
-                    R.bb[b, a, i, j] = R.bb[a, b, i, j]
+                    R.bb[b, a, i, j] = -1.0 * R.bb[a, b, i, j]
 
     return
 

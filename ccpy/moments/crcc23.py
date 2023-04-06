@@ -5,7 +5,7 @@ import numpy as np
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
 from ccpy.utilities.updates import crcc_loops, ccsdpt_loops
 
-def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF=False):
+def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
     """
     Calculate the ground-state CR-CC(2,3) correction to the CCSD energy.
     """
@@ -30,6 +30,7 @@ def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF=False):
                                         d3aaa_o, d3aaa_v,
                                         system.noccupied_alpha, system.nunoccupied_alpha,
     )
+
     #### aab correction ####
     # calculate intermediates
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)

@@ -135,7 +135,7 @@ def build_LH_1B(L, LH, T, H):
 
     return LH
 
-#
+
 # def build_LH_2A(L, LH, T, H):
 #
 #     LH.aa = np.einsum("ea,ebij->abij", H.a.vv, L.aa, optimize=True) - np.einsum(
