@@ -286,13 +286,12 @@ def update(T, dT, H, shift, flag_RHF, system):
     # T, dT = t3c_010001.update(T, dT, H, shift, system)
 
 
-
     # perform all T3 update loops
     # update t3a
-    T, dT = t3a_111111.update(T, dT, H, shift, system)
-    T, dT = t3a_110111.update(T, dT, H, shift, system)
-    T, dT = t3a_111011.update(T, dT, H, shift, system)
-    T, dT = t3a_110011.update(T, dT, H, shift, system)
+    T, dT = t3a_111111.update(T, dT, H, shift, system) # h(a),p(a) //
+    T, dT = t3a_110111.update(T, dT, H, shift, system) # h(a),p(a) // p(a)
+    T, dT = t3a_111011.update(T, dT, H, shift, system) # h(a),p(a) // h(a)
+    T, dT = t3a_110011.update(T, dT, H, shift, system) # h(
     T, dT = t3a_100111.update(T, dT, H, shift, system)
     T, dT = t3a_111001.update(T, dT, H, shift, system)
     T, dT = t3a_100011.update(T, dT, H, shift, system)

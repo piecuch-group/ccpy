@@ -18,8 +18,6 @@ from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
 
-# [TODO]: - make CC(P) solver able to read in previous T vector of smaller P space as initial guess
-#         - clean up CC(P) solvers to remove options for previous linear and quadratic solvers
 
 class Driver:
 
@@ -30,8 +28,8 @@ class Driver:
                                   sorted=sorted))
 
     @classmethod
-    def from_gamess(cls, logfile, onebody, twobody, nfrozen, normal_ordered=True, sorted=True, data_type=np.float64):
-        return cls(*load_gamess_integrals(logfile, onebody, twobody, nfrozen, normal_ordered=normal_ordered, sorted=sorted,
+    def from_gamess(cls, logfile, nfrozen, fcidump=None, onebody=None, twobody=None, normal_ordered=True, sorted=True, data_type=np.float64):
+        return cls(*load_gamess_integrals(logfile, fcidump, onebody, twobody, nfrozen, normal_ordered=normal_ordered, sorted=sorted,
                                    data_type=data_type))
 
     def __init__(self, system, hamiltonian, max_number_states=100):
@@ -186,6 +184,7 @@ class Driver:
                                  p_orders=self.operator_params["pspace_orders"],
                                  pspace_sizes=excitation_count)
         # Run the CC calculation
+        # NOTE: It may not look like it, but t3_excitations is permuted and matches T at this point. It changes from its value at input!
         self.T, self.correlation_energy, _ = cc_jacobi(update_function,
                                                 self.T,
                                                 dT,
@@ -197,7 +196,7 @@ class Driver:
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system)
         print("   CC calculation ended on", get_timestamp())
 
-    def run_hbar(self, method):
+    def run_hbar(self, method, t3_excitations=None):
         # check if requested CC calculation is implemented in modules
         if "hbar_" + method.lower() not in ccpy.hbar.MODULES:
             raise NotImplementedError(
@@ -218,10 +217,6 @@ class Driver:
 
     def run_eomcc(self, method, state_index, t3_excitations=None, r3_excitations=None, guess_method="cis", multiplicity=None):
         """Performs the EOMCC calculation specified by the user in the input."""
-
-        if not self.flag_hbar:
-            print("WARNING: HBar is not computed prior to running EOMCC!")
-
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.eomcc.MODULES:
             raise NotImplementedError(
@@ -230,6 +225,9 @@ class Driver:
         # Set operator parameters needed to build R
         self.set_operator_params(method)
         self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert(self.flag_hbar)
 
         # import the specific EOMCC method module and get its update function
         eom_module = import_module("ccpy.eomcc." + method.lower())
@@ -278,10 +276,6 @@ class Driver:
             ct += 1
 
     def run_leftcc(self, method, state_index=[0], t3_excitations=None, l3_excitations=None, pspace=None):
-
-        if not self.flag_hbar:
-            print("WARNING: HBar is not computed prior to running left CC!")
-
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.left.MODULES:
             raise NotImplementedError(
@@ -290,6 +284,9 @@ class Driver:
         # Set operator parameters needed to build L
         self.set_operator_params(method)
         self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert(self.flag_hbar)
 
         # import the specific CC method module and get its update function
         lcc_mod = import_module("ccpy.left." + method.lower())
@@ -396,9 +393,10 @@ class Driver:
     def run_ccp3(self, method, state_index=[0], two_body_approx=True, t3_excitations=None, l3_excitations=None, r3_excitations=None, pspace=None):
 
         if method.lower() == "crcc23":
-            assert(self.flag_hbar)
             from ccpy.moments.crcc23 import calc_crcc23
             from ccpy.moments.creomcc23 import calc_creomcc23
+            # Ensure that HBar is set upon entry
+            assert(self.flag_hbar)
             for i in state_index:
                 # Perform ground-state correction
                 if i == 0:
@@ -409,30 +407,32 @@ class Driver:
                                                                           self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                           self.system, self.options["RHF_symmetry"])
         elif method.lower() == "ccsd(t)":
-            assert(not self.flag_hbar)
             from ccpy.moments.crcc23 import calc_ccsdpt
+            # Warn the user if they run using HBar instead of H; we will not disallow it, however
+            if self.flag_hbar:
+                print("WARNING: CCSD(T) is using similarity-transformed Hamiltonian! Results will not match conventional CCSD(T)!")
             _, self.deltapq[0] = calc_ccsdpt(self.T, self.correlation_energy, self.hamiltonian, self.system, self.options["RHF_symmetry"])
 
         elif method.lower() == "crcc24":
-            assert(self.flag_hbar)
             from ccpy.moments.crcc24 import calc_crcc24
+            # Ensure that HBar is set
+            assert(self.flag_hbar)
             # Perform ground-state correction
             _, self.deltapq[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
 
         elif method.lower() == "cct3":
-            assert(self.flag_hbar)
             from ccpy.moments.cct3 import calc_cct3
-
+            # Ensure that HBar is set
+            assert(self.flag_hbar)
             # Perform ground-state correction
             _, self.deltapq[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
                                            self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
 
         elif method.lower() == "ccp3":
-            assert(self.flag_hbar)
-            if pspace is None:
-                print("WARNING: P space array is not set upon entering CC(P;3)!")
             from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full
-
+            # Ensure that both HBar and pspace are set
+            assert(self.flag_hbar)
+            assert(pspace)
             # Perform ground-state correction
             if two_body_approx: # Use the 2BA (requires only L1, L2 and HBar of CCSD)
                 _, self.deltapq[0] = calc_ccp3_2ba(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
@@ -453,8 +453,6 @@ class Driver:
 #             "{} not implemented".format(calculation.calculation_type)
 #         )
 #
-#     # [TODO]: Check if calculation parameters (e.g, active orbitals) make sense
-#
 #     # import the specific CC method module and get its update function
 #     cc_mod = import_module("ccpy.mrcc." + calculation.calculation_type.lower())
 #     heff_mod = import_module("ccpy.mrcc.effective_hamiltonian")
@@ -469,7 +467,6 @@ class Driver:
 #     cc_printer.cc_header()
 #
 #     # initialize the cluster operator anew, or use restart
-#     #[TODO]: This is not compatible if the initial T is a lower order than the
 #     # one used in the calculation. For example, we could not start a CCSDT
 #     # calculation using the CCSD cluster amplitudes.
 #     T = [None for i in range(len(model_space))]

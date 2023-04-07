@@ -1,148 +1,104 @@
-from pytest import mark, approx
-from pyscf import scf, gto
-
 import numpy as np
+from pyscf import scf, gto
+from ccpy.drivers.driver import Driver
 
-from ccpy.models.molecule import Molecule
-from ccpy.models.calculation import Calculation
-from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
-from ccpy.drivers.driver import cc_driver
-
-
-def build_pyscf_molecule(molecule):
-    strings = [
-        f"{element.name} {xyz.x:.6f} {xyz.y:.6f} {xyz.z:.6f}"
-        for element, xyz in molecule.geometry.structure
-    ]
-    string = ";".join(strings)
-
-    return gto.M(atom=string,
-                 basis=molecule.basis,
-                 symmetry=molecule.geometry.symmetry,
-                 unit=molecule.geometry.unit)
-
-
-MOLECULES = {
-    "h2o_olsen": {  # https://doi.org/10.1063/1.471518
-        "metadata": {
-            "symmetry": "C2V",
-            "unit": "bohr"
-        },
-            1.0: [("O", 0.0, 0.0, -0.0090),
-                  ("H", 0.0,  1.515_263, -1.058_898),
-                  ("H", 0.0, -1.515_263, -1.058_898)],
-            1.5: [("O", 0.0, 0.0, -0.0135),
-                  ("H", 0.0,  2.272_894_5, -1.588_347),
-                  ("H", 0.0, -2.272_894_5, -1.588_347)],
-            2.0: [("O", 0.0, 0.0, -0.0180),
-                  ("H", 0.0,  3.030_526, -2.117_796),
-                  ("H", 0.0, -3.030_526, -2.117_796)],
-    },
-
-    "f2": {
-        "metadata": {
-            "symmetry": "D2H",
-            "unit": "bohr"
-        },
-            1.0: [("F", 0.0, 0.0, -1.334_08),
-                  ("F", 0.0, 0.0,  1.334_08)],
-    }
-}
-
-REFERENCE = {
-    "h2o_olsen": {
-#        1.0: {
-#            "ccsd": {
-#                "huzinaga": 2.2,
-#                "dz": 1.1,
-#                "cc-pvdz": 1.1,
-#                "cc-pvtz": 1.1
-#            }
-#        },
-#
-#        1.5: {
-#            "ccsd": {
-#                "huzinaga": 2.2,
-#                "dz": 1.1,
-#                "cc-pvdz": 1.1,
-#                "cc-pvtz": 1.1
-#            }
-#        },
-#
-        2.0: {
-            "reference": {
-                "cc-pvdz": -75.5877112496
-            },
-            "ccsd": {
-#                "huzinaga": 2.2,
-#                "dz": 1.1,
-                "cc-pvdz": -75.9296328657,
-#                "cc-pvtz": 1.1
-            }
-        }
-    }
-}
-
-def get_molecule(molecule_key, geometry_key, basis_set):
-    metadata = MOLECULES[molecule_key]["metadata"]
-    structure = MOLECULES[molecule_key][geometry_key]
-    molecule = {
-        "name": molecule_key,
-        "basis": basis_set,
-        "geometry": {
-            "structure": structure,
-            "unit": metadata["unit"],
-            "symmetry": metadata["symmetry"]
-        }
-    }
-
-    return Molecule.from_dict(molecule)
-
-
-def get_tests():
-    tests = []
-    for molecule_key, geometries in REFERENCE.items():
-        for geometry_key, methods in geometries.items():
-            for method_key, basis_sets in methods.items():
-                if method_key == "reference":
-                    continue
-
-                for basis_set, energy in basis_sets.items():
-                    molecule = get_molecule(molecule_key,
-                                            geometry_key,
-                                            basis_set)
-                    if "reference" in methods:
-                        reference = methods["reference"].get(basis_set, None)
-                    else:
-                        reference = None
-                    tests.append(
-                        (molecule, basis_set, reference, energy)
-                    )
-
-    return tests
-
-
-@mark.parametrize(
-    "molecule, basis, reference, energy",
-    get_tests()
-)
-def test_molecule(molecule, basis, reference, energy):
-    mol = build_pyscf_molecule(molecule)
-    mf = scf.RHF(mol)
-    e = mf.kernel()
-
-    if reference:
-        assert e == approx(reference)
-
-    system, H = load_pyscf_integrals(mf, nfrozen=0)
-    calculation = Calculation(
-        order=2,
-        calculation_type="ccsd",
-        convergence_tolerance=1.0e-8,
-        diis_size=6
+def test_cct3_f2():
+    """
+    F2 / cc-pVDZ at R = 2.0Re, where Re = 2.66816 bohr using RHF.
+    Cartesian orbitals are used for the d orbitals in the cc-pVDZ basis.
+    Reference: Chem. Phys. Lett. 344, 165 (2001).
+    """
+    geometry = [["F", (0.0, 0.0, -2.66816)],
+                ["F", (0.0, 0.0,  2.66816)]]
+    mol = gto.M(atom=geometry,
+                basis="cc-pvdz",
+                charge=0,
+                spin=0,
+                symmetry="D2H",
+                cart=True,
+                unit="Bohr",
     )
+    mf = scf.RHF(mol)
+    mf.kernel()
 
-    T, total_energy, is_converged = cc_driver(calculation, system, H)
+    driver = Driver.from_pyscf(mf, nfrozen=2)
+    driver.system.set_active_space(nact_occupied=5, nact_unoccupied=1)
+    driver.run_cc(method="ccsdt1")
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="cct3", state_index=[0])
 
-    assert total_energy == approx(energy)
+    # Check reference energy
+    assert(np.allclose(driver.system.reference_energy, -198.4200962814))
+    # Check CCSDt energy
+    assert(np.allclose(driver.correlation_energy, -0.6363154135))
+    assert(np.allclose(driver.system.reference_energy + driver.correlation_energy, -199.0564116949))
+    # Check CC(t;3)_A energy
+    assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["A"], -0.6376818524))
+    assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["A"], -199.0577781338))
+    # Check CC(t;3)_D energy
+    assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["D"], -0.6378384699))
+    assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"], -199.0579347513))
 
+def test_cct3_hfhminus_triplet():
+    """
+    (HFH)- / 6-31g(1d,1p) open-shell triplet in the symmetric D2H geometry
+    with R_{HF} = 2.0 angstrom using ROHF and MO integrals from GAMESS.
+    Reference: J. Chem. Theory Comput. 8, 4968 (2012)
+    """
+    driver = Driver.from_gamess(logfile="data/hfhminus-triplet/hfhminus-triplet.log",
+                                fcidump="data/hfhminus-triplet/hfhminus-triplet.FCIDUMP",
+                                nfrozen=1)
+    driver.system.set_active_space(nact_unoccupied=1, nact_occupied=1)
+    driver.system.print_info()
+
+    driver.run_cc(method="ccsdt1")
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="cct3", state_index=[0])
+
+    # Check reference energy
+    assert(np.allclose(driver.system.reference_energy, -100.3591573557))
+    # Check CCSDt energy
+    assert(np.allclose(driver.correlation_energy, -0.1925359236))
+    assert(np.allclose(driver.system.reference_energy + driver.correlation_energy, -100.5516932793))
+    # Check CC(t;3)_A energy
+    assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["A"], -0.1936455544))
+    assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["A"], -100.5528029101))
+    # Check CC(t;3)_D energy
+    assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["D"], -0.1938719549))
+    assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"], -100.5530293106))
+
+# if __name__ == "__main__":
+#     test_cct3_hfhminus_triplet()
+#     test_cct3_f2()
+# Methods
+# - CCD
+# - CCSD
+# - CCSDT
+# - CCSDt
+# - CC(P) aimed at CCSDT
+# - CCSDTQ
+# - CCSD(T)
+# - CR-CC(2,3)
+# - CR-CC(2,4)
+# - EOMCCSD
+# - EOMCCSDt
+# - EOMCCSDT
+# - CR-EOMCC(2,3)
+# - delta-CR-EOMCC(2,3)
+# - left CCSD
+# - left CCSDT
+# - ec-CC-II
+# - ec-CC-II_{3}
+#
+# - Adaptive CC(P;Q) aimed at CCSDT
+# - ec-CC-II_{3,4}
+
+# Molecules
+# F2 / cc-pVDZ, cc-pVTZ, aug-cc-pVTZ
+# H2O / DZ, cc-pVDZ, cc-pVTZ, cc-pVQZ
+# CH2 / 6-31G*, cc-pVTZ, cc-pVQZ
+# H4
+# H8
+#

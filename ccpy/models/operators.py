@@ -2,6 +2,7 @@ import numpy as np
 from itertools import combinations_with_replacement
 
 # [TODO]: Make sparse array operator class that holds 1D array of amplitudes and COO array of indices
+# [TODO]: Allow Cluster Operators to load in the values from another Cluster Operator of lower rank (or different P space)
 
 class ActiveOperator:
 
@@ -250,62 +251,3 @@ def get_operator_dimension(i, j, system):
     bra = [nocc_a] * (i - j) + [nocc_b] * j
 
     return ket + bra
-
-
-if __name__ == "__main__":
-
-    from pyscf import gto, scf
-
-    from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
-
-    mol = gto.Mole()
-    mol.build(
-        atom="""F 0.0 0.0 -2.66816
-                F 0.0 0.0  2.66816""",
-        basis="ccpvdz",
-        charge=0,
-        spin=0,
-        symmetry="D2H",
-        cart=True,
-        unit="Bohr",
-    )
-    mf = scf.ROHF(mol)
-    mf.kernel()
-
-    nfrozen = 2
-    system, H = load_pyscf_integrals(mf, nfrozen,
-                                     num_act_holes_alpha = 2,
-                                     num_act_particles_alpha = 1,
-                                     num_act_holes_beta = 1,
-                                     num_act_particles_beta = 2)
-
-    print(system)
-
-    T = ClusterOperator(system, 3, p_orders=[3], pspace_sizes=[[100, 200, 200, 100]])
-    for key in T.spin_cases:
-        print(key, "->", getattr(T, key).shape)
-    print(T.dimensions)
-    print(T.dimensions[5], T.dimensions[6], T.dimensions[7], T.dimensions[8])
-    print("Flattened dimension = ", T.ndim)
-    print(T.flatten().shape)
-
-    num_particles = 1
-    num_holes = 2
-    R = FockOperator(system, num_particles, num_holes)
-    print("IP operator", num_particles, 'p-', num_holes, 'h')
-    print("---------------------------")
-    for key in R.spin_cases:
-        print(key, "->", getattr(R, key).shape)
-    print("Flattened dimension = ", R.ndim)
-    print(R.flatten().shape)
-
-    num_particles = 4
-    num_holes = 2
-    R = FockOperator(system, num_particles, num_holes)
-    print("EA operator", num_particles, 'p-', num_holes, 'h')
-    print("---------------------------")
-    for key in R.spin_cases:
-        print(key, "->", getattr(R, key).shape)
-    print("Flattened dimension = ", R.ndim)
-    print(R.flatten().shape)
-
