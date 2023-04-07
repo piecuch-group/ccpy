@@ -170,7 +170,7 @@ def get_full_pspace(system, nexcit, use_bool=False):
     return pspace
 
 
-def get_pspace_from_cipsi(pspace_file, system, nexcit=3, ordered_index=True):
+def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
 
     pspace = get_empty_pspace(system, nexcit)
 
@@ -239,68 +239,40 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3, ordered_index=True):
             if n == 1:
                 excitations[n][spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_unocc[3], idx_occ[0], idx_occ[1], idx_occ[2], idx_occ[3]])
 
-            ct_aaa = 1
-            ct_aab = 1
-            ct_abb = 1
-            ct_bbb = 1
-
             if excit_rank == 3:
                 if spincase == 'aaa':
                     for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
                         for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
                             a, b, c = perms_unocc
                             i, j, k = perms_occ
-                            if ordered_index:
-                                pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = ct_aaa
-                                ct_aaa += 1
-                            else:
-                                pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+                            pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
 
                 if spincase == 'aab':
                     for perms_unocc in permutations((idx_unocc[0], idx_unocc[1])):
                         for perms_occ in permutations((idx_occ[0], idx_occ[1])):
                             a, b = perms_unocc
                             i, j = perms_occ
-                            if ordered_index:
-                                pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = ct_aab
-                                ct_aab += 1
-                            else:
-                                pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
+                            pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
 
                 if spincase == 'abb':
                     for perms_unocc in permutations((idx_unocc[1], idx_unocc[2])):
                         for perms_occ in permutations((idx_occ[1], idx_occ[2])):
                             b, c = perms_unocc
                             j, k = perms_occ
-                            if ordered_index:
-                                pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = ct_abb
-                                ct_abb += 1
-                            else:
-                                pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
+                            pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
 
                 if spincase == 'bbb':
                     for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
                         for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
                             a, b, c = perms_unocc
                             i, j, k = perms_occ
-                            if ordered_index:
-                                pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = ct_bbb
-                                ct_bbb += 1
-                            else:
-                                pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
-
-            if excit_rank == 4:
-                pspace[n][spincase][idx_unocc[0] - 1, idx_unocc[1] - 1, idx_unocc[2] - 1, idx_unocc[3] - 1, idx_occ[0] - 1, idx_occ[1] - 1, idx_occ[2] - 1, idx_occ[3] - 1] = 1
+                            pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
 
     # convert excitation arrays to Numpy arrays
     for spincase in ["aaa", "aab", "abb", "bbb"]:
         excitations[0][spincase] = np.asarray(excitations[0][spincase])
         if len(excitations[0][spincase].shape) < 2:
             excitations[0][spincase] = np.ones((1, 6))
-    for spincase in ["aaaa", "aaab", "aabb", "abbb", "bbbb"]:
-        excitations[1][spincase] = np.asarray(excitations[1][spincase])
-        if len(excitations[1][spincase].shape) < 2:
-            excitations[1][spincase] = np.ones((1, 8))
 
     return pspace, excitations, excitation_count
 

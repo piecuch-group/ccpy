@@ -8,7 +8,7 @@ import ccpy.hbar
 import ccpy.left
 import ccpy.eomcc
 
-from ccpy.drivers.solvers import cc_jacobi, ccp_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eccc_jacobi
+from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eccc_jacobi
 from ccpy.drivers.cc_energy import get_LR, get_r0
 
 from ccpy.models.integrals import Integral
@@ -148,27 +148,19 @@ class Driver:
         print("   CC calculation started on", get_timestamp())
         self.print_options()
 
-        if t3_excitations is None:  # Run the standard CC solver if no explicit P space is used
+        # Create either the standard CC or CC(P) cluster operator
+        if t3_excitations is None:
             if self.T is None:
-                self.T = ClusterOperator(self.system,
-                                         order=self.operator_params["order"],
-                                         active_orders=self.operator_params["active_orders"],
-                                         num_active=self.operator_params["number_active_indices"])
+                    self.T = ClusterOperator(self.system,
+                                             order=self.operator_params["order"],
+                                             active_orders=self.operator_params["active_orders"],
+                                             num_active=self.operator_params["number_active_indices"])
             # regardless of restart status, initialize residual anew
             dT = ClusterOperator(self.system,
                                  order=self.operator_params["order"],
                                  active_orders=self.operator_params["active_orders"],
                                  num_active=self.operator_params["number_active_indices"])
-            # Run the CC calculation
-            self.T, self.correlation_energy, _ = cc_jacobi(update_function,
-                                                    self.T,
-                                                    dT,
-                                                    self.hamiltonian,
-                                                    self.system,
-                                                    self.options,
-                                                   )
-        else: # CC(P) method
-    
+        else:
             # Get dimensions of T3 spincases in P space
             n3aaa = t3_excitations["aaa"].shape[0]
             n3aab = t3_excitations["aab"].shape[0]
@@ -184,25 +176,25 @@ class Driver:
                 t3_excitations["abb"] = t3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
 
             if self.T is None:
-                T = ClusterOperator(self.system,
-                                    order=self.operator_params["order"],
-                                    p_orders=self.operator_params["pspace_orders"],
-                                    pspace_sizes=excitation_count)
+                self.T = ClusterOperator(self.system,
+                                         order=self.operator_params["order"],
+                                         p_orders=self.operator_params["pspace_orders"],
+                                         pspace_sizes=excitation_count)
             # regardless of restart status, initialize residual anew
             dT = ClusterOperator(self.system,
                                  order=self.operator_params["order"],
                                  p_orders=self.operator_params["pspace_orders"],
                                  pspace_sizes=excitation_count)
-            # Run the CC calculation
-            self.T, self.correlation_energy, _ = ccp_jacobi(update_function,
-                                                            self.T,
-                                                            dT,
-                                                            self.hamiltonian,
-                                                            self.system,
-                                                            t3_excitations
-                                                           )
-
-        cc_calculation_summary(self.system.reference_energy, self.correlation_energy)
+        # Run the CC calculation
+        self.T, self.correlation_energy, _ = cc_jacobi(update_function,
+                                                self.T,
+                                                dT,
+                                                self.hamiltonian,
+                                                self.system,
+                                                self.options,
+                                                t3_excitations,
+                                               )
+        cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system)
         print("   CC calculation ended on", get_timestamp())
 
     def run_hbar(self, method):
@@ -398,7 +390,7 @@ class Driver:
                                                   self.options,
                                                )
 
-        cc_calculation_summary(self.system.reference_energy, self.correlation_energy)
+        cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system)
         print("   ec-CC calculation ended on", get_timestamp())
 
     def run_ccp3(self, method, state_index=[0], two_body_approx=True, t3_excitations=None, l3_excitations=None, r3_excitations=None, pspace=None):

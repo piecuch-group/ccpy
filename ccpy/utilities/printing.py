@@ -16,13 +16,14 @@ EOMCC_ITERATION_HEADER = ITERATION_HEADER_FMT.format(
 def get_timestamp():
         return datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "%Y-%m-%d %H:%M:%S")
 
-def cc_calculation_summary(reference_energy, cc_energy):
+def cc_calculation_summary(T, reference_energy, cc_energy, system):
     DATA_FMT = "{:<30} {:>20.8f}"
     print("\n   CC Calculation Summary")
     print("  --------------------------------------------------")
     print(DATA_FMT.format("   Reference energy", reference_energy))
     print(DATA_FMT.format("   CC correlation energy", cc_energy))
     print(DATA_FMT.format("   Total CC energy", reference_energy + cc_energy))
+    print_ee_amplitudes(T, system, T.order, 10, 0.05)
     print("")
 
 def eomcc_calculation_summary(R, omega, r0, is_converged, system):
