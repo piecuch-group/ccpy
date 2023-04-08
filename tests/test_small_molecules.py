@@ -152,12 +152,11 @@ def test_cct3_ch():
     assert(np.allclose(driver.system.reference_energy, -38.2713247488))
                 
 if __name__ == "__main__":
-    test_cct3_ch()
 #     test_ccsdt_ch()
 #     test_crcc23_glycine()
-#     test_cct3_hfhminus_triplet()
+    test_cct3_hfhminus_triplet()
 #     test_cct3_f2()
-
+    test_cct3_ch()
 
 # Methods
 # - CCD
