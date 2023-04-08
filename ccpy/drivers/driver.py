@@ -27,7 +27,6 @@ def cc_driver(calculation, system, hamiltonian, T_init=None, pspace=None, t3_exc
         )
 
     # [TODO]: Check if calculation parameters (e.g, active orbitals) make sense
-
     # import the specific CC method module and get its update function
     cc_mod = import_module("ccpy.cc." + calculation.calculation_type.lower())
     update_function = getattr(cc_mod, 'update')
