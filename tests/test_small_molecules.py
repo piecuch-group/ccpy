@@ -134,35 +134,39 @@ def test_cct3_ch():
     """
     """
     driver = Driver.from_gamess(logfile="data/ch/ch.log", fcidump="data/ch/ch.FCIDUMP", nfrozen=1)
+    driver.system.set_active_space(nact_occupied=1, nact_unoccupied=2)
     driver.system.print_info()
-    driver.system.set_active_space(nact_occupied=1, nact_unoccupied=1)
-
-    print(driver.system.num_act_occupied_alpha)
-    print(driver.system.num_act_occupied_beta)
-    print(driver.system.num_act_unoccupied_alpha)
-    print(driver.system.num_act_unoccupied_beta)
 
     driver.run_cc(method="ccsdt1")
-    #driver.run_hbar(method="ccsd")
-    #driver.run_leftcc(method="left_ccsd")
-    #driver.run_ccp3(method="cct3")
-
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="cct3")
 
     # Check reference energy
     assert(np.allclose(driver.system.reference_energy, -38.2713247488))
-                
-if __name__ == "__main__":
+    # Check CCSDt energy
+    assert(np.allclose(driver.correlation_energy, -0.11469532))
+    assert(np.allclose(driver.system.reference_energy + driver.correlation_energy, -38.38602007))
+    # Check CC(t;3)_A energy
+    assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["A"], -0.1160181452))
+    assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["A"], -38.3873428940))
+    # Check CC(t;3)_D energy
+    assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["D"], -0.1162820915))
+    assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"], -38.3876068402))
+
+
+#if __name__ == "__main__":
 #     test_ccsdt_ch()
 #     test_crcc23_glycine()
-    test_cct3_hfhminus_triplet()
+#     test_cct3_hfhminus_triplet()
 #     test_cct3_f2()
-    test_cct3_ch()
+#     test_cct3_ch()
 
 # Methods
-# - CCD
-# - CCSD
-# - CCSDT
-# - CCSDt
+# - CCD: closed-shell [], open-shell []
+# - CCSD: closed-shell [X], open-shell []
+# - CCSDT: closed-shell [], open-shell [X]
+# - CCSDt: closed-shell [], open-shell [X]
 # - CC(P) aimed at CCSDT
 # - CCSDTQ
 # - CCSD(T)
@@ -181,10 +185,3 @@ if __name__ == "__main__":
 # - Adaptive CC(P;Q) aimed at CCSDT
 # - ec-CC-II_{3,4}
 
-# Molecules
-# F2 / cc-pVDZ, cc-pVTZ, aug-cc-pVTZ
-# H2O / DZ, cc-pVDZ, cc-pVTZ, cc-pVQZ
-# CH2 / 6-31G*, cc-pVTZ, cc-pVQZ
-# H4
-# H8
-#
