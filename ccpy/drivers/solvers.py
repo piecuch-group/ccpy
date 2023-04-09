@@ -30,6 +30,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     sigma[:, 0] = HR(dR, R, T, H, options["RHF_symmetry"], system)
     dR.unflatten(dR.flatten() * 0.0)
 
+    is_converged = False
     curr_size = 1
     while curr_size < options["maximum_iterations"]:
         t1 = time.time()

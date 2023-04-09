@@ -55,6 +55,7 @@ class Driver:
         self.R = [None] * max_number_states
         self.correlation_energy = 0.0
         self.vertical_excitation_energy = np.zeros(max_number_states)
+        self.vertical_excitation_energy_guess = None
         self.r0 = np.zeros(max_number_states)
         self.deltapq = [None] * max_number_states
         self.ddeltapq = [None] * max_number_states
@@ -216,7 +217,7 @@ class Driver:
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
 
-    def run_eomcc(self, method, state_index, t3_excitations=None, r3_excitations=None, guess_method="cis", multiplicity=None):
+    def run_eomcc(self, method, state_index, multiplicity, t3_excitations=None, r3_excitations=None, guess_method="cis", run_guess_only=False):
         """Performs the EOMCC calculation specified by the user in the input."""
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.eomcc.MODULES:
@@ -234,14 +235,14 @@ class Driver:
         eom_module = import_module("ccpy.eomcc." + method.lower())
         HR_function = getattr(eom_module, 'HR')
         update_function = getattr(eom_module, 'update')
+
         # import the specific guess function
         guess_module = import_module("ccpy.eomcc." + guess_method.lower() + "_guess")
         guess_function = getattr(guess_module, "run_diagonalization")
-        if multiplicity is None:
-            multiplicity = self.system.multiplicity
 
-        # Run the initial guess function
-        omega, V = guess_function(self.system, self.hamiltonian, multiplicity)
+        # Run the initial guess function; can choose to exit here if run_guess_only=True, otherwise continue to EOM
+        self.vertical_excitation_energy_guess, V = guess_function(self.system, self.hamiltonian, multiplicity)
+        if run_guess_only: return
 
         for i in state_index:
             if self.R[i] is None:
@@ -250,7 +251,7 @@ class Driver:
                                             active_orders=self.operator_params["active_orders"],
                                             num_active=self.operator_params["number_active_indices"])
                 self.R[i].unflatten(V[:, i - 1], order=1)
-                self.vertical_excitation_energy[i] = omega[i - 1]
+                self.vertical_excitation_energy[i] = self.vertical_excitation_energy_guess[i - 1]
 
         # Form the initial subspace vectors
         B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
