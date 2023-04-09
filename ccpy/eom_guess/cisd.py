@@ -1,57 +1,13 @@
 import numpy as np
 
-from ccpy.utilities.printing import print_amplitudes
-from ccpy.eomcc.s2matrix import build_s2matrix_cis
-from ccpy.models.operators import ClusterOperator, FockOperator
+from ccpy.eom_guess.s2matrix import build_s2matrix_cisd
 
-def get_initial_guess(calculation, system, H, nroot, noact=0, nuact=0, guess_order=1, verbose=False):
+def run_diagonalization(system, H, multiplicity):
 
-    calc_type = "ee"
-    if "ip" in calculation.calculation_type.lower():
-        calc_type = "ip"
-    if "ea" in calculation.calculation_type.lower():
-        calc_type = "ea"
+    Hmat = build_cisd_hamiltonian(H, system)
+    omega, V = spin_adapt_guess(system, Hmat, multiplicity)
 
-    if calc_type == "ee":
-        Hmat = build_cis_hamiltonian(H, system)
-        omega, V = spin_adapt_guess(system, Hmat, calculation.multiplicity)
-        idx = np.argsort(omega)
-        omega = omega[idx]
-        V = V[:, idx]
-
-    elif calc_type == "ip":
-        Hmat = build_1h_hamiltonian(H, system)
-        omega, V = np.linalg.eig(Hmat)
-        idx = np.flip(np.argsort(omega))
-        omega = omega[idx]
-        V = V[:, idx]
-
-    elif calc_type == "ea":
-        Hmat = build_1p_hamiltonian(H, system)
-        omega, V = np.linalg.eig(Hmat)
-        idx = np.argsort(omega)
-        omega = omega[idx]
-        V = V[:, idx]
-
-    R = []
-    for i in range(nroot):
-
-        if calc_type == "ee":
-            R.append(ClusterOperator(system,
-                                    order=calculation.order,
-                                    active_orders=calculation.active_orders,
-                                    num_active=calculation.num_active)
-                     )
-        else:
-            R.append(FockOperator(system, num_particles=calculation.num_particles, num_holes=calculation.num_holes))
-
-        R[i].unflatten(V[:, i], order=guess_order)
-
-        if verbose:
-            print("Guess for root:", i + 1, " ω = ", omega[i])
-            print_amplitudes(R[i], system, guess_order, nprint=5)
-
-    return R, omega[:nroot]
+    return omega, V
 
 def spin_adapt_guess(system, H, multiplicity):
 
@@ -61,7 +17,7 @@ def spin_adapt_guess(system, H, multiplicity):
 
     ndim = H.shape[0]
 
-    S2 = build_s2matrix_cis(system)
+    S2 = build_s2matrix_cisd(system)
     eval_s2, V_s2 = np.linalg.eig(S2)
     idx_s2 = [i for i, s2 in enumerate(eval_s2) if abs(_get_multiplicity(s2) - multiplicity) < 1.0e-07]
 
@@ -81,7 +37,7 @@ def spin_adapt_guess(system, H, multiplicity):
     return omega[idx[len(idx_s2):]], V[:, idx[len(idx_s2):]]
 
 
-def build_cis_hamiltonian(H, system):
+def build_cisd_hamiltonian(H, system):
 
     n1a = system.noccupied_alpha * system.nunoccupied_alpha
     n1b = system.noccupied_beta * system.nunoccupied_beta
@@ -137,69 +93,6 @@ def build_cis_hamiltonian(H, system):
     return np.concatenate(
         (np.concatenate((Haa, Hab), axis=1), np.concatenate((Hba, Hbb), axis=1)), axis=0
     )
-
-def build_1h_hamiltonian(H, system):
-    """Build and diagonalize the Hamiltonian in the space of 1h excitations."""
-
-    HAA = np.zeros((system.noccupied_alpha, system.noccupied_alpha))
-    HAB = np.zeros((system.noccupied_alpha, system.noccupied_beta))
-    HBA = np.zeros((system.noccupied_beta, system.noccupied_alpha))
-    HBB = np.zeros((system.noccupied_beta, system.noccupied_beta))
-
-    ct1 = 0
-    for i in range(system.noccupied_alpha):
-        ct2 = 0
-        for j in range(system.noccupied_alpha):
-            HAA[ct1, ct2] = H.a.oo[j, i]
-            ct2 += 1
-        ct1 += 1
-
-    ct1 = 0
-    for i in range(system.noccupied_beta):
-        ct2 = 0
-        for j in range(system.noccupied_beta):
-            HBB[ct1, ct2] = H.b.oo[j, i]
-            ct2 += 1
-        ct1 += 1
-
-    Hmat = np.vstack(
-                      (np.hstack((HAA, HAB)),
-                       np.hstack((HBA, HBB)))
-                     )
-
-    return Hmat
-
-def build_1p_hamiltonian(H, system):
-    """Build and diagonalize the Hamiltonian in the space of 1p excitations."""
-
-    HAA = np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha))
-    HAB = np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta))
-    HBA = np.zeros((system.nunoccupied_beta, system.nunoccupied_alpha))
-    HBB = np.zeros((system.nunoccupied_beta, system.nunoccupied_beta))
-
-    ct1 = 0
-    for a in range(system.nunoccupied_alpha):
-        ct2 = 0
-        for b in range(system.nunoccupied_alpha):
-            HAA[ct1, ct2] = H.a.vv[a, b]
-            ct2 += 1
-        ct1 += 1
-
-    ct1 = 0
-    for a in range(system.nunoccupied_beta):
-        ct2 = 0
-        for b in range(system.nunoccupied_beta):
-            HBB[ct1, ct2] = H.b.vv[a, b]
-            ct2 += 1
-        ct1 += 1
-
-    Hmat = np.vstack(
-                      (np.hstack((HAA, HAB)),
-                       np.hstack((HBA, HBB)))
-                     )
-
-    return Hmat
-
 
 # def build_eomccsd_matrix(dets1A,dets1B,dets2A,dets2B,dets2C,H1A,H1B,H2A,H2B,H2C):
 #

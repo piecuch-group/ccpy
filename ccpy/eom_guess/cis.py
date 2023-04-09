@@ -1,62 +1,53 @@
 import numpy as np
 
-from ccpy.utilities.printing import print_amplitudes
-from ccpy.eomcc.s2matrix import build_s2matrix_cis
+from ccpy.eom_guess.s2matrix import build_s2matrix_cis
 
-def cis(calculation, system, H):
+def run_diagonalization(system, H, multiplicity):
 
-    ndim = (
-            system.noccupied_alpha * system.nunoccupied_alpha 
-            * system.noccupied_beta * system.nunoccupied_beta
-    )
-    H_cis = build_cis_hamiltonian(H, system)
-    omega_cis, V_cis = np.linalg.eig(H_cis)
-    idx = np.argsort(omega_cis)
-    omega_cis = omega_cis[idx]
-    V_cis = V_cis[:, idx]
+    Hmat = build_cis_hamiltonian(H, system)
+    omega, V = spin_adapt_guess(system, Hmat, multiplicity)
 
-    print("CIS Eigenvalues:")
-    for i in range(ndim):
-        print("E{} = {}".format(i + 1, omega_cis[i]))
-        print_amplitudes(V_cis[:, i], system)
+    return omega, V
+
+def spin_adapt_guess(system, H, multiplicity):
+
+    def _get_multiplicity(s2):
+        s = -0.5 + np.sqrt(0.25 + s2)
+        return 2.0 * s + 1.0
+
+    ndim = H.shape[0]
 
     S2 = build_s2matrix_cis(system)
     eval_s2, V_s2 = np.linalg.eig(S2)
-    idx = np.argsort(eval_s2)
-    eval_s2 = eval_s2[idx]
-    V_s2 = V_s2[:, idx]
+    idx_s2 = [i for i, s2 in enumerate(eval_s2) if abs(_get_multiplicity(s2) - multiplicity) < 1.0e-07]
+    n_s2_sub = len(idx_s2)
 
-    Ns2 = 0
-    idx_s2 = []
-    print("S2 Eigenvalues:")
-    for i in range(ndim):
-        sval = -0.5 + np.sqrt(0.25 + eval_s2[i])
-        multval = 2 * sval + 1
-        print("S{} = {}  (mult = {})".format(i + 1, sval, multval))
-        if abs(multval - calculation.multiplicity) < 1.0e-07:
-            idx_s2.append(i)
-            Ns2 += 1
-
-    print("Dimension of spin subspace of multiplicity {} = {}".format(calculation.multiplicity, Ns2))
-    Qs2 = ndim - Ns2
-    W = np.zeros((ndim, Ns2))
-    for i in range(Ns2):
+    W = np.zeros((ndim, n_s2_sub))
+    for i in range(n_s2_sub):
         W[:, i] = V_s2[:, idx_s2[i]]
 
-    G = np.einsum("Ku,Nv,Lu,Mv,LM->KN", W, W, W, W, H_cis, optimize=True)
+    # Transform from determinantal basis to basis of S2 eigenfunctions
+    G = np.einsum("Ku,Nv,Lu,Mv,LM->KN", W, W, W, W, H, optimize=True)
+    # diagonalize and sort the resulting eigenvalues
+    omega, V = np.linalg.eig(G)
+    omega = np.real(omega)
+    V = np.real(V)
+    idx = np.argsort(omega)
+    omega = omega[idx]
+    V = V[:, idx]
 
-    omega_cis, V_cis = np.linalg.eig(G)
-    omega_cis = np.real(omega_cis)
-    V_cis = np.real(V_cis)
-    idx = np.argsort(omega_cis)
-    omega_cis = omega_cis[idx]
-    V_cis = V_cis[:, idx]
-    print("Spin-adpated CIS eigenvalues:")
-    for i in range(calculation.nroot):
-        print("E{} = {}".format(i + 1, omega_cis[i + Qs2]))
-        print_amplitudes(V_cis[:, i + Qs2], system)
+    # now all the eigenvalues that do not have the correct multiplicity are going to be numerically 0
+    # retain only those that are non-zero to find the spin-adapted subspace
+    omega_adapt = np.zeros(n_s2_sub)
+    V_adapt = np.zeros((ndim, n_s2_sub))
+    n = 0
+    for i in range(len(omega)):
+        if abs(omega[i] < 1.0e-09): continue
+        omega_adapt[n] = omega[i]
+        V_adapt[:, n] = V[:, i]
+        n += 1
 
-    return omega_cis, V_cis
+    return omega_adapt, V_adapt
 
 
 def build_cis_hamiltonian(H, system):
@@ -72,7 +63,7 @@ def build_cis_hamiltonian(H, system):
             for b in range(system.nunoccupied_alpha):
                 for j in range(system.noccupied_alpha):
                     Haa[ct1, ct2] = (
-                        H.a.vv[a, b] * (i == j)
+                          H.a.vv[a, b] * (i == j)
                         - H.a.oo[j, i] * (a == b)
                         + H.aa.voov[a, j, i, b]
                     )

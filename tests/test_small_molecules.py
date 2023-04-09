@@ -11,6 +11,7 @@ def test_creom23_chplus():
     driver.options["maximum_iterations"] = 200
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
+    driver.run_guess(method="cis", multiplicity=1)
     driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3, 4, 5])
     driver.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3, 4, 5])
     driver.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3, 4, 5])
@@ -36,6 +37,7 @@ def test_eomccsdt1_chplus():
 
     driver.run_cc(method="ccsdt1")
     driver.run_hbar(method="ccsdt1")
+    driver.run_guess(method="cis", multiplicity=1)
     driver.run_eomcc(method="eomccsdt1", state_index=[1, 2, 3, 4, 5])
 
     # Check reference energy
@@ -217,8 +219,8 @@ def test_cct3_ch():
 
 
 if __name__ == "__main__":
-#    test_creom23_chplus()
-    test_eomccsdt1_chplus()
+    test_creom23_chplus()
+#    test_eomccsdt1_chplus()
 #     test_ccsdt_ch()
 #     test_crcc23_glycine()
 #     test_cct3_hfhminus_triplet()

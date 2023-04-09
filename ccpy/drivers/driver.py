@@ -6,6 +6,7 @@ from functools import partial
 import ccpy.cc
 import ccpy.hbar
 import ccpy.left
+import ccpy.eom_guess
 import ccpy.eomcc
 
 from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eccc_jacobi
@@ -55,8 +56,10 @@ class Driver:
         self.R = [None] * max_number_states
         self.correlation_energy = 0.0
         self.vertical_excitation_energy = np.zeros(max_number_states)
-        self.vertical_excitation_energy_guess = None
         self.r0 = np.zeros(max_number_states)
+        self.guess_energy = None
+        self.guess_vectors = None
+        self.guess_order = 0
         self.deltapq = [None] * max_number_states
         self.ddeltapq = [None] * max_number_states
 
@@ -217,7 +220,25 @@ class Driver:
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
 
-    def run_eomcc(self, method, state_index, multiplicity, t3_excitations=None, r3_excitations=None, guess_method="cis", run_guess_only=False):
+    def run_guess(self, method, multiplicity, nact_occupied=0, nact_unoccupied=0):
+        """Performs the initial guess for a subsequent EOMCC calculation."""
+        # check if requested EOM guess calculation is implemented in modules
+        if method.lower() not in ccpy.eom_guess.MODULES:
+            raise NotImplementedError(
+                "{} guess not implemented".format(method.lower())
+            )
+        # import the specific guess function
+        guess_module = import_module("ccpy.eom_guess." + method.lower())
+        guess_function = getattr(guess_module, "run_diagonalization")
+        # Set operator parameters needed to build the guess R vector
+        if method.lower() == "cis":
+            self.guess_order = 1
+        elif method.lower() == "cisd":
+            self.guess_order = 2
+        # Run the initial guess function and save all eigenpairs
+        self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity)
+
+    def run_eomcc(self, method, state_index, t3_excitations=None, r3_excitations=None):
         """Performs the EOMCC calculation specified by the user in the input."""
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.eomcc.MODULES:
@@ -236,22 +257,14 @@ class Driver:
         HR_function = getattr(eom_module, 'HR')
         update_function = getattr(eom_module, 'update')
 
-        # import the specific guess function
-        guess_module = import_module("ccpy.eomcc." + guess_method.lower() + "_guess")
-        guess_function = getattr(guess_module, "run_diagonalization")
-
-        # Run the initial guess function; can choose to exit here if run_guess_only=True, otherwise continue to EOM
-        self.vertical_excitation_energy_guess, V = guess_function(self.system, self.hamiltonian, multiplicity)
-        if run_guess_only: return
-
         for i in state_index:
             if self.R[i] is None:
                 self.R[i] = ClusterOperator(self.system,
                                             order=self.operator_params["order"],
                                             active_orders=self.operator_params["active_orders"],
                                             num_active=self.operator_params["number_active_indices"])
-                self.R[i].unflatten(V[:, i - 1], order=1)
-                self.vertical_excitation_energy[i] = self.vertical_excitation_energy_guess[i - 1]
+                self.R[i].unflatten(self.guess_vectors[:, i - 1], order=self.guess_order)
+                self.vertical_excitation_energy[i] = self.guess_energy[i - 1]
 
         # Form the initial subspace vectors
         B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
