@@ -4,8 +4,7 @@ import time
 import numpy as np
 
 from ccpy.utilities.printing import print_cc_iteration, print_cc_iteration_header,\
-                                    print_eomcc_iteration, print_eomcc_iteration_header,\
-                                    print_amplitudes
+                                    print_eomcc_iteration, print_eomcc_iteration_header
 from ccpy.utilities.utilities import remove_file
 from ccpy.models.operators import ClusterOperator, FockOperator
 
@@ -18,10 +17,6 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     # orthonormalize the initial trial space; this is important when using doubles in EOMCCSd guess
     #B0, _ = np.linalg.qr(np.asarray([r.flatten() for r in R]).T)
 
-    print("   =======================================")
-    print("   Energy of initial guess = {:>10.10f}".format(omega))
-    print_amplitudes(R, system, 2, nprint=5)
-    print("   =======================================")
     print_eomcc_iteration_header()
 
     # Allocate the B (correction/subspace), sigma (HR), and G (interaction) matrices

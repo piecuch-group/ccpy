@@ -13,7 +13,7 @@ from ccpy.drivers.cc_energy import get_LR, get_r0
 
 from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator, FockOperator
-from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc_calculation_summary, leftcc_calculation_summary
+from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc_calculation_summary, leftcc_calculation_summary, print_ee_amplitudes
 
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
@@ -42,7 +42,8 @@ class Driver:
                         "energy_shift" : 0.0,
                         "diis_size" : 6,
                         "RHF_symmetry" : False,
-                        "diis_out_of_core" : False}
+                        "diis_out_of_core" : False,
+                        "amp_print_threshold" : 0.025}
         self.operator_params = {"order" : 0,
                                 "number_particles" : 0,
                                 "number_holes" : 0,
@@ -193,7 +194,7 @@ class Driver:
                                                 self.options,
                                                 t3_excitations,
                                                )
-        cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system)
+        cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   CC calculation ended on", get_timestamp())
 
     def run_hbar(self, method, t3_excitations=None):
@@ -266,12 +267,14 @@ class Driver:
         ct = 0
         for i in state_index:
             print("   EOMCC calculation for root %d started on" % i, get_timestamp())
+            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[i]))
+            print_ee_amplitudes(self.R[i], self.system, self.R[i].order, self.options["amp_print_threshold"])
             self.R[i], self.vertical_excitation_energy[i], is_converged = eomcc_davidson(HR_function, update_function, B0[:, ct],
                                                                               self.R[i], dR, self.vertical_excitation_energy[i],
                                                                               self.T, self.hamiltonian, self.system, self.options)
             # Compute r0 a posteriori
             self.r0[i] = get_r0(self.R[i], self.hamiltonian, self.vertical_excitation_energy[i])
-            eomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.r0[i], is_converged, self.system)
+            eomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.r0[i], is_converged, self.system, self.options["amp_print_threshold"])
             print("   EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
             ct += 1
 
@@ -334,7 +337,7 @@ class Driver:
             if not ground_state:
                 self.L[i].unflatten(1.0 / LR_function(self.L[i]) * self.L[i].flatten())
 
-            leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system)
+            leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
             print("   Left CC calculation for root %d ended on" % i, get_timestamp(), "\n")
 
     def run_eccc(self, method, external_wavefunction, t3_excitations=None):
@@ -387,7 +390,7 @@ class Driver:
                                                   self.options,
                                                )
 
-        cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system)
+        cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"], self.options["amp_max_print"])
         print("   ec-CC calculation ended on", get_timestamp())
 
     def run_ccp3(self, method, state_index=[0], two_body_approx=True, t3_excitations=None, l3_excitations=None, r3_excitations=None, pspace=None):
