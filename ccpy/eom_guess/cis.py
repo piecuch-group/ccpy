@@ -2,12 +2,12 @@ import numpy as np
 
 from ccpy.eom_guess.s2matrix import build_s2matrix_cis
 
-def run_diagonalization(system, H, multiplicity):
+def run_diagonalization(system, H, multiplicity, nroot):
 
     Hmat = build_cis_hamiltonian(H, system)
     omega, V = spin_adapt_guess(system, Hmat, multiplicity)
 
-    return omega, V
+    return omega[:nroot], V[:, :nroot]
 
 def spin_adapt_guess(system, H, multiplicity):
 

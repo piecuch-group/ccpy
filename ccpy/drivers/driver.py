@@ -42,7 +42,7 @@ class Driver:
                         "convergence_tolerance" : 1.0e-07,
                         "energy_shift" : 0.0,
                         "diis_size" : 6,
-                        "RHF_symmetry" : False,
+                        "RHF_symmetry" : (self.system.noccupied_alpha == self.system.noccupied_beta),
                         "diis_out_of_core" : False,
                         "amp_print_threshold" : 0.025}
         self.operator_params = {"order" : 0,
@@ -220,7 +220,7 @@ class Driver:
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
 
-    def run_guess(self, method, multiplicity, nact_occupied=0, nact_unoccupied=0):
+    def run_guess(self, method, multiplicity, nroot, nact_occupied=0, nact_unoccupied=0):
         """Performs the initial guess for a subsequent EOMCC calculation."""
         # check if requested EOM guess calculation is implemented in modules
         if method.lower() not in ccpy.eom_guess.MODULES:
@@ -236,7 +236,7 @@ class Driver:
         elif method.lower() == "cisd":
             self.guess_order = 2
         # Run the initial guess function and save all eigenpairs
-        self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity)
+        self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, nroot)
 
     def run_eomcc(self, method, state_index, t3_excitations=None, r3_excitations=None):
         """Performs the EOMCC calculation specified by the user in the input."""
