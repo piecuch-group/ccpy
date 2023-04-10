@@ -2,7 +2,7 @@ import numpy as np
 
 from ccpy.models.calculation import Calculation
 from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace_with_symmetry, add_spinorbital_triples_to_pspace
-from ccpy.utilities.symmetry_count import count_triples
+from ccpy.utilities.symmetry import count_triples
 from ccpy.drivers.driver import cc_driver, lcc_driver
 from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
 from ccpy.moments.ccp3 import calc_ccp3, calc_ccp3_with_selection, calc_ccp3_with_moments, calc_ccpert3_with_selection, calc_ccpert3_with_moments

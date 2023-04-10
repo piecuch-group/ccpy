@@ -1,5 +1,5 @@
 from ccpy.utilities.printing import SystemPrinter
-from ccpy.utilities.symmetry_count import get_pg_irreps
+from ccpy.utilities.symmetry import get_pg_irreps
 
 
 class System:
