@@ -1,7 +1,7 @@
 import numpy as np
 
 from ccpy.models.calculation import Calculation
-from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace_with_symmetry, add_spinorbital_triples_to_pspace
+from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace, add_spinorbital_triples_to_pspace
 from ccpy.utilities.symmetry import count_triples
 from ccpy.drivers.driver import cc_driver, lcc_driver
 from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
@@ -82,7 +82,7 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
         print("   ===========================================================================================\n")
 
         # Count the excitations in the current P space
-        excitation_count = count_excitations_in_pspace_with_symmetry(pspace, system)
+        excitation_count = count_excitations_in_pspace(pspace, system)
         for ind, excitation_count_irrep in enumerate(excitation_count):
             tot_p_space = excitation_count_irrep[0]['aaa'] + excitation_count_irrep[0]['aab'] + excitation_count_irrep[0]['abb'] + excitation_count_irrep[0]['bbb']
             print("   Symmetry", system.point_group_number_to_irrep[ind], "-", "Total number of triples in P space = ", tot_p_space)

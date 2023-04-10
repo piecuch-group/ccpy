@@ -3,7 +3,6 @@ from itertools import permutations
 
 from ccpy.utilities.determinants import get_excits_from, get_excits_to, get_spincase, spatial_orb_idx, get_excit_rank
 
-
 def get_empty_pspace(system, nexcit, use_bool=False):
     if nexcit == 3:
         if use_bool:
@@ -185,11 +184,10 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
     unoccupied_upper_bound = system.nunoccupied_beta
 
     orb_table = {'a': system.noccupied_alpha, 'b': system.noccupied_beta}
+    h_sym = len(system.point_group_irrep_to_number)
 
-    excitation_count = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0},
-                        {'aaaa': 0, 'aaab': 0, 'aabb': 0, 'abbb': 0, 'bbbb': 0}]
-    excitations = [{'aaa': [], 'aab': [], 'abb': [], 'bbb': []},
-                   {'aaaa': [], 'aaab': [], 'aabb': [], 'abbb': [], 'bbbb': []}]
+    excitation_count_by_symmetry = [[{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0}] for i in range(h_sym)]
+    excitations = [{'aaa': [], 'aab': [], 'abb': [], 'bbb': []}]
 
     with open(pspace_file) as f:
 
@@ -233,40 +231,53 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
 
             n = excit_rank - 3
 
-            excitation_count[n][spincase] += 1
-            if n == 0:
-                excitations[n][spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_occ[0], idx_occ[1], idx_occ[2]])
-            if n == 1:
-                excitations[n][spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_unocc[3], idx_occ[0], idx_occ[1], idx_occ[2], idx_occ[3]])
+            # Get the symmetry irrep of the triple excitation
+            sym = system.point_group_irrep_to_number[system.reference_symmetry]
+            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
+            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
+            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
+            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
+            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_alpha]]
+            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_alpha]]
+            excitation_count_by_symmetry[sym][n][spincase] += 1
 
-            if excit_rank == 3:
-                if spincase == 'aaa':
-                    for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
-                        for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
-                            a, b, c = perms_unocc
-                            i, j, k = perms_occ
-                            pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+            excitations[n][spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_occ[0], idx_occ[1], idx_occ[2]])
 
-                if spincase == 'aab':
-                    for perms_unocc in permutations((idx_unocc[0], idx_unocc[1])):
-                        for perms_occ in permutations((idx_occ[0], idx_occ[1])):
-                            a, b = perms_unocc
-                            i, j = perms_occ
-                            pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
+            if spincase == 'aaa':
+                for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
+                    for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
+                        a, b, c = perms_unocc
+                        i, j, k = perms_occ
+                        pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
 
-                if spincase == 'abb':
-                    for perms_unocc in permutations((idx_unocc[1], idx_unocc[2])):
-                        for perms_occ in permutations((idx_occ[1], idx_occ[2])):
-                            b, c = perms_unocc
-                            j, k = perms_occ
-                            pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
+            if spincase == 'aab':
+                for perms_unocc in permutations((idx_unocc[0], idx_unocc[1])):
+                    for perms_occ in permutations((idx_occ[0], idx_occ[1])):
+                        a, b = perms_unocc
+                        i, j = perms_occ
+                        pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
 
-                if spincase == 'bbb':
-                    for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
-                        for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
-                            a, b, c = perms_unocc
-                            i, j, k = perms_occ
-                            pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+            if spincase == 'abb':
+                for perms_unocc in permutations((idx_unocc[1], idx_unocc[2])):
+                    for perms_occ in permutations((idx_occ[1], idx_occ[2])):
+                        b, c = perms_unocc
+                        j, k = perms_occ
+                        pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
+
+            if spincase == 'bbb':
+                for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
+                    for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
+                        a, b, c = perms_unocc
+                        i, j, k = perms_occ
+                        pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+
+    for isym, excitation_count_irrep in enumerate(excitation_count_by_symmetry):
+        tot_excitation_count_irrep = excitation_count_irrep[0]['aaa'] + excitation_count_irrep[0]['aab'] + excitation_count_irrep[0]['abb'] + excitation_count_irrep[0]['bbb']
+        print("   Symmetry", system.point_group_number_to_irrep[isym], "-", "Total number of triples in P space = ", tot_excitation_count_irrep)
+        print("      Number of aaa = ", excitation_count_irrep[0]['aaa'])
+        print("      Number of aab = ", excitation_count_irrep[0]['aab'])
+        print("      Number of abb = ", excitation_count_irrep[0]['abb'])
+        print("      Number of bbb = ", excitation_count_irrep[0]['bbb'])
 
     # convert excitation arrays to Numpy arrays
     for spincase in ["aaa", "aab", "abb", "bbb"]:
@@ -274,76 +285,9 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
         if len(excitations[0][spincase].shape) < 2:
             excitations[0][spincase] = np.ones((1, 6))
 
-    return pspace, excitations, excitation_count
+    return pspace, excitations, excitation_count_by_symmetry
 
-
-def count_excitations_in_pspace(pspace, system, ordered_index=True):
-    excitation_count = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0},
-                        {'aaaa': 0, 'aaab': 0, 'aabb': 0, 'abbb': 0, 'bbbb': 0}]
-
-    for n, p in enumerate(pspace):
-
-        if n == 0:
-
-            for a in range(system.nunoccupied_alpha):
-                for b in range(a + 1, system.nunoccupied_alpha):
-                    for c in range(b + 1, system.nunoccupied_alpha):
-                        for i in range(system.noccupied_alpha):
-                            for j in range(i + 1, system.noccupied_alpha):
-                                for k in range(j + 1, system.noccupied_alpha):
-
-                                    if ordered_index:
-                                        if p['aaa'][a, b, c, i, j, k] != 0:
-                                            excitation_count[n]['aaa'] += 1
-                                    else:
-                                        if p['aaa'][a, b, c, i, j, k] == 1:
-                                            excitation_count[n]['aaa'] += 1
-
-            for a in range(system.nunoccupied_alpha):
-                for b in range(a + 1, system.nunoccupied_alpha):
-                    for c in range(system.nunoccupied_beta):
-                        for i in range(system.noccupied_alpha):
-                            for j in range(i + 1, system.noccupied_alpha):
-                                for k in range(system.noccupied_beta):
-
-                                    if ordered_index:
-                                        if p['aab'][a, b, c, i, j, k] != 0:
-                                            excitation_count[n]['aab'] += 1
-                                    else:
-                                        if p['aab'][a, b, c, i, j, k] == 1:
-                                            excitation_count[n]['aab'] += 1
-
-            for a in range(system.nunoccupied_alpha):
-                for b in range(system.nunoccupied_beta):
-                    for c in range(b + 1, system.nunoccupied_beta):
-                        for i in range(system.noccupied_alpha):
-                            for j in range(system.noccupied_beta):
-                                for k in range(j + 1, system.noccupied_beta):
-
-                                    if ordered_index:
-                                        if p['abb'][a, b, c, i, j, k] != 0:
-                                            excitation_count[n]['abb'] += 1
-                                    else:
-                                        if p['abb'][a, b, c, i, j, k] == 1:
-                                            excitation_count[n]['abb'] += 1
-
-            for a in range(system.nunoccupied_beta):
-                for b in range(a + 1, system.nunoccupied_beta):
-                    for c in range(b + 1, system.nunoccupied_beta):
-                        for i in range(system.noccupied_beta):
-                            for j in range(i + 1, system.noccupied_beta):
-                                for k in range(j + 1, system.noccupied_beta):
-
-                                    if ordered_index:
-                                        if p['bbb'][a, b, c, i, j, k] != 0:
-                                            excitation_count[n]['bbb'] += 1
-                                    else:
-                                        if p['bbb'][a, b, c, i, j, k] == 1:
-                                            excitation_count[n]['bbb'] += 1
-
-    return excitation_count
-
-def count_excitations_in_pspace_with_symmetry(pspace, system):
+def count_excitations_in_pspace(pspace, system):
 
     h_sym = len(system.point_group_irrep_to_number)
 
@@ -425,6 +369,14 @@ def count_excitations_in_pspace_with_symmetry(pspace, system):
 
                                     if p['bbb'][a, b, c, i, j, k] == 1:
                                         excitation_count[sym][n]['bbb'] += 1
+
+    for isym, excitation_count_irrep in enumerate(excitation_count):
+        tot_excitation_count_irrep = excitation_count_irrep[0]['aaa'] + excitation_count_irrep[0]['aab'] + excitation_count_irrep[0]['abb'] + excitation_count_irrep[0]['bbb']
+        print("   Symmetry", system.point_group_number_to_irrep[isym], "-", "Total number of triples in P space = ", tot_excitation_count_irrep)
+        print("      Number of aaa = ", excitation_count_irrep[0]['aaa'])
+        print("      Number of aab = ", excitation_count_irrep[0]['aab'])
+        print("      Number of abb = ", excitation_count_irrep[0]['abb'])
+        print("      Number of bbb = ", excitation_count_irrep[0]['bbb'])
 
     return excitation_count
 
