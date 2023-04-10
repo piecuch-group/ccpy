@@ -232,18 +232,18 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
             n = excit_rank - 3
 
             # Get the symmetry irrep of the triple excitation
-            sym = system.point_group_irrep_to_number[system.reference_symmetry]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_alpha]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_alpha]]
-            excitation_count_by_symmetry[sym][n][spincase] += 1
 
             excitations[n][spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_occ[0], idx_occ[1], idx_occ[2]])
 
             if spincase == 'aaa':
+                sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_alpha]]
+                excitation_count_by_symmetry[sym][n][spincase] += 1
                 for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
                     for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
                         a, b, c = perms_unocc
@@ -251,6 +251,14 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                         pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
 
             if spincase == 'aab':
+                sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
+                excitation_count_by_symmetry[sym][n][spincase] += 1
                 for perms_unocc in permutations((idx_unocc[0], idx_unocc[1])):
                     for perms_occ in permutations((idx_occ[0], idx_occ[1])):
                         a, b = perms_unocc
@@ -258,6 +266,14 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                         pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
 
             if spincase == 'abb':
+                sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_beta]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
+                excitation_count_by_symmetry[sym][n][spincase] += 1
                 for perms_unocc in permutations((idx_unocc[1], idx_unocc[2])):
                     for perms_occ in permutations((idx_occ[1], idx_occ[2])):
                         b, c = perms_unocc
@@ -265,6 +281,14 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                         pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
 
             if spincase == 'bbb':
+                sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_beta]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_beta]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
+                excitation_count_by_symmetry[sym][n][spincase] += 1
                 for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
                     for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
                         a, b, c = perms_unocc
