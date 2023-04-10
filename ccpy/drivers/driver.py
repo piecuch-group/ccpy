@@ -148,8 +148,8 @@ class Driver:
         update_function = getattr(cc_mod, 'update')
 
         # Print the options as a header
-        print("   CC calculation started on", get_timestamp())
         self.print_options()
+        print("   CC calculation started on", get_timestamp())
 
         # Create either the standard CC or CC(P) cluster operator
         if t3_excitations is None:
@@ -310,6 +310,9 @@ class Driver:
         update_function = getattr(lcc_mod, 'update')
 
         LR_function = None
+
+        # Print the options as a header
+        self.print_options()
 
         # regardless of restart status, initialize residual anew
         LH = ClusterOperator(self.system,
