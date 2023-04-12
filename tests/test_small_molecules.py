@@ -8,13 +8,14 @@ def test_creom23_chplus():
     driver = Driver.from_gamess(logfile="data/chplus/chplus.log", fcidump="data/chplus/chplus.FCIDUMP", nfrozen=0)
     driver.system.print_info()
 
-    driver.options["maximum_iterations"] = 200
+    driver.options["maximum_iterations"] = 300
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
-    driver.run_guess(method="cis", multiplicity=3, nroot=10)
-    driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3, 4, 5])
-    driver.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3, 4, 5])
-    driver.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3, 4, 5])
+    driver.run_guess(method="cis", multiplicity=1, nroot=10)
+    driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3])
+    driver.options["energy_shift"] = 0.5
+    driver.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3])
+    driver.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3])
 
     # Check reference energy
     assert(np.allclose(driver.system.reference_energy, -37.9027681837))
@@ -42,6 +43,30 @@ def test_eomccsdt1_chplus():
 
     # Check reference energy
     assert(np.allclose(driver.system.reference_energy, -37.9027681837))
+    # Check CCSDt energy
+    #assert(np.allclose(driver.correlation_energy, -0.11469532))
+    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy, -38.38602007))
+    # Check CC(t;3)_A energy
+    #assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["A"], -0.1160181452))
+    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["A"], -38.3873428940))
+    # Check CC(t;3)_D energy
+    #assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["D"], -0.1162820915))
+    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"], -38.3876068402))
+
+def test_eomccsdt1_ch():
+    """
+    """
+    driver = Driver.from_gamess(logfile="data/ch/ch.log", fcidump="data/ch/ch.FCIDUMP", nfrozen=1)
+    driver.system.print_info()
+    driver.system.set_active_space(nact_occupied=1, nact_unoccupied=1)
+
+    driver.run_cc(method="ccsdt1")
+    driver.run_hbar(method="ccsdt1")
+    driver.run_guess(method="cis", multiplicity=1, nroot=10)
+    driver.run_eomcc(method="eomccsdt1", state_index=[1, 2, 3])
+
+    # Check reference energy
+    assert(np.allclose(driver.system.reference_energy, -38.2713247488))
     # Check CCSDt energy
     #assert(np.allclose(driver.correlation_energy, -0.11469532))
     #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy, -38.38602007))
@@ -183,19 +208,6 @@ def test_ccsdt_ch():
 def test_cct3_ch():
     """
     """
-    #mol = gto.M(
-    #            atom=[["C", (0.0, 0.0, 0.0)],
-    #                  ["H", (0.0, 0.0, 1.1197868)]],
-    #            basis="aug-cc-pvdz",
-    #            symmetry="C2V",
-    #            spin=1,
-    #            charge=0,
-    #            cart=False,
-    #            unit="Angstrom",
-    #)
-    #mf = scf.ROHF(mol)
-    #mf.kernel()
-    #driver = Driver.from_pyscf(mf, nfrozen=1)
     driver = Driver.from_gamess(logfile="data/ch/ch.log", fcidump="data/ch/ch.FCIDUMP", nfrozen=1)
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=2)
     driver.system.print_info()
@@ -219,9 +231,9 @@ def test_cct3_ch():
 
 
 if __name__ == "__main__":
-    test_creom23_chplus()
+    #test_creom23_chplus()
     # test_eomccsdt1_chplus()
-    # test_ccsdt_ch()
+    test_ccsdt_ch()
     # test_crcc23_glycine()
     # test_cct3_hfhminus_triplet()
     # test_cct3_f2()

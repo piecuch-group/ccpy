@@ -36,219 +36,161 @@ def spin_adapt_guess(system, H, multiplicity):
 
     return omega[idx[len(idx_s2):]], V[:, idx[len(idx_s2):]]
 
+def build_eomccsd_matrix(dets1A,dets1B,dets2A,dets2B,dets2C,H1A,H1B,H2A,H2B,H2C):
 
-def build_cisd_hamiltonian(H, system):
+    n1a = len(dets1A['inds'])
+    n1b = len(dets1B['inds'])
+    n2a = len(dets2A['inds'])
+    n2b = len(dets2B['inds'])
+    n2c = len(dets2C['inds'])
 
-    n1a = system.noccupied_alpha * system.nunoccupied_alpha
-    n1b = system.noccupied_beta * system.nunoccupied_beta
+    # 1A - 1A block
+    H1A1A = np.zeros((n1a,n1a))
+    for idet in range(n1a):
+        i,a = dets1A['inds'][idet]
+        sym1 = dets1A['sym'][idet]
+        for jdet in range(n1a):
+            j,b = dets1A['inds'][jdet]
+            sym2 = dets1A['sym'][jdet]
+            H1A1A[idet,jdet] = (i==j)*H1A['vv'][a,b] - (a==b)*H1A['oo'][j,i] + H2A['voov'][a,j,i,b]
 
-    Haa = np.zeros((n1a, n1a))
-    ct1 = 0
-    for a in range(system.nunoccupied_alpha):
-        for i in range(system.noccupied_alpha):
-            ct2 = 0
-            for b in range(system.nunoccupied_alpha):
-                for j in range(system.noccupied_alpha):
-                    Haa[ct1, ct2] = (
-                          H.a.vv[a, b] * (i == j)
-                        - H.a.oo[j, i] * (a == b)
-                        + H.aa.voov[a, j, i, b]
-                    )
-                    ct2 += 1
-            ct1 += 1
-    Hab = np.zeros((n1a, n1b))
-    ct1 = 0
-    for a in range(system.nunoccupied_alpha):
-        for i in range(system.noccupied_alpha):
-            ct2 = 0
-            for b in range(system.nunoccupied_beta):
-                for j in range(system.noccupied_beta):
-                    Hab[ct1, ct2] = H.ab.voov[a, j, i, b]
-                    ct2 += 1
-            ct1 += 1
-    Hba = np.zeros((n1b, n1a))
-    ct1 = 0
-    for a in range(system.nunoccupied_beta):
-        for i in range(system.noccupied_beta):
-            ct2 = 0
-            for b in range(system.nunoccupied_alpha):
-                for j in range(system.noccupied_alpha):
-                    Hba[ct1, ct2] = H.ab.ovvo[j, a, b, i]
-                    ct2 += 1
-            ct1 += 1
-    Hbb = np.zeros((n1b, n1b))
-    ct1 = 0
-    for a in range(system.nunoccupied_beta):
-        for i in range(system.noccupied_beta):
-            ct2 = 0
-            for b in range(system.nunoccupied_beta):
-                for j in range(system.noccupied_beta):
-                    Hbb[ct1, ct2] = (
-                        H.b.vv[a, b] * (i == j)
-                        - H.b.oo[j, i] * (a == b)
-                        + H.bb.voov[a, j, i, b]
-                    )
-                    ct2 += 1
-            ct1 += 1
-    return np.concatenate(
-        (np.concatenate((Haa, Hab), axis=1), np.concatenate((Hba, Hbb), axis=1)), axis=0
-    )
+    # 1A - 1B block
+    H1A1B = np.zeros((n1a,n1b))
+    for idet in range(n1a):
+        i,a = dets1A['inds'][idet]
+        sym1 = dets1A['sym'][idet]
+        for jdet in range(n1b):
+            j,b = dets1B['inds'][jdet]
+            sym2 = dets1B['sym'][jdet]
+            H1A1B[idet,jdet] = H2B['voov'][a,j,i,b]
 
-# def build_eomccsd_matrix(dets1A,dets1B,dets2A,dets2B,dets2C,H1A,H1B,H2A,H2B,H2C):
-#
-#     n1a = len(dets1A['inds'])
-#     n1b = len(dets1B['inds'])
-#     n2a = len(dets2A['inds'])
-#     n2b = len(dets2B['inds'])
-#     n2c = len(dets2C['inds'])
-#
-#     # 1A - 1A block
-#     H1A1A = np.zeros((n1a,n1a))
-#     for idet in range(n1a):
-#         i,a = dets1A['inds'][idet]
-#         sym1 = dets1A['sym'][idet]
-#         for jdet in range(n1a):
-#             j,b = dets1A['inds'][jdet]
-#             sym2 = dets1A['sym'][jdet]
-#             H1A1A[idet,jdet] = (i==j)*H1A['vv'][a,b] - (a==b)*H1A['oo'][j,i] + H2A['voov'][a,j,i,b]
-#
-#     # 1A - 1B block
-#     H1A1B = np.zeros((n1a,n1b))
-#     for idet in range(n1a):
-#         i,a = dets1A['inds'][idet]
-#         sym1 = dets1A['sym'][idet]
-#         for jdet in range(n1b):
-#             j,b = dets1B['inds'][jdet]
-#             sym2 = dets1B['sym'][jdet]
-#             H1A1B[idet,jdet] = H2B['voov'][a,j,i,b]
-#
-#     # 1B - 1A block
-#     H1B1A = np.zeros((n1b,n1a))
-#     for idet in range(n1b):
-#         i,a = dets1B['inds'][idet]
-#         sym1 = dets1B['sym'][idet]
-#         for jdet in range(n1a):
-#             j,b = dets1A['inds'][jdet]
-#             sym2 = dets1A['sym'][jdet]
-#             H1B1A[idet,jdet] = H2B['ovvo'][j,a,b,i]
-#
-#     # 1B - 1B block
-#     H1B1B = np.zeros((n1b,n1b))
-#     for idet in range(n1b):
-#         i,a = dets1B['inds'][idet]
-#         sym1 = dets1B['sym'][idet]
-#         for jdet in range(n1b):
-#             j,b = dets1B['inds'][jdet]
-#             sym2 = dets1B['sym'][jdet]
-#             H1B1B[idet,jdet] = (i==j)*H1B['vv'][a,b] - (a==b)*H1B['oo'][j,i] + H2C['voov'][a,j,i,b]
-#
-#     # 1A - 2A block
-#     H1A2A = np.zeros((n1a,n2a))
-#     for idet in range(n1a):
-#         i,a = dets1A['inds'][idet]
-#         sym1 = dets1A['sym'][idet]
-#         for jdet in range(n2a):
-#             j,k,b,c = dets2A['inds'][jdet]
-#             sym2 = dets2A['sym'][jdet]
-#             H1A2A[idet,jdet] = (
-#                                (i==k)*(a==c)*H1A['ov'][j,b]
-#                               +(i==j)*(a==b)*H1A['ov'][k,c]
-#                               -(i==j)*(a==c)*H1A['ov'][k,b]
-#                               -(i==k)*(a==b)*H1A['ov'][j,c]
-#                               -(a==b)*H2A['ooov'][j,k,i,c]
-#                               -(a==c)*H2A['ooov'][k,j,i,b]
-#                               +(i==j)*H2A['vovv'][a,k,b,c]
-#                               +(i==k)*H2A['vovv'][a,j,c,b]
-#             )
-#
-#     # 1A - 2B block
-#     H1A2B = np.zeros((n1a,n2b))
-#     for idet in range(n1a):
-#         i,a = dets1A['inds'][idet]
-#         sym1 = dets1A['sym'][idet]
-#         for jdet in range(n2b):
-#             j,k,b,c = dets2B['inds'][jdet]
-#             sym2 = dets2B['sym'][jdet]
-#             H1A2B[idet,jdet] = (
-#                                (i==j)*H2B['vovv'][a,k,b,c]
-#                               -(a==b)*H2B['ooov'][j,k,i,c]
-#                               +(i==j)*(a==b)*H1B['ov'][k,c]
-#             )
-#
-#     # 1B - 2B block
-#     H1B2B = np.zeros((n1b,n2b))
-#     for idet in range(n1b):
-#         i,a = dets1B['inds'][idet]
-#         sym1 = dets1B['sym'][idet]
-#         for jdet in range(n2b):
-#             j,k,b,c = dets2B['inds'][jdet]
-#             sym2 = dets2B['sym'][jdet]
-#             H1B2B[idet,jdet] = (
-#                                (i==k)*H2B['ovvv'][j,a,b,c]
-#                               -(a==c)*H2B['oovo'][j,k,b,i]
-#                               +(i==k)*(a==c)*H1A['ov'][j,b]
-#             )
-#
-#     # 1B - 2C block
-#     H1B2C = np.zeros((n1b,n2c))
-#     for idet in range(n1b):
-#         i,a = dets1B['inds'][idet]
-#         sym1 = dets1B['sym'][idet]
-#         for jdet in range(n2c):
-#             j,k,b,c = dets2C['inds'][jdet]
-#             sym2 = dets2C['sym'][jdet]
-#             H1B2C[idet,jdet] = (
-#                                (i==k)*(a==c)*H1B['ov'][j,b]
-#                               +(i==j)*(a==b)*H1B['ov'][k,c]
-#                               -(i==j)*(a==c)*H1B['ov'][k,b]
-#                               -(i==k)*(a==b)*H1B['ov'][j,c]
-#                               -(a==b)*H2C['ooov'][j,k,i,c]
-#                               -(a==c)*H2C['ooov'][k,j,i,b]
-#                               +(i==j)*H2C['vovv'][a,k,b,c]
-#                               +(i==k)*H2C['vovv'][a,j,c,b]
-#             )
-#
-#     # 2A - 1A block
-#     H2A1A = np.zeros((n2a,n1a))
-#     for idet in range(n2a):
-#         i,j,a,b = dets2A['inds'][idet]
-#         sym1 = dets2A['sym'][idet]
-#         for jdet in range(n1a):
-#             k,c = dets1A['inds'][jdet]
-#             sym2 = dets1A['sym'][jdet]
-#             H2A1A[idet,jdet] = (
-#                                (j==k)*H2A['vvov'][a,b,i,c]
-#                               +(i==k)*H2A['vvov'][b,a,j,c]
-#                               -(b==c)*H2A['vooo'][a,k,i,j]
-#                               -(a==c)*H2A['vooo'][b,k,j,i]
-#             )
-#
-#     # 2B - 1A block
-#     H2B1A = np.zeros((n2b,n1a))
-#     for idet in range(n2b):
-#         i,j,a,b = dets2B['inds'][idet]
-#         sym1 = dets2B['sym'][idet]
-#         for jdet in range(n1a):
-#             k,c = dets1A['inds'][jdet]
-#             sym2 = dets1A['sym'][jdet]
-#             H2B1A[idet,jdet] = (
-#                                (i==k)*H2B['vvvo'][a,b,c,j]
-#                               -(a==c)*H2B['ovoo'][k,b,i,j]
-#             )
-#
-#     # 2B - 1B block
-#     H2B1B = np.zeros((n2b,n1b))
-#     for idet in range(n2b):
-#         i,j,a,b = dets2B['inds'][idet]
-#         sym1 = dets2B['sym'][idet]
-#         for jdet in range(n1b):
-#             k,c = dets1B['inds'][jdet]
-#             sym2 = dets1B['sym'][jdet]
-#             H2B1B[idet,jdet] = (
-#                                (j==k)*H2B['vvov'][a,b,i,c]
-#                               -(b==c)*H2B['vooo'][a,k,i,j]
-#             )
-#
+    # 1B - 1A block
+    H1B1A = np.zeros((n1b,n1a))
+    for idet in range(n1b):
+        i,a = dets1B['inds'][idet]
+        sym1 = dets1B['sym'][idet]
+        for jdet in range(n1a):
+            j,b = dets1A['inds'][jdet]
+            sym2 = dets1A['sym'][jdet]
+            H1B1A[idet,jdet] = H2B['ovvo'][j,a,b,i]
+
+    # 1B - 1B block
+    H1B1B = np.zeros((n1b,n1b))
+    for idet in range(n1b):
+        i,a = dets1B['inds'][idet]
+        sym1 = dets1B['sym'][idet]
+        for jdet in range(n1b):
+            j,b = dets1B['inds'][jdet]
+            sym2 = dets1B['sym'][jdet]
+            H1B1B[idet,jdet] = (i==j)*H1B['vv'][a,b] - (a==b)*H1B['oo'][j,i] + H2C['voov'][a,j,i,b]
+
+    # 1A - 2A block
+    H1A2A = np.zeros((n1a,n2a))
+    for idet in range(n1a):
+        i,a = dets1A['inds'][idet]
+        sym1 = dets1A['sym'][idet]
+        for jdet in range(n2a):
+            j,k,b,c = dets2A['inds'][jdet]
+            sym2 = dets2A['sym'][jdet]
+            H1A2A[idet,jdet] = (
+                                (i==k)*(a==c)*H1A['ov'][j,b]
+                               +(i==j)*(a==b)*H1A['ov'][k,c]
+                               -(i==j)*(a==c)*H1A['ov'][k,b]
+                               -(i==k)*(a==b)*H1A['ov'][j,c]
+                               -(a==b)*H2A['ooov'][j,k,i,c]
+                               -(a==c)*H2A['ooov'][k,j,i,b]
+                               +(i==j)*H2A['vovv'][a,k,b,c]
+                               +(i==k)*H2A['vovv'][a,j,c,b]
+            )
+
+    # 1A - 2B block
+    H1A2B = np.zeros((n1a,n2b))
+    for idet in range(n1a):
+        i,a = dets1A['inds'][idet]
+        sym1 = dets1A['sym'][idet]
+        for jdet in range(n2b):
+            j,k,b,c = dets2B['inds'][jdet]
+            sym2 = dets2B['sym'][jdet]
+            H1A2B[idet,jdet] = (
+                                (i==j)*H2B['vovv'][a,k,b,c]
+                               -(a==b)*H2B['ooov'][j,k,i,c]
+                               +(i==j)*(a==b)*H1B['ov'][k,c]
+            )
+
+    # 1B - 2B block
+    H1B2B = np.zeros((n1b,n2b))
+    for idet in range(n1b):
+        i,a = dets1B['inds'][idet]
+        sym1 = dets1B['sym'][idet]
+        for jdet in range(n2b):
+            j,k,b,c = dets2B['inds'][jdet]
+            sym2 = dets2B['sym'][jdet]
+            H1B2B[idet,jdet] = (
+                                (i==k)*H2B['ovvv'][j,a,b,c]
+                               -(a==c)*H2B['oovo'][j,k,b,i]
+                               +(i==k)*(a==c)*H1A['ov'][j,b]
+            )
+
+    # 1B - 2C block
+    H1B2C = np.zeros((n1b,n2c))
+    for idet in range(n1b):
+        i,a = dets1B['inds'][idet]
+        sym1 = dets1B['sym'][idet]
+        for jdet in range(n2c):
+            j,k,b,c = dets2C['inds'][jdet]
+            sym2 = dets2C['sym'][jdet]
+            H1B2C[idet,jdet] = (
+                                (i==k)*(a==c)*H1B['ov'][j,b]
+                               +(i==j)*(a==b)*H1B['ov'][k,c]
+                               -(i==j)*(a==c)*H1B['ov'][k,b]
+                               -(i==k)*(a==b)*H1B['ov'][j,c]
+                               -(a==b)*H2C['ooov'][j,k,i,c]
+                               -(a==c)*H2C['ooov'][k,j,i,b]
+                               +(i==j)*H2C['vovv'][a,k,b,c]
+                               +(i==k)*H2C['vovv'][a,j,c,b]
+            )
+
+    # 2A - 1A block
+    H2A1A = np.zeros((n2a,n1a))
+    for idet in range(n2a):
+        i,j,a,b = dets2A['inds'][idet]
+        sym1 = dets2A['sym'][idet]
+        for jdet in range(n1a):
+            k,c = dets1A['inds'][jdet]
+            sym2 = dets1A['sym'][jdet]
+            H2A1A[idet,jdet] = (
+                                (j==k)*H2A['vvov'][a,b,i,c]
+                               +(i==k)*H2A['vvov'][b,a,j,c]
+                               -(b==c)*H2A['vooo'][a,k,i,j]
+                               -(a==c)*H2A['vooo'][b,k,j,i]
+            )
+
+    # 2B - 1A block
+    H2B1A = np.zeros((n2b,n1a))
+    for idet in range(n2b):
+        i,j,a,b = dets2B['inds'][idet]
+        sym1 = dets2B['sym'][idet]
+        for jdet in range(n1a):
+            k,c = dets1A['inds'][jdet]
+            sym2 = dets1A['sym'][jdet]
+            H2B1A[idet,jdet] = (
+                                (i==k)*H2B['vvvo'][a,b,c,j]
+                               -(a==c)*H2B['ovoo'][k,b,i,j]
+            )
+
+    # 2B - 1B block
+    H2B1B = np.zeros((n2b,n1b))
+    for idet in range(n2b):
+        i,j,a,b = dets2B['inds'][idet]
+        sym1 = dets2B['sym'][idet]
+        for jdet in range(n1b):
+            k,c = dets1B['inds'][jdet]
+            sym2 = dets1B['sym'][jdet]
+            H2B1B[idet,jdet] = (
+                                (j==k)*H2B['vvov'][a,b,i,c]
+                               -(b==c)*H2B['vooo'][a,k,i,j]
+            )
+
 #     # 2C - 1B block
 #     H2C1B = np.zeros((n2c,n1b))
 #     for idet in range(n2c):
