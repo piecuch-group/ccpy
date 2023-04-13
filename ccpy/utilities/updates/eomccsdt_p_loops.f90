@@ -1,4 +1,4 @@
-module eomccp_quadratic_loops_direct_opt
+module eomccsdt_p_loops
 
       use omp_lib
 
@@ -291,5 +291,5 @@ module eomccp_quadratic_loops_direct_opt
 
               end subroutine argsort
 
-end module eomccp_quadratic_loops_direct_opt
+end module eomccsdt_p_loops
  

@@ -9,9 +9,8 @@ MODULES := cc_loops \
 		   mbpt_loops \
 		   eomcc_initial_guess \
 		   ccp_loops \
-		   ccp_quadratic_loops_omp \
-		   ccp_quadratic_loops_direct_opt \
-		   eomccp_quadratic_loops_direct_opt \
+		   ccsdt_p_loops \
+		   eomccsdt_p_loops \
 		   eomcc_active_loops \
 		   cc_active_loops \
 		   cct3_loops \

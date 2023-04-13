@@ -4,7 +4,7 @@ import numpy as np
 
 from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
-from ccpy.utilities.updates import ccp_quadratic_loops_direct_opt
+from ccpy.utilities.updates import ccsdt_p_loops
 
 def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace=None):
 
@@ -103,7 +103,7 @@ def update_t1a(T, dT, H, shift, t3_excitations):
     dT.a += 0.5 * np.einsum("anef,efin->ai", h2A_vovv, T.aa, optimize=True)
     dT.a += np.einsum("anef,efin->ai", h2B_vovv, T.ab, optimize=True)
 
-    T.a, dT.a = ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t1a(
+    T.a, dT.a = ccsdt_p_loops.ccsdt_p_loops.update_t1a(
         T.a, 
         dT.a + H.a.vo,
         t3_excitations["aaa"].T, t3_excitations["aab"].T, t3_excitations["abb"].T,
@@ -154,7 +154,7 @@ def update_t1b(T, dT, H, shift, t3_excitations):
     dT.b += 0.5 * np.einsum("anef,efin->ai", h2C_vovv, T.bb, optimize=True)
     dT.b += np.einsum("nafe,feni->ai", h2B_ovvv, T.ab, optimize=True)
 
-    T.b, dT.b = ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t1b(
+    T.b, dT.b = ccsdt_p_loops.ccsdt_p_loops.update_t1b(
         T.b,
         dT.b + H.b.vo,
         t3_excitations["aab"].T, t3_excitations["abb"].T, t3_excitations["bbb"].T,
@@ -211,7 +211,7 @@ def update_t2a(T, dT, H, H0, shift, t3_excitations):
     dT.aa += 0.25 * np.einsum("abef,efij->abij", H.aa.vvvv, tau, optimize=True)
     dT.aa += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
 
-    T.aa, dT.aa = ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t2a(
+    T.aa, dT.aa = ccsdt_p_loops.ccsdt_p_loops.update_t2a(
         T.aa,
         dT.aa + 0.25 * H0.aa.vvoo,
         t3_excitations["aaa"].T, t3_excitations["aab"].T,
@@ -294,7 +294,7 @@ def update_t2b(T, dT, H, H0, shift, t3_excitations):
     dT.ab += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
     dT.ab += np.einsum("abef,efij->abij", H.ab.vvvv, tau, optimize=True)
 
-    T.ab, dT.ab = ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t2b(
+    T.ab, dT.ab = ccsdt_p_loops.ccsdt_p_loops.update_t2b(
         T.ab,
         dT.ab + H0.ab.vvoo,
         t3_excitations["aab"].T, t3_excitations["abb"].T,
@@ -355,7 +355,7 @@ def update_t2c(T, dT, H, H0, shift, t3_excitations):
     dT.bb += 0.25 * np.einsum("abef,efij->abij", H.bb.vvvv, tau, optimize=True)
     dT.bb += 0.125 * np.einsum("mnij,abmn->abij", I2C_oooo, T.bb, optimize=True)
 
-    T.bb, dT.bb = ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t2c(
+    T.bb, dT.bb = ccsdt_p_loops.ccsdt_p_loops.update_t2c(
         T.bb,
         dT.bb + 0.25 * H0.bb.vvoo,
         t3_excitations["abb"].T, t3_excitations["bbb"].T,
@@ -377,7 +377,7 @@ def update_t3a(T, dT, H, H0, shift, t3_excitations):
     """
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
 
-    dT.aaa, T.aaa, t3_excitations["aaa"] = ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t3a_p(
+    dT.aaa, T.aaa, t3_excitations["aaa"] = ccsdt_p_loops.ccsdt_p_loops.update_t3a_p(
         T.aaa, t3_excitations["aaa"].T, 
         T.aab, t3_excitations["aab"].T,
         T.aa,
@@ -403,7 +403,7 @@ def update_t3b(T, dT, H, H0, shift, t3_excitations):
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
 
-    dT.aab, T.aab, t3_excitations["aab"] = ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t3b_p(
+    dT.aab, T.aab, t3_excitations["aab"] = ccsdt_p_loops.ccsdt_p_loops.update_t3b_p(
         T.aaa, t3_excitations["aaa"].T,
         T.aab, t3_excitations["aab"].T,
         T.abb, t3_excitations["abb"].T,
@@ -430,7 +430,7 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations):
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
 
-    dT.abb, T.abb, t3_excitations["abb"] = ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t3c_p(
+    dT.abb, T.abb, t3_excitations["abb"] = ccsdt_p_loops.ccsdt_p_loops.update_t3c_p(
         T.aab, t3_excitations["aab"].T,
         T.abb, t3_excitations["abb"].T,
         T.bbb, t3_excitations["bbb"].T,
@@ -455,7 +455,7 @@ def update_t3d(T, dT, H, H0, shift, t3_excitations):
     """
     I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
 
-    dT.bbb, T.bbb, t3_excitations["bbb"] = ccp_quadratic_loops_direct_opt.ccp_quadratic_loops_direct_opt.update_t3d_p(
+    dT.bbb, T.bbb, t3_excitations["bbb"] = ccsdt_p_loops.ccsdt_p_loops.update_t3d_p(
         T.abb, t3_excitations["abb"].T,
         T.bbb, t3_excitations["bbb"].T,
         T.bb,
