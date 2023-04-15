@@ -155,8 +155,7 @@ module ccsdt_p_loops
                       end do
 
               end subroutine update_t1b
-
-
+          
               subroutine update_t2a(t2a, resid,&
                                     X2A,&
                                     t3a_excits, t3b_excits,&

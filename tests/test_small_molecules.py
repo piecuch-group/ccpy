@@ -7,27 +7,52 @@ def test_creom23_chplus():
     """
     driver = Driver.from_gamess(logfile="data/chplus/chplus.log", fcidump="data/chplus/chplus.FCIDUMP", nfrozen=0)
     driver.system.print_info()
-
     driver.options["maximum_iterations"] = 300
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="cis", multiplicity=1, nroot=10)
-    driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3])
+    driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3, 4])
     driver.options["energy_shift"] = 0.5
-    driver.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3])
-    driver.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3])
+    driver.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3, 4])
+    driver.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3, 4])
+
+    expected_vee = [0.0, 0.11982887, 0.11982887, 0.49906873, 0.53118318]
+    expected_total_energy = [-38.0176701653, -37.8978412944, -37.8978412944, -37.5186014361, -37.4864869901]
+    expected_deltapq = {"A" : [-0.0013798405, -0.0016296078, -0.0016296078, -0.0021697718, -0.0045706983],
+                        "D" : [-0.0017825588, -0.0022877876, -0.0022877876, -0.0030686698, -0.0088507112]}
+    expected_ddeltapq = {"A" : [0.0, -0.0016296078, -0.0016296078, -0.0022291593, -0.0045706983],
+                         "D" : [0.0, -0.0022877876, -0.0022877876, -0.0031525794, -0.0088507112]}
 
     # Check reference energy
     assert(np.allclose(driver.system.reference_energy, -37.9027681837))
-    # Check CCSDt energy
-    #assert(np.allclose(driver.correlation_energy, -0.11469532))
-    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy, -38.38602007))
-    # Check CC(t;3)_A energy
-    #assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["A"], -0.1160181452))
-    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["A"], -38.3873428940))
-    # Check CC(t;3)_D energy
-    #assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["D"], -0.1162820915))
-    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"], -38.3876068402))
+    for n in range(5):
+        if n == 0:
+            # Check CCSD energy
+            assert (np.allclose(driver.correlation_energy, -0.11490198))
+            assert (np.allclose(driver.system.reference_energy + driver.correlation_energy, -38.01767017))
+            # Check CR-CC(2,3)_A energy
+            assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["A"], -0.1162818221))
+            assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["A"], -38.0190500058))
+            # Check CR-CC(2,3)_D energy
+            assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["D"], -0.1166845404))
+            assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"], -38.0194527241))
+        else:
+            # Check EOMCCSD energy
+            assert (np.allclose(driver.vertical_excitation_energy[n], expected_vee[n]))
+            assert (np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[n], expected_total_energy[n]))
+            # Check CR-CC(2,3)_A energy
+            assert (np.allclose(driver.vertical_excitation_energy[n] + driver.deltapq[n]["A"], expected_vee[n] + expected_deltapq["A"][n]))
+            assert (np.allclose(driver.system.reference_energy + driver.correlation_energy +
+                                driver.vertical_excitation_energy[n] + driver.deltapq[n]["A"],
+                                -38.01767017 + expected_vee[n] + expected_deltapq["A"][n]))
+            assert (np.allclose(driver.vertical_excitation_energy[n] + driver.ddeltapq[n]["A"], expected_vee[n] + expected_ddeltapq["A"][n]))
+
+            # Check CR-CC(2,3)_D energy
+            assert (np.allclose(driver.vertical_excitation_energy[n] + driver.deltapq[n]["D"], expected_vee[n] + expected_deltapq["D"][n]))
+            assert (np.allclose(driver.system.reference_energy + driver.correlation_energy +
+                                driver.vertical_excitation_energy[n] + driver.deltapq[n]["D"],
+                                -38.01767017 + expected_vee[n] + expected_deltapq["D"][n]))
+            assert (np.allclose(driver.vertical_excitation_energy[n] + driver.ddeltapq[n]["D"], expected_vee[n] + expected_ddeltapq["D"][n]))
 
 def test_eomccsdt1_chplus():
     """
@@ -41,17 +66,20 @@ def test_eomccsdt1_chplus():
     driver.run_guess(method="cis", multiplicity=1, nroot=10)
     driver.run_eomcc(method="eomccsdt1", state_index=[1, 2, 3, 4, 5])
 
+    expected_vee = [0.0, 0.11879449, 0.11879449, 0.49704224, 0.52261182, 0.52261184]
+    expected_total_energy = [-38.01904114 + omega for omega in expected_vee]
+
     # Check reference energy
     assert(np.allclose(driver.system.reference_energy, -37.9027681837))
-    # Check CCSDt energy
-    #assert(np.allclose(driver.correlation_energy, -0.11469532))
-    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy, -38.38602007))
-    # Check CC(t;3)_A energy
-    #assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["A"], -0.1160181452))
-    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["A"], -38.3873428940))
-    # Check CC(t;3)_D energy
-    #assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["D"], -0.1162820915))
-    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"], -38.3876068402))
+    for n in range(6):
+        if n == 0:
+            # Check CCSD energy
+            assert (np.allclose(driver.correlation_energy, -0.11627295))
+            assert (np.allclose(driver.system.reference_energy + driver.correlation_energy, -38.01904114))
+        else:
+            # Check EOMCCSDt energy
+            assert (np.allclose(driver.vertical_excitation_energy[n], expected_vee[n]))
+            assert (np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[n], expected_total_energy[n]))
 
 def test_eomccsdt1_ch():
     """
@@ -62,20 +90,23 @@ def test_eomccsdt1_ch():
 
     driver.run_cc(method="ccsdt1")
     driver.run_hbar(method="ccsdt1")
-    driver.run_guess(method="cis", multiplicity=1, nroot=10)
+    driver.run_guess(method="cis", multiplicity=2, nroot=10)
     driver.run_eomcc(method="eomccsdt1", state_index=[1, 2, 3])
+
+    expected_vee = [0.0, 0.00015539, 0.12326569, 0.11287039]
+    expected_total_energy = [-38.38596742 + omega for omega in expected_vee]
 
     # Check reference energy
     assert(np.allclose(driver.system.reference_energy, -38.2713247488))
-    # Check CCSDt energy
-    #assert(np.allclose(driver.correlation_energy, -0.11469532))
-    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy, -38.38602007))
-    # Check CC(t;3)_A energy
-    #assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["A"], -0.1160181452))
-    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["A"], -38.3873428940))
-    # Check CC(t;3)_D energy
-    #assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["D"], -0.1162820915))
-    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"], -38.3876068402))
+    for n in range(4):
+        if n == 0:
+            # Check CCSD energy
+            assert (np.allclose(driver.correlation_energy, -0.11464267))
+            assert (np.allclose(driver.system.reference_energy + driver.correlation_energy, -38.38596742))
+        else:
+            # Check EOMCCSDt energy
+            assert (np.allclose(driver.vertical_excitation_energy[n], expected_vee[n]))
+            assert (np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[n], expected_total_energy[n]))
 
 def test_cct3_f2():
     """
@@ -228,37 +259,3 @@ def test_cct3_ch():
     # Check CC(t;3)_D energy
     assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["D"], -0.1162820915))
     assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"], -38.3876068402))
-
-
-if __name__ == "__main__":
-    #test_creom23_chplus()
-    # test_eomccsdt1_chplus()
-    test_ccsdt_ch()
-    # test_crcc23_glycine()
-    # test_cct3_hfhminus_triplet()
-    # test_cct3_f2()
-    # test_cct3_ch()
-
-# Methods
-# - CCD: closed-shell [], open-shell []
-# - CCSD: closed-shell [X], open-shell []
-# - CCSDT: closed-shell [], open-shell [X]
-# - CCSDt: closed-shell [], open-shell [X]
-# - CC(P) aimed at CCSDT
-# - CCSDTQ
-# - CCSD(T)
-# - CR-CC(2,3)
-# - CR-CC(2,4)
-# - EOMCCSD
-# - EOMCCSDt
-# - EOMCCSDT
-# - CR-EOMCC(2,3)
-# - delta-CR-EOMCC(2,3)
-# - left CCSD
-# - left CCSDT
-# - ec-CC-II
-# - ec-CC-II_{3}
-#
-# - Adaptive CC(P;Q) aimed at CCSDT
-# - ec-CC-II_{3,4}
-
