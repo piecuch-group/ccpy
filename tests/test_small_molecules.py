@@ -1,11 +1,18 @@
+from pathlib import Path
+
 import numpy as np
 from pyscf import scf, gto
 from ccpy.drivers.driver import Driver
 
+
+TEST_DATA_DIR = str(Path(__file__).parent.absolute() / "data")
+
 def test_creom23_chplus():
     """
     """
-    driver = Driver.from_gamess(logfile="data/chplus/chplus.log", fcidump="data/chplus/chplus.FCIDUMP", nfrozen=0)
+    driver = Driver.from_gamess(logfile=TEST_DATA_DIR+"/chplus/chplus.log",
+                                fcidump=TEST_DATA_DIR+"/chplus/chplus.FCIDUMP",
+                                nfrozen=0)
     driver.system.print_info()
     driver.options["maximum_iterations"] = 300
     driver.run_cc(method="ccsd")
@@ -57,7 +64,9 @@ def test_creom23_chplus():
 def test_eomccsdt1_chplus():
     """
     """
-    driver = Driver.from_gamess(logfile="data/chplus/chplus.log", fcidump="data/chplus/chplus.FCIDUMP", nfrozen=0)
+    driver = Driver.from_gamess(logfile=TEST_DATA_DIR+"/chplus/chplus.log",
+                                fcidump=TEST_DATA_DIR+"/chplus/chplus.FCIDUMP",
+                                nfrozen=0)
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=3)
 
@@ -84,7 +93,9 @@ def test_eomccsdt1_chplus():
 def test_eomccsdt1_ch():
     """
     """
-    driver = Driver.from_gamess(logfile="data/ch/ch.log", fcidump="data/ch/ch.FCIDUMP", nfrozen=1)
+    driver = Driver.from_gamess(logfile=TEST_DATA_DIR+"/ch/ch.log",
+                                fcidump=TEST_DATA_DIR+"/ch/ch.FCIDUMP",
+                                nfrozen=1)
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=1)
 
@@ -152,8 +163,8 @@ def test_cct3_hfhminus_triplet():
     with R_{HF} = 2.0 angstrom using ROHF and MO integrals from GAMESS.
     Reference: J. Chem. Theory Comput. 8, 4968 (2012)
     """
-    driver = Driver.from_gamess(logfile="data/hfhminus-triplet/hfhminus-triplet.log",
-                                fcidump="data/hfhminus-triplet/hfhminus-triplet.FCIDUMP",
+    driver = Driver.from_gamess(logfile=TEST_DATA_DIR+"/hfhminus-triplet/hfhminus-triplet.log",
+                                fcidump=TEST_DATA_DIR+"/hfhminus-triplet/hfhminus-triplet.FCIDUMP",
                                 nfrozen=1)
     driver.system.set_active_space(nact_unoccupied=1, nact_occupied=1)
     driver.system.print_info()
@@ -224,7 +235,9 @@ def test_crcc23_glycine():
 def test_ccsdt_ch():
     """
     """
-    driver = Driver.from_gamess(logfile="data/ch/ch.log", fcidump="data/ch/ch.FCIDUMP", nfrozen=1)
+    driver = Driver.from_gamess(logfile=TEST_DATA_DIR+"/ch/ch.log",
+                                fcidump=TEST_DATA_DIR+"/ch/ch.FCIDUMP",
+                                nfrozen=1)
     driver.system.print_info()
 
     driver.run_cc(method="ccsdt")
@@ -239,7 +252,9 @@ def test_ccsdt_ch():
 def test_cct3_ch():
     """
     """
-    driver = Driver.from_gamess(logfile="data/ch/ch.log", fcidump="data/ch/ch.FCIDUMP", nfrozen=1)
+    driver = Driver.from_gamess(logfile=TEST_DATA_DIR+"/ch/ch.log",
+                                fcidump=TEST_DATA_DIR+"/ch/ch.FCIDUMP",
+                                nfrozen=1)
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=2)
     driver.system.print_info()
 
