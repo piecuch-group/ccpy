@@ -407,7 +407,7 @@ class Driver:
                                                   self.options,
                                                )
 
-        cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"], self.options["amp_max_print"])
+        cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   ec-CC calculation ended on", get_timestamp())
 
     def run_ccp3(self, method, state_index=[0], two_body_approx=True, t3_excitations=None, l3_excitations=None, r3_excitations=None, pspace=None):
