@@ -54,6 +54,26 @@ module ccp3_adaptive_loops
     !
     ! Otherwise, another straightforward solution would be to create the Q space once and store it on disk. Then,
     ! read it in for every (i,j,k) in the loop so that the memory pressure is not too great. Use it and put it away.
+   
+    ! (3) Solution used in Quantum Package 2 (suggested by Anthony):
+    ! Adopt a data structure called the selection buffer, which has fields
+    ! selection_buffer%values = values(:) - 1D array of size k*N storing the moment corrections,
+    ! selection_buffer%minval = half_val - value of buffer at position N / k,
+    ! selection_buffer%triples = triples(:,:) - 6 x k*N array storing the integers (i,j,k,a,b,c) of each triple, sorted
+    !                                           in accordance with the selection_buffer%values array.
+    ! Use it as follows (for case k = 2):
+    ! - In the beginning, start filling up the 2*N array
+    ! - Once the array becomes full, sort it and identify the value at the midpoint (N). Store this as minval.
+    ! - As you encounter new triples, if the new moment correction is greater than the minval, overwrite
+    !   existing elements starting from N+1 and ending at 2*N
+    !   (don't overwrite position N I think. Otherwise, the list will be sorted out of order).
+    ! - Once you overwrite element 2*N, re-sort the list and repeat until the end of the loop.
+    ! - Then take the first N elements for the selection.
+    !
+    ! The savings here are two-fold: (i) because the selection buffer has length 2*N, you will sort it fewer times
+    ! (in the worst case, you sort it only half as much) and (ii) since you only overwrite if the candidate moment is
+    ! greater than minval, you will likely not be overwriting an element for every triple, thus you should sort
+    ! the array fewer times than the worst-case result.
 
 
     implicit none

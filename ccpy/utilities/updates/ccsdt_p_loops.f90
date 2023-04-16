@@ -593,63 +593,80 @@ module ccsdt_p_loops
                   integer, allocatable :: idx_table(:,:,:,:)
                   integer, allocatable :: loc_arr(:,:)
 
-                  real(kind=8), allocatable :: t3_amps_buff(:)
+                  real(kind=8), allocatable :: t3_amps_buff(:), i_buff(:,:,:,:), h_buff(:,:,:,:)
                   integer, allocatable :: t3_excits_buff(:,:)
 
                   real(kind=8) :: I2A_vvov(nua, nua, noa, nua), I2A_vooo(nua, noa, noa, noa)
                   real(kind=8) :: val, denom, t_amp, res_mm23, hmatel, hmatel1
                   integer :: a, b, c, d, i, j, k, l, e, f, m, n, idet, jdet
                   integer :: idx
-
+                  
                   ! Start the VT3 intermediates at Hbar (factor of 1/2 to compensate for antisymmetrization)
                   I2A_vooo(:,:,:,:) = 0.5d0 * H2A_vooo(:,:,:,:)
                   I2A_vvov(:,:,:,:) = 0.5d0 * H2A_vvov(:,:,:,:)
+                  ! call reorder4(I2A_ovoo, 0.5d0 * h2a_vooo, (/2,1,4,3/)) ! now we don't need i_buff
+                  allocate(i_buff(noa,nua,noa,noa))
+                  i_buff = 0.0d0
                   do idet = 1, n3aaa
                       t_amp = t3a_amps(idet)
-
-                      ! I2A(amij) <- A(ij) [A(n/ij)A(a/ef) h2a(mnef) * t3a(aefijn)]
                       a = t3a_excits(1,idet); e = t3a_excits(2,idet); f = t3a_excits(3,idet);
                       i = t3a_excits(4,idet); j = t3a_excits(5,idet); n = t3a_excits(6,idet);
-                      I2A_vooo(a,:,i,j) = I2A_vooo(a,:,i,j) + H2A_oovv(:,n,e,f) * t_amp ! (1)
-                      I2A_vooo(a,:,n,j) = I2A_vooo(a,:,n,j) - H2A_oovv(:,i,e,f) * t_amp ! (in)
-                      I2A_vooo(a,:,i,n) = I2A_vooo(a,:,i,n) - H2A_oovv(:,j,e,f) * t_amp ! (jn)
-                      I2A_vooo(e,:,i,j) = I2A_vooo(e,:,i,j) - H2A_oovv(:,n,a,f) * t_amp ! (ae)
-                      I2A_vooo(e,:,n,j) = I2A_vooo(e,:,n,j) + H2A_oovv(:,i,a,f) * t_amp ! (in)(ae)
-                      I2A_vooo(e,:,i,n) = I2A_vooo(e,:,i,n) + H2A_oovv(:,j,a,f) * t_amp ! (jn)(ae)
-                      I2A_vooo(f,:,i,j) = I2A_vooo(f,:,i,j) - H2A_oovv(:,n,e,a) * t_amp ! (af)
-                      I2A_vooo(f,:,n,j) = I2A_vooo(f,:,n,j) + H2A_oovv(:,i,e,a) * t_amp ! (in)(af)
-                      I2A_vooo(f,:,i,n) = I2A_vooo(f,:,i,n) + H2A_oovv(:,j,e,a) * t_amp ! (jn)(af)
-
-                      ! I2A(abie) <- A(ab) [A(i/mn)A(f/ab) -h2a(mnef) * t3a(abfimn)]
-                      a = t3a_excits(1,idet); b = t3a_excits(2,idet); f = t3a_excits(3,idet);
-                      i = t3a_excits(4,idet); m = t3a_excits(5,idet); n = t3a_excits(6,idet);
-                      I2A_vvov(a,b,i,:) = I2A_vvov(a,b,i,:) - H2A_oovv(m,n,:,f) * t_amp ! (1)
-                      I2A_vvov(a,b,m,:) = I2A_vvov(a,b,m,:) + H2A_oovv(i,n,:,f) * t_amp ! (im)
-                      I2A_vvov(a,b,n,:) = I2A_vvov(a,b,n,:) + H2A_oovv(m,i,:,f) * t_amp ! (in)
-                      I2A_vvov(f,b,i,:) = I2A_vvov(f,b,i,:) + H2A_oovv(m,n,:,a) * t_amp ! (af)
-                      I2A_vvov(f,b,m,:) = I2A_vvov(f,b,m,:) - H2A_oovv(i,n,:,a) * t_amp ! (im)(af)
-                      I2A_vvov(f,b,n,:) = I2A_vvov(f,b,n,:) - H2A_oovv(m,i,:,a) * t_amp ! (in)(af)
-                      I2A_vvov(a,f,i,:) = I2A_vvov(a,f,i,:) + H2A_oovv(m,n,:,b) * t_amp ! (bf)
-                      I2A_vvov(a,f,m,:) = I2A_vvov(a,f,m,:) - H2A_oovv(i,n,:,b) * t_amp ! (im)(bf)
-                      I2A_vvov(a,f,n,:) = I2A_vvov(a,f,n,:) - H2A_oovv(m,i,:,b) * t_amp ! (in)(bf)
+                      ! I2A(amij) <- A(ij) [A(n/ij)A(a/ef) h2a(mnef) * t3a(aefijn)]
+                      i_buff(:,a,i,j) = i_buff(:,a,i,j) + H2A_oovv(:,n,e,f) * t_amp ! (1)
+                      i_buff(:,a,n,j) = i_buff(:,a,n,j) - H2A_oovv(:,i,e,f) * t_amp ! (in)
+                      i_buff(:,a,i,n) = i_buff(:,a,i,n) - H2A_oovv(:,j,e,f) * t_amp ! (jn)
+                      i_buff(:,e,i,j) = i_buff(:,e,i,j) - H2A_oovv(:,n,a,f) * t_amp ! (ae)
+                      i_buff(:,e,n,j) = i_buff(:,e,n,j) + H2A_oovv(:,i,a,f) * t_amp ! (in)(ae)
+                      i_buff(:,e,i,n) = i_buff(:,e,i,n) + H2A_oovv(:,j,a,f) * t_amp ! (jn)(ae)
+                      i_buff(:,f,i,j) = i_buff(:,f,i,j) - H2A_oovv(:,n,e,a) * t_amp ! (af)
+                      i_buff(:,f,n,j) = i_buff(:,f,n,j) + H2A_oovv(:,i,e,a) * t_amp ! (in)(af)
+                      i_buff(:,f,i,n) = i_buff(:,f,i,n) + H2A_oovv(:,j,e,a) * t_amp ! (jn)(af)
                   end do
-
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
-
-                      ! I2A(amij) <- A(ij) [A(ae) h2b(mnef) * t3b(aefijn)]
                       a = t3b_excits(1,idet); e = t3b_excits(2,idet); f = t3b_excits(3,idet);
                       i = t3b_excits(4,idet); j = t3b_excits(5,idet); n = t3b_excits(6,idet);
-                      I2A_vooo(a,:,i,j) = I2A_vooo(a,:,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
-                      I2A_vooo(e,:,i,j) = I2A_vooo(e,:,i,j) - H2B_oovv(:,n,a,f) * t_amp ! (ae)
-
-                      ! I2A(abie) <- A(ab) [A(im) -h2b(mnef) * t3b(abfimn)]
+                      ! I2A(amij) <- A(ij) [A(ae) h2b(mnef) * t3b(aefijn)]
+                      i_buff(:,a,i,j) = i_buff(:,a,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
+                      i_buff(:,e,i,j) = i_buff(:,e,i,j) - H2B_oovv(:,n,a,f) * t_amp ! (ae)
+                  end do
+                  call sum4(I2A_vooo, i_buff, (/2,1,3,4/))
+                  deallocate(i_buff)
+                  
+                  allocate(i_buff(nua,nua,nua,noa))
+                  i_buff = 0.0d0
+                  allocate(h_buff(nua,noa,noa,nua))
+                  call reorder4(h_buff, H2A_oovv, (/3,1,2,4/))
+                  do idet = 1, n3aaa
+                      t_amp = t3a_amps(idet)
+                      a = t3a_excits(1,idet); b = t3a_excits(2,idet); f = t3a_excits(3,idet);
+                      i = t3a_excits(4,idet); m = t3a_excits(5,idet); n = t3a_excits(6,idet);
+                      ! I2A(abie) <- A(ab) [A(i/mn)A(f/ab) -h2a(mnef) * t3a(abfimn)]
+                      i_buff(:,a,b,i) = i_buff(:,a,b,i) - h_buff(:,m,n,f) * t_amp ! (1)
+                      i_buff(:,a,b,m) = i_buff(:,a,b,m) + h_buff(:,i,n,f) * t_amp ! (im)
+                      i_buff(:,a,b,n) = i_buff(:,a,b,n) + h_buff(:,m,i,f) * t_amp ! (in)
+                      i_buff(:,f,b,i) = i_buff(:,f,b,i) + h_buff(:,m,n,a) * t_amp ! (af)
+                      i_buff(:,f,b,m) = i_buff(:,f,b,m) - h_buff(:,i,n,a) * t_amp ! (im)(af)
+                      i_buff(:,f,b,n) = i_buff(:,f,b,n) - h_buff(:,m,i,a) * t_amp ! (in)(af)
+                      i_buff(:,a,f,i) = i_buff(:,a,f,i) + h_buff(:,m,n,b) * t_amp ! (bf)
+                      i_buff(:,a,f,m) = i_buff(:,a,f,m) - h_buff(:,i,n,b) * t_amp ! (im)(bf)
+                      i_buff(:,a,f,n) = i_buff(:,a,f,n) - h_buff(:,m,i,b) * t_amp ! (in)(bf)
+                  end do
+                  deallocate(h_buff)
+                  allocate(h_buff(nua,noa,nob,nub))
+                  call reorder4(h_buff, H2B_oovv, (/3,1,2,4/))
+                  do idet = 1, n3aab
+                      t_amp = t3b_amps(idet)
                       a = t3b_excits(1,idet); b = t3b_excits(2,idet); f = t3b_excits(3,idet);
                       i = t3b_excits(4,idet); m = t3b_excits(5,idet); n = t3b_excits(6,idet);
-                      I2A_vvov(a,b,i,:) = I2A_vvov(a,b,i,:) - H2B_oovv(m,n,:,f) * t_amp ! (1)
-                      I2A_vvov(a,b,m,:) = I2A_vvov(a,b,m,:) + H2B_oovv(i,n,:,f) * t_amp ! (im)
+                      ! I2A(abie) <- A(ab) [A(im) -h2b(mnef) * t3b(abfimn)]
+                      i_buff(:,a,b,i) = i_buff(:,a,b,i) - h_buff(:,m,n,f) * t_amp ! (1)
+                      i_buff(:,a,b,m) = i_buff(:,a,b,m) + h_buff(:,i,n,f) * t_amp ! (im)
                   end do
-
+                  deallocate(h_buff)
+                  call sum4(I2A_vvov, i_buff, (/4,1,2,3/))
+                  deallocate(i_buff)
+                  
                   ! Zero the residual container
                   resid = 0.0d0
 
@@ -2196,7 +2213,7 @@ module ccsdt_p_loops
 
                   real(kind=8), intent(out) :: resid(n3aab)
 
-                  real(kind=8), allocatable :: t3_amps_buff(:)
+                  real(kind=8), allocatable :: t3_amps_buff(:), i_buff(:,:,:,:), h_buff(:,:,:,:)
                   integer, allocatable :: t3_excits_buff(:,:)
 
                   integer, allocatable :: loc_arr(:,:)
@@ -2219,51 +2236,71 @@ module ccsdt_p_loops
                   I2B_ovoo(:,:,:,:) = H2B_ovoo(:,:,:,:)
                   I2B_vvov(:,:,:,:) = H2B_vvov(:,:,:,:)
                   I2B_vvvo(:,:,:,:) = H2B_vvvo(:,:,:,:)
-
+                  
+                  allocate(i_buff(noa,nua,noa,noa))
+                  i_buff = 0.0d0
                   do idet = 1, n3aaa
                       t_amp = t3a_amps(idet)
-
                       ! I2A(amij) <- A(ij) [A(n/ij)A(a/ef) h2a(mnef) * t3a(aefijn)]
                       a = t3a_excits(1,idet); e = t3a_excits(2,idet); f = t3a_excits(3,idet);
                       i = t3a_excits(4,idet); j = t3a_excits(5,idet); n = t3a_excits(6,idet);
-                      I2A_vooo(a,:,i,j) = I2A_vooo(a,:,i,j) + H2A_oovv(:,n,e,f) * t_amp ! (1)
-                      I2A_vooo(a,:,n,j) = I2A_vooo(a,:,n,j) - H2A_oovv(:,i,e,f) * t_amp ! (in)
-                      I2A_vooo(a,:,i,n) = I2A_vooo(a,:,i,n) - H2A_oovv(:,j,e,f) * t_amp ! (jn)
-                      I2A_vooo(e,:,i,j) = I2A_vooo(e,:,i,j) - H2A_oovv(:,n,a,f) * t_amp ! (ae)
-                      I2A_vooo(e,:,n,j) = I2A_vooo(e,:,n,j) + H2A_oovv(:,i,a,f) * t_amp ! (in)(ae)
-                      I2A_vooo(e,:,i,n) = I2A_vooo(e,:,i,n) + H2A_oovv(:,j,a,f) * t_amp ! (jn)(ae)
-                      I2A_vooo(f,:,i,j) = I2A_vooo(f,:,i,j) - H2A_oovv(:,n,e,a) * t_amp ! (af)
-                      I2A_vooo(f,:,n,j) = I2A_vooo(f,:,n,j) + H2A_oovv(:,i,e,a) * t_amp ! (in)(af)
-                      I2A_vooo(f,:,i,n) = I2A_vooo(f,:,i,n) + H2A_oovv(:,j,e,a) * t_amp ! (jn)(af)
-
-                      ! I2A(abie) <- A(ab) [A(i/mn)A(f/ab) -h2a(mnef) * t3a(abfimn)]
-                      a = t3a_excits(1,idet); b = t3a_excits(2,idet); f = t3a_excits(3,idet);
-                      i = t3a_excits(4,idet); m = t3a_excits(5,idet); n = t3a_excits(6,idet);
-                      I2A_vvov(a,b,i,:) = I2A_vvov(a,b,i,:) - H2A_oovv(m,n,:,f) * t_amp ! (1)
-                      I2A_vvov(a,b,m,:) = I2A_vvov(a,b,m,:) + H2A_oovv(i,n,:,f) * t_amp ! (im)
-                      I2A_vvov(a,b,n,:) = I2A_vvov(a,b,n,:) + H2A_oovv(m,i,:,f) * t_amp ! (in)
-                      I2A_vvov(f,b,i,:) = I2A_vvov(f,b,i,:) + H2A_oovv(m,n,:,a) * t_amp ! (af)
-                      I2A_vvov(f,b,m,:) = I2A_vvov(f,b,m,:) - H2A_oovv(i,n,:,a) * t_amp ! (im)(af)
-                      I2A_vvov(f,b,n,:) = I2A_vvov(f,b,n,:) - H2A_oovv(m,i,:,a) * t_amp ! (in)(af)
-                      I2A_vvov(a,f,i,:) = I2A_vvov(a,f,i,:) + H2A_oovv(m,n,:,b) * t_amp ! (bf)
-                      I2A_vvov(a,f,m,:) = I2A_vvov(a,f,m,:) - H2A_oovv(i,n,:,b) * t_amp ! (im)(bf)
-                      I2A_vvov(a,f,n,:) = I2A_vvov(a,f,n,:) - H2A_oovv(m,i,:,b) * t_amp ! (in)(bf)
+                      i_buff(:,a,i,j) = i_buff(:,a,i,j) + H2A_oovv(:,n,e,f) * t_amp ! (1)
+                      i_buff(:,a,n,j) = i_buff(:,a,n,j) - H2A_oovv(:,i,e,f) * t_amp ! (in)
+                      i_buff(:,a,i,n) = i_buff(:,a,i,n) - H2A_oovv(:,j,e,f) * t_amp ! (jn)
+                      i_buff(:,e,i,j) = i_buff(:,e,i,j) - H2A_oovv(:,n,a,f) * t_amp ! (ae)
+                      i_buff(:,e,n,j) = i_buff(:,e,n,j) + H2A_oovv(:,i,a,f) * t_amp ! (in)(ae)
+                      i_buff(:,e,i,n) = i_buff(:,e,i,n) + H2A_oovv(:,j,a,f) * t_amp ! (jn)(ae)
+                      i_buff(:,f,i,j) = i_buff(:,f,i,j) - H2A_oovv(:,n,e,a) * t_amp ! (af)
+                      i_buff(:,f,n,j) = i_buff(:,f,n,j) + H2A_oovv(:,i,e,a) * t_amp ! (in)(af)
+                      i_buff(:,f,i,n) = i_buff(:,f,i,n) + H2A_oovv(:,j,e,a) * t_amp ! (jn)(af)
                   end do
-
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
-
                       ! I2A(amij) <- A(ij) [A(ae) h2b(mnef) * t3b(aefijn)]
                       a = t3b_excits(1,idet); e = t3b_excits(2,idet); f = t3b_excits(3,idet);
                       i = t3b_excits(4,idet); j = t3b_excits(5,idet); n = t3b_excits(6,idet);
-                      I2A_vooo(a,:,i,j) = I2A_vooo(a,:,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
-                      I2A_vooo(e,:,i,j) = I2A_vooo(e,:,i,j) - H2B_oovv(:,n,a,f) * t_amp ! (ae)
+                      i_buff(:,a,i,j) = i_buff(:,a,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
+                      i_buff(:,e,i,j) = i_buff(:,e,i,j) - H2B_oovv(:,n,a,f) * t_amp ! (ae)
+                  end do
+                  call sum4(I2A_vooo, i_buff, (/2,1,3,4/))
+                  deallocate(i_buff)
 
+                  allocate(i_buff(nua,nua,nua,noa))
+                  i_buff = 0.0d0
+                  allocate(h_buff(nua,noa,noa,nua))
+                  call reorder4(h_buff, h2a_oovv, (/3,1,2,4/))
+                  do idet = 1, n3aaa
+                      t_amp = t3a_amps(idet)
+                      ! I2A(abie) <- A(ab) [A(i/mn)A(f/ab) -h2a(mnef) * t3a(abfimn)]
+                      a = t3a_excits(1,idet); b = t3a_excits(2,idet); f = t3a_excits(3,idet);
+                      i = t3a_excits(4,idet); m = t3a_excits(5,idet); n = t3a_excits(6,idet);
+                      i_buff(:,a,b,i) = i_buff(:,a,b,i) - h_buff(:,m,n,f) * t_amp ! (1)
+                      i_buff(:,a,b,m) = i_buff(:,a,b,m) + h_buff(:,i,n,f) * t_amp ! (im)
+                      i_buff(:,a,b,n) = i_buff(:,a,b,n) + h_buff(:,m,i,f) * t_amp ! (in)
+                      i_buff(:,f,b,i) = i_buff(:,f,b,i) + h_buff(:,m,n,a) * t_amp ! (af)
+                      i_buff(:,f,b,m) = i_buff(:,f,b,m) - h_buff(:,i,n,a) * t_amp ! (im)(af)
+                      i_buff(:,f,b,n) = i_buff(:,f,b,n) - h_buff(:,m,i,a) * t_amp ! (in)(af)
+                      i_buff(:,a,f,i) = i_buff(:,a,f,i) + h_buff(:,m,n,b) * t_amp ! (bf)
+                      i_buff(:,a,f,m) = i_buff(:,a,f,m) - h_buff(:,i,n,b) * t_amp ! (im)(bf)
+                      i_buff(:,a,f,n) = i_buff(:,a,f,n) - h_buff(:,m,i,b) * t_amp ! (in)(bf)
+                  end do
+                  deallocate(h_buff)
+                  allocate(h_buff(nua,noa,nob,nub))
+                  call reorder4(h_buff, h2b_oovv, (/3,1,2,4/))
+                  do idet = 1, n3aab
+                      t_amp = t3b_amps(idet)
                       ! I2A(abie) <- A(ab) [A(im) -h2b(mnef) * t3b(abfimn)]
                       a = t3b_excits(1,idet); b = t3b_excits(2,idet); f = t3b_excits(3,idet);
                       i = t3b_excits(4,idet); m = t3b_excits(5,idet); n = t3b_excits(6,idet);
-                      I2A_vvov(a,b,i,:) = I2A_vvov(a,b,i,:) - H2B_oovv(m,n,:,f) * t_amp ! (1)
-                      I2A_vvov(a,b,m,:) = I2A_vvov(a,b,m,:) + H2B_oovv(i,n,:,f) * t_amp ! (im)
+                      i_buff(:,a,b,i) = i_buff(:,a,b,i) - h_buff(:,m,n,f) * t_amp ! (1)
+                      i_buff(:,a,b,m) = i_buff(:,a,b,m) + h_buff(:,i,n,f) * t_amp ! (im)
+                  end do
+                  deallocate(h_buff)
+                  call sum4(I2A_vvov, i_buff, (/4,1,2,3/))
+                  deallocate(i_buff)
+
+                  do idet = 1, n3aab
+                      t_amp = t3b_amps(idet)
 
                       ! I2B(abej) <- A(af) -h2a(mnef) * t3b(afbmnj)
                       a = t3b_excits(1,idet); f = t3b_excits(2,idet); b = t3b_excits(3,idet);
@@ -5106,7 +5143,7 @@ module ccsdt_p_loops
                   integer, allocatable :: idx_table(:,:,:,:)
                   integer, allocatable :: loc_arr(:,:)
 
-                  real(kind=8), allocatable :: t3_amps_buff(:)
+                  real(kind=8), allocatable :: t3_amps_buff(:), i_buff(:,:,:,:), h_buff(:,:,:,:)
                   integer, allocatable :: t3_excits_buff(:,:)
 
                   real(kind=8) :: val, denom, t_amp, res_mm23, hmatel, hmatel1
@@ -5117,52 +5154,70 @@ module ccsdt_p_loops
                   ! compute VT3 intermediates
                   I2C_vooo(:,:,:,:) = 0.5d0 * H2C_vooo(:,:,:,:)
                   I2C_vvov(:,:,:,:) = 0.5d0 * H2C_vvov(:,:,:,:)
-
-                  do idet = 1, n3abb
-                      t_amp = t3c_amps(idet)
-
-                      ! I2C(abie) <- A(ab) [A(im) -h2b(nmfe) * t3c(fabnim)]
-                      f = t3c_excits(1,idet); a = t3c_excits(2,idet); b = t3c_excits(3,idet);
-                      n = t3c_excits(4,idet); i = t3c_excits(5,idet); m = t3c_excits(6,idet);
-                      I2C_vvov(a,b,i,:) = I2C_vvov(a,b,i,:) - H2B_oovv(n,m,f,:) * t_amp ! (1)
-                      I2C_vvov(a,b,m,:) = I2C_vvov(a,b,m,:) + H2B_oovv(n,i,f,:) * t_amp ! (im)
-
-                      ! I2C(amij) <- A(ij) [A(ae) h2b(nmfe) * t3c(faenij)]
-                      f = t3c_excits(1,idet); a = t3c_excits(2,idet); e = t3c_excits(3,idet);
-                      n = t3c_excits(4,idet); i = t3c_excits(5,idet); j = t3c_excits(6,idet);
-                      I2C_vooo(a,:,i,j) = I2C_vooo(a,:,i,j) + H2B_oovv(n,:,f,e) * t_amp ! (1)
-                      I2C_vooo(e,:,i,j) = I2C_vooo(e,:,i,j) - H2B_oovv(n,:,f,a) * t_amp ! (ae)
-                  end do
-
+                  allocate(i_buff(nob,nub,nob,nob))
+                  i_buff = 0.0d0
                   do idet = 1, n3bbb
                       t_amp = t3d_amps(idet)
-
                       ! I2C(amij) <- A(ij) [A(n/ij)A(a/ef) h2c(mnef) * t3d(aefijn)]
                       a = t3d_excits(1,idet); e = t3d_excits(2,idet); f = t3d_excits(3,idet);
                       i = t3d_excits(4,idet); j = t3d_excits(5,idet); n = t3d_excits(6,idet);
-                      I2C_vooo(a,:,i,j) = I2C_vooo(a,:,i,j) + H2C_oovv(:,n,e,f) * t_amp ! (1)
-                      I2C_vooo(a,:,n,j) = I2C_vooo(a,:,n,j) - H2C_oovv(:,i,e,f) * t_amp ! (in)
-                      I2C_vooo(a,:,i,n) = I2C_vooo(a,:,i,n) - H2C_oovv(:,j,e,f) * t_amp ! (jn)
-                      I2C_vooo(e,:,i,j) = I2C_vooo(e,:,i,j) - H2C_oovv(:,n,a,f) * t_amp ! (ae)
-                      I2C_vooo(e,:,n,j) = I2C_vooo(e,:,n,j) + H2C_oovv(:,i,a,f) * t_amp ! (in)(ae)
-                      I2C_vooo(e,:,i,n) = I2C_vooo(e,:,i,n) + H2C_oovv(:,j,a,f) * t_amp ! (jn)(ae)
-                      I2C_vooo(f,:,i,j) = I2C_vooo(f,:,i,j) - H2C_oovv(:,n,e,a) * t_amp ! (af)
-                      I2C_vooo(f,:,n,j) = I2C_vooo(f,:,n,j) + H2C_oovv(:,i,e,a) * t_amp ! (in)(af)
-                      I2C_vooo(f,:,i,n) = I2C_vooo(f,:,i,n) + H2C_oovv(:,j,e,a) * t_amp ! (jn)(af)
-
+                      i_buff(:,a,i,j) = i_buff(:,a,i,j) + H2C_oovv(:,n,e,f) * t_amp ! (1)
+                      i_buff(:,a,n,j) = i_buff(:,a,n,j) - H2C_oovv(:,i,e,f) * t_amp ! (in)
+                      i_buff(:,a,i,n) = i_buff(:,a,i,n) - H2C_oovv(:,j,e,f) * t_amp ! (jn)
+                      i_buff(:,e,i,j) = i_buff(:,e,i,j) - H2C_oovv(:,n,a,f) * t_amp ! (ae)
+                      i_buff(:,e,n,j) = i_buff(:,e,n,j) + H2C_oovv(:,i,a,f) * t_amp ! (in)(ae)
+                      i_buff(:,e,i,n) = i_buff(:,e,i,n) + H2C_oovv(:,j,a,f) * t_amp ! (jn)(ae)
+                      i_buff(:,f,i,j) = i_buff(:,f,i,j) - H2C_oovv(:,n,e,a) * t_amp ! (af)
+                      i_buff(:,f,n,j) = i_buff(:,f,n,j) + H2C_oovv(:,i,e,a) * t_amp ! (in)(af)
+                      i_buff(:,f,i,n) = i_buff(:,f,i,n) + H2C_oovv(:,j,e,a) * t_amp ! (jn)(af)
+                  end do
+                  allocate(h_buff(nob,noa,nua,nub))
+                  call reorder4(h_buff, h2b_oovv, (/2,1,3,4/))
+                  do idet = 1, n3abb
+                      t_amp = t3c_amps(idet)
+                      ! I2C(amij) <- A(ij) [A(ae) h2b(nmfe) * t3c(faenij)]
+                      f = t3c_excits(1,idet); a = t3c_excits(2,idet); e = t3c_excits(3,idet);
+                      n = t3c_excits(4,idet); i = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      i_buff(:,a,i,j) = i_buff(:,a,i,j) + h_buff(:,n,f,e) * t_amp ! (1)
+                      i_buff(:,e,i,j) = i_buff(:,e,i,j) - h_buff(:,n,f,a) * t_amp ! (ae)
+                  end do
+                  deallocate(h_buff)
+                  call sum4(I2C_vooo, i_buff, (/2,1,3,4/))
+                  deallocate(i_buff)
+                  
+                  allocate(i_buff(nub,nub,nub,nob))
+                  i_buff = 0.0d0
+                  allocate(h_buff(nub,nob,nob,nub))
+                  call reorder4(h_buff, h2c_oovv, (/3,1,2,4/))
+                  do idet = 1, n3bbb
+                      t_amp = t3d_amps(idet)
                       ! I2C(abie) <- A(ab) [A(i/mn)A(f/ab) -h2c(mnef) * t3d(abfimn)]
                       a = t3d_excits(1,idet); b = t3d_excits(2,idet); f = t3d_excits(3,idet);
                       i = t3d_excits(4,idet); m = t3d_excits(5,idet); n = t3d_excits(6,idet);
-                      I2C_vvov(a,b,i,:) = I2C_vvov(a,b,i,:) - H2C_oovv(m,n,:,f) * t_amp ! (1)
-                      I2C_vvov(a,b,m,:) = I2C_vvov(a,b,m,:) + H2C_oovv(i,n,:,f) * t_amp ! (im)
-                      I2C_vvov(a,b,n,:) = I2C_vvov(a,b,n,:) + H2C_oovv(m,i,:,f) * t_amp ! (in)
-                      I2C_vvov(f,b,i,:) = I2C_vvov(f,b,i,:) + H2C_oovv(m,n,:,a) * t_amp ! (af)
-                      I2C_vvov(f,b,m,:) = I2C_vvov(f,b,m,:) - H2C_oovv(i,n,:,a) * t_amp ! (im)(af)
-                      I2C_vvov(f,b,n,:) = I2C_vvov(f,b,n,:) - H2C_oovv(m,i,:,a) * t_amp ! (in)(af)
-                      I2C_vvov(a,f,i,:) = I2C_vvov(a,f,i,:) + H2C_oovv(m,n,:,b) * t_amp ! (bf)
-                      I2C_vvov(a,f,m,:) = I2C_vvov(a,f,m,:) - H2C_oovv(i,n,:,b) * t_amp ! (im)(bf)
-                      I2C_vvov(a,f,n,:) = I2C_vvov(a,f,n,:) - H2C_oovv(m,i,:,b) * t_amp ! (in)(bf)
+                      i_buff(:,a,b,i) = i_buff(:,a,b,i) - h_buff(:,m,n,f) * t_amp ! (1)
+                      i_buff(:,a,b,m) = i_buff(:,a,b,m) + h_buff(:,i,n,f) * t_amp ! (im)
+                      i_buff(:,a,b,n) = i_buff(:,a,b,n) + h_buff(:,m,i,f) * t_amp ! (in)
+                      i_buff(:,f,b,i) = i_buff(:,f,b,i) + h_buff(:,m,n,a) * t_amp ! (af)
+                      i_buff(:,f,b,m) = i_buff(:,f,b,m) - h_buff(:,i,n,a) * t_amp ! (im)(af)
+                      i_buff(:,f,b,n) = i_buff(:,f,b,n) - h_buff(:,m,i,a) * t_amp ! (in)(af)
+                      i_buff(:,a,f,i) = i_buff(:,a,f,i) + h_buff(:,m,n,b) * t_amp ! (bf)
+                      i_buff(:,a,f,m) = i_buff(:,a,f,m) - h_buff(:,i,n,b) * t_amp ! (im)(bf)
+                      i_buff(:,a,f,n) = i_buff(:,a,f,n) - h_buff(:,m,i,b) * t_amp ! (in)(bf)
                   end do
+                  deallocate(h_buff)
+                  allocate(h_buff(nub,noa,nob,nua))
+                  call reorder4(h_buff, h2b_oovv, (/4,1,2,3/))
+                  do idet = 1, n3abb
+                      t_amp = t3c_amps(idet)
+                      ! I2C(abie) <- A(ab) [A(im) -h2b(nmfe) * t3c(fabnim)]
+                      f = t3c_excits(1,idet); a = t3c_excits(2,idet); b = t3c_excits(3,idet);
+                      n = t3c_excits(4,idet); i = t3c_excits(5,idet); m = t3c_excits(6,idet);
+                      i_buff(:,a,b,i) = i_buff(:,a,b,i) - h_buff(:,n,m,f) * t_amp ! (1)
+                      i_buff(:,a,b,m) = i_buff(:,a,b,m) + h_buff(:,n,i,f) * t_amp ! (im)
+                  end do
+                  deallocate(h_buff)
+                  call sum4(I2C_vvov, i_buff, (/4,1,2,3/))
+                  deallocate(i_buff)
 
                   ! Zero the residual
                   resid = 0.0d0
@@ -6816,5 +6871,52 @@ module ccsdt_p_loops
               end do
 
       end subroutine argsort
+      
+      subroutine reorder4(y, x, iorder)
+
+          integer, intent(in) :: iorder(4)
+          real(kind=8), intent(in) :: x(:,:,:,:)
+
+          real(kind=8), intent(out) :: y(:,:,:,:)
+
+          integer :: i, j, k, l
+          integer :: vec(4)
+
+          y = 0.0d0
+          do i = 1, size(x,1)
+             do j = 1, size(x,2)
+                do k = 1, size(x,3)
+                   do l = 1, size(x,4)
+                      vec = (/i,j,k,l/)
+                      y(vec(iorder(1)),vec(iorder(2)),vec(iorder(3)),vec(iorder(4))) = x(i,j,k,l)
+                   end do
+                end do
+             end do
+          end do
+
+      end subroutine reorder4
+    
+      subroutine sum4(x, y, iorder)
+
+          integer, intent(in) :: iorder(4)
+          real(kind=8), intent(in) :: y(:,:,:,:)
+
+          real(kind=8), intent(inout) :: x(:,:,:,:)
+          
+          integer :: i, j, k, l
+          integer :: vec(4)
+
+          do i = 1, size(x,1)
+             do j = 1, size(x,2)
+                do k = 1, size(x,3)
+                   do l = 1, size(x,4)
+                      vec = (/i,j,k,l/)
+                      x(i,j,k,l) = x(i,j,k,l) + y(vec(iorder(1)),vec(iorder(2)),vec(iorder(3)),vec(iorder(4)))
+                   end do
+                end do
+             end do
+          end do
+
+      end subroutine sum4
 
 end module ccsdt_p_loops

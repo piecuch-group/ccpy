@@ -228,3 +228,7 @@ def test_cct3_ch():
     # Check CC(t;3)_D energy
     assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["D"], -0.1162820915))
     assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"], -38.3876068402))
+
+if __name__ == "__main__":
+
+    test_cct3_hfhminus_triplet()
