@@ -19,8 +19,8 @@ def test_creom23_chplus():
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="cis", multiplicity=1, nroot=10)
     driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3, 4])
-    driver.options["energy_shift"] = 0.5
     driver.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3, 4])
+    driver.options["energy_shift"] = 0.5
     driver.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3, 4])
 
     expected_vee = [0.0, 0.11982887, 0.11982887, 0.49906873, 0.53118318]
@@ -231,4 +231,5 @@ def test_cct3_ch():
 
 if __name__ == "__main__":
 
-    test_cct3_hfhminus_triplet()
+    test_creom23_chplus()
+    #test_cct3_hfhminus_triplet()

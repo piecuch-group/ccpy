@@ -575,14 +575,14 @@ module cc_loops2
               end do
 
               do i = 1,noa
-                do j = i+1,noa
+                do j = 1,noa
                   do a = 1,nua
-                    do b = a+1,nua
+                    do b = 1,nua
                       denom = H1A_vv(a,a) + H1A_vv(b,b) - H1A_oo(i,i) - H1A_oo(j,j)
                       r2a(b,a,j,i) = r2a(b,a,j,i)/(omega-denom+shift)
-                      r2a(a,b,j,i) = -r2a(b,a,j,i)
-                      r2a(b,a,i,j) = -r2a(b,a,j,i)
-                      r2a(a,b,i,j) = r2a(b,a,j,i)
+                      !r2a(a,b,j,i) = -r2a(b,a,j,i)
+                      !r2a(b,a,i,j) = -r2a(b,a,j,i)
+                      !r2a(a,b,i,j) = r2a(b,a,j,i)
                     end do
                   end do
                 end do
@@ -600,14 +600,14 @@ module cc_loops2
               end do
 
               do i = 1,nob
-                do j = i+1,nob
+                do j = 1,nob
                   do a = 1,nub
-                    do b = a+1,nub
+                    do b = 1,nub
                       denom = H1B_vv(a,a) + H1B_vv(b,b) - H1B_oo(i,i) - H1B_oo(j,j)
                       r2c(b,a,j,i) = r2c(b,a,j,i)/(omega-denom+shift)
-                      r2c(a,b,j,i) = -r2c(b,a,j,i)
-                      r2c(b,a,i,j) = -r2c(b,a,j,i)
-                      r2c(a,b,i,j) = r2c(b,a,j,i)
+                      !r2c(a,b,j,i) = -r2c(b,a,j,i)
+                      !r2c(b,a,i,j) = -r2c(b,a,j,i)
+                      !r2c(a,b,i,j) = r2c(b,a,j,i)
                     end do
                   end do
                 end do

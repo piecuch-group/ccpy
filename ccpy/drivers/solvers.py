@@ -49,6 +49,9 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
         idx = np.argsort(abs(alpha[0, :]))
         alpha = np.real(alpha[:, idx[-1]])
 
+        #idx = np.flip(np.argsort([abs(x - omega_old) for x in e]))
+        #alpha = np.real(alpha[:, idx[-1]])
+
         # Get the eigenpair of interest
         omega = np.real(e[idx[-1]])
         r = np.dot(B[:, :curr_size], alpha)
