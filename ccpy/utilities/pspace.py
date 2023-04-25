@@ -702,20 +702,20 @@ def adaptive_triples_selection_from_moments(moments, pspace, t3_excitations, num
     return new_pspace, new_t3_excitations
 
 
-def get_active_pspace(system, nact_o, nact_u, num_active=1):
+def get_active_pspace(system, nact_o_alpha, nact_u_alpha, nact_o_beta, nact_u_beta, num_active=1):
     from ccpy.utilities.active_space import active_hole, active_particle
 
     def count_active_occ_alpha(occ):
-        return sum([active_hole(i, system.noccupied_alpha, nact_o) for i in occ])
+        return sum([active_hole(i, system.noccupied_alpha, nact_o_alpha) for i in occ])
 
     def count_active_occ_beta(occ):
-        return sum([active_hole(i, system.noccupied_beta, nact_o) for i in occ])
+        return sum([active_hole(i, system.noccupied_beta, nact_o_beta) for i in occ])
 
     def count_active_unocc_alpha(unocc):
-        return sum([active_particle(a, nact_u) for a in unocc])
+        return sum([active_particle(a, nact_u_alpha) for a in unocc])
 
     def count_active_unocc_beta(unocc):
-        return sum([active_particle(a, nact_u) for a in unocc])
+        return sum([active_particle(a, nact_u_beta) for a in unocc])
 
     pspace = get_empty_pspace(system, 3)
 

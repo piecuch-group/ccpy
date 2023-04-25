@@ -157,9 +157,7 @@ def count_triples(system):
                         for c in range(b + 1, system.norbitals):
                             symc = system.orbital_symmetries[c]
                             nc = system.point_group_irrep_to_number[symc]
-
-                            sym = n_refsym
-                            sym = na ^ nb ^ nc ^ nk ^ nj ^ ni
+                            sym = n_refsym ^ na ^ nb ^ nc ^ nk ^ nj ^ ni
                             countsym[sym] += 1  
 
     for i in range(system.noccupied_alpha):
@@ -180,9 +178,7 @@ def count_triples(system):
                         for c in range(system.noccupied_beta, system.norbitals):
                             symc = system.orbital_symmetries[c]
                             nc = system.point_group_irrep_to_number[symc]
-
-                            sym = n_refsym
-                            sym = na ^ nb ^ nc ^ nk ^ nj ^ ni
+                            sym = n_refsym ^ na ^ nb ^ nc ^ nk ^ nj ^ ni
                             countsym[sym] += 1 
 
     for i in range(system.noccupied_alpha):
@@ -203,9 +199,7 @@ def count_triples(system):
                         for c in range(b + 1, system.norbitals):
                             symc = system.orbital_symmetries[c]
                             nc = system.point_group_irrep_to_number[symc]
-
-                            sym = n_refsym
-                            sym = na ^ nb ^ nc ^ nk ^ nj ^ ni
+                            sym = n_refsym ^ na ^ nb ^ nc ^ nk ^ nj ^ ni
                             countsym[sym] += 1 
 
     for i in range(system.noccupied_beta):
@@ -226,9 +220,7 @@ def count_triples(system):
                         for c in range(b + 1, system.norbitals):
                             symc = system.orbital_symmetries[c]
                             nc = system.point_group_irrep_to_number[symc]
-
-                            sym = n_refsym
-                            sym = na ^ nb ^ nc ^ nk ^ nj ^ ni
+                            sym = n_refsym ^ na ^ nb ^ nc ^ nk ^ nj ^ ni
                             countsym[sym] += 1  
     
     total = sum(countsym)
@@ -265,9 +257,7 @@ def count_quadruples(system):
                                 for d in range(c + 1, system.norbitals):
                                     symd = system.orbital_symmetries[d]
                                     nd = system.point_group_irrep_to_number[symd]
-
-                                    sym = n_refsym
-                                    sym = na ^ nb ^ nc ^ nd ^ nl ^ nk ^ nj ^ ni
+                                    sym = n_refsym ^ na ^ nb ^ nc ^ nd ^ nl ^ nk ^ nj ^ ni
                                     countsym[sym] += 1
 
     for i in range(system.noccupied_alpha):
@@ -294,9 +284,7 @@ def count_quadruples(system):
                                 for d in range(system.noccupied_beta, system.norbitals):
                                     symd = system.orbital_symmetries[d]
                                     nd = system.point_group_irrep_to_number[symd]
-
-                                    sym = n_refsym
-                                    sym = na ^ nb ^ nc ^ nd ^ nl ^ nk ^ nj ^ ni
+                                    sym = n_refsym ^ na ^ nb ^ nc ^ nd ^ nl ^ nk ^ nj ^ ni
                                     countsym[sym] += 1
 
 
@@ -324,9 +312,7 @@ def count_quadruples(system):
                                 for d in range(c + 1, system.norbitals):
                                     symd = system.orbital_symmetries[d]
                                     nd = system.point_group_irrep_to_number[symd]
-
-                                    sym = n_refsym
-                                    sym = na ^ nb ^ nc ^ nd ^ nl ^ nk ^ nj ^ ni
+                                    sym = n_refsym ^ na ^ nb ^ nc ^ nd ^ nl ^ nk ^ nj ^ ni
                                     countsym[sym] += 1
 
 
@@ -354,9 +340,7 @@ def count_quadruples(system):
                                 for d in range(c + 1, system.norbitals):
                                     symd = system.orbital_symmetries[d]
                                     nd = system.point_group_irrep_to_number[symd]
-
-                                    sym = n_refsym
-                                    sym = na ^ nb ^ nc ^ nd ^ nl ^ nk ^ nj ^ ni
+                                    sym = n_refsym ^ na ^ nb ^ nc ^ nd ^ nl ^ nk ^ nj ^ ni
                                     countsym[sym] += 1
 
     for i in range(system.noccupied_beta):
@@ -383,9 +367,7 @@ def count_quadruples(system):
                                 for d in range(c + 1, system.norbitals):
                                     symd = system.orbital_symmetries[d]
                                     nd = system.point_group_irrep_to_number[symd]
-
-                                    sym = n_refsym
-                                    sym = na ^ nb ^ nc ^ nd ^ nl ^ nk ^ nj ^ ni
+                                    sym = n_refsym ^ na ^ nb ^ nc ^ nd ^ nl ^ nk ^ nj ^ ni
                                     countsym[sym] += 1
 
     total = sum(countsym)
