@@ -168,6 +168,8 @@ module ccp3_adaptive_loops
 
                                                 LM = temp1*(temp2+temp3)
 
+                                                if (abs(LM) == 0.0d0) cycle
+
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
 
@@ -197,7 +199,6 @@ module ccp3_adaptive_loops
 
                                                 deltaD = deltaD + LM/D
 
-                                                if (abs(LM/D) == 0.0d0) cycle
 
                                                 if ( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a-1, 2*b-1, 2*c-1, 2*i-1, 2*j-1, 2*k-1/)
@@ -366,6 +367,7 @@ module ccp3_adaptive_loops
                                                        +l2a(a,b,i,j)*H1B_ov(k,c)
 
                                                 LM = temp1*(temp2+temp3)
+                                                if (abs(LM) == 0.0d0) cycle
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
@@ -395,8 +397,6 @@ module ccp3_adaptive_loops
                                                 -D3C_V(a,k,c)-D3C_V(b,k,c)
 
                                                 deltaD = deltaD + LM/D
-
-                                                if (abs(LM/D) == 0.0d0) cycle
 
                                                 if( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a-1, 2*b-1, 2*c, 2*i-1, 2*j-1, 2*k/)
@@ -574,6 +574,8 @@ module ccp3_adaptive_loops
 
                                                 LM = temp1*(temp2+temp3)
 
+                                                if (abs(LM) == 0.0d0) cycle
+
                                                 D = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                 - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
 
@@ -601,8 +603,6 @@ module ccp3_adaptive_loops
                                                 -D3C_V(a,k,b)-D3C_V(a,k,c)-D3D_V(b,k,c)
 
                                                 deltaD = deltaD + LM/D
-
-                                                if (abs(LM/D) == 0.0d0) cycle
 
                                                 if( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a-1, 2*b, 2*c, 2*i-1, 2*j, 2*k/)
@@ -724,6 +724,7 @@ module ccp3_adaptive_loops
                                                 +H1b_ov(j,b)*l2c(a,c,i,k)
 
                                                 LM = temp1*(temp2+temp3)
+                                                if (abs(LM) == 0.0d0) cycle
 
                                                 D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                 - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
@@ -753,8 +754,6 @@ module ccp3_adaptive_loops
                                                 -D3D_V(a,k,b)-D3D_V(a,k,c)-D3D_V(b,k,c)
 
                                                 deltaD = deltaD + LM/D
-
-                                                if (abs(LM/D) == 0.0d0) cycle
 
                                                 if( abs(LM/D) > abs(moments(idx_min)) ) then
                                                     triples_list(idx_min, :) = (/2*a, 2*b, 2*c, 2*i, 2*j, 2*k/)
@@ -1488,7 +1487,6 @@ module ccp3_adaptive_loops
                       real(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
-
                       do i1 = 1,size(x_in,1)
                          do i2 = 1,size(x_in,2)
                             do i3 = 1,size(x_in,3)

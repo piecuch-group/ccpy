@@ -1,11 +1,12 @@
 import numpy as np
+import time
 
 from ccpy.models.calculation import Calculation
 from ccpy.utilities.pspace import get_empty_pspace, count_excitations_in_pspace_with_symmetry, add_spinorbital_triples_to_pspace
 from ccpy.utilities.symmetry_count import count_triples
 from ccpy.drivers.driver import cc_driver, lcc_driver
 from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
-from ccpy.moments.ccp3 import calc_ccp3, calc_ccp3_with_selection, calc_ccp3_with_moments, calc_ccpert3_with_selection, calc_ccpert3_with_moments
+from ccpy.moments.ccp3 import calc_ccp3, calc_ccp3_with_selection, calc_ccp3_with_moments, calc_ccpert3, calc_ccpert3_with_selection, calc_ccpert3_with_moments
 from ccpy.utilities.pspace import adaptive_triples_selection_from_moments
 
 def adapt_ccsdt(calculation, system, hamiltonian, T=None, pert_corr=False, on_the_fly=True, relaxed=True):
@@ -17,7 +18,7 @@ def adapt_ccsdt(calculation, system, hamiltonian, T=None, pert_corr=False, on_th
     return T, ccp_energy, ccpq_energy
 
 #[TODO]: Generalize this function to at least handling singles through quadruples, not just triples
-def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly, T=None):
+def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly, p_space_analyze=True, T=None):
     """Performs the adaptive CC(P;Q) calculation specified by the user in the input."""
 
     # check if requested CC(P) calculation is implemented in modules
@@ -34,6 +35,7 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
                             maximum_iterations=calculation.maximum_iterations,
                             convergence_tolerance=calculation.convergence_tolerance,
                             energy_shift=calculation.energy_shift,
+                            RHF_symmetry = calculation.RHF_symmetry,
                             low_memory=False
                             )
 
@@ -82,14 +84,17 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
         print("   ===========================================================================================\n")
 
         # Count the excitations in the current P space
-        excitation_count = count_excitations_in_pspace_with_symmetry(pspace, system)
-        for ind, excitation_count_irrep in enumerate(excitation_count):
-            tot_p_space = excitation_count_irrep[0]['aaa'] + excitation_count_irrep[0]['aab'] + excitation_count_irrep[0]['abb'] + excitation_count_irrep[0]['bbb']
-            print("   Symmetry", system.point_group_number_to_irrep[ind], "-", "Total number of triples in P space = ", tot_p_space)
-            print("      Number of aaa = ", excitation_count_irrep[0]['aaa'])
-            print("      Number of aab = ", excitation_count_irrep[0]['aab'])
-            print("      Number of abb = ", excitation_count_irrep[0]['abb'])
-            print("      Number of bbb = ", excitation_count_irrep[0]['bbb'])
+        if p_space_analyze:
+            t1 = time.time()
+            excitation_count = count_excitations_in_pspace_with_symmetry(pspace, system)
+            for ind, excitation_count_irrep in enumerate(excitation_count):
+                tot_p_space = excitation_count_irrep[0]['aaa'] + excitation_count_irrep[0]['aab'] + excitation_count_irrep[0]['abb'] + excitation_count_irrep[0]['bbb']
+                print("   Symmetry", system.point_group_number_to_irrep[ind], "-", "Total number of triples in P space = ", tot_p_space)
+                print("      Number of aaa = ", excitation_count_irrep[0]['aaa'])
+                print("      Number of aab = ", excitation_count_irrep[0]['aab'])
+                print("      Number of abb = ", excitation_count_irrep[0]['abb'])
+                print("      Number of bbb = ", excitation_count_irrep[0]['bbb'])
+            print("   TIME TAKEN FOR COUNTING P SPACE = ", time.time() - t1)
         
         # Perform CC(P) calculation using previous T vector as initial guess
         if n > 0:
@@ -100,26 +105,33 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
             T, ccp_energy[n], is_converged = cc_driver(calculation, system, hamiltonian, t3_excitations=t3_excitations, pspace=pspace[0])
 
         if pert_corr:
-            # Compute the CCSD(T)-like correction and return the moments as well as selected triples
-            if on_the_fly:
-                Eccp3, deltap3, moments, triples_list = calc_ccpert3_with_selection(T,
-                                                                                    hamiltonian,
-                                                                                    system,
-                                                                                    pspace,
-                                                                                    num_dets_to_add[n],
-                                                                                    use_RHF=calculation.RHF_symmetry)
+            t1 = time.time()
+            # If last calculation, just perform a simple CC(P;3) and move on; no need to select triples
+            if n == num_calcs - 1:
+                Eccp3, deltap3 = calc_ccpert3(T, hamiltonian, system, pspace, use_RHF=calculation.RHF_symmetry)
             else:
-                Eccp3, deltap3, moments = calc_ccpert3_with_moments(T,
-                                                                    hamiltonian,
-                                                                    system,
-                                                                    pspace,
-                                                                    use_RHF=calculation.RHF_symmetry)
+                # Compute the CCSD(T)-like correction and return the moments as well as selected triples
+                if on_the_fly:
+                    Eccp3, deltap3, moments, triples_list = calc_ccpert3_with_selection(T,
+                                                                                        hamiltonian,
+                                                                                        system,
+                                                                                        pspace,
+                                                                                        num_dets_to_add[n],
+                                                                                        use_RHF=calculation.RHF_symmetry)
+                else:
+                    Eccp3, deltap3, moments = calc_ccpert3_with_moments(T,
+                                                                        hamiltonian,
+                                                                        system,
+                                                                        pspace,
+                                                                        use_RHF=calculation.RHF_symmetry)
+            print("   TIME TAKEN FOR (T)-CORRECTION + SELECTION = ", time.time() - t1)
             ccpq_energy[n] = Eccp3
         else:
             # Build CCSD-like Hbar from CC(P)
             Hbar = build_hbar_ccsd(T, hamiltonian)
             # Perform left-CCSD calculation
             L, _, is_converged = lcc_driver(calculation_left, system, T, Hbar)
+            t1 = time.time()
             # If last calculation, just perform a simple CC(P;3) and move on; no need to select triples
             if n == num_calcs - 1:
                 Eccp3, deltap3 = calc_ccp3(T, L, Hbar, hamiltonian, system, pspace, use_RHF=calculation.RHF_symmetry)
@@ -133,13 +145,16 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
                                                                                      use_RHF=calculation.RHF_symmetry)
                 else:
                     Eccp3, deltap3, moments = calc_ccp3_with_moments(T, L, Hbar, hamiltonian, system, pspace, use_RHF=calculation.RHF_symmetry)
+            print("   TIME TAKEN FOR CR(2,3)-CORRECTION + SELECTION = ", time.time() - t1)
             ccpq_energy[n] = Eccp3["D"]
 
         # add the triples
+        t1 = time.time()
         if n < num_calcs - 1:
             if on_the_fly:
                 pspace[0], t3_excitations = add_spinorbital_triples_to_pspace(triples_list, pspace[0], t3_excitations, calculation.RHF_symmetry)
             else:
-                pspace[0], t3_excitations = adaptive_triples_selection_from_moments(moments, pspace[0], t3_excitations, num_dets_to_add[n], system)
+                pspace[0], t3_excitations = adaptive_triples_selection_from_moments(moments, pspace[0], t3_excitations, num_dets_to_add[n], system, calculation.RHF_symmetry)
+        print("   TIME TAKEN TO ENLARGE P SPACE = ", time.time() - t1)
 
     return T, ccp_energy, ccpq_energy

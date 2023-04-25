@@ -65,10 +65,10 @@ def test_pyscf(stretch, basis):
             energy_shift=0.0,
             maximum_iterations=500,
             RHF_symmetry=False,
-            adaptive_percentages=[1.0, 2.0, 3.0, 4.0, 5.0]
+            adaptive_percentages=[5.0]
     )
 
-    T, total_energy, is_converged = adapt_ccsdt(calculation, system, H, pert_corr=False, relaxed=True, on_the_fly=True)
+    T, total_energy, is_converged = adapt_ccsdt(calculation, system, H, pert_corr=True, relaxed=True, on_the_fly=True)
 
 if __name__ == "__main__":
 

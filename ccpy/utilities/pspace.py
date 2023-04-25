@@ -617,7 +617,13 @@ def adaptive_triples_selection_from_moments(moments, pspace, t3_excitations, num
     n3b = 0
     n3c = 0
     n3d = 0
-    while n3a + n3b + n3c + n3d < num_add:
+
+    if RHF_symmetry:
+        stop_fcn = lambda n3a, n3b, n3c, n3d: n3a + n3b
+    else:
+        stop_fcn = lambda n3a, n3b, n3c, n3d: n3a + n3b + n3c + n3d
+
+    while stop_fcn(n3a, n3b, n3c, n3d) < num_add:
         if idx[ct] < n3aaa:
             a, b, c, i, j, k = np.unravel_index(idx[ct], moments["aaa"].shape)
             if pspace["aaa"][a, b, c, i, j, k]:
@@ -631,6 +637,14 @@ def adaptive_triples_selection_from_moments(moments, pspace, t3_excitations, num
                         a, b, c = perms_unocc
                         i, j, k = perms_occ
                         new_pspace['aaa'][a, b, c, i, j, k] = True
+                if RHF_symmetry: # include the same bbb excitations if RHF symmetry is applied
+                    new_t3_excitations["bbb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
+                    n3d += 1
+                    for perms_unocc in permutations((a, b, c)):
+                        for perms_occ in permutations((i, j, k)):
+                            a, b, c = perms_unocc
+                            i, j, k = perms_occ
+                            new_pspace['bbb'][a, b, c, i, j, k] = True
         elif idx[ct] < n3aaa + n3aab:
             a, b, c, i, j, k = np.unravel_index(idx[ct] - n3aaa, moments["aab"].shape)
             if pspace["aab"][a, b, c, i, j, k]:
@@ -644,7 +658,15 @@ def adaptive_triples_selection_from_moments(moments, pspace, t3_excitations, num
                         a, b = perms_unocc
                         i, j = perms_occ
                         new_pspace['aab'][a, b, c, i, j, k] = True
-        elif idx[ct] < n3aaa + n3aab + n3abb:
+                if RHF_symmetry: # include the same abb excitations if RHF symmetry is applied
+                    new_t3_excitations["abb"].append([c + 1, a + 1, b + 1, k + 1, i + 1, j + 1])
+                    n3c += 1
+                    for perms_unocc in permutations((a, b)):
+                        for perms_occ in permutations((i, j)):
+                            a, b = perms_unocc
+                            i, j = perms_occ
+                            new_pspace['abb'][c, a, b, k, i, j] = True
+        elif idx[ct] < n3aaa + n3aab + n3abb and not RHF_symmetry:
             a, b, c, i, j, k = np.unravel_index(idx[ct] - n3aaa - n3aab, moments["abb"].shape)
             if pspace["abb"][a, b, c, i, j, k]:
                 ct += 1
@@ -657,7 +679,7 @@ def adaptive_triples_selection_from_moments(moments, pspace, t3_excitations, num
                         b, c = perms_unocc
                         j, k = perms_occ
                         new_pspace['abb'][a, b, c, i, j, k] = True
-        else:
+        elif not RHF_symmetry:
             a, b, c, i, j, k = np.unravel_index(idx[ct] - n3aaa - n3aab - n3abb, moments["bbb"].shape)
             if pspace["bbb"][a, b, c, i, j, k]:
                 ct += 1
