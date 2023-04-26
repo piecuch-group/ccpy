@@ -47,13 +47,13 @@ module ccsdpt_loops
                                    call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_1243(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,X3A,nua2)
                                    !!!!! L3A -> (T3[2])^+ !!!!!
                                    ! Diagram 1: A(i/jk)A(c/ab) H2A_vovv(e,i,b,a)*l2a(e,c,j,k)
-                                   call dgemm('n','n',nua2,nua,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2a(:,:,j,k),nua,1.0d0,L3A,nua2)
-                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2a(:,:,i,k),nua,1.0d0,L3A,nua2)
-                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2a(:,:,j,k),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2a(:,:,i,k),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,L3A,nua2)
                                    ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
-                                   call dgemm('n','t',nua,nua2,noa,-0.5d0,vA_ooov_4312(:,:,j,i),nua,t2a(:,:,:,k),nua2,1.0d0,L3A,nua)
-                                   call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,k,i),nua,t2a(:,:,:,j),nua2,1.0d0,L3A,nua)
-                                   call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,j,k),nua,t2a(:,:,:,i),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,-0.5d0,vA_ooov_4312(:,:,j,i),nua,t2a(:,:,:,k),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,k,i),nua,t2a(:,:,:,j),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,j,k),nua,t2a(:,:,:,i),nua2,1.0d0,L3A,nua)
 
                                     do a = 1, nua
                                         do b = a+1, nua
@@ -62,8 +62,8 @@ module ccsdpt_loops
                                                 temp1 = X3A(a,b,c) + X3A(b,c,a) + X3A(c,a,b)&
                                                 - X3A(a,c,b) - X3A(b,a,c) - X3A(c,b,a)
 
-                                                temp2 = L3A(a,b,c) + L3A(b,c,a) + L3A(c,a,b)&
-                                                - L3A(a,c,b) - L3A(b,a,c) - L3A(c,b,a)
+                                                !temp2 = L3A(a,b,c) + L3A(b,c,a) + L3A(c,a,b)&
+                                                !- L3A(a,c,b) - L3A(b,a,c) - L3A(c,b,a)
 
                                                 temp3 =&
                                                 t1a(c,k)*vA_oovv(i,j,a,b)&
@@ -85,7 +85,7 @@ module ccsdpt_loops
                                                 +fA_ov(j,a)*t2a(c,b,i,k)&
                                                 +fA_ov(j,b)*t2a(a,c,i,k)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
@@ -176,28 +176,28 @@ module ccsdpt_loops
                                     call dgemm('n','t',nua,nuanub,noa,-1.0d0,I2A_vooo(:,:,i,j),nua,t2b(:,:,:,k),nuanub,1.0d0,X3B,nua)
                                     !!!!! L3B -> (T3[2])^+ !!!!!
                                     ! Diagram 1: A(ab) H2B(ekbc)*l2a(aeij)
-                                    call dgemm('n','n',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,vB_vovv_1342(:,:,:,k),nua,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,vB_vovv_1342(:,:,:,k),nua,1.0d0,L3B,nua)
                                     ! Diagram 2: A(ij) H2A(eiba)*l2b(ecjk)
-                                    call dgemm('n','n',nua2,nub,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2b(:,:,j,k),nua,1.0d0,L3B,nua2)
-                                    call dgemm('n','n',nua2,nub,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2b(:,:,i,k),nua,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2b(:,:,j,k),nua,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2b(:,:,i,k),nua,1.0d0,L3B,nua2)
                                     ! Diagram 3: A(ij)A(ab) H2B(ieac)*l2b(bejk) -> l2b(aeik)*H2B(jebc)
-                                    call dgemm('n','n',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,vB_ovvv_2341(:,:,:,j),nub,1.0d0,L3B,nua)
-                                    call dgemm('n','n',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,vB_ovvv_2341(:,:,:,i),nub,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,vB_ovvv_2341(:,:,:,j),nub,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,vB_ovvv_2341(:,:,:,i),nub,1.0d0,L3B,nua)
                                     ! Diagram 4: -A(ij) H2B(jkmc)*l2a(abim) -> +A(ij) H2B(jkmc)*l2a(abmi)
-                                    call dgemm('n','n',nua2,nub,noa,0.5d0,t2a(:,:,:,i),nua2,vB_ooov_3412(:,:,j,k),noa,1.0d0,L3B,nua2)
-                                    call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a(:,:,:,j),nua2,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,noa,0.5d0,t2a(:,:,:,i),nua2,vB_ooov_3412(:,:,j,k),noa,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a(:,:,:,j),nua2,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3B,nua2)
                                     ! Diagram 5: -A(ab) H2A(jima)*l2b(bcmk)
-                                    call dgemm('n','t',nua,nuanub,noa,-1.0d0,vA_ooov_4312(:,:,j,i),nua,t2b(:,:,:,k),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,noa,-1.0d0,vA_ooov_4312(:,:,j,i),nua,t2b(:,:,:,k),nuanub,1.0d0,L3B,nua)
                                     ! Diagram 6: -A(ij)A(ab) H2B(ikam)*l2b(bcjm)
-                                    call dgemm('n','t',nua,nuanub,nob,-1.0d0,vB_oovo_3412(:,:,i,k),nua,t2b_1243(:,:,:,j),nuanub,1.0d0,L3B,nua)
-                                    call dgemm('n','t',nua,nuanub,nob,1.0d0,vB_oovo_3412(:,:,j,k),nua,t2b_1243(:,:,:,i),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,nob,-1.0d0,vB_oovo_3412(:,:,i,k),nua,t2b_1243(:,:,:,j),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,nob,1.0d0,vB_oovo_3412(:,:,j,k),nua,t2b_1243(:,:,:,i),nuanub,1.0d0,L3B,nua)
 
                                     do a = 1, nua
                                         do b = a+1, nua
                                             do c = 1, nub
 
                                                 temp1 = X3B(a,b,c) - X3B(b,a,c)
-                                                temp2 = L3B(a,b,c) - L3B(b,a,c)
+                                                !temp2 = L3B(a,b,c) - L3B(b,a,c)
                                                 temp3 = t1a(a,i)*vB_oovv(j,k,b,c)&
                                                        -t1a(a,j)*vB_oovv(i,k,b,c)&
                                                        -t1a(b,i)*vB_oovv(j,k,a,c)&
@@ -209,7 +209,7 @@ module ccsdpt_loops
                                                        +t2b(a,c,i,k)*fA_ov(j,b)&
                                                        +t2a(a,b,i,j)*fB_ov(k,c)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
@@ -306,28 +306,28 @@ module ccsdpt_loops
 
                                     !!!!! L3C -> (T3[2])^+ !!!!!
                                     ! Diagram 1: A(bc) H2B_ovvv(i,e,a,b)*l2c(e,c,j,k)
-                                    call dgemm('n','n',nuanub,nub,nub,1.0d0,vB_ovvv_3421(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nub,1.0d0,vB_ovvv_3421(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,L3C,nuanub)
                                     ! Diagram 2: A(jk) H2C_vovv(e,k,b,c)*l2b(a,e,i,j)
-                                    call dgemm('n','n',nua,nub2,nub,0.5d0,t2b(:,:,i,j),nua,vC_vovv_1342(:,:,:,k),nub,1.0d0,L3C,nua)
-                                    call dgemm('n','n',nua,nub2,nub,-0.5d0,t2b(:,:,i,k),nua,vC_vovv_1342(:,:,:,j),nub,1.0d0,L3C,nua)
+                                    !call dgemm('n','n',nua,nub2,nub,0.5d0,t2b(:,:,i,j),nua,vC_vovv_1342(:,:,:,k),nub,1.0d0,L3C,nua)
+                                    !call dgemm('n','n',nua,nub2,nub,-0.5d0,t2b(:,:,i,k),nua,vC_vovv_1342(:,:,:,j),nub,1.0d0,L3C,nua)
                                     ! Diagram 3: A(jk)A(bc) H2B_vovv(e,j,a,b)*l2b(e,c,i,k)
-                                    call dgemm('n','n',nuanub,nub,nua,1.0d0,vB_vovv_3412(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,L3C,nuanub)
-                                    call dgemm('n','n',nuanub,nub,nua,-1.0d0,vB_vovv_3412(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nua,1.0d0,vB_vovv_3412(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nua,-1.0d0,vB_vovv_3412(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,L3C,nuanub)
                                     ! Diagram 4: -A(jk) H2B_oovo(i,j,a,m)*l2c(b,c,m,k)
-                                    call dgemm('n','t',nua,nub2,nob,-0.5d0,vB_oovo_3412(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,L3C,nua)
-                                    call dgemm('n','t',nua,nub2,nob,0.5d0,vB_oovo_3412(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,L3C,nua)
+                                    !call dgemm('n','t',nua,nub2,nob,-0.5d0,vB_oovo_3412(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,L3C,nua)
+                                    !call dgemm('n','t',nua,nub2,nob,0.5d0,vB_oovo_3412(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,L3C,nua)
                                     ! Diagram 5: -A(bc) H2C_ooov(j,k,m,c)*l2b(a,b,i,m)
-                                    call dgemm('n','n',nuanub,nub,nob,-1.0d0,t2b_1243(:,:,:,i),nuanub,vC_ooov_3412(:,:,j,k),nob,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nob,-1.0d0,t2b_1243(:,:,:,i),nuanub,vC_ooov_3412(:,:,j,k),nob,1.0d0,L3C,nuanub)
                                     ! Diagram 6: -A(jk)A(bc) H2B_ooov(i,j,m,b)*l2b(a,c,m,k) -> -A(jk)A(bc) H2B_ooov(i,k,m,c)*l2b(a,b,m,j)
-                                    call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
-                                    call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,vB_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,vB_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
 
                                     do a = 1, nua
                                         do b = 1, nub
                                             do c = b+1, nub
 
                                                     temp1 = X3C(a,b,c) - X3C(a,c,b)
-                                                    temp2 = L3C(a,b,c) - L3C(a,c,b)
+                                                    !temp2 = L3C(a,b,c) - L3C(a,c,b)
                                                     temp3 = t1b(c,k)*vB_oovv(i,j,a,b)&
                                                             -t1b(b,k)*vB_oovv(i,j,a,c)&
                                                             -t1b(c,j)*vB_oovv(i,k,a,b)&
@@ -339,7 +339,7 @@ module ccsdpt_loops
                                                             +fB_ov(j,b)*t2b(a,c,i,k)&
                                                             +fA_ov(i,a)*t2c(b,c,j,k)
 
-                                                    LM = temp1*(temp2+temp3)
+                                                    LM = temp1*(temp1+temp3)
 
                                                     D = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                     - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
@@ -394,13 +394,13 @@ module ccsdpt_loops
                                    call dgemm('n','n',nub2,nub,nub,-0.5d0,I2C_vvov_1243(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,X3D,nub2)
                                    !!!!! L3A -? (T3[2])^+ !!!!!
                                    ! Diagram 1: A(i/jk)A(c/ab) H2C_vovv(e,i,b,a)*l2c(e,c,j,k)
-                                   call dgemm('n','n',nub2,nub,nub,0.5d0,vC_vovv_4312(:,:,:,i),nub2,t2c(:,:,j,k),nub,1.0d0,L3D,nub2)
-                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,j),nub2,t2c(:,:,i,k),nub,1.0d0,L3D,nub2)
-                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,0.5d0,vC_vovv_4312(:,:,:,i),nub2,t2c(:,:,j,k),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,j),nub2,t2c(:,:,i,k),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,L3D,nub2)
                                    ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
-                                   call dgemm('n','t',nub,nub2,nob,-0.5d0,vC_ooov_4312(:,:,j,i),nub,t2c(:,:,:,k),nub2,1.0d0,L3D,nub)
-                                   call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,k,i),nub,t2c(:,:,:,j),nub2,1.0d0,L3D,nub)
-                                   call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,j,k),nub,t2c(:,:,:,i),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,-0.5d0,vC_ooov_4312(:,:,j,i),nub,t2c(:,:,:,k),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,k,i),nub,t2c(:,:,:,j),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,j,k),nub,t2c(:,:,:,i),nub2,1.0d0,L3D,nub)
 
                                     do a = 1, nub
                                         do b = a+1, nub
@@ -409,8 +409,8 @@ module ccsdpt_loops
                                                 temp1 = X3D(a,b,c) + X3D(b,c,a) + X3D(c,a,b)&
                                                 - X3D(a,c,b) - X3D(b,a,c) - X3D(c,b,a)
 
-                                                temp2 = L3D(a,b,c) + L3D(b,c,a) + L3D(c,a,b)&
-                                                - L3D(a,c,b) - L3D(b,a,c) - L3D(c,b,a)
+                                                !temp2 = L3D(a,b,c) + L3D(b,c,a) + L3D(c,a,b)&
+                                                !- L3D(a,c,b) - L3D(b,a,c) - L3D(c,b,a)
 
                                                 temp3 =&
                                                 t1b(c,k)*vC_oovv(i,j,a,b)&
@@ -432,7 +432,7 @@ module ccsdpt_loops
                                                 +fB_ov(j,a)*t2c(c,b,i,k)&
                                                 +fB_ov(j,b)*t2c(a,c,i,k)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
 
                                                 D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                 - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
@@ -494,13 +494,13 @@ module ccsdpt_loops
                                    call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_1243(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,X3A,nua2)
                                    !!!!! L3A -> (T3[2])^+ !!!!!
                                    ! Diagram 1: A(i/jk)A(c/ab) H2A_vovv(e,i,b,a)*l2a(e,c,j,k)
-                                   call dgemm('n','n',nua2,nua,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2a(:,:,j,k),nua,1.0d0,L3A,nua2)
-                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2a(:,:,i,k),nua,1.0d0,L3A,nua2)
-                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2a(:,:,j,k),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2a(:,:,i,k),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,L3A,nua2)
                                    ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
-                                   call dgemm('n','t',nua,nua2,noa,-0.5d0,vA_ooov_4312(:,:,j,i),nua,t2a(:,:,:,k),nua2,1.0d0,L3A,nua)
-                                   call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,k,i),nua,t2a(:,:,:,j),nua2,1.0d0,L3A,nua)
-                                   call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,j,k),nua,t2a(:,:,:,i),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,-0.5d0,vA_ooov_4312(:,:,j,i),nua,t2a(:,:,:,k),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,k,i),nua,t2a(:,:,:,j),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,j,k),nua,t2a(:,:,:,i),nua2,1.0d0,L3A,nua)
 
                                     do a = 1, nua
                                         do b = a+1, nua
@@ -511,8 +511,8 @@ module ccsdpt_loops
                                                 temp1 = X3A(a,b,c) + X3A(b,c,a) + X3A(c,a,b)&
                                                 - X3A(a,c,b) - X3A(b,a,c) - X3A(c,b,a)
 
-                                                temp2 = L3A(a,b,c) + L3A(b,c,a) + L3A(c,a,b)&
-                                                - L3A(a,c,b) - L3A(b,a,c) - L3A(c,b,a)
+                                                !temp2 = L3A(a,b,c) + L3A(b,c,a) + L3A(c,a,b)&
+                                                !- L3A(a,c,b) - L3A(b,a,c) - L3A(c,b,a)
 
                                                 temp3 =&
                                                 t1a(c,k)*vA_oovv(i,j,a,b)&
@@ -534,7 +534,7 @@ module ccsdpt_loops
                                                 +fA_ov(j,a)*t2a(c,b,i,k)&
                                                 +fA_ov(j,b)*t2a(a,c,i,k)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
@@ -628,21 +628,21 @@ module ccsdpt_loops
                                     call dgemm('n','t',nua,nuanub,noa,-1.0d0,I2A_vooo(:,:,i,j),nua,t2b(:,:,:,k),nuanub,1.0d0,X3B,nua)
                                     !!!!! L3B -> (T3[2])^+ !!!!!
                                     ! Diagram 1: A(ab) H2B(ekbc)*l2a(aeij)
-                                    call dgemm('n','n',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,vB_vovv_1342(:,:,:,k),nua,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,vB_vovv_1342(:,:,:,k),nua,1.0d0,L3B,nua)
                                     ! Diagram 2: A(ij) H2A(eiba)*l2b(ecjk)
-                                    call dgemm('n','n',nua2,nub,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2b(:,:,j,k),nua,1.0d0,L3B,nua2)
-                                    call dgemm('n','n',nua2,nub,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2b(:,:,i,k),nua,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2b(:,:,j,k),nua,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2b(:,:,i,k),nua,1.0d0,L3B,nua2)
                                     ! Diagram 3: A(ij)A(ab) H2B(ieac)*l2b(bejk) -> l2b(aeik)*H2B(jebc)
-                                    call dgemm('n','n',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,vB_ovvv_2341(:,:,:,j),nub,1.0d0,L3B,nua)
-                                    call dgemm('n','n',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,vB_ovvv_2341(:,:,:,i),nub,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,vB_ovvv_2341(:,:,:,j),nub,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,vB_ovvv_2341(:,:,:,i),nub,1.0d0,L3B,nua)
                                     ! Diagram 4: -A(ij) H2B(jkmc)*l2a(abim) -> +A(ij) H2B(jkmc)*l2a(abmi)
-                                    call dgemm('n','n',nua2,nub,noa,0.5d0,t2a(:,:,:,i),nua2,vB_ooov_3412(:,:,j,k),noa,1.0d0,L3B,nua2)
-                                    call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a(:,:,:,j),nua2,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,noa,0.5d0,t2a(:,:,:,i),nua2,vB_ooov_3412(:,:,j,k),noa,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a(:,:,:,j),nua2,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3B,nua2)
                                     ! Diagram 5: -A(ab) H2A(jima)*l2b(bcmk)
-                                    call dgemm('n','t',nua,nuanub,noa,-1.0d0,vA_ooov_4312(:,:,j,i),nua,t2b(:,:,:,k),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,noa,-1.0d0,vA_ooov_4312(:,:,j,i),nua,t2b(:,:,:,k),nuanub,1.0d0,L3B,nua)
                                     ! Diagram 6: -A(ij)A(ab) H2B(ikam)*l2b(bcjm)
-                                    call dgemm('n','t',nua,nuanub,nob,-1.0d0,vB_oovo_3412(:,:,i,k),nua,t2b_1243(:,:,:,j),nuanub,1.0d0,L3B,nua)
-                                    call dgemm('n','t',nua,nuanub,nob,1.0d0,vB_oovo_3412(:,:,j,k),nua,t2b_1243(:,:,:,i),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,nob,-1.0d0,vB_oovo_3412(:,:,i,k),nua,t2b_1243(:,:,:,j),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,nob,1.0d0,vB_oovo_3412(:,:,j,k),nua,t2b_1243(:,:,:,i),nuanub,1.0d0,L3B,nua)
 
                                     do a = 1, nua
                                         do b = a+1, nua
@@ -651,7 +651,7 @@ module ccsdpt_loops
                                                 if (pspace(a,b,c,i,j,k)) cycle
 
                                                 temp1 = X3B(a,b,c) - X3B(b,a,c)
-                                                temp2 = L3B(a,b,c) - L3B(b,a,c)
+                                                !temp2 = L3B(a,b,c) - L3B(b,a,c)
                                                 temp3 = t1a(a,i)*vB_oovv(j,k,b,c)&
                                                        -t1a(a,j)*vB_oovv(i,k,b,c)&
                                                        -t1a(b,i)*vB_oovv(j,k,a,c)&
@@ -663,7 +663,7 @@ module ccsdpt_loops
                                                        +t2b(a,c,i,k)*fA_ov(j,b)&
                                                        +t2a(a,b,i,j)*fB_ov(k,c)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
@@ -762,21 +762,21 @@ module ccsdpt_loops
 
                                     !!!!! L3C -> (T3[2])^+ !!!!!
                                     ! Diagram 1: A(bc) H2B_ovvv(i,e,a,b)*l2c(e,c,j,k)
-                                    call dgemm('n','n',nuanub,nub,nub,1.0d0,vB_ovvv_3421(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nub,1.0d0,vB_ovvv_3421(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,L3C,nuanub)
                                     ! Diagram 2: A(jk) H2C_vovv(e,k,b,c)*l2b(a,e,i,j)
-                                    call dgemm('n','n',nua,nub2,nub,0.5d0,t2b(:,:,i,j),nua,vC_vovv_1342(:,:,:,k),nub,1.0d0,L3C,nua)
-                                    call dgemm('n','n',nua,nub2,nub,-0.5d0,t2b(:,:,i,k),nua,vC_vovv_1342(:,:,:,j),nub,1.0d0,L3C,nua)
+                                    !call dgemm('n','n',nua,nub2,nub,0.5d0,t2b(:,:,i,j),nua,vC_vovv_1342(:,:,:,k),nub,1.0d0,L3C,nua)
+                                    !call dgemm('n','n',nua,nub2,nub,-0.5d0,t2b(:,:,i,k),nua,vC_vovv_1342(:,:,:,j),nub,1.0d0,L3C,nua)
                                     ! Diagram 3: A(jk)A(bc) H2B_vovv(e,j,a,b)*l2b(e,c,i,k)
-                                    call dgemm('n','n',nuanub,nub,nua,1.0d0,vB_vovv_3412(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,L3C,nuanub)
-                                    call dgemm('n','n',nuanub,nub,nua,-1.0d0,vB_vovv_3412(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nua,1.0d0,vB_vovv_3412(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nua,-1.0d0,vB_vovv_3412(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,L3C,nuanub)
                                     ! Diagram 4: -A(jk) H2B_oovo(i,j,a,m)*l2c(b,c,m,k)
-                                    call dgemm('n','t',nua,nub2,nob,-0.5d0,vB_oovo_3412(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,L3C,nua)
-                                    call dgemm('n','t',nua,nub2,nob,0.5d0,vB_oovo_3412(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,L3C,nua)
+                                    !call dgemm('n','t',nua,nub2,nob,-0.5d0,vB_oovo_3412(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,L3C,nua)
+                                    !call dgemm('n','t',nua,nub2,nob,0.5d0,vB_oovo_3412(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,L3C,nua)
                                     ! Diagram 5: -A(bc) H2C_ooov(j,k,m,c)*l2b(a,b,i,m)
-                                    call dgemm('n','n',nuanub,nub,nob,-1.0d0,t2b_1243(:,:,:,i),nuanub,vC_ooov_3412(:,:,j,k),nob,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nob,-1.0d0,t2b_1243(:,:,:,i),nuanub,vC_ooov_3412(:,:,j,k),nob,1.0d0,L3C,nuanub)
                                     ! Diagram 6: -A(jk)A(bc) H2B_ooov(i,j,m,b)*l2b(a,c,m,k) -> -A(jk)A(bc) H2B_ooov(i,k,m,c)*l2b(a,b,m,j)
-                                    call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
-                                    call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,vB_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,vB_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
 
                                     do a = 1, nua
                                         do b = 1, nub
@@ -785,7 +785,7 @@ module ccsdpt_loops
                                                 if (pspace(a,b,c,i,j,k)) cycle
 
                                                 temp1 = X3C(a,b,c) - X3C(a,c,b)
-                                                temp2 = L3C(a,b,c) - L3C(a,c,b)
+                                                !temp2 = L3C(a,b,c) - L3C(a,c,b)
                                                 temp3 = t1b(c,k)*vB_oovv(i,j,a,b)&
                                                         -t1b(b,k)*vB_oovv(i,j,a,c)&
                                                         -t1b(c,j)*vB_oovv(i,k,a,b)&
@@ -797,7 +797,7 @@ module ccsdpt_loops
                                                         +fB_ov(j,b)*t2b(a,c,i,k)&
                                                         +fA_ov(i,a)*t2c(b,c,j,k)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
 
                                                 D = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                 - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
@@ -855,13 +855,13 @@ module ccsdpt_loops
                                    call dgemm('n','n',nub2,nub,nub,-0.5d0,I2C_vvov_1243(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,X3D,nub2)
                                    !!!!! L3A -? (T3[2])^+ !!!!!
                                    ! Diagram 1: A(i/jk)A(c/ab) H2C_vovv(e,i,b,a)*l2c(e,c,j,k)
-                                   call dgemm('n','n',nub2,nub,nub,0.5d0,vC_vovv_4312(:,:,:,i),nub2,t2c(:,:,j,k),nub,1.0d0,L3D,nub2)
-                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,j),nub2,t2c(:,:,i,k),nub,1.0d0,L3D,nub2)
-                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,0.5d0,vC_vovv_4312(:,:,:,i),nub2,t2c(:,:,j,k),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,j),nub2,t2c(:,:,i,k),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,L3D,nub2)
                                    ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
-                                   call dgemm('n','t',nub,nub2,nob,-0.5d0,vC_ooov_4312(:,:,j,i),nub,t2c(:,:,:,k),nub2,1.0d0,L3D,nub)
-                                   call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,k,i),nub,t2c(:,:,:,j),nub2,1.0d0,L3D,nub)
-                                   call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,j,k),nub,t2c(:,:,:,i),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,-0.5d0,vC_ooov_4312(:,:,j,i),nub,t2c(:,:,:,k),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,k,i),nub,t2c(:,:,:,j),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,j,k),nub,t2c(:,:,:,i),nub2,1.0d0,L3D,nub)
 
                                     do a = 1, nub
                                         do b = a+1, nub
@@ -872,8 +872,8 @@ module ccsdpt_loops
                                                 temp1 = X3D(a,b,c) + X3D(b,c,a) + X3D(c,a,b)&
                                                 - X3D(a,c,b) - X3D(b,a,c) - X3D(c,b,a)
 
-                                                temp2 = L3D(a,b,c) + L3D(b,c,a) + L3D(c,a,b)&
-                                                - L3D(a,c,b) - L3D(b,a,c) - L3D(c,b,a)
+                                                !temp2 = L3D(a,b,c) + L3D(b,c,a) + L3D(c,a,b)&
+                                                !- L3D(a,c,b) - L3D(b,a,c) - L3D(c,b,a)
 
                                                 temp3 =&
                                                 t1b(c,k)*vC_oovv(i,j,a,b)&
@@ -895,7 +895,7 @@ module ccsdpt_loops
                                                 +fB_ov(j,a)*t2c(c,b,i,k)&
                                                 +fB_ov(j,b)*t2c(a,c,i,k)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
 
                                                 D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                 - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
@@ -964,13 +964,13 @@ module ccsdpt_loops
                                    call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_1243(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,X3A,nua2)
                                    !!!!! L3A -> (T3[2])^+ !!!!!
                                    ! Diagram 1: A(i/jk)A(c/ab) H2A_vovv(e,i,b,a)*l2a(e,c,j,k)
-                                   call dgemm('n','n',nua2,nua,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2a(:,:,j,k),nua,1.0d0,L3A,nua2)
-                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2a(:,:,i,k),nua,1.0d0,L3A,nua2)
-                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2a(:,:,j,k),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2a(:,:,i,k),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,L3A,nua2)
                                    ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
-                                   call dgemm('n','t',nua,nua2,noa,-0.5d0,vA_ooov_4312(:,:,j,i),nua,t2a(:,:,:,k),nua2,1.0d0,L3A,nua)
-                                   call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,k,i),nua,t2a(:,:,:,j),nua2,1.0d0,L3A,nua)
-                                   call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,j,k),nua,t2a(:,:,:,i),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,-0.5d0,vA_ooov_4312(:,:,j,i),nua,t2a(:,:,:,k),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,k,i),nua,t2a(:,:,:,j),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,j,k),nua,t2a(:,:,:,i),nua2,1.0d0,L3A,nua)
 
                                     do a = 1, nua
                                         do b = a+1, nua
@@ -981,8 +981,8 @@ module ccsdpt_loops
                                                 temp1 = X3A(a,b,c) + X3A(b,c,a) + X3A(c,a,b)&
                                                 - X3A(a,c,b) - X3A(b,a,c) - X3A(c,b,a)
 
-                                                temp2 = L3A(a,b,c) + L3A(b,c,a) + L3A(c,a,b)&
-                                                - L3A(a,c,b) - L3A(b,a,c) - L3A(c,b,a)
+                                                !temp2 = L3A(a,b,c) + L3A(b,c,a) + L3A(c,a,b)&
+                                                !- L3A(a,c,b) - L3A(b,a,c) - L3A(c,b,a)
 
                                                 temp3 =&
                                                 t1a(c,k)*vA_oovv(i,j,a,b)&
@@ -1004,7 +1004,7 @@ module ccsdpt_loops
                                                 +fA_ov(j,a)*t2a(c,b,i,k)&
                                                 +fA_ov(j,b)*t2a(a,c,i,k)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
                                                 if (abs(LM) == 0.0d0) cycle
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
@@ -1111,21 +1111,21 @@ module ccsdpt_loops
                                     call dgemm('n','t',nua,nuanub,noa,-1.0d0,I2A_vooo(:,:,i,j),nua,t2b(:,:,:,k),nuanub,1.0d0,X3B,nua)
                                     !!!!! L3B -> (T3[2])^+ !!!!!
                                     ! Diagram 1: A(ab) H2B(ekbc)*l2a(aeij)
-                                    call dgemm('n','n',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,vB_vovv_1342(:,:,:,k),nua,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,vB_vovv_1342(:,:,:,k),nua,1.0d0,L3B,nua)
                                     ! Diagram 2: A(ij) H2A(eiba)*l2b(ecjk)
-                                    call dgemm('n','n',nua2,nub,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2b(:,:,j,k),nua,1.0d0,L3B,nua2)
-                                    call dgemm('n','n',nua2,nub,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2b(:,:,i,k),nua,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2b(:,:,j,k),nua,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2b(:,:,i,k),nua,1.0d0,L3B,nua2)
                                     ! Diagram 3: A(ij)A(ab) H2B(ieac)*l2b(bejk) -> l2b(aeik)*H2B(jebc)
-                                    call dgemm('n','n',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,vB_ovvv_2341(:,:,:,j),nub,1.0d0,L3B,nua)
-                                    call dgemm('n','n',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,vB_ovvv_2341(:,:,:,i),nub,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,vB_ovvv_2341(:,:,:,j),nub,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,vB_ovvv_2341(:,:,:,i),nub,1.0d0,L3B,nua)
                                     ! Diagram 4: -A(ij) H2B(jkmc)*l2a(abim) -> +A(ij) H2B(jkmc)*l2a(abmi)
-                                    call dgemm('n','n',nua2,nub,noa,0.5d0,t2a(:,:,:,i),nua2,vB_ooov_3412(:,:,j,k),noa,1.0d0,L3B,nua2)
-                                    call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a(:,:,:,j),nua2,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,noa,0.5d0,t2a(:,:,:,i),nua2,vB_ooov_3412(:,:,j,k),noa,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a(:,:,:,j),nua2,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3B,nua2)
                                     ! Diagram 5: -A(ab) H2A(jima)*l2b(bcmk)
-                                    call dgemm('n','t',nua,nuanub,noa,-1.0d0,vA_ooov_4312(:,:,j,i),nua,t2b(:,:,:,k),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,noa,-1.0d0,vA_ooov_4312(:,:,j,i),nua,t2b(:,:,:,k),nuanub,1.0d0,L3B,nua)
                                     ! Diagram 6: -A(ij)A(ab) H2B(ikam)*l2b(bcjm)
-                                    call dgemm('n','t',nua,nuanub,nob,-1.0d0,vB_oovo_3412(:,:,i,k),nua,t2b_1243(:,:,:,j),nuanub,1.0d0,L3B,nua)
-                                    call dgemm('n','t',nua,nuanub,nob,1.0d0,vB_oovo_3412(:,:,j,k),nua,t2b_1243(:,:,:,i),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,nob,-1.0d0,vB_oovo_3412(:,:,i,k),nua,t2b_1243(:,:,:,j),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,nob,1.0d0,vB_oovo_3412(:,:,j,k),nua,t2b_1243(:,:,:,i),nuanub,1.0d0,L3B,nua)
 
                                     do a = 1, nua
                                         do b = a+1, nua
@@ -1134,7 +1134,7 @@ module ccsdpt_loops
                                                 if (pspace(a,b,c,i,j,k)) cycle
 
                                                 temp1 = X3B(a,b,c) - X3B(b,a,c)
-                                                temp2 = L3B(a,b,c) - L3B(b,a,c)
+                                                !temp2 = L3B(a,b,c) - L3B(b,a,c)
                                                 temp3 = t1a(a,i)*vB_oovv(j,k,b,c)&
                                                        -t1a(a,j)*vB_oovv(i,k,b,c)&
                                                        -t1a(b,i)*vB_oovv(j,k,a,c)&
@@ -1146,7 +1146,7 @@ module ccsdpt_loops
                                                        +t2b(a,c,i,k)*fA_ov(j,b)&
                                                        +t2a(a,b,i,j)*fB_ov(k,c)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
                                                 if (abs(LM) == 0.0d0) cycle
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
@@ -1257,21 +1257,21 @@ module ccsdpt_loops
 
                                     !!!!! L3C -> (T3[2])^+ !!!!!
                                     ! Diagram 1: A(bc) H2B_ovvv(i,e,a,b)*l2c(e,c,j,k)
-                                    call dgemm('n','n',nuanub,nub,nub,1.0d0,vB_ovvv_3421(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nub,1.0d0,vB_ovvv_3421(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,L3C,nuanub)
                                     ! Diagram 2: A(jk) H2C_vovv(e,k,b,c)*l2b(a,e,i,j)
-                                    call dgemm('n','n',nua,nub2,nub,0.5d0,t2b(:,:,i,j),nua,vC_vovv_1342(:,:,:,k),nub,1.0d0,L3C,nua)
-                                    call dgemm('n','n',nua,nub2,nub,-0.5d0,t2b(:,:,i,k),nua,vC_vovv_1342(:,:,:,j),nub,1.0d0,L3C,nua)
+                                    !call dgemm('n','n',nua,nub2,nub,0.5d0,t2b(:,:,i,j),nua,vC_vovv_1342(:,:,:,k),nub,1.0d0,L3C,nua)
+                                    !call dgemm('n','n',nua,nub2,nub,-0.5d0,t2b(:,:,i,k),nua,vC_vovv_1342(:,:,:,j),nub,1.0d0,L3C,nua)
                                     ! Diagram 3: A(jk)A(bc) H2B_vovv(e,j,a,b)*l2b(e,c,i,k)
-                                    call dgemm('n','n',nuanub,nub,nua,1.0d0,vB_vovv_3412(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,L3C,nuanub)
-                                    call dgemm('n','n',nuanub,nub,nua,-1.0d0,vB_vovv_3412(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nua,1.0d0,vB_vovv_3412(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nua,-1.0d0,vB_vovv_3412(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,L3C,nuanub)
                                     ! Diagram 4: -A(jk) H2B_oovo(i,j,a,m)*l2c(b,c,m,k)
-                                    call dgemm('n','t',nua,nub2,nob,-0.5d0,vB_oovo_3412(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,L3C,nua)
-                                    call dgemm('n','t',nua,nub2,nob,0.5d0,vB_oovo_3412(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,L3C,nua)
+                                    !call dgemm('n','t',nua,nub2,nob,-0.5d0,vB_oovo_3412(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,L3C,nua)
+                                    !call dgemm('n','t',nua,nub2,nob,0.5d0,vB_oovo_3412(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,L3C,nua)
                                     ! Diagram 5: -A(bc) H2C_ooov(j,k,m,c)*l2b(a,b,i,m)
-                                    call dgemm('n','n',nuanub,nub,nob,-1.0d0,t2b_1243(:,:,:,i),nuanub,vC_ooov_3412(:,:,j,k),nob,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nob,-1.0d0,t2b_1243(:,:,:,i),nuanub,vC_ooov_3412(:,:,j,k),nob,1.0d0,L3C,nuanub)
                                     ! Diagram 6: -A(jk)A(bc) H2B_ooov(i,j,m,b)*l2b(a,c,m,k) -> -A(jk)A(bc) H2B_ooov(i,k,m,c)*l2b(a,b,m,j)
-                                    call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
-                                    call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,vB_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,vB_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
 
                                     do a = 1, nua
                                         do b = 1, nub
@@ -1280,7 +1280,7 @@ module ccsdpt_loops
                                                 if (pspace(a,b,c,i,j,k)) cycle
 
                                                 temp1 = X3C(a,b,c) - X3C(a,c,b)
-                                                temp2 = L3C(a,b,c) - L3C(a,c,b)
+                                                !temp2 = L3C(a,b,c) - L3C(a,c,b)
                                                 temp3 = t1b(c,k)*vB_oovv(i,j,a,b)&
                                                         -t1b(b,k)*vB_oovv(i,j,a,c)&
                                                         -t1b(c,j)*vB_oovv(i,k,a,b)&
@@ -1292,7 +1292,7 @@ module ccsdpt_loops
                                                         +fB_ov(j,b)*t2b(a,c,i,k)&
                                                         +fA_ov(i,a)*t2c(b,c,j,k)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
                                                 if (abs(LM) == 0.0d0) cycle
 
                                                 D = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
@@ -1364,13 +1364,13 @@ module ccsdpt_loops
                                    call dgemm('n','n',nub2,nub,nub,-0.5d0,I2C_vvov_1243(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,X3D,nub2)
                                    !!!!! L3A -? (T3[2])^+ !!!!!
                                    ! Diagram 1: A(i/jk)A(c/ab) H2C_vovv(e,i,b,a)*l2c(e,c,j,k)
-                                   call dgemm('n','n',nub2,nub,nub,0.5d0,vC_vovv_4312(:,:,:,i),nub2,t2c(:,:,j,k),nub,1.0d0,L3D,nub2)
-                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,j),nub2,t2c(:,:,i,k),nub,1.0d0,L3D,nub2)
-                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,0.5d0,vC_vovv_4312(:,:,:,i),nub2,t2c(:,:,j,k),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,j),nub2,t2c(:,:,i,k),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,L3D,nub2)
                                    ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
-                                   call dgemm('n','t',nub,nub2,nob,-0.5d0,vC_ooov_4312(:,:,j,i),nub,t2c(:,:,:,k),nub2,1.0d0,L3D,nub)
-                                   call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,k,i),nub,t2c(:,:,:,j),nub2,1.0d0,L3D,nub)
-                                   call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,j,k),nub,t2c(:,:,:,i),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,-0.5d0,vC_ooov_4312(:,:,j,i),nub,t2c(:,:,:,k),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,k,i),nub,t2c(:,:,:,j),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,j,k),nub,t2c(:,:,:,i),nub2,1.0d0,L3D,nub)
 
                                     do a = 1, nub
                                         do b = a+1, nub
@@ -1381,8 +1381,8 @@ module ccsdpt_loops
                                                 temp1 = X3D(a,b,c) + X3D(b,c,a) + X3D(c,a,b)&
                                                 - X3D(a,c,b) - X3D(b,a,c) - X3D(c,b,a)
 
-                                                temp2 = L3D(a,b,c) + L3D(b,c,a) + L3D(c,a,b)&
-                                                - L3D(a,c,b) - L3D(b,a,c) - L3D(c,b,a)
+                                                !temp2 = L3D(a,b,c) + L3D(b,c,a) + L3D(c,a,b)&
+                                                !- L3D(a,c,b) - L3D(b,a,c) - L3D(c,b,a)
 
                                                 temp3 =&
                                                 t1b(c,k)*vC_oovv(i,j,a,b)&
@@ -1404,7 +1404,7 @@ module ccsdpt_loops
                                                 +fB_ov(j,a)*t2c(c,b,i,k)&
                                                 +fB_ov(j,b)*t2c(a,c,i,k)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
                                                 if (abs(LM) == 0.0d0) cycle
 
                                                 D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
@@ -1474,13 +1474,13 @@ module ccsdpt_loops
                                    call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_1243(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,X3A,nua2)
                                    !!!!! L3A -> (T3[2])^+ !!!!!
                                    ! Diagram 1: A(i/jk)A(c/ab) H2A_vovv(e,i,b,a)*l2a(e,c,j,k)
-                                   call dgemm('n','n',nua2,nua,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2a(:,:,j,k),nua,1.0d0,L3A,nua2)
-                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2a(:,:,i,k),nua,1.0d0,L3A,nua2)
-                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2a(:,:,j,k),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2a(:,:,i,k),nua,1.0d0,L3A,nua2)
+                                   !call dgemm('n','n',nua2,nua,nua,-0.5d0,vA_vovv_4312(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,L3A,nua2)
                                    ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
-                                   call dgemm('n','t',nua,nua2,noa,-0.5d0,vA_ooov_4312(:,:,j,i),nua,t2a(:,:,:,k),nua2,1.0d0,L3A,nua)
-                                   call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,k,i),nua,t2a(:,:,:,j),nua2,1.0d0,L3A,nua)
-                                   call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,j,k),nua,t2a(:,:,:,i),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,-0.5d0,vA_ooov_4312(:,:,j,i),nua,t2a(:,:,:,k),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,k,i),nua,t2a(:,:,:,j),nua2,1.0d0,L3A,nua)
+                                   !call dgemm('n','t',nua,nua2,noa,0.5d0,vA_ooov_4312(:,:,j,k),nua,t2a(:,:,:,i),nua2,1.0d0,L3A,nua)
 
                                     do a = 1, nua
                                         do b = a+1, nua
@@ -1491,8 +1491,8 @@ module ccsdpt_loops
                                                 temp1 = X3A(a,b,c) + X3A(b,c,a) + X3A(c,a,b)&
                                                 - X3A(a,c,b) - X3A(b,a,c) - X3A(c,b,a)
 
-                                                temp2 = L3A(a,b,c) + L3A(b,c,a) + L3A(c,a,b)&
-                                                - L3A(a,c,b) - L3A(b,a,c) - L3A(c,b,a)
+                                                !temp2 = L3A(a,b,c) + L3A(b,c,a) + L3A(c,a,b)&
+                                                !- L3A(a,c,b) - L3A(b,a,c) - L3A(c,b,a)
 
                                                 temp3 =&
                                                 t1a(c,k)*vA_oovv(i,j,a,b)&
@@ -1514,7 +1514,7 @@ module ccsdpt_loops
                                                 +fA_ov(j,a)*t2a(c,b,i,k)&
                                                 +fA_ov(j,b)*t2a(a,c,i,k)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
@@ -1611,21 +1611,21 @@ module ccsdpt_loops
                                     call dgemm('n','t',nua,nuanub,noa,-1.0d0,I2A_vooo(:,:,i,j),nua,t2b(:,:,:,k),nuanub,1.0d0,X3B,nua)
                                     !!!!! L3B -> (T3[2])^+ !!!!!
                                     ! Diagram 1: A(ab) H2B(ekbc)*l2a(aeij)
-                                    call dgemm('n','n',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,vB_vovv_1342(:,:,:,k),nua,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,vB_vovv_1342(:,:,:,k),nua,1.0d0,L3B,nua)
                                     ! Diagram 2: A(ij) H2A(eiba)*l2b(ecjk)
-                                    call dgemm('n','n',nua2,nub,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2b(:,:,j,k),nua,1.0d0,L3B,nua2)
-                                    call dgemm('n','n',nua2,nub,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2b(:,:,i,k),nua,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,nua,0.5d0,vA_vovv_4312(:,:,:,i),nua2,t2b(:,:,j,k),nua,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,nua,-0.5d0,vA_vovv_4312(:,:,:,j),nua2,t2b(:,:,i,k),nua,1.0d0,L3B,nua2)
                                     ! Diagram 3: A(ij)A(ab) H2B(ieac)*l2b(bejk) -> l2b(aeik)*H2B(jebc)
-                                    call dgemm('n','n',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,vB_ovvv_2341(:,:,:,j),nub,1.0d0,L3B,nua)
-                                    call dgemm('n','n',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,vB_ovvv_2341(:,:,:,i),nub,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,vB_ovvv_2341(:,:,:,j),nub,1.0d0,L3B,nua)
+                                    !call dgemm('n','n',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,vB_ovvv_2341(:,:,:,i),nub,1.0d0,L3B,nua)
                                     ! Diagram 4: -A(ij) H2B(jkmc)*l2a(abim) -> +A(ij) H2B(jkmc)*l2a(abmi)
-                                    call dgemm('n','n',nua2,nub,noa,0.5d0,t2a(:,:,:,i),nua2,vB_ooov_3412(:,:,j,k),noa,1.0d0,L3B,nua2)
-                                    call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a(:,:,:,j),nua2,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,noa,0.5d0,t2a(:,:,:,i),nua2,vB_ooov_3412(:,:,j,k),noa,1.0d0,L3B,nua2)
+                                    !call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a(:,:,:,j),nua2,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3B,nua2)
                                     ! Diagram 5: -A(ab) H2A(jima)*l2b(bcmk)
-                                    call dgemm('n','t',nua,nuanub,noa,-1.0d0,vA_ooov_4312(:,:,j,i),nua,t2b(:,:,:,k),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,noa,-1.0d0,vA_ooov_4312(:,:,j,i),nua,t2b(:,:,:,k),nuanub,1.0d0,L3B,nua)
                                     ! Diagram 6: -A(ij)A(ab) H2B(ikam)*l2b(bcjm)
-                                    call dgemm('n','t',nua,nuanub,nob,-1.0d0,vB_oovo_3412(:,:,i,k),nua,t2b_1243(:,:,:,j),nuanub,1.0d0,L3B,nua)
-                                    call dgemm('n','t',nua,nuanub,nob,1.0d0,vB_oovo_3412(:,:,j,k),nua,t2b_1243(:,:,:,i),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,nob,-1.0d0,vB_oovo_3412(:,:,i,k),nua,t2b_1243(:,:,:,j),nuanub,1.0d0,L3B,nua)
+                                    !call dgemm('n','t',nua,nuanub,nob,1.0d0,vB_oovo_3412(:,:,j,k),nua,t2b_1243(:,:,:,i),nuanub,1.0d0,L3B,nua)
 
                                     do a = 1, nua
                                         do b = a+1, nua
@@ -1634,7 +1634,7 @@ module ccsdpt_loops
                                                 if (pspace(a,b,c,i,j,k)) cycle
 
                                                 temp1 = X3B(a,b,c) - X3B(b,a,c)
-                                                temp2 = L3B(a,b,c) - L3B(b,a,c)
+                                                !temp2 = L3B(a,b,c) - L3B(b,a,c)
                                                 temp3 = t1a(a,i)*vB_oovv(j,k,b,c)&
                                                        -t1a(a,j)*vB_oovv(i,k,b,c)&
                                                        -t1a(b,i)*vB_oovv(j,k,a,c)&
@@ -1646,7 +1646,7 @@ module ccsdpt_loops
                                                        +t2b(a,c,i,k)*fA_ov(j,b)&
                                                        +t2a(a,b,i,j)*fB_ov(k,c)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
@@ -1749,21 +1749,21 @@ module ccsdpt_loops
 
                                     !!!!! L3C -> (T3[2])^+ !!!!!
                                     ! Diagram 1: A(bc) H2B_ovvv(i,e,a,b)*l2c(e,c,j,k)
-                                    call dgemm('n','n',nuanub,nub,nub,1.0d0,vB_ovvv_3421(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nub,1.0d0,vB_ovvv_3421(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,L3C,nuanub)
                                     ! Diagram 2: A(jk) H2C_vovv(e,k,b,c)*l2b(a,e,i,j)
-                                    call dgemm('n','n',nua,nub2,nub,0.5d0,t2b(:,:,i,j),nua,vC_vovv_1342(:,:,:,k),nub,1.0d0,L3C,nua)
-                                    call dgemm('n','n',nua,nub2,nub,-0.5d0,t2b(:,:,i,k),nua,vC_vovv_1342(:,:,:,j),nub,1.0d0,L3C,nua)
+                                    !call dgemm('n','n',nua,nub2,nub,0.5d0,t2b(:,:,i,j),nua,vC_vovv_1342(:,:,:,k),nub,1.0d0,L3C,nua)
+                                    !call dgemm('n','n',nua,nub2,nub,-0.5d0,t2b(:,:,i,k),nua,vC_vovv_1342(:,:,:,j),nub,1.0d0,L3C,nua)
                                     ! Diagram 3: A(jk)A(bc) H2B_vovv(e,j,a,b)*l2b(e,c,i,k)
-                                    call dgemm('n','n',nuanub,nub,nua,1.0d0,vB_vovv_3412(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,L3C,nuanub)
-                                    call dgemm('n','n',nuanub,nub,nua,-1.0d0,vB_vovv_3412(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nua,1.0d0,vB_vovv_3412(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nua,-1.0d0,vB_vovv_3412(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,L3C,nuanub)
                                     ! Diagram 4: -A(jk) H2B_oovo(i,j,a,m)*l2c(b,c,m,k)
-                                    call dgemm('n','t',nua,nub2,nob,-0.5d0,vB_oovo_3412(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,L3C,nua)
-                                    call dgemm('n','t',nua,nub2,nob,0.5d0,vB_oovo_3412(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,L3C,nua)
+                                    !call dgemm('n','t',nua,nub2,nob,-0.5d0,vB_oovo_3412(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,L3C,nua)
+                                    !call dgemm('n','t',nua,nub2,nob,0.5d0,vB_oovo_3412(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,L3C,nua)
                                     ! Diagram 5: -A(bc) H2C_ooov(j,k,m,c)*l2b(a,b,i,m)
-                                    call dgemm('n','n',nuanub,nub,nob,-1.0d0,t2b_1243(:,:,:,i),nuanub,vC_ooov_3412(:,:,j,k),nob,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,nob,-1.0d0,t2b_1243(:,:,:,i),nuanub,vC_ooov_3412(:,:,j,k),nob,1.0d0,L3C,nuanub)
                                     ! Diagram 6: -A(jk)A(bc) H2B_ooov(i,j,m,b)*l2b(a,c,m,k) -> -A(jk)A(bc) H2B_ooov(i,k,m,c)*l2b(a,b,m,j)
-                                    call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
-                                    call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,vB_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,vB_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
+                                    !call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,vB_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
 
                                     do a = 1, nua
                                         do b = 1, nub
@@ -1772,7 +1772,7 @@ module ccsdpt_loops
                                                 if (pspace(a,b,c,i,j,k)) cycle
 
                                                 temp1 = X3C(a,b,c) - X3C(a,c,b)
-                                                temp2 = L3C(a,b,c) - L3C(a,c,b)
+                                                !temp2 = L3C(a,b,c) - L3C(a,c,b)
                                                 temp3 = t1b(c,k)*vB_oovv(i,j,a,b)&
                                                         -t1b(b,k)*vB_oovv(i,j,a,c)&
                                                         -t1b(c,j)*vB_oovv(i,k,a,b)&
@@ -1784,7 +1784,7 @@ module ccsdpt_loops
                                                         +fB_ov(j,b)*t2b(a,c,i,k)&
                                                         +fA_ov(i,a)*t2c(b,c,j,k)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
 
                                                 D = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                 - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
@@ -1847,13 +1847,13 @@ module ccsdpt_loops
                                    call dgemm('n','n',nub2,nub,nub,-0.5d0,I2C_vvov_1243(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,X3D,nub2)
                                    !!!!! L3A -? (T3[2])^+ !!!!!
                                    ! Diagram 1: A(i/jk)A(c/ab) H2C_vovv(e,i,b,a)*l2c(e,c,j,k)
-                                   call dgemm('n','n',nub2,nub,nub,0.5d0,vC_vovv_4312(:,:,:,i),nub2,t2c(:,:,j,k),nub,1.0d0,L3D,nub2)
-                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,j),nub2,t2c(:,:,i,k),nub,1.0d0,L3D,nub2)
-                                   call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,0.5d0,vC_vovv_4312(:,:,:,i),nub2,t2c(:,:,j,k),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,j),nub2,t2c(:,:,i,k),nub,1.0d0,L3D,nub2)
+                                   !call dgemm('n','n',nub2,nub,nub,-0.5d0,vC_vovv_4312(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,L3D,nub2)
                                    ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
-                                   call dgemm('n','t',nub,nub2,nob,-0.5d0,vC_ooov_4312(:,:,j,i),nub,t2c(:,:,:,k),nub2,1.0d0,L3D,nub)
-                                   call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,k,i),nub,t2c(:,:,:,j),nub2,1.0d0,L3D,nub)
-                                   call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,j,k),nub,t2c(:,:,:,i),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,-0.5d0,vC_ooov_4312(:,:,j,i),nub,t2c(:,:,:,k),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,k,i),nub,t2c(:,:,:,j),nub2,1.0d0,L3D,nub)
+                                   !call dgemm('n','t',nub,nub2,nob,0.5d0,vC_ooov_4312(:,:,j,k),nub,t2c(:,:,:,i),nub2,1.0d0,L3D,nub)
 
                                     do a = 1, nub
                                         do b = a+1, nub
@@ -1864,8 +1864,8 @@ module ccsdpt_loops
                                                 temp1 = X3D(a,b,c) + X3D(b,c,a) + X3D(c,a,b)&
                                                 - X3D(a,c,b) - X3D(b,a,c) - X3D(c,b,a)
 
-                                                temp2 = L3D(a,b,c) + L3D(b,c,a) + L3D(c,a,b)&
-                                                - L3D(a,c,b) - L3D(b,a,c) - L3D(c,b,a)
+                                                !temp2 = L3D(a,b,c) + L3D(b,c,a) + L3D(c,a,b)&
+                                                !- L3D(a,c,b) - L3D(b,a,c) - L3D(c,b,a)
 
                                                 temp3 =&
                                                 t1b(c,k)*vC_oovv(i,j,a,b)&
@@ -1887,7 +1887,7 @@ module ccsdpt_loops
                                                 +fB_ov(j,a)*t2c(c,b,i,k)&
                                                 +fB_ov(j,b)*t2c(a,c,i,k)
 
-                                                LM = temp1*(temp2+temp3)
+                                                LM = temp1*(temp1+temp3)
 
                                                 D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                 - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
