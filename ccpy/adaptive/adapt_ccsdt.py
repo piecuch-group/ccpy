@@ -9,16 +9,14 @@ from ccpy.hbar.hbar_ccsd import build_hbar_ccsd
 from ccpy.moments.ccp3 import calc_ccp3, calc_ccp3_with_selection, calc_ccp3_with_moments, calc_ccpert3, calc_ccpert3_with_selection, calc_ccpert3_with_moments
 from ccpy.utilities.pspace import adaptive_triples_selection_from_moments
 
-def adapt_ccsdt(calculation, system, hamiltonian, T=None, pert_corr=False, on_the_fly=True, relaxed=True):
+def adapt_ccsdt(calculation, system, hamiltonian, T=None, pert_corr=False, on_the_fly=True, pspace_analyze=True):
 
-    if relaxed:
-        T, ccp_energy, ccpq_energy = adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly, T=None)
-
+    T, ccp_energy, ccpq_energy = adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly, pspace_analyze, T=None)
 
     return T, ccp_energy, ccpq_energy
 
 #[TODO]: Generalize this function to at least handling singles through quadruples, not just triples
-def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly, p_space_analyze=True, T=None):
+def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly, pspace_analyze, T=None):
     """Performs the adaptive CC(P;Q) calculation specified by the user in the input."""
 
     # check if requested CC(P) calculation is implemented in modules
@@ -84,7 +82,7 @@ def adapt_ccsdt_relaxed(calculation, system, hamiltonian, pert_corr, on_the_fly,
         print("   ===========================================================================================\n")
 
         # Count the excitations in the current P space
-        if p_space_analyze:
+        if pspace_analyze:
             t1 = time.time()
             excitation_count = count_excitations_in_pspace_with_symmetry(pspace, system)
             for ind, excitation_count_irrep in enumerate(excitation_count):
