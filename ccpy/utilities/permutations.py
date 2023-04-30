@@ -1,5 +1,4 @@
 
-
 def calculate_permutation_parity(lst):
     """Given a permutation of the digits 0..N in order as a list,
     returns its parity (or sign): +1 for even parity; -1 for odd."""
@@ -41,26 +40,3 @@ def do_lineup_permutation(f1, f2):
     p2 = idx_common_2 + idx_different_2
 
     return [f1[i] for i in p1], [f2[i] for i in p2], calculate_permutation_parity(p1), calculate_permutation_parity(p2)
-
-
-
-
-
-
-if __name__ == "__main__":
-
-    f1 = [1, 2, 3, 4, 6, 8, 11]
-    f2 = [3, 4, 5, 6, 7]
-
-    print('Oritinal')
-    print('List 1 = ', f1)
-    print('List 2 = ', f2)
-
-    f1, f2, perm1, perm2 = do_lineup_permutation(f1, f2)
-
-    print('List 1 = ', f1, 'phase = ', perm1)
-    print('List 2 = ', f2, 'phase = ', perm2)
-
-
-
-

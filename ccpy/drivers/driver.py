@@ -54,6 +54,7 @@ class Driver:
         self.T = None
         self.L = [None] * max_number_states
         self.R = [None] * max_number_states
+        self.rdm1 = [[None] * max_number_states] * max_number_states
         self.correlation_energy = 0.0
         self.vertical_excitation_energy = np.zeros(max_number_states)
         self.r0 = np.zeros(max_number_states)
@@ -460,6 +461,13 @@ class Driver:
                 _, self.delta_pq[0] = calc_ccp3_full(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
         else:
             raise NotImplementedError("Triples correction {} not implemented".format(method.lower()))
+
+    def run_rdm1(self, state_index=[0]):
+        from ccpy.density.rdm1 import calc_rdm1
+        for istate in state_index:
+            for jstate in state_index:
+                self.rdm1[istate][jstate] = calc_rdm1(self.T, self.L[istate], self.system)
+
 
 #class AdaptDriver:
 
