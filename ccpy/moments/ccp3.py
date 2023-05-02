@@ -383,7 +383,7 @@ def calc_ccp3_with_moments(T, L, H, H0, system, pspace, use_RHF=False):
 
     return Eccp3, deltap3, moments
 
-def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False):
+def calc_ccp3_with_selection(T, L, corr_energy, H, H0, system, pspace, num_add, use_RHF=False):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
@@ -407,7 +407,7 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
     dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list = ccp3_loops.ccp3_loops.crcc23a_p_with_selection(
         moments,
         triples_list,
-        pspace[0]['aaa'],
+        pspace['aaa'],
         T.aa, L.a, L.aa,
         H.aa.vooo, I2A_vvov, H0.aa.oovv, H.a.ov,
         H.aa.vovv, H.aa.ooov, H0.a.oo, H0.a.vv,
@@ -425,7 +425,7 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
     dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list = ccp3_loops.ccp3_loops.crcc23b_p_with_selection(
         moments,
         triples_list,
-        pspace[0]['aab'],
+        pspace['aab'],
         T.aa, T.ab, L.a, L.b, L.aa, L.ab,
         I2B_ovoo, I2B_vooo, I2A_vooo,
         H.ab.vvvo, H.ab.vvov, H.aa.vvov,
@@ -454,7 +454,7 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
         dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list = ccp3_loops.ccp3_loops.crcc23c_p_with_selection(
             moments,
             triples_list,
-            pspace[0]['abb'],
+            pspace['abb'],
             T.ab, T.bb, L.a, L.b, L.ab, L.bb,
             I2B_vooo, I2C_vooo, I2B_ovoo,
             H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
@@ -476,7 +476,7 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
         dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list = ccp3_loops.ccp3_loops.crcc23d_p_with_selection(
             moments,
             triples_list,
-            pspace[0]['bbb'],
+            pspace['bbb'],
             T.bb, L.b, L.bb,
             H.bb.vooo, I2C_vvov, H0.bb.oovv, H.b.ov,
             H.bb.vovv, H.bb.ooov, H0.b.oo, H0.b.vv,
@@ -495,12 +495,10 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results
-    cc_energy = get_cc_energy(T, H0)
-
-    energy_A = cc_energy + correction_A
-    energy_B = cc_energy + correction_B
-    energy_C = cc_energy + correction_C
-    energy_D = cc_energy + correction_D
+    energy_A = corr_energy + correction_A
+    energy_B = corr_energy + correction_B
+    energy_C = corr_energy + correction_C
+    energy_D = corr_energy + correction_D
 
     total_energy_A = system.reference_energy + energy_A
     total_energy_B = system.reference_energy + energy_B
@@ -510,7 +508,7 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
     print('   CC(P;3) Calculation Summary')
     print('   -------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
-    print("   CC(P) = {:>10.10f}".format(system.reference_energy + cc_energy))
+    print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CC(P;3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A
@@ -541,7 +539,7 @@ def calc_ccp3_with_selection(T, L, H, H0, system, pspace, num_add, use_RHF=False
     deltap3 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
 
 
-    return Eccp3, deltap3, moments, triples_list
+    return Eccp3["D"], triples_list
 
 def calc_ccpert3_with_selection(T, H, system, pspace, num_add, use_RHF=False):
     """

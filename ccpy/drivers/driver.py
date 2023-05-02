@@ -2,6 +2,8 @@
 import numpy as np
 from importlib import import_module
 from functools import partial
+from copy import deepcopy
+import time
 
 import ccpy.cc
 import ccpy.hbar
@@ -468,6 +470,117 @@ class Driver:
             for jstate in state_index:
                 self.rdm1[istate][jstate] = calc_rdm1(self.T, self.L[istate], self.system)
 
+
+class AdaptDriver:
+    def __init__(self, driver, percentage, correction_method="crcc23", do_pspace_analysis=True):
+        t1 = time.time()
+        from ccpy.utilities.pspace import get_empty_pspace
+        self.driver = driver
+        self.percentage = percentage
+        self.correction_method = correction_method
+        self.do_pspace_analysis = do_pspace_analysis
+
+        self.nmacro = len(self.percentage)
+        self.ccp_energy = np.zeros(self.nmacro)
+        self.ccpq_energy = np.zeros(self.nmacro)
+        self.pspace = get_empty_pspace(self.driver.system, 3, use_bool=True)
+        self.t3_excitations = {"aaa" : np.ones((1, 6)),
+                               "aab" : np.ones((1, 6)),
+                               "abb" : np.ones((1, 6)),
+                               "bbb" : np.ones((1, 6))}
+
+        # Save the bare Hamiltonian for later iterations
+        self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
+        print("took", time.time() - t1, "seconds")
+
+    def excitation_count(self):
+        """This will perform an initial symmetry-adapted count of the triples excitation
+           space to determine the total number of triples and the relevant incremental
+           additions used throughout the calculation."""
+        from ccpy.utilities.symmetry import count_triples
+        # Count the triples using symmetry
+        self.num_excitations_symmetry, _ = count_triples(self.driver.system)
+        self.num_total_excitations = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]]
+        self.one_increment = int(0.01 * self.num_total_excitations)
+        # Setting up the number of added determinants in each iteration
+        self.num_dets_to_add = np.zeros(len(self.percentage))
+        for i in range(len(self.percentage) - 1):
+            if self.percentage[i + 1] == 100.0:
+                self.num_dets_to_add[i] = self.num_total_excitations - self.one_increment * self.percentage[i]
+            else:
+                self.num_dets_to_add[i] = self.one_increment * (self.percentage[i + 1] - self.percentage[i])
+        self.num_dets_to_add[-1] = 1
+        # Adjust for RHF symmetry
+        if self.driver.options["RHF_symmetry"]:
+            for i in range(len(self.percentage) - 1):
+                self.num_dets_to_add[i] = int(self.num_dets_to_add[i] / 2)
+
+    def analyze_pspace(self):
+        """This will count and analyze the P space in terms of spatial and Sz-spin symmetry."""
+        from ccpy.utilities.pspace import count_excitations_in_pspace
+        # Count the excitations in the current P space
+        excitation_count = count_excitations_in_pspace(self.pspace, self.driver.system)
+
+    def run_ccp(self, imacro):
+        """This will run CC(P), and if needed, HBar and left-CC calculations."""
+        self.driver.run_cc(method="ccsdt_p", t3_excitations=self.t3_excitations)
+        if self.correction_method == "crcc23":
+            self.driver.run_hbar(method="ccsd")
+            self.driver.run_leftcc(method="left_ccsd")
+        self.ccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy
+
+    def run_ccp3(self, imacro):
+        """This will run the CC(P;3) correction using either the CR-CC(2,3)- or CCSD(T)-like
+           approach, and in tandem, select the leading triply excited determinants and return
+           the result in an array. For the last calculation, this should not perform the
+           selection steps."""
+        from ccpy.moments.ccp3 import calc_ccp3_with_selection
+        if imacro < self.nmacro - 1:
+            self.ccpq_energy[imacro], triples_list = calc_ccp3_with_selection(self.driver.T, 
+                                                                              self.driver.L[0],
+                                                                              self.driver.correlation_energy,
+                                                                              self.driver.hamiltonian, 
+                                                                              self.bare_hamiltonian, 
+                                                                              self.driver.system, 
+                                                                              self.pspace, 
+                                                                              self.num_dets_to_add[imacro], 
+                                                                              use_RHF=self.driver.options["RHF_symmetry"]
+                                                    )
+        else:
+            triples_list = []
+            self.driver.run_ccp3(method="ccp3", state_index=[0], two_body_approx=True, pspace=self.pspace)
+            self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltapq[0]["D"]
+
+        return triples_list
+
+    def run_expand_pspace(self, list_of_added_triples):
+        """This will expand the P space using the list of triply excited determinants identified
+           using the CC(P;Q) moment expansions, above."""
+        from ccpy.utilities.pspace import add_spinorbital_triples_to_pspace
+        self.pspace, self.t3_excitations = add_spinorbital_triples_to_pspace(list_of_added_triples, self.pspace, self.t3_excitations, self.driver.options["RHF_symmetry"])
+
+    def run(self):
+        """This is the main driver for the entire adaptive CC(P;Q) calculation. It will call the above
+           methods in the correct sequence and handle logic accordingly."""
+
+        # Perform the preliminary excitation counting
+        self.excitation_count()
+        for imacro in range(self.nmacro):
+            # Step 1: Analyze the P space (optional)
+            if self.do_pspace_analysis:
+                self.analyze_pspace()
+            # Step 2: Run CC(P) on this P space
+            self.run_ccp(imacro)
+            # Step 3: Moment correction + adaptive selection
+            list_of_added_triples = self.run_ccp3(imacro)
+            if imacro == self.nmacro - 1: 
+                break
+            # Step 4: Expand the P space
+            self.run_expand_pspace(list_of_added_triples)
+            # Step 5: Reset variables in driver (CAN WE AVOID DOING THIS PLEASE?)
+            self.driver.T = None
+            self.driver.L[0] = None
+            self.driver.hamiltonian = deepcopy(self.bare_hamiltonian)
 
 #class AdaptDriver:
 

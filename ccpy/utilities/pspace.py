@@ -6,7 +6,7 @@ from ccpy.utilities.determinants import get_excits_from, get_excits_to, get_spin
 def get_empty_pspace(system, nexcit, use_bool=False):
     if nexcit == 3:
         if use_bool:
-            pspace = [{"aaa": np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+            pspace = {"aaa": np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
                                        system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha),
                                       fill_value=False, dtype=bool),
                        "aab": np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
@@ -18,78 +18,23 @@ def get_empty_pspace(system, nexcit, use_bool=False):
                        "bbb": np.full((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
                                        system.noccupied_beta, system.noccupied_beta, system.noccupied_beta),
                                       fill_value=False, dtype=bool)}
-                      ]
+                      
         else:
-            pspace = [{'aaa': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+            pspace = {'aaa': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
                        'aab': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
                        'abb': np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
                                         system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
                        'bbb': np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                        system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}]
-    if nexcit == 4:
-        if use_bool:
-            pspace = [{"aaa": np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                       system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha),
-                                      fill_value=False, dtype=bool),
-                       "aab": np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                       system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta),
-                                      fill_value=False, dtype=bool),
-                       "abb": np.full((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
-                                       system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta),
-                                      fill_value=False, dtype=bool),
-                       "bbb": np.full((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                       system.noccupied_beta, system.noccupied_beta, system.noccupied_beta),
-                                      fill_value=False, dtype=bool)},
-                      {'aaaa': np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                         system.nunoccupied_alpha,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
-                                         system.noccupied_alpha), fill_value=False, dtype=bool),
-                       'aaab': np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
-                                         system.noccupied_beta), fill_value=False, dtype=bool),
-                       'aabb': np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta,
-                                         system.noccupied_beta), fill_value=False, dtype=bool),
-                       'bbbb': np.full((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_beta, system.noccupied_beta, system.noccupied_beta,
-                                         system.noccupied_beta), fill_value=False, dtype=bool)}]
-        else:
-            pspace = [{'aaa': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                        system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
-                       'aab': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                        system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
-                       'abb': np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
-                                        system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
-                       'bbb': np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                        system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))},
-                      {'aaaa': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                         system.nunoccupied_alpha,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
-                                         system.noccupied_alpha)),
-                       'aaab': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
-                                         system.noccupied_beta)),
-                       'aabb': np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta,
-                                         system.noccupied_beta)),
-                       'bbbb': np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_beta, system.noccupied_beta, system.noccupied_beta,
-                                         system.noccupied_beta))}]
+                                        system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}
     return pspace
 
 
 def get_full_pspace(system, nexcit, use_bool=False):
     if nexcit == 3:
         if use_bool:
-            pspace = [{"aaa": np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+            pspace = {"aaa": np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
                                        system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha),
                                       fill_value=True, dtype=bool),
                        "aab": np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
@@ -101,205 +46,18 @@ def get_full_pspace(system, nexcit, use_bool=False):
                        "bbb": np.full((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
                                        system.noccupied_beta, system.noccupied_beta, system.noccupied_beta),
                                       fill_value=True, dtype=bool)}
-                      ]
+                      
         else:
-            pspace = [{'aaa': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
+            pspace = {'aaa': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
                        'aab': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
                        'abb': np.ones((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
                                         system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
                        'bbb': np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                        system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}]
-    if nexcit == 4:
-        if use_bool:
-            pspace = [{"aaa": np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                       system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha),
-                                      fill_value=True, dtype=bool),
-                       "aab": np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                       system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta),
-                                      fill_value=True, dtype=bool),
-                       "abb": np.full((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
-                                       system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta),
-                                      fill_value=True, dtype=bool),
-                       "bbb": np.full((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                       system.noccupied_beta, system.noccupied_beta, system.noccupied_beta),
-                                      fill_value=True, dtype=bool)},
-                      {'aaaa': np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                         system.nunoccupied_alpha,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
-                                         system.noccupied_alpha), fill_value=True, dtype=bool),
-                       'aaab': np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
-                                         system.noccupied_beta), fill_value=True, dtype=bool),
-                       'aabb': np.full((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta,
-                                         system.noccupied_beta), fill_value=True, dtype=bool),
-                       'bbbb': np.full((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_beta, system.noccupied_beta, system.noccupied_beta,
-                                         system.noccupied_beta), fill_value=True, dtype=bool)}]
-        else:
-            pspace = [{'aaa': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                        system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha)),
-                       'aab': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                        system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta)),
-                       'abb': np.ones((system.nunoccupied_alpha, system.nunoccupied_beta, system.nunoccupied_beta,
-                                        system.noccupied_alpha, system.noccupied_beta, system.noccupied_beta)),
-                       'bbb': np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                        system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))},
-                      {'aaaa': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                         system.nunoccupied_alpha,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
-                                         system.noccupied_alpha)),
-                       'aaab': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_alpha,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_alpha,
-                                         system.noccupied_beta)),
-                       'aabb': np.ones((system.nunoccupied_alpha, system.nunoccupied_alpha, system.nunoccupied_beta,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_alpha, system.noccupied_alpha, system.noccupied_beta,
-                                         system.noccupied_beta)),
-                       'bbbb': np.ones((system.nunoccupied_beta, system.nunoccupied_beta, system.nunoccupied_beta,
-                                         system.nunoccupied_beta,
-                                         system.noccupied_beta, system.noccupied_beta, system.noccupied_beta,
-                                         system.noccupied_beta))}]
+                                        system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}
     return pspace
 
-
-def get_pspace_from_qmc(pspace_file, system, nexcit=3):
-
-    pspace = get_empty_pspace(system, nexcit)
-
-    HF = sorted(
-        [2 * i - 1 for i in range(1, system.noccupied_alpha + 1)]
-        + [2 * i for i in range(1, system.noccupied_beta + 1)]
-    )
-
-    occupied_lower_bound = 1
-    occupied_upper_bound = system.noccupied_alpha
-    unoccupied_lower_bound = 1
-    unoccupied_upper_bound = system.nunoccupied_beta
-
-    orb_table = {'a': system.noccupied_alpha, 'b': system.noccupied_beta}
-    h_sym = len(system.point_group_irrep_to_number)
-
-    excitation_count_by_symmetry = [[{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0}] for i in range(h_sym)]
-    excitations = [{'aaa': [], 'aab': [], 'abb': [], 'bbb': []}]
-
-    count = 0
-    with open(pspace_file) as f:
-
-        for line in f.readlines():
-
-            if count % 36 != 0: continue # read only every 36th line in the file
-            count += 1
-
-            # The P space file written in this way lists triply excited excitations in spatial orbital form
-            spatial_triple = list(map(int, line.split()))
-            spincase = get_spincase(spinorb_occ, spinorb_unocc)
-
-            unocc_shift = [orb_table[x] for x in spincase]
-
-            idx_unocc = [x - shift for x, shift in zip(idx_unocc, unocc_shift)]
-
-            if any([i > occupied_upper_bound for i in idx_occ]) or any([i < occupied_lower_bound for i in idx_occ]):
-                print("Occupied orbitals out of range!")
-                print(spincase)
-                print(spinorbital_triple)
-                print(idx_occ)
-                break
-            if any([i > unoccupied_upper_bound for i in idx_unocc]) or any(
-                    [i < unoccupied_lower_bound for i in idx_unocc]):
-                print("Unoccupied orbitals out of range!")
-                print(spincase)
-                print(spinorbital_triple)
-                print(idx_unocc)
-                break
-
-            n = excit_rank - 3
-
-            # Get the symmetry irrep of the triple excitation
-
-            excitations[n][spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_occ[0], idx_occ[1], idx_occ[2]])
-
-            if spincase == 'aaa':
-                sym = system.point_group_irrep_to_number[system.reference_symmetry]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_alpha]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_alpha]]
-                excitation_count_by_symmetry[sym][n][spincase] += 1
-                for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
-                    for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
-                        a, b, c = perms_unocc
-                        i, j, k = perms_occ
-                        pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
-
-            if spincase == 'aab':
-                sym = system.point_group_irrep_to_number[system.reference_symmetry]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_alpha]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
-                excitation_count_by_symmetry[sym][n][spincase] += 1
-                for perms_unocc in permutations((idx_unocc[0], idx_unocc[1])):
-                    for perms_occ in permutations((idx_occ[0], idx_occ[1])):
-                        a, b = perms_unocc
-                        i, j = perms_occ
-                        pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
-
-            if spincase == 'abb':
-                sym = system.point_group_irrep_to_number[system.reference_symmetry]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_beta]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
-                excitation_count_by_symmetry[sym][n][spincase] += 1
-                for perms_unocc in permutations((idx_unocc[1], idx_unocc[2])):
-                    for perms_occ in permutations((idx_occ[1], idx_occ[2])):
-                        b, c = perms_unocc
-                        j, k = perms_occ
-                        pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
-
-            if spincase == 'bbb':
-                sym = system.point_group_irrep_to_number[system.reference_symmetry]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_beta]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_beta]]
-                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
-                excitation_count_by_symmetry[sym][n][spincase] += 1
-                for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
-                    for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
-                        a, b, c = perms_unocc
-                        i, j, k = perms_occ
-                        pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
-
-    for isym, excitation_count_irrep in enumerate(excitation_count_by_symmetry):
-        tot_excitation_count_irrep = excitation_count_irrep[0]['aaa'] + excitation_count_irrep[0]['aab'] + excitation_count_irrep[0]['abb'] + excitation_count_irrep[0]['bbb']
-        print("   Symmetry", system.point_group_number_to_irrep[isym], "-", "Total number of triples in P space = ", tot_excitation_count_irrep)
-        print("      Number of aaa = ", excitation_count_irrep[0]['aaa'])
-        print("      Number of aab = ", excitation_count_irrep[0]['aab'])
-        print("      Number of abb = ", excitation_count_irrep[0]['abb'])
-        print("      Number of bbb = ", excitation_count_irrep[0]['bbb'])
-
-    # convert excitation arrays to Numpy arrays
-    for spincase in ["aaa", "aab", "abb", "bbb"]:
-        excitations[0][spincase] = np.asarray(excitations[0][spincase])
-        if len(excitations[0][spincase].shape) < 2:
-            excitations[0][spincase] = np.ones((1, 6))
-
-    return pspace, excitations, excitation_count_by_symmetry
 
 def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
 
@@ -318,8 +76,8 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
     orb_table = {'a': system.noccupied_alpha, 'b': system.noccupied_beta}
     h_sym = len(system.point_group_irrep_to_number)
 
-    excitation_count_by_symmetry = [[{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0}] for i in range(h_sym)]
-    excitations = [{'aaa': [], 'aab': [], 'abb': [], 'bbb': []}]
+    excitation_count_by_symmetry = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0} for i in range(h_sym)]
+    excitations = {'aaa': [], 'aab': [], 'abb': [], 'bbb': []}
 
     with open(pspace_file) as f:
 
@@ -360,11 +118,9 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 print(idx_unocc)
                 break
 
-            n = excit_rank - 3
 
             # Get the symmetry irrep of the triple excitation
-
-            excitations[n][spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_occ[0], idx_occ[1], idx_occ[2]])
+            excitations[spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_occ[0], idx_occ[1], idx_occ[2]])
 
             if spincase == 'aaa':
                 sym = system.point_group_irrep_to_number[system.reference_symmetry]
@@ -374,12 +130,12 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_alpha]]
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_alpha]]
-                excitation_count_by_symmetry[sym][n][spincase] += 1
+                excitation_count_by_symmetry[sym][spincase] += 1
                 for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
                     for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
                         a, b, c = perms_unocc
                         i, j, k = perms_occ
-                        pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+                        pspace[spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
 
             if spincase == 'aab':
                 sym = system.point_group_irrep_to_number[system.reference_symmetry]
@@ -389,12 +145,12 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_alpha]]
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
-                excitation_count_by_symmetry[sym][n][spincase] += 1
+                excitation_count_by_symmetry[sym][spincase] += 1
                 for perms_unocc in permutations((idx_unocc[0], idx_unocc[1])):
                     for perms_occ in permutations((idx_occ[0], idx_occ[1])):
                         a, b = perms_unocc
                         i, j = perms_occ
-                        pspace[n][spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
+                        pspace[spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
 
             if spincase == 'abb':
                 sym = system.point_group_irrep_to_number[system.reference_symmetry]
@@ -404,12 +160,12 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_beta]]
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
-                excitation_count_by_symmetry[sym][n][spincase] += 1
+                excitation_count_by_symmetry[sym][spincase] += 1
                 for perms_unocc in permutations((idx_unocc[1], idx_unocc[2])):
                     for perms_occ in permutations((idx_occ[1], idx_occ[2])):
                         b, c = perms_unocc
                         j, k = perms_occ
-                        pspace[n][spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
+                        pspace[spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
 
             if spincase == 'bbb':
                 sym = system.point_group_irrep_to_number[system.reference_symmetry]
@@ -419,26 +175,26 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_beta]]
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_beta]]
                 sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
-                excitation_count_by_symmetry[sym][n][spincase] += 1
+                excitation_count_by_symmetry[sym][spincase] += 1
                 for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
                     for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
                         a, b, c = perms_unocc
                         i, j, k = perms_occ
-                        pspace[n][spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+                        pspace[spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
 
     for isym, excitation_count_irrep in enumerate(excitation_count_by_symmetry):
-        tot_excitation_count_irrep = excitation_count_irrep[0]['aaa'] + excitation_count_irrep[0]['aab'] + excitation_count_irrep[0]['abb'] + excitation_count_irrep[0]['bbb']
+        tot_excitation_count_irrep = excitation_count_irrep['aaa'] + excitation_count_irrep['aab'] + excitation_count_irrep['abb'] + excitation_count_irrep['bbb']
         print("   Symmetry", system.point_group_number_to_irrep[isym], "-", "Total number of triples in P space = ", tot_excitation_count_irrep)
-        print("      Number of aaa = ", excitation_count_irrep[0]['aaa'])
-        print("      Number of aab = ", excitation_count_irrep[0]['aab'])
-        print("      Number of abb = ", excitation_count_irrep[0]['abb'])
-        print("      Number of bbb = ", excitation_count_irrep[0]['bbb'])
+        print("      Number of aaa = ", excitation_count_irrep['aaa'])
+        print("      Number of aab = ", excitation_count_irrep['aab'])
+        print("      Number of abb = ", excitation_count_irrep['abb'])
+        print("      Number of bbb = ", excitation_count_irrep['bbb'])
 
     # convert excitation arrays to Numpy arrays
     for spincase in ["aaa", "aab", "abb", "bbb"]:
-        excitations[0][spincase] = np.asarray(excitations[0][spincase])
-        if len(excitations[0][spincase].shape) < 2:
-            excitations[0][spincase] = np.ones((1, 6))
+        excitations[spincase] = np.asarray(excitations[spincase])
+        if len(excitations[spincase].shape) < 2:
+            excitations[spincase] = np.ones((1, 6))
 
     return pspace, excitations, excitation_count_by_symmetry
 
@@ -446,92 +202,87 @@ def count_excitations_in_pspace(pspace, system):
 
     h_sym = len(system.point_group_irrep_to_number)
 
-    excitation_count = [[{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0},
-                        {'aaaa': 0, 'aaab': 0, 'aabb': 0, 'abbb': 0, 'bbbb': 0}] for i in range(h_sym)]
+    excitation_count = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0} for i in range(h_sym)]
 
-    for n, p in enumerate(pspace):
+    for a in range(system.nunoccupied_alpha):
+        for b in range(a + 1, system.nunoccupied_alpha):
+            for c in range(b + 1, system.nunoccupied_alpha):
+                for i in range(system.noccupied_alpha):
+                    for j in range(i + 1, system.noccupied_alpha):
+                        for k in range(j + 1, system.noccupied_alpha):
 
-        if n == 0:
+                            sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_alpha]]
 
-            for a in range(system.nunoccupied_alpha):
-                for b in range(a + 1, system.nunoccupied_alpha):
-                    for c in range(b + 1, system.nunoccupied_alpha):
-                        for i in range(system.noccupied_alpha):
-                            for j in range(i + 1, system.noccupied_alpha):
-                                for k in range(j + 1, system.noccupied_alpha):
+                            if pspace['aaa'][a, b, c, i, j, k] == 1:
+                                excitation_count[sym]['aaa'] += 1
 
-                                    sym = system.point_group_irrep_to_number[system.reference_symmetry]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_alpha]]
+    for a in range(system.nunoccupied_alpha):
+        for b in range(a + 1, system.nunoccupied_alpha):
+            for c in range(system.nunoccupied_beta):
+                for i in range(system.noccupied_alpha):
+                    for j in range(i + 1, system.noccupied_alpha):
+                        for k in range(system.noccupied_beta):
 
-                                    if p['aaa'][a, b, c, i, j, k] == 1:
-                                        excitation_count[sym][n]['aaa'] += 1
+                            sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
 
-            for a in range(system.nunoccupied_alpha):
-                for b in range(a + 1, system.nunoccupied_alpha):
-                    for c in range(system.nunoccupied_beta):
-                        for i in range(system.noccupied_alpha):
-                            for j in range(i + 1, system.noccupied_alpha):
-                                for k in range(system.noccupied_beta):
+                            if pspace['aab'][a, b, c, i, j, k] == 1:
+                                excitation_count[sym]['aab'] += 1
 
-                                    sym = system.point_group_irrep_to_number[system.reference_symmetry]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
+    for a in range(system.nunoccupied_alpha):
+        for b in range(system.nunoccupied_beta):
+            for c in range(b + 1, system.nunoccupied_beta):
+                for i in range(system.noccupied_alpha):
+                    for j in range(system.noccupied_beta):
+                        for k in range(j + 1, system.noccupied_beta):
 
-                                    if p['aab'][a, b, c, i, j, k] == 1:
-                                        excitation_count[sym][n]['aab'] += 1
+                            sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_beta]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
 
-            for a in range(system.nunoccupied_alpha):
-                for b in range(system.nunoccupied_beta):
-                    for c in range(b + 1, system.nunoccupied_beta):
-                        for i in range(system.noccupied_alpha):
-                            for j in range(system.noccupied_beta):
-                                for k in range(j + 1, system.noccupied_beta):
+                            if pspace['abb'][a, b, c, i, j, k] == 1:
+                                excitation_count[sym]['abb'] += 1
 
-                                    sym = system.point_group_irrep_to_number[system.reference_symmetry]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_beta]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
+    for a in range(system.nunoccupied_beta):
+        for b in range(a + 1, system.nunoccupied_beta):
+            for c in range(b + 1, system.nunoccupied_beta):
+                for i in range(system.noccupied_beta):
+                    for j in range(i + 1, system.noccupied_beta):
+                        for k in range(j + 1, system.noccupied_beta):
 
-                                    if p['abb'][a, b, c, i, j, k] == 1:
-                                        excitation_count[sym][n]['abb'] += 1
+                            sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_beta]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_beta]]
+                            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
 
-            for a in range(system.nunoccupied_beta):
-                for b in range(a + 1, system.nunoccupied_beta):
-                    for c in range(b + 1, system.nunoccupied_beta):
-                        for i in range(system.noccupied_beta):
-                            for j in range(i + 1, system.noccupied_beta):
-                                for k in range(j + 1, system.noccupied_beta):
-
-                                    sym = system.point_group_irrep_to_number[system.reference_symmetry]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_beta]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_beta]]
-                                    sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
-
-                                    if p['bbb'][a, b, c, i, j, k] == 1:
-                                        excitation_count[sym][n]['bbb'] += 1
+                            if pspace['bbb'][a, b, c, i, j, k] == 1:
+                                excitation_count[sym]['bbb'] += 1
 
     for isym, excitation_count_irrep in enumerate(excitation_count):
-        tot_excitation_count_irrep = excitation_count_irrep[0]['aaa'] + excitation_count_irrep[0]['aab'] + excitation_count_irrep[0]['abb'] + excitation_count_irrep[0]['bbb']
+        tot_excitation_count_irrep = excitation_count_irrep['aaa'] + excitation_count_irrep['aab'] + excitation_count_irrep['abb'] + excitation_count_irrep['bbb']
         print("   Symmetry", system.point_group_number_to_irrep[isym], "-", "Total number of triples in P space = ", tot_excitation_count_irrep)
-        print("      Number of aaa = ", excitation_count_irrep[0]['aaa'])
-        print("      Number of aab = ", excitation_count_irrep[0]['aab'])
-        print("      Number of abb = ", excitation_count_irrep[0]['abb'])
-        print("      Number of bbb = ", excitation_count_irrep[0]['bbb'])
+        print("      Number of aaa = ", excitation_count_irrep['aaa'])
+        print("      Number of aab = ", excitation_count_irrep['aab'])
+        print("      Number of abb = ", excitation_count_irrep['abb'])
+        print("      Number of bbb = ", excitation_count_irrep['bbb'])
 
     return excitation_count
 
