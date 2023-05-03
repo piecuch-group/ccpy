@@ -536,10 +536,99 @@ def calc_ccp3_with_selection(T, L, corr_energy, H, H0, system, pspace, num_add, 
     Eccp3 = {"A": total_energy_A, "B": total_energy_B, "C": total_energy_C, "D": total_energy_D}
     deltap3 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
 
-
     return Eccp3["D"], triples_list
 
-def calc_ccpert3_with_selection(T, H, system, pspace, num_add, use_RHF=False):
+def calc_ccpert3(T, corr_energy, H, system, pspace, use_RHF=False):
+    """
+    Calculate the ground-state CCSD(T) correction to the CCSD energy.
+    """
+    t_start = time.time()
+
+    #### aaa correction ####
+    # calculate intermediates
+    I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
+    # perform correction in-loop
+    dA_aaa = ccsdpt_loops.ccsdpt_loops.ccsdpta_p(
+        pspace["aaa"],
+        T.a, T.aa,
+        H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
+        H.aa.vovv, H.aa.ooov,
+        H.a.oo, H.a.vv,
+        system.noccupied_alpha, system.nunoccupied_alpha,
+    )
+    #### aab correction ####
+    # calculate intermediates
+    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
+    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
+    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+    dA_aab = ccsdpt_loops.ccsdpt_loops.ccsdptb_p(
+        pspace["aab"],
+        T.a, T.b, T.aa, T.ab,
+        I2B_ovoo, I2B_vooo, I2A_vooo,
+        H.ab.vvvo, H.ab.vvov, H.aa.vvov,
+        H.ab.vovv, H.ab.ovvv, H.aa.vovv,
+        H.ab.ooov, H.ab.oovo, H.aa.ooov,
+        H.a.ov, H.b.ov, H.aa.oovv, H.ab.oovv,
+        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+        system.noccupied_alpha, system.nunoccupied_alpha,
+        system.noccupied_beta, system.nunoccupied_beta,
+    )
+
+    if use_RHF:
+        correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
+    else:
+        I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
+        I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
+        I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+        dA_abb = ccsdpt_loops.ccsdpt_loops.ccsdptc_p(
+            pspace["abb"],
+            T.a, T.b, T.ab, T.bb,
+            I2B_vooo, I2C_vooo, I2B_ovoo,
+            H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
+            H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
+            H.bb.ooov,
+            H.a.ov, H.b.ov,
+            H.ab.oovv, H.bb.oovv,
+            H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+            system.noccupied_alpha, system.nunoccupied_alpha,
+            system.noccupied_beta, system.nunoccupied_beta,
+        )
+
+        I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
+        dA_bbb = ccsdpt_loops.ccsdpt_loops.ccsdptd_p(
+            pspace["bbb"],
+            T.b, T.bb,
+            H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
+            H.bb.vovv, H.bb.ooov,
+            H.b.oo, H.b.vv,
+            system.noccupied_beta, system.nunoccupied_beta,
+        )
+
+        correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
+
+    t_end = time.time()
+    minutes, seconds = divmod(t_end - t_start, 60)
+
+    # print the results
+    energy_A = corr_energy + correction_A
+    total_energy_A = system.reference_energy + energy_A
+    Eccp3 = {"A" : total_energy_A}
+    deltap3 = {"A" : correction_A}
+
+    print('   CC(P;3)_(T) Calculation Summary')
+    print('   -------------------------------------')
+    print("   Completed in  ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
+    print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
+    print(
+        "   CC(P;3)_(T) = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
+            total_energy_A, energy_A, correction_A
+        )
+    )
+
+    return Eccp3, deltap3
+
+
+def calc_ccpert3_with_selection(T, corr_energy, H, system, pspace, num_add, use_RHF=False):
     """
     Calculate the ground-state CCSD(T) correction to the CC(P) energy.
     """
@@ -557,7 +646,7 @@ def calc_ccpert3_with_selection(T, H, system, pspace, num_add, use_RHF=False):
     dA_aaa, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdpta_p_with_selection(
         moments,
         triples_list,
-        pspace[0]["aaa"],
+        pspace["aaa"],
         T.a, T.aa,
         H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
         H.aa.vovv, H.aa.ooov,
@@ -572,7 +661,7 @@ def calc_ccpert3_with_selection(T, H, system, pspace, num_add, use_RHF=False):
     dA_aab, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdptb_p_with_selection(
         moments,
         triples_list,
-        pspace[0]["aab"],
+        pspace["aab"],
         T.a, T.b, T.aa, T.ab,
         I2B_ovoo, I2B_vooo, I2A_vooo,
         H.ab.vvvo, H.ab.vvov, H.aa.vvov,
@@ -596,7 +685,7 @@ def calc_ccpert3_with_selection(T, H, system, pspace, num_add, use_RHF=False):
         dA_abb, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdptc_p_with_selection(
             moments,
             triples_list,
-            pspace[0]["abb"],
+            pspace["abb"],
             T.a, T.b, T.ab, T.bb,
             I2B_vooo, I2C_vooo, I2B_ovoo,
             H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
@@ -616,7 +705,7 @@ def calc_ccpert3_with_selection(T, H, system, pspace, num_add, use_RHF=False):
         dA_bbb, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdptd_p_with_selection(
             moments,
             triples_list,
-            pspace[0]["bbb"],
+            pspace["bbb"],
             T.b, T.bb,
             H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
             H.bb.vovv, H.bb.ooov,
@@ -630,14 +719,13 @@ def calc_ccpert3_with_selection(T, H, system, pspace, num_add, use_RHF=False):
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results
-    cc_energy = get_cc_energy(T, H)
-    energy_A = cc_energy + correction_A
+    energy_A = corr_energy + correction_A
     total_energy_A = system.reference_energy + energy_A
 
     print('   CC(P;3)_(T) Calculation Summary')
     print('   -------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
-    print("   CC(P) = {:>10.10f}".format(system.reference_energy + cc_energy))
+    print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CC(P;3)_(T) = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A
@@ -649,9 +737,9 @@ def calc_ccpert3_with_selection(T, H, system, pspace, num_add, use_RHF=False):
         )
     )
 
-    return total_energy_A, correction_A, moments, triples_list
+    return total_energy_A, triples_list
 
-def calc_ccpert3_with_moments(T, H, system, pspace, use_RHF=False):
+def calc_ccpert3_with_moments(T, corr_energy, H, system, pspace, use_RHF=False):
     """
     Calculate the ground-state CCSD(T) correction to the CC(P) energy using full moment arrays in memory.
     """
@@ -666,7 +754,7 @@ def calc_ccpert3_with_moments(T, H, system, pspace, use_RHF=False):
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
     dA_aaa, moments["aaa"] = ccsdpt_loops.ccsdpt_loops.ccsdpta_p_full_moment(
-        pspace[0]["aaa"],
+        pspace["aaa"],
         T.a, T.aa,
         H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
         H.aa.vovv, H.aa.ooov,
@@ -680,7 +768,7 @@ def calc_ccpert3_with_moments(T, H, system, pspace, use_RHF=False):
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     dA_aab, moments["aab"] = ccsdpt_loops.ccsdpt_loops.ccsdptb_p_full_moment(
-        pspace[0]["aab"],
+        pspace["aab"],
         T.a, T.b, T.aa, T.ab,
         I2B_ovoo, I2B_vooo, I2A_vooo,
         H.ab.vvvo, H.ab.vvov, H.aa.vvov,
@@ -701,7 +789,7 @@ def calc_ccpert3_with_moments(T, H, system, pspace, use_RHF=False):
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
         dA_abb, moments["abb"] = ccsdpt_loops.ccsdpt_loops.ccsdptc_p_full_moment(
-            pspace[0]["abb"],
+            pspace["abb"],
             T.a, T.b, T.ab, T.bb,
             I2B_vooo, I2C_vooo, I2B_ovoo,
             H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
@@ -718,7 +806,7 @@ def calc_ccpert3_with_moments(T, H, system, pspace, use_RHF=False):
         # calculate intermediates
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
         dA_bbb, moments["bbb"] = ccsdpt_loops.ccsdpt_loops.ccsdptd_p_full_moment(
-            pspace[0]["bbb"],
+            pspace["bbb"],
             T.b, T.bb,
             H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
             H.bb.vovv, H.bb.ooov,
@@ -732,20 +820,19 @@ def calc_ccpert3_with_moments(T, H, system, pspace, use_RHF=False):
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results
-    cc_energy = get_cc_energy(T, H)
-    energy_A = cc_energy + correction_A
+    energy_A = corr_energy + correction_A
     total_energy_A = system.reference_energy + energy_A
 
     print('   CC(P;3)_(T) Calculation Summary')
     print('   -------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
-    print("   CC(P) = {:>10.10f}".format(system.reference_energy + cc_energy))
+    print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CC(P;3)_(T) = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A
         )
     )
-    return total_energy_A, correction_A, moments
+    return total_energy_A, moments
 
 
 def build_M3A_full(T, H, H0):

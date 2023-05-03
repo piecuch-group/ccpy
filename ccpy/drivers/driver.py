@@ -461,6 +461,16 @@ class Driver:
                 _, self.deltapq[0] = calc_ccp3_2ba(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
             else: # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
                 _, self.delta_pq[0] = calc_ccp3_full(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
+
+        elif method.lower() == "ccp3(t)":
+            from ccpy.moments.ccp3 import calc_ccpert3
+            # Ensure that pspace is set
+            assert(pspace)
+            # Warn the user if they run using HBar instead of H; we will not disallow it, however
+            if self.flag_hbar:
+                print("WARNING: CC(P;3)_(T) is using similarity-transformed Hamiltonian! Results will not match conventional CCSD(T)!")
+            # Perform ground-state correction
+            _, self.deltapq[0] = calc_ccpert3(self.T, self.correlation_energy, self.hamiltonian, self.system, pspace, self.options["RHF_symmetry"])
         else:
             raise NotImplementedError("Triples correction {} not implemented".format(method.lower()))
 
@@ -490,8 +500,9 @@ class AdaptDriver:
                                "abb": np.ones((1, 6)),
                                "bbb": np.ones((1, 6))}
 
-        # Save the bare Hamiltonian for later iterations
-        self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
+        # Save the bare Hamiltonian for later iterations if using CR-CC(2,3)
+        if not self.options["perturbative"]:
+            self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
 
     def print_options(self):
         print("   ------------------------------------------")
@@ -540,9 +551,9 @@ class AdaptDriver:
            while simultaneously selecting the leading triply excited determinants and returning
            the result in an array. For the last calculation, this should not perform the
            selection steps."""
-        from ccpy.moments.ccp3 import calc_ccp3_with_selection
+        from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_ccpert3_with_selection
 
-        if not self.options["perturbative"]:
+        if not self.options["perturbative"]: # CR-CC(2,3) method
             if imacro < self.nmacro - 1:
                 self.ccpq_energy[imacro], triples_list = calc_ccp3_with_selection(self.driver.T, 
                                                                                   self.driver.L[0],
@@ -557,6 +568,19 @@ class AdaptDriver:
                 triples_list = []
                 self.driver.run_ccp3(method="ccp3", state_index=[0], two_body_approx=True, pspace=self.pspace)
                 self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltapq[0]["D"]
+        else: # CCSD(T) method
+            if imacro < self.nmacro - 1:
+                self.ccpq_energy[imacro], triples_list = calc_ccpert3_with_selection(self.driver.T, 
+                                                                                     self.driver.correlation_energy,
+                                                                                     self.driver.hamiltonian, 
+                                                                                     self.driver.system, 
+                                                                                     self.pspace, 
+                                                                                     self.num_dets_to_add[imacro], 
+                                                                                     use_RHF=self.driver.options["RHF_symmetry"])
+            else:
+                triples_list = []
+                self.driver.run_ccp3(method="ccp3(t)", state_index=[0], pspace=self.pspace)
+                self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltapq[0]["A"]
 
         return triples_list
 
@@ -565,9 +589,9 @@ class AdaptDriver:
            approach and stores all moment corrections in one array in memory, which is later used
            to identify the top determinants for inclusion in the P space.
            For the last calculation, this should not perform the selection steps."""
-        from ccpy.moments.ccp3 import calc_ccp3_with_moments
+        from ccpy.moments.ccp3 import calc_ccp3_with_moments, calc_ccpert3_with_moments
 
-        if not self.options["perturbative"]:
+        if not self.options["perturbative"]: # CR-CC(2,3) method
             if imacro < self.nmacro - 1:
                 self.ccpq_energy[imacro], moments = calc_ccp3_with_moments(self.driver.T, 
                                                                            self.driver.L[0],
@@ -581,6 +605,18 @@ class AdaptDriver:
                 moments = []
                 self.driver.run_ccp3(method="ccp3", state_index=[0], two_body_approx=True, pspace=self.pspace)
                 self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltapq[0]["D"]
+        else: # CCSD(T) method
+            if imacro < self.nmacro - 1:
+                self.ccpq_energy[imacro], moments = calc_ccpert3_with_moments(self.driver.T, 
+                                                                              self.driver.correlation_energy,
+                                                                              self.driver.hamiltonian, 
+                                                                              self.driver.system, 
+                                                                              self.pspace, 
+                                                                              use_RHF=self.driver.options["RHF_symmetry"])
+            else:
+                moments = []
+                self.driver.run_ccp3(method="ccp3(t)", state_index=[0], pspace=self.pspace)
+                self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltapq[0]["A"]
 
         return moments
 
@@ -628,8 +664,9 @@ class AdaptDriver:
             self.run_expand_pspace(imacro, selection_arr)
             # Step 5: Reset variables in driver (CAN WE AVOID DOING THIS, PLEASE?)
             self.driver.T = None
-            self.driver.L[0] = None
-            setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+            if not self.options["perturbative"]:
+                self.driver.L[0] = None
+                setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
 
         # Print results
         print("   Adaptive CC(P;Q) calculation ended on", get_timestamp(), "\n")
