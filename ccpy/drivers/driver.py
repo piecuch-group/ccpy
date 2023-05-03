@@ -477,18 +477,18 @@ class AdaptDriver:
         from ccpy.utilities.pspace import get_empty_pspace
         self.driver = driver
         self.percentage = percentage
-        self.options = {"full storage" : full_storage,
-                        "perturbative" : perturbative,
-                        "P space analysis" : pspace_analysis}
+        self.options = {"full storage": full_storage,
+                        "perturbative": perturbative,
+                        "P space analysis": pspace_analysis}
 
         self.nmacro = len(self.percentage)
         self.ccp_energy = np.zeros(self.nmacro)
         self.ccpq_energy = np.zeros(self.nmacro)
         self.pspace = get_empty_pspace(self.driver.system, 3, use_bool=True)
-        self.t3_excitations = {"aaa" : np.ones((1, 6)),
-                               "aab" : np.ones((1, 6)),
-                               "abb" : np.ones((1, 6)),
-                               "bbb" : np.ones((1, 6))}
+        self.t3_excitations = {"aaa": np.ones((1, 6)),
+                               "aab": np.ones((1, 6)),
+                               "abb": np.ones((1, 6)),
+                               "bbb": np.ones((1, 6))}
 
         # Save the bare Hamiltonian for later iterations
         self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
@@ -602,11 +602,10 @@ class AdaptDriver:
         print("   Adaptive CC(P;Q) calculation started on", get_timestamp())
         self.print_options()
 
-        # Perform the preliminary excitation counting
+        # Step 0: Perform the preliminary excitation counting
         self.excitation_count()
         for imacro in range(self.nmacro):
-            print("   Adaptive CC(P;Q) Macroiteration - ", imacro + 1, "Fraction of triples = ", self.percentage[imacro], "%")
-            print("   ------------------------------------------------------------------")
+            print("   Adaptive CC(P;Q) Macroiteration - ", imacro, "Fraction of triples = ", self.percentage[imacro], "%")
             # Step 1: Analyze the P space (optional)
             if self.options["P space analysis"]:
                 self.analyze_pspace()
