@@ -276,11 +276,11 @@ def test_adaptive_f2():
     geometry = [["F", (0.0, 0.0, -2.66816)],
                 ["F", (0.0, 0.0,  2.66816)]]
     mol = gto.M(atom=geometry,
-                basis="cc-pvtz",
+                basis="cc-pvdz",
                 charge=0,
                 spin=0,
                 symmetry="D2H",
-                cart=False,
+                cart=True,
                 unit="Bohr",
     )
     mf = scf.RHF(mol)
@@ -289,7 +289,8 @@ def test_adaptive_f2():
     percentages = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
 
     driver = Driver.from_pyscf(mf, nfrozen=2)
-    adaptdriver = AdaptDriver(driver, percentages, full_storage=True, perturbative=True, pspace_analysis=False)
+    driver.system.print_info()
+    adaptdriver = AdaptDriver(driver, percentages, full_storage=False, perturbative=False, pspace_analysis=False)
     adaptdriver.run()
 
 

@@ -639,7 +639,17 @@ class AdaptDriver:
         self.print_options()
 
         # Step 0: Perform the preliminary excitation counting
+        print("   Preliminary excitation count...", end=" ")
+        t1 = time.time()
         self.excitation_count()
+        print("completed in", time.time() - t1, "seconds")
+        print("   Excitation Count Summary:")
+        for i, count in enumerate(self.num_excitations_symmetry):
+            symmetry = self.driver.system.point_group_number_to_irrep[i]
+            print("      Symmetry", symmetry, " = ", count)
+        print("      Using", self.num_total_excitations, "as total for ground state.")
+        print("      Determinant addition plan:", self.num_dets_to_add)
+        print("")
         for imacro in range(self.nmacro):
             print("   Adaptive CC(P;Q) Macroiteration - ", imacro, "Fraction of triples = ", self.percentage[imacro], "%")
             # Step 1: Analyze the P space (optional)
@@ -657,9 +667,9 @@ class AdaptDriver:
             if imacro > 0:
                 print("   Change in CC(P) energy = ", self.ccp_energy[imacro] - self.ccp_energy[imacro - 1])
                 print("   Change in CC(P;Q) energy = ", self.ccpq_energy[imacro] - self.ccpq_energy[imacro - 1], "\n")
-
             if imacro == self.nmacro - 1:
                 break
+
             # Step 4: Expand the P space
             self.run_expand_pspace(imacro, selection_arr)
             # Step 5: Reset variables in driver (CAN WE AVOID DOING THIS, PLEASE?)

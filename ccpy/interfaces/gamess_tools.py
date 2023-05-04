@@ -96,7 +96,7 @@ def get_point_group(gamess_logfile):
     flag_found = False
     with open(gamess_logfile, "r") as f:
         for line in f.readlines():
-            if flag_found:
+            if flag_found and point_group != "CI" and point_group != "CS":
                 order = line.split()[-1]
                 if len(point_group) == 3:
                     point_group = point_group[0] + order + point_group[2]
