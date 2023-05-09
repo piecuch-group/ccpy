@@ -136,6 +136,17 @@ class Driver:
             print("  ", option_key, "=", option_value)
         print("   ------------------------------------------\n")
 
+    def run_mbpt(self, method):
+
+        if method.lower() == "mbpt2":
+            from ccpy.mbpt.mbpt import calc_mbpt2
+            self.correlation_energy = calc_mbpt2(self.system, self.hamiltonian)
+        elif method.lower() == "mbpt3":
+            from ccpy.mbpt.mbpt import calc_mbpt3
+            self.correlation_energy = calc_mbpt3(self.system, self.hamiltonian)
+        else:
+            raise NotImplementedError("MBPT method {} not implemented".format(method.lower()))
+
     def run_cc(self, method, t3_excitations=None):
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.cc.MODULES:

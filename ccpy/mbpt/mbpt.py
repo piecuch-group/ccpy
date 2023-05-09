@@ -1,131 +1,40 @@
-import mbpt_loops
+import time
+from ccpy.utilities.updates import mbpt_loops
 
+def calc_mbpt2(system, H):
 
-def calc_mp2(sys, ints):
+    t_start = time.time()
+    corr_energy = mbpt_loops.mbpt_loops.mp2(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                            H.aa.oovv, H.aa.vvoo, H.ab.oovv, H.ab.vvoo, H.bb.oovv, H.bb.vvoo)
+    t_end = time.time()
+    minutes, seconds = divmod(t_end - t_start, 60)
 
-    fA = ints["fA"]
-    fB = ints["fB"]
-    vA = ints["vA"]
-    vB = ints["vB"]
-    vC = ints["vC"]
+    print('\n   MBPT(2) Calculation Summary')
+    print('   -------------------------------------')
+    print("   Completed in  ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
+    print("   Reference = {:>10.10f}".format(system.reference_energy))
+    print("   MBPT(2) = {:>10.10f}     ΔE = {:>10.10f}".format(system.reference_energy + corr_energy, corr_energy))
 
-    Ecorr = 0.0
-    for i in range(sys["Nocc_a"]):
-        for j in range(i + 1, sys["Nocc_a"]):
-            for a in range(sys["Nunocc_a"]):
-                for b in range(a + 1, sys["Nunocc_a"]):
-                    denom = (
-                        fA["oo"][i, i]
-                        + fA["oo"][j, j]
-                        - fA["vv"][a, a]
-                        - fA["vv"][b, b]
-                    )
-                    Ecorr += vA["oovv"][i, j, a, b] * vA["vvoo"][a, b, i, j] / denom
-    for i in range(sys["Nocc_a"]):
-        for j in range(sys["Nocc_b"]):
-            for a in range(sys["Nunocc_a"]):
-                for b in range(sys["Nunocc_b"]):
-                    denom = (
-                        fA["oo"][i, i]
-                        + fB["oo"][j, j]
-                        - fA["vv"][a, a]
-                        - fB["vv"][b, b]
-                    )
-                    Ecorr += vB["oovv"][i, j, a, b] * vB["vvoo"][a, b, i, j] / denom
-    for i in range(sys["Nocc_b"]):
-        for j in range(i + 1, sys["Nocc_b"]):
-            for a in range(sys["Nunocc_b"]):
-                for b in range(a + 1, sys["Nunocc_b"]):
-                    denom = (
-                        fB["oo"][i, i]
-                        + fB["oo"][j, j]
-                        - fB["vv"][a, a]
-                        - fB["vv"][b, b]
-                    )
-                    Ecorr += vC["oovv"][i, j, a, b] * vC["vvoo"][a, b, i, j] / denom
+    return corr_energy
 
-    return Ecorr
+def calc_mbpt3(system, H):
 
+    t_start = time.time()
+    corr_energy2 = mbpt_loops.mbpt_loops.mp2(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                            H.aa.oovv, H.aa.vvoo, H.ab.oovv, H.ab.vvoo, H.bb.oovv, H.bb.vvoo)
+    corr_energy3 = mbpt_loops.mbpt_loops.mp3(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                       H.aa.oovv, H.aa.vvoo, H.aa.voov, H.aa.oooo, H.aa.vvvv,
+                                       H.ab.oovv, H.ab.vvoo, H.ab.voov, H.ab.ovvo, H.ab.vovo, H.ab.ovov, H.ab.oooo, H.ab.vvvv,
+                                       H.bb.oovv, H.bb.vvoo, H.bb.voov, H.bb.oooo, H.bb.vvvv)
+    t_end = time.time()
+    minutes, seconds = divmod(t_end - t_start, 60)
 
-def mp2(sys, ints):
+    corr_energy = corr_energy2 + corr_energy3
 
-    print("\n   =============+++MBPT(2) Calculation+++=============")
-    fA = ints["fA"]
-    fB = ints["fB"]
-    vA = ints["vA"]
-    vB = ints["vB"]
-    vC = ints["vC"]
-    Ecorr = mbpt_loops.mbpt_loops.mp2(
-        fA["oo"],
-        fA["vv"],
-        fB["oo"],
-        fB["vv"],
-        vA["oovv"],
-        vA["vvoo"],
-        vB["oovv"],
-        vB["vvoo"],
-        vC["oovv"],
-        vC["vvoo"],
-    )
+    print('\n   MBPT(3) Calculation Summary')
+    print('   -------------------------------------')
+    print("   Completed in  ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
+    print("   Reference = {:>10.10f}".format(system.reference_energy))
+    print("   MBPT(3) = {:>10.10f}     ΔE = {:>10.10f}".format(system.reference_energy + corr_energy, corr_energy))
 
-    Emp2 = Ecorr + ints["Escf"]
-
-    print("     MBPT(2) correlation energy = {} hartree".format(Ecorr))
-    print("     Total MBPT(2) energy = {} hartree".format(Emp2))
-
-    return Emp2
-
-
-def mp3(sys, ints):
-
-    print("\n   =============+++MBPT(3) Calculation+++=============")
-    fA = ints["fA"]
-    fB = ints["fB"]
-    vA = ints["vA"]
-    vB = ints["vB"]
-    vC = ints["vC"]
-    Ecorr2 = mbpt_loops.mbpt_loops.mp2(
-        fA["oo"],
-        fA["vv"],
-        fB["oo"],
-        fB["vv"],
-        vA["oovv"],
-        vA["vvoo"],
-        vB["oovv"],
-        vB["vvoo"],
-        vC["oovv"],
-        vC["vvoo"],
-    )
-    Ecorr3 = mbpt_loops.mbpt_loops.mp3(
-        fA["oo"],
-        fA["vv"],
-        fB["oo"],
-        fB["vv"],
-        vA["oovv"],
-        vA["vvoo"],
-        vA["voov"],
-        vA["oooo"],
-        vA["vvvv"],
-        vB["oovv"],
-        vB["vvoo"],
-        vB["voov"],
-        vB["ovvo"],
-        vB["vovo"],
-        vB["ovov"],
-        vB["oooo"],
-        vB["vvvv"],
-        vC["oovv"],
-        vC["vvoo"],
-        vC["voov"],
-        vC["oooo"],
-        vC["vvvv"],
-    )
-    Ecorr = Ecorr2 + Ecorr3
-    Emp3 = Ecorr + ints["Escf"]
-
-    print("     E(2) correlation energy = {} hartree".format(Ecorr2))
-    print("     E(3) correlation energy = {} hartree".format(Ecorr3))
-    print("     MBPT(3) correlation energy = {} hartree".format(Ecorr))
-    print("     Total MBPT(3) energy = {} hartree".format(Emp3))
-
-    return Emp3
+    return corr_energy
