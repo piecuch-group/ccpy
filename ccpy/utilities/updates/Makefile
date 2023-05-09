@@ -28,14 +28,18 @@ TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 FFLAGS := -std=f2018 -O3 -ffree-line-length-512 -fopenmp -lgomp
 
 ifeq ($(CONDA_PREFIX),)
-	MKLFOLDER := $(MKLROOT)/lib/intel64
+	#MKLFOLDER := $(MKLROOT)/lib/intel64
+	#MKLFLAGS = -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
+	MKLFLAGS := --link-mkl
 else
 	MKLFOLDER := $(CONDA_PREFIX)/lib
+	MKLFLAGS := -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
 endif
 
 # configuration for lab computers
 # the mkl library specifics are different for different computer. Just don't use this for now...
-LIBS :=# -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
+#LIBS :=# -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
+LIBS := $(MKLFLAGS)
 
 .PHONY: all clean
 
@@ -43,8 +47,7 @@ all: $(TARGETS)
 
 %$(EXT_SUFFIX): %.f90
 	echo $(MKLFOLDER)
-	f2py $(LIBS) --f90flags="$(FFLAGS)" -c $< -m $*
-	#f2py $(LIBS) --quiet --f90flags="$(FFLAGS)" -c $< -m $*
+	f2py $(LIBS) --quiet --f90flags="$(FFLAGS)" -c $< -m $*
 
 clean:
 	rm $(TARGETS)
