@@ -1,7 +1,7 @@
 from ccpy.utilities.printing import SystemPrinter
 from ccpy.utilities.symmetry import get_pg_irreps
 
-
+# [TODO]: For single-reference methods, this should really be called "Reference"
 class System:
     """Class that holds information about the molecular or periodic system."""
 

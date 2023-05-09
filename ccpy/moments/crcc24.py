@@ -35,7 +35,6 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     #     d3aaa_o,
     #     d3aaa_v,
     # )
-    print("finished aaaa correction in", time.time() - t1, "seconds")
 
     #### aaab correction ####
     t1 = time.time()
@@ -72,7 +71,6 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     #     d3abb_o,
     #     d3abb_v,
     # )
-    print("finished aaab correction in", time.time() - t1, "seconds")
 
     #### aabb correction ####
     t1 = time.time()
@@ -116,7 +114,6 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     #     d3bbb_o,
     #     d3bbb_v,
     # )
-    print("finished aabb correction in", time.time() - t1, "seconds")
 
     if use_RHF:
         correction_A = 2.0 * dA_aaaa + 2.0 * dA_aaab + dA_aabb
@@ -160,7 +157,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
         #    d3abb_o,
         #    d3abb_v,
         #)
-        print("finished abbb correction in", time.time() - t1, "seconds")
+
         #### bbbb correction ####
         t1 = time.time()
         dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = bbbb_correction(T, L, H, H0, d3bbb_o, d3bbb_v)
@@ -178,7 +175,6 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
         #     d3bbb_o,
         #     d3bbb_v,
         # )
-        print("finished bbbb correction in", time.time() - t1, "seconds")
 
         correction_A = dA_aaaa + dA_aaab + dA_aabb + dA_abbb + dA_bbbb
         correction_B = dB_aaaa + dB_aaab + dB_aabb + dB_abbb + dB_bbbb

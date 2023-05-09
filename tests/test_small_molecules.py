@@ -4,7 +4,6 @@ import numpy as np
 from pyscf import scf, gto
 from ccpy.drivers.driver import Driver, AdaptDriver
 
-
 TEST_DATA_DIR = str(Path(__file__).parent.absolute() / "data")
 
 def test_creom23_chplus():
@@ -19,8 +18,8 @@ def test_creom23_chplus():
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="cis", multiplicity=1, nroot=10)
     driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3, 4])
+    driver.options["energy_shift"] = 0.5 # set energy shift to help converge left-EOMCCSD
     driver.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3, 4])
-    driver.options["energy_shift"] = 0.5
     driver.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3, 4])
 
     expected_vee = [0.0, 0.11982887, 0.11982887, 0.49906873, 0.53118318]
@@ -232,7 +231,6 @@ def test_cct3_ch():
 def test_ccsdpt_f2():
     """
     F2 / cc-pVDZ at R = 2.0Re, where Re = 2.66816 bohr using RHF.
-    Cartesian orbitals are used for the d orbitals in the cc-pVTZ basis.
     Reference: Chem. Phys. Lett. 344, 165 (2001).
     """
     geometry = [["F", (0.0, 0.0, -2.66816)],
@@ -251,9 +249,6 @@ def test_ccsdpt_f2():
     driver = Driver.from_pyscf(mf, nfrozen=2)
     driver.run_cc(method="ccsd")
     driver.run_ccp3(method="ccsd(t)")
-    driver.run_hbar(method="ccsd")
-    driver.run_leftcc(method="left_ccsd")
-    driver.run_ccp3(method="crcc23")
 
     # Check reference energy
     assert(np.allclose(driver.system.reference_energy, -198.48327030))
@@ -261,11 +256,40 @@ def test_ccsdpt_f2():
     assert(np.allclose(driver.correlation_energy, -0.69225474))
     assert(np.allclose(driver.system.reference_energy + driver.correlation_energy, -199.17552504))
     # Check CCSD(T) energy
-    #assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["A"], -0.6376818524))
-    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["A"], -199.0577781338))
-    # Check CR-CC(2,3) energy
-    #assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["D"], -0.6378384699))
-    #assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"], -199.0579347513))
+    assert(np.allclose(driver.correlation_energy + driver.deltapq[0]["A"], -0.7814280834))
+    assert(np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["A"], -199.2646983796))
+
+def test_crcc24_f2():
+    """
+    F2 / cc-pVDZ at R = 2.0Re, where Re = 2.66816 bohr using RHF.
+    Cartesian orbitals are used for the d orbitals in the cc-pVDZ basis.
+    Reference: Chem. Phys. Lett. 344, 165 (2001).
+    """
+    geometry = [["F", (0.0, 0.0, -2.66816)],
+                ["F", (0.0, 0.0,  2.66816)]]
+    mol = gto.M(atom=geometry,
+                basis="cc-pvdz",
+                charge=0,
+                spin=0,
+                symmetry="D2H",
+                cart=True,
+                unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=2)
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="crcc23")
+    driver.run_ccp4(method="crcc24")
+
+    # Check reference energy
+    assert(np.allclose(driver.system.reference_energy, -198.420096282673))
+    # Check CCSD energy
+    assert(np.allclose(driver.correlation_energy, -0.59246629))
+    assert(np.allclose(driver.system.reference_energy + driver.correlation_energy, -199.01256257))
 
 def test_adaptive_f2():
     """
@@ -295,5 +319,4 @@ def test_adaptive_f2():
 
 
 if __name__ == "__main__":
-    test_adaptive_f2()
 

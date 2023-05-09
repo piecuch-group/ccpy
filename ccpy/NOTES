@@ -1,0 +1,74 @@
+We might have jumped the gun with the Driver class structure. Basically, I don't like
+the fact that Driver carries with it System and Hamiltonian objects as attributes. System
+(which should really be called Reference) and Hamiltonian seem like independent objects. What
+I currently call Driver is really a handle to the CC wave function, thus it should act
+on the Reference and ab initio Hamiltonian objects to produce the correlated CC states
+parameterized by T, L, and R. We can then introduce meta-drivers that construct sequences
+of CC wave functions on the way to converging high-level CCSDT or EOMCCSDT energetics.
+
+Can we get somehow the following partitioning of data?
+
+Reference:
+    attrs:
+        - occupied orbitals (i,j,k,..)
+        - unoccupied orbitals (a,b,c,..)
+        - reference energy
+        - reference symmetry
+        - reference multiplicity
+        - MO symmetries
+        - MO occupations
+        - active orbitals
+    methods:
+        - set active space(nacto, nactu)
+
+Hamiltonian:
+    attrs:
+        - a...
+        - b...
+        - aa...
+        - ab...
+        - bb...
+        - similarity_transform=False
+    methods:
+        - run_hbar(self, method, CCWaveFunction) -> Replaces original attrs with new ones
+
+(*) Reference and Hamiltonian objects are obtained directly from interfaces to external codes
+
+CCWaveFunction:
+    E.g.,
+        def __init__(self, Reference):
+            self.T = build_cluster_operator
+    attrs:
+        - T
+        - L
+        - R
+        - corr_energy = 0.0
+        - vertical_excitation_energy = np.zeros(100)
+        - r0 = np.zeros(100)
+        - rdm1 = [[None for p in range(100)] for q in range(100)]
+        - deltapq = np.zeros(100)
+        - ddeltapq = np.zeros(100)
+    methods:
+        build_cluster_operator(method, Reference) -> produces containers for T, L, and R
+        run_cc(self, Hamiltonian)
+        run_left(self, Hamiltonian) -> Hamiltonian is post-similarity-transformation
+        run_eomcc(self, Hamiltonian) -> Hamiltonian is post-similarity-transformation
+        run_ccp3(self, Hamiltonian) -> Hamiltonian is post-similarity-transformation
+
+(*) In CCWaveFunction, the Reference is used only once to build the cluster operator. Then, CC methods can run
+    using internal attributes of wave function in addition to the ab initio Hamiltonian.
+
+Now, we introduce the concept of drivers (i.e., meta-drivers) that consume CCWaveFunctions (formerly drivers) to
+carry out macro-iterative CC(P;Q) calculations like the adaptive or CIPSI-driven variants.
+
+Driver(CCWaveFunction, Hamiltonian):
+    attrs:
+        - ccp_energy
+        - ccpq_energy
+        - meta-solver parameters (% triples, Ndet(in), etc.)
+    methods:
+        - run_adaptiveccpq():
+        - run_cipsiccpq()
+
+
+

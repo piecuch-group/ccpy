@@ -6721,7 +6721,20 @@ module ccsdt_p_loops
       end subroutine get_index_table
 
       subroutine sort4(excits, amps, loc_arr, idx_table, idims, n1, n2, n3, n4, nloc, n3p, resid)
-
+      ! Sort the 1D array of T3 amplitudes, the 2D array of T3 excitations, and, optionally, the
+      ! associated 1D residual array such that triple excitations with the same spatial orbital
+      ! indices in the positions indicated by idims are next to one another.
+      ! In:
+      !   idims: array of 4 integer dimensions along which T3 will be sorted
+      !   n1, n2, n3, and n4: no/nu sizes of each dimension in idims
+      !   nloc: permutationally unique number of possible (p,q,r,s) tuples
+      !   n3p: Number of P-space triples of interest
+      ! In,Out:
+      !   excits: T3 excitation array (can be aaa, aab, abb, or bbb)
+      !   amps: T3 amplitude vector (can be aaa, aab, abb, or bbb)
+      !   resid (optional): T3 residual vector (can be aaa, aab, abb, or bbb)
+      !   loc_arr: array providing the start- and end-point indices for each sorted block in t3 excitations
+          
               integer, intent(in) :: n1, n2, n3, n4, nloc, n3p
               integer, intent(in) :: idims(4)
               integer, intent(in) :: idx_table(n1,n2,n3,n4)
@@ -6737,23 +6750,28 @@ module ccsdt_p_loops
               integer :: pqrs1, pqrs2
               integer, allocatable :: temp(:), idx(:)
 
+              ! obtain the lexcial index for each triple excitation in the P space along the sorting dimensions idims
               allocate(temp(n3p),idx(n3p))
               do idet = 1, n3p
                  p = excits(idims(1),idet); q = excits(idims(2),idet); r = excits(idims(3),idet); s = excits(idims(4),idet)
                  temp(idet) = idx_table(p,q,r,s)
               end do
+              ! get the sorting array
               call argsort(temp, idx)
+              ! apply sorting array to t3 excitations, amplitudes, and, optionally, residual arrays
               excits = excits(:,idx)
               amps = amps(idx)
               if (present(resid)) resid = resid(idx)
               deallocate(temp,idx)
-
-              loc_arr(:,1) = 1; loc_arr(:,2) = 0;
+              ! obtain the start- and end-point indices for each lexical index in the sorted t3 excitation and amplitude arrays
+              loc_arr(:,1) = 1; loc_arr(:,2) = 0; ! set default start > end so that empty sets do not trigger loops
               do idet = 1, n3p-1
+                 ! get consecutive lexcial indices
                  p1 = excits(idims(1),idet);   q1 = excits(idims(2),idet);   r1 = excits(idims(3),idet);   s1 = excits(idims(4),idet)
                  p2 = excits(idims(1),idet+1); q2 = excits(idims(2),idet+1); r2 = excits(idims(3),idet+1); s2 = excits(idims(4),idet+1)
                  pqrs1 = idx_table(p1,q1,r1,s1)
                  pqrs2 = idx_table(p2,q2,r2,s2)
+                 ! if change occurs between consecutive indices, record these locations in loc_arr as new start/end points
                  if (pqrs1 /= pqrs2) then
                     loc_arr(pqrs1,2) = idet
                     loc_arr(pqrs2,1) = idet+1

@@ -436,13 +436,6 @@ class Driver:
                 print("WARNING: CCSD(T) is using similarity-transformed Hamiltonian! Results will not match conventional CCSD(T)!")
             _, self.deltapq[0] = calc_ccsdpt(self.T, self.correlation_energy, self.hamiltonian, self.system, self.options["RHF_symmetry"])
 
-        elif method.lower() == "crcc24":
-            from ccpy.moments.crcc24 import calc_crcc24
-            # Ensure that HBar is set
-            assert(self.flag_hbar)
-            # Perform ground-state correction
-            _, self.deltapq[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
-
         elif method.lower() == "cct3":
             from ccpy.moments.cct3 import calc_cct3
             # Ensure that HBar is set
@@ -473,6 +466,17 @@ class Driver:
             _, self.deltapq[0] = calc_ccpert3(self.T, self.correlation_energy, self.hamiltonian, self.system, pspace, self.options["RHF_symmetry"])
         else:
             raise NotImplementedError("Triples correction {} not implemented".format(method.lower()))
+
+    def run_ccp4(self, method, state_index=[0], two_body_approx=True):
+
+        if method.lower() == "crcc24":
+            from ccpy.moments.crcc24 import calc_crcc24
+            # Ensure that HBar is set
+            assert(self.flag_hbar)
+            # Perform ground-state correction
+            _, self.deltapq[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+        else:
+            raise NotImplementedError("Quadruples correction {} not implemented".format(method.lower()))
 
     def run_rdm1(self, state_index=[0]):
         from ccpy.density.rdm1 import calc_rdm1
