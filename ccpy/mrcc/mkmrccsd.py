@@ -4,8 +4,6 @@ import numpy as np
 # In order to get the expected behavior for submatrix slicing, use H.aa[np.ix_(arr1, arr2, arr3, arr4)]
 # if you are using singleton dimensions and arbitrary slices, those singletons must be converted to arrays
 
-from ccpy.drivers.cc_energy import get_cc_energy_unsorted
-from ccpy.drivers.hf_energy import calc_hf_energy_unsorted
 from ccpy.mrcc.normal_order import shift_normal_order
 from ccpy.hbar.hbar_ccs import get_ccs_intermediates_unsorted
 from ccpy.utilities.updates import mrcc_loops

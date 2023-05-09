@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.linalg import eig
 
-from ccpy.drivers.hf_energy import calc_g_matrix, calc_hf_energy
+from ccpy.energy.hf_energy import calc_g_matrix, calc_hf_energy
 from ccpy.models.integrals import getHamiltonian
 from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 

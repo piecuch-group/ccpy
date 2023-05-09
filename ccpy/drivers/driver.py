@@ -12,10 +12,10 @@ import ccpy.eom_guess
 import ccpy.eomcc
 
 from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eccc_jacobi
-from ccpy.drivers.cc_energy import get_LR, get_r0
+from ccpy.energy.cc_energy import get_LR, get_r0
 
 from ccpy.models.integrals import Integral
-from ccpy.models.operators import ClusterOperator, FockOperator
+from ccpy.models.operators import ClusterOperator
 from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc_calculation_summary, leftcc_calculation_summary, print_ee_amplitudes
 
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals

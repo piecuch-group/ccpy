@@ -1,6 +1,6 @@
 import numpy as np
 from ccpy.mrcc.normal_order import shift_normal_order
-from ccpy.drivers.cc_energy import get_cc_energy_unsorted
+from ccpy.energy.cc_energy import get_cc_energy_unsorted
 
 
 def compute_Heff_mkmrccsd(H, T, model_space, system):

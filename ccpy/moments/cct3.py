@@ -2,7 +2,7 @@
 import time
 
 import numpy as np
-from ccpy.drivers.cc_energy import get_cc_energy
+from ccpy.energy.cc_energy import get_cc_energy
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
 from ccpy.utilities.updates import cct3_loops
 

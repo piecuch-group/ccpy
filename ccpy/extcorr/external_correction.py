@@ -6,7 +6,7 @@ from ccpy.extcorr.contractions_t4 import contract_vt4_doubles
 from ccpy.models.operators import ClusterOperator
 from ccpy.models.integrals import Integral
 from ccpy.utilities.updates import clusteranalysis
-from ccpy.drivers.cc_energy import get_cc_energy, get_ci_energy
+from ccpy.energy.cc_energy import get_cc_energy, get_ci_energy
 import time
 
 def cluster_analysis(wavefunction_file, hamiltonian, system):

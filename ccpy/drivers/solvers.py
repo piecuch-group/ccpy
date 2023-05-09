@@ -5,7 +5,6 @@ import numpy as np
 
 from ccpy.utilities.printing import print_cc_iteration, print_cc_iteration_header,\
                                     print_eomcc_iteration, print_eomcc_iteration_header
-from ccpy.utilities.utilities import remove_file
 from ccpy.models.operators import ClusterOperator, FockOperator
 
 
@@ -93,7 +92,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
 
 def eccc_jacobi(update_t, T, dT, H, T_ext, VT_ext, system, options):
 
-    from ccpy.drivers.cc_energy import get_cc_energy
+    from ccpy.energy.cc_energy import get_cc_energy
     from ccpy.drivers.diis import DIIS
 
     # instantiate the DIIS accelerator object
@@ -167,7 +166,7 @@ def eccc_jacobi(update_t, T, dT, H, T_ext, VT_ext, system, options):
 
 def cc_jacobi(update_t, T, dT, H, system, options, t3_excitations=None):
 
-    from ccpy.drivers.cc_energy import get_cc_energy
+    from ccpy.energy.cc_energy import get_cc_energy
     from ccpy.drivers.diis import DIIS
 
     # instantiate the DIIS accelerator object
@@ -245,7 +244,7 @@ def cc_jacobi(update_t, T, dT, H, system, options, t3_excitations=None):
 
 def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, system, options):
 
-    from ccpy.drivers.cc_energy import get_lcc_energy
+    from ccpy.energy.cc_energy import get_lcc_energy
     from ccpy.drivers.diis import DIIS
 
     # instantiate the DIIS accelerator object
@@ -332,7 +331,7 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
 
 def left_ccp_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, system, pspace):
 
-    from ccpy.drivers.cc_energy import get_lcc_energy
+    from ccpy.energy.cc_energy import get_lcc_energy
     from ccpy.drivers.diis import DIIS
 
     # instantiate the DIIS accelerator object

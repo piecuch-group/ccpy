@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.drivers.hf_energy import calc_hf_energy_unsorted
+from ccpy.energy.hf_energy import calc_hf_energy_unsorted
 
 def shift_normal_order(H, occ_a, occ_b, occ_a_prev, occ_b_prev):
 

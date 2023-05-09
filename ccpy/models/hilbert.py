@@ -1,5 +1,6 @@
 import numpy as np
-from ccpy.drivers.hf_energy import calc_hf_energy_unsorted, calc_hf_energy
+from ccpy.energy.hf_energy import calc_hf_energy_unsorted
+
 
 class Excitation:
 

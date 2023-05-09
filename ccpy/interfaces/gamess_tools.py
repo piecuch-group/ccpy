@@ -15,7 +15,7 @@ def load_gamess_integrals(
     from cclib.io import ccread
 
     from ccpy.constants import constants
-    from ccpy.drivers.hf_energy import calc_hf_energy, calc_hf_frozen_core_energy
+    from ccpy.energy.hf_energy import calc_hf_energy, calc_hf_frozen_core_energy
     from ccpy.models.integrals import getHamiltonian
     from ccpy.models.system import System
 
