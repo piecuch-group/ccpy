@@ -648,11 +648,14 @@ class AdaptDriver:
         self.excitation_count()
         print("completed in", time.time() - t1, "seconds")
         print("   Excitation Count Summary:")
+        spin_fact = 1.0
+        if self.driver.options["RHF_symmetry"]:
+            spin_fact = 2.0
         for i, count in enumerate(self.num_excitations_symmetry):
             symmetry = self.driver.system.point_group_number_to_irrep[i]
             print("      Symmetry", symmetry, " = ", count)
         print("      Using", self.num_total_excitations, "as total for ground state.")
-        print("      Determinant addition plan:", self.num_dets_to_add)
+        print("      Determinant addition plan:", [int("{0:.0f}".format(v, i)) for i, v in enumerate(self.num_dets_to_add[:-1] * spin_fact)])
         print("")
         for imacro in range(self.nmacro):
             print("   Adaptive CC(P;Q) Macroiteration - ", imacro, "Fraction of triples = ", self.percentage[imacro], "%")

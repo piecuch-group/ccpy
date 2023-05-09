@@ -310,7 +310,7 @@ def test_adaptive_f2():
     mf = scf.RHF(mol)
     mf.kernel()
 
-    percentages = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
+    percentages = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
 
     driver = Driver.from_pyscf(mf, nfrozen=2)
     driver.system.print_info()
@@ -319,4 +319,4 @@ def test_adaptive_f2():
 
 
 if __name__ == "__main__":
-
+    test_adaptive_f2()

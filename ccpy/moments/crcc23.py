@@ -210,7 +210,7 @@ def calc_ccsdpt(T, corr_energy, H, system, use_RHF=False):
     Eccsdpt = {"A" : total_energy_A}
     deltapt = {"A" : correction_A}
 
-    print('   CCSD(T) Calculation Summary')
+    print('\n   CCSD(T) Calculation Summary')
     print('   -------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
     print("   CCSD = {:>10.10f}".format(system.reference_energy + corr_energy))
