@@ -10,6 +10,8 @@ jobs:
   build-and-test:
 
     runs-on: ubuntu-latest
+    env:
+      USE_BLAS: mkl
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11"]
