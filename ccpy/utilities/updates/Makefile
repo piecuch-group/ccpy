@@ -11,6 +11,7 @@ MODULES := cc_loops \
 		   ccp_loops \
 		   ccsdt_p_loops \
 		   eomccsdt_p_loops \
+		   leftccsdt_p_intermediates \
 		   eomcc_active_loops \
 		   cc_active_loops \
 		   cct3_loops \

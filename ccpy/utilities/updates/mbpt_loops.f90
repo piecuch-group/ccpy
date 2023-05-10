@@ -5,8 +5,8 @@ module mbpt_loops
       contains
 
               subroutine mp2(fA_oo,fA_vv,fB_oo,fB_vv,&
-                    vA_oovv,vA_vvoo,vB_oovv,vB_vvoo,vC_oovv,vC_vvoo,&
-                    noa,nob,nua,nub,Emp2)
+                             vA_oovv,vA_vvoo,vB_oovv,vB_vvoo,vC_oovv,vC_vvoo,&
+                             noa,nob,nua,nub,Emp2)
 
                     integer, intent(in) :: noa, nob, nua, nub
                     real(kind=8), intent(in) :: fA_oo(noa,noa),fB_oo(nob,nob),&
@@ -56,10 +56,10 @@ module mbpt_loops
               end subroutine mp2
 
               subroutine mp3(fA_oo,fA_vv,fB_oo,fB_vv,&
-                    vA_oovv,vA_vvoo,vA_voov,vA_oooo,vA_vvvv,&
-                    vB_oovv,vB_vvoo,vB_voov,vB_ovvo,vB_vovo,vB_ovov,vB_oooo,vB_vvvv,&
-                    vC_oovv,vC_vvoo,vC_voov,vC_oooo,vC_vvvv,&
-                    noa,nob,nua,nub,Emp3)
+                             vA_oovv,vA_vvoo,vA_voov,vA_oooo,vA_vvvv,&
+                             vB_oovv,vB_vvoo,vB_voov,vB_ovvo,vB_vovo,vB_ovov,vB_oooo,vB_vvvv,&
+                             vC_oovv,vC_vvoo,vC_voov,vC_oooo,vC_vvvv,&
+                             noa,nob,nua,nub,Emp3)
 
                     integer, intent(in) :: noa, nob, nua, nub
                     real(kind=8), intent(in) :: fA_oo(noa,noa),fB_oo(nob,nob),&
@@ -274,16 +274,6 @@ module mbpt_loops
                           end do
                        end do
                     end do
-
-
-                    ! Emp3 = 0.25*vA(ijab)*t2A(abij) + 0.25*vC(ijab)*t2C(abij) +  vB(ijab)*t2b(abij) 
-
               end subroutine mp3
-
-
-
-
-
-
 
 end module mbpt_loops
