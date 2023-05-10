@@ -74,11 +74,11 @@ module leftccsdt_p_intermediates
                         ! compute < ijkabc | mnkabc > ->
                         ! N[i+j+k+cba a+b+c+knm] = delta(j,n)N[i+m] + delta(i,m) N[j+n] - delta(i,n)N[j+m] - delta(j,m) N[i+n]
                         !                        = A(ij)A(nm) delta(i,m) N[j+n]
-                        lt_amp = l_amp * t_amp
-                        if (i==m) x1a_oo(j,n) = x1a_oo(j,n) + 0.5d0 * lt_amp ! (1)
-                        if (j==m) x1a_oo(i,n) = x1a_oo(i,n) - 0.5d0 * lt_amp ! (ij)
-                        if (i==n) x1a_oo(j,m) = x1a_oo(j,m) - 0.5d0 * lt_amp ! (nm)
-                        if (j==n) x1a_oo(i,m) = x1a_oo(i,m) + 0.5d0 * lt_amp ! (ij)(nm)
+                        lt_amp = 0.5d0 * l_amp * t_amp
+                        if (i==m) x1a_oo(j,n) = x1a_oo(j,n) + lt_amp ! (1)
+                        if (j==m) x1a_oo(i,n) = x1a_oo(i,n) - lt_amp ! (ij)
+                        if (i==n) x1a_oo(j,m) = x1a_oo(j,m) - lt_amp ! (nm)
+                        if (j==n) x1a_oo(i,m) = x1a_oo(i,m) + lt_amp ! (ij)(nm)
                      end do
                      ! (ik)
                      idx = idx_table(a,b,c,i)
@@ -88,11 +88,11 @@ module leftccsdt_p_intermediates
                           m = t3a_excits(4,jdet); n = t3a_excits(5,jdet);
                           ! compute < ijkabc | mniabc > ->
                           ! N[i+j+k+cba a+b+c+inm] = -A(jk)A(nm) delta(k,m) N[j+n]
-                          lt_amp = l_amp * t_amp
-                          if (k==m) x1a_oo(j,n) = x1a_oo(j,n) - 0.5d0 * lt_amp ! (1)
-                          if (j==m) x1a_oo(k,n) = x1a_oo(k,n) + 0.5d0 * lt_amp ! (jk)
-                          if (k==n) x1a_oo(j,m) = x1a_oo(j,m) + 0.5d0 * lt_amp ! (nm)
-                          if (j==n) x1a_oo(k,m) = x1a_oo(k,m) - 0.5d0 * lt_amp ! (jk)(nm)
+                          lt_amp = 0.5d0 * l_amp * t_amp
+                          if (k==m) x1a_oo(j,n) = x1a_oo(j,n) - lt_amp ! (1)
+                          if (j==m) x1a_oo(k,n) = x1a_oo(k,n) + lt_amp ! (jk)
+                          if (k==n) x1a_oo(j,m) = x1a_oo(j,m) + lt_amp ! (nm)
+                          if (j==n) x1a_oo(k,m) = x1a_oo(k,m) - lt_amp ! (jk)(nm)
                        end do
                      end if
                      ! (jk)
@@ -103,11 +103,11 @@ module leftccsdt_p_intermediates
                           m = t3a_excits(4,jdet); n = t3a_excits(5,jdet);
                           ! compute < ijkabc | mnjabc > ->
                           ! N[i+j+k+cba a+b+c+jnm] = -A(ik)A(nm) delta(i,m) N[k+n]
-                          lt_amp = l_amp * t_amp
-                          if (i==m) x1a_oo(k,n) = x1a_oo(k,n) - 0.5d0 * lt_amp ! (1)
-                          if (k==m) x1a_oo(i,n) = x1a_oo(i,n) + 0.5d0 * lt_amp ! (ik)
-                          if (i==n) x1a_oo(k,m) = x1a_oo(k,m) + 0.5d0 * lt_amp ! (nm)  
-                          if (k==n) x1a_oo(i,m) = x1a_oo(i,m) - 0.5d0 * lt_amp ! (ik)(nm)
+                          lt_amp = 0.5d0 * l_amp * t_amp
+                          if (i==m) x1a_oo(k,n) = x1a_oo(k,n) - lt_amp ! (1)
+                          if (k==m) x1a_oo(i,n) = x1a_oo(i,n) + lt_amp ! (ik)
+                          if (i==n) x1a_oo(k,m) = x1a_oo(k,m) + lt_amp ! (nm)  
+                          if (k==n) x1a_oo(i,m) = x1a_oo(i,m) - lt_amp ! (ik)(nm)
                        end do
                      end if
                   end do
@@ -124,11 +124,11 @@ module leftccsdt_p_intermediates
                         t_amp = t3a_amps(jdet)
                         m = t3a_excits(5,jdet); n = t3a_excits(6,jdet);
                         ! compute < ijkabc | imnabc > -> A(jk)A(mn) delta(j,m) N[k+n]
-                        lt_amp = l_amp * t_amp
-                        if (j==m) x1a_oo(k,n) = x1a_oo(k,n) + 0.5d0 * lt_amp ! (1)
-                        if (k==m) x1a_oo(j,n) = x1a_oo(j,n) - 0.5d0 * lt_amp ! (jk)
-                        if (j==n) x1a_oo(k,m) = x1a_oo(k,m) - 0.5d0 * lt_amp ! (mn)
-                        if (k==n) x1a_oo(j,m) = x1a_oo(j,m) + 0.5d0 * lt_amp ! (jk)(mn)
+                        lt_amp = 0.5d0 * l_amp * t_amp
+                        if (j==m) x1a_oo(k,n) = x1a_oo(k,n) + lt_amp ! (1)
+                        if (k==m) x1a_oo(j,n) = x1a_oo(j,n) - lt_amp ! (jk)
+                        if (j==n) x1a_oo(k,m) = x1a_oo(k,m) - lt_amp ! (mn)
+                        if (k==n) x1a_oo(j,m) = x1a_oo(j,m) + lt_amp ! (jk)(mn)
                      end do
                      ! (ij)
                      idx = idx_table(a,b,c,j)
@@ -137,11 +137,11 @@ module leftccsdt_p_intermediates
                           t_amp = t3a_amps(jdet)
                           m = t3a_excits(5,jdet); n = t3a_excits(6,jdet);
                           ! compute < ijkabc | jmnabc > -> -A(ik)A(mn) delta(i,m) N[k+n]
-                          lt_amp = l_amp * t_amp
-                          if (i==m) x1a_oo(k,n) = x1a_oo(k,n) - 0.5d0 * lt_amp ! (1)
-                          if (k==m) x1a_oo(i,n) = x1a_oo(i,n) + 0.5d0 * lt_amp ! (ik)
-                          if (i==n) x1a_oo(k,m) = x1a_oo(k,m) + 0.5d0 * lt_amp ! (mn)
-                          if (k==n) x1a_oo(i,m) = x1a_oo(i,m) - 0.5d0 * lt_amp ! (ik)(mn)
+                          lt_amp = 0.5d0 * l_amp * t_amp
+                          if (i==m) x1a_oo(k,n) = x1a_oo(k,n) - lt_amp ! (1)
+                          if (k==m) x1a_oo(i,n) = x1a_oo(i,n) + lt_amp ! (ik)
+                          if (i==n) x1a_oo(k,m) = x1a_oo(k,m) + lt_amp ! (mn)
+                          if (k==n) x1a_oo(i,m) = x1a_oo(i,m) - lt_amp ! (ik)(mn)
                        end do
                      end if
                      ! (ik)
@@ -151,11 +151,11 @@ module leftccsdt_p_intermediates
                           t_amp = t3a_amps(jdet)
                           m = t3a_excits(5,jdet); n = t3a_excits(6,jdet);
                           ! compute < ijkabc | kmnabc > -> -A(ij)A(mn) delta(j,m) N[i+n]
-                          lt_amp = l_amp * t_amp
-                          if (j==m) x1a_oo(i,n) = x1a_oo(i,n) - 0.5d0 * lt_amp ! (1)
-                          if (i==m) x1a_oo(j,n) = x1a_oo(j,n) + 0.5d0 * lt_amp ! (ij)
-                          if (j==n) x1a_oo(i,m) = x1a_oo(i,m) + 0.5d0 * lt_amp ! (mn)
-                          if (i==n) x1a_oo(j,m) = x1a_oo(j,m) - 0.5d0 * lt_amp ! (ij)(mn)
+                          lt_amp = 0.5d0 * l_amp * t_amp
+                          if (j==m) x1a_oo(i,n) = x1a_oo(i,n) - lt_amp ! (1)
+                          if (i==m) x1a_oo(j,n) = x1a_oo(j,n) + lt_amp ! (ij)
+                          if (j==n) x1a_oo(i,m) = x1a_oo(i,m) + lt_amp ! (mn)
+                          if (i==n) x1a_oo(j,m) = x1a_oo(j,m) - lt_amp ! (ij)(mn)
                         end do
                      end if
                   end do
@@ -171,12 +171,12 @@ module leftccsdt_p_intermediates
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                        t_amp = t3a_amps(jdet)
                        m = t3a_excits(4,jdet); n = t3a_excits(6,jdet);
-                       ! compute < ijkabc | mjnabc > -> A(ik)A(mn) delta(k,n) N[i+m]
-                       lt_amp = l_amp * t_amp
-                       if (k==n) x1a_oo(i,m) = x1a_oo(i,m) + 0.5d0 * lt_amp ! (1)
-                       if (i==n) x1a_oo(k,m) = x1a_oo(k,m) - 0.5d0 * lt_amp ! (ik)
-                       if (k==m) x1a_oo(i,n) = x1a_oo(i,n) - 0.5d0 * lt_amp ! (mn)
-                       if (i==m) x1a_oo(k,n) = x1a_oo(k,n) + 0.5d0 * lt_amp ! (ik)(mn)
+                       ! compute < ijkabc | mjnabc > -> A(ik)A(mn) delta(k,n) N[i+ m]
+                       lt_amp = 0.5d0 * l_amp * t_amp
+                       if (k==n) x1a_oo(i,m) = x1a_oo(i,m) + lt_amp ! (1)
+                       if (i==n) x1a_oo(k,m) = x1a_oo(k,m) - lt_amp ! (ik)
+                       if (k==m) x1a_oo(i,n) = x1a_oo(i,n) - lt_amp ! (mn)
+                       if (i==m) x1a_oo(k,n) = x1a_oo(k,n) + lt_amp ! (ik)(mn)
                      end do
                      ! (ij)
                      idx = idx_table(a,b,c,i)
@@ -184,12 +184,12 @@ module leftccsdt_p_intermediates
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3a_amps(jdet)
                           m = t3a_excits(4,jdet); n = t3a_excits(6,jdet);
-                          ! compute < ijkabc | minabc > -> -A(jk)A(mn) delta(k,n) N[j+m]
-                          lt_amp = l_amp * t_amp
-                          if (k==n) x1a_oo(j,m) = x1a_oo(j,m) - 0.5d0 * lt_amp ! (1)
-                          if (j==n) x1a_oo(k,m) = x1a_oo(k,m) + 0.5d0 * lt_amp ! (jk)
-                          if (k==m) x1a_oo(j,n) = x1a_oo(j,n) + 0.5d0 * lt_amp ! (mn)
-                          if (j==m) x1a_oo(k,n) = x1a_oo(k,n) - 0.5d0 * lt_amp ! (jk)(mn)
+                          ! compute < ijkabc | minabc > -> -A(jk)A(mn) delta(k,n) N[j+ m]
+                          lt_amp = 0.5d0 * l_amp * t_amp
+                          if (k==n) x1a_oo(j,m) = x1a_oo(j,m) - lt_amp ! (1)
+                          if (j==n) x1a_oo(k,m) = x1a_oo(k,m) + lt_amp ! (jk)
+                          if (k==m) x1a_oo(j,n) = x1a_oo(j,n) + lt_amp ! (mn)
+                          if (j==m) x1a_oo(k,n) = x1a_oo(k,n) - lt_amp ! (jk)(mn)
                         end do
                      end if
                      ! (jk)
@@ -198,15 +198,104 @@ module leftccsdt_p_intermediates
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3a_amps(jdet)
                           m = t3a_excits(4,jdet); n = t3a_excits(6,jdet);
-                          ! compute < ijkabc | mknabc > -> -A(ij)A(mn) delta(j,n) N[i+m]
-                          lt_amp = l_amp * t_amp
-                          if (j==n) x1a_oo(i,m) = x1a_oo(i,m) - 0.5d0 * lt_amp ! (1)
-                          if (i==n) x1a_oo(j,m) = x1a_oo(j,m) + 0.5d0 * lt_amp ! (ij)
-                          if (j==m) x1a_oo(i,n) = x1a_oo(i,n) + 0.5d0 * lt_amp ! (mn)
-                          if (i==m) x1a_oo(j,n) = x1a_oo(j,n) - 0.5d0 * lt_amp ! (ij)(mn)
+                          ! compute < ijkabc | mknabc > -> -A(ij)A(mn) delta(j,n) N[i+ m]
+                          lt_amp = 0.50 * l_amp * t_amp
+                          if (j==n) x1a_oo(i,m) = x1a_oo(i,m) - lt_amp ! (1)
+                          if (i==n) x1a_oo(j,m) = x1a_oo(j,m) + lt_amp ! (ij)
+                          if (j==m) x1a_oo(i,n) = x1a_oo(i,n) + lt_amp ! (mn)
+                          if (i==m) x1a_oo(j,n) = x1a_oo(j,n) - lt_amp ! (ij)(mn)
                         end do 
                      end if
                   end do
+                  deallocate(loc_arr,idx_table)
+                  !!!! X1A(mi) = 1/6 l3b(efgmno) t3b(efgino) -> X1A(im) = 1/6 l3b(abcijk) * t3b(abcmjk)
+                  ! allocate new sorting arrays
+                  allocate(loc_arr(nua*(nua-1)/2*nub*nob,2))
+                  allocate(idx_table(nua,nua,nub,nob))
+                  !!! ABCK LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, nob)
+                  call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, nob, nua*(nua-1)/2*nub*nob, n3aab_t)
+                  do idet = 1, n3aab_l
+                     l_amp = l3b_amps(idet)
+                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
+                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,b,c,k)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        t_amp = t3b_amps(jdet)
+                        m = t3b_excits(4,jdet); n = t3b_excits(5,jdet);
+                        ! compute < ijk~abc~ | mnk~abc~ > -> A(ij)A(mn) delta(j,n) N[i+ m]
+                        lt_amp = l_amp * t_amp
+                        ! NOTE: no factor of 1/2 here
+                        if (i==m) x1a_oo(j,n) = x1a_oo(j,n) + lt_amp ! (1)
+                        if (j==m) x1a_oo(i,n) = x1a_oo(i,n) - lt_amp ! (ij)
+                        if (i==n) x1a_oo(j,m) = x1a_oo(j,m) - lt_amp ! (nm)
+                        if (j==n) x1a_oo(i,m) = x1a_oo(i,m) + lt_amp ! (ij)(nm)
+                     end do
+                  end do
+                  deallocate(loc_arr,idx_table)
+                  !!!! X1A(mi) = 1/6 l3c(efgmno) t3c(efgino) -> X1A(im) = 1/6 l3c(abcijk) * t3c(abcmjk)
+                  ! allocate new sorting arrays
+                  allocate(loc_arr(nub*(nub-1)/2*nua*nob,2))
+                  allocate(idx_table(nub,nub,nua,nob))
+                  !!! BCAJ LOOP !!!
+                  call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,nob-1/), nub, nub, nua, nob)
+                  call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/2,3,1,5/), nub, nub, nua, nob, nub*(nub-1)/2*nua*nob, n3abb_t)
+                  do idet = 1, n3abb_l
+                     l_amp = l3c_amps(idet)
+                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
+                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(b,c,a,j)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        t_amp = t3c_amps(jdet)
+                        m = t3c_excits(4,jdet); n = t3c_excits(6,jdet);
+                        ! compute < ij~k~ab~c~ | mj~n~ab~c~ > -> delta(k,n) N[i+ m]
+                        lt_amp = 0.5d0 * l_amp * t_amp
+                        if (k==n) x1a_oo(i,m) = x1a_oo(i,m) + lt_amp ! (1)
+                     end do
+                     ! (jk)
+                     idx = idx_table(b,c,a,k)
+                     if (idx/=0) then
+                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                           t_amp = t3c_amps(jdet)
+                           m = t3c_excits(4,jdet); n = t3c_excits(6,jdet);
+                           ! compute < ij~k~ab~c~ | mk~n~ab~c~ > -> -delta(j,n) N[i+ m]
+                           lt_amp = 0.5d0 * l_amp * t_amp
+                           if (j==n) x1a_oo(i,m) = x1a_oo(i,m) - lt_amp ! (1)
+                        end do
+                     end if
+                  end do
+                  !!! BCAK LOOP !!!
+                  call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/2,nob/), nub, nub, nua, nob)
+                  call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/2,3,1,6/), nub, nub, nua, nob, nub*(nub-1)/2*nua*nob, n3abb_t)
+                  do idet = 1, n3abb_l
+                     l_amp = l3c_amps(idet)
+                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
+                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(b,c,a,k)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        t_amp = t3c_amps(jdet)
+                        m = t3c_excits(4,jdet); n = t3c_excits(5,jdet);
+                        ! compute < ij~k~ab~c~ | mn~k~ab~c~ > -> delta(j,n) N[i+ m]
+                        lt_amp = 0.5d0 * l_amp * t_amp
+                        if (j==n) x1a_oo(i,m) = x1a_oo(i,m) + lt_amp ! (1)
+                     end do
+                     ! (jk)
+                     idx = idx_table(b,c,a,j)
+                     if (idx/=0) then
+                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                           t_amp = t3c_amps(jdet)
+                           m = t3c_excits(4,jdet); n = t3c_excits(5,jdet);
+                           ! compute < ij~k~ab~c~ | mn~j~ab~c~ > -> -delta(k,n) N[i+ m]
+                           lt_amp = 0.5d0 * l_amp * t_amp
+                           if (k==n) x1a_oo(i,m) = x1a_oo(i,m) - lt_amp ! (1)
+                        end do
+                     end if
+                  end do
+                  deallocate(loc_arr,idx_table)
+
         end subroutine compute_x1a_oo
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
