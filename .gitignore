@@ -121,3 +121,4 @@ pspace
 *.inf
 
 .vscode/
+.nfs*
