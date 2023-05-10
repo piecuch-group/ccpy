@@ -29,18 +29,30 @@ TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 FFLAGS := -std=f2018 -O3 -ffree-line-length-512 -fopenmp -lgomp
 
 ifeq ($(CONDA_PREFIX),)
-	#MKLFOLDER := $(MKLROOT)/lib/intel64
-	#MKLFLAGS = -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
-	MKLFLAGS := --link-mkl
+
+ifeq ($(USE_BLAS),mkl)
+	BLASFLAGS := --link-mkl
+else ifeq ($(USE_BLAS),openblas)
+	BLASFLAGS := --link-openblas64
 else
+	BLASFLAGS :=
+endif
+
+	
+else
+
+# Run if inside conda
+ifeq ($(USE_BLAS),mkl)
 	MKLFOLDER := $(CONDA_PREFIX)/lib
-	MKLFLAGS := -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
+	BLASFLAGS := -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
+else
+	BLASFLAGS :=
+endif
+
 endif
 
 # configuration for lab computers
-# the mkl library specifics are different for different computer. Just don't use this for now...
-#LIBS :=# -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
-LIBS := $(MKLFLAGS)
+LIBS := $(BLASFLAGS)
 
 .PHONY: all clean
 
