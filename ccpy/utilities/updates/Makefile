@@ -49,7 +49,7 @@ all: $(TARGETS)
 
 %$(EXT_SUFFIX): %.f90
 	echo $(MKLFOLDER)
-	f2py $(LIBS) --quiet --f90flags="$(FFLAGS)" -c $< -m $*
+	f2py $(LIBS) --f90flags="$(FFLAGS)" -c $< -m $*
 
 clean:
 	rm $(TARGETS)
