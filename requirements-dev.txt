@@ -1,7 +1,5 @@
 # Project requirements
-numpy
-scipy
-h5py
+-r requirements.txt
 
 # Docs
 mkdocs
