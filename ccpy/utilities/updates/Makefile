@@ -26,7 +26,7 @@ SOURCES := $(addsuffix .f90, $(MODULES))
 TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 
 # If OpenMP is not available, remove the last two flags, -fopenmp, -lgomp
-FFLAGS := -std=f2018 -O3 -ffree-line-length-512 -fopenmp -lgomp
+FFLAGS := -std=f2018 -O3 -ffree-line-length-512# -fopenmp -lgomp
 
 ifeq ($(CONDA_PREFIX),)
 	#MKLFOLDER := $(MKLROOT)/lib/intel64
@@ -40,7 +40,8 @@ endif
 # configuration for lab computers
 # the mkl library specifics are different for different computer. Just don't use this for now...
 #LIBS :=# -L$(MKLFOLDER) -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_avx2 -lgomp -lpthread -lm -ldl
-LIBS := $(MKLFLAGS)
+#LIBS := $(MKLFLAGS)
+LIBS :=
 
 .PHONY: all clean
 
