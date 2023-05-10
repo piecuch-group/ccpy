@@ -26,7 +26,7 @@ SOURCES := $(addsuffix .f90, $(MODULES))
 TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 
 # If OpenMP is not available, remove the last two flags, -fopenmp, -lgomp
-FFLAGS := -std=f2018 -O3 -ffree-line-length-512 -fopenmp -lgomp
+FFLAGS := -std=f2018 -O3 -ffree-line-length-512# -fopenmp -lgomp
 
 ifeq ($(CONDA_PREFIX),)
 
@@ -60,7 +60,7 @@ all: $(TARGETS)
 
 %$(EXT_SUFFIX): %.f90
 	echo $(MKLFOLDER)
-	f2py $(LIBS) --quiet --f90flags="$(FFLAGS)" -c $< -m $*
+	f2py $(LIBS) --f90flags="$(FFLAGS)" -c $< -m $*
 
 clean:
 	rm $(TARGETS)
