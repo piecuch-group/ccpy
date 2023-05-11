@@ -11,13 +11,6 @@ BLACK := black $(SRC)
 AUTOFLAKE := autoflake -ir --remove-all-unused-imports --ignore-init-module-imports --remove-unused-variables $(SRC)
 MYPY := mypy ccpy
 PYLINT := pylint ccpy
-F90_FORMATTER := fprettify \
-								 --whitespace-comma \
-								 --enable-decl \
-								 --whitespace-type no \
-								 --enable-replacements \
-								 -w 4 \
-								 -r ./ccpy/utilities/updates
 
 
 ##@ Getting Started
@@ -25,6 +18,7 @@ F90_FORMATTER := fprettify \
 bootstrap: ## Bootstrap project development
 	pip install -r requirements-dev.txt
 	pip install -e .
+	pre-commit install
 .PHONY: bootstrap
 
 
@@ -34,10 +28,7 @@ qa: format-check lint test  ## Run all QA rules
 .PHONY: qa
 
 format: ## Run all formatters
-	$(AUTOFLAKE)
-	$(ISORT)
-	$(BLACK)
-	$(F90_FORMATTER)
+	pre-commit run --all-files
 .PHONY: format
 
 format-check: ## Check format

@@ -10,12 +10,12 @@ markdown-include
 pygments
 ansi2html
 
-# Testing
+# QA
 pytest
 pytest-cov
 
-# Formatting
 black
 autoflake
 pylint
 fprettify
+precommit

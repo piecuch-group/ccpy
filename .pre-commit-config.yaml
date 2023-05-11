@@ -1,0 +1,31 @@
+default_stages: [commit, push]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        exclude: ^ccpy/utilities/updates/.*f90$
+  - repo: https://github.com/psf/black
+    rev: 22.10.0
+    hooks:
+      - id: black
+  - repo: local
+    hooks:
+      - id: fprettify
+        name: Format fortran files
+        language: system
+        entry: fprettify
+        args:
+          - --whitespace-comma
+          - --enable-decl
+          - --whitespace-type
+          - 'no'
+          - --enable-replacements
+          - --line-length
+          - '140'
+          - --whitespace
+          - '4'
+        types: [file]
+        files: ^ccpy/utilities/updates/.*f90$
