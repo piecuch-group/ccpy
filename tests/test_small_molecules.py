@@ -499,5 +499,5 @@ def test_adaptive_f2():
 
 
 if __name__ == "__main__":
-    # test_adaptive_f2()
-    test_crcc24_f2()
+    test_adaptive_f2()
+    #test_crcc24_f2()
