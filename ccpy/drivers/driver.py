@@ -73,6 +73,9 @@ class Driver:
         self.fock.a.vv = self.hamiltonian.a.vv.copy()
         self.fock.b.vv = self.hamiltonian.b.vv.copy()
 
+        if system.noccupied_alpha * system.nunoccupied_beta <= 4:
+            self.options["diis_size"] = -1
+
     def set_operator_params(self, method):
         if method.lower() in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2"]:
             self.operator_params["order"] = 2

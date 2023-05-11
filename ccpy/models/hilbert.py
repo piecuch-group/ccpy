@@ -322,7 +322,6 @@ if __name__ == "__main__":
 
     H_CIS = np.vstack((np.hstack((H_SASA, H_SASB)),
                        np.hstack((H_SBSA, H_SBSB))))
-
     E, V = np.linalg.eigh(H_CIS)
     idx = np.argsort(E)
     e_test = E[idx]
@@ -386,4 +385,7 @@ if __name__ == "__main__":
     e_true = E[idx]
     V = V[:, idx]
 
-    print(np.linalg.norm(e_test - e_true))
+    for iroot in range(len(e_true)):
+        print("eigenvalue", iroot + 1, "Expected = ", e_true[iroot], "Got = ", e_test[iroot])
+
+
