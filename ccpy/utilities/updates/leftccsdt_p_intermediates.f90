@@ -69,7 +69,74 @@ module leftccsdt_p_intermediates
                      end do
                   end do
 
-              end subroutine compute_x2a_ooov    
+              end subroutine compute_x2a_ooov   
+
+              subroutine compute_x2a_vovv(x2a_vovv,&
+                                          t2a, t2b,&
+                                          l3a_amps, l3a_excits,&
+                                          l3b_amps, l3b_excits,&
+                                          n3aaa_l, n3aab_l,&
+                                          noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aaa_l, n3aab_l
+
+                  real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
+                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
+                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
+
+                  real(kind=8), intent(out) :: x2a_vovv(nua,noa,nua,nua)
+                 
+                  real(kind=8) :: l_amp
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  x2a_vovv = 0.0d0
+                  do idet = 1, n3aaa_l
+                     l_amp = l3a_amps(idet)
+                     ! x2a(eiba) <- A(ab) [A(i/mn)A(f/ab) l3a(abfimn) * t2a(efmn)]
+                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); f = l3a_excits(3,idet);
+                     i = l3a_excits(4,idet); m = l3a_excits(5,idet); n = l3a_excits(6,idet);
+                     ! only fill permutationally unique elements!
+                     x2a_vovv(:,i,a,b) = x2a_vovv(:,i,a,b) + l_amp * t2a(:,f,m,n) ! (1)
+                     x2a_vovv(:,m,a,b) = x2a_vovv(:,m,a,b) - l_amp * t2a(:,f,i,n) ! (im)
+                     x2a_vovv(:,n,a,b) = x2a_vovv(:,n,a,b) - l_amp * t2a(:,f,m,i) ! (in)
+                     x2a_vovv(:,i,b,f) = x2a_vovv(:,i,b,f) + l_amp * t2a(:,a,m,n) ! (af)
+                     x2a_vovv(:,m,b,f) = x2a_vovv(:,m,b,f) - l_amp * t2a(:,a,i,n) ! (im)(af)
+                     x2a_vovv(:,n,b,f) = x2a_vovv(:,n,b,f) - l_amp * t2a(:,a,m,i) ! (in)(af)
+                     x2a_vovv(:,i,a,f) = x2a_vovv(:,i,a,f) - l_amp * t2a(:,b,m,n) ! (bf)
+                     x2a_vovv(:,m,a,f) = x2a_vovv(:,m,a,f) + l_amp * t2a(:,b,i,n) ! (im)(bf)
+                     x2a_vovv(:,n,a,f) = x2a_vovv(:,n,a,f) + l_amp * t2a(:,b,m,i) ! (in)(bf)
+                  end do
+                  do idet = 1, n3aab_l
+                     l_amp = l3b_amps(idet)
+                     ! x2a(eiba) <- A(ab) [A(im) l3b(abfimn) * t2b(efmn)]
+                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); f = l3b_excits(3,idet);
+                     i = l3b_excits(4,idet); m = l3b_excits(5,idet); n = l3b_excits(6,idet);
+                     ! only fill permutationally unique elements!
+                     x2a_vovv(:,i,a,b) = x2a_vovv(:,i,a,b) + l_amp * t2b(:,f,m,n) ! (1)
+                     x2a_vovv(:,m,a,b) = x2a_vovv(:,m,a,b) - l_amp * t2b(:,f,i,n) ! (im)
+                  end do
+
+                  ! apply the common A(ij) antisymmetrizer
+                  do a = 1, nua
+                     do b = a+1, nua
+                        do i = 1, noa
+                           do e = 1, nua
+                              x2a_vovv(e,i,a,b) = x2a_vovv(e,i,a,b) - x2a_vovv(e,i,b,a)
+                           end do
+                        end do
+                     end do
+                  end do
+                  ! explicitly antisymmetrize
+                  do a = 1, nua
+                     do b = a+1, nua
+                        x2a_vovv(:,:,b,a) = -x2a_vovv(:,:,a,b)
+                     end do
+                  end do
+
+              end subroutine compute_x2a_vovv    
         
               subroutine compute_x1a_oo(x1a_oo,&
                                         t3a_amps, t3a_excits,&
