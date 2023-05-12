@@ -38,9 +38,12 @@ Because CCpy is primarily used for CC method development work, we use interfaces
 reference state and associated molecular orbital one- and two-electron integrals prior to performing the correlated CC calculations. All implementations
 in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references.
 
-A list of all CC/EOMCC routines available in CCpy:
+A list of all computational options available in CCpy:
+  - MBPT(2)
+  - MBPT(3)
   - CCD
   - CCSD
+  - CCSD(T)
   - CR-CC(2,3)
   - CCSDt
   - CC(t;3)
@@ -48,7 +51,7 @@ A list of all CC/EOMCC routines available in CCpy:
   - Adaptive CC(P;Q) aimed at converging CCSDT (unpublished)
   - CCSDT
   - CR-CC(2,4)
-  - CCSDTQ
+  - CCSDTQ (available for RHF reference only)
   - EOMCCSD
   - CR-EOMCC(2,3) and its size-intensive δ-CR-EOMCC(2,3) extension
   - EOMCCSDt
@@ -56,6 +59,11 @@ A list of all CC/EOMCC routines available in CCpy:
   - ec-CC-II
   - ec-CC-II_{3}
   - ec-CC_II_{3,4} (unpublished)
+
+Currently, all EOMCC options are initiated using a CIS-like guess, which can reliably locate states dominated by single
+excitations. Currently, the more desirable CISd-like guess, capable of finding doubly excited states, is not available
+yet. 
+
 
 # Installation
 Installation should be simple. Simply clone this git repository and run `make install` followed by `make all` inside of it. You will
