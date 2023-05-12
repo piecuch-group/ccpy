@@ -2621,31 +2621,31 @@ module leftccsdt_p_intermediates
               subroutine compute_x2b_ovvo(x2b_ovvo,&
                                           t3b_amps, t3b_excits,&
                                           t3c_amps, t3c_excits,&
-                                          t3c_amps, t3c_excits,&
+                                          t3d_amps, t3d_excits,&
+                                          l3a_amps, l3a_excits,&
                                           l3b_amps, l3b_excits,&
                                           l3c_amps, l3c_excits,&
-                                          l3d_amps, l3d_excits,&
-                                          n3aaa_t, n3aab_t, n3abb_t,&
-                                          n3aab_l, n3abb_l, n3bbb_l,&
+                                          n3aab_t, n3abb_t, n3bbb_t,&
+                                          n3aaa_l, n3aab_l, n3abb_l,&
                                           noa, nua, nob, nub)
 
                   integer, intent(in) :: noa, nua, nob, nub
-                  integer, intent(in) :: n3aaa_t, n3aab_t, n3abb_t
-                  integer, intent(in) :: n3aab_l, n3abb_l, n3bbb_l
+                  integer, intent(in) :: n3aab_t, n3abb_t, n3bbb_t
+                  integer, intent(in) :: n3aaa_l, n3aab_l, n3abb_l
 
-                  integer, intent(in) :: t3a_excits(6,n3aaa_t)
-                  real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
                   integer, intent(in) :: t3b_excits(6,n3aab_t)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
                   integer, intent(in) :: t3c_excits(6,n3abb_t)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
+                  integer, intent(in) :: t3d_excits(6,n3bbb_t)
+                  real(kind=8), intent(in) :: t3d_amps(n3bbb_t)
                   
+                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
                   integer, intent(in) :: l3b_excits(6,n3aab_l)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
                   integer, intent(in) :: l3c_excits(6,n3abb_l)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-                  integer, intent(in) :: l3d_excits(6,n3bbb_l)
-                  real(kind=8), intent(in) :: l3d_amps(n3bbb_l)
 
                   real(kind=8), intent(out) :: x2b_ovvo(noa,nub,nua,nob)
                   
