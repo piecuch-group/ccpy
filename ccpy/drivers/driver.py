@@ -311,7 +311,7 @@ class Driver:
             self.r0[i] = get_r0(self.R[i], self.hamiltonian, self.vertical_excitation_energy[i])
             # compute the relative excitation level (REL) metric
             self.relative_excitation_level[i] = get_rel(self.R[i], self.r0[i])
-            eomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.r0[i], self.relative_excitation_level[i], is_converged, self.system, self.options["amp_print_threshold"])
+            eomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.correlation_energy, self.r0[i], self.relative_excitation_level[i], is_converged, self.system, self.options["amp_print_threshold"])
             print("   EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
             ct += 1
 
