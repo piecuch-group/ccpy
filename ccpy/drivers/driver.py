@@ -47,6 +47,11 @@ class Driver:
                         "RHF_symmetry" : (self.system.noccupied_alpha == self.system.noccupied_beta),
                         "diis_out_of_core" : False,
                         "amp_print_threshold" : 0.025}
+
+        # Disable DIIS for small problems to avoid inherent singularity
+        if self.system.noccupied_alpha * self.system.nunoccupied_beta <= 4:
+            self.options["diis_size"] = -1
+
         self.operator_params = {"order" : 0,
                                 "number_particles" : 0,
                                 "number_holes" : 0,
@@ -73,8 +78,6 @@ class Driver:
         self.fock.a.vv = self.hamiltonian.a.vv.copy()
         self.fock.b.vv = self.hamiltonian.b.vv.copy()
 
-        if system.noccupied_alpha * system.nunoccupied_beta <= 4:
-            self.options["diis_size"] = -1
 
     def set_operator_params(self, method):
         if method.lower() in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2"]:

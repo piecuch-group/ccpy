@@ -15,16 +15,16 @@ def test_creom23_chplus():
         nfrozen=0,
     )
     driver.system.print_info()
-    driver.options["maximum_iterations"] = 300
+    driver.options["maximum_iterations"] = 1000
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="cis", multiplicity=1, nroot=10)
-    driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3, 4])
+    driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3, 4, 9])
     driver.options[
         "energy_shift"
     ] = 0.5  # set energy shift to help converge left-EOMCCSD
-    driver.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3, 4])
-    driver.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3, 4])
+    driver.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3, 4, 9])
+    driver.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3, 4, 9])
 
     expected_vee = [
         0.0,
@@ -32,6 +32,7 @@ def test_creom23_chplus():
         0.11982887,
         0.49906873,
         0.53118318,
+        0.63633490,
     ]
     expected_total_energy = [
         -38.0176701653,
@@ -39,6 +40,7 @@ def test_creom23_chplus():
         -37.8978412944,
         -37.5186014361,
         -37.4864869901,
+        -37.3813352611,
     ]
     expected_deltapq = {
         "A": [
@@ -47,6 +49,7 @@ def test_creom23_chplus():
             -0.0016296078,
             -0.0021697718,
             -0.0045706983,
+            -0.0032097085,
         ],
         "D": [
             -0.0017825588,
@@ -54,6 +57,7 @@ def test_creom23_chplus():
             -0.0022877876,
             -0.0030686698,
             -0.0088507112,
+            -0.0045827171,
         ],
     }
     expected_ddeltapq = {
@@ -63,6 +67,7 @@ def test_creom23_chplus():
             -0.0016296078,
             -0.0022291593,
             -0.0045706983,
+            -0.0033071442,
         ],
         "D": [
             0.0,
@@ -70,6 +75,7 @@ def test_creom23_chplus():
             -0.0022877876,
             -0.0031525794,
             -0.0088507112,
+            -0.0047158142,
         ],
     }
 
@@ -499,5 +505,6 @@ def test_adaptive_f2():
 
 
 if __name__ == "__main__":
-    test_adaptive_f2()
+    test_creom23_chplus()
+    #test_adaptive_f2()
     #test_crcc24_f2()

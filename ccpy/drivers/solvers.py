@@ -270,6 +270,7 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
         diis_engine = DIIS(L, options["diis_size"], options["diis_out_of_core"], vecfile="l.npy", residfile="dl.npy")
 
     # Jacobi/DIIS iterations
+    num_throw_away = 0 # keep this at 0 for now...
     ndiis_cycle = 0
     energy = 0.0
     energy_old = get_lcc_energy(L, LH) + omega
@@ -322,11 +323,12 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
             break
 
         # Save T and dT vectors to disk for DIIS
-        if do_diis:
+        if niter >= num_throw_away and do_diis:
             diis_engine.push(L, LH, niter)
 
         # Do DIIS extrapolation
-        if niter >= options["diis_size"] and do_diis:
+        if (niter + 1) % options["diis_size"] == 0 and do_diis: # this criterion works better I've found...
+        #if niter >= options["diis_size"] + num_throw_away and do_diis:
             ndiis_cycle += 1
             L.unflatten(diis_engine.extrapolate())
 
