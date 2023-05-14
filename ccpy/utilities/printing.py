@@ -26,14 +26,14 @@ def cc_calculation_summary(T, reference_energy, cc_energy, system, print_thresh)
     print_ee_amplitudes(T, system, T.order, print_thresh)
     print("")
 
-def eomcc_calculation_summary(R, omega, r0, is_converged, system, print_thresh):
+def eomcc_calculation_summary(R, omega, r0, rel, is_converged, system, print_thresh):
     print("\n   EOMCC Calculation Summary")
-    print("  --------------------------------------------------------")
+    print("  --------------------------------------------------------------------")
     if is_converged:
         convergence_label = 'converged'
     else:
         convergence_label = 'not converged'
-    print("   Root", convergence_label, "   ω = %.8f" % omega, "  r0 = %.8f" % r0)
+    print("   Root", convergence_label, "   ω = %.8f" % omega, "  r0 = %.8f" % r0, "  REL = %.5f" % rel)
     print_ee_amplitudes(R, system, R.order, print_thresh)
     print("")
 

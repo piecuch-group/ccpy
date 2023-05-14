@@ -70,6 +70,27 @@ def get_r0(R, H, omega):
 
     return r0 / omega
 
+def get_rel(R, r0):
+    """
+       Compute the reduced excitation level (REL) metric, given by
+       \sum_{n=0}^{N} n*<0|(R_{\mu,n})^+ R_{\mu,n})|0>/\sum_{n=0}^{N} <0|(R_{\mu,n})^+ R_{\mu,n})|0>.
+       We assume only CCSD-level contributions (e.g., REL for EOMCCSDT, EOMCCSDt, etc. will not include
+       effects of R3).
+       [See J. Chem. Phys. 122, 214107 (2005)].
+    """
+    rel_0 = r0**2
+    rel_1 = (
+            np.einsum("ai,ai->", R.a, R.a, optimize=True)
+            + np.einsum("ai,ai->", R.b, R.b, optimize=True)
+    )
+    rel_2 = (
+            0.25 * np.einsum("abij,abij->", R.aa, R.aa, optimize=True)
+            + np.einsum("abij,abij->", R.ab, R.ab, optimize=True)
+            + 0.25 * np.einsum("abij,abij->", R.bb, R.bb, optimize=True)
+    )
+    rel = (rel_1 + 2.0 * rel_2)/(rel_0 + rel_1 + rel_2)
+    return rel
+
 def get_LR(R, L):
 
     # explicitly enforce biorthonormality
