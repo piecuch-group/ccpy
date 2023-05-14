@@ -8,23 +8,39 @@ TEST_DATA_DIR = str(Path(__file__).parent.absolute() / "data")
 
 
 def test_creom23_chplus():
-    """ """
+    """
+    CH+ at R = Re, where Re = 2.13713 bohr using RHF described using the Olsen
+    basis set. Excited-state EOMCCSD, CR-EOMCC(2,3), and delta-CR-EOMCC(2,3)
+    calculations performed for 5 excited states initiated using the CIS initial
+    guess. The state orderings obtained using CIS are as follows:
+    1 and 2 -> 1 Pi
+    3 -> 3 Sigma
+    4 and 5 -> 2 Pi
+    9 -> 4 Sigma.
+    The 2 Sigma and both Delta states are dominated by two-electron excitations are
+    are thus invisible to the CIS initial guess.
+    Reference: Chem. Phys. Lett. 154, 380 (1989) [original Olsen paper with basis set]
+               Mol. Phys. 118, e1817592 (2020) [CC(P;Q) results]
+    """
+
+    selected_states = [0, 1, 2, 3, 4, 5, 9] # Pick guess vectors for states (I knew this beforehand)
+
     driver = Driver.from_gamess(
         logfile=TEST_DATA_DIR + "/chplus/chplus.log",
         fcidump=TEST_DATA_DIR + "/chplus/chplus.FCIDUMP",
         nfrozen=0,
     )
     driver.system.print_info()
-    driver.options["maximum_iterations"] = 1000
+    driver.options["maximum_iterations"] = 1000 # 4 Sigma state requires ~661 iterations in left-CCSD
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="cis", multiplicity=1, nroot=10)
-    driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3, 4, 9])
+    driver.run_eomcc(method="eomccsd", state_index=selected_states[1:])
     driver.options[
         "energy_shift"
     ] = 0.5  # set energy shift to help converge left-EOMCCSD
-    driver.run_leftcc(method="left_ccsd", state_index=[0, 1, 2, 3, 4, 9])
-    driver.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3, 4, 9])
+    driver.run_leftcc(method="left_ccsd", state_index=selected_states)
+    driver.run_ccp3(method="crcc23", state_index=selected_states)
 
     expected_vee = [
         0.0,
@@ -32,6 +48,10 @@ def test_creom23_chplus():
         0.11982887,
         0.49906873,
         0.53118318,
+        0.53118318,
+        0.0,
+        0.0,
+        0.0,
         0.63633490,
     ]
     expected_total_energy = [
@@ -40,6 +60,10 @@ def test_creom23_chplus():
         -37.8978412944,
         -37.5186014361,
         -37.4864869901,
+        -37.4864869901,
+        0.0,
+        0.0,
+        0.0,
         -37.3813352611,
     ]
     expected_deltapq = {
@@ -49,6 +73,10 @@ def test_creom23_chplus():
             -0.0016296078,
             -0.0021697718,
             -0.0045706983,
+            -0.0045706983,
+            0.0,
+            0.0,
+            0.0,
             -0.0032097085,
         ],
         "D": [
@@ -57,6 +85,10 @@ def test_creom23_chplus():
             -0.0022877876,
             -0.0030686698,
             -0.0088507112,
+            -0.0088507112,
+            0.0,
+            0.0,
+            0.0,
             -0.0045827171,
         ],
     }
@@ -67,6 +99,10 @@ def test_creom23_chplus():
             -0.0016296078,
             -0.0022291593,
             -0.0045706983,
+            -0.0045706983,
+            0.0,
+            0.0,
+            0.0,
             -0.0033071442,
         ],
         "D": [
@@ -75,13 +111,17 @@ def test_creom23_chplus():
             -0.0022877876,
             -0.0031525794,
             -0.0088507112,
+            -0.0088507112,
+            0.0,
+            0.0,
+            0.0,
             -0.0047158142,
         ],
     }
 
     # Check reference energy
     assert np.allclose(driver.system.reference_energy, -37.9027681837)
-    for n in range(5):
+    for n in selected_states:
         if n == 0:
             # Check CCSD energy
             assert np.allclose(driver.correlation_energy, -0.11490198)
