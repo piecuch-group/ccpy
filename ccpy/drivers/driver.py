@@ -151,6 +151,9 @@ class Driver:
         elif method.lower() == "mbpt3":
             from ccpy.mbpt.mbpt import calc_mbpt3
             self.correlation_energy = calc_mbpt3(self.system, self.hamiltonian)
+        elif method.lower() == "mbpt4":
+            from ccpy.mbpt.mbpt import calc_mbpt4
+            self.correlation_energy = calc_mbpt4(self.system, self.hamiltonian)
         else:
             raise NotImplementedError("MBPT method {} not implemented".format(method.lower()))
 

@@ -7,6 +7,9 @@ from ccpy.utilities.printing import print_cc_iteration, print_cc_iteration_heade
                                     print_eomcc_iteration, print_eomcc_iteration_header
 from ccpy.models.operators import ClusterOperator, FockOperator
 
+# [TODO]: CROP algorithm
+# 
+
 
 def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     """

@@ -475,6 +475,46 @@ def test_ccsdpt_f2():
         -199.2646983796,
     )
 
+def test_mbpt_h2o():
+    """
+    """
+    # 2 Re
+    geometry = [["O", (0.0, 0.0, -0.0180)], 
+                ["H", (0.0, 3.030526, -2.117796)],
+                ["H", (0.0, -3.030526, -2.117796)]]
+    mol = gto.M(
+        atom=geometry,
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    # Check reference energy
+    assert np.allclose(
+        driver.system.reference_energy, -75.587711
+    )
+    driver.run_mbpt(method="mbpt2")
+    # Check MBPT(2) total energy
+    assert np.allclose(
+        driver.system.reference_energy + driver.correlation_energy, -75.896935
+    )
+    driver.run_mbpt(method="mbpt3")
+    # Check MBPT(3) total energy
+    assert np.allclose(
+        driver.system.reference_energy + driver.correlation_energy, -75.882569
+    )
+    driver.run_mbpt(method="mbpt4")
+    # Check MBPT(4) total energy
+    assert np.allclose(
+        driver.system.reference_energy + driver.correlation_energy, -75.935619
+    )
+
 
 def test_crcc24_f2():
     """
@@ -545,7 +585,8 @@ def test_adaptive_f2():
 
 
 if __name__ == "__main__":
+    test_mbpt_h2o()
     #test_creom23_chplus()
-    test_eomccsdt1_chplus()
+    #test_eomccsdt1_chplus()
     #test_adaptive_f2()
     #test_crcc24_f2()
