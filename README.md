@@ -36,11 +36,13 @@ energetics for the missing many-electron correlations using the generalized mome
 
 Because CCpy is primarily used for CC method development work, we use interfaces to GAMESS and Pyscf to obtain the mean-field (typically Hartree-Fock)
 reference state and associated molecular orbital one- and two-electron integrals prior to performing the correlated CC calculations. All implementations
-in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references.
+in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references. The expressions
+used in all methods are also valid for UHF references, however, CCpy does not yet have a convenient interface to UHF references computed
+by PySCF or GAMESS. Once this is made available, all computations will also be compatible with UHF.
 
 A list of all computational options available in CCpy:
-  - MBPT(2)
-  - MBPT(3)
+  - MP2
+  - MP3
   - CCD
   - CCSD
   - CCSD(T)
@@ -61,8 +63,9 @@ A list of all computational options available in CCpy:
   - ec-CC_II_{3,4} (unpublished)
 
 Currently, all EOMCC options are initiated using a CIS-like guess, which can reliably locate states dominated by single
-excitations. Currently, the more desirable CISd-like guess, capable of finding doubly excited states, is not available
-yet. 
+excitations. The more desirable CISd-like guess, capable of finding doubly excited states, is not available yet. Also
+note that the MPn methods available in CCpy are not implemented for non-Hartree-Fock orbitals, and thus should only be
+used with RHF and ROHF references. 
 
 
 # Installation

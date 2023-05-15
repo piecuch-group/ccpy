@@ -145,15 +145,15 @@ class Driver:
 
     def run_mbpt(self, method):
 
-        if method.lower() == "mbpt2":
-            from ccpy.mbpt.mbpt import calc_mbpt2
-            self.correlation_energy = calc_mbpt2(self.system, self.hamiltonian)
-        elif method.lower() == "mbpt3":
-            from ccpy.mbpt.mbpt import calc_mbpt3
-            self.correlation_energy = calc_mbpt3(self.system, self.hamiltonian)
-        elif method.lower() == "mbpt4":
-            from ccpy.mbpt.mbpt import calc_mbpt4
-            self.correlation_energy = calc_mbpt4(self.system, self.hamiltonian)
+        if method.lower() == "mp2":
+            from ccpy.mbpt.mbpt import calc_mp2
+            self.correlation_energy = calc_mp2(self.system, self.hamiltonian)
+        elif method.lower() == "mp3":
+            from ccpy.mbpt.mbpt import calc_mp3
+            self.correlation_energy = calc_mp3(self.system, self.hamiltonian)
+        elif method.lower() == "mp4":
+            from ccpy.mbpt.mbpt import calc_mp4
+            self.correlation_energy = calc_mp4(self.system, self.hamiltonian)
         else:
             raise NotImplementedError("MBPT method {} not implemented".format(method.lower()))
 

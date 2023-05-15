@@ -1,7 +1,7 @@
 import time
 from ccpy.utilities.updates import mbpt_loops
 
-def calc_mbpt2(system, H):
+def calc_mp2(system, H):
 
     t_start = time.time()
     corr_energy = mbpt_loops.mbpt_loops.mp2(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
@@ -17,7 +17,7 @@ def calc_mbpt2(system, H):
 
     return corr_energy
 
-def calc_mbpt3(system, H):
+def calc_mp3(system, H):
 
     t_start = time.time()
     corr_energy2 = mbpt_loops.mbpt_loops.mp2(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
@@ -41,7 +41,7 @@ def calc_mbpt3(system, H):
 
     return corr_energy
 
-def calc_mbpt4(system, H):
+def calc_mp4(system, H):
 
     t_start = time.time()
     corr_energy2 = mbpt_loops.mbpt_loops.mp2(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
