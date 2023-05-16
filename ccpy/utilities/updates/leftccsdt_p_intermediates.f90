@@ -605,6 +605,288 @@ module leftccsdt_p_intermediates
 
               end subroutine compute_x1a_oo
 
+              subroutine compute_x1a_vv(x1a_vv,&
+                                        t3a_amps, t3a_excits,&
+                                        t3b_amps, t3b_excits,&
+                                        t3c_amps, t3c_excits,&
+                                        l3a_amps, l3a_excits,&
+                                        l3b_amps, l3b_excits,&
+                                        l3c_amps, l3c_excits,&
+                                        n3aaa_t, n3aab_t, n3abb_t,&
+                                        n3aaa_l, n3aab_l, n3abb_l,&
+                                        noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aaa_t, n3aab_t, n3abb_t
+                  integer, intent(in) :: n3aaa_l, n3aab_l, n3abb_l
+
+                  integer, intent(in) :: t3a_excits(6,n3aaa_t)
+                  real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
+                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  real(kind=8), intent(in) :: t3b_amps(n3aab_t)
+                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  real(kind=8), intent(in) :: t3c_amps(n3abb_t)
+                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
+                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
+                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  real(kind=8), intent(in) :: l3c_amps(n3abb_l)
+
+                  real(kind=8), intent(out) :: x1a_vv(nua,nua)
+                 
+                  integer, allocatable :: excits_buff(:,:)
+                  real(kind=8), allocatable :: amps_buff(:) 
+                  integer, allocatable :: idx_table(:,:,:,:)
+                  integer, allocatable :: loc_arr(:,:)
+
+                  real(kind=8) :: t_amp, l_amp, lt_amp
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet, jdet
+                  integer :: idx, nloc
+
+                  x1a_vv = 0.0d0
+                  !!!! x1a(ea) <- -1/6 l3a(abcijk) t3a(ebcijk)
+                  ! copy t3a into buffer
+                  allocate(amps_buff(n3aaa_t), excits_buff(6,n3aaa_t))
+                  amps_buff(:) = t3a_amps(:)
+                  excits_buff(:,:) = t3a_excits(:,:)
+                  ! allocate new sorting arrays
+                  nloc = noa*(noa-1)*(noa-2)/6*nua
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(noa,noa,noa,nua))
+                  !!! IJKC LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_l
+                     l_amp = l3a_amps(idet)
+                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
+                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,c)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        t_amp = amps_buff(jdet)
+                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        ! < ijkabc | ijkdec >
+                        lt_amp = 0.5d0 * l_amp * t_amp
+                        if (a==d) x1a_vv(e,b) = x1a_vv(e,b) - lt_amp ! (1)
+                        if (b==d) x1a_vv(e,a) = x1a_vv(e,a) + lt_amp ! (ab)
+                        if (a==e) x1a_vv(d,b) = x1a_vv(d,b) + lt_amp ! (de)
+                        if (b==e) x1a_vv(d,a) = x1a_vv(d,a) - lt_amp ! (ab)(de)
+                     end do
+                     ! (ac)
+                     idx = idx_table(i,j,k,a)
+                     if (idx/=0) then
+                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                           t_amp = amps_buff(jdet)
+                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           lt_amp = 0.5d0 * l_amp * t_amp
+                           if (c==d) x1a_vv(e,b) = x1a_vv(e,b) + lt_amp ! (1)
+                           if (b==d) x1a_vv(e,c) = x1a_vv(e,c) - lt_amp ! (ab)
+                           if (c==e) x1a_vv(d,b) = x1a_vv(d,b) - lt_amp ! (de)
+                           if (b==e) x1a_vv(d,c) = x1a_vv(d,c) + lt_amp ! (ab)(de)
+                        end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(i,j,k,b)
+                     if (idx/=0) then
+                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                           t_amp = amps_buff(jdet)
+                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           lt_amp = 0.5d0 * l_amp * t_amp
+                           if (a==d) x1a_vv(e,c) = x1a_vv(e,c) + lt_amp ! (1)
+                           if (c==d) x1a_vv(e,a) = x1a_vv(e,a) - lt_amp ! (ab)
+                           if (a==e) x1a_vv(d,c) = x1a_vv(d,c) - lt_amp ! (de)
+                           if (c==e) x1a_vv(d,a) = x1a_vv(d,a) + lt_amp ! (ab)(de)
+                        end do
+                     end if
+                  end do
+                  !!! IJKB LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/2,nua-1/), noa, noa, noa, nua)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_l
+                     l_amp = l3a_amps(idet)
+                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
+                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,b)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        t_amp = amps_buff(jdet)
+                        d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                        lt_amp = 0.5d0 * l_amp * t_amp
+                        if (a==d) x1a_vv(f,c) = x1a_vv(f,c) - lt_amp ! (1)
+                        if (c==d) x1a_vv(f,a) = x1a_vv(f,a) + lt_amp ! (ac)
+                        if (a==f) x1a_vv(d,c) = x1a_vv(d,c) + lt_amp ! (df)
+                        if (c==f) x1a_vv(d,a) = x1a_vv(d,a) - lt_amp ! (ac)(df)
+                     end do
+                     ! (ab)
+                     idx = idx_table(i,j,k,a)
+                     if (idx/=0) then
+                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                           t_amp = amps_buff(jdet)
+                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           lt_amp = 0.5d0 * l_amp * t_amp
+                           if (b==d) x1a_vv(f,c) = x1a_vv(f,c) + lt_amp ! (1)
+                           if (c==d) x1a_vv(f,b) = x1a_vv(f,b) - lt_amp ! (ac)
+                           if (b==f) x1a_vv(d,c) = x1a_vv(d,c) - lt_amp ! (df)
+                           if (c==f) x1a_vv(d,b) = x1a_vv(d,b) + lt_amp ! (ac)(df)
+                        end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(i,j,k,c)
+                     if (idx/=0) then
+                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                           t_amp = amps_buff(jdet)
+                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           lt_amp = 0.5d0 * l_amp * t_amp
+                           if (a==d) x1a_vv(f,b) = x1a_vv(f,b) + lt_amp ! (1)
+                           if (b==d) x1a_vv(f,a) = x1a_vv(f,a) - lt_amp ! (ac)
+                           if (a==f) x1a_vv(d,b) = x1a_vv(d,b) - lt_amp ! (df)
+                           if (b==f) x1a_vv(d,a) = x1a_vv(d,a) + lt_amp ! (ac)(df)
+                        end do
+                     end if
+                  end do
+                  !!! IJKA LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_l
+                     l_amp = l3a_amps(idet)
+                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
+                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,a)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        t_amp = amps_buff(jdet)
+                        e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                        lt_amp = 0.5d0 * l_amp * t_amp
+                        if (b==e) x1a_vv(f,c) = x1a_vv(f,c) - lt_amp ! (1)
+                        if (c==e) x1a_vv(f,b) = x1a_vv(f,b) + lt_amp ! (bc)
+                        if (b==f) x1a_vv(e,c) = x1a_vv(e,c) + lt_amp ! (ef)
+                        if (c==f) x1a_vv(e,b) = x1a_vv(e,b) - lt_amp ! (bc)(ef)
+                     end do
+                     ! (ab)
+                     idx = idx_table(i,j,k,b)
+                     if (idx/=0) then
+                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                           t_amp = amps_buff(jdet)
+                           e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                           lt_amp = 0.5d0 * l_amp * t_amp
+                           if (a==e) x1a_vv(f,c) = x1a_vv(f,c) + lt_amp ! (1)
+                           if (c==e) x1a_vv(f,a) = x1a_vv(f,a) - lt_amp ! (bc)
+                           if (a==f) x1a_vv(e,c) = x1a_vv(e,c) - lt_amp ! (ef)
+                           if (c==f) x1a_vv(e,a) = x1a_vv(e,a) + lt_amp ! (bc)(ef)
+                        end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(i,j,k,c)
+                     if (idx/=0) then
+                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                           t_amp = amps_buff(jdet)
+                           e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                           lt_amp = 0.5d0 * l_amp * t_amp
+                           if (b==e) x1a_vv(f,a) = x1a_vv(f,a) + lt_amp ! (1)
+                           if (a==e) x1a_vv(f,b) = x1a_vv(f,b) - lt_amp ! (bc)
+                           if (b==f) x1a_vv(e,a) = x1a_vv(e,a) - lt_amp ! (ef)
+                           if (a==f) x1a_vv(e,b) = x1a_vv(e,b) + lt_amp ! (bc)(ef)
+                        end do
+                     end if
+                  end do
+                  deallocate(loc_arr,idx_table,amps_buff,excits_buff)
+                  !!!! x1a(ea) <- -l3b(abcijk) t3b(ebcijk)
+                  ! copy t3b into buffer
+                  allocate(amps_buff(n3aab_t), excits_buff(6,n3aab_t))
+                  amps_buff(:) = t3b_amps(:)
+                  excits_buff(:,:) = t3b_excits(:,:)
+                  ! allocate new sorting arrays
+                  nloc = noa*(noa-1)/2*nob*nub
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(noa,noa,nob,nub))
+                  !!! IJKC LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nub/), noa, noa, nob, nub)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab_t)
+                  do idet = 1, n3aab_l
+                     l_amp = l3b_amps(idet)
+                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
+                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,c)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        t_amp = amps_buff(jdet)
+                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        ! < ijk~abc~ | ijk~dec~ >
+                        lt_amp = l_amp * t_amp
+                        if (a==d) x1a_vv(e,b) = x1a_vv(e,b) - lt_amp ! (1)
+                        if (b==d) x1a_vv(e,a) = x1a_vv(e,a) + lt_amp ! (ab)
+                        if (a==e) x1a_vv(d,b) = x1a_vv(d,b) + lt_amp ! (de)
+                        if (b==e) x1a_vv(d,a) = x1a_vv(d,a) - lt_amp ! (ab)(de)
+                     end do
+                  end do
+                  deallocate(loc_arr,idx_table,amps_buff,excits_buff)
+                  !!!! x1a(ea) <- -1/4 l3c(abcijk) t3c(ebcijk)
+                  ! copy t3c into buffer
+                  allocate(amps_buff(n3abb_t), excits_buff(6,n3abb_t))
+                  amps_buff(:) = t3c_amps(:)
+                  excits_buff(:,:) = t3c_excits(:,:)
+                  ! allocate new sorting arrays
+                  nloc = noa*nob*(nob-1)/2*nub
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(nob,nob,noa,nub))
+                  !!! JKIB LOOP !!!
+                  call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nub-1/), nob, nob, noa, nub)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,4,2/), nob, nob, noa, nub, nloc, n3abb_t)
+                  do idet = 1, n3abb_l
+                     l_amp = l3c_amps(idet)
+                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
+                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(j,k,i,b)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        t_amp = amps_buff(jdet)
+                        d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                        ! < ij~k~ab~c~ | ij~k~db~f~ >
+                        lt_amp = 0.5d0 * l_amp * t_amp
+                        if (c==f) x1a_vv(d,a) = x1a_vv(d,a) - lt_amp 
+                     end do
+                     ! (bc)
+                     idx = idx_table(j,k,i,c)
+                     if (idx/=0) then
+                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                           t_amp = amps_buff(jdet)
+                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           lt_amp = 0.5d0 * l_amp * t_amp
+                           if (b==f) x1a_vv(d,a) = x1a_vv(d,a) + lt_amp 
+                        end do
+                     end if
+                  end do
+                  !!! JKIC LOOP !!!
+                  call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/2,nub/), nob, nob, noa, nub)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,4,3/), nob, nob, noa, nub, nloc, n3abb_t)
+                  do idet = 1, n3abb_l
+                     l_amp = l3c_amps(idet)
+                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
+                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(j,k,i,c)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        t_amp = amps_buff(jdet)
+                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        lt_amp = 0.5d0 * l_amp * t_amp
+                        if (b==e) x1a_vv(d,a) = x1a_vv(d,a) - lt_amp
+                     end do
+                     ! (bc)
+                     idx = idx_table(j,k,i,b)
+                     if (idx/=0) then
+                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                           t_amp = amps_buff(jdet)
+                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           lt_amp = 0.5d0 * l_amp * t_amp
+                           if (c==e) x1a_vv(d,a) = x1a_vv(d,a) + lt_amp 
+                        end do
+                     end if
+                  end do
+                  deallocate(loc_arr,idx_table,amps_buff,excits_buff)
+
+              end subroutine compute_x1a_vv  
+      
               subroutine compute_x2a_oooo(x2a_oooo,&
                                           t3a_amps, t3a_excits,&
                                           t3b_amps, t3b_excits,&
