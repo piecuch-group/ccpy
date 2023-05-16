@@ -38,7 +38,8 @@ def test_creom23_chplus():
     driver.run_eomcc(method="eomccsd", state_index=selected_states[1:])
     driver.options[
         "energy_shift"
-    ] = 0.5  # set energy shift to help converge left-EOMCCSD
+    ] = 0.8  # set energy shift to help converge left-EOMCCSD
+    driver.options["diis_size"] = 12
     driver.run_leftcc(method="left_ccsd", state_index=selected_states)
     driver.run_ccp3(method="crcc23", state_index=selected_states)
 
@@ -589,8 +590,8 @@ def test_adaptive_f2():
 
 
 if __name__ == "__main__":
-    test_mbpt_h2o()
+    #test_mbpt_h2o()
     #test_creom23_chplus()
-    #test_eomccsdt1_chplus()
+    test_eomccsdt1_chplus()
     #test_adaptive_f2()
     #test_crcc24_f2()

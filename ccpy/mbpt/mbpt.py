@@ -50,7 +50,7 @@ def calc_mp4(system, H):
                                              H.aa.oovv, H.aa.vvoo, H.aa.voov, H.aa.oooo, H.aa.vvvv,
                                              H.ab.oovv, H.ab.vvoo, H.ab.voov, H.ab.ovvo, H.ab.vovo, H.ab.ovov, H.ab.oooo, H.ab.vvvv,
                                              H.bb.oovv, H.bb.vvoo, H.bb.voov, H.bb.oooo, H.bb.vvvv)
-    corr_energy4 = mbpt_loops.mbpt_loops.mp4(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+    corr_energy4, corr_singles, corr_doubles, corr_triples, corr_quadruples = mbpt_loops.mbpt_loops.mp4(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                              H.aa.oovv, H.aa.vvoo, H.aa.voov, H.aa.oooo, H.aa.vvvv, H.aa.vooo, H.aa.vvov, H.aa.ooov, H.aa.vovv,
                                              H.ab.oovv, H.ab.vvoo, H.ab.voov, H.ab.ovvo, H.ab.vovo, H.ab.ovov, H.ab.oooo, H.ab.vvvv,
                                              H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.ab.ooov, H.ab.oovo, H.ab.vovv, H.ab.ovvv,
@@ -67,6 +67,10 @@ def calc_mp4(system, H):
     print("   2nd-order contribution = {:>10.10f}".format(corr_energy2))
     print("   3rd-order contribution = {:>10.10f}".format(corr_energy3))
     print("   4th-order contribution = {:>10.10f}".format(corr_energy4))
+    print("        E(T1) = {:>10.10f}".format(corr_singles))
+    print("        E(T2) = {:>10.10f}".format(corr_doubles))
+    print("        E(T3) = {:>10.10f}".format(corr_triples))
+    print("        E(T2**2) = {:>10.10f}".format(corr_quadruples))
     print("   MBPT(4) = {:>10.10f}     ΔE = {:>10.10f}".format(system.reference_energy + corr_energy, corr_energy))
 
     return corr_energy

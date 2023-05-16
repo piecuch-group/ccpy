@@ -940,11 +940,9 @@ module cc_loops2
                                   do c = b + 1,nua
 
                                       denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1A_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1A_vv(C,C)
+                                      val = omega*l3a(a,b,c,i,j,k) - X3A(a,b,c,i,j,k)
 
-                                      val = X3A(a, b, c, i, j, k)
-
-                                      l3a(a, b, c, i, j, k) = l3a(a, b, c, i, j, k)&
-                                              - (val - omega * l3a(a, b, c, i, j, k))/(denom - omega + shift)
+                                      l3a(a,b,c,i,j,k) = l3a(a,b,c,i,j,k) + val/(denom - omega + shift)
                                       l3a(A,B,C,K,I,J) = l3a(A,B,C,I,J,K)
                                       l3a(A,B,C,J,K,I) = l3a(A,B,C,I,J,K)
                                       l3a(A,B,C,I,K,J) = -l3a(A,B,C,I,J,K)
@@ -986,8 +984,7 @@ module cc_loops2
                                       l3a(C,A,B,J,I,K) = -l3a(A,B,C,I,J,K)
                                       l3a(C,A,B,K,J,I) = -l3a(A,B,C,I,J,K)
 
-                                      val = X3A(a, b, c, i, j, k) - omega * l3a(a, b, c, i, j, k)
-
+                                      val = val/(denom - omega + shift)
                                       X3A(A,B,C,I,J,K) = val
                                       X3A(A,B,C,K,I,J) = val
                                       X3A(A,B,C,J,K,I) = val
@@ -1029,7 +1026,6 @@ module cc_loops2
                                       X3A(C,B,A,I,K,J) = val
                                       X3A(C,B,A,J,I,K) = val
                                       X3A(C,B,A,K,J,I) = val
-
                                   end do
                               end do
                           end do
@@ -1045,23 +1041,18 @@ module cc_loops2
                                   do c = 1,nub
 
                                       denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1B_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1B_vv(C,C)
+                                      val = omega*l3b(a,b,c,i,j,k) - X3B(a,b,c,i,j,k)
 
-                                      val = X3B(a, b, c, i, j, k)
-
-                                      l3b(a, b, c, i, j, k) = l3b(a, b, c, i, j, k)&
-                                              - (val - omega * l3b(a, b, c, i, j, k))/(denom - omega + shift)
+                                      l3b(a,b,c,i,j,k) = l3b(a,b,c,i,j,k) + val/(denom - omega + shift)
                                       l3b(b, a, c, i, j, k) = -1.0 * l3b(A,B,C,I,J,K)
                                       l3b(a, b, c, j, i, k) = -1.0 * l3b(A,B,C,I,J,K)
                                       l3b(b, a, c, j, i, k) = l3b(A,B,C,I,J,K)
 
-
-                                      val = X3B(a, b, c, i, j, k) - omega * l3b(a, b, c, i, j, k)
-
+                                      val = val/(denom - omega + shift)
                                       X3B(A,B,C,I,J,K) = val
                                       X3B(B,A,C,I,J,K) = -1.0 * val
                                       X3B(A,B,C,J,I,K) = -1.0 * val
                                       X3B(B,A,C,J,I,K) = val
-
                                   end do
                               end do
                           end do
@@ -1077,23 +1068,18 @@ module cc_loops2
                                   do c = b+1,nub
 
                                       denom = -H1A_oo(I,I)-H1B_oo(J,J)-H1B_oo(K,K)+H1A_vv(A,A)+H1B_vv(B,B)+H1B_vv(C,C)
+                                      val = omega*l3c(a,b,c,i,j,k) - X3C(a,b,c,i,j,k)
 
-                                      val = X3C(a, b, c, i, j, k)
-
-                                      l3c(a, b, c, i, j, k) = l3c(a, b, c, i, j, k)&
-                                              - (val - omega * l3c(a, b, c, i, j, k))/(denom - omega + shift)
+                                      l3c(a,b,c,i,j,k) = l3c(a,b,c,i,j,k) + val/(denom - omega + shift)
                                       l3c(a, c, b, i, j, k) = -1.0 * l3c(A,B,C,I,J,K)
                                       l3c(a, b, c, i, k, j) = -1.0 * l3c(A,B,C,I,J,K)
                                       l3c(a, c, b, i, k, j) = l3c(A,B,C,I,J,K)
 
-
-                                      val = X3C(a, b, c, i, j, k) - omega * l3c(a, b, c, i, j, k)
-
+                                      val = val/(denom - omega + shift)
                                       X3C(A,B,C,I,J,K) = val
                                       X3C(A,C,B,I,J,K) = -1.0 * val
                                       X3C(A,B,C,I,K,J) = -1.0 * val
                                       X3C(A,C,B,I,K,J) = val
-
                                   end do
                               end do
                           end do
@@ -1109,11 +1095,9 @@ module cc_loops2
                                   do c = b+1,nub
 
                                       denom = -H1B_oo(I,I)-H1B_oo(J,J)-H1B_oo(K,K)+H1B_vv(A,A)+H1B_vv(B,B)+H1B_vv(C,C)
+                                      val = omega*l3d(a,b,c,i,j,k) - X3D(a,b,c,i,j,k)
 
-                                      val = X3D(a, b, c, i, j, k)
-
-                                      l3d(a, b, c, i, j, k) = l3d(a, b, c, i, j, k)&
-                                              - (val - omega * l3d(a, b, c, i, j, k))/(denom - omega + shift)
+                                      l3d(a,b,c,i,j,k) = l3d(a,b,c,i,j,k) + val/(denom - omega + shift)
                                       l3d(A,B,C,K,I,J) = l3d(A,B,C,I,J,K)
                                       l3d(A,B,C,J,K,I) = l3d(A,B,C,I,J,K)
                                       l3d(A,B,C,I,K,J) = -l3d(A,B,C,I,J,K)
@@ -1155,8 +1139,7 @@ module cc_loops2
                                       l3d(C,A,B,J,I,K) = -l3d(A,B,C,I,J,K)
                                       l3d(C,A,B,K,J,I) = -l3d(A,B,C,I,J,K)
 
-                                      val = X3D(a, b, c, i, j, k) - omega * l3d(a, b, c, i, j, k)
-
+                                      val = val/(denom - omega + shift)
                                       X3D(A,B,C,I,J,K) = val
                                       X3D(A,B,C,K,I,J) = val
                                       X3D(A,B,C,J,K,I) = val
@@ -1198,7 +1181,6 @@ module cc_loops2
                                       X3D(C,B,A,I,K,J) = val
                                       X3D(C,B,A,J,I,K) = val
                                       X3D(C,B,A,K,J,I) = val
-
                                   end do
                               end do
                           end do

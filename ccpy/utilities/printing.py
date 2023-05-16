@@ -35,7 +35,7 @@ def eomcc_calculation_summary(R, omega, corr_energy, r0, rel, is_converged, syst
     print("\n   EOMCC Calculation Summary (%s)" % convergence_label)
     print("  --------------------------------------------------")
     print(DATA_FMT.format("   Vertical excitation energy", omega))
-    print(DATA_FMT.format("   Ground state weight r0", r0))
+    print(DATA_FMT.format("   Reference state weight r0", r0))
     print(DATA_FMT.format("   Relative excitation level", rel))
     print(DATA_FMT.format("   Total EOMCC energy", system.reference_energy + corr_energy + omega))
     print_ee_amplitudes(R, system, R.order, print_thresh)

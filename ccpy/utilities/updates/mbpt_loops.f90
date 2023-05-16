@@ -277,7 +277,7 @@ module mbpt_loops
                              vB_oovv,vB_vvoo,vB_voov,vB_ovvo,vB_vovo,vB_ovov,vB_oooo,vB_vvvv,&
                              vB_vooo,vB_ovoo,vB_vvov,vB_vvvo,vB_ooov,vB_oovo,vB_vovv,vB_ovvv,&
                              vC_oovv,vC_vvoo,vC_voov,vC_oooo,vC_vvvv,vC_vooo,vC_vvov,vC_ooov,vC_vovv,&
-                             noa,nob,nua,nub,Emp4)
+                             noa,nob,nua,nub,Emp4,eS,eD,eT,eQ)
 
                     integer, intent(in) :: noa, nob, nua, nub
                     real(kind=8), intent(in) :: fA_oo(noa,noa),fB_oo(nob,nob),&
@@ -316,13 +316,15 @@ module mbpt_loops
                                                 vC_vvov(nub,nub,nob,nub),&
                                                 vC_ooov(nob,nob,nob,nub),&
                                                 vC_vovv(nub,nob,nub,nub)
-                    real(kind=8), intent(out) :: Emp4
+                    real(kind=8), intent(out) :: Emp4, eS, eD, eT, eQ
 
                     real(kind=8) :: t2a_1(nua,nua,noa,noa), t2b_1(nua,nub,noa,nob), t2c_1(nub,nub,nob,nob)
+                    real(kind=8) :: x2a_voov(nua,noa,noa,nua),&
+                                    x2a_oooo(noa,noa,noa,noa),&
+                                    x1a_oo(noa,noa)
 
-                    integer :: i, j, k, l, a, b, c, d, m, n, e, f, o, g
+                    integer :: i, j, k, l, a, b, c, d, m, n, e, f
                     real(kind=8) :: denom, t_amp
-                    real(kind=8) :: e_test1, e_test2
 
                     ! compute t2a_1, t2b_1, and t2c_1 using R2*V|0>
                     t2a_1 = 0.0d0; t2b_1 = 0.0d0; t2c_1 = 0.0d0;
@@ -363,7 +365,8 @@ module mbpt_loops
                        end do
                     end do
                     
-                    ! compute E(D) = <0|(T2[2])^+ * T2[2]|0>, where T2[2] = R2*V*T2[1|0>
+                    ! compute E(D) = <0|(T2[2])^+ * R2 * T2[2]|0>, where T2[2] = V*T2[1|0>
+                    eD = 0.0d0
                     do a = 1, nua
                        do b = a+1, nua
                           do i = 1, noa
@@ -399,7 +402,7 @@ module mbpt_loops
                                                     + vB_voov(b,m,j,e) * t2b_1(a,e,i,m)
                                    end do
                                 end do
-                                Emp4 = Emp4 + t_amp * t_amp / denom
+                                eD = eD + t_amp * t_amp / denom
                              end do
                           end do
                        end do
@@ -453,7 +456,7 @@ module mbpt_loops
                                       t_amp = t_amp - vB_vovo(a,m,e,j) * t2b_1(e,b,i,m)
                                    end do
                                 end do
-                                Emp4 = Emp4 + t_amp * t_amp / denom
+                                eD = eD + t_amp * t_amp / denom
                              end do
                           end do
                        end do
@@ -493,12 +496,13 @@ module mbpt_loops
                                                     + vB_ovvo(m,b,e,j) * t2b_1(e,a,m,i)
                                    end do
                                 end do
-                                Emp4 = Emp4 + t_amp * t_amp / denom
+                                eD = eD + t_amp * t_amp / denom
                              end do
                           end do
                        end do
                     end do
-                    ! compute E(S) = <0|(T1[2])^+ * T1[2]|0>, where T1[2] = R1*V*T2[1]|0>
+                    ! compute E(S) = <0|(T1[2])^+ * R1* T1[2]|0>, where T1[2] = V*T2[1]|0>
+                    eS = 0.0d0
                     do a = 1, nua
                        do i = 1, noa
                           denom = fA_oo(i,i) - fA_vv(a,a)
@@ -529,7 +533,7 @@ module mbpt_loops
                                 end do
                              end do
                           end do
-                          Emp4 = Emp4 + t_amp * t_amp / denom
+                          eS = eS + t_amp * t_amp / denom
                        end do
                     end do
                     do a = 1, nub
@@ -562,11 +566,12 @@ module mbpt_loops
                                 end do
                              end do
                           end do
-                          Emp4 = Emp4 + t_amp * t_amp / denom
+                          eS = eS + t_amp * t_amp / denom
                        end do
                     end do
 
-                    ! compute E(T) = <0|(T3[2])^+ * T3[2]|0>, where T3[2] = R3*V*T2[1]|0>
+                    ! compute E(T) = <0|(T3[2])^+ * R3 * T3[2]|0>, where T3[2] = V*T2[1]|0>
+                    eT = 0.0d0
                     do a = 1, nua
                        do b = a+1, nua
                           do c = b+1, nua
@@ -594,12 +599,12 @@ module mbpt_loops
                                                        - vA_vvov(a,b,k,e) * t2a_1(e,c,j,i)& ! (ik)
                                                        - vA_vvov(c,b,i,e) * t2a_1(e,a,j,k)& ! (ac)
                                                        + vA_vvov(c,b,j,e) * t2a_1(e,a,i,k)& ! (ac)(ij)
-                                                       + vA_vvov(c,b,k,e) * t2a_1(e,a,j,i)& ! (ac)(ik)
+                                                       + vA_vvov(c,b,k,e) * t2a_1(e,a,j,i)& ! (ac)(ik) 
                                                        - vA_vvov(a,c,i,e) * t2a_1(e,b,j,k)& ! (bc)
                                                        + vA_vvov(a,c,j,e) * t2a_1(e,b,i,k)& ! (bc)(ij)
-                                                       + vA_vvov(a,c,k,e) * t2a_1(e,b,j,i)  ! (bc)(ik)
+                                                       + vA_vvov(a,c,k,e) * t2a_1(e,b,j,i)  ! (bc)(ik) 
                                       end do
-                                      Emp4 = Emp4 + t_amp * t_amp / denom
+                                      eT = eT + t_amp * t_amp / denom
                                    end do
                                 end do
                              end do
@@ -638,7 +643,7 @@ module mbpt_loops
                                                        + vB_vooo(a,m,j,k) * t2b_1(b,c,i,m)&
                                                        - vB_vooo(b,m,j,k) * t2b_1(a,c,i,m)
                                       end do 
-                                      Emp4 = Emp4 + t_amp * t_amp / denom
+                                      eT = eT + t_amp * t_amp / denom
                                    end do
                                 end do
                              end do
@@ -677,7 +682,7 @@ module mbpt_loops
                                                        - vC_vooo(c,m,k,j) * t2b_1(a,b,i,m)&
                                                        + vC_vooo(b,m,k,j) * t2b_1(a,c,i,m)
                                       end do
-                                      Emp4 = Emp4 + t_amp * t_amp / denom
+                                      eT = eT + t_amp * t_amp / denom
                                    end do
                                 end do
                              end do
@@ -716,13 +721,22 @@ module mbpt_loops
                                                        + vC_vvov(a,c,j,e) * t2c_1(e,b,i,k)& ! (bc)(ij)
                                                        + vC_vvov(a,c,k,e) * t2c_1(e,b,j,i)  ! (bc)(ik)
                                       end do
-                                      Emp4 = Emp4 + t_amp * t_amp / denom
+                                      eT = eT + t_amp * t_amp / denom
                                    end do
                                 end do
                              end do
                           end do
                        end do
                     end do
+
+                    ! compute E(Q) = <0|(T2[1]**2)^+ * R4 * (T2[1]**2)|0>, where T2[1] = V|0>)
+                    ! This is accomplished using diagram factorization (adding of different tv1's)
+                    ! check Bartlett & Shavitt book
+                    eQ = 0.0d0
+
+
+                    Emp4 = eS + eD + eT + eQ
+
 
               end subroutine mp4
               
