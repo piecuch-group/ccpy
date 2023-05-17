@@ -4,312 +4,69 @@ module leftccsdt_p_intermediates
         
         contains
 
-              subroutine compute_x2a_ooov(x2a_ooov,&
-                                          t2a, t2b,&
-                                          l3a_amps, l3a_excits,&
-                                          l3b_amps, l3b_excits,&
-                                          n3aaa_l, n3aab_l,&
-                                          noa, nua, nob, nub)
+              subroutine compute_x1a_vo(x1a_vo,&
+                                        t3a_amps, t3a_excits,&
+                                        t3b_amps, t3b_excits,&
+                                        t3c_amps, t3c_excits,&
+                                        l2a, l2b, l2c,&
+                                        n3aaa_t, n3aab_t, n3abb_t,&
+                                        noa, nua, nob, nub)
 
                   integer, intent(in) :: noa, nua, nob, nub
-                  integer, intent(in) :: n3aaa_l, n3aab_l
+                  integer, intent(in) :: n3aaa_t, n3aab_t, n3abb_t
 
-                  real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
-                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
-                  real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
-                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
+                  integer, intent(in) :: t3a_excits(6,n3aaa_t)
+                  real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
+                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  real(kind=8), intent(in) :: t3b_amps(n3aab_t)
+                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  real(kind=8), intent(in) :: t3c_amps(n3abb_t)
 
-                  real(kind=8), intent(out) :: x2a_ooov(noa,noa,noa,nua)
-                 
-                  real(kind=8) :: l_amp
+                  real(kind=8), intent(in) :: l2a(nua,nua,noa,noa),&
+                                              l2b(nua,nub,noa,nob),&
+                                              l2c(nub,nub,nob,nob)
+
+                  real(kind=8), intent(out) :: x1a_vo(nua,noa)
+
+                  real(kind=8) :: t_amp
                   integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
 
-                  x2a_ooov = 0.0d0
-                  do idet = 1, n3aaa_l
-                     l_amp = l3a_amps(idet)
-                     ! x2a(jima) <- A(ij) [A(n/ij)A(a/ef) l3a(aefijn) * t2a(efmn)]
-                     a = l3a_excits(1,idet); e = l3a_excits(2,idet); f = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); n = l3a_excits(6,idet);
-                     ! only fill permutationally unique elements!
-                     x2a_ooov(i,j,:,a) = x2a_ooov(i,j,:,a) - l_amp * t2a(e,f,:,n) ! (1)
-                     x2a_ooov(i,j,:,e) = x2a_ooov(i,j,:,e) + l_amp * t2a(a,f,:,n) ! (ae)
-                     x2a_ooov(i,j,:,f) = x2a_ooov(i,j,:,f) + l_amp * t2a(e,a,:,n) ! (af)
-                     x2a_ooov(j,n,:,a) = x2a_ooov(j,n,:,a) - l_amp * t2a(e,f,:,i) ! (in)
-                     x2a_ooov(j,n,:,e) = x2a_ooov(j,n,:,e) + l_amp * t2a(a,f,:,i) ! (ae)(in)
-                     x2a_ooov(j,n,:,f) = x2a_ooov(j,n,:,f) + l_amp * t2a(e,a,:,i) ! (af)(in)
-                     x2a_ooov(i,n,:,a) = x2a_ooov(i,n,:,a) + l_amp * t2a(e,f,:,j) ! (jn)
-                     x2a_ooov(i,n,:,e) = x2a_ooov(i,n,:,e) - l_amp * t2a(a,f,:,j) ! (ae)(jn)
-                     x2a_ooov(i,n,:,f) = x2a_ooov(i,n,:,f) - l_amp * t2a(e,a,:,j) ! (af)(jn)
+                  x1a_vo = 0.0d0
+                  do idet = 1, n3aaa_t
+                     t_amp = t3a_amps(idet)
+                     ! x1a(ai) <- A(a/ef)A(i/mn) l2a(efmn) * t3a(aefimn)
+                     a = t3a_excits(1,idet); e = t3a_excits(2,idet); f = t3a_excits(3,idet);
+                     i = t3a_excits(4,idet); m = t3a_excits(5,idet); n = t3a_excits(6,idet);
+                     x1a_vo(a,i) = x1a_vo(a,i) + l2a(e,f,m,n) * t_amp ! (1)
+                     x1a_vo(e,i) = x1a_vo(e,i) - l2a(a,f,m,n) * t_amp ! (ae)
+                     x1a_vo(f,i) = x1a_vo(f,i) - l2a(e,a,m,n) * t_amp ! (af)
+                     x1a_vo(a,m) = x1a_vo(a,m) - l2a(e,f,i,n) * t_amp ! (im)
+                     x1a_vo(e,m) = x1a_vo(e,m) + l2a(a,f,i,n) * t_amp ! (ae)(im)
+                     x1a_vo(f,m) = x1a_vo(f,m) + l2a(e,a,i,n) * t_amp ! (af)(im)
+                     x1a_vo(a,n) = x1a_vo(a,n) - l2a(e,f,m,i) * t_amp ! (in)
+                     x1a_vo(e,n) = x1a_vo(e,n) + l2a(a,f,m,i) * t_amp ! (ae)(in)
+                     x1a_vo(f,n) = x1a_vo(f,n) + l2a(e,a,m,i) * t_amp ! (af)(in)
                   end do
-                  do idet = 1, n3aab_l
-                     l_amp = l3b_amps(idet)
-                     ! x2a(jima) <- A(ij) [A(ae) l3b(aefijn) * t2b(efmn)]
-                     a = l3b_excits(1,idet); e = l3b_excits(2,idet); f = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); n = l3b_excits(6,idet);
-                     ! only fill permutationally unique elements!
-                     x2a_ooov(i,j,:,a) = x2a_ooov(i,j,:,a) - l_amp * t2b(e,f,:,n) ! (1)
-                     x2a_ooov(i,j,:,e) = x2a_ooov(i,j,:,e) + l_amp * t2b(a,f,:,n) ! (ae)
+                  do idet = 1, n3aab_t
+                     t_amp = t3b_amps(idet)
+                     ! x1a(ai) <- A(ae)A(im) l2b(efmn) * t3b(aefimn)
+                     a = t3b_excits(1,idet); e = t3b_excits(2,idet); f = t3b_excits(3,idet);
+                     i = t3b_excits(4,idet); m = t3b_excits(5,idet); n = t3b_excits(6,idet);
+                     x1a_vo(a,i) = x1a_vo(a,i) + l2b(e,f,m,n) * t_amp ! (1)
+                     x1a_vo(e,i) = x1a_vo(e,i) - l2b(a,f,m,n) * t_amp ! (ae)
+                     x1a_vo(a,m) = x1a_vo(a,m) - l2b(e,f,i,n) * t_amp ! (im)
+                     x1a_vo(e,m) = x1a_vo(e,m) + l2b(a,f,i,n) * t_amp ! (ae)(im)
                   end do
-
-                  ! apply the common A(ij) antisymmetrizer
-                  do i = 1, noa
-                     do j = i+1, noa
-                        do m = 1, noa
-                           do a = 1, nua
-                              x2a_ooov(i,j,m,a) = x2a_ooov(i,j,m,a) - x2a_ooov(j,i,m,a)
-                           end do
-                        end do
-                     end do
-                  end do
-                  ! explicitly antisymmetrize
-                  do i = 1, noa
-                     do j = i+1, noa
-                        x2a_ooov(j,i,:,:) = -x2a_ooov(i,j,:,:)
-                     end do
+                  do idet = 1, n3abb_t
+                     t_amp = t3c_amps(idet)
+                     ! x1a(ai) <- l2c(efmn) * t3c(aefimn)
+                     a = t3c_excits(1,idet); e = t3c_excits(2,idet); f = t3c_excits(3,idet);
+                     i = t3c_excits(4,idet); m = t3c_excits(5,idet); n = t3c_excits(6,idet);
+                     x1a_vo(a,i) = x1a_vo(a,i) + l2c(e,f,m,n) * t_amp ! (1)
                   end do
 
-              end subroutine compute_x2a_ooov   
+              end subroutine compute_x1a_vo
 
-              subroutine compute_x2a_vovv(x2a_vovv,&
-                                          t2a, t2b,&
-                                          l3a_amps, l3a_excits,&
-                                          l3b_amps, l3b_excits,&
-                                          n3aaa_l, n3aab_l,&
-                                          noa, nua, nob, nub)
-
-                  integer, intent(in) :: noa, nua, nob, nub
-                  integer, intent(in) :: n3aaa_l, n3aab_l
-
-                  real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
-                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
-                  real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
-                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-
-                  real(kind=8), intent(out) :: x2a_vovv(nua,noa,nua,nua)
-                 
-                  real(kind=8) :: l_amp
-                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
-
-                  x2a_vovv = 0.0d0
-                  do idet = 1, n3aaa_l
-                     l_amp = l3a_amps(idet)
-                     ! x2a(eiba) <- A(ab) [A(i/mn)A(f/ab) l3a(abfimn) * t2a(efmn)]
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); f = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); m = l3a_excits(5,idet); n = l3a_excits(6,idet);
-                     ! only fill permutationally unique elements!
-                     x2a_vovv(:,i,a,b) = x2a_vovv(:,i,a,b) + l_amp * t2a(:,f,m,n) ! (1)
-                     x2a_vovv(:,m,a,b) = x2a_vovv(:,m,a,b) - l_amp * t2a(:,f,i,n) ! (im)
-                     x2a_vovv(:,n,a,b) = x2a_vovv(:,n,a,b) - l_amp * t2a(:,f,m,i) ! (in)
-                     x2a_vovv(:,i,b,f) = x2a_vovv(:,i,b,f) + l_amp * t2a(:,a,m,n) ! (af)
-                     x2a_vovv(:,m,b,f) = x2a_vovv(:,m,b,f) - l_amp * t2a(:,a,i,n) ! (im)(af)
-                     x2a_vovv(:,n,b,f) = x2a_vovv(:,n,b,f) - l_amp * t2a(:,a,m,i) ! (in)(af)
-                     x2a_vovv(:,i,a,f) = x2a_vovv(:,i,a,f) - l_amp * t2a(:,b,m,n) ! (bf)
-                     x2a_vovv(:,m,a,f) = x2a_vovv(:,m,a,f) + l_amp * t2a(:,b,i,n) ! (im)(bf)
-                     x2a_vovv(:,n,a,f) = x2a_vovv(:,n,a,f) + l_amp * t2a(:,b,m,i) ! (in)(bf)
-                  end do
-                  do idet = 1, n3aab_l
-                     l_amp = l3b_amps(idet)
-                     ! x2a(eiba) <- A(ab) [A(im) l3b(abfimn) * t2b(efmn)]
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); f = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); m = l3b_excits(5,idet); n = l3b_excits(6,idet);
-                     ! only fill permutationally unique elements!
-                     x2a_vovv(:,i,a,b) = x2a_vovv(:,i,a,b) + l_amp * t2b(:,f,m,n) ! (1)
-                     x2a_vovv(:,m,a,b) = x2a_vovv(:,m,a,b) - l_amp * t2b(:,f,i,n) ! (im)
-                  end do
-
-                  ! apply the common A(ij) antisymmetrizer
-                  do a = 1, nua
-                     do b = a+1, nua
-                        do i = 1, noa
-                           do e = 1, nua
-                              x2a_vovv(e,i,a,b) = x2a_vovv(e,i,a,b) - x2a_vovv(e,i,b,a)
-                           end do
-                        end do
-                     end do
-                  end do
-                  ! explicitly antisymmetrize
-                  do a = 1, nua
-                     do b = a+1, nua
-                        x2a_vovv(:,:,b,a) = -x2a_vovv(:,:,a,b)
-                     end do
-                  end do
-
-              end subroutine compute_x2a_vovv   
-
-              subroutine compute_x2b_oovo(x2b_oovo,&
-                                          t2b, t2c,&
-                                          l3b_amps, l3b_excits,&
-                                          l3c_amps, l3c_excits,&
-                                          n3aab_l, n3abb_l,&
-                                          noa, nua, nob, nub)
-
-                  integer, intent(in) :: noa, nua, nob, nub
-                  integer, intent(in) :: n3aab_l, n3abb_l
-
-                  real(kind=8), intent(in) :: t2b(nua,nub,noa,nob), t2c(nub,nub,nob,nob)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
-                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
-                  real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-
-                  real(kind=8), intent(out) :: x2b_oovo(noa,nob,nua,nob)
-                 
-                  real(kind=8) :: l_amp
-                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
-
-                  x2b_oovo = 0.0d0
-                  do idet = 1, n3aab_l
-                     l_amp = l3b_amps(idet)
-                     ! x2b(jkbm) <- A(bf)A(jn) l3b(bfejnk) * t2b(fenm)
-                     b = l3b_excits(1,idet); f = l3b_excits(2,idet); e = l3b_excits(3,idet);
-                     j = l3b_excits(4,idet); n = l3b_excits(5,idet); k = l3b_excits(6,idet);
-                     x2b_oovo(j,k,b,:) = x2b_oovo(j,k,b,:) + l_amp * t2b(f,e,n,:) ! (1)
-                     x2b_oovo(j,k,f,:) = x2b_oovo(j,k,f,:) - l_amp * t2b(b,e,n,:) ! (bf)
-                     x2b_oovo(n,k,b,:) = x2b_oovo(n,k,b,:) - l_amp * t2b(f,e,j,:) ! (jn)
-                     x2b_oovo(n,k,f,:) = x2b_oovo(n,k,f,:) + l_amp * t2b(b,e,j,:) ! (bf)(jn)
-                  end do
-                  do idet = 1, n3abb_l
-                     l_amp = l3c_amps(idet)
-                     ! x2b(jkbm) <- A(nk) l3c(bfejnk) * t2c(fenm)
-                     b = l3c_excits(1,idet); f = l3c_excits(2,idet); e = l3c_excits(3,idet);
-                     j = l3c_excits(4,idet); n = l3c_excits(5,idet); k = l3c_excits(6,idet);
-                     x2b_oovo(j,k,b,:) = x2b_oovo(j,k,b,:) + l_amp * t2c(f,e,n,:) ! (1)
-                     x2b_oovo(j,n,b,:) = x2b_oovo(j,n,b,:) - l_amp * t2c(f,e,k,:) ! (kn)
-                  end do
-
-              end subroutine compute_x2b_oovo
-
-              subroutine compute_x2b_ooov(x2b_ooov,&
-                                          t2a, t2b,&
-                                          l3b_amps, l3b_excits,&
-                                          l3c_amps, l3c_excits,&
-                                          n3aab_l, n3abb_l,&
-                                          noa, nua, nob, nub)
-
-                  integer, intent(in) :: noa, nua, nob, nub
-                  integer, intent(in) :: n3aab_l, n3abb_l
-
-                  real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
-                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
-                  real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-
-                  real(kind=8), intent(out) :: x2b_ooov(noa,nob,noa,nub)
-                 
-                  real(kind=8) :: l_amp
-                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
-
-                  x2b_ooov = 0.0d0
-                  do idet = 1, n3aab_l
-                     l_amp = l3b_amps(idet)
-                     ! x2b(jkmc) <- A(jn) l3b(efcjnk) * t2a(efmn)
-                     e = l3b_excits(1,idet); f = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     j = l3b_excits(4,idet); n = l3b_excits(5,idet); k = l3b_excits(6,idet);
-                     x2b_ooov(j,k,:,c) = x2b_ooov(j,k,:,c) + l_amp * t2a(e,f,:,n) ! (1)
-                     x2b_ooov(n,k,:,c) = x2b_ooov(n,k,:,c) - l_amp * t2a(e,f,:,j) ! (jn)
-                  end do
-                  do idet = 1, n3abb_l
-                     l_amp = l3c_amps(idet)
-                     ! x2b(jkmc) <-  A(fc)A(kn) l3c(efcjnk) * t2b(efmn)
-                     e = l3c_excits(1,idet); f = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     j = l3c_excits(4,idet); n = l3c_excits(5,idet); k = l3c_excits(6,idet);
-                     x2b_ooov(j,k,:,c) = x2b_ooov(j,k,:,c) + l_amp * t2b(e,f,:,n) ! (1)
-                     x2b_ooov(j,n,:,c) = x2b_ooov(j,n,:,c) - l_amp * t2b(e,f,:,k) ! (kn)
-                     x2b_ooov(j,k,:,f) = x2b_ooov(j,k,:,f) - l_amp * t2b(e,c,:,n) ! (fc)
-                     x2b_ooov(j,n,:,f) = x2b_ooov(j,n,:,f) + l_amp * t2b(e,c,:,k) ! (kn)(fc)
-                  end do
-
-              end subroutine compute_x2b_ooov
-
-              subroutine compute_x2b_ovvv(x2b_ovvv,&
-                                          t2b, t2c,&
-                                          l3b_amps, l3b_excits,&
-                                          l3c_amps, l3c_excits,&
-                                          n3aab_l, n3abb_l,&
-                                          noa, nua, nob, nub)
-
-                  integer, intent(in) :: noa, nua, nob, nub
-                  integer, intent(in) :: n3aab_l, n3abb_l
-
-                  real(kind=8), intent(in) :: t2b(nua,nub,noa,nob), t2c(nub,nub,nob,nob)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
-                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
-                  real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-
-                  real(kind=8), intent(out) :: x2b_ovvv(noa,nub,nua,nub)
-                 
-                  real(kind=8) :: l_amp
-                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
-
-                  x2b_ovvv = 0.0d0
-                  do idet = 1, n3aab_l
-                     l_amp = l3b_amps(idet)
-                     ! x2b(ieab) <- A(af)A(in) -l3b(afbinm) * t2b(fenm)
-                     a = l3b_excits(1,idet); f = l3b_excits(2,idet); b = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); n = l3b_excits(5,idet); m = l3b_excits(6,idet);
-                     x2b_ovvv(i,:,a,b) = x2b_ovvv(i,:,a,b) - l_amp * t2b(f,:,n,m) ! (1)
-                     x2b_ovvv(i,:,f,b) = x2b_ovvv(i,:,f,b) + l_amp * t2b(a,:,n,m) ! (af)
-                     x2b_ovvv(n,:,a,b) = x2b_ovvv(n,:,a,b) + l_amp * t2b(f,:,i,m) ! (in)
-                     x2b_ovvv(n,:,f,b) = x2b_ovvv(n,:,f,b) - l_amp * t2b(a,:,i,m) ! (af)(in)
-                  end do
-                  do idet = 1, n3abb_l
-                     l_amp = l3c_amps(idet)
-                     ! x2b(ieab) <- A(fb) -l3c(afbinm) * t2c(fenm)
-                     a = l3c_excits(1,idet); f = l3c_excits(2,idet); b = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); n = l3c_excits(5,idet); m = l3c_excits(6,idet);
-                     x2b_ovvv(i,:,a,b) = x2b_ovvv(i,:,a,b) - l_amp * t2c(f,:,n,m) ! (1)
-                     x2b_ovvv(i,:,a,f) = x2b_ovvv(i,:,a,f) + l_amp * t2c(b,:,n,m) ! (fb)
-                  end do
-
-              end subroutine compute_x2b_ovvv
-
-              subroutine compute_x2b_vovv(x2b_vovv,&
-                                          t2a, t2b,&
-                                          l3b_amps, l3b_excits,&
-                                          l3c_amps, l3c_excits,&
-                                          n3aab_l, n3abb_l,&
-                                          noa, nua, nob, nub)
-
-                  integer, intent(in) :: noa, nua, nob, nub
-                  integer, intent(in) :: n3aab_l, n3abb_l
-
-                  real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
-                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
-                  real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-
-                  real(kind=8), intent(out) :: x2b_vovv(nua,nob,nua,nub)
-                 
-                  real(kind=8) :: l_amp
-                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
-
-                  x2b_vovv = 0.0d0
-                  do idet = 1, n3aab_l
-                     l_amp = l3b_amps(idet)
-                     ! x2b(ejab) <- A(af) -l3b(afbmnj) * t2a(efmn)
-                     a = l3b_excits(1,idet); f = l3b_excits(2,idet); b = l3b_excits(3,idet);
-                     m = l3b_excits(4,idet); n = l3b_excits(5,idet); j = l3b_excits(6,idet);
-                     x2b_vovv(:,j,a,b) = x2b_vovv(:,j,a,b) - l_amp * t2a(:,f,m,n) ! (1)
-                     x2b_vovv(:,j,f,b) = x2b_vovv(:,j,f,b) + l_amp * t2a(:,a,m,n) ! (af)
-                  end do
-                  do idet = 1, n3abb_l
-                     l_amp = l3c_amps(idet)
-                     ! x2b(ejab) <-  A(bf)A(nj) -l3c(afbmnj) * t2b(efmn)
-                     a = l3c_excits(1,idet); f = l3c_excits(2,idet); b = l3c_excits(3,idet);
-                     m = l3c_excits(4,idet); n = l3c_excits(5,idet); j = l3c_excits(6,idet);
-                     x2b_vovv(:,j,a,b) = x2b_vovv(:,j,a,b) - l_amp * t2b(:,f,m,n) ! (1)
-                     x2b_vovv(:,j,a,f) = x2b_vovv(:,j,a,f) + l_amp * t2b(:,b,m,n) ! (bf)
-                     x2b_vovv(:,n,a,b) = x2b_vovv(:,n,a,b) + l_amp * t2b(:,f,m,j) ! (nj)
-                     x2b_vovv(:,n,a,f) = x2b_vovv(:,n,a,f) - l_amp * t2b(:,b,m,j) ! (bf)(nj)
-                  end do
-
-              end subroutine compute_x2b_vovv
-        
               subroutine compute_x1a_oo(x1a_oo,&
                                         t3a_amps, t3a_excits,&
                                         t3b_amps, t3b_excits,&
@@ -885,8 +642,314 @@ module leftccsdt_p_intermediates
                   end do
                   deallocate(loc_arr,idx_table,amps_buff,excits_buff)
 
-              end subroutine compute_x1a_vv  
-      
+              end subroutine compute_x1a_vv 
+
+              subroutine compute_x2a_ooov(x2a_ooov,&
+                                          t2a, t2b,&
+                                          l3a_amps, l3a_excits,&
+                                          l3b_amps, l3b_excits,&
+                                          n3aaa_l, n3aab_l,&
+                                          noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aaa_l, n3aab_l
+
+                  real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
+                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
+                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
+
+                  real(kind=8), intent(out) :: x2a_ooov(noa,noa,noa,nua)
+                 
+                  real(kind=8) :: l_amp
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  x2a_ooov = 0.0d0
+                  do idet = 1, n3aaa_l
+                     l_amp = l3a_amps(idet)
+                     ! x2a(jima) <- A(ij) [A(n/ij)A(a/ef) l3a(aefijn) * t2a(efmn)]
+                     a = l3a_excits(1,idet); e = l3a_excits(2,idet); f = l3a_excits(3,idet);
+                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); n = l3a_excits(6,idet);
+                     ! only fill permutationally unique elements!
+                     x2a_ooov(i,j,:,a) = x2a_ooov(i,j,:,a) - l_amp * t2a(e,f,:,n) ! (1)
+                     x2a_ooov(i,j,:,e) = x2a_ooov(i,j,:,e) + l_amp * t2a(a,f,:,n) ! (ae)
+                     x2a_ooov(i,j,:,f) = x2a_ooov(i,j,:,f) + l_amp * t2a(e,a,:,n) ! (af)
+                     x2a_ooov(j,n,:,a) = x2a_ooov(j,n,:,a) - l_amp * t2a(e,f,:,i) ! (in)
+                     x2a_ooov(j,n,:,e) = x2a_ooov(j,n,:,e) + l_amp * t2a(a,f,:,i) ! (ae)(in)
+                     x2a_ooov(j,n,:,f) = x2a_ooov(j,n,:,f) + l_amp * t2a(e,a,:,i) ! (af)(in)
+                     x2a_ooov(i,n,:,a) = x2a_ooov(i,n,:,a) + l_amp * t2a(e,f,:,j) ! (jn)
+                     x2a_ooov(i,n,:,e) = x2a_ooov(i,n,:,e) - l_amp * t2a(a,f,:,j) ! (ae)(jn)
+                     x2a_ooov(i,n,:,f) = x2a_ooov(i,n,:,f) - l_amp * t2a(e,a,:,j) ! (af)(jn)
+                  end do
+                  do idet = 1, n3aab_l
+                     l_amp = l3b_amps(idet)
+                     ! x2a(jima) <- A(ij) [A(ae) l3b(aefijn) * t2b(efmn)]
+                     a = l3b_excits(1,idet); e = l3b_excits(2,idet); f = l3b_excits(3,idet);
+                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); n = l3b_excits(6,idet);
+                     ! only fill permutationally unique elements!
+                     x2a_ooov(i,j,:,a) = x2a_ooov(i,j,:,a) - l_amp * t2b(e,f,:,n) ! (1)
+                     x2a_ooov(i,j,:,e) = x2a_ooov(i,j,:,e) + l_amp * t2b(a,f,:,n) ! (ae)
+                  end do
+
+                  ! apply the common A(ij) antisymmetrizer
+                  do i = 1, noa
+                     do j = i+1, noa
+                        do m = 1, noa
+                           do a = 1, nua
+                              x2a_ooov(i,j,m,a) = x2a_ooov(i,j,m,a) - x2a_ooov(j,i,m,a)
+                           end do
+                        end do
+                     end do
+                  end do
+                  ! explicitly antisymmetrize
+                  do i = 1, noa
+                     do j = i+1, noa
+                        x2a_ooov(j,i,:,:) = -x2a_ooov(i,j,:,:)
+                     end do
+                  end do
+
+              end subroutine compute_x2a_ooov   
+
+              subroutine compute_x2a_vovv(x2a_vovv,&
+                                          t2a, t2b,&
+                                          l3a_amps, l3a_excits,&
+                                          l3b_amps, l3b_excits,&
+                                          n3aaa_l, n3aab_l,&
+                                          noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aaa_l, n3aab_l
+
+                  real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
+                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
+                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
+
+                  real(kind=8), intent(out) :: x2a_vovv(nua,noa,nua,nua)
+                 
+                  real(kind=8) :: l_amp
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  x2a_vovv = 0.0d0
+                  do idet = 1, n3aaa_l
+                     l_amp = l3a_amps(idet)
+                     ! x2a(eiba) <- A(ab) [A(i/mn)A(f/ab) l3a(abfimn) * t2a(efmn)]
+                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); f = l3a_excits(3,idet);
+                     i = l3a_excits(4,idet); m = l3a_excits(5,idet); n = l3a_excits(6,idet);
+                     ! only fill permutationally unique elements!
+                     x2a_vovv(:,i,a,b) = x2a_vovv(:,i,a,b) + l_amp * t2a(:,f,m,n) ! (1)
+                     x2a_vovv(:,m,a,b) = x2a_vovv(:,m,a,b) - l_amp * t2a(:,f,i,n) ! (im)
+                     x2a_vovv(:,n,a,b) = x2a_vovv(:,n,a,b) - l_amp * t2a(:,f,m,i) ! (in)
+                     x2a_vovv(:,i,b,f) = x2a_vovv(:,i,b,f) + l_amp * t2a(:,a,m,n) ! (af)
+                     x2a_vovv(:,m,b,f) = x2a_vovv(:,m,b,f) - l_amp * t2a(:,a,i,n) ! (im)(af)
+                     x2a_vovv(:,n,b,f) = x2a_vovv(:,n,b,f) - l_amp * t2a(:,a,m,i) ! (in)(af)
+                     x2a_vovv(:,i,a,f) = x2a_vovv(:,i,a,f) - l_amp * t2a(:,b,m,n) ! (bf)
+                     x2a_vovv(:,m,a,f) = x2a_vovv(:,m,a,f) + l_amp * t2a(:,b,i,n) ! (im)(bf)
+                     x2a_vovv(:,n,a,f) = x2a_vovv(:,n,a,f) + l_amp * t2a(:,b,m,i) ! (in)(bf)
+                  end do
+                  do idet = 1, n3aab_l
+                     l_amp = l3b_amps(idet)
+                     ! x2a(eiba) <- A(ab) [A(im) l3b(abfimn) * t2b(efmn)]
+                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); f = l3b_excits(3,idet);
+                     i = l3b_excits(4,idet); m = l3b_excits(5,idet); n = l3b_excits(6,idet);
+                     ! only fill permutationally unique elements!
+                     x2a_vovv(:,i,a,b) = x2a_vovv(:,i,a,b) + l_amp * t2b(:,f,m,n) ! (1)
+                     x2a_vovv(:,m,a,b) = x2a_vovv(:,m,a,b) - l_amp * t2b(:,f,i,n) ! (im)
+                  end do
+
+                  ! apply the common A(ij) antisymmetrizer
+                  do a = 1, nua
+                     do b = a+1, nua
+                        do i = 1, noa
+                           do e = 1, nua
+                              x2a_vovv(e,i,a,b) = x2a_vovv(e,i,a,b) - x2a_vovv(e,i,b,a)
+                           end do
+                        end do
+                     end do
+                  end do
+                  ! explicitly antisymmetrize
+                  do a = 1, nua
+                     do b = a+1, nua
+                        x2a_vovv(:,:,b,a) = -x2a_vovv(:,:,a,b)
+                     end do
+                  end do
+
+              end subroutine compute_x2a_vovv   
+
+              subroutine compute_x2b_oovo(x2b_oovo,&
+                                          t2b, t2c,&
+                                          l3b_amps, l3b_excits,&
+                                          l3c_amps, l3c_excits,&
+                                          n3aab_l, n3abb_l,&
+                                          noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aab_l, n3abb_l
+
+                  real(kind=8), intent(in) :: t2b(nua,nub,noa,nob), t2c(nub,nub,nob,nob)
+                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
+                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  real(kind=8), intent(in) :: l3c_amps(n3abb_l)
+
+                  real(kind=8), intent(out) :: x2b_oovo(noa,nob,nua,nob)
+                 
+                  real(kind=8) :: l_amp
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  x2b_oovo = 0.0d0
+                  do idet = 1, n3aab_l
+                     l_amp = l3b_amps(idet)
+                     ! x2b(jkbm) <- A(bf)A(jn) l3b(bfejnk) * t2b(fenm)
+                     b = l3b_excits(1,idet); f = l3b_excits(2,idet); e = l3b_excits(3,idet);
+                     j = l3b_excits(4,idet); n = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     x2b_oovo(j,k,b,:) = x2b_oovo(j,k,b,:) + l_amp * t2b(f,e,n,:) ! (1)
+                     x2b_oovo(j,k,f,:) = x2b_oovo(j,k,f,:) - l_amp * t2b(b,e,n,:) ! (bf)
+                     x2b_oovo(n,k,b,:) = x2b_oovo(n,k,b,:) - l_amp * t2b(f,e,j,:) ! (jn)
+                     x2b_oovo(n,k,f,:) = x2b_oovo(n,k,f,:) + l_amp * t2b(b,e,j,:) ! (bf)(jn)
+                  end do
+                  do idet = 1, n3abb_l
+                     l_amp = l3c_amps(idet)
+                     ! x2b(jkbm) <- A(nk) l3c(bfejnk) * t2c(fenm)
+                     b = l3c_excits(1,idet); f = l3c_excits(2,idet); e = l3c_excits(3,idet);
+                     j = l3c_excits(4,idet); n = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     x2b_oovo(j,k,b,:) = x2b_oovo(j,k,b,:) + l_amp * t2c(f,e,n,:) ! (1)
+                     x2b_oovo(j,n,b,:) = x2b_oovo(j,n,b,:) - l_amp * t2c(f,e,k,:) ! (kn)
+                  end do
+
+              end subroutine compute_x2b_oovo
+
+              subroutine compute_x2b_ooov(x2b_ooov,&
+                                          t2a, t2b,&
+                                          l3b_amps, l3b_excits,&
+                                          l3c_amps, l3c_excits,&
+                                          n3aab_l, n3abb_l,&
+                                          noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aab_l, n3abb_l
+
+                  real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
+                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
+                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  real(kind=8), intent(in) :: l3c_amps(n3abb_l)
+
+                  real(kind=8), intent(out) :: x2b_ooov(noa,nob,noa,nub)
+                 
+                  real(kind=8) :: l_amp
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  x2b_ooov = 0.0d0
+                  do idet = 1, n3aab_l
+                     l_amp = l3b_amps(idet)
+                     ! x2b(jkmc) <- A(jn) l3b(efcjnk) * t2a(efmn)
+                     e = l3b_excits(1,idet); f = l3b_excits(2,idet); c = l3b_excits(3,idet);
+                     j = l3b_excits(4,idet); n = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     x2b_ooov(j,k,:,c) = x2b_ooov(j,k,:,c) + l_amp * t2a(e,f,:,n) ! (1)
+                     x2b_ooov(n,k,:,c) = x2b_ooov(n,k,:,c) - l_amp * t2a(e,f,:,j) ! (jn)
+                  end do
+                  do idet = 1, n3abb_l
+                     l_amp = l3c_amps(idet)
+                     ! x2b(jkmc) <-  A(fc)A(kn) l3c(efcjnk) * t2b(efmn)
+                     e = l3c_excits(1,idet); f = l3c_excits(2,idet); c = l3c_excits(3,idet);
+                     j = l3c_excits(4,idet); n = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     x2b_ooov(j,k,:,c) = x2b_ooov(j,k,:,c) + l_amp * t2b(e,f,:,n) ! (1)
+                     x2b_ooov(j,n,:,c) = x2b_ooov(j,n,:,c) - l_amp * t2b(e,f,:,k) ! (kn)
+                     x2b_ooov(j,k,:,f) = x2b_ooov(j,k,:,f) - l_amp * t2b(e,c,:,n) ! (fc)
+                     x2b_ooov(j,n,:,f) = x2b_ooov(j,n,:,f) + l_amp * t2b(e,c,:,k) ! (kn)(fc)
+                  end do
+
+              end subroutine compute_x2b_ooov
+
+              subroutine compute_x2b_ovvv(x2b_ovvv,&
+                                          t2b, t2c,&
+                                          l3b_amps, l3b_excits,&
+                                          l3c_amps, l3c_excits,&
+                                          n3aab_l, n3abb_l,&
+                                          noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aab_l, n3abb_l
+
+                  real(kind=8), intent(in) :: t2b(nua,nub,noa,nob), t2c(nub,nub,nob,nob)
+                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
+                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  real(kind=8), intent(in) :: l3c_amps(n3abb_l)
+
+                  real(kind=8), intent(out) :: x2b_ovvv(noa,nub,nua,nub)
+                 
+                  real(kind=8) :: l_amp
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  x2b_ovvv = 0.0d0
+                  do idet = 1, n3aab_l
+                     l_amp = l3b_amps(idet)
+                     ! x2b(ieab) <- A(af)A(in) -l3b(afbinm) * t2b(fenm)
+                     a = l3b_excits(1,idet); f = l3b_excits(2,idet); b = l3b_excits(3,idet);
+                     i = l3b_excits(4,idet); n = l3b_excits(5,idet); m = l3b_excits(6,idet);
+                     x2b_ovvv(i,:,a,b) = x2b_ovvv(i,:,a,b) - l_amp * t2b(f,:,n,m) ! (1)
+                     x2b_ovvv(i,:,f,b) = x2b_ovvv(i,:,f,b) + l_amp * t2b(a,:,n,m) ! (af)
+                     x2b_ovvv(n,:,a,b) = x2b_ovvv(n,:,a,b) + l_amp * t2b(f,:,i,m) ! (in)
+                     x2b_ovvv(n,:,f,b) = x2b_ovvv(n,:,f,b) - l_amp * t2b(a,:,i,m) ! (af)(in)
+                  end do
+                  do idet = 1, n3abb_l
+                     l_amp = l3c_amps(idet)
+                     ! x2b(ieab) <- A(fb) -l3c(afbinm) * t2c(fenm)
+                     a = l3c_excits(1,idet); f = l3c_excits(2,idet); b = l3c_excits(3,idet);
+                     i = l3c_excits(4,idet); n = l3c_excits(5,idet); m = l3c_excits(6,idet);
+                     x2b_ovvv(i,:,a,b) = x2b_ovvv(i,:,a,b) - l_amp * t2c(f,:,n,m) ! (1)
+                     x2b_ovvv(i,:,a,f) = x2b_ovvv(i,:,a,f) + l_amp * t2c(b,:,n,m) ! (fb)
+                  end do
+
+              end subroutine compute_x2b_ovvv
+
+              subroutine compute_x2b_vovv(x2b_vovv,&
+                                          t2a, t2b,&
+                                          l3b_amps, l3b_excits,&
+                                          l3c_amps, l3c_excits,&
+                                          n3aab_l, n3abb_l,&
+                                          noa, nua, nob, nub)
+
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aab_l, n3abb_l
+
+                  real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
+                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  real(kind=8), intent(in) :: l3b_amps(n3aab_l)
+                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  real(kind=8), intent(in) :: l3c_amps(n3abb_l)
+
+                  real(kind=8), intent(out) :: x2b_vovv(nua,nob,nua,nub)
+                 
+                  real(kind=8) :: l_amp
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  x2b_vovv = 0.0d0
+                  do idet = 1, n3aab_l
+                     l_amp = l3b_amps(idet)
+                     ! x2b(ejab) <- A(af) -l3b(afbmnj) * t2a(efmn)
+                     a = l3b_excits(1,idet); f = l3b_excits(2,idet); b = l3b_excits(3,idet);
+                     m = l3b_excits(4,idet); n = l3b_excits(5,idet); j = l3b_excits(6,idet);
+                     x2b_vovv(:,j,a,b) = x2b_vovv(:,j,a,b) - l_amp * t2a(:,f,m,n) ! (1)
+                     x2b_vovv(:,j,f,b) = x2b_vovv(:,j,f,b) + l_amp * t2a(:,a,m,n) ! (af)
+                  end do
+                  do idet = 1, n3abb_l
+                     l_amp = l3c_amps(idet)
+                     ! x2b(ejab) <-  A(bf)A(nj) -l3c(afbmnj) * t2b(efmn)
+                     a = l3c_excits(1,idet); f = l3c_excits(2,idet); b = l3c_excits(3,idet);
+                     m = l3c_excits(4,idet); n = l3c_excits(5,idet); j = l3c_excits(6,idet);
+                     x2b_vovv(:,j,a,b) = x2b_vovv(:,j,a,b) - l_amp * t2b(:,f,m,n) ! (1)
+                     x2b_vovv(:,j,a,f) = x2b_vovv(:,j,a,f) + l_amp * t2b(:,b,m,n) ! (bf)
+                     x2b_vovv(:,n,a,b) = x2b_vovv(:,n,a,b) + l_amp * t2b(:,f,m,j) ! (nj)
+                     x2b_vovv(:,n,a,f) = x2b_vovv(:,n,a,f) - l_amp * t2b(:,b,m,j) ! (bf)(nj)
+                  end do
+
+              end subroutine compute_x2b_vovv
+        
               subroutine compute_x2a_oooo(x2a_oooo,&
                                           t3a_amps, t3a_excits,&
                                           t3b_amps, t3b_excits,&

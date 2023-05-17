@@ -595,3 +595,4 @@ if __name__ == "__main__":
     test_eomccsdt1_chplus()
     #test_adaptive_f2()
     #test_crcc24_f2()
+    #test_cct3_ch()

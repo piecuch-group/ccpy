@@ -239,7 +239,7 @@ class Driver:
         # Replace the driver hamiltonian with the Hbar
         print("")
         print("   HBar construction began on", get_timestamp(), end="")
-        self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.system)
+        self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.system, t3_excitations)
         print("... completed on", get_timestamp(), "\n")
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
