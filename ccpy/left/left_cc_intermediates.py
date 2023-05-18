@@ -148,8 +148,12 @@ def build_left_ccsdt_intermediates(L, T, system):
 def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, system, RHF_symmetry=False):
     """Calculate the L*T intermediates used in the left-CCSDT equations"""
 
+    nua, noa = T.a.shape
+    nub, nob = T.b.shape
+
     # Create new 2-body integral object
     X = Integral.from_empty(system, 2, data_type=T.a.dtype, use_none=True)
+
     ## a intermediates ##
     X.a.vo = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x1a_vo(
                                                                T.aaa, t3_excitations["aaa"].T,
@@ -345,5 +349,4 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                L.bbb, l3_excitations["bbb"].T,
                                                                noa, nua, nob, nub,
         )
-
     return X
