@@ -42,7 +42,7 @@ def spin_adapt_guess(system, H, multiplicity):
     V_adapt = np.zeros((ndim, n_s2_sub))
     n = 0
     for i in range(len(omega)):
-        if abs(omega[i] < 1.0e-09): continue
+        if abs(omega[i]) < 1.0e-09: continue
         omega_adapt[n] = omega[i]
         V_adapt[:, n] = V[:, i]
         n += 1

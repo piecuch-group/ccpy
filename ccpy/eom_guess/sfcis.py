@@ -5,10 +5,13 @@ import numpy as np
 def run_diagonalization(system, H, multiplicity, nroot):
 
     Hmat = build_sfcis_hamiltonian(H, system)
-    #omega, V = np.linalg.eig(Hmat)
-    #idx = np.argsort(omega)
-    #omega = omega[idx]
-    #V = V[:, idx]
+    # print("Untransformed omega")
+    # tmp_e, tmp_v = np.linalg.eig(Hmat)
+    # idx = np.argsort(tmp_e)
+    # tmp_e = tmp_e[idx]
+    # tmp_v = tmp_v[:, idx]
+    # omega = tmp_e
+    # V = tmp_v
     omega, V = spin_adapt_guess(system, Hmat, multiplicity)
 
     return omega[:nroot], V[:, :nroot]
@@ -51,7 +54,7 @@ def spin_adapt_guess(system, H, multiplicity):
     for i in range(n_s2_sub):
         W[:, i] = V_s2[:, idx_s2[i]]
 
-    # Transform from determinantal basis to basis of S2 eigenfunctions
+    # Transform into determinantal eigenbasis of S2
     G = np.einsum("Ku,Nv,Lu,Mv,LM->KN", W, W, W, W, H, optimize=True)
     # diagonalize and sort the resulting eigenvalues
     omega, V = np.linalg.eig(G)
@@ -63,15 +66,16 @@ def spin_adapt_guess(system, H, multiplicity):
 
     # now all the eigenvalues that do not have the correct multiplicity are going to be numerically 0
     # retain only those that are non-zero to find the spin-adapted subspace
+    # Unfortunately, for SF-CIS, one root will genuinely have 1 excitation energy equal to 0, corresponding to
+    # the low-spin triplet ground-state described as a spin-flip excitation out of the high-spin reference
     omega_adapt = np.zeros(n_s2_sub)
     V_adapt = np.zeros((ndim, n_s2_sub))
     n = 0
     for i in range(len(omega)):
-        if abs(omega[i] < 1.0e-09): continue
+        if abs(omega[i]) < 1.0e-09: continue
         omega_adapt[n] = omega[i]
         V_adapt[:, n] = V[:, i]
         n += 1
-
     return omega_adapt, V_adapt
 
 def get_sz2(system):
@@ -99,8 +103,5 @@ def build_s2matrix_sfcis(system):
                     Sbb[ct1, ct2] += (a == i) * (b == j)
                     ct2 += 1
             ct1 += 1
-
-    for i in range(Sbb.shape[0]):
-        print(Sbb[i, :])
 
     return Sbb
