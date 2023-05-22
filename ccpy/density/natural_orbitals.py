@@ -17,7 +17,7 @@ from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 # up the HF-based virtual orbitals, which are of low quality anyway, and retain the
 # original HF orbitals. This may give you better behaviors?
 
-def convert_to_ccsd_no(rdm1, H, system, dump_integrals=False, print_diagnostics=False):
+def transform_to_natorbs(rdm1, H, system, dump_integrals=False, print_diagnostics=False):
 
     slice_table = {
         "a": {

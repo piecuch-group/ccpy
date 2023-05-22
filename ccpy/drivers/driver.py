@@ -136,6 +136,9 @@ class Driver:
             self.order = 4
             self.num_particles = 4
             self.num_holes = 2
+        elif method.lower() in ["sfeomccsd"]:
+            self.order = 1
+            self.Ms = -1
             
     def print_options(self):
         print("   ------------------------------------------")
@@ -259,6 +262,8 @@ class Driver:
             self.guess_order = 1
         elif method.lower() == "cisd":
             self.guess_order = 2
+        elif method.lower() == "sfcis":
+            self.guess_order = 0
         # Run the initial guess function and save all eigenpairs
         self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, nroot)
 
