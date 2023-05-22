@@ -1,9 +1,50 @@
 import numpy as np
 
-def get_sz2(system):
+def spin_adapt_guess(S2, H, multiplicity):
 
-    Ns = float(system.noccupied_alpha - system.noccupied_beta)
-    sz2 = (Ns / 2.0 + 1.0) * (Ns / 2.0)
+    def _get_multiplicity(s2):
+        s = -0.5 + np.sqrt(0.25 + s2)
+        return 2.0 * s + 1.0
+
+    ndim = H.shape[0]
+
+    eval_s2, V_s2 = np.linalg.eig(S2)
+    idx_s2 = [i for i, s2 in enumerate(eval_s2) if abs(_get_multiplicity(s2) - multiplicity) < 1.0e-07]
+    n_s2_sub = len(idx_s2)
+
+    W = np.zeros((ndim, n_s2_sub))
+    for i in range(n_s2_sub):
+        W[:, i] = V_s2[:, idx_s2[i]]
+
+    # Transform into determinantal eigenbasis of S2
+    G = np.einsum("Ku,Nv,Lu,Mv,LM->KN", W, W, W, W, H, optimize=True)
+    # diagonalize and sort the resulting eigenvalues
+    omega, V = np.linalg.eig(G)
+    omega = np.real(omega)
+    V = np.real(V)
+    idx = np.argsort(omega)
+    omega = omega[idx]
+    V = V[:, idx]
+
+    # now all the eigenvalues that do not have the correct multiplicity are going to be numerically 0
+    # retain only those that are non-zero to find the spin-adapted subspace
+    # Unfortunately, for SF-CIS, one root will genuinely have 1 excitation energy equal to 0, corresponding to
+    # the low-spin triplet ground-state described as a spin-flip excitation out of the high-spin reference
+    omega_adapt = np.zeros(n_s2_sub)
+    V_adapt = np.zeros((ndim, n_s2_sub))
+    n = 0
+    for i in range(len(omega)):
+        if abs(omega[i]) < 1.0e-09: continue
+        omega_adapt[n] = omega[i]
+        V_adapt[:, n] = V[:, i]
+        n += 1
+    return omega_adapt, V_adapt
+
+def get_sz2(system, Ms):
+
+    Ns = float( (system.noccupied_alpha + Ms) - (system.noccupied_beta - Ms))
+    sz = Ns / 2.0
+    sz2 = (sz + 1.0) * sz
 
     return sz2
 
@@ -24,7 +65,7 @@ def build_s2matrix_cis(system):
     n1a = system.nunoccupied_alpha * system.noccupied_alpha
     n1b = system.nunoccupied_beta * system.noccupied_beta
 
-    sz2 = get_sz2(system)
+    sz2 = get_sz2(system, Ms=0)
 
     Saa = np.zeros((n1a, n1a))
     ct1 = 0
@@ -92,7 +133,7 @@ def build_s2matrix_cisd(system):
     n2b = system.nunoccupied_alpha * system.nunoccupied_beta * system.noccupied_alpha * system.noccupied_beta
     n2c = system.nunoccupied_beta**2 * system.noccupied_beta**2
 
-    sz2 = get_sz2(system)
+    sz2 = get_sz2(system, Ms=0)
 
     Saa = np.zeros((n1a, n1a))
     ct1 = 0
@@ -171,3 +212,21 @@ def build_s2matrix_cisd(system):
         (np.concatenate((Saa, Sab), axis=1),
          np.concatenate((Sba, Sbb), axis=1)), axis=0
     )
+
+
+def build_s2matrix_sfcis(system, Ms):
+
+    n1b = system.nunoccupied_beta * system.noccupied_alpha
+    sz2 = get_sz2(system, Ms)
+    Sbb = np.zeros((n1b, n1b))
+    ct1 = 0
+    for a in range(system.noccupied_beta, system.noccupied_beta + system.nunoccupied_beta):
+        for i in range(system.noccupied_alpha):
+            ct2 = 0
+            for b in range(system.noccupied_beta, system.noccupied_beta + system.nunoccupied_beta):
+                for j in range(system.noccupied_alpha):
+                    Sbb[ct1, ct2] += sz2 * (a == b) * (i == j)
+                    Sbb[ct1, ct2] += (a == i) * (b == j)
+                    ct2 += 1
+            ct1 += 1
+    return Sbb
