@@ -12,7 +12,7 @@ import ccpy.eom_guess
 import ccpy.eomcc
 
 from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eccc_jacobi
-from ccpy.energy.cc_energy import get_LR, get_r0
+from ccpy.energy.cc_energy import get_LR, get_r0, get_rel
 
 from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator
@@ -47,6 +47,11 @@ class Driver:
                         "RHF_symmetry" : (self.system.noccupied_alpha == self.system.noccupied_beta),
                         "diis_out_of_core" : False,
                         "amp_print_threshold" : 0.025}
+
+        # Disable DIIS for small problems to avoid inherent singularity
+        if self.system.noccupied_alpha * self.system.nunoccupied_beta <= 4:
+            self.options["diis_size"] = -1
+
         self.operator_params = {"order" : 0,
                                 "number_particles" : 0,
                                 "number_holes" : 0,
@@ -60,6 +65,7 @@ class Driver:
         self.correlation_energy = 0.0
         self.vertical_excitation_energy = np.zeros(max_number_states)
         self.r0 = np.zeros(max_number_states)
+        self.relative_excitation_level = np.zeros(max_number_states)
         self.guess_energy = None
         self.guess_vectors = None
         self.guess_order = 0
@@ -72,6 +78,7 @@ class Driver:
         self.fock.b.oo = self.hamiltonian.b.oo.copy()
         self.fock.a.vv = self.hamiltonian.a.vv.copy()
         self.fock.b.vv = self.hamiltonian.b.vv.copy()
+
 
     def set_operator_params(self, method):
         if method.lower() in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2"]:
@@ -129,6 +136,9 @@ class Driver:
             self.order = 4
             self.num_particles = 4
             self.num_holes = 2
+        elif method.lower() in ["sfeomccsd"]:
+            self.order = 1
+            self.Ms = -1
             
     def print_options(self):
         print("   ------------------------------------------")
@@ -138,12 +148,15 @@ class Driver:
 
     def run_mbpt(self, method):
 
-        if method.lower() == "mbpt2":
-            from ccpy.mbpt.mbpt import calc_mbpt2
-            self.correlation_energy = calc_mbpt2(self.system, self.hamiltonian)
-        elif method.lower() == "mbpt3":
-            from ccpy.mbpt.mbpt import calc_mbpt3
-            self.correlation_energy = calc_mbpt3(self.system, self.hamiltonian)
+        if method.lower() == "mp2":
+            from ccpy.mbpt.mbpt import calc_mp2
+            self.correlation_energy = calc_mp2(self.system, self.hamiltonian)
+        elif method.lower() == "mp3":
+            from ccpy.mbpt.mbpt import calc_mp3
+            self.correlation_energy = calc_mp3(self.system, self.hamiltonian)
+        elif method.lower() == "mp4":
+            from ccpy.mbpt.mbpt import calc_mp4
+            self.correlation_energy = calc_mp4(self.system, self.hamiltonian)
         else:
             raise NotImplementedError("MBPT method {} not implemented".format(method.lower()))
 
@@ -229,7 +242,7 @@ class Driver:
         # Replace the driver hamiltonian with the Hbar
         print("")
         print("   HBar construction began on", get_timestamp(), end="")
-        self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.system)
+        self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.system, t3_excitations)
         print("... completed on", get_timestamp(), "\n")
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
@@ -249,6 +262,8 @@ class Driver:
             self.guess_order = 1
         elif method.lower() == "cisd":
             self.guess_order = 2
+        elif method.lower() == "sfcis":
+            self.guess_order = 0
         # Run the initial guess function and save all eigenpairs
         self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, nroot)
 
@@ -302,7 +317,9 @@ class Driver:
                                                                               self.T, self.hamiltonian, self.system, self.options)
             # Compute r0 a posteriori
             self.r0[i] = get_r0(self.R[i], self.hamiltonian, self.vertical_excitation_energy[i])
-            eomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.r0[i], is_converged, self.system, self.options["amp_print_threshold"])
+            # compute the relative excitation level (REL) metric
+            self.relative_excitation_level[i] = get_rel(self.R[i], self.r0[i])
+            eomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.correlation_energy, self.r0[i], self.relative_excitation_level[i], is_converged, self.system, self.options["amp_print_threshold"])
             print("   EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
             ct += 1
 

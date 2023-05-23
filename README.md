@@ -36,11 +36,16 @@ energetics for the missing many-electron correlations using the generalized mome
 
 Because CCpy is primarily used for CC method development work, we use interfaces to GAMESS and Pyscf to obtain the mean-field (typically Hartree-Fock)
 reference state and associated molecular orbital one- and two-electron integrals prior to performing the correlated CC calculations. All implementations
-in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references.
+in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references. The expressions
+used in all methods are also valid for UHF references, however, CCpy does not yet have a convenient interface to UHF references computed
+by PySCF or GAMESS. Once this is made available, all computations will also be compatible with UHF.
 
-A list of all CC/EOMCC routines available in CCpy:
+A list of all computational options available in CCpy:
+  - MP2
+  - MP3
   - CCD
   - CCSD
+  - CCSD(T)
   - CR-CC(2,3)
   - CCSDt
   - CC(t;3)
@@ -48,7 +53,7 @@ A list of all CC/EOMCC routines available in CCpy:
   - Adaptive CC(P;Q) aimed at converging CCSDT (unpublished)
   - CCSDT
   - CR-CC(2,4)
-  - CCSDTQ
+  - CCSDTQ (available for RHF reference only)
   - EOMCCSD
   - CR-EOMCC(2,3) and its size-intensive δ-CR-EOMCC(2,3) extension
   - EOMCCSDt
@@ -56,6 +61,12 @@ A list of all CC/EOMCC routines available in CCpy:
   - ec-CC-II
   - ec-CC-II_{3}
   - ec-CC_II_{3,4} (unpublished)
+
+Currently, all EOMCC options are initiated using a CIS-like guess, which can reliably locate states dominated by single
+excitations. The more desirable CISd-like guess, capable of finding doubly excited states, is not available yet. Also
+note that the MPn methods available in CCpy are not implemented for non-Hartree-Fock orbitals, and thus should only be
+used with RHF and ROHF references. 
+
 
 # Installation
 Installation should be simple. Simply clone this git repository and run `make install` followed by `make all` inside of it. You will

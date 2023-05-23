@@ -1,42 +1,16 @@
 import numpy as np
 
-from ccpy.eom_guess.s2matrix import build_s2matrix_cisd
+from ccpy.eom_guess.s2matrix import build_s2matrix_cisd, spin_adapt_guess
 
 def run_diagonalization(system, H, multiplicity, nroot):
 
     Hmat = build_cisd_hamiltonian(H, system)
-    omega, V = spin_adapt_guess(system, Hmat, multiplicity)
+    S2mat = build_s2matrix_cisd(system)
+    omega, V = spin_adapt_guess(S2mat, Hmat, multiplicity)
 
     return omega[:nroot], V[:, :nroot]
 
-def spin_adapt_guess(system, H, multiplicity):
-
-    def _get_multiplicity(s2):
-        s = -0.5 + np.sqrt(0.25 + s2)
-        return 2.0 * s + 1.0
-
-    ndim = H.shape[0]
-
-    S2 = build_s2matrix_cisd(system)
-    eval_s2, V_s2 = np.linalg.eig(S2)
-    idx_s2 = [i for i, s2 in enumerate(eval_s2) if abs(_get_multiplicity(s2) - multiplicity) < 1.0e-07]
-
-    W = np.zeros((ndim, len(idx_s2)))
-    for i in range(len(idx_s2)):
-        W[:, i] = V_s2[:, idx_s2[i]]
-
-    # Transform from determinantal basis to basis of S2 eigenfunctions
-    G = np.einsum("Ku,Nv,Lu,Mv,LM->KN", W, W, W, W, H, optimize=True)
-
-    omega, V = np.linalg.eig(G)
-    omega = np.real(omega)
-    V = np.real(V)
-
-    idx = np.argsort(omega)
-
-    return omega[idx[len(idx_s2):]], V[:, idx[len(idx_s2):]]
-
-def build_eomccsd_matrix(dets1A,dets1B,dets2A,dets2B,dets2C,H1A,H1B,H2A,H2B,H2C):
+def build_cisd_hamiltonian(dets1A,dets1B,dets2A,dets2B,dets2C,H1A,H1B,H2A,H2B,H2C):
 
     n1a = len(dets1A['inds'])
     n1b = len(dets1B['inds'])

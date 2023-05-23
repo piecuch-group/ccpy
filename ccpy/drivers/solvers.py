@@ -7,6 +7,9 @@ from ccpy.utilities.printing import print_cc_iteration, print_cc_iteration_heade
                                     print_eomcc_iteration, print_eomcc_iteration_header
 from ccpy.models.operators import ClusterOperator, FockOperator
 
+# [TODO]: CROP algorithm
+# 
+
 
 def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     """
@@ -95,8 +98,14 @@ def eccc_jacobi(update_t, T, dT, H, T_ext, VT_ext, system, options):
     from ccpy.energy.cc_energy import get_cc_energy
     from ccpy.drivers.diis import DIIS
 
+    # check whether DIIS is being used
+    do_diis = True
+    if options["diis_size"] == -1:
+        do_diis = False
+
     # instantiate the DIIS accelerator object
-    diis_engine = DIIS(T, options["diis_size"], options["diis_out_of_core"])
+    if do_diis:
+        diis_engine = DIIS(T, options["diis_size"], options["diis_out_of_core"])
 
     # Jacobi/DIIS iterations
     num_throw_away = 3
@@ -143,11 +152,11 @@ def eccc_jacobi(update_t, T, dT, H, T_ext, VT_ext, system, options):
             break
 
         # Save T and dT vectors to disk for DIIS
-        if niter >= num_throw_away:
+        if niter >= num_throw_away and do_diis:
             diis_engine.push(T, dT, niter)
 
         # Do DIIS extrapolation
-        if niter >= options["diis_size"] + num_throw_away:
+        if niter >= options["diis_size"] + num_throw_away and do_diis:
             ndiis_cycle += 1
             T.unflatten(diis_engine.extrapolate())
 
@@ -160,7 +169,8 @@ def eccc_jacobi(update_t, T, dT, H, T_ext, VT_ext, system, options):
         print("ec-CC calculation did not converge.")
 
     # Remove the t.npy and dt.npy files if out-of-core DIIS was used
-    diis_engine.cleanup()
+    if do_diis:
+        diis_engine.cleanup()
 
     return T, energy, is_converged
 
@@ -169,8 +179,14 @@ def cc_jacobi(update_t, T, dT, H, system, options, t3_excitations=None):
     from ccpy.energy.cc_energy import get_cc_energy
     from ccpy.drivers.diis import DIIS
 
+    # check whether DIIS is being used
+    do_diis = True
+    if options["diis_size"] == -1:
+        do_diis = False
+
     # instantiate the DIIS accelerator object
-    diis_engine = DIIS(T, options["diis_size"], options["diis_out_of_core"])
+    if do_diis:
+        diis_engine = DIIS(T, options["diis_size"], options["diis_out_of_core"])
 
     # Jacobi/DIIS iterations
     num_throw_away = 3
@@ -220,11 +236,11 @@ def cc_jacobi(update_t, T, dT, H, system, options, t3_excitations=None):
             break
 
         # Save T and dT vectors to disk for DIIS
-        if niter >= num_throw_away:
+        if niter >= num_throw_away and do_diis:
             diis_engine.push(T, dT, niter)
 
         # Do DIIS extrapolation
-        if niter >= options["diis_size"] + num_throw_away:
+        if niter >= options["diis_size"] + num_throw_away and do_diis:
             ndiis_cycle += 1
             T.unflatten(diis_engine.extrapolate())
 
@@ -237,7 +253,8 @@ def cc_jacobi(update_t, T, dT, H, system, options, t3_excitations=None):
         print("CC calculation did not converge.")
 
     # Remove the t.npy and dt.npy files if out-of-core DIIS was used
-    diis_engine.cleanup()
+    if do_diis:
+        diis_engine.cleanup()
 
     return T, energy, is_converged
 
@@ -247,10 +264,16 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
     from ccpy.energy.cc_energy import get_lcc_energy
     from ccpy.drivers.diis import DIIS
 
+    do_diis = True
+    if options["diis_size"] == -1:
+        do_diis = False
+
     # instantiate the DIIS accelerator object
-    diis_engine = DIIS(L, options["diis_size"], options["diis_out_of_core"], vecfile="l.npy", residfile="dl.npy")
+    if do_diis:
+        diis_engine = DIIS(L, options["diis_size"], options["diis_out_of_core"], vecfile="l.npy", residfile="dl.npy")
 
     # Jacobi/DIIS iterations
+    num_throw_away = 0 # keep this at 0 for now...
     ndiis_cycle = 0
     energy = 0.0
     energy_old = get_lcc_energy(L, LH) + omega
@@ -303,10 +326,12 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
             break
 
         # Save T and dT vectors to disk for DIIS
-        diis_engine.push(L, LH, niter)
+        if niter >= num_throw_away and do_diis:
+            diis_engine.push(L, LH, niter)
 
         # Do DIIS extrapolation
-        if niter >= options["diis_size"]:
+        #if (niter + 1) % options["diis_size"] == 0 and do_diis: # this criterion works better I've found...
+        if niter >= options["diis_size"] + num_throw_away and do_diis:
             ndiis_cycle += 1
             L.unflatten(diis_engine.extrapolate())
 
@@ -324,7 +349,8 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
         print("Left CC calculation did not converge.")
 
     # Remove the t.npy and dt.npy files if out-of-core DIIS was used
-    diis_engine.cleanup()
+    if do_diis:
+        diis_engine.cleanup()
 
     return L, energy, LR, is_converged
 
@@ -334,8 +360,14 @@ def left_ccp_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, sys
     from ccpy.energy.cc_energy import get_lcc_energy
     from ccpy.drivers.diis import DIIS
 
+    # check whether DIIS is being used
+    do_diis = True
+    if options["diis_size"] == -1:
+        do_diis = False
+
     # instantiate the DIIS accelerator object
-    diis_engine = DIIS(L, calculation.diis_size, calculation.low_memory, vecfile="l.npy", residfile="dl.npy")
+    if do_diis:
+        diis_engine = DIIS(L, calculation.diis_size, calculation.low_memory, vecfile="l.npy", residfile="dl.npy")
 
     # Jacobi/DIIS iterations
     ndiis_cycle = 0
@@ -390,10 +422,11 @@ def left_ccp_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, sys
             break
 
         # Save T and dT vectors to disk for DIIS
-        diis_engine.push(L, LH, niter)
+        if do_diis:
+            diis_engine.push(L, LH, niter)
 
         # Do DIIS extrapolation
-        if niter >= calculation.diis_size:
+        if niter >= calculation.diis_size and do_diis:
             ndiis_cycle += 1
             L.unflatten(diis_engine.extrapolate())
 
@@ -441,7 +474,8 @@ def left_ccp_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, sys
             L.unflatten(1.0 / LR * L.flatten())
 
     # Remove the t.npy and dt.npy files if out-of-core DIIS was used
-    diis_engine.cleanup()
+    if do_diis:
+        diis_engine.cleanup()
 
     return L, energy, LR, is_converged
 

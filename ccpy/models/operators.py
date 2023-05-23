@@ -151,8 +151,6 @@ class ClusterOperator:
                 setattr(self, name, np.reshape(T_flat[prev: ndim + prev], dims))
                 prev += ndim
 
-
-
 class FockOperator:
     """Builds generalized particle-nonconserving operators of the EA/IP-type and
     higher-order extensions, such as DEA/DIP, etc.
@@ -216,6 +214,70 @@ class FockOperator:
                     ndim += np.prod(dimensions)
 
         self.ndim = ndim
+
+    def flatten(self):
+        return np.hstack(
+            [getattr(self, key).flatten() for key in self.spin_cases]
+        )
+
+    def unflatten(self, T_flat, order=0):
+        prev = 0
+
+        # allows unflattening of up to a specified order which may be less than
+        # the order of the cluster operator.
+        if order == 0: order = self.order
+
+        for dims, name in zip(self.dimensions, self.spin_cases):
+
+            if len(name) > order: continue
+
+            ndim = np.prod(dims)
+            setattr(self, name, np.reshape(T_flat[prev: ndim + prev], dims))
+            prev += ndim
+
+class SpinFlipOperator:
+    """Builds generalized alpha-to-beta spin-flipping operators"""
+    def __init__(self, system, order, Ms, data_type=np.float64):
+        self.Ms = Ms
+        self.spin_cases = []
+        self.dimensions = []
+        self.num_flip = abs(self.Ms)
+        self.order = self.num_flip + order
+
+        # Assert that we follow convention of a->b spin flips, not b->a
+        assert self.Ms < 0
+
+        # For the time being, hard-code this to support single, double, and triple spin-flip operators for Ms = -1
+        noa = system.noccupied_alpha
+        nob = system.noccupied_beta
+        nua = system.nunoccupied_alpha
+        nub = system.nunoccupied_beta
+        if self.Ms == -1:
+            if self.order == 1: # single spin-flip
+                setattr(self, "b", np.zeros((nub, noa))) # r1(a~|i)
+                setattr(self, "spin_cases", ["b"])
+                setattr(self, "dimensions", [(nub, noa)])
+            elif self.order == 2: # singles and doubles spin-flip
+                setattr(self, "b", np.zeros((nub, noa))) # r1(a~|i)
+                setattr(self, "ab", np.zeros((nua, nub, noa, noa))) # r2(ab~|ij)
+                setattr(self, "bb", np.zeros((nub, nub, nob, noa))) # r2(a~b~|i~j)
+                setattr(self, "spin_cases", ["b", "ab", "bb"])
+                setattr(self, "dimensions", [(nub, noa), (nua, nub, noa, noa), (nub, nub, nob, noa)])
+            elif self.order == 3: # singles, doubles, and triples spin-flip
+                setattr(self, "b", np.zeros((nub, noa))) # r1(a~|i)
+                setattr(self, "ab", np.zeros((nua, nub, noa, noa))) # r2(ab~|ij)
+                setattr(self, "bb", np.zeros((nub, nub, nob, noa))) # r2(a~b~|i~j)
+                setattr(self, "aab", np.zeros((nua, nua, nub, noa, noa, noa))) # r3(abc~|ijk)
+                setattr(self, "abb", np.zeros((nua, nub, nub, noa, nob, noa))) # r3(ab~c~|ij~k)
+                setattr(self, "bbb", np.zeros((nub, nub, nub, nob, nob, noa))) # r3(a~b~c~|i~j~k)
+                setattr(self, "spin_cases", ["b", "ab", "bb", "aab", "abb", "bbb"])
+                setattr(self, "dimensions", [(nub, noa), (nua, nub, noa, noa), (nub, nub, nob, noa),
+                                       (nua, nua, nub, noa, noa, noa),
+                                       (nua, nub, nub, noa, nob, noa),
+                                       (nub, nub, nub, nob, nob, noa)])
+            self.ndim = 0
+            for dim in self.dimensions:
+                self.ndim += np.prod(dim)
 
     def flatten(self):
         return np.hstack(
