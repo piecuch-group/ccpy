@@ -32,7 +32,17 @@ def HR(dR, R, T, H, flag_RHF, system):
     return dR.flatten()
 
 def build_HR_1B(R, T, H):
-    pass
+
+    # < a~i | (H(2) * R1)_C | 0 >
+    x1a = np.einsum("ae,ei->ai", H.b.vv, R.b, optimize=True)
+    x1a -= np.einsum("mi,am->ai", H.a.oo, R.b, optimize=True)
+    x1a -= np.einsum("maie,em->ai", H.ab.ovov, R.b, optimize=True)
+    # <a~i | (H(2) * R2)_C | 0 >
+    x1a += np.einsum("me,eami->ai", H.a.ov, R.ab, optimize=True)
+    x1a += np.einsum("me,eami->ai", H.b.ov, R.bb, optimize=True)
+    x1a += np.einsum("mnif,fanm->ai", H.ab.ooov, R.bb, optimize=True)
+    x1a -= np.einsum("anfe,feni->ai", H.bb.vovv, R.bb, optimize=True)
+    return x1a
 
 def build_HR_2B(R, T, H):
     pass
