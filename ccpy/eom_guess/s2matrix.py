@@ -230,3 +230,19 @@ def build_s2matrix_sfcis(system, Ms):
                     ct2 += 1
             ct1 += 1
     return Sbb
+
+def build_s2matrix_2p(system):
+
+    n2b = system.nunoccupied_beta * system.nunoccupied_alpha
+    sz2 = get_sz2(system) # this needs to be modified
+    Sab = np.zeros((n2b, n2b))
+    ct1 = 0
+    for a in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):
+        for b in range(system.noccupied_beta, system.noccupied_beta + system.nunoccupied_beta):
+            ct2 = 0
+            for c in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):
+                for d in range(system.noccupied_beta, system.noccupied_beta + system.nunoccupied_beta):
+                    Sab[ct1, ct2] += sz2 * (a == c) * (b == d)
+                    ct2 += 1
+            ct1 += 1
+    return Sab

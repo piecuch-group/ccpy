@@ -167,7 +167,8 @@ class FockOperator:
         self.num_holes = num_holes
         self.spin_cases = []
         self.dimensions = []
-        self.order = min(num_particles, num_holes) + abs(num_particles - num_holes)
+        #self.order = min(num_particles, num_holes) + abs(num_particles - num_holes)
+        self.order = abs(num_particles - num_holes)
 
         assert num_particles != num_holes
 
@@ -181,11 +182,24 @@ class FockOperator:
             single_particle_dims = {'a' : system.noccupied_alpha, 'b' : system.noccupied_beta}
             single_particle_spins = ['a', 'b']
 
+        # Here, we can cut down the number of cases using RHF symmetry, e.g., for
+        # EA/IP -> only add/remove a
+        # DEA/DIP -> only add/remove ab
+        # TEA/TIP -> only add/remove aaa for quartet, aab for doublet/triplet (let's not do this case)
         add_spin = []
         add_dims = []
-        for comb in combinations_with_replacement(single_particle_spins, num_add):
-            add_spin.append(''.join(list(comb)))
-            add_dims.append([single_particle_dims[x] for x in comb])
+        if num_add == 1: # EA/IP
+            add_spin.append("a")
+            add_dims.append([single_particle_dims[x] for x in ["a"]])
+        elif num_add == 2: # DEA/DIP
+            add_spin.append("ab")
+            add_dims.append([single_particle_dims[x] for x in ["a", "b"]])
+
+        # add_spin = []
+        # add_dims = []
+        # for comb in combinations_with_replacement(single_particle_spins, num_add):
+        #     add_spin.append(''.join(list(comb)))
+        #     add_dims.append([single_particle_dims[x] for x in comb])
 
         ndim = 0
         # initial iteration for the purely ionizing/attaching operators (e.g., R_1p/1h or R_2p/2h)
@@ -205,8 +219,8 @@ class FockOperator:
                 dimension_base = get_operator_dimension(i, j, system)
 
                 for spin, dim in zip(add_spin, add_dims):
-                    name = name_base + spin
-                    dimensions = dimension_base + dim
+                    name = spin + name_base
+                    dimensions = dim + dimension_base
 
                     setattr(self, name, np.zeros(dimensions, dtype=data_type))
                     self.spin_cases.append(name)

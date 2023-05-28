@@ -52,6 +52,8 @@ endif
 
 endif
 
+#$(info $$BLASFLAGS is [${BLASFLAGS}])
+
 # configuration for lab computers
 LIBS := $(BLASFLAGS)
 
