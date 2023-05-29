@@ -10,7 +10,6 @@ from ccpy.models.operators import ClusterOperator, FockOperator
 # [TODO]: CROP algorithm
 # 
 
-
 def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     """
     Diagonalize the similarity-transformed Hamiltonian HBar using the
@@ -50,9 +49,6 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
         # = \sum_k alpha_{ik} < b0 | b_k > = \sum_k alpha_{i0}
         idx = np.argsort(abs(alpha[0, :]))
         alpha = np.real(alpha[:, idx[-1]])
-
-        #idx = np.flip(np.argsort([abs(x - omega_old) for x in e]))
-        #alpha = np.real(alpha[:, idx[-1]])
 
         # Get the eigenpair of interest
         omega = np.real(e[idx[-1]])

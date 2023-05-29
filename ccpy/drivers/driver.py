@@ -18,6 +18,7 @@ from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator, SpinFlipOperator, FockOperator
 from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc_calculation_summary, leftcc_calculation_summary, print_ee_amplitudes
 from ccpy.utilities.printing import print_sf_amplitudes, sfeomcc_calculation_summary
+from ccpy.utilities.printing import print_dea_amplitudes, deaeomcc_calculation_summary
 
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
@@ -129,6 +130,10 @@ class Driver:
             self.order = 4
             self.num_particles = 2
             self.num_holes = 4
+        elif method.lower() in ["deaeom2", "left_deaeom2"]:
+            self.order = 2
+            self.num_particles = 2
+            self.num_holes = 0
         elif method.lower() in ["deaeom3", "left_deaeom3"]:
             self.order = 3
             self.num_particles = 3
@@ -248,7 +253,7 @@ class Driver:
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
 
-    def run_guess(self, method, multiplicity, nroot, nact_occupied=0, nact_unoccupied=0):
+    def run_guess(self, method, multiplicity, nroot, nact_occupied=-1, nact_unoccupied=-1):
         """Performs the initial guess for a subsequent EOMCC calculation."""
         # check if requested EOM guess calculation is implemented in modules
         if method.lower() not in ccpy.eom_guess.MODULES:
@@ -259,14 +264,12 @@ class Driver:
         guess_module = import_module("ccpy.eom_guess." + method.lower())
         guess_function = getattr(guess_module, "run_diagonalization")
         # Set operator parameters needed to build the guess R vector
-        if method.lower() == "cis":
+        if method.lower() in ["cis", "sfcis", "eacis", "ipcis"]:
             self.guess_order = 1
-        elif method.lower() == "cisd":
+        elif method.lower()in ["cisd", "sfcisd", "deacis", "dipcis"]:
             self.guess_order = 2
-        elif method.lower() == "sfcis":
-            self.guess_order = 0
         # Run the initial guess function and save all eigenpairs
-        self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, nroot)
+        self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, nroot, nact_occupied, nact_unoccupied)
 
     def run_eomcc(self, method, state_index, t3_excitations=None, r3_excitations=None):
         """Performs the EOMCC calculation specified by the user in the input."""
@@ -348,8 +351,8 @@ class Driver:
                 self.R[i] = SpinFlipOperator(self.system,
                                              Ms=-1,
                                              order=self.operator_params["order"])
-                self.R[i].unflatten(self.guess_vectors[:, i - 1], order=self.guess_order + 1)
-                self.vertical_excitation_energy[i] = self.guess_energy[i - 1]
+                self.R[i].unflatten(self.guess_vectors[:, i], order=self.guess_order)
+                self.vertical_excitation_energy[i] = self.guess_energy[i]
 
         # Form the initial subspace vectors
         B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
@@ -380,6 +383,64 @@ class Driver:
             sfeomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.correlation_energy,
                                         is_converged, self.system, self.options["amp_print_threshold"])
             print("   SF-EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
+            ct += 1
+
+    def run_deaeomcc(self, method, state_index):
+        """Performs the particle-nonconserving EOMCC calculation specified by the user in the input."""
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.eomcc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build R
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert (self.flag_hbar)
+
+        # import the specific EOMCC method module and get its update function
+        eom_module = import_module("ccpy.eomcc." + method.lower())
+        HR_function = getattr(eom_module, 'HR')
+        update_function = getattr(eom_module, 'update')
+
+        for i in state_index:
+            if self.R[i] is None:
+                self.R[i] = FockOperator(self.system,
+                                         self.num_particles,
+                                         self.num_holes)
+                self.R[i].unflatten(self.guess_vectors[:, i], order=self.guess_order)
+                self.vertical_excitation_energy[i] = self.guess_energy[i]
+
+        # Form the initial subspace vectors
+        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+
+        # Print the options as a header
+        self.print_options()
+
+        # Create the residual R that is re-used for each root
+        dR = FockOperator(self.system,
+                          self.num_particles,
+                          self.num_holes)
+
+        ct = 0
+        for i in state_index:
+            print("   DEA-EOMCC calculation for root %d started on" % i, get_timestamp())
+            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[i]))
+            print_dea_amplitudes(self.R[i], self.system, self.R[i].order, self.options["amp_print_threshold"])
+            self.R[i], self.vertical_excitation_energy[i], is_converged = eomcc_davidson(HR_function,
+                                                                                         update_function,
+                                                                                         B0[:, ct],
+                                                                                         self.R[i], dR,
+                                                                                         self.vertical_excitation_energy[
+                                                                                             i],
+                                                                                         self.T,
+                                                                                         self.hamiltonian,
+                                                                                         self.system,
+                                                                                         self.options)
+            deaeomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.correlation_energy,
+                                        is_converged, self.system, self.options["amp_print_threshold"])
+            print("   DEA-EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
             ct += 1
 
     def run_leftcc(self, method, state_index=[0], t3_excitations=None, l3_excitations=None, pspace=None):

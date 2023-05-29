@@ -233,8 +233,20 @@ def build_s2matrix_sfcis(system, Ms):
 
 def build_s2matrix_2p(system):
 
+    def chi_beta(p):
+        if p >= 0 and p < system.noccupied_beta:
+            return 1.0
+        else:
+            return 0.0
+
+    def pi_alpha(p):
+        if p >= system.noccupied_alpha and p < system.nunoccupied_alpha + system.noccupied_alpha:
+            return 1.0
+        else:
+            return 0.0
+
     n2b = system.nunoccupied_beta * system.nunoccupied_alpha
-    sz2 = get_sz2(system) # this needs to be modified
+    sz2 = get_sz2(system) # this needs to be modified potentially
     Sab = np.zeros((n2b, n2b))
     ct1 = 0
     for a in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):

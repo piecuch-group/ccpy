@@ -54,6 +54,19 @@ def sfeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, pri
     print_sf_amplitudes(R, system, R.order, print_thresh)
     print("")
 
+def deaeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, print_thresh):
+    DATA_FMT = "{:<30} {:>20.8f}"
+    if is_converged:
+        convergence_label = 'converged'
+    else:
+        convergence_label = 'not converged'
+    print("\n   DEA-EOMCC Calculation Summary (%s)" % convergence_label)
+    print("  --------------------------------------------------")
+    print(DATA_FMT.format("   Vertical excitation energy", omega))
+    print(DATA_FMT.format("   Total EOMCC energy", system.reference_energy + corr_energy + omega))
+    print_dea_amplitudes(R, system, R.order, print_thresh)
+    print("")
+
 def leftcc_calculation_summary(L, omega, LR, is_converged, system, print_thresh):
     print("\n   Left CC Calculation Summary")
     print("  --------------------------------------------------------")
@@ -96,12 +109,6 @@ def print_eomcc_iteration(
     )
 
 def print_ee_amplitudes(R, system, order, thresh_print):
-
-    n1a = system.noccupied_alpha * system.nunoccupied_alpha
-    n1b = system.noccupied_beta * system.nunoccupied_beta
-    n2a = system.noccupied_alpha ** 2 * system.nunoccupied_alpha ** 2
-    n2b = system.noccupied_beta * system.noccupied_alpha * system.nunoccupied_beta * system.nunoccupied_alpha
-    n2c = system.noccupied_beta ** 2 * system.nunoccupied_beta ** 2
 
     # Zero out the non-unique R amplitudes related by permutational symmetry
     for a in range(system.nunoccupied_alpha):
@@ -211,11 +218,83 @@ def print_ee_amplitudes(R, system, order, thresh_print):
 
     return
 
-def print_sf_amplitudes(R, system, order, thresh_print):
+def print_dea_amplitudes(R, system, order, thresh_print):
 
-    n1b = system.nunoccupied_beta * system.noccupied_alpha
-    n2b = system.nunoccupied_beta * system.noccupied_alpha * system.nunoccupied_alpha * system.noccupied_alpha
-    n2c = system.nunoccupied_beta * system.noccupied_alpha * system.nunoccupied_beta * system.noccupied_beta
+    # Zero out the non-unique R amplitudes related by permutational symmetry
+    if R.order > 2:
+        for a in range(system.nunoccupied_alpha):
+            for b in range(system.nunoccupied_beta):
+                for c in range(a + 1, system.nunoccupied_alpha):
+                    for k in range(system.noccupied_alpha):
+                        R.aba[c, b, a, k] = 0.0
+        for a in range(system.nunoccupied_alpha):
+            for b in range(system.nunoccupied_beta):
+                for c in range(b + 1, system.nunoccupied_beta):
+                    for k in range(system.noccupied_beta):
+                        R.abb[a, c, b, k] = 0.0
+
+    print("\n   Largest Singly and Doubly Excited Amplitudes:")
+    n = 1
+    for a in range(system.nunoccupied_alpha):
+        for b in range(system.nunoccupied_beta):
+            if abs(R.ab[a, b]) <= thresh_print: continue
+            print(
+                "      [{}]     ->  {}A  {}B  =   {:.6f}".format(
+                    n,
+                    a + system.nfrozen + system.noccupied_alpha + 1,
+                    b + system.nfrozen + system.noccupied_beta + 1,
+                    R.ab[a, b],
+                )
+            )
+            n += 1
+    if R.order > 2:
+        for a in range(system.nunoccupied_alpha):
+            for b in range(system.nunoccupied_beta):
+                for c in range(a + 1, system.nunoccupied_alpha):
+                    for k in range(system.noccupied_alpha):
+                        if abs(R.aba[a, b, c, k]) <= thresh_print: continue
+                        print(
+                            "      [{}]     {}A  ->  {}A  {}B  {}A  =   {:.6f}".format(
+                                n,
+                                k + system.nfrozen + 1,
+                                a + system.nfrozen + system.noccupied_alpha + 1,
+                                b + system.noccupied_beta + system.nfrozen + 1,
+                                c + system.noccupied_alpha + system.nfrozen + 1,
+                                R.aba[a, b, c, k],
+                            )
+                        )
+                        n += 1
+        for a in range(system.nunoccupied_alpha):
+            for b in range(system.nunoccupied_beta):
+                for c in range(b + 1, system.nunoccupied_beta):
+                    for k in range(system.noccupied_beta):
+                        if abs(R.abb[a, b, c, k]) <= thresh_print: continue
+                        print(
+                            "      [{}]     {}B  ->  {}A  {}B  {}B  =   {:.6f}".format(
+                                n,
+                                k + system.nfrozen + 1,
+                                a + system.nfrozen + system.noccupied_alpha + 1,
+                                b + system.noccupied_beta + system.nfrozen + 1,
+                                c + system.noccupied_beta + system.nfrozen + 1,
+                                R.abb[a, b, c, k],
+                            )
+                        )
+                        n += 1
+        # Restore permutationally redundant amplitudes
+        for a in range(system.nunoccupied_alpha):
+            for b in range(system.nunoccupied_beta):
+                for c in range(a + 1, system.nunoccupied_alpha):
+                    for k in range(system.noccupied_alpha):
+                        R.aba[c, b, a, k] = -R.aba[a, b, c, k]
+        for a in range(system.nunoccupied_alpha):
+            for b in range(system.nunoccupied_beta):
+                for c in range(b + 1, system.nunoccupied_beta):
+                    for k in range(system.noccupied_beta):
+                        R.abb[a, c, b, k] = -R.abb[a, b, c, k]
+
+    return
+
+def print_sf_amplitudes(R, system, order, thresh_print):
 
     # Zero out the non-unique R amplitudes related by permutational symmetry
     for a in range(system.nunoccupied_alpha):

@@ -2,7 +2,7 @@ import numpy as np
 
 from ccpy.eom_guess.s2matrix import build_s2matrix_cis, spin_adapt_guess
 
-def run_diagonalization(system, H, multiplicity, nroot):
+def run_diagonalization(system, H, multiplicity, nroot, nacto, nactu):
 
     Hmat = build_cis_hamiltonian(H, system)
     S2mat = build_s2matrix_cis(system)

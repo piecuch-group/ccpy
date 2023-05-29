@@ -167,8 +167,9 @@ class FockOperator:
         self.num_holes = num_holes
         self.spin_cases = []
         self.dimensions = []
-        #self.order = min(num_particles, num_holes) + abs(num_particles - num_holes)
-        self.order = abs(num_particles - num_holes)
+        self.num_diff = abs(num_particles - num_holes)
+        self.num_excit = min(num_particles, num_holes)
+        self.order = self.num_diff + self.num_excit
 
         assert num_particles != num_holes
 
@@ -213,7 +214,7 @@ class FockOperator:
             ndim += np.prod(dimensions)
 
         # now add ionizing/attaching operators to np-nh particle-conserving operators
-        for i in range(1, self.order + 1):
+        for i in range(1, self.num_excit + 1):
             for j in range(i + 1):
                 name_base = get_operator_name(i, j)
                 dimension_base = get_operator_dimension(i, j, system)
