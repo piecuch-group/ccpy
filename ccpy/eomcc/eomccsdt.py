@@ -30,8 +30,8 @@ def update(R, omega, H, system):
 
 def HR(dR, R, T, H, flag_RHF, system):
 
-    HR = get_eomccsd_intermediates(H, R, T, system)
-    HR = add_R3_terms(HR, H, R)
+    X = get_eomccsd_intermediates(H, R, T, system)
+    X = add_R3_terms(X, H, R)
 
     dR.a = build_HR_1A(R, T, H)
     if flag_RHF:
@@ -39,21 +39,21 @@ def HR(dR, R, T, H, flag_RHF, system):
     else:
         dR.b = build_HR_1B(R, T, H)
 
-    dR.aa = build_HR_2A(R, T, H, HR)
-    dR.ab = build_HR_2B(R, T, H, HR)
+    dR.aa = build_HR_2A(R, T, H, X)
+    dR.ab = build_HR_2B(R, T, H, X)
     if flag_RHF:
         dR.bb = dR.aa.copy()
     else:
-        dR.bb = build_HR_2C(R, T, H, HR)
+        dR.bb = build_HR_2C(R, T, H, X)
 
-    dR.aaa = build_HR_3A(R, T, H, HR)
-    dR.aab = build_HR_3B(R, T, H, HR)
+    dR.aaa = build_HR_3A(R, T, H, X)
+    dR.aab = build_HR_3B(R, T, H, X)
     if flag_RHF:
         dR.abb = np.transpose(dR.aab, (2, 1, 0, 5, 4, 3))
         dR.bbb = dR.aaa.copy()
     else:
-        dR.abb = build_HR_3C(R, T, H, HR)
-        dR.bbb = build_HR_3D(R, T, H, HR)
+        dR.abb = build_HR_3C(R, T, H, X)
+        dR.bbb = build_HR_3D(R, T, H, X)
 
     return dR.flatten()
 
