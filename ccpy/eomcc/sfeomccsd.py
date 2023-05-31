@@ -51,10 +51,12 @@ def build_HR_2B(R, T, H):
     x_oo = (
             np.einsum("nmfe,fenj->mj", H.ab.oovv, R.ab, optimize=True)
             + 0.5 * np.einsum("mnef,fenj->mj", H.bb.oovv, R.bb, optimize=True)
+            - np.einsum("mnje,em->nj", H.ab.ooov, R.b, optimize=True)
     )
     x_vv = (
             -0.5 * np.einsum("mnef,fbnm->be", H.aa.oovv, R.ab, optimize=True)
             - np.einsum("mnef,fbnm->be", H.ab.oovv, R.bb, optimize=True)
+            - np.einsum("mbfe,em->bf", H.ab.ovvv, R.b, optimize=True)
     )
 
     x2b = np.einsum("abie,ej->abij", H.ab.vvov, R.b, optimize=True)
@@ -78,10 +80,12 @@ def build_HR_2C(R, T, H):
     x_oo = (
             np.einsum("nmfe,fenj->mj", H.ab.oovv, R.ab, optimize=True)
             + 0.5 * np.einsum("mnef,fenj->mj", H.bb.oovv, R.bb, optimize=True)
+            - np.einsum("mnje,em->nj", H.ab.ooov, R.b, optimize=True)
     )
     x_vv = (
             -0.5 * np.einsum("mnef,fbnm->be", H.aa.oovv, R.ab, optimize=True)
             - np.einsum("mnef,fbnm->be", H.ab.oovv, R.bb, optimize=True)
+            - np.einsum("mbfe,em->bf", H.ab.ovvv, R.b, optimize=True)
     )
 
     x2c = 0.5 * np.einsum("abie,ej->abij", H.bb.vvov, R.b, optimize=True)
