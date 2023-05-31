@@ -55,12 +55,14 @@ A list of all computational options available in CCpy:
   - CR-CC(2,4)
   - CCSDTQ (available for RHF reference only)
   - EOMCCSD
+  - Spin-Flip (SF) EOMCCSD
   - CR-EOMCC(2,3) and its size-intensive δ-CR-EOMCC(2,3) extension
   - EOMCCSDt
   - EOMCCSDT
   - ec-CC-II
   - ec-CC-II_{3}
   - ec-CC_II_{3,4} (unpublished)
+  - DEA-EOMCCSD(3p-1h)
 
 Currently, all EOMCC options are initiated using a CIS-like guess, which can reliably locate states dominated by single
 excitations. The more desirable CISd-like guess, capable of finding doubly excited states, is not available yet. Also
