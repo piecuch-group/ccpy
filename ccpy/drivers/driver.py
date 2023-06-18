@@ -48,7 +48,8 @@ class Driver:
                         "diis_size" : 6,
                         "RHF_symmetry" : (self.system.noccupied_alpha == self.system.noccupied_beta),
                         "diis_out_of_core" : False,
-                        "amp_print_threshold" : 0.025}
+                        "amp_print_threshold" : 0.025,
+                        "davidson_max_subspace_size" : 30}
 
         # Disable DIIS for small problems to avoid inherent singularity
         if self.system.noccupied_alpha * self.system.nunoccupied_beta <= 4:

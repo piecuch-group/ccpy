@@ -20,10 +20,13 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
 
     print_eomcc_iteration_header()
 
+    # Maximum subspace size
+    max_size = options["davidson_max_subspace_size"]
+
     # Allocate the B (correction/subspace), sigma (HR), and G (interaction) matrices
-    sigma = np.zeros((R.ndim, options["maximum_iterations"]))
-    B = np.zeros((R.ndim, options["maximum_iterations"]))
-    G = np.zeros((options["maximum_iterations"], options["maximum_iterations"]))
+    sigma = np.zeros((R.ndim, max_size))
+    B = np.zeros((R.ndim, max_size))
+    G = np.zeros((max_size, max_size))
 
     # Initial values
     B[:, 0] = B0
@@ -33,7 +36,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
 
     is_converged = False
     curr_size = 1
-    while curr_size < options["maximum_iterations"]:
+    for niter in range(options["maximum_iterations"]):
         t1 = time.time()
         # store old energy
         omega_old = omega.copy()
@@ -63,7 +66,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
             is_converged = True
             # print the iteration of convergence
             elapsed_time = time.time() - t1
-            print_eomcc_iteration(curr_size, omega, residual, deltaE, elapsed_time)
+            print_eomcc_iteration(niter, omega, residual, deltaE, elapsed_time)
             break
 
         # update residual vector
@@ -75,12 +78,25 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
         q *= 1.0 / np.linalg.norm(q)
         R.unflatten(q)
 
-        B[:, curr_size] = q
-        sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+        # If below maximum subspace size, expand the subspace
+        if curr_size < max_size:
+            B[:, curr_size] = q
+            sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+        else:
+            # Restart subspace iteration from the current guess for the eigenvector
+            curr_size = 0
+            B[:, curr_size] = B0
+            R.unflatten(B[:, curr_size])
+            sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+
+            curr_size = 1
+            B[:, curr_size] = r
+            R.unflatten(r)
+            sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system)
 
         # print the iteration of convergence
         elapsed_time = time.time() - t1
-        print_eomcc_iteration(curr_size, omega, residual, deltaE, elapsed_time)
+        print_eomcc_iteration(niter, omega, residual, deltaE, elapsed_time)
 
         curr_size += 1
 
