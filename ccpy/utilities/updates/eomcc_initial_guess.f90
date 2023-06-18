@@ -4,28 +4,21 @@ module eomcc_initial_guess
 
         contains
 
-                ! There is something wrong here. I am confused whether we should
-                ! enforce that
-                ! sym_target = sym(K) * sym(H) * sym(L) 
-                ! or
-                ! 0 = sym(K) * sym(H) * sym(L)
-
                 subroutine get_active_dimensions(idx1A,idx1B,idx2A,idx2B,idx2C,&
-                                syms1A,syms1B,syms2A,syms2B,syms2C,&
-                                n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,noact,nuact,&
-                                mo_syms,mult_table,&
-                                noa,nua,nob,nub,norb,h_group)
+                                                 n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,noact,nuact,&
+                                                 noa,nua,nob,nub)
 
-                        integer, intent(in) :: noa, nua, nob, nub, noact, nuact, norb, h_group
-                        integer, intent(in) :: mo_syms(norb), mult_table(0:h_group-1,0:h_group-1)
-                        integer, intent(out) :: idx1A(nua,noa), idx1B(nub,nob),& 
+                        integer, intent(in) :: noa, nua, nob, nub, noact, nuact
+                        integer, intent(out) :: idx1A(nua,noa), idx1B(nub,nob),&
                                                 idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob),&
-                                                syms1A(nua,noa), syms1B(nub,nob),&
-                                                syms2A(nua,nua,noa,noa), syms2B(nua,nub,noa,nob), syms2C(nub,nub,nob,nob),&
                                                 n1a_act, n1b_act, n2a_act, n2b_act, n2c_act
 
                         integer :: a, b, i, j, act_rng_oa(2), act_rng_ua(2), act_rng_ob(2), act_rng_ub(2),&
-                                   num_act_holes, num_act_particles, sa, sb, si, sj
+                                   num_act_holes, num_act_particles
+                        integer :: num_act
+
+                        !num_act = 1 ! |iJAb>
+                        num_act = 2 ! |IJAB>
 
                         act_rng_oa(1) = max(0, noa-noact)
                         act_rng_oa(2) = noa
@@ -37,33 +30,24 @@ module eomcc_initial_guess
                         act_rng_ub(2) = min(nub, nuact)
 
                         idx1A = 0
-                        syms1A = -1
                         n1a_act = 0
                         do i = 1,noa
                            do a = 1,nua
-                                 sa = mo_syms(a+noa)
-                                 si = mo_syms(i)
-                                 syms1A(a,i) = mult_table(sa,si)
                                  idx1A(a,i) = 1
                                  n1a_act = n1a_act + 1
                            end do
                         end do
 
                         idx1B = 0
-                        syms1B = -1
                         n1b_act = 0
                         do i = 1,nob
                            do a = 1,nub
                                  idx1B(a,i) = 1
-                                 sa = mo_syms(a+nob)
-                                 si = mo_syms(i)
-                                 syms1B(a,i) = mult_table(sa,si)
                                  n1b_act = n1b_act + 1
                            end do
                         end do
 
                         idx2A = 0
-                        syms2A = -1
                         n2a_act = 0
                         do i = 1, noa
                         do j = i+1, noa
@@ -83,15 +67,7 @@ module eomcc_initial_guess
                             if (b>act_rng_ua(1) .and. b<=act_rng_ua(2)) then
                                 num_act_particles = num_act_particles + 1
                             end if
-                            if (num_act_holes >= 1 .and. num_act_particles >= 1) then
-                                sa = mo_syms(a+noa)
-                                sb = mo_syms(b+noa)
-                                si = mo_syms(i)
-                                sj = mo_syms(j)
-                                syms2A(a,b,i,j) = mult_table(sa,mult_table(sb,mult_table(si,sj)))
-                                syms2A(b,a,i,j) = syms2A(a,b,i,j)
-                                syms2A(a,b,j,i) = syms2A(a,b,i,j)
-                                syms2A(b,a,j,i) = syms2A(a,b,i,j)
+                            if (num_act_holes >= num_act .and. num_act_particles >= num_act) then
                                 idx2A(a,b,i,j) = 1
                                 idx2A(b,a,i,j) = 1
                                 idx2A(a,b,j,i) = 1
@@ -104,7 +80,6 @@ module eomcc_initial_guess
                         end do
 
                         idx2B = 0
-                        syms2B = -1
                         n2b_act = 0
                         do i = 1, noa
                         do j = 1, nob
@@ -124,12 +99,7 @@ module eomcc_initial_guess
                             if (b>act_rng_ub(1) .and. b<=act_rng_ub(2)) then
                                 num_act_particles = num_act_particles + 1
                             end if
-                            if (num_act_holes >= 1 .and. num_act_particles >= 1) then
-                                sa = mo_syms(a+noa)
-                                sb = mo_syms(b+nob)
-                                si = mo_syms(i)
-                                sj = mo_syms(j)
-                                syms2B(a,b,i,j) = mult_table(sa,mult_table(sb,mult_table(si,sj)))
+                            if (num_act_holes >= num_act .and. num_act_particles >= num_act) then
                                 idx2B(a,b,i,j) = 1
                                 n2b_act = n2b_act + 1
                             end if
@@ -139,7 +109,6 @@ module eomcc_initial_guess
                         end do
 
                         idx2C = 0
-                        syms2C = -1
                         n2c_act = 0
                         do i = 1, nob
                         do j = i+1, nob
@@ -159,15 +128,7 @@ module eomcc_initial_guess
                             if (b>act_rng_ub(1) .and. b<=act_rng_ub(2)) then
                                 num_act_particles = num_act_particles + 1
                             end if
-                            if (num_act_holes >= 1 .and. num_act_particles >= 1) then
-                                sa = mo_syms(a+nob)
-                                sb = mo_syms(b+nob)
-                                si = mo_syms(i)
-                                sj = mo_syms(j)
-                                syms2C(a,b,i,j) = mult_table(sa,mult_table(sb,mult_table(si,sj)))
-                                syms2C(b,a,i,j) = syms2C(a,b,i,j)
-                                syms2C(a,b,j,i) = syms2C(a,b,i,j)
-                                syms2C(b,a,j,i) = syms2C(a,b,i,j)
+                            if (num_act_holes >= num_act .and. num_act_particles >= num_act) then
                                 idx2C(a,b,i,j) = 1
                                 idx2C(b,a,i,j) = 1
                                 idx2C(a,b,j,i) = 1
@@ -184,8 +145,8 @@ module eomcc_initial_guess
                 subroutine unflatten_guess_vector(r1a,r1b,r2a,r2b,r2c,&
                                 CIvec,&
                                 idx1A,idx1B,idx2A,idx2B,idx2C,&
-                                noa,nua,nob,nub,&
-                                n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,ndim_act)
+                                n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,ndim_act,&
+                                noa,nua,nob,nub)
 
                         integer, intent(in) :: noa, nua, nob, nub, n1a_act, n1b_act,&
                                 n2a_act, n2b_act, n2c_act, ndim_act,&
@@ -268,16 +229,11 @@ module eomcc_initial_guess
                                     H2B_oooo,H2B_vvvv,H2B_voov,H2B_ovvo,H2B_vovo,H2B_ovov,H2B_vooo,&
                                     H2B_ovoo,H2B_vvov,H2B_vvvo,H2B_ooov,H2B_oovo,H2B_vovv,H2B_ovvv,&
                                     H2C_oooo,H2C_vvvv,H2C_voov,H2C_vooo,H2C_vvov,H2C_ooov,H2C_vovv,&
-                                    noa,nua,nob,nub,n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,ndim_act,&
-                                    sym_target,sym_ref,syms1A,syms1B,syms2A,syms2B,syms2C,mult_table,h_group)
+                                    n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,ndim_act,noa,nua,nob,nub)
 
                         integer, intent(in) :: noa, nua, nob, nub, n1a_act, n1b_act, n2a_act, n2b_act, n2c_act, ndim_act,&
                                                idx1A(nua,noa), idx1B(nub,nob),&
-                                               idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob),&
-                                               syms1A(nua,noa), syms1B(nub,nob),&
-                                               syms2A(nua,nua,noa,noa), syms2B(nua,nub,noa,nob), syms2C(nub,nub,nob,nob),&
-                                               sym_target, sym_ref, h_group
-                        integer, intent(in) :: mult_table(0:h_group-1,0:h_group-1)
+                                               idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob)
                         real(kind=8), intent(in) :: H1A_oo(noa,noa),H1A_vv(nua,nua),H1A_ov(noa,nua),&
                                     H1B_oo(nob,nob),H1B_vv(nub,nub),H1B_ov(nob,nub),&
                                     H2A_oooo(noa,noa,noa,noa),H2A_vvvv(nua,nua,nua,nua),H2A_voov(nua,noa,noa,nua),&
@@ -296,7 +252,7 @@ module eomcc_initial_guess
                         
                         real(kind=8) :: Hmat2(ndim_act,ndim_act)
                         real(kind=8), allocatable :: Htemp(:,:), VL(:,:), wi(:), work(:)
-                        integer :: i, j, k, l, a, b, c, d, ct1, ct2, pos(6), info, g1, g2
+                        integer :: i, j, k, l, a, b, c, d, ct1, ct2, pos(6), info
 
                         pos(1) = 0
                         pos(2) = n1a_act
@@ -311,17 +267,11 @@ module eomcc_initial_guess
                         ct1 = 0
                         do i = 1 , noa
                         do a = 1 , nua
-                            g1 = syms1A(a,i)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , noa
                             do b = 1 , nua
-                                g2 = syms1A(b,j)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx1A(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) = &
@@ -339,17 +289,11 @@ module eomcc_initial_guess
                         ct1 = 0
                         do i = 1 , nob
                         do a = 1 , nub
-                            g1 = syms1B(a,i)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , noa
                             do b = 1 , nua
-                                !g2 = syms1A(b,j)
-                                ! enforce spatial symmetry
-                                if (g2 /= sym_target) cycle
                                 if (idx1A(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -367,17 +311,11 @@ module eomcc_initial_guess
                         ct1 = 0
                         do i = 1 , noa
                         do a = 1 , nua
-                            g1 = syms1A(a,i)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , nob
                             do b = 1 , nub
-                                g2 = syms1B(b,j)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx1B(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -395,17 +333,11 @@ module eomcc_initial_guess
                         ct1 = 0
                         do i = 1 , nob
                         do a = 1 , nub
-                            g1 = syms1B(a,i)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do j = 1 , nob
                             do b = 1 , nub
-                                g2 = syms1B(b,j)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx1B(b,j)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -423,9 +355,6 @@ module eomcc_initial_guess
                         ct1 = 0
                         do i = 1, noa
                         do a = 1, nua
-                            g1 = syms1A(a,i)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -433,9 +362,6 @@ module eomcc_initial_guess
                             do k = j+1, noa
                             do b = 1, nua
                             do c = b+1, nua
-                                g2 = syms2A(b,c,j,k)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx2A(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -455,9 +381,6 @@ module eomcc_initial_guess
                         ct1 = 0
                         do i = 1, noa
                         do a = 1, nua
-                            g1 = syms1A(a,i)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx1A(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -465,9 +388,6 @@ module eomcc_initial_guess
                             do k = 1, nob
                             do b = 1, nua
                             do c = 1, nub
-                                g2 = syms2B(b,c,j,k)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx2B(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -487,9 +407,6 @@ module eomcc_initial_guess
                         ct1 = 0
                         do i = 1, nob
                         do a = 1, nub
-                            g1 = syms1B(a,i)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -497,9 +414,6 @@ module eomcc_initial_guess
                             do k = 1, nob
                             do b = 1, nua
                             do c = 1, nub
-                                g2 = syms2B(b,c,j,k)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx2B(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -519,9 +433,6 @@ module eomcc_initial_guess
                         ct1 = 0
                         do i = 1, nob
                         do a = 1, nub
-                            g1 = syms1B(a,i)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx1B(a,i)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -529,9 +440,6 @@ module eomcc_initial_guess
                             do k = j+1, nob
                             do b = 1, nub
                             do c = b+1, nub
-                                g2 = syms2C(b,c,j,k)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx2C(b,c,j,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -553,17 +461,11 @@ module eomcc_initial_guess
                         do j = i+1, noa
                         do a = 1, nua
                         do b = a+1, nua
-                            g1 = syms2A(a,b,i,j)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
                             do c = 1, nua
-                                g2 = syms1A(c,k)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx1A(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -585,17 +487,11 @@ module eomcc_initial_guess
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
-                            g1 = syms2B(a,b,i,j)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, noa
                             do c = 1, nua
-                                g2 = syms1A(c,k)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx1A(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -617,17 +513,11 @@ module eomcc_initial_guess
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
-                            g1 = syms2B(a,b,i,j)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, nob
                             do c = 1, nub
-                                g2 = syms1B(c,k)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx1B(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -649,17 +539,11 @@ module eomcc_initial_guess
                         do j = i+1, nob
                         do a = 1, nub
                         do b = a+1, nub
-                            g1 = syms2C(a,b,i,j)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
                             do k = 1, nob
                             do c = 1, nub
-                                g2 = syms1B(c,k)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx1B(c,k)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -681,9 +565,6 @@ module eomcc_initial_guess
                         do j = i+1, noa
                         do a = 1, nua
                         do b = a+1, nua
-                            g1 = syms2A(a,b,i,j)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -691,9 +572,6 @@ module eomcc_initial_guess
                             do l = k+1, noa
                             do c = 1, nua
                             do d = c+1, nua
-                                g2 = syms2A(c,d,k,l)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx2A(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -717,9 +595,6 @@ module eomcc_initial_guess
                         do j = i+1, noa
                         do a = 1, nua
                         do b = a+1, nua
-                            g1 = syms2A(a,b,i,j)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx2A(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -727,9 +602,6 @@ module eomcc_initial_guess
                             do l = 1, nob
                             do c = 1, nua
                             do d = 1, nub
-                                g2 = syms2B(c,d,k,l)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -753,9 +625,6 @@ module eomcc_initial_guess
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
-                            g1 = syms2B(a,b,i,j)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -763,9 +632,6 @@ module eomcc_initial_guess
                             do l = k+1, noa
                             do c = 1, nua
                             do d = c+1, nua
-                                g2 = syms2A(c,d,k,l)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx2A(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -789,9 +655,6 @@ module eomcc_initial_guess
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
-                            g1 = syms2B(a,b,i,j)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -799,9 +662,6 @@ module eomcc_initial_guess
                             do l = 1, nob
                             do c = 1, nua
                             do d = 1, nub
-                                g2 = syms2B(c,d,k,l)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -829,9 +689,6 @@ module eomcc_initial_guess
                         do j = 1, nob
                         do a = 1, nua
                         do b = 1, nub
-                            g1 = syms2B(a,b,i,j)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx2B(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -839,9 +696,6 @@ module eomcc_initial_guess
                             do l = k+1, nob
                             do c = 1, nub
                             do d = c+1, nub
-                                g2 = syms2C(c,d,k,l)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx2C(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -865,9 +719,6 @@ module eomcc_initial_guess
                         do j = i+1, nob
                         do a = 1, nub
                         do b = a+1, nub
-                            g1 = syms2C(a,b,i,j)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -875,9 +726,6 @@ module eomcc_initial_guess
                             do l = 1, nob
                             do c = 1, nua
                             do d = 1, nub
-                                g2 = syms2B(c,d,k,l)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx2B(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -901,9 +749,6 @@ module eomcc_initial_guess
                         do j = i+1, nob
                         do a = 1, nub
                         do b = a+1, nub
-                            g1 = syms2C(a,b,i,j)
-                            ! enforce spatial symmetry
-                            !if (g1 /= sym_target) cycle
                             if (idx2C(a,b,i,j)==0) cycle
                             ct1 = ct1 + 1
                             ct2 = 0
@@ -911,9 +756,6 @@ module eomcc_initial_guess
                             do l = k+1, nob
                             do c = 1, nub
                             do d = c+1, nub
-                                g2 = syms2C(c,d,k,l)
-                                ! enforce spatial symmetry
-                                !if (g2 /= sym_target) cycle
                                 if (idx2C(c,d,k,l)==0) cycle
                                 ct2 = ct2 + 1
                                 Htemp(ct1,ct2) =&
@@ -938,7 +780,6 @@ module eomcc_initial_guess
                         end if
                         deallocate(VL,wi,work)
 
-
                 end subroutine eomccs_d_matrix
 
 
@@ -951,12 +792,8 @@ module eomcc_initial_guess
                     real(kind=8) :: val
 
                     val = H2A_voov(a,j,i,b)
-                    if (i==j) then
-                        val = val + H1A_vv(a,b)
-                    end if
-                    if (a==b) then
-                        val = val - H1A_oo(j,i)
-                    end if
+                    if (i==j) val = val + h1a_vv(a,b)
+                    if (a==b) val = val - h1a_oo(j,i)
                     
                 end function calc_SASA_matel
 
@@ -991,12 +828,8 @@ module eomcc_initial_guess
                     real(kind=8) :: val
 
                     val = H2C_voov(a,j,i,b)
-                    if (i==j) then
-                        val = val + H1B_vv(a,b)
-                    end if
-                    if (a==b) then
-                        val = val - H1B_oo(j,i)
-                    end if
+                    if (i==j) val = val + h1b_vv(a,b)
+                    if (a==b) val = val - h1b_oo(j,i)
                     
                 end function calc_SBSB_matel
 
@@ -1009,30 +842,17 @@ module eomcc_initial_guess
                     real(kind=8) :: val
 
                     val = 0.0d0
-                    if (i==k .and. a==c) then
-                        val = val + H1A_ov(j,b)
-                    end if
-                    if (a==b .and. i==j) then
-                        val = val + H1A_ov(k,c)
-                    end if
-                    if (i==j .and. a==c) then
-                        val = val - H1A_ov(k,b)
-                    end if
-                    if (i==k .and. a==b) then
-                        val = val - H1A_ov(j,c)
-                    end if
-                    if (a==b) then
-                        val = val - H2A_ooov(j,k,i,c)
-                    end if
-                    if (a==c) then
-                        val = val - H2A_ooov(k,j,i,b)
-                    end if
-                    if (i==j) then
-                        val = val + H2A_vovv(a,k,b,c)
-                    end if
-                    if (i==k) then
-                        val = val + H2A_vovv(a,j,c,b)
-                    end if
+                    !!! A(jk)A(bc) h1a(kc) d(ij) d(ab)
+                    if (i==j .and. a==b) val = val + h1a_ov(k,c) ! (1)
+                    if (i==k .and. a==b) val = val - h1a_ov(j,c) ! (jk)
+                    if (i==j .and. a==c) val = val - h1a_ov(k,b) ! (bc)
+                    if (i==k .and. a==c) val = val + h1a_ov(j,b) ! (jk)(bc)
+                    !!! A(bc) -h2a(jkic) d(ab)
+                    if (a==b) val = val - h2a_ooov(j,k,i,c) ! (1)
+                    if (a==c) val = val + h2a_ooov(j,k,i,b) ! (bc)
+                    !!! A(jk) h2a(akbc) d(ij)
+                    if (i==j) val = val + h2a_vovv(a,k,b,c) ! (1)
+                    if (i==k) val = val - h2a_vovv(a,j,b,c) ! (jk)
 
                 end function calc_SADA_matel
 
@@ -1045,15 +865,12 @@ module eomcc_initial_guess
                     real(kind=8) :: val
 
                     val = 0.0d0
-                    if (a==b) then
-                        val = val - H2B_ooov(j,k,i,c)
-                    end if
-                    if (i==j) then
-                        val = val + H2B_vovv(a,k,b,c)
-                    end if
-                    if (i==j .and. a==b) then
-                        val = val + H1B_ov(k,c)
-                    end if
+                    !!! h1b(k,c) d(ij) d(ab)
+                    if (i==j .and. a==b) val = val + h1b_ov(k,c)
+                    !!! -h2b(jkic) d(ab)
+                    if (a==b) val = val - h2b_ooov(j,k,i,c)
+                    !!! h2b(akbc) d(ij)
+                    if (i==j) val = val + h2b_vovv(a,k,b,c)
 
                 end function calc_SADB_matel
 
@@ -1066,15 +883,12 @@ module eomcc_initial_guess
                     real(kind=8) :: val
 
                     val = 0.0d0
-                    if (a==c) then
-                        val = val - H2B_oovo(j,k,b,i)
-                    end if
-                    if (i==k) then
-                        val = val + H2B_ovvv(j,a,b,c)
-                    end if
-                    if (i==k .and. a==c) then
-                        val = val + H1A_ov(j,b)
-                    end if
+                    !!! h1a(j,b) d(ik) d(ac)
+                    if (i==k .and. a==c) val = val + h1a_ov(j,b)
+                    !!! -h2b(jkbi) d(ac)
+                    if (a==c) val = val - h2b_oovo(j,k,b,i)
+                    !!! h2b(jabc) d(ik)
+                    if (i==k) val = val + h2b_ovvv(j,a,b,c)
 
                 end function calc_SBDB_matel
 
@@ -1087,30 +901,17 @@ module eomcc_initial_guess
                     real(kind=8) :: val
 
                     val = 0.0d0
-                    if (i==k .and. a==c) then
-                        val = val + H1B_ov(j,b)
-                    end if
-                    if (a==b .and. i==j) then
-                        val = val + H1B_ov(k,c)
-                    end if
-                    if (i==j .and. a==c) then
-                        val = val - H1B_ov(k,b)
-                    end if
-                    if (i==k .and. a==b) then
-                        val = val - H1B_ov(j,c)
-                    end if
-                    if (a==b) then
-                        val = val - H2C_ooov(j,k,i,c)
-                    end if
-                    if (a==c) then
-                        val = val - H2C_ooov(k,j,i,b)
-                    end if
-                    if (i==j) then
-                        val = val + H2C_vovv(a,k,b,c)
-                    end if
-                    if (i==k) then
-                        val = val + H2C_vovv(a,j,c,b)
-                    end if
+                    !!! A(jk)A(bc) h1a(kc) d(ij) d(ab)
+                    if (i==j .and. a==b) val = val + h1b_ov(k,c) ! (1)
+                    if (i==k .and. a==b) val = val - h1b_ov(j,c) ! (jk)
+                    if (i==j .and. a==c) val = val - h1b_ov(k,b) ! (bc)
+                    if (i==k .and. a==c) val = val + h1b_ov(j,b) ! (jk)(bc)
+                    !!! A(bc) -h2a(jkic) d(ab)
+                    if (a==b) val = val - h2c_ooov(j,k,i,c) ! (1)
+                    if (a==c) val = val + h2c_ooov(j,k,i,b) ! (bc)
+                    !!! A(jk) h2a(akbc) d(ij)
+                    if (i==j) val = val + h2c_vovv(a,k,b,c) ! (1)
+                    if (i==k) val = val - h2c_vovv(a,j,b,c) ! (jk)
 
                 end function calc_SBDC_matel
 
@@ -1122,18 +923,12 @@ module eomcc_initial_guess
                         real(kind=8) :: val
 
                         val = 0.0d0
-                        if (a==c) then
-                            val = val - H2A_vooo(b,k,j,i)
-                        end if
-                        if (b==c) then
-                            val = val - H2A_vooo(a,k,i,j)
-                        end if
-                        if (i==k) then
-                            val = val + H2A_vvov(b,a,j,c)
-                        end if
-                        if (j==k) then
-                            val = val + H2A_vvov(a,b,i,c)
-                        end if
+                        !!! A(ab) -h2a(akij) d(bc)
+                        if (b==c) val = val - h2a_vooo(a,k,i,j) ! (1)
+                        if (a==c) val = val + h2a_vooo(b,k,i,j) ! (ab)
+                        !!! A(ij) h2a(abic) d(kj)
+                        if (j==k) val = val + h2a_vvov(a,b,i,c) ! (1)
+                        if (i==k) val = val - h2a_vvov(a,b,j,c) ! (ij)
 
                 end function calc_DASA_matel
 
@@ -1145,12 +940,10 @@ module eomcc_initial_guess
                         real(kind=8) :: val
 
                         val = 0.0d0
-                        if (a==c) then
-                            val = val - H2B_ovoo(k,b,i,j)
-                        end if
-                        if (i==k) then
-                            val = val + H2B_vvvo(a,b,c,j)
-                        end if
+                        !!! -h2b(kbij) d(ac)
+                        if (a==c) val = val - h2b_ovoo(k,b,i,j)
+                        !!! h2b(abcj) d(ik)
+                        if (i==k) val = val + h2b_vvvo(a,b,c,j)
 
                 end function calc_DBSA_matel
 
@@ -1162,12 +955,10 @@ module eomcc_initial_guess
                         real(kind=8) :: val
 
                         val = 0.0d0
-                        if (b==c) then
-                            val = val - H2B_vooo(a,k,i,j)
-                        end if
-                        if (j==k) then
-                            val = val + H2B_vvov(a,b,i,c)
-                        end if
+                        !!! -h2b(akij) d(bc)
+                        if (b==c) val = val - h2b_vooo(a,k,i,j)
+                        !!! h2b(abic) d(jk)
+                        if (j==k) val = val + h2b_vvov(a,b,i,c)
 
                 end function calc_DBSB_matel
 
@@ -1179,18 +970,12 @@ module eomcc_initial_guess
                         real(kind=8) :: val
 
                         val = 0.0d0
-                        if (a==c) then
-                            val = val - H2C_vooo(b,k,j,i)
-                        end if
-                        if (b==c) then
-                            val = val - H2C_vooo(a,k,i,j)
-                        end if
-                        if (i==k) then
-                            val = val + H2C_vvov(b,a,j,c)
-                        end if
-                        if (j==k) then
-                            val = val + H2C_vvov(a,b,i,c)
-                        end if
+                        !!! A(ab) -h2a(akij) d(bc)
+                        if (b==c) val = val - h2c_vooo(a,k,i,j) ! (1)
+                        if (a==c) val = val + h2c_vooo(b,k,i,j) ! (ab)
+                        !!! A(ij) h2a(abic) d(kj)
+                        if (j==k) val = val + h2c_vvov(a,b,i,c) ! (1)
+                        if (i==k) val = val - h2c_vvov(a,b,j,c) ! (ij)
 
                 end function calc_DCSB_matel
 
@@ -1205,100 +990,45 @@ module eomcc_initial_guess
                         real(kind=8) :: val
                     
                         val = 0.0d0
+                        !!! A(ij)A(kl) -h1a(ki) d(ac)d(bd)d(jl)
                         if (a==c .and. b==d) then
-                            if (j==l) then
-                                val = val - H1A_oo(k,i)
-                            end if
-                            if (i==l) then
-                                val = val + H1A_oo(k,j) ! correct
-                                !val = val - H1A_oo(k,j) ! previous
-                            end if
-                            if (j==k) then
-                                val = val + H1A_oo(l,i) ! correct
-                                !val = val - H1A_oo(l,i) ! previous
-                            end if
-                            if (i==k) then
-                                val = val - H1A_oo(l,j)
-                            end if
+                            if (j==l) val = val - h1a_oo(k,i) ! (1)
+                            if (i==l) val = val + h1a_oo(k,j) ! (ij)
+                            if (j==k) val = val + h1a_oo(l,i) ! (kl)
+                            if (i==k) val = val - h1a_oo(l,j) ! (ij)(kl)
                         end if
+                        !!! A(ab)A(cd) h1a(ac) d(ik)d(jl)d(bd)
                         if (j==l .and. i==k) then
-                            if (b==d) then
-                                val = val + H1A_vv(a,c)
-                            end if 
-                            if (b==c) then
-                                val = val - H1A_vv(a,d) ! correct
-                                !val = val + H1A_vv(a,d) ! previous
-                            end if
-                            if (a==c) then
-                                val = val + H1A_vv(b,d)
-                            end if
-                            if (a==d) then
-                                val = val - H1A_vv(b,c) ! correct
-                                !val = val + H1A_vv(b,c) ! previous
-                            end if
+                            if (b==d) val = val + h1a_vv(a,c) ! (1)
+                            if (a==d) val = val - h1a_vv(b,c) ! (ab)
+                            if (b==c) val = val - h1a_vv(a,d) ! (cd)
+                            if (a==c) val = val + h1a_vv(b,d) ! (ab)(cd)
                         end if
-                        if (i==k) then
-                            if (a==c) then
-                                val = val + H2A_voov(b,l,j,d)
-                            end if
-                            if (a==d) then
-                                val = val - H2A_voov(b,l,j,c)
-                            end if
-                            if (b==c) then
-                                val = val - H2A_voov(a,l,j,d)
-                            end if
-                            if (b==d) then
-                                val = val + H2A_voov(a,l,j,c)
-                            end if
-                        end if
-                        if (i==l) then
-                            if (a==c) then
-                                val = val - H2A_voov(b,k,j,d)
-                            end if
-                            if (a==d) then
-                                val = val + H2A_voov(b,k,j,c)
-                            end if
-                            if (b==c) then
-                                val = val + H2A_voov(a,k,j,d)
-                            end if
-                            if (b==d) then
-                                val = val - H2A_voov(a,k,j,c)
-                            end if
-                        end if
-                        if (j==k) then
-                            if (a==c) then
-                                val = val - H2A_voov(b,l,i,d)
-                            end if
-                            if (a==d) then
-                                val = val + H2A_voov(b,l,i,c)
-                            end if
-                            if (b==c) then
-                                val = val + H2A_voov(a,l,i,d)
-                            end if
-                            if (b==d) then
-                                val = val - H2A_voov(a,l,i,c)
-                            end if
-                        end if
-                        if (j==l) then
-                            if (a==c) then
-                                val = val + H2A_voov(b,k,i,d)
-                            end if
-                            if (a==d) then
-                                val = val - H2A_voov(b,k,i,c)
-                            end if
-                            if (b==c) then
-                                val = val - H2A_voov(a,k,i,d)
-                            end if
-                            if (b==d) then
-                                val = val + H2A_voov(a,k,i,c)
-                            end if
-                        end if
-                        if (b==d .and. a==c) then
-                            val = val + H2A_oooo(k,l,i,j)
-                        end if
-                        if (i==k .and. j==l) then
-                            val = val + H2A_vvvv(a,b,c,d)
-                        end if
+                        !!! A(ij)A(kl)A(ab)A(cd) h2a(akic) d(bd) d(jl)
+                        ! (1)
+                        if (b==d .and. j==l) val = val + h2a_voov(a,k,i,c) ! (1)
+                        if (b==d .and. i==l) val = val - h2a_voov(a,k,j,c) ! (ij)
+                        if (a==d .and. j==l) val = val - h2a_voov(b,k,i,c) ! (ab)
+                        if (a==d .and. i==l) val = val + h2a_voov(b,k,j,c) ! (ij)(ab)
+                        ! (kl)
+                        if (b==d .and. j==k) val = val - h2a_voov(a,l,i,c) ! (1)
+                        if (b==d .and. i==k) val = val + h2a_voov(a,l,j,c) ! (ij)
+                        if (a==d .and. j==k) val = val + h2a_voov(b,l,i,c) ! (ab)
+                        if (a==d .and. i==k) val = val - h2a_voov(b,l,j,c) ! (ij)(ab)
+                        ! (cd)
+                        if (b==c .and. j==l) val = val - h2a_voov(a,k,i,d) ! (1)
+                        if (b==c .and. i==l) val = val + h2a_voov(a,k,j,d) ! (ij)
+                        if (a==c .and. j==l) val = val + h2a_voov(b,k,i,d) ! (ab)
+                        if (a==c .and. i==l) val = val - h2a_voov(b,k,j,d) ! (ij)(ab)
+                        ! (kl)(cd)
+                        if (b==c .and. j==k) val = val + h2a_voov(a,l,i,d) ! (1)
+                        if (b==c .and. i==k) val = val - h2a_voov(a,l,j,d) ! (ij)
+                        if (a==c .and. j==k) val = val - h2a_voov(b,l,i,d) ! (ab)
+                        if (a==c .and. i==k) val = val + h2a_voov(b,l,j,d) ! (ij)(ab)
+                        !!! h2a(klij) d(bd) d(ac)
+                        if (b==d .and. a==c) val = val + h2a_oooo(k,l,i,j)
+                        !!! h2a(abcd) d(ik) d(jl)
+                        if (i==k .and. j==l) val = val + h2a_vvvv(a,b,c,d)
 
                 end function calc_DADA_matel
 
@@ -1310,22 +1040,11 @@ module eomcc_initial_guess
                         real(kind=8) :: val
 
                         val = 0.0d0
-                        if (i==k) then
-                            if (a==c) then
-                                val = val + H2B_voov(b,l,j,d)
-                            end if
-                            if (b==c) then
-                                val = val - H2B_voov(a,l,j,d)
-                            end if
-                        end if
-                        if (j==k) then
-                            if (a==c) then
-                                val = val - H2B_voov(b,l,i,d)
-                            end if
-                            if (b==c) then
-                                val = val + H2B_voov(a,l,i,d)
-                            end if
-                        end if
+                        !!! A(ij)A(ab) h2b(alid) d(jk) d(bc)
+                        if (j==k .and. b==c) val = val + h2b_voov(a,l,i,d) ! (1)
+                        if (i==k .and. b==c) val = val - h2b_voov(a,l,j,d) ! (ij)
+                        if (j==k .and. a==c) val = val - h2b_voov(b,l,i,d) ! (ab)
+                        if (i==k .and. a==c) val = val + h2b_voov(b,l,j,d) ! (ij)(ab)
 
                 end function calc_DADB_matel
                             
@@ -1337,22 +1056,11 @@ module eomcc_initial_guess
                         real(kind=8) :: val
 
                         val = 0.0d0
-                        if (i==k) then
-                            if (a==c) then
-                                val = val + H2B_ovvo(l,b,d,j)
-                            end if
-                            if (a==d) then
-                                val = val - H2B_ovvo(l,b,c,j)
-                            end if
-                        end if
-                        if (i==l) then
-                            if (a==c) then
-                                val = val - H2B_ovvo(k,b,d,j)
-                            end if
-                            if (a==d) then
-                                val = val + H2B_ovvo(k,b,c,j)
-                            end if
-                        end if
+                        !!! A(kl)A(cd) h2b(kbcj) d(il) d(ad)
+                        if (i==l .and. a==d) val = val + h2b_ovvo(k,b,c,j) ! (1)
+                        if (i==k .and. a==d) val = val - h2b_ovvo(l,b,c,j) ! (kl)
+                        if (i==l .and. a==c) val = val - h2b_ovvo(k,b,d,j) ! (cd)
+                        if (i==k .and. a==c) val = val + h2b_ovvo(l,b,d,j) ! (kl)(cd)
 
                 end function calc_DBDA_matel
 
@@ -1372,40 +1080,26 @@ module eomcc_initial_guess
                         real(kind=8) :: val
 
                         val = 0.0d0
-                        if (j==l) then
-                            if (b==d) then
-                                val = val + H2A_voov(a,k,i,c)
-                            end if 
-                            if (i==k) then
-                                val = val + H2B_vvvv(a,b,c,d)
-                            end if
-                        end if
-                        if (a==c) then
-                            if (i==k) then
-                                val = val + H2C_voov(b,l,j,d)
-                            end if
-                            if (b==d) then
-                                val = val + H2B_oooo(k,l,i,j)
-                            end if
-                        end if
-                        if (j==l .and. a==c) then
-                            val = val - H2B_ovov(k,b,i,d)
-                        end if
-                        if (i==k .and. b==d) then
-                            val = val - H2B_vovo(a,l,c,j)
-                        end if
-                        if (j==l .and. a==c .and. b==d) then
-                            val = val - H1A_oo(k,i)
-                        end if
-                        if (a==c .and. b==d .and. i==k) then
-                            val = val - H1B_oo(l,j)
-                        end if
-                        if (i==k .and. b==d .and. j==l) then
-                            val = val + H1A_vv(a,c)
-                        end if
-                        if (j==l .and. i==k .and. a==c) then
-                            val = val + H1B_vv(b,d)
-                        end if 
+                        !!! -h1a(ki) d(ac) d(bd) d(jl)
+                        if (a==c .and. b==d .and. j==l) val = val - h1a_oo(k,i)
+                        !!! -h1b(lj) d(ac) d(bd) d(ik)
+                        if (a==c .and. b==d .and. i==k) val = val - h1b_oo(l,j)
+                        !!! h1a(ac) d(ik) d(jl) d(bd)
+                        if (i==k .and. j==l .and. b==d) val = val + h1a_vv(a,c)
+                        !!! h1b(bd) d(ik) d(jl) d(ac)
+                        if (i==k .and. j==l .and. a==c) val = val + h1b_vv(b,d)
+                        !!! h2a(akic) d(jl) d(bd)
+                        if (j==l .and. b==d) val = val + h2a_voov(a,k,i,c)
+                        !!! h2c(bljd) d(ik) d(ac)
+                        if (i==k .and. a==c) val = val + h2c_voov(b,l,j,d)
+                        !!! -h2b(kbid) d(jl) d(ac)
+                        if (j==l .and. a==c) val = val - h2b_ovov(k,b,i,d)
+                        !!! -h2b(alcj) d(ik) d(bd)
+                        if (i==k .and. b==d) val = val - h2b_vovo(a,l,c,j)
+                        !!! h2b(klij) d(ac) d(bd)
+                        if (a==c .and. b==d) val = val + h2b_oooo(k,l,i,j)
+                        !!! h2b(abcd) d(ik) d(jl)
+                        if (i==k .and. j==l) val = val + h2b_vvvv(a,b,c,d)
 
                 end function calc_DBDB_matel
 
@@ -1417,22 +1111,11 @@ module eomcc_initial_guess
                         real(kind=8) :: val
 
                         val = 0.0d0
-                        if (j==k) then
-                            if (b==c) then
-                                val = val + H2B_voov(a,l,i,d)
-                            end if
-                            if (b==d) then
-                                val = val - H2B_voov(a,l,i,c)
-                            end if
-                        end if
-                        if (j==l) then
-                            if (b==c) then
-                                val = val - H2B_voov(a,k,i,d)
-                            end if
-                            if (b==d) then
-                                val = val + H2B_voov(a,k,i,c)
-                            end if
-                        end if
+                        !!! A(kl)A(cd) h2b(akic) d(bd) d(jl)
+                        if (b==d .and. j==l) val = val + h2b_voov(a,k,i,c) ! (1)
+                        if (b==d .and. j==k) val = val - h2b_voov(a,l,i,c) ! (kl)
+                        if (b==c .and. j==l) val = val - h2b_voov(a,k,i,d) ! (cd)
+                        if (b==c .and. j==k) val = val + h2b_voov(a,l,i,d) ! (kl)(cd)
 
                 end function calc_DBDC_matel
 
@@ -1444,22 +1127,11 @@ module eomcc_initial_guess
                         real(kind=8) :: val
 
                         val = 0.0d0
-                        if (i==l) then
-                            if (a==d) then
-                                val = val + H2B_ovvo(k,b,c,j)
-                            end if
-                            if (b==d) then
-                                val = val - H2B_ovvo(k,a,c,j)
-                            end if
-                        end if
-                        if (j==l) then
-                            if (a==d) then
-                                val = val - H2B_ovvo(k,b,c,i)
-                            end if
-                            if (b==d) then
-                                val = val + H2B_ovvo(k,a,c,i)
-                            end if
-                        end if
+                        !!! A(ij)A(ab) h2b(kaci) d(jl) d(bd)
+                        if (j==l .and. b==d) val = val + h2b_ovvo(k,a,c,i) ! (1)
+                        if (i==l .and. b==d) val = val - h2b_ovvo(k,a,c,j) ! (ij)
+                        if (j==l .and. a==d) val = val - h2b_ovvo(k,b,c,i) ! (ab)
+                        if (i==l .and. a==d) val = val + h2b_ovvo(k,b,c,j) ! (ij)(ab)
 
                 end function calc_DCDB_matel
 
@@ -1474,100 +1146,45 @@ module eomcc_initial_guess
                         real(kind=8) :: val
                     
                         val = 0.0d0
+                        !!! A(ij)A(kl) -h1a(ki) d(ac)d(bd)d(jl)
                         if (a==c .and. b==d) then
-                            if (j==l) then
-                                val = val - H1B_oo(k,i)
-                            end if
-                            if (i==l) then
-                                val = val + H1B_oo(k,j) ! correct
-                                !val = val - H1B_oo(k,j) ! previous
-                            end if
-                            if (j==k) then
-                                val = val + H1B_oo(l,i) ! correct
-                                !val = val - H1B_oo(l,i) ! previous
-                            end if
-                            if (i==k) then
-                                val = val - H1B_oo(l,j)
-                            end if
+                            if (j==l) val = val - h1b_oo(k,i) ! (1)
+                            if (i==l) val = val + h1b_oo(k,j) ! (ij)
+                            if (j==k) val = val + h1b_oo(l,i) ! (kl)
+                            if (i==k) val = val - h1b_oo(l,j) ! (ij)(kl)
                         end if
+                        !!! A(ab)A(cd) h1a(ac) d(ik)d(jl)d(bd)
                         if (j==l .and. i==k) then
-                            if (b==d) then
-                                val = val + H1B_vv(a,c)
-                            end if 
-                            if (b==c) then
-                                val = val - H1B_vv(a,d) ! correct
-                                !val = val + H1B_vv(a,d) ! previous
-                            end if
-                            if (a==c) then
-                                val = val + H1B_vv(b,d)
-                            end if
-                            if (a==d) then
-                                val = val - H1B_vv(b,c) ! correct
-                                !val = val + H1B_vv(b,c) ! previous
-                            end if
+                            if (b==d) val = val + h1b_vv(a,c) ! (1)
+                            if (a==d) val = val - h1b_vv(b,c) ! (ab)
+                            if (b==c) val = val - h1b_vv(a,d) ! (cd)
+                            if (a==c) val = val + h1b_vv(b,d) ! (ab)(cd)
                         end if
-                        if (i==k) then
-                            if (a==c) then
-                                val = val + H2C_voov(b,l,j,d)
-                            end if
-                            if (a==d) then
-                                val = val - H2C_voov(b,l,j,c)
-                            end if
-                            if (b==c) then
-                                val = val - H2C_voov(a,l,j,d)
-                            end if
-                            if (b==d) then
-                                val = val + H2C_voov(a,l,j,c)
-                            end if
-                        end if
-                        if (i==l) then
-                            if (a==c) then
-                                val = val - H2C_voov(b,k,j,d)
-                            end if
-                            if (a==d) then
-                                val = val + H2C_voov(b,k,j,c)
-                            end if
-                            if (b==c) then
-                                val = val + H2C_voov(a,k,j,d)
-                            end if
-                            if (b==d) then
-                                val = val - H2C_voov(a,k,j,c)
-                            end if
-                        end if
-                        if (j==k) then
-                            if (a==c) then
-                                val = val - H2C_voov(b,l,i,d)
-                            end if
-                            if (a==d) then
-                                val = val + H2C_voov(b,l,i,c)
-                            end if
-                            if (b==c) then
-                                val = val + H2C_voov(a,l,i,d)
-                            end if
-                            if (b==d) then
-                                val = val - H2C_voov(a,l,i,c)
-                            end if
-                        end if
-                        if (j==l) then
-                            if (a==c) then
-                                val = val + H2C_voov(b,k,i,d)
-                            end if
-                            if (a==d) then
-                                val = val - H2C_voov(b,k,i,c)
-                            end if
-                            if (b==c) then
-                                val = val - H2C_voov(a,k,i,d)
-                            end if
-                            if (b==d) then
-                                val = val + H2C_voov(a,k,i,c)
-                            end if
-                        end if
-                        if (b==d .and. a==c) then
-                            val = val + H2C_oooo(k,l,i,j)
-                        end if
-                        if (i==k .and. j==l) then
-                            val = val + H2C_vvvv(a,b,c,d)
-                        end if
+                        !!! A(ij)A(kl)A(ab)A(cd) h2a(akic) d(bd) d(jl)
+                        ! (1)
+                        if (b==d .and. j==l) val = val + h2c_voov(a,k,i,c) ! (1)
+                        if (b==d .and. i==l) val = val - h2c_voov(a,k,j,c) ! (ij)
+                        if (a==d .and. j==l) val = val - h2c_voov(b,k,i,c) ! (ab)
+                        if (a==d .and. i==l) val = val + h2c_voov(b,k,j,c) ! (ij)(ab)
+                        ! (kl)
+                        if (b==d .and. j==k) val = val - h2c_voov(a,l,i,c) ! (1)
+                        if (b==d .and. i==k) val = val + h2c_voov(a,l,j,c) ! (ij)
+                        if (a==d .and. j==k) val = val + h2c_voov(b,l,i,c) ! (ab)
+                        if (a==d .and. i==k) val = val - h2c_voov(b,l,j,c) ! (ij)(ab)
+                        ! (cd)
+                        if (b==c .and. j==l) val = val - h2c_voov(a,k,i,d) ! (1)
+                        if (b==c .and. i==l) val = val + h2c_voov(a,k,j,d) ! (ij)
+                        if (a==c .and. j==l) val = val + h2c_voov(b,k,i,d) ! (ab)
+                        if (a==c .and. i==l) val = val - h2c_voov(b,k,j,d) ! (ij)(ab)
+                        ! (kl)(cd)
+                        if (b==c .and. j==k) val = val + h2c_voov(a,l,i,d) ! (1)
+                        if (b==c .and. i==k) val = val - h2c_voov(a,l,j,d) ! (ij)
+                        if (a==c .and. j==k) val = val - h2c_voov(b,l,i,d) ! (ab)
+                        if (a==c .and. i==k) val = val + h2c_voov(b,l,j,d) ! (ij)(ab)
+                        !!! h2a(klij) d(bd) d(ac)
+                        if (b==d .and. a==c) val = val + h2c_oooo(k,l,i,j)
+                        !!! h2a(abcd) d(ik) d(jl)
+                        if (i==k .and. j==l) val = val + h2c_vvvv(a,b,c,d)
 
                 end function calc_DCDC_matel
 
