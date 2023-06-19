@@ -336,21 +336,19 @@ class Driver:
                                           self.options["amp_print_threshold"])
             print("   Multiroot EOMCC calculation ended on", get_timestamp(), "\n")
         else:
-            ct = 0
-            for i in state_index:
-                print("   EOMCC calculation for root %d started on" % i, get_timestamp())
-                print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[i]))
-                print_ee_amplitudes(self.R[i], self.system, self.R[i].order, self.options["amp_print_threshold"])
-                self.R[i], self.vertical_excitation_energy[i], is_converged = eomcc_davidson(HR_function, update_function, B0[:, ct],
-                                                                                  self.R[i], dR, self.vertical_excitation_energy[i],
-                                                                                  self.T, self.hamiltonian, self.system, self.options)
+            for j, istate in enumerate(state_index):
+                print("   EOMCC calculation for root %d started on" % istate, get_timestamp())
+                print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
+                print_ee_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+                self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function, update_function, B0[:, j],
+                                                                                                       self.R[istate], dR, self.vertical_excitation_energy[istate],
+                                                                                                       self.T, self.hamiltonian, self.system, self.options)
                 # Compute r0 a posteriori
-                self.r0[i] = get_r0(self.R[i], self.hamiltonian, self.vertical_excitation_energy[i])
+                self.r0[istate] = get_r0(self.R[istate], self.hamiltonian, self.vertical_excitation_energy[istate])
                 # compute the relative excitation level (REL) metric
-                self.relative_excitation_level[i] = get_rel(self.R[i], self.r0[i])
-                eomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.correlation_energy, self.r0[i], self.relative_excitation_level[i], is_converged, i, self.system, self.options["amp_print_threshold"])
+                self.relative_excitation_level[istate] = get_rel(self.R[istate], self.r0[istate])
+                eomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.r0[istate], self.relative_excitation_level[istate], is_converged, istate, self.system, self.options["amp_print_threshold"])
                 print("   EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
-                ct += 1
 
     def run_sfeomcc(self, method, state_index):
         """Performs the SF-EOMCC calculation specified by the user in the input."""

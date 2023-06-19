@@ -16,11 +16,13 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     Diagonalize the similarity-transformed Hamiltonian HBar using the
     non-Hermitian Davidson algorithm.
     """
+    t_root_start = time.time()
 
     print_eomcc_iteration_header()
 
     # Maximum subspace size
-    nrest = 1
+    nrest = 1   # number of previous vectors used to restart (>1 does not work, why?)
+    noffset = 0 # flag set to 1 to include B0 in the restart subspace or 0 to exclude it (doesn't seem to help).
     max_size = options["davidson_max_subspace_size"]
     selection_method = options["eomcc_block_selection_method"]
 
@@ -28,13 +30,15 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     sigma = np.zeros((R.ndim, max_size))
     B = np.zeros((R.ndim, max_size))
     G = np.zeros((max_size, max_size))
-    restart_block = np.zeros((R.ndim, nrest))
+    restart_block = np.zeros((R.ndim, nrest + noffset))
 
     # Initial values
     B[:, 0] = B0
     R.unflatten(B[:, 0])
     dR.unflatten(dR.flatten() * 0.0)
     sigma[:, 0] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+    if noffset == 1:
+        restart_block[:, 0] = B0
 
     is_converged = False
     curr_size = 1
@@ -64,7 +68,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
         # Get the eigenpair of interest
         omega = np.real(e[iselect])
         r = np.dot(B[:, :curr_size], alpha)
-        restart_block[:, niter % nrest] = r
+        restart_block[:, niter % nrest + noffset] = r
 
         # calculate residual vector: r_i = S_{iK}*alpha_{K} - omega * r_i
         R.unflatten(np.dot(sigma[:, :curr_size], alpha) - omega * r)
@@ -95,11 +99,11 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
             # Basic restart - use the last approximation to the eigenvector
             print("       **Deflating subspace**")
             restart_block, _ = np.linalg.qr(restart_block)
-            for j in range(nrest):
+            for j in range(restart_block.shape[1]):
                 R.unflatten(restart_block[:, j])
                 B[:, j] = R.flatten()
                 sigma[:, j] = HR(dR, R, T, H, options["RHF_symmetry"], system)
-            curr_size = nrest - 1
+            curr_size = restart_block.shape[1] - 1
 
         # print the iteration of convergence
         elapsed_time = time.time() - t1
@@ -109,6 +113,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
 
     # store the actual root you've solved for
     R.unflatten(r)
+    t_root_end = time.time()
 
     return R, omega, is_converged
 
