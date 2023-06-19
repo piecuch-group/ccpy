@@ -32,6 +32,7 @@ def test_creom23_chplus():
     )
     driver.system.print_info()
     driver.options["maximum_iterations"] = 1000 # 4 Sigma state requires ~661 iterations in left-CCSD
+    driver.options["davidson_max_subspace_size"] = 50
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="cis", multiplicity=1, nroot=10)
@@ -590,8 +591,8 @@ def test_adaptive_f2():
 
 
 if __name__ == "__main__":
-    test_mbpt_h2o()
-    #test_creom23_chplus()
+    #test_mbpt_h2o()
+    test_creom23_chplus()
     #test_eomccsdt1_chplus()
     #test_adaptive_f2()
     #test_crcc24_f2()

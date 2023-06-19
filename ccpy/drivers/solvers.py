@@ -22,13 +22,13 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     # Maximum subspace size
     nrest = 1
     max_size = options["davidson_max_subspace_size"]
-    restart_block = np.zeros((R.ndim, nrest))
-    #restart_block[:, 0] = B0
+    selection_method = options["eomcc_block_selection_method"]
 
     # Allocate the B (correction/subspace), sigma (HR), and G (interaction) matrices
     sigma = np.zeros((R.ndim, max_size))
     B = np.zeros((R.ndim, max_size))
     G = np.zeros((max_size, max_size))
+    restart_block = np.zeros((R.ndim, nrest))
 
     # Initial values
     B[:, 0] = B0
@@ -49,14 +49,20 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
             G[p, curr_size - 1] = np.dot(sigma[:, curr_size - 1].T, B[:, p])
         e, alpha_full = np.linalg.eig(G[:curr_size, :curr_size])
 
-        # select root based on maximum overlap with initial guess
-        # < b0 | V_i > = < b0 | \sum_k alpha_{ik} |b_k>
-        # = \sum_k alpha_{ik} < b0 | b_k > = \sum_k alpha_{i0}
-        idx = np.argsort(abs(alpha_full[0, :]))
-        alpha = np.real(alpha_full[:, idx[-1]])
+        # select root
+        if selection_method == "overlap":  # Option 1: based on overlap
+            # < b0 | V_i > = < b0 | \sum_k alpha_{ik} |b_k>
+            # = \sum_k alpha_{ik} < b0 | b_k > = \sum_k alpha_{i0}
+            idx = np.argsort(abs(alpha_full[0, :]))
+            iselect = idx[-1]
+        elif selection_method == "energy":  # Option 2: based on energy
+            idx = np.argsort([abs(x - omega) for x in e])
+            iselect = idx[0]
+
+        alpha = np.real(alpha_full[:, iselect])
 
         # Get the eigenpair of interest
-        omega = np.real(e[idx[-1]])
+        omega = np.real(e[iselect])
         r = np.dot(B[:, :curr_size], alpha)
         restart_block[:, niter % nrest] = r
 
@@ -87,6 +93,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
             sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system)
         else:
             # Basic restart - use the last approximation to the eigenvector
+            print("       **Deflating subspace**")
             restart_block, _ = np.linalg.qr(restart_block)
             for j in range(nrest):
                 R.unflatten(restart_block[:, j])
@@ -152,6 +159,7 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
         e, alpha_full = np.linalg.eig(G[:curr_size, :curr_size])
 
         num_add = 0
+        nmax_add = sum([not x for x in is_converged])
         alpha = np.zeros((curr_size, nroot))
         for j, istate in enumerate(state_index):
             # Cycle if root is already converged
@@ -192,6 +200,7 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
                 B[:, curr_size + num_add] = q
                 sigma[:, curr_size + num_add] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
                 num_add += 1
+
             # Store the root you've solved for
             R[istate].unflatten(r)
 

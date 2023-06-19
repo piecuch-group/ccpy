@@ -52,8 +52,7 @@ class Driver:
                         "amp_print_threshold" : 0.025,
                         "davidson_max_subspace_size" : 30,
                         "eomcc_solver" : "standard_davidson",
-                        "eomcc_block_selection_method" : "energy"}
-        self.options["davidson_max_subspace_size"] = self.options["maximum_iterations"]
+                        "eomcc_block_selection_method" : "overlap"}
 
         # Disable DIIS for small problems to avoid inherent singularity
         if self.system.noccupied_alpha * self.system.nunoccupied_beta <= 4:
