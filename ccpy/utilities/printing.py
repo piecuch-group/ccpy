@@ -26,13 +26,13 @@ def cc_calculation_summary(T, reference_energy, cc_energy, system, print_thresh)
     print_ee_amplitudes(T, system, T.order, print_thresh)
     print("")
 
-def eomcc_calculation_summary(R, omega, corr_energy, r0, rel, is_converged, system, print_thresh):
+def eomcc_calculation_summary(R, omega, corr_energy, r0, rel, is_converged, istate, system, print_thresh):
     DATA_FMT = "{:<30} {:>20.8f}"
     if is_converged:
         convergence_label = 'converged'
     else:
         convergence_label = 'not converged'
-    print("\n   EOMCC Calculation Summary (%s)" % convergence_label)
+    print("\n   EOMCC Calculation Summary (%s) - Root %i" % (convergence_label, istate))
     print("  --------------------------------------------------")
     print(DATA_FMT.format("   Vertical excitation energy", omega))
     print(DATA_FMT.format("   Reference state weight r0", r0))
@@ -107,6 +107,27 @@ def print_eomcc_iteration(
             iteration_idx, residuum, omega, delta_energy, time_str
         )
     )
+
+def print_block_eomcc_iteration(
+    iteration_idx, curr_size, omega, residuum, delta_energy, elapsed_time, state_index
+):
+    minutes, seconds = divmod(elapsed_time, 60)
+    time_str = f"({minutes:.1f}m {seconds:.1f}s)"
+    for j, istate in enumerate(state_index):
+        if j == 0:
+            print(
+                ITERATION_FMT.format(
+                    iteration_idx, residuum[j], omega[istate], delta_energy[j], time_str
+                )
+            )
+        else:
+            print(
+                ITERATION_FMT.format(
+                    "", residuum[j], omega[istate], delta_energy[j], time_str
+                )
+            )
+    print("      Current subspace size = ", curr_size)
+    print("      ............................................................")
 
 def print_ee_amplitudes(R, system, order, thresh_print):
 

@@ -11,7 +11,7 @@ import ccpy.left
 import ccpy.eom_guess
 import ccpy.eomcc
 
-from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eccc_jacobi
+from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eomcc_block_davidson, eccc_jacobi
 from ccpy.energy.cc_energy import get_LR, get_r0, get_rel
 
 from ccpy.models.integrals import Integral
@@ -27,14 +27,14 @@ from ccpy.interfaces.gamess_tools import load_gamess_integrals
 class Driver:
 
     @classmethod
-    def from_pyscf(cls, meanfield, nfrozen, normal_ordered=True, dump_integrals=False, sorted=True):
+    def from_pyscf(cls, meanfield, nfrozen, ndelete=0, normal_ordered=True, dump_integrals=False, sorted=True):
         return cls(
-            *load_pyscf_integrals(meanfield, nfrozen, normal_ordered=normal_ordered, dump_integrals=dump_integrals,
+            *load_pyscf_integrals(meanfield, nfrozen, ndelete, normal_ordered=normal_ordered, dump_integrals=dump_integrals,
                                   sorted=sorted))
 
     @classmethod
-    def from_gamess(cls, logfile, nfrozen, fcidump=None, onebody=None, twobody=None, normal_ordered=True, sorted=True, data_type=np.float64):
-        return cls(*load_gamess_integrals(logfile, fcidump, onebody, twobody, nfrozen, normal_ordered=normal_ordered, sorted=sorted,
+    def from_gamess(cls, logfile, nfrozen, ndelete=0, fcidump=None, onebody=None, twobody=None, normal_ordered=True, sorted=True, data_type=np.float64):
+        return cls(*load_gamess_integrals(logfile, fcidump, onebody, twobody, nfrozen, ndelete, normal_ordered=normal_ordered, sorted=sorted,
                                    data_type=data_type))
 
     def __init__(self, system, hamiltonian, max_number_states=100):
@@ -43,13 +43,17 @@ class Driver:
         self.flag_hbar = False
         self.options = {"method" : None,
                         "maximum_iterations": 80,
-                        "convergence_tolerance" : 1.0e-07,
+                        "amp_convergence" : 1.0e-07,
+                        "energy_convergence" : 1.0e-07,
                         "energy_shift" : 0.0,
                         "diis_size" : 6,
                         "RHF_symmetry" : (self.system.noccupied_alpha == self.system.noccupied_beta),
                         "diis_out_of_core" : False,
                         "amp_print_threshold" : 0.025,
-                        "davidson_max_subspace_size" : 30}
+                        "davidson_max_subspace_size" : 30,
+                        "eomcc_solver" : "standard_davidson",
+                        "eomcc_block_selection_method" : "energy"}
+        self.options["davidson_max_subspace_size"] = self.options["maximum_iterations"]
 
         # Disable DIIS for small problems to avoid inherent singularity
         if self.system.noccupied_alpha * self.system.nunoccupied_beta <= 4:
@@ -311,22 +315,43 @@ class Driver:
                              order=self.operator_params["order"],
                              active_orders=self.operator_params["active_orders"],
                              num_active=self.operator_params["number_active_indices"])
-        
-        ct = 0
-        for i in state_index:
-            print("   EOMCC calculation for root %d started on" % i, get_timestamp())
-            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[i]))
-            print_ee_amplitudes(self.R[i], self.system, self.R[i].order, self.options["amp_print_threshold"])
-            self.R[i], self.vertical_excitation_energy[i], is_converged = eomcc_davidson(HR_function, update_function, B0[:, ct],
-                                                                              self.R[i], dR, self.vertical_excitation_energy[i],
-                                                                              self.T, self.hamiltonian, self.system, self.options)
-            # Compute r0 a posteriori
-            self.r0[i] = get_r0(self.R[i], self.hamiltonian, self.vertical_excitation_energy[i])
-            # compute the relative excitation level (REL) metric
-            self.relative_excitation_level[i] = get_rel(self.R[i], self.r0[i])
-            eomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.correlation_energy, self.r0[i], self.relative_excitation_level[i], is_converged, self.system, self.options["amp_print_threshold"])
-            print("   EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
-            ct += 1
+
+        if self.options["eomcc_solver"] == "block_davidson":
+            print("   Multiroot EOMCC calculation started on", get_timestamp(), "\n")
+            print("   Energy of initial guess")
+            for istate in state_index:
+                print("      Root  {} = {:>10.10f}".format(istate, self.vertical_excitation_energy[istate]))
+            self.R, self.vertical_excitation_energy, is_converged = eomcc_block_davidson(HR_function, update_function,
+                                                                                         B0,
+                                                                                         self.R, dR,
+                                                                                         self.vertical_excitation_energy,
+                                                                                         self.T, self.hamiltonian,
+                                                                                         self.system, state_index, self.options)
+            for j, istate in enumerate(state_index):
+                # Compute r0 a posteriori
+                self.r0[istate] = get_r0(self.R[istate], self.hamiltonian, self.vertical_excitation_energy[istate])
+                # compute the relative excitation level (REL) metric
+                self.relative_excitation_level[istate] = get_rel(self.R[istate], self.r0[istate])
+                eomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy,
+                                          self.r0[istate], self.relative_excitation_level[istate], is_converged[j], istate, self.system,
+                                          self.options["amp_print_threshold"])
+            print("   Multiroot EOMCC calculation ended on", get_timestamp(), "\n")
+        else:
+            ct = 0
+            for i in state_index:
+                print("   EOMCC calculation for root %d started on" % i, get_timestamp())
+                print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[i]))
+                print_ee_amplitudes(self.R[i], self.system, self.R[i].order, self.options["amp_print_threshold"])
+                self.R[i], self.vertical_excitation_energy[i], is_converged = eomcc_davidson(HR_function, update_function, B0[:, ct],
+                                                                                  self.R[i], dR, self.vertical_excitation_energy[i],
+                                                                                  self.T, self.hamiltonian, self.system, self.options)
+                # Compute r0 a posteriori
+                self.r0[i] = get_r0(self.R[i], self.hamiltonian, self.vertical_excitation_energy[i])
+                # compute the relative excitation level (REL) metric
+                self.relative_excitation_level[i] = get_rel(self.R[i], self.r0[i])
+                eomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.correlation_energy, self.r0[i], self.relative_excitation_level[i], is_converged, i, self.system, self.options["amp_print_threshold"])
+                print("   EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
+                ct += 1
 
     def run_sfeomcc(self, method, state_index):
         """Performs the SF-EOMCC calculation specified by the user in the input."""

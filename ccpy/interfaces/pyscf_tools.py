@@ -9,7 +9,7 @@ from ccpy.energy.hf_energy import calc_hf_frozen_core_energy
 
 
 def load_pyscf_integrals(
-        meanfield, nfrozen=0,
+        meanfield, nfrozen=0, ndelete=0,
         num_act_holes_alpha=0, num_act_particles_alpha=0,
         num_act_holes_beta=0, num_act_particles_beta=0,
         normal_ordered=True, dump_integrals=False, sorted=True
@@ -37,6 +37,7 @@ def load_pyscf_integrals(
         norbitals,
         molecule.spin + 1,  # PySCF mol.spin returns 2S, not S
         nfrozen,
+        ndelete=ndelete,
         point_group=molecule.symmetry,
         orbital_symmetries = [x.upper() for x in symm.label_orb_symm(molecule, molecule.irrep_name, molecule.symm_orb, mo_coeff)],
         charge=molecule.charge,

@@ -13,6 +13,7 @@ class System:
         nfrozen,
         point_group="C1",
         orbital_symmetries=None,
+        ndelete=0,
         charge=0,
         nkpts=0,
         reference_energy=0.0,
@@ -25,8 +26,9 @@ class System:
     ):
         # basic information
         self.nelectrons = nelectrons - 2 * nfrozen
-        self.norbitals = norbitals - nfrozen
+        self.norbitals = norbitals - nfrozen - ndelete
         self.nfrozen = nfrozen
+        self.ndelete = ndelete
         self.multiplicity = multiplicity
         self.charge = charge
         # orbital partitioning

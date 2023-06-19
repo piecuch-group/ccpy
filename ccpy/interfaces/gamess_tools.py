@@ -7,6 +7,7 @@ def load_gamess_integrals(
     onebody_file=None,
     twobody_file=None,
     nfrozen=0,
+    ndelete=0,
     normal_ordered=True,
     sorted=True,
     data_type=np.float64,
@@ -26,6 +27,7 @@ def load_gamess_integrals(
         data.nmo,
         data.mult,
         nfrozen,
+        ndelete=ndelete,
         point_group=get_point_group(gamess_logfile),
         orbital_symmetries=[x.upper() for x in data.mosyms[0]],
         charge=data.charge,
@@ -138,7 +140,7 @@ def load_onebody_integrals(onebody_file, system, data_type):
     e1int : ndarray(dtype=float, shape=(norb,norb))
         Onebody part of the bare Hamiltonian in the MO basis (Z)
     """
-    norb = system.norbitals + system.nfrozen
+    norb = system.norbitals + system.nfrozen - system.ndelete
     e1int = np.zeros((norb, norb), dtype=data_type)
     try:
         with open(onebody_file) as f_in:
@@ -174,7 +176,7 @@ def load_twobody_integrals(twobody_file, system, data_type):
         Twobody part of the bare Hamiltonian in the MO basis (V)
     """
     try:
-        norb = system.norbitals + system.nfrozen
+        norb = system.norbitals + system.nfrozen - system.ndelete
         # initialize numpy array
         e2int = np.zeros((norb, norb, norb, norb), dtype=data_type)
         # open file
@@ -220,7 +222,7 @@ def load_from_fcidump(fcidump, system):
     e_nn : float
         Nuclear repulsion energy (in hartree)
     """
-    norb = system.norbitals + system.nfrozen
+    norb = system.norbitals + system.nfrozen - system.ndelete
     e1int = np.zeros((norb, norb))
     e2int = np.zeros((norb, norb, norb, norb))
 

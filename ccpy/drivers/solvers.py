@@ -4,7 +4,8 @@ import time
 import numpy as np
 
 from ccpy.utilities.printing import print_cc_iteration, print_cc_iteration_header,\
-                                    print_eomcc_iteration, print_eomcc_iteration_header
+                                    print_eomcc_iteration, print_eomcc_iteration_header,\
+                                    print_block_eomcc_iteration
 from ccpy.models.operators import ClusterOperator, FockOperator
 
 # [TODO]: CROP algorithm
@@ -15,13 +16,14 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     Diagonalize the similarity-transformed Hamiltonian HBar using the
     non-Hermitian Davidson algorithm.
     """
-    # orthonormalize the initial trial space; this is important when using doubles in EOMCCSd guess
-    #B0, _ = np.linalg.qr(np.asarray([r.flatten() for r in R]).T)
 
     print_eomcc_iteration_header()
 
     # Maximum subspace size
+    nrest = 1
     max_size = options["davidson_max_subspace_size"]
+    restart_block = np.zeros((R.ndim, nrest))
+    #restart_block[:, 0] = B0
 
     # Allocate the B (correction/subspace), sigma (HR), and G (interaction) matrices
     sigma = np.zeros((R.ndim, max_size))
@@ -31,8 +33,8 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     # Initial values
     B[:, 0] = B0
     R.unflatten(B[:, 0])
-    sigma[:, 0] = HR(dR, R, T, H, options["RHF_symmetry"], system)
     dR.unflatten(dR.flatten() * 0.0)
+    sigma[:, 0] = HR(dR, R, T, H, options["RHF_symmetry"], system)
 
     is_converged = False
     curr_size = 1
@@ -45,28 +47,29 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
         for p in range(curr_size):
             G[curr_size - 1, p] = np.dot(B[:, curr_size - 1].T, sigma[:, p])
             G[p, curr_size - 1] = np.dot(sigma[:, curr_size - 1].T, B[:, p])
-        e, alpha = np.linalg.eig(G[:curr_size, :curr_size])
+        e, alpha_full = np.linalg.eig(G[:curr_size, :curr_size])
 
         # select root based on maximum overlap with initial guess
         # < b0 | V_i > = < b0 | \sum_k alpha_{ik} |b_k>
         # = \sum_k alpha_{ik} < b0 | b_k > = \sum_k alpha_{i0}
-        idx = np.argsort(abs(alpha[0, :]))
-        alpha = np.real(alpha[:, idx[-1]])
+        idx = np.argsort(abs(alpha_full[0, :]))
+        alpha = np.real(alpha_full[:, idx[-1]])
 
         # Get the eigenpair of interest
         omega = np.real(e[idx[-1]])
         r = np.dot(B[:, :curr_size], alpha)
+        restart_block[:, niter % nrest] = r
 
         # calculate residual vector: r_i = S_{iK}*alpha_{K} - omega * r_i
         R.unflatten(np.dot(sigma[:, :curr_size], alpha) - omega * r)
         residual = np.linalg.norm(R.flatten())
-        deltaE = omega - omega_old
+        delta_energy = omega - omega_old
 
-        if residual < options["convergence_tolerance"] and abs(deltaE) < options["convergence_tolerance"]:
+        if residual < options["amp_convergence"] and abs(delta_energy) < options["energy_convergence"]:
             is_converged = True
             # print the iteration of convergence
             elapsed_time = time.time() - t1
-            print_eomcc_iteration(niter, omega, residual, deltaE, elapsed_time)
+            print_eomcc_iteration(niter, omega, residual, delta_energy, elapsed_time)
             break
 
         # update residual vector
@@ -83,25 +86,124 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
             B[:, curr_size] = q
             sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system)
         else:
-            # Restart subspace iteration from the current guess for the eigenvector
-            curr_size = 0
-            B[:, curr_size] = B0
-            R.unflatten(B[:, curr_size])
-            sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system)
-
-            curr_size = 1
-            B[:, curr_size] = r
-            R.unflatten(r)
-            sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+            # Basic restart - use the last approximation to the eigenvector
+            restart_block, _ = np.linalg.qr(restart_block)
+            for j in range(nrest):
+                R.unflatten(restart_block[:, j])
+                B[:, j] = R.flatten()
+                sigma[:, j] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+            curr_size = nrest - 1
 
         # print the iteration of convergence
         elapsed_time = time.time() - t1
-        print_eomcc_iteration(niter, omega, residual, deltaE, elapsed_time)
+        print_eomcc_iteration(niter, omega, residual, delta_energy, elapsed_time)
 
         curr_size += 1
 
     # store the actual root you've solved for
     R.unflatten(r)
+
+    return R, omega, is_converged
+
+def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_index, options):
+    """
+    Diagonalize the similarity-transformed Hamiltonian HBar using the
+    non-Hermitian block Davidson algorithm.
+    Here, it is assumed that you have a list of R operators, [R1, R2, ..., Rn]
+    and a single residual container dR that is re-used for each root.
+    """
+    print_eomcc_iteration_header()
+
+    # Number of roots
+    nroot = len(state_index)
+    ndim = R[state_index[0]].ndim
+    max_size = nroot * options["maximum_iterations"]
+    selection_method = options["eomcc_block_selection_method"]
+
+    # Allocate the B (correction/subspace), sigma (HR), and G (interaction) matrices
+    sigma = np.zeros((ndim, max_size))
+    B = np.zeros((ndim, max_size))
+    G = np.zeros((max_size, max_size))
+
+    # Initial values
+    num_add = 0
+    curr_size = 0
+    for j, istate in enumerate(state_index):
+        B[:, j] = B0[:, j]
+        R[istate].unflatten(B[:, j])
+        dR.unflatten(dR.flatten() * 0.0)
+        sigma[:, j] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
+        num_add += 1
+        curr_size += 1
+
+    is_converged = [False] * nroot
+    residual = np.zeros(nroot)
+    delta_energy = np.zeros(nroot)
+    for niter in range(options["maximum_iterations"]):
+        t1 = time.time()
+        # store old energy
+        omega_old = omega.copy()
+
+        # solve projection subspace eigenproblem: G_{IJ} = sum_K B_{KI} S_{KJ}
+        for p in range(curr_size):
+            for j in range(1, num_add + 1):
+                G[curr_size - j, p] = np.dot(B[:, curr_size - j].T, sigma[:, p])
+                G[p, curr_size - j] = np.dot(sigma[:, curr_size - j].T, B[:, p])
+        e, alpha_full = np.linalg.eig(G[:curr_size, :curr_size])
+
+        num_add = 0
+        alpha = np.zeros((curr_size, nroot))
+        for j, istate in enumerate(state_index):
+            # Cycle if root is already converged
+            if is_converged[j]: continue
+
+            # select root
+            if selection_method == "overlap":  # Option 1: based on overlap
+                idx = np.argsort(abs(alpha_full[j, :]))
+                iselect = idx[-1]
+            elif selection_method == "energy": # Option 2: based on energy
+                idx = np.argsort(e)
+                iselect = idx[j]
+
+            # Get the expansion coefficients for the j-th root
+            alpha[:, j] = np.real(alpha_full[:, iselect])
+
+            # Get the eigenpair of interest
+            omega[istate] = np.real(e[iselect])
+            r = np.dot(B[:, :curr_size], alpha[:, j])
+
+            # calculate residual vector: r_i = S_{iK}*alpha_{K} - omega * r_i
+            R[istate].unflatten(np.dot(sigma[:, :curr_size], alpha[:, j]) - omega[istate] * r)
+            residual[j] = np.linalg.norm(R[istate].flatten())
+            delta_energy[j] = omega[istate] - omega_old[istate]
+
+            # Check convergence
+            if residual[j] < options["amp_convergence"] and abs(delta_energy[j]) < options["energy_convergence"]:
+                is_converged[j] = True
+            else:
+                # update the residual vector
+                R[istate] = update_r(R[istate], omega[istate], H, system)
+                q = R[istate].flatten()
+                for p in range(curr_size + num_add):
+                    b = B[:, p] / np.linalg.norm(B[:, p])
+                    q -= np.dot(b.T, q) * b
+                q /= np.linalg.norm(q)
+                R[istate].unflatten(q)
+                B[:, curr_size + num_add] = q
+                sigma[:, curr_size + num_add] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
+                num_add += 1
+            # Store the root you've solved for
+            R[istate].unflatten(r)
+
+        # Check for all roots converged and break
+        if all(is_converged):
+            print("   All roots converged")
+            break
+
+        # print the iteration
+        elapsed_time = time.time() - t1
+        print_block_eomcc_iteration(niter + 1, curr_size, omega, residual, delta_energy, elapsed_time, state_index)
+        curr_size += num_add
 
     return R, omega, is_converged
 
@@ -146,8 +248,8 @@ def eccc_jacobi(update_t, T, dT, H, T_ext, VT_ext, system, options):
         # check for exit condition
         residuum = np.linalg.norm(dT.flatten())
         if (
-            residuum < options["convergence_tolerance"]
-            and abs(delta_energy) < options["convergence_tolerance"]
+            residuum < options["amp_convergence"]
+            and abs(delta_energy) < options["energy_convergence"]
         ):
             # print the iteration of convergence
             elapsed_time = time.time() - t1
@@ -230,8 +332,8 @@ def cc_jacobi(update_t, T, dT, H, system, options, t3_excitations=None):
         # check for exit condition
         residuum = np.linalg.norm(dT.flatten())
         if (
-            residuum < options["convergence_tolerance"]
-            and abs(delta_energy) < options["convergence_tolerance"]
+            residuum < options["amp_convergence"]
+            and abs(delta_energy) < options["energy_convergence"]
         ):
             # print the iteration of convergence
             elapsed_time = time.time() - t1
@@ -320,8 +422,8 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
         # check for exit condition
         residuum = np.linalg.norm(LH.flatten())
         if (
-            residuum < options["convergence_tolerance"]
-            and abs(delta_energy) < options["convergence_tolerance"]
+            residuum < options["amp_convergence"]
+            and abs(delta_energy) < options["energy_convergence"]
         ):
             # print the iteration of convergence
             elapsed_time = time.time() - t1

@@ -20,7 +20,7 @@ def run_diagonalization(system, H, multiplicity, nroot, nacto, nactu):
         )
     ndim_act = n1a_act + n1b_act + n2a_act + n2b_act + n2c_act
 
-    V_act, omega, Hmat, = eomcc_initial_guess.eomcc_initial_guess.eomccs_d_matrix(
+    V_act, omega, Hmat = eomcc_initial_guess.eomcc_initial_guess.eomccs_d_matrix(
                                             idx1A, idx1B, idx2A, idx2B, idx2C,
                                             H.a.oo, H.a.vv, H.a.ov,
                                             H.b.oo, H.b.vv, H.b.ov,
@@ -36,6 +36,7 @@ def run_diagonalization(system, H, multiplicity, nroot, nacto, nactu):
 
     omega = omega[:nroot]
     V = np.zeros((ndim, nroot))
+
     for i in range(nroot):
         V_a, V_b, V_aa, V_ab, V_bb = eomcc_initial_guess.eomcc_initial_guess.unflatten_guess_vector(
                                                             V_act[:, i],
@@ -49,6 +50,4 @@ def run_diagonalization(system, H, multiplicity, nroot, nacto, nactu):
         print("Eigenvalue", i + 1, " = ", omega[i])
 
     return omega, V
-
-
 
