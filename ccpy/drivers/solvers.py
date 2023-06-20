@@ -24,7 +24,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     nrest = 1   # number of previous vectors used to restart (>1 does not work, why?)
     noffset = 0 # flag set to 1 to include B0 in the restart subspace or 0 to exclude it (doesn't seem to help).
     max_size = options["davidson_max_subspace_size"]
-    selection_method = options["eomcc_block_selection_method"]
+    selection_method = options["davidson_selection_method"]
 
     # Allocate the B (correction/subspace), sigma (HR), and G (interaction) matrices
     sigma = np.zeros((R.ndim, max_size))
@@ -117,6 +117,133 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
 
     return R, omega, is_converged
 
+# Trying to get the version with restarts working...
+# def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_index, options):
+#     """
+#     Diagonalize the similarity-transformed Hamiltonian HBar using the
+#     non-Hermitian block Davidson algorithm.
+#     Here, it is assumed that you have a list of R operators, [R1, R2, ..., Rn]
+#     and a single residual container dR that is re-used for each root.
+#     """
+#     print_eomcc_iteration_header()
+#
+#     # Number of roots
+#     nroot = len(state_index)
+#     ndim = R[state_index[0]].ndim
+#     max_size = nroot * options["davidson_max_subspace_size"]
+#     selection_method = options["davidson_selection_method"]
+#
+#     # Allocate the B (correction/subspace), sigma (HR), and G (interaction) matrices
+#     sigma = np.zeros((ndim, max_size))
+#     B = np.zeros((ndim, max_size))
+#     G = np.zeros((max_size, max_size))
+#
+#     # Initial values
+#     num_add = 0
+#     curr_size = 0
+#     for j, istate in enumerate(state_index):
+#         B[:, j] = B0[:, j]
+#         R[istate].unflatten(B[:, j])
+#         dR.unflatten(dR.flatten() * 0.0)
+#         sigma[:, j] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
+#         num_add += 1
+#         curr_size += 1
+#
+#     is_converged = [False] * nroot
+#     residual = np.zeros(nroot)
+#     delta_energy = np.zeros(nroot)
+#     for niter in range(options["maximum_iterations"]):
+#         t1 = time.time()
+#         # store old energy
+#         omega_old = omega.copy()
+#
+#         # solve projection subspace eigenproblem: G_{IJ} = sum_K B_{KI} S_{KJ}
+#         for p in range(curr_size):
+#             for j in range(1, num_add + 1):
+#                 G[curr_size - j, p] = np.dot(B[:, curr_size - j].T, sigma[:, p])
+#                 G[p, curr_size - j] = np.dot(sigma[:, curr_size - j].T, B[:, p])
+#         e, alpha_full = np.linalg.eig(G[:curr_size, :curr_size])
+#
+#         # Compute the approximations
+#         n_active = sum([not x for x in is_converged])
+#         i_active = [j for j in range(nroot) if is_converged[j]]
+#         alpha = np.zeros((curr_size, nroot))
+#         for j, istate in enumerate(state_index):
+#             # Cycle if root is already converged
+#             if is_converged[j]: continue
+#             # select root
+#             if selection_method == "overlap":  # Option 1: based on overlap
+#                 idx = np.argsort(abs(alpha_full[j, :]))
+#                 iselect = idx[-1]
+#             elif selection_method == "energy": # Option 2: based on energy
+#                 idx = np.argsort(e)
+#                 iselect = idx[j]
+#
+#             # Get the expansion coefficients for the j-th root
+#             alpha[:, j] = np.real(alpha_full[:, iselect])
+#
+#             # Get the eigenpair of interest
+#             omega[istate] = np.real(e[iselect])
+#             r = np.dot(B[:, :curr_size], alpha[:, j])
+#
+#             # calculate residual vector: r_i = S_{iK}*alpha_{K} - omega * r_i
+#             R[istate].unflatten(np.dot(sigma[:, :curr_size], alpha[:, j]) - omega[istate] * r)
+#             residual[j] = np.linalg.norm(R[istate].flatten())
+#             delta_energy[j] = omega[istate] - omega_old[istate]
+#
+#             # Check convergence
+#             if residual[j] < options["amp_convergence"] and abs(delta_energy[j]) < options["energy_convergence"]:
+#                 R[istate].unflatten(r)
+#                 is_converged[j] = True
+#
+#         # Expand the subspace
+#         num_add = 0
+#         if curr_size + n_active < max_size:
+#             for j, istate in enumerate(state_index):
+#                 # Cycle if root is already converged
+#                 if is_converged[j]: continue
+#                 # update the residual vector
+#                 R[istate] = update_r(R[istate], omega[istate], H, system)
+#                 q = R[istate].flatten()
+#                 for p in range(curr_size + num_add):
+#                     b = B[:, p] / np.linalg.norm(B[:, p])
+#                     q -= np.dot(b.T, q) * b
+#                 q /= np.linalg.norm(q)
+#                 R[istate].unflatten(q)
+#                 B[:, curr_size + num_add] = q
+#                 sigma[:, curr_size + num_add] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
+#                 num_add += 1
+#             curr_size += num_add
+#         else: # deflate the subspace
+#             print("      **Deflating subspace**")
+#             btemp = np.zeros((ndim, n_active))
+#             ct = 0
+#             for j in range(nroot):
+#                 if is_converged[j]: continue
+#                 btemp[:, ct] = np.dot(B[:, :curr_size], alpha[:, j])
+#                 ct += 1
+#             B[:, :n_active] = btemp
+#             B[:, :n_active], _ = np.linalg.qr(B[:, :n_active])
+#             ct = 0
+#             for j, istate in enumerate(state_index):
+#                 # Cycle if root is already converged
+#                 if is_converged[j]: continue
+#                 R[istate].unflatten(B[:, ct])
+#                 sigma[:, ct] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
+#                 ct += 1
+#             curr_size = n_active
+#             num_add = n_active
+#
+#         # print the iteration
+#         elapsed_time = time.time() - t1
+#         print_block_eomcc_iteration(niter + 1, curr_size, omega, residual, delta_energy, elapsed_time, state_index)
+#
+#         # Check for all roots converged and break
+#         if all(is_converged):
+#             print("   All roots converged")
+#             break
+#
+#     return R, omega, is_converged
 def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_index, options):
     """
     Diagonalize the similarity-transformed Hamiltonian HBar using the
@@ -130,7 +257,7 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
     nroot = len(state_index)
     ndim = R[state_index[0]].ndim
     max_size = nroot * options["maximum_iterations"]
-    selection_method = options["eomcc_block_selection_method"]
+    selection_method = options["davidson_selection_method"]
 
     # Allocate the B (correction/subspace), sigma (HR), and G (interaction) matrices
     sigma = np.zeros((ndim, max_size))

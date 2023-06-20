@@ -51,8 +51,8 @@ class Driver:
                         "diis_out_of_core" : False,
                         "amp_print_threshold" : 0.025,
                         "davidson_max_subspace_size" : 30,
-                        "eomcc_solver" : "standard_davidson",
-                        "eomcc_block_selection_method" : "overlap"}
+                        "davidson_solver" : "standard",
+                        "davidson_selection_method" : "overlap"}
 
         # Disable DIIS for small problems to avoid inherent singularity
         if self.system.noccupied_alpha * self.system.nunoccupied_beta <= 4:
@@ -315,7 +315,7 @@ class Driver:
                              active_orders=self.operator_params["active_orders"],
                              num_active=self.operator_params["number_active_indices"])
 
-        if self.options["eomcc_solver"] == "block_davidson":
+        if self.options["davidson_solver"] == "multiroot":
             print("   Multiroot EOMCC calculation started on", get_timestamp(), "\n")
             print("   Energy of initial guess")
             for istate in state_index:
