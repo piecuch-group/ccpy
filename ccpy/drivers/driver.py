@@ -348,7 +348,7 @@ class Driver:
                 # compute the relative excitation level (REL) metric
                 self.relative_excitation_level[istate] = get_rel(self.R[istate], self.r0[istate])
                 eomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.r0[istate], self.relative_excitation_level[istate], is_converged, istate, self.system, self.options["amp_print_threshold"])
-                print("   EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
+                print("   EOMCC calculation for root %d ended on" % j, get_timestamp(), "\n")
 
     def run_sfeomcc(self, method, state_index):
         """Performs the SF-EOMCC calculation specified by the user in the input."""
