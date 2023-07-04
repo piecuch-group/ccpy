@@ -1,14 +1,21 @@
 import numpy as np
+import math
 
 def spin_adapt_guess(S2, H, multiplicity):
 
     def _get_multiplicity(s2):
-        s = -0.5 + np.sqrt(0.25 + s2)
+        s = -0.5 + math.sqrt(0.25 + s2)
         return 2.0 * s + 1.0
+
+    # if multiplicity = -1, then just diagonalize H and return
+    if multiplicity == -1:
+        omega, V = np.linalg.eig(H)
+        idx = np.argsort(omega)
+        return omega[idx], V[:, idx]
 
     ndim = H.shape[0]
 
-    eval_s2, V_s2 = np.linalg.eig(S2)
+    eval_s2, V_s2 = np.linalg.eigh(S2)
     idx_s2 = [i for i, s2 in enumerate(eval_s2) if abs(_get_multiplicity(s2) - multiplicity) < 1.0e-07]
     n_s2_sub = len(idx_s2)
 
@@ -113,7 +120,13 @@ def build_s2matrix_cis(system):
          np.concatenate((Sba, Sbb), axis=1)), axis=0
     )
 
-def build_s2matrix_cisd(system):
+def build_s2matrix_cisd(system, nacto, nactu):
+
+    # set active space parameters
+    nacto_a = min(nacto + (system.multiplicity - 1), system.noccupied_alpha)
+    nacto_b = min(nacto, system.noccupied_beta)
+    nactu_a = min(nactu, system.nunoccupied_alpha)
+    nactu_b = min(nactu + (system.multiplicity - 1), system.nunoccupied_beta)
 
     def chi_beta(p):
         if p >= 0 and p < system.noccupied_beta:
@@ -129,90 +142,205 @@ def build_s2matrix_cisd(system):
 
     n1a = system.nunoccupied_alpha * system.noccupied_alpha
     n1b = system.nunoccupied_beta * system.noccupied_beta
-    n2a = system.nunoccupied_alpha**2 * system.noccupied_alpha**2
-    n2b = system.nunoccupied_alpha * system.nunoccupied_beta * system.noccupied_alpha * system.noccupied_beta
-    n2c = system.nunoccupied_beta**2 * system.noccupied_beta**2
+    n2a = int(nactu_a * (nactu_a - 1) / 2 * nacto_a * (nacto_a - 1) / 2)
+    n2b = nacto_a * nacto_b * nactu_a * nactu_b
+    n2c = int(nactu_b * (nactu_b - 1) / 2 * nacto_b * (nacto_b - 1) / 2)
 
     sz2 = get_sz2(system, Ms=0)
-
-    Saa = np.zeros((n1a, n1a))
+    #
+    a_S_a = np.zeros((n1a, n1a))
     ct1 = 0
     for a in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):
         for i in range(system.noccupied_alpha):
             ct2 = 0
             for b in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):
                 for j in range(system.noccupied_alpha):
-                    Saa[ct1, ct2] = (sz2 + 1.0 * chi_beta(i)) * (i == j) * (a == b)
+                    a_S_a[ct1, ct2] = (sz2 + 1.0 * chi_beta(i)) * (i == j) * (a == b)
                     ct2 += 1
             ct1 += 1
-    Sab = np.zeros((n1a, n1b))
+    #
+    a_S_b = np.zeros((n1a, n1b))
     ct1 = 0
     for a in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):
         for i in range(system.noccupied_alpha):
             ct2 = 0
             for b in range(system.noccupied_beta, system.noccupied_beta + system.nunoccupied_beta):
                 for j in range(system.noccupied_beta):
-                    Sab[ct1, ct2] = -1.0 * (i == j) * (a == b) * chi_beta(i) * pi_alpha(a)
+                    a_S_b[ct1, ct2] = -1.0 * (i == j) * (a == b)
                     ct2 += 1
             ct1 += 1
-    Sba = np.zeros((n1b, n1a))
-    ct1 = 0
-    for a in range(system.noccupied_beta, system.noccupied_beta + system.nunoccupied_beta):
-        for i in range(system.noccupied_beta):
-            ct2 = 0
-            for b in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):
-                for j in range(system.noccupied_alpha):
-                    Sba[ct1, ct2] = -1.0 * (i == j) * (a == b) * chi_beta(i) * pi_alpha(a)
-                    ct2 += 1
-            ct1 += 1
-    Sbb = np.zeros((n1b, n1b))
+    b_S_a = a_S_b.T
+    #
+    b_S_b = np.zeros((n1b, n1b))
     ct1 = 0
     for a in range(system.noccupied_beta, system.noccupied_beta + system.nunoccupied_beta):
         for i in range(system.noccupied_beta):
             ct2 = 0
             for b in range(system.noccupied_beta, system.noccupied_beta + system.nunoccupied_beta):
                 for j in range(system.noccupied_beta):
-                    Sbb[ct1, ct2] = (sz2 + 1.0 * pi_alpha(a)) * (i == j) * (a == b)
+                    b_S_b[ct1, ct2] = (sz2 + 1.0 * pi_alpha(a)) * (i == j) * (a == b)
                     ct2 += 1
             ct1 += 1
+    #
+    a_S_ab = np.zeros((n1a, n2b))
+    ct1 = 0
+    for a in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):
+        for i in range(system.noccupied_alpha):
+            ct2 = 0
+            for B in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
+                for C in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
+                    for J in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
+                        for K in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
+                            # + d(a,B) <i|K~> <J|C~>
+                            a_S_ab[ct1, ct2] = 1.0 * (a == B) * (i == K) * (J == C)
+                            ct2 += 1
+            ct1 += 1
+    ab_S_a = a_S_ab.T
+    #
+    b_S_ab = np.zeros((n1b, n2b))
+    ct1 = 0
+    for a in range(system.noccupied_beta, system.noccupied_beta + system.nunoccupied_beta):
+        for i in range(system.noccupied_beta):
+            ct2 = 0
+            for B in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
+                for C in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
+                    for J in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
+                        for K in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
+                            # - d(i,K) <J|C~> <a~|B>
+                            b_S_ab[ct1, ct2] = -1.0 * (a == B) * (i == K) * (J == C)
+                            ct2 += 1
+            ct1 += 1
+    ab_S_b = b_S_ab.T
+    #
+    aa_S_aa = np.zeros((n2a, n2a))
+    ct1 = 0
+    for A in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
+        for B in range(A + 1, system.noccupied_alpha + nactu_a):
+            for I in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
+                for J in range(I + 1, system.noccupied_alpha):
+                    ct2 = 0
+                    for C in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
+                        for D in range(C + 1, system.noccupied_alpha + nactu_a):
+                            for K in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
+                                for L in range(K + 1, system.noccupied_alpha):
+                                    # +A(IJ)A(KL) d(A,C) d(J,L) d(B,D) d(I,K) chi_alpha(I)
+                                    aa_S_aa[ct1, ct2] += 1.0 * chi_beta(I) * (I == K) * (A == C) * (J == L) * (B == D) # (1)
+                                    aa_S_aa[ct1, ct2] -= 1.0 * chi_beta(J) * (J == K) * (A == C) * (I == L) * (B == D) # (IJ)
+                                    aa_S_aa[ct1, ct2] -= 1.0 * chi_beta(I) * (I == L) * (A == C) * (J == K) * (B == D) # (KL)
+                                    aa_S_aa[ct1, ct2] += 1.0 * chi_beta(J) * (J == L) * (A == C) * (I == K) * (B == D) # (IJ)(KL)
 
-    # Saaa = np.zeros((n1a, n2a))
-    # Sbaa = np.zeros((n1b, n2a))
-    #
-    # Sbbb = np.zeros((n1b, n2c))
-    # Sabb = np.zeros((n1a, n2c))
-    #
-    # Saab = np.zeros((n1a, n2b))
-    # ct1 = 0
-    # for a in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):
-    #     for i in range(system.noccupied_alpha):
-    #         ct2 = 0
-    #         for b in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):
-    #             for c in range(system.noccupied_beta, system.noccupied_beta + system.nunoccupied_beta):
-    #                 for j in range(system.noccupied_alpha):
-    #                     for k in range(system.noccupied_beta):
-    #                         Saab[ct1, ct2] = -1.0 * (a == b) * (i == k) * (c == j)
-    # Sbab = np.zeros((n1b, n2b))
-    #
-    # Saaaa = np.zeros((n2a, n2a))
-    # Saaab = np.zeros((n2a, n2b))
-    # Saabb = np.zeros((n2a, n2c))
-    #
-    # Sabaa = np.zeros((n2b, n2a))
-    # Sabab = np.zeros((n2b, n2b))
-    # Sabbb = np.zeros((n2b, n2c))
-    #
-    # Sbbaa = np.zeros((n2c, n2a))
-    # Sbbab = np.zeros((n2c, n2b))
-    # Sbbbb = np.zeros((n2c, n2c))
+                                    aa_S_aa[ct1, ct2] += sz2 * (I == K) * (A == C) * (J == L) * (B == D)
 
+                                    ct2 += 1
+                    ct1 += 1
+    #
+    aa_S_ab = np.zeros((n2a, n2b))
+    ct1 = 0
+    for A in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
+        for B in range(A + 1, system.noccupied_alpha + nactu_a):
+            for I in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
+                for J in range(I + 1, system.noccupied_alpha):
+                    ct2 = 0
+                    for C in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
+                        for D in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
+                            for K in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
+                                for L in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
+                                    # -A(IJ)A(AB) d(I,K) d(A,C) <L~|J> <B|D~>
+                                    aa_S_ab[ct1, ct2] -= (I == K) * (A == C) * (L == J) * (B == D) # (1)
+                                    aa_S_ab[ct1, ct2] += (J == K) * (A == C) * (L == I) * (B == D) # (IJ)
+                                    aa_S_ab[ct1, ct2] += (I == K) * (B == C) * (L == J) * (A == D) # (AB)
+                                    aa_S_ab[ct1, ct2] -= (J == K) * (B == C) * (L == I) * (A == D) # (IJ)(AB)
+                                    ct2 += 1
+                    ct1 += 1
+    ab_S_aa = aa_S_ab.T
+    #
+    ab_S_ab = np.zeros((n2b, n2b))
+    ct1 = 0
+    for A in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
+        for B in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
+            for I in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
+                for J in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
+                    ct2 = 0
+                    for C in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
+                        for D in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
+                            for K in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
+                                for L in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
+                                    # d(A,C) d(B~,D~) <L~|I> <K|J~>
+                                    ab_S_ab[ct1, ct2] -= (A == C) * (B == D) * (L == I) * (K == J)
+                                    # d(I,K) d(J~,L~) <A|D~> <B~|C>
+                                    ab_S_ab[ct1, ct2] -= (I == K) * (J == L) * (A == D) * (B == C)
+                                    # d(J~,L~) d(A,C) <K|D~> <B~|I>
+                                    ab_S_ab[ct1, ct2] += (J == L) * (A == C) * (K == D) * (B == I)
 
+                                    ab_S_ab[ct1, ct2] += (J == L) * (I == K) * (A == C) * (B == D) * pi_alpha(B)
+                                    ab_S_ab[ct1, ct2] += (A == C) * (I == K) * (J == L) * (B == D) * chi_beta(I)
+
+                                    ab_S_ab[ct1, ct2] += sz2 * (I == K) * (J == L) * (A == C) * (B == D)
+
+                                    ct2 += 1
+                    ct1 += 1
+    #
+    ab_S_bb = np.zeros((n2b, n2c))
+    ct1 = 0
+    for A in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
+        for B in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
+            for I in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
+                for J in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
+                    ct2 = 0
+                    for C in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
+                        for D in range(C + 1, system.noccupied_beta + nactu_b):
+                            for K in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
+                                for L in range(K + 1, system.noccupied_beta):
+                                    # -A(K~L~)A(C~D~) d(J~,L~) d(B~,D~) <K~|I> <A|C~>
+                                    ab_S_bb[ct1, ct2] -= (J == L) * (B == D) * (K == I) * (A == C) # (1)
+                                    ab_S_bb[ct1, ct2] += (J == K) * (B == D) * (L == I) * (A == C) # (KL)
+                                    ab_S_bb[ct1, ct2] += (J == L) * (B == C) * (K == I) * (A == D) # (CD)
+                                    ab_S_bb[ct1, ct2] -= (J == K) * (B == C) * (L == I) * (A == D) # (KL)(CD)
+                                    ct2 += 1
+                    ct1 += 1
+    bb_S_ab = ab_S_bb.T
+    #
+    bb_S_bb = np.zeros((n2c, n2c))
+    ct1 = 0
+    for A in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
+        for B in range(A + 1, system.noccupied_beta + nactu_b):
+            for I in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
+                for J in range(I + 1, system.noccupied_beta):
+                    ct2 = 0
+                    for C in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
+                        for D in range(C + 1, system.noccupied_beta + nactu_b):
+                            for K in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
+                                for L in range(K + 1, system.noccupied_beta):
+                                    bb_S_bb[ct1, ct2] += 1.0 * pi_alpha(A) * (I == K) * (A == C) * (J == L) * (B == D) # (1)
+                                    bb_S_bb[ct1, ct2] -= 1.0 * pi_alpha(B) * (I == K) * (B == C) * (J == L) * (A == D) # (AB)
+                                    bb_S_bb[ct1, ct2] -= 1.0 * pi_alpha(A) * (I == K) * (A == D) * (J == L) * (B == C) # (CD)
+                                    bb_S_bb[ct1, ct2] += 1.0 * pi_alpha(B) * (I == K) * (B == D) * (J == L) * (A == C) # (AB)(CD)
+
+                                    bb_S_bb[ct1, ct2] += sz2 * (I == K) * (A == C) * (J == L) * (B == D)
+
+                                    ct2 += 1
+                    ct1 += 1
+
+    # Lot of zero blocks
+    a_S_aa = np.zeros((n1a, n2a))
+    aa_S_a = a_S_aa.T
+    b_S_aa = np.zeros((n1b, n2a))
+    aa_S_b = b_S_aa.T
+    b_S_bb = np.zeros((n1b, n2c))
+    bb_S_b = b_S_bb.T
+    a_S_bb = np.zeros((n1a, n2c))
+    bb_S_a = a_S_bb.T
+    aa_S_bb = np.zeros((n2a, n2c))
+    bb_S_aa = aa_S_bb.T
 
     return np.concatenate(
-        (np.concatenate((Saa, Sab), axis=1),
-         np.concatenate((Sba, Sbb), axis=1)), axis=0
+        (np.concatenate((a_S_a, a_S_b, a_S_aa, a_S_ab, a_S_bb), axis=1),
+         np.concatenate((b_S_a, b_S_b, b_S_aa, b_S_ab, b_S_bb), axis=1),
+         np.concatenate((aa_S_a, aa_S_b, aa_S_aa, aa_S_ab, aa_S_bb), axis=1),
+         np.concatenate((ab_S_a, ab_S_b, ab_S_aa, ab_S_ab, ab_S_bb), axis=1),
+         np.concatenate((bb_S_a, bb_S_b, bb_S_aa, bb_S_ab, bb_S_bb), axis=1)
+         ), axis=0
     )
-
 
 def build_s2matrix_sfcis(system, Ms):
 
