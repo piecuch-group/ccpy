@@ -41,8 +41,8 @@ used in all methods are also valid for UHF references, however, CCpy does not ye
 by PySCF or GAMESS. Once this is made available, all computations will also be compatible with UHF.
 
 A list of all computational options available in CCpy:
-  - MP2
-  - MP3
+  - MP2 (Hartree-Fock orbitals only)
+  - MP3 (Hartree-Fock orbitals only)
   - CCD
   - CCSD
   - CCSD(T)
@@ -63,13 +63,7 @@ A list of all computational options available in CCpy:
   - ec-CC-II_{3}
   - ec-CC_II_{3,4} (unpublished)
   - DEA-EOMCCSD(3p-1h)
-
-Currently, all EOMCC options are initiated using a CIS-like guess, which can reliably locate states dominated by single
-excitations. The more desirable CISd-like guess, capable of finding doubly excited states, is not available yet. Also
-note that the MPn methods available in CCpy are not implemented for non-Hartree-Fock orbitals, and thus should only be
-used with RHF and ROHF references. 
-
-
+  
 # Installation
 Installation should be simple. Simply clone this git repository and run `make install` followed by `make all` inside of it. You will
 need a working gfortran compiler as well as locations for BLAS (preferably MKL) libraries, which enter in the Makefile as the environment
