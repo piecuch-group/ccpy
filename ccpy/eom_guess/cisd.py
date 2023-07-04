@@ -1,69 +1,11 @@
 import numpy as np
-
 from ccpy.eom_guess.s2matrix import build_s2matrix_cisd, spin_adapt_guess
-from ccpy.utilities.updates import eomcc_initial_guess
 
-# def run_diagonalization(system, H, multiplicity, nroot, nacto, nactu):
-#
-#     def _get_multiplicity(s2):
-#         s = -0.5 + np.sqrt(0.25 + s2)
-#         return 2.0 * s + 1.0
-#
-#     #Hmat = build_cisd_hamiltonian(dets1A, dets1B, dets2A, dets2B, dets2C, H, system)
-#     S2mat = build_s2matrix_cisd(system, nacto, nactu)
-#     eval_s2, V_s2 = np.linalg.eigh(S2mat)
-#     # Debug
-#     for i, s2 in enumerate(eval_s2):
-#         print("Root", i + 1, "s2 = ", s2, "mult = ", _get_multiplicity(s2))
-#     ##omega, V = spin_adapt_guess(S2mat, Hmat, multiplicity)
-#
-#     noa, nob, nua, nub = H.ab.oovv.shape
-#     ndim = noa*nua + nob*nub + noa**2*nua**2 + noa*nob*nua*nub + nob**2*nub**2
-#
-#     idx1A, idx1B, idx2A, idx2B, idx2C, n1a_act, n1b_act, n2a_act, n2b_act, n2c_act = \
-#         eomcc_initial_guess.eomcc_initial_guess.get_active_dimensions(
-#                                                                 nacto, nactu,
-#                                                                 system.noccupied_alpha, system.nunoccupied_alpha,
-#                                                                 system.noccupied_beta, system.nunoccupied_beta,
-#         )
-#     ndim_act = n1a_act + n1b_act + n2a_act + n2b_act + n2c_act
-#
-#     V_act, omega, Hmat = eomcc_initial_guess.eomcc_initial_guess.eomccs_d_matrix(
-#                                             idx1A, idx1B, idx2A, idx2B, idx2C,
-#                                             H.a.oo, H.a.vv, H.a.ov,
-#                                             H.b.oo, H.b.vv, H.b.ov,
-#                                             H.aa.oooo, H.aa.vvvv, H.aa.voov, H.aa.vooo, H.aa.vvov, H.aa.ooov, H.aa.vovv,
-#                                             H.ab.oooo, H.ab.vvvv, H.ab.voov, H.ab.ovvo, H.ab.vovo, H.ab.ovov, H.ab.vooo,
-#                                             H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.ab.ooov, H.ab.oovo, H.ab.vovv, H.ab.ovvv,
-#                                             H.bb.oooo, H.bb.vvvv, H.bb.voov, H.bb.vooo, H.bb.vvov, H.bb.ooov, H.bb.vovv,
-#                                             n1a_act, n1b_act, n2a_act, n2b_act, n2c_act, ndim_act)
-#     idx = np.argsort(omega)
-#     omega = omega[idx]
-#     V_act = V_act[:, idx]
-#     nroot = min(len(omega), nroot)
-#
-#     omega = omega[:nroot]
-#     V = np.zeros((ndim, nroot))
-#
-#     for i in range(nroot):
-#         V_a, V_b, V_aa, V_ab, V_bb = eomcc_initial_guess.eomcc_initial_guess.unflatten_guess_vector(
-#                                                             V_act[:, i],
-#                                                             idx1A, idx1B, idx2A, idx2B, idx2C,
-#                                                             n1a_act, n1b_act, n2a_act, n2b_act, n2c_act, ndim_act,
-#         )
-#         V[:, i] = np.hstack((V_a.flatten(), V_b.flatten(), V_aa.flatten(), V_ab.flatten(), V_bb.flatten()))
-#
-#     print("Dimension of CISd problem = ", ndim_act)
-#     for i in range(nroot):
-#         print("Eigenvalue", i + 1, " = ", omega[i])
-#
-#     return omega, V
-
-def run_diagonalization(system, H, multiplicity, nroot, nacto, nactu):
+def run_diagonalization(system, H, multiplicity, nroot, nacto, nactu, debug=False):
 
     Hmat = build_cisd_hamiltonian(H, system, nacto, nactu)
     S2mat = build_s2matrix_cisd(system, nacto, nactu)
-    omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity)
+    omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=debug)
 
     nroot = min(nroot, V_act.shape[1])
     noa, nob, nua, nub = H.ab.oovv.shape
@@ -180,6 +122,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                     )
                     ct2 += 1
             ct1 += 1
+    #print("norm of a_H_a = ", np.linalg.norm(a_H_a.flatten()))
     # < ia | H | j~b~ >
     a_H_b = np.zeros((n1a, n1b))
     ct1 = 0
@@ -191,6 +134,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                     a_H_b[ct1, ct2] = H.ab.voov[a, j, i, b]
                     ct2 += 1
             ct1 += 1
+    #print("norm of a_H_b = ", np.linalg.norm(a_H_b.flatten()))
     # < i~a~ | H | jb >
     b_H_a = np.zeros((n1b, n1a))
     ct1 = 0
@@ -202,6 +146,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                     b_H_a[ct1, ct2] = H.ab.ovvo[j, a, b, i]
                     ct2 += 1
             ct1 += 1
+    #print("norm of b_H_a = ", np.linalg.norm(b_H_a.flatten()))
     # < i~a~ | H | j~b~ >
     b_H_b = np.zeros((n1b, n1b))
     ct1 = 0
@@ -217,6 +162,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                     )
                     ct2 += 1
             ct1 += 1
+    #print("norm of b_H_b = ", np.linalg.norm(b_H_b.flatten()))
     # < ia | H | jkbc >
     a_H_aa = np.zeros((n1a, n2a))
     idet = 0
@@ -240,6 +186,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                             a_H_aa[idet, jdet] = hmatel
                             jdet += 1
             idet += 1
+    #print("norm of a_H_aa = ", np.linalg.norm(a_H_aa.flatten()))
     # < ia | H | jk~bc~ >
     a_H_ab = np.zeros((n1a, n2b))
     idet = 0
@@ -259,6 +206,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                             a_H_ab[idet, jdet] = hmatel
                             jdet += 1
             idet += 1
+    #print("norm of a_H_ab = ", np.linalg.norm(a_H_ab.flatten()))
     # < i~a~ | H | jk~bc~ >
     b_H_ab = np.zeros((n1b, n2b))
     idet = 0
@@ -278,6 +226,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                             b_H_ab[idet, jdet] = hmatel
                             jdet += 1
             idet += 1
+    #print("norm of b_H_ab = ", np.linalg.norm(b_H_ab.flatten()))
     # < i~a~ | H | j~k~b~c~ >
     b_H_bb = np.zeros((n1b, n2c))
     idet = 0
@@ -301,6 +250,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                             b_H_bb[idet, jdet] = hmatel
                             jdet += 1
             idet += 1
+    #print("norm of b_H_bb = ", np.linalg.norm(b_H_bb.flatten()))
     # < ijab | H | kc >
     aa_H_a = np.zeros((n2a, n1a))
     idet = 0
@@ -320,6 +270,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                             aa_H_a[idet, jdet] = hmatel
                             jdet += 1
                     idet += 1
+    #print("norm of aa_H_a = ", np.linalg.norm(aa_H_a.flatten()))
     # < ij~ab~ | H | kc >
     ab_H_a = np.zeros((n2b, n1a))
     idet = 0
@@ -337,6 +288,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                             ab_H_a[idet, jdet] = hmatel
                             jdet += 1
                     idet += 1
+    #print("norm of ab_H_a = ", np.linalg.norm(ab_H_a.flatten()))
     # < ij~ab~ | H | k~c~ >
     ab_H_b = np.zeros((n2b, n1b))
     idet = 0
@@ -354,6 +306,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                             ab_H_b[idet, jdet] = hmatel
                             jdet += 1
                     idet += 1
+    #print("norm of ab_H_b = ", np.linalg.norm(ab_H_b.flatten()))
     # < i~j~a~b~ | H | k~c~ >
     bb_H_b = np.zeros((n2c, n1b))
     idet = 0
@@ -373,6 +326,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                             bb_H_b[idet, jdet] = hmatel
                             jdet += 1
                     idet += 1
+    #print("norm of bb_H_b = ", np.linalg.norm(bb_H_b.flatten()))
     # < ijab | H | klcd >
     aa_H_aa = np.zeros((n2a, n2a))
     idet = 0
@@ -422,6 +376,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                                     aa_H_aa[idet, jdet] = hmatel
                                     jdet += 1
                     idet += 1
+    #print("norm of aa_H_aa = ", np.linalg.norm(aa_H_aa.flatten()))
     # < ijab | H | kl~cd~ >
     aa_H_ab = np.zeros((n2a, n2b))
     idet = 0
@@ -443,6 +398,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                                     aa_H_ab[idet, jdet] = hmatel
                                     jdet += 1
                     idet += 1
+    #print("norm of aa_H_ab = ", np.linalg.norm(aa_H_ab.flatten()))
     # < ij~ab~ | H | klcd >
     ab_H_aa = np.zeros((n2b, n2a))
     idet = 0
@@ -464,6 +420,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                                     ab_H_aa[idet, jdet] = hmatel
                                     jdet += 1
                     idet += 1
+    #print("norm of ab_H_aa = ", np.linalg.norm(ab_H_aa.flatten()))
     # < ij~ab~ | H | kl~cd~ >
     ab_H_ab = np.zeros((n2b, n2b))
     idet = 0
@@ -491,6 +448,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                                     ab_H_ab[idet, jdet] = hmatel
                                     jdet += 1
                     idet += 1
+    #print("norm of ab_H_ab = ", np.linalg.norm(ab_H_ab.flatten()))
     # < ij~ab~ | H | k~l~c~d~ >
     ab_H_bb = np.zeros((n2b, n2c))
     idet = 0
@@ -512,6 +470,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                                     ab_H_bb[idet, jdet] = hmatel
                                     jdet += 1
                     idet += 1
+    #print("norm of ab_H_bb = ", np.linalg.norm(ab_H_bb.flatten()))
     # < i~j~a~b~ | H | kl~cd~ >
     bb_H_ab = np.zeros((n2c, n2b))
     idet = 0
@@ -533,6 +492,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                                     bb_H_ab[idet, jdet] = hmatel
                                     jdet += 1
                     idet += 1
+    #print("norm of bb_H_ab = ", np.linalg.norm(bb_H_ab.flatten()))
     # < i~j~a~b~ | H | k~l~c~d~ >
     bb_H_bb = np.zeros((n2c, n2c))
     idet = 0
@@ -580,7 +540,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
                                     bb_H_bb[idet, jdet] = hmatel
                                     jdet += 1
                     idet += 1
-
+    #print("norm of bb_H_bb = ", np.linalg.norm(bb_H_bb.flatten()))
     # Zero blocks
     a_H_bb = np.zeros((n1a, n2c))
     b_H_aa = np.zeros((n1b, n2a))

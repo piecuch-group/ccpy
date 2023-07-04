@@ -1,7 +1,7 @@
 import numpy as np
 import math
 
-def spin_adapt_guess(S2, H, multiplicity):
+def spin_adapt_guess(S2, H, multiplicity, debug):
 
     def _get_multiplicity(s2):
         s = -0.5 + math.sqrt(0.25 + s2)
@@ -16,6 +16,16 @@ def spin_adapt_guess(S2, H, multiplicity):
     ndim = H.shape[0]
 
     eval_s2, V_s2 = np.linalg.eigh(S2)
+
+    if debug:
+        omega_ref, _ = np.linalg.eig(H)
+        idx = np.argsort(omega_ref)
+        omega_ref = omega_ref[idx]
+        for i, s2 in enumerate(eval_s2):
+            print("root", i + 1, "s2 = ", s2, "mult = ", _get_multiplicity(s2))
+        for i in range(50):
+            print("root", i + 1, "E = ", omega_ref[i])
+
     idx_s2 = [i for i, s2 in enumerate(eval_s2) if abs(_get_multiplicity(s2) - multiplicity) < 1.0e-07]
     n_s2_sub = len(idx_s2)
 
@@ -158,6 +168,7 @@ def build_s2matrix_cisd(system, nacto, nactu):
                     a_S_a[ct1, ct2] = (sz2 + 1.0 * chi_beta(i)) * (i == j) * (a == b)
                     ct2 += 1
             ct1 += 1
+    #print(np.linalg.norm(a_S_a.flatten()))
     #
     a_S_b = np.zeros((n1a, n1b))
     ct1 = 0
@@ -170,6 +181,7 @@ def build_s2matrix_cisd(system, nacto, nactu):
                     ct2 += 1
             ct1 += 1
     b_S_a = a_S_b.T
+    #print(np.linalg.norm(a_S_b.flatten()))
     #
     b_S_b = np.zeros((n1b, n1b))
     ct1 = 0
@@ -181,6 +193,7 @@ def build_s2matrix_cisd(system, nacto, nactu):
                     b_S_b[ct1, ct2] = (sz2 + 1.0 * pi_alpha(a)) * (i == j) * (a == b)
                     ct2 += 1
             ct1 += 1
+    #print(np.linalg.norm(b_S_b.flatten()))
     #
     a_S_ab = np.zeros((n1a, n2b))
     ct1 = 0
@@ -192,10 +205,11 @@ def build_s2matrix_cisd(system, nacto, nactu):
                     for J in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
                         for K in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
                             # + d(a,B) <i|K~> <J|C~>
-                            a_S_ab[ct1, ct2] = 1.0 * (a == B) * (i == K) * (J == C)
+                            a_S_ab[ct1, ct2] += (a == B) * (i == K) * (J == C)
                             ct2 += 1
             ct1 += 1
     ab_S_a = a_S_ab.T
+    #print(np.linalg.norm(a_S_ab.flatten()))
     #
     b_S_ab = np.zeros((n1b, n2b))
     ct1 = 0
@@ -207,10 +221,11 @@ def build_s2matrix_cisd(system, nacto, nactu):
                     for J in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
                         for K in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
                             # - d(i,K) <J|C~> <a~|B>
-                            b_S_ab[ct1, ct2] = -1.0 * (a == B) * (i == K) * (J == C)
+                            b_S_ab[ct1, ct2] -= (a == B) * (i == K) * (J == C)
                             ct2 += 1
             ct1 += 1
     ab_S_b = b_S_ab.T
+    #print(np.linalg.norm(b_S_ab.flatten()))
     #
     aa_S_aa = np.zeros((n2a, n2a))
     ct1 = 0
@@ -224,15 +239,14 @@ def build_s2matrix_cisd(system, nacto, nactu):
                             for K in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
                                 for L in range(K + 1, system.noccupied_alpha):
                                     # +A(IJ)A(KL) d(A,C) d(J,L) d(B,D) d(I,K) chi_alpha(I)
-                                    aa_S_aa[ct1, ct2] += 1.0 * chi_beta(I) * (I == K) * (A == C) * (J == L) * (B == D) # (1)
-                                    aa_S_aa[ct1, ct2] -= 1.0 * chi_beta(J) * (J == K) * (A == C) * (I == L) * (B == D) # (IJ)
-                                    aa_S_aa[ct1, ct2] -= 1.0 * chi_beta(I) * (I == L) * (A == C) * (J == K) * (B == D) # (KL)
-                                    aa_S_aa[ct1, ct2] += 1.0 * chi_beta(J) * (J == L) * (A == C) * (I == K) * (B == D) # (IJ)(KL)
-
+                                    aa_S_aa[ct1, ct2] += chi_beta(I) * (I == K) * (A == C) * (J == L) * (B == D) # (1)
+                                    aa_S_aa[ct1, ct2] -= chi_beta(J) * (J == K) * (A == C) * (I == L) * (B == D) # (IJ)
+                                    aa_S_aa[ct1, ct2] -= chi_beta(I) * (I == L) * (A == C) * (J == K) * (B == D) # (KL)
+                                    aa_S_aa[ct1, ct2] += chi_beta(J) * (J == L) * (A == C) * (I == K) * (B == D) # (IJ)(KL)
                                     aa_S_aa[ct1, ct2] += sz2 * (I == K) * (A == C) * (J == L) * (B == D)
-
                                     ct2 += 1
                     ct1 += 1
+    #print(np.linalg.norm(aa_S_aa.flatten()))
     #
     aa_S_ab = np.zeros((n2a, n2b))
     ct1 = 0
@@ -253,6 +267,7 @@ def build_s2matrix_cisd(system, nacto, nactu):
                                     ct2 += 1
                     ct1 += 1
     ab_S_aa = aa_S_ab.T
+    #print(np.linalg.norm(aa_S_ab.flatten()))
     #
     ab_S_ab = np.zeros((n2b, n2b))
     ct1 = 0
@@ -265,20 +280,20 @@ def build_s2matrix_cisd(system, nacto, nactu):
                         for D in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
                             for K in range(system.noccupied_alpha - nacto_a, system.noccupied_alpha):
                                 for L in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
-                                    # d(A,C) d(B~,D~) <L~|I> <K|J~>
+                                    # -d(A,C) d(B~,D~) <L~|I> <K|J~>
                                     ab_S_ab[ct1, ct2] -= (A == C) * (B == D) * (L == I) * (K == J)
-                                    # d(I,K) d(J~,L~) <A|D~> <B~|C>
+                                    # -d(I,K) d(J~,L~) <A|D~> <B~|C>
                                     ab_S_ab[ct1, ct2] -= (I == K) * (J == L) * (A == D) * (B == C)
                                     # d(J~,L~) d(A,C) <K|D~> <B~|I>
                                     ab_S_ab[ct1, ct2] += (J == L) * (A == C) * (K == D) * (B == I)
-
+                                    # +d(J,L) d(A,C) d(I,K) d(B,D) pi_alpha(B)
                                     ab_S_ab[ct1, ct2] += (J == L) * (I == K) * (A == C) * (B == D) * pi_alpha(B)
+                                    # +d(I,K) d(J,L) d(B,D) d(A,C) chi_beta(I)
                                     ab_S_ab[ct1, ct2] += (A == C) * (I == K) * (J == L) * (B == D) * chi_beta(I)
-
                                     ab_S_ab[ct1, ct2] += sz2 * (I == K) * (J == L) * (A == C) * (B == D)
-
                                     ct2 += 1
                     ct1 += 1
+    #print(np.linalg.norm(ab_S_ab.flatten()))
     #
     ab_S_bb = np.zeros((n2b, n2c))
     ct1 = 0
@@ -299,6 +314,7 @@ def build_s2matrix_cisd(system, nacto, nactu):
                                     ct2 += 1
                     ct1 += 1
     bb_S_ab = ab_S_bb.T
+    #print(np.linalg.norm(ab_S_bb.flatten()))
     #
     bb_S_bb = np.zeros((n2c, n2c))
     ct1 = 0
@@ -311,15 +327,15 @@ def build_s2matrix_cisd(system, nacto, nactu):
                         for D in range(C + 1, system.noccupied_beta + nactu_b):
                             for K in range(system.noccupied_beta - nacto_b, system.noccupied_beta):
                                 for L in range(K + 1, system.noccupied_beta):
-                                    bb_S_bb[ct1, ct2] += 1.0 * pi_alpha(A) * (I == K) * (A == C) * (J == L) * (B == D) # (1)
-                                    bb_S_bb[ct1, ct2] -= 1.0 * pi_alpha(B) * (I == K) * (B == C) * (J == L) * (A == D) # (AB)
-                                    bb_S_bb[ct1, ct2] -= 1.0 * pi_alpha(A) * (I == K) * (A == D) * (J == L) * (B == C) # (CD)
-                                    bb_S_bb[ct1, ct2] += 1.0 * pi_alpha(B) * (I == K) * (B == D) * (J == L) * (A == C) # (AB)(CD)
-
+                                    # A(AB)A(CD) d(I,K) d(J,L) d(B,D) d(A,C) pi_alpha(A)
+                                    bb_S_bb[ct1, ct2] += pi_alpha(A) * (I == K) * (A == C) * (J == L) * (B == D) # (1)
+                                    bb_S_bb[ct1, ct2] -= pi_alpha(B) * (I == K) * (B == C) * (J == L) * (A == D) # (AB)
+                                    bb_S_bb[ct1, ct2] -= pi_alpha(A) * (I == K) * (A == D) * (J == L) * (B == C) # (CD)
+                                    bb_S_bb[ct1, ct2] += pi_alpha(B) * (I == K) * (B == D) * (J == L) * (A == C) # (AB)(CD)
                                     bb_S_bb[ct1, ct2] += sz2 * (I == K) * (A == C) * (J == L) * (B == D)
-
                                     ct2 += 1
                     ct1 += 1
+    #print(np.linalg.norm(bb_S_bb.flatten()))
 
     # Lot of zero blocks
     a_S_aa = np.zeros((n1a, n2a))
