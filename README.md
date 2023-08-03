@@ -50,7 +50,7 @@ A list of all computational options available in CCpy:
   - CCSDt
   - CC(t;3)
   - CIPSI-driven CC(P;Q) aimed at converging CCSDT
-  - Adaptive CC(P;Q) aimed at converging CCSDT (See https://arxiv.org/abs/2306.09638, accepted to JCP)
+  - Adaptive CC(P;Q) aimed at converging CCSDT (In press at Journal of Chemical Physics, see https://arxiv.org/abs/2306.09638)
   - CCSDT
   - CR-CC(2,4)
   - CCSDTQ (available for RHF reference only)
