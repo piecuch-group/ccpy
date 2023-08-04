@@ -2,11 +2,11 @@ import numpy as np
 
 from ccpy.eom_guess.s2matrix import build_s2matrix_2p, spin_adapt_guess
 
-def run_diagonalization(system, H, multiplicity, nroot, nacto, nactu):
+def run_diagonalization(system, H, multiplicity, nroot, nacto, nactu, debug=False):
 
     Hmat = build_2p_hamiltonian(H, nactu)
     S2mat = build_s2matrix_2p(system, nactu)
-    omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity)
+    omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=debug)
     nroot = min(nroot, V_act.shape[1])
 
     # scatter active-space guess into full space

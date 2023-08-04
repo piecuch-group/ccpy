@@ -1,7 +1,7 @@
 import numpy as np
 import math
 
-def spin_adapt_guess(S2, H, multiplicity, debug):
+def spin_adapt_guess(S2, H, multiplicity, debug=False):
 
     def _get_multiplicity(s2):
         s = -0.5 + math.sqrt(0.25 + s2)

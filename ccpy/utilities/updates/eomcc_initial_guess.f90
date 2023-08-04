@@ -782,6 +782,545 @@ module eomcc_initial_guess
 
                 end subroutine eomccs_d_matrix
 
+                subroutine s2_matrix(S2mat,idx1A,idx1B,idx2A,idx2B,idx2C,&
+                                    n1a_act,n1b_act,n2a_act,n2b_act,n2c_act,ndim_act,noa,nua,nob,nub)
+
+                        integer, intent(in) :: noa, nua, nob, nub, n1a_act, n1b_act, n2a_act, n2b_act, n2c_act, ndim_act,&
+                                               idx1A(nua,noa), idx1B(nub,nob),&
+                                               idx2A(nua,nua,noa,noa), idx2B(nua,nub,noa,nob), idx2C(nub,nub,nob,nob)
+
+                        real(kind=8), intent(out) :: S2mat(ndim_act,ndim_act)
+
+                        integer :: i, j, k, l, a, b, c, d, ct1, ct2, pos(6)
+                        real(kind=8), allocatable :: Stemp(:,:)
+
+                        pos(1) = 0
+                        pos(2) = n1a_act
+                        pos(3) = n1a_act+n1b_act
+                        pos(4) = n1a_act+n1b_act+n2a_act
+                        pos(5) = n1a_act+n1b_act+n2a_act+n2b_act
+                        pos(6) = n1a_act+n1b_act+n2a_act+n2b_act+n2c_act
+
+                        ! < ia | H | jb >
+                        allocate(Stemp(n1a_act,n1a_act))
+                        Stemp = 0.0d0
+                        ct1 = 0
+                        do i = 1 , noa
+                        do a = 1 , nua
+                            if (idx1A(a,i)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do j = 1 , noa
+                            do b = 1 , nua
+                                if (idx1A(b,j)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) = &
+                                calc_SASA_matel(i,a,j,b,H1A_oo,H1A_vv,H2A_voov)
+                            end do
+                            end do
+                        end do
+                        end do
+                        Hmat(pos(1)+1:pos(2),pos(1)+1:pos(2)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < i~a~ | H | jb >
+                        allocate(Htemp(n1b_act,n1a_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1 , nob
+                        do a = 1 , nub
+                            if (idx1B(a,i)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do j = 1 , noa
+                            do b = 1 , nua
+                                if (idx1A(b,j)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_SBSA_matel(i,a,j,b,H2B_ovvo)
+                            end do
+                            end do
+                        end do
+                        end do
+                        Hmat(pos(2)+1:pos(3),pos(1)+1:pos(2)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < ia | H | j~b~ >
+                        allocate(Htemp(n1a_act,n1b_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1 , noa
+                        do a = 1 , nua
+                            if (idx1A(a,i)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do j = 1 , nob
+                            do b = 1 , nub
+                                if (idx1B(b,j)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_SASB_matel(i,a,j,b,H2B_voov)
+                            end do
+                            end do
+                        end do
+                        end do
+                        Hmat(pos(1)+1:pos(2),pos(2)+1:pos(3)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < i~a~ | H | j~b~ >
+                        allocate(Htemp(n1b_act,n1b_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1 , nob
+                        do a = 1 , nub
+                            if (idx1B(a,i)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do j = 1 , nob
+                            do b = 1 , nub
+                                if (idx1B(b,j)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_SBSB_matel(i,a,j,b,H1B_oo,H1B_vv,H2C_voov)
+                            end do
+                            end do
+                        end do
+                        end do
+                        Hmat(pos(2)+1:pos(3),pos(2)+1:pos(3)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < ia | H | jkbc >
+                        allocate(Htemp(n1a_act,n2a_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, noa
+                        do a = 1, nua
+                            if (idx1A(a,i)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do j = 1, noa
+                            do k = j+1, noa
+                            do b = 1, nua
+                            do c = b+1, nua
+                                if (idx2A(b,c,j,k)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_SADA_matel(i,a,j,k,b,c,H1A_ov,H2A_ooov,H2A_vovv)
+                            end do
+                            end do
+                            end do
+                            end do
+                        end do
+                        end do
+                        Hmat(pos(1)+1:pos(2),pos(3)+1:pos(4)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < ia | H | jk~bc~ >
+                        allocate(Htemp(n1a_act,n2b_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, noa
+                        do a = 1, nua
+                            if (idx1A(a,i)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do j = 1, noa
+                            do k = 1, nob
+                            do b = 1, nua
+                            do c = 1, nub
+                                if (idx2B(b,c,j,k)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_SADB_matel(i,a,j,k,b,c,H1B_ov,H2B_ooov,H2B_vovv)
+                            end do
+                            end do
+                            end do
+                            end do
+                        end do
+                        end do
+                        Hmat(pos(1)+1:pos(2),pos(4)+1:pos(5)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < i~a~ | H | jk~bc~ >
+                        allocate(Htemp(n1b_act,n2b_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, nob
+                        do a = 1, nub
+                            if (idx1B(a,i)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do j = 1, noa
+                            do k = 1, nob
+                            do b = 1, nua
+                            do c = 1, nub
+                                if (idx2B(b,c,j,k)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_SBDB_matel(i,a,j,k,b,c,H1A_ov,H2B_oovo,H2B_ovvv)
+                            end do
+                            end do
+                            end do
+                            end do
+                        end do
+                        end do
+                        Hmat(pos(2)+1:pos(3),pos(4)+1:pos(5)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < i~a~ | H | j~k~b~c~ >
+                        allocate(Htemp(n1b_act,n2c_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, nob
+                        do a = 1, nub
+                            if (idx1B(a,i)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do j = 1, nob
+                            do k = j+1, nob
+                            do b = 1, nub
+                            do c = b+1, nub
+                                if (idx2C(b,c,j,k)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_SBDC_matel(i,a,j,k,b,c,H1B_ov,H2C_ooov,H2C_vovv)
+                            end do
+                            end do
+                            end do
+                            end do
+                        end do
+                        end do
+                        Hmat(pos(2)+1:pos(3),pos(5)+1:pos(6)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < ijab | H | kc >
+                        allocate(Htemp(n2a_act,n1a_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, noa
+                        do j = i+1, noa
+                        do a = 1, nua
+                        do b = a+1, nua
+                            if (idx2A(a,b,i,j)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do k = 1, noa
+                            do c = 1, nua
+                                if (idx1A(c,k)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_DASA_matel(i,j,a,b,k,c,H2A_vooo,H2A_vvov)
+                            end do
+                            end do
+                        end do
+                        end do
+                        end do
+                        end do
+                        Hmat(pos(3)+1:pos(4),pos(1)+1:pos(2)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < ij~ab~ | H | kc >
+                        allocate(Htemp(n2b_act,n1a_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, noa
+                        do j = 1, nob
+                        do a = 1, nua
+                        do b = 1, nub
+                            if (idx2B(a,b,i,j)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do k = 1, noa
+                            do c = 1, nua
+                                if (idx1A(c,k)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_DBSA_matel(i,j,a,b,k,c,H2B_ovoo,H2B_vvvo)
+                            end do
+                            end do
+                        end do
+                        end do
+                        end do
+                        end do
+                        Hmat(pos(4)+1:pos(5),pos(1)+1:pos(2)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < ij~ab~ | H | k~c~ >
+                        allocate(Htemp(n2b_act,n1b_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, noa
+                        do j = 1, nob
+                        do a = 1, nua
+                        do b = 1, nub
+                            if (idx2B(a,b,i,j)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do k = 1, nob
+                            do c = 1, nub
+                                if (idx1B(c,k)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_DBSB_matel(i,j,a,b,k,c,H2B_vooo,H2B_vvov)
+                            end do
+                            end do
+                        end do
+                        end do
+                        end do
+                        end do
+                        Hmat(pos(4)+1:pos(5),pos(2)+1:pos(3)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < i~j~a~b~ | H | k~c~ >
+                        allocate(Htemp(n2c_act,n1b_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, nob
+                        do j = i+1, nob
+                        do a = 1, nub
+                        do b = a+1, nub
+                            if (idx2C(a,b,i,j)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do k = 1, nob
+                            do c = 1, nub
+                                if (idx1B(c,k)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_DCSB_matel(i,j,a,b,k,c,H2C_vooo,H2C_vvov)
+                            end do
+                            end do
+                        end do
+                        end do
+                        end do
+                        end do
+                        Hmat(pos(5)+1:pos(6),pos(2)+1:pos(3)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < ijab | H | klcd >
+                        allocate(Htemp(n2a_act,n2a_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, noa
+                        do j = i+1, noa
+                        do a = 1, nua
+                        do b = a+1, nua
+                            if (idx2A(a,b,i,j)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do k = 1, noa
+                            do l = k+1, noa
+                            do c = 1, nua
+                            do d = c+1, nua
+                                if (idx2A(c,d,k,l)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_DADA_matel(i,j,a,b,k,l,c,d,H1A_oo,H1A_vv,H2A_voov,H2A_oooo,H2A_vvvv)
+                            end do
+                            end do
+                            end do
+                            end do
+                        end do
+                        end do
+                        end do
+                        end do
+                        Hmat(pos(3)+1:pos(4),pos(3)+1:pos(4)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < ijab | H | kl~cd~ >
+                        allocate(Htemp(n2a_act,n2b_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, noa
+                        do j = i+1, noa
+                        do a = 1, nua
+                        do b = a+1, nua
+                            if (idx2A(a,b,i,j)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do k = 1, noa
+                            do l = 1, nob
+                            do c = 1, nua
+                            do d = 1, nub
+                                if (idx2B(c,d,k,l)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_DADB_matel(i,j,a,b,k,l,c,d,H2B_voov)
+                            end do
+                            end do
+                            end do
+                            end do
+                        end do
+                        end do
+                        end do
+                        end do
+                        Hmat(pos(3)+1:pos(4),pos(4)+1:pos(5)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < ij~ab~ | H | klcd >
+                        allocate(Htemp(n2b_act,n2a_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, noa
+                        do j = 1, nob
+                        do a = 1, nua
+                        do b = 1, nub
+                            if (idx2B(a,b,i,j)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do k = 1, noa
+                            do l = k+1, noa
+                            do c = 1, nua
+                            do d = c+1, nua
+                                if (idx2A(c,d,k,l)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_DBDA_matel(i,j,a,b,k,l,c,d,H2B_ovvo)
+                            end do
+                            end do
+                            end do
+                            end do
+                        end do
+                        end do
+                        end do
+                        end do
+                        Hmat(pos(4)+1:pos(5),pos(3)+1:pos(4)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < ij~ab~ | H | kl~cd~ >
+                        allocate(Htemp(n2b_act,n2b_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, noa
+                        do j = 1, nob
+                        do a = 1, nua
+                        do b = 1, nub
+                            if (idx2B(a,b,i,j)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do k = 1, noa
+                            do l = 1, nob
+                            do c = 1, nua
+                            do d = 1, nub
+                                if (idx2B(c,d,k,l)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_DBDB_matel(i,j,a,b,k,l,c,d,&
+                                H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                                H2A_voov,&
+                                H2B_oooo,H2B_vvvv,H2B_ovov,H2B_vovo,&
+                                H2C_voov)
+                            end do
+                            end do
+                            end do
+                            end do
+                        end do
+                        end do
+                        end do
+                        end do
+                        Hmat(pos(4)+1:pos(5),pos(4)+1:pos(5)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < ij~ab~ | H | k~l~c~d~ >
+                        allocate(Htemp(n2b_act,n2c_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, noa
+                        do j = 1, nob
+                        do a = 1, nua
+                        do b = 1, nub
+                            if (idx2B(a,b,i,j)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do k = 1, nob
+                            do l = k+1, nob
+                            do c = 1, nub
+                            do d = c+1, nub
+                                if (idx2C(c,d,k,l)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_DBDC_matel(i,j,a,b,k,l,c,d,H2B_voov)
+                            end do
+                            end do
+                            end do
+                            end do
+                        end do
+                        end do
+                        end do
+                        end do
+                        Hmat(pos(4)+1:pos(5),pos(5)+1:pos(6)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < i~j~a~b~ | H | k~lc~d >
+                        allocate(Htemp(n2c_act,n2b_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, nob
+                        do j = i+1, nob
+                        do a = 1, nub
+                        do b = a+1, nub
+                            if (idx2C(a,b,i,j)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do k = 1, noa
+                            do l = 1, nob
+                            do c = 1, nua
+                            do d = 1, nub
+                                if (idx2B(c,d,k,l)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_DCDB_matel(i,j,a,b,k,l,c,d,H2B_ovvo)
+                            end do
+                            end do
+                            end do
+                            end do
+                        end do
+                        end do
+                        end do
+                        end do
+                        Hmat(pos(5)+1:pos(6),pos(4)+1:pos(5)) = Htemp
+                        deallocate(Htemp)
+
+                        ! < i~j~a~b~ | H | k~l~c~d~ >
+                        allocate(Htemp(n2c_act,n2c_act))
+                        Htemp = 0.0d0
+                        ct1 = 0
+                        do i = 1, nob
+                        do j = i+1, nob
+                        do a = 1, nub
+                        do b = a+1, nub
+                            if (idx2C(a,b,i,j)==0) cycle
+                            ct1 = ct1 + 1
+                            ct2 = 0
+                            do k = 1, nob
+                            do l = k+1, nob
+                            do c = 1, nub
+                            do d = c+1, nub
+                                if (idx2C(c,d,k,l)==0) cycle
+                                ct2 = ct2 + 1
+                                Htemp(ct1,ct2) =&
+                                calc_DCDC_matel(i,j,a,b,k,l,c,d,H1B_oo,H1B_vv,H2C_voov,H2C_oooo,H2C_vvvv)
+                            end do
+                            end do
+                            end do
+                            end do
+                        end do
+                        end do
+                        end do
+                        end do
+                        Hmat(pos(5)+1:pos(6),pos(5)+1:pos(6)) = Htemp
+                        deallocate(Htemp)
+
+                        Hmat2 = Hmat
+                        allocate(VL(ndim_act,ndim_act),wi(ndim_act),work(4*ndim_act))
+                        call dgeev('N','V',ndim_act,Hmat2,ndim_act,omega,wi,VL,ndim_act,CIvec,ndim_act,&
+                                work,4*ndim_act,info)
+                        if (info /= 0) then
+                            print*,'Problem diagonalizing EOMCCSd matrix'
+                        end if
+                        deallocate(VL,wi,work)
+
+                end subroutine spin_matrix
 
                 function calc_SASA_matel(i,a,j,b,H1A_oo,H1A_vv,H2A_voov) result(val)
 

@@ -1,6 +1,8 @@
 import time
 from ccpy.utilities.updates import mbpt_loops
 
+# [TODO]: Generalize MPn methods to MBPT(n) methods for non-HF orbitals.
+
 def calc_mp2(system, H):
 
     t_start = time.time()
@@ -41,6 +43,7 @@ def calc_mp3(system, H):
 
     return corr_energy
 
+# [TODO]: Fix error in MP4. Correlation energy is not correct.
 def calc_mp4(system, H):
 
     t_start = time.time()

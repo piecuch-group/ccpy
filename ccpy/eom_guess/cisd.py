@@ -545,7 +545,7 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
     a_H_bb = np.zeros((n1a, n2c))
     b_H_aa = np.zeros((n1b, n2a))
     aa_H_bb = np.zeros((n2a, n2c))
-    # Assemble full matrix
+    # Assemble and return full matrix
     return np.concatenate(
         (np.concatenate((a_H_a, a_H_b, a_H_aa, a_H_ab, a_H_bb), axis=1),
          np.concatenate((b_H_a, b_H_b, b_H_aa, b_H_ab, b_H_bb), axis=1),
