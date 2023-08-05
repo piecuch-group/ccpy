@@ -545,25 +545,25 @@ def calc_ccpert3(T, corr_energy, H, system, pspace, use_RHF=False):
 
     #### aaa correction ####
     # calculate intermediates
-    I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
+    #I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
     dA_aaa = ccsdpt_loops.ccsdpt_loops.ccsdpta_p(
         pspace["aaa"],
         T.a, T.aa,
-        H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
+        H.aa.vooo, H.aa.vvov, H.aa.oovv, H.a.ov,
         H.aa.vovv, H.aa.ooov,
         H.a.oo, H.a.vv,
         system.noccupied_alpha, system.nunoccupied_alpha,
     )
     #### aab correction ####
     # calculate intermediates
-    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
-    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+    #I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
+    #I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
+    #I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     dA_aab = ccsdpt_loops.ccsdpt_loops.ccsdptb_p(
         pspace["aab"],
         T.a, T.b, T.aa, T.ab,
-        I2B_ovoo, I2B_vooo, I2A_vooo,
+        H.ab.ovoo, H.ab.vooo, H.aa.vooo,
         H.ab.vvvo, H.ab.vvov, H.aa.vvov,
         H.ab.vovv, H.ab.ovvv, H.aa.vovv,
         H.ab.ooov, H.ab.oovo, H.aa.ooov,
@@ -576,13 +576,13 @@ def calc_ccpert3(T, corr_energy, H, system, pspace, use_RHF=False):
     if use_RHF:
         correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
     else:
-        I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
-        I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
-        I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+        #I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
+        #I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
+        #I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
         dA_abb = ccsdpt_loops.ccsdpt_loops.ccsdptc_p(
             pspace["abb"],
             T.a, T.b, T.ab, T.bb,
-            I2B_vooo, I2C_vooo, I2B_ovoo,
+            H.ab.vooo, H.bb.vooo, H.ab.ovoo,
             H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
             H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
             H.bb.ooov,
@@ -593,11 +593,11 @@ def calc_ccpert3(T, corr_energy, H, system, pspace, use_RHF=False):
             system.noccupied_beta, system.nunoccupied_beta,
         )
 
-        I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
+        #I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
         dA_bbb = ccsdpt_loops.ccsdpt_loops.ccsdptd_p(
             pspace["bbb"],
             T.b, T.bb,
-            H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
+            H.bb.vooo, H.bb.vvov, H.bb.oovv, H.b.ov,
             H.bb.vovv, H.bb.ooov,
             H.b.oo, H.b.vv,
             system.noccupied_beta, system.nunoccupied_beta,
@@ -640,29 +640,29 @@ def calc_ccpert3_with_selection(T, corr_energy, H, system, pspace, num_add, use_
 
     #### aaa correction ####
     # calculate intermediates
-    I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
+    #I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
     dA_aaa, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdpta_p_with_selection(
         moments,
         triples_list,
         pspace["aaa"],
         T.a, T.aa,
-        H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
+        H.aa.vooo, H.aa.vvov, H.aa.oovv, H.a.ov,
         H.aa.vovv, H.aa.ooov,
         H.a.oo, H.a.vv,
         system.noccupied_alpha, system.nunoccupied_alpha, num_add,
     )
     #### aab correction ####
     # calculate intermediates
-    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
-    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+    #I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
+    #I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
+    #I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     dA_aab, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdptb_p_with_selection(
         moments,
         triples_list,
         pspace["aab"],
         T.a, T.b, T.aa, T.ab,
-        I2B_ovoo, I2B_vooo, I2A_vooo,
+        H.ab.ovoo, H.ab.vooo, H.aa.vooo,
         H.ab.vvvo, H.ab.vvov, H.aa.vvov,
         H.ab.vovv, H.ab.ovvv, H.aa.vovv,
         H.ab.ooov, H.ab.oovo, H.aa.ooov,
@@ -678,15 +678,15 @@ def calc_ccpert3_with_selection(T, corr_energy, H, system, pspace, num_add, use_
     else:
         #### abb correction ####
         # calculate intermediates
-        I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
-        I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
-        I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+        #I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
+        #I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
+        #I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
         dA_abb, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdptc_p_with_selection(
             moments,
             triples_list,
             pspace["abb"],
             T.a, T.b, T.ab, T.bb,
-            I2B_vooo, I2C_vooo, I2B_ovoo,
+            H.ab.vooo, H.bb.vooo, H.ab.ovoo,
             H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
             H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
             H.bb.ooov,
@@ -700,13 +700,13 @@ def calc_ccpert3_with_selection(T, corr_energy, H, system, pspace, num_add, use_
 
         #### bbb correction ####
         # calculate intermediates
-        I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
+        #I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
         dA_bbb, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdptd_p_with_selection(
             moments,
             triples_list,
             pspace["bbb"],
             T.b, T.bb,
-            H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
+            H.bb.vooo, H.bb.vvov, H.bb.oovv, H.b.ov,
             H.bb.vovv, H.bb.ooov,
             H.b.oo, H.b.vv,
             system.noccupied_beta, system.nunoccupied_beta, num_add,
@@ -748,14 +748,13 @@ def calc_ccpert3_with_moments(T, corr_energy, H, system, pspace, use_RHF=False):
     t_start = time.time()
 
     #### aaa correction ####
-    #### aaa correction ####
     # calculate intermediates
-    I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
+    #I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
     dA_aaa, moments["aaa"] = ccsdpt_loops.ccsdpt_loops.ccsdpta_p_full_moment(
         pspace["aaa"],
         T.a, T.aa,
-        H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
+        H.aa.vooo, H.aa.vvov, H.aa.oovv, H.a.ov,
         H.aa.vovv, H.aa.ooov,
         H.a.oo, H.a.vv,
         system.noccupied_alpha, system.nunoccupied_alpha
@@ -763,13 +762,13 @@ def calc_ccpert3_with_moments(T, corr_energy, H, system, pspace, use_RHF=False):
 
     #### aab correction ####
     # calculate intermediates
-    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
-    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+    #I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
+    #I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
+    #I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     dA_aab, moments["aab"] = ccsdpt_loops.ccsdpt_loops.ccsdptb_p_full_moment(
         pspace["aab"],
         T.a, T.b, T.aa, T.ab,
-        I2B_ovoo, I2B_vooo, I2A_vooo,
+        H.ab.ovoo, H.ab.vooo, H.aa.vooo,
         H.ab.vvvo, H.ab.vvov, H.aa.vvov,
         H.ab.vovv, H.ab.ovvv, H.aa.vovv,
         H.ab.ooov, H.ab.oovo, H.aa.ooov,
@@ -784,13 +783,13 @@ def calc_ccpert3_with_moments(T, corr_energy, H, system, pspace, use_RHF=False):
     else:
         #### abb correction ####
         # calculate intermediates
-        I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
-        I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
-        I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+        #I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
+        #I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
+        #I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
         dA_abb, moments["abb"] = ccsdpt_loops.ccsdpt_loops.ccsdptc_p_full_moment(
             pspace["abb"],
             T.a, T.b, T.ab, T.bb,
-            I2B_vooo, I2C_vooo, I2B_ovoo,
+            H.ab.vooo, H.bb.vooo, H.ab.ovoo,
             H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
             H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
             H.bb.ooov,
@@ -803,11 +802,11 @@ def calc_ccpert3_with_moments(T, corr_energy, H, system, pspace, use_RHF=False):
 
         #### bbb correction ####
         # calculate intermediates
-        I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
+        #I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
         dA_bbb, moments["bbb"] = ccsdpt_loops.ccsdpt_loops.ccsdptd_p_full_moment(
             pspace["bbb"],
             T.b, T.bb,
-            H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
+            H.bb.vooo, H.bb.vvov, H.bb.oovv, H.b.ov,
             H.bb.vovv, H.bb.ooov,
             H.b.oo, H.b.vv,
             system.noccupied_beta, system.nunoccupied_beta

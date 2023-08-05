@@ -74,16 +74,17 @@ module ccsdpt_loops
                                                 +t1a(a,i)*vA_oovv(k,j,c,b)&
                                                 +t1a(b,i)*vA_oovv(k,j,a,c)&
                                                 +t1a(a,j)*vA_oovv(i,k,c,b)&
-                                                +t1a(b,j)*vA_oovv(i,k,a,c)&
-                                                +fA_ov(k,c)*t2a(a,b,i,j)&
-                                                -fA_ov(k,a)*t2a(c,b,i,j)&
-                                                -fA_ov(k,b)*t2a(a,c,i,j)&
-                                                -fA_ov(i,c)*t2a(a,b,k,j)&
-                                                -fA_ov(j,c)*t2a(a,b,i,k)&
-                                                +fA_ov(i,a)*t2a(c,b,k,j)&
-                                                +fA_ov(i,b)*t2a(a,c,k,j)&
-                                                +fA_ov(j,a)*t2a(c,b,i,k)&
-                                                +fA_ov(j,b)*t2a(a,c,i,k)
+                                                +t1a(b,j)*vA_oovv(i,k,a,c)
+                                                !temp3 = temp3 +
+                                                !+fA_ov(k,c)*t2a(a,b,i,j)&
+                                                !-fA_ov(k,a)*t2a(c,b,i,j)&
+                                                !-fA_ov(k,b)*t2a(a,c,i,j)&
+                                                !-fA_ov(i,c)*t2a(a,b,k,j)&
+                                                !-fA_ov(j,c)*t2a(a,b,i,k)&
+                                                !+fA_ov(i,a)*t2a(c,b,k,j)&
+                                                !+fA_ov(i,b)*t2a(a,c,k,j)&
+                                                !+fA_ov(j,a)*t2a(c,b,i,k)&
+                                                !+fA_ov(j,b)*t2a(a,c,i,k)
 
                                                 LM = temp1*(temp1+temp3)
 
@@ -202,12 +203,13 @@ module ccsdpt_loops
                                                        -t1a(a,j)*vB_oovv(i,k,b,c)&
                                                        -t1a(b,i)*vB_oovv(j,k,a,c)&
                                                        +t1a(b,j)*vB_oovv(i,k,a,c)&
-                                                       +t1b(c,k)*vA_oovv(i,j,a,b)&
-                                                       +t2b(b,c,j,k)*fA_ov(i,a)&
-                                                       -t2b(b,c,i,k)*fA_ov(j,a)&
-                                                       -t2b(a,c,j,k)*fA_ov(i,b)&
-                                                       +t2b(a,c,i,k)*fA_ov(j,b)&
-                                                       +t2a(a,b,i,j)*fB_ov(k,c)
+                                                       +t1b(c,k)*vA_oovv(i,j,a,b)
+                                               !temp3 = temp3 &
+                                                       !+t2b(b,c,j,k)*fA_ov(i,a)&
+                                                       !-t2b(b,c,i,k)*fA_ov(j,a)&
+                                                       !-t2b(a,c,j,k)*fA_ov(i,b)&
+                                                       !+t2b(a,c,i,k)*fA_ov(j,b)&
+                                                       !+t2a(a,b,i,j)*fB_ov(k,c)
 
                                                 LM = temp1*(temp1+temp3)
 
@@ -332,12 +334,13 @@ module ccsdpt_loops
                                                             -t1b(b,k)*vB_oovv(i,j,a,c)&
                                                             -t1b(c,j)*vB_oovv(i,k,a,b)&
                                                             +t1b(b,j)*vB_oovv(i,k,a,c)&
-                                                            +t1a(a,i)*vC_oovv(j,k,b,c)&
-                                                            +fB_ov(k,c)*t2b(a,b,i,j)&
-                                                            -fB_ov(k,b)*t2b(a,c,i,j)&
-                                                            -fB_ov(j,c)*t2b(a,b,i,k)&
-                                                            +fB_ov(j,b)*t2b(a,c,i,k)&
-                                                            +fA_ov(i,a)*t2c(b,c,j,k)
+                                                            +t1a(a,i)*vC_oovv(j,k,b,c)
+                                                    !temp3 = temp3 &
+                                                            !+fB_ov(k,c)*t2b(a,b,i,j)&
+                                                            !-fB_ov(k,b)*t2b(a,c,i,j)&
+                                                            !-fB_ov(j,c)*t2b(a,b,i,k)&
+                                                            !+fB_ov(j,b)*t2b(a,c,i,k)&
+                                                            !+fA_ov(i,a)*t2c(b,c,j,k)
 
                                                     LM = temp1*(temp1+temp3)
 
@@ -421,16 +424,17 @@ module ccsdpt_loops
                                                 +t1b(a,i)*vC_oovv(k,j,c,b)&
                                                 +t1b(b,i)*vC_oovv(k,j,a,c)&
                                                 +t1b(a,j)*vC_oovv(i,k,c,b)&
-                                                +t1b(b,j)*vC_oovv(i,k,a,c)&
-                                                +fB_ov(k,c)*t2c(a,b,i,j)&
-                                                -fB_ov(k,a)*t2c(c,b,i,j)&
-                                                -fB_ov(k,b)*t2c(a,c,i,j)&
-                                                -fB_ov(i,c)*t2c(a,b,k,j)&
-                                                -fB_ov(j,c)*t2c(a,b,i,k)&
-                                                +fB_ov(i,a)*t2c(c,b,k,j)&
-                                                +fB_ov(i,b)*t2c(a,c,k,j)&
-                                                +fB_ov(j,a)*t2c(c,b,i,k)&
-                                                +fB_ov(j,b)*t2c(a,c,i,k)
+                                                +t1b(b,j)*vC_oovv(i,k,a,c)
+                                                !temp3 = temp3 &
+                                                !+fB_ov(k,c)*t2c(a,b,i,j)&
+                                                !-fB_ov(k,a)*t2c(c,b,i,j)&
+                                                !-fB_ov(k,b)*t2c(a,c,i,j)&
+                                                !-fB_ov(i,c)*t2c(a,b,k,j)&
+                                                !-fB_ov(j,c)*t2c(a,b,i,k)&
+                                                !+fB_ov(i,a)*t2c(c,b,k,j)&
+                                                !+fB_ov(i,b)*t2c(a,c,k,j)&
+                                                !+fB_ov(j,a)*t2c(c,b,i,k)&
+                                                !+fB_ov(j,b)*t2c(a,c,i,k)
 
                                                 LM = temp1*(temp1+temp3)
 
@@ -523,16 +527,17 @@ module ccsdpt_loops
                                                 +t1a(a,i)*vA_oovv(k,j,c,b)&
                                                 +t1a(b,i)*vA_oovv(k,j,a,c)&
                                                 +t1a(a,j)*vA_oovv(i,k,c,b)&
-                                                +t1a(b,j)*vA_oovv(i,k,a,c)&
-                                                +fA_ov(k,c)*t2a(a,b,i,j)&
-                                                -fA_ov(k,a)*t2a(c,b,i,j)&
-                                                -fA_ov(k,b)*t2a(a,c,i,j)&
-                                                -fA_ov(i,c)*t2a(a,b,k,j)&
-                                                -fA_ov(j,c)*t2a(a,b,i,k)&
-                                                +fA_ov(i,a)*t2a(c,b,k,j)&
-                                                +fA_ov(i,b)*t2a(a,c,k,j)&
-                                                +fA_ov(j,a)*t2a(c,b,i,k)&
-                                                +fA_ov(j,b)*t2a(a,c,i,k)
+                                                +t1a(b,j)*vA_oovv(i,k,a,c)
+                                                !temp3 = temp3 &
+                                                !+fA_ov(k,c)*t2a(a,b,i,j)&
+                                                !-fA_ov(k,a)*t2a(c,b,i,j)&
+                                                !-fA_ov(k,b)*t2a(a,c,i,j)&
+                                                !-fA_ov(i,c)*t2a(a,b,k,j)&
+                                                !-fA_ov(j,c)*t2a(a,b,i,k)&
+                                                !+fA_ov(i,a)*t2a(c,b,k,j)&
+                                                !+fA_ov(i,b)*t2a(a,c,k,j)&
+                                                !+fA_ov(j,a)*t2a(c,b,i,k)&
+                                                !+fA_ov(j,b)*t2a(a,c,i,k)
 
                                                 LM = temp1*(temp1+temp3)
 
@@ -656,12 +661,13 @@ module ccsdpt_loops
                                                        -t1a(a,j)*vB_oovv(i,k,b,c)&
                                                        -t1a(b,i)*vB_oovv(j,k,a,c)&
                                                        +t1a(b,j)*vB_oovv(i,k,a,c)&
-                                                       +t1b(c,k)*vA_oovv(i,j,a,b)&
-                                                       +t2b(b,c,j,k)*fA_ov(i,a)&
-                                                       -t2b(b,c,i,k)*fA_ov(j,a)&
-                                                       -t2b(a,c,j,k)*fA_ov(i,b)&
-                                                       +t2b(a,c,i,k)*fA_ov(j,b)&
-                                                       +t2a(a,b,i,j)*fB_ov(k,c)
+                                                       +t1b(c,k)*vA_oovv(i,j,a,b)
+                                                !temp3 = temp3 &
+                                                !       +t2b(b,c,j,k)*fA_ov(i,a)&
+                                                !       -t2b(b,c,i,k)*fA_ov(j,a)&
+                                                !       -t2b(a,c,j,k)*fA_ov(i,b)&
+                                                !       +t2b(a,c,i,k)*fA_ov(j,b)&
+                                                !       +t2a(a,b,i,j)*fB_ov(k,c)
 
                                                 LM = temp1*(temp1+temp3)
 
@@ -790,12 +796,13 @@ module ccsdpt_loops
                                                         -t1b(b,k)*vB_oovv(i,j,a,c)&
                                                         -t1b(c,j)*vB_oovv(i,k,a,b)&
                                                         +t1b(b,j)*vB_oovv(i,k,a,c)&
-                                                        +t1a(a,i)*vC_oovv(j,k,b,c)&
-                                                        +fB_ov(k,c)*t2b(a,b,i,j)&
-                                                        -fB_ov(k,b)*t2b(a,c,i,j)&
-                                                        -fB_ov(j,c)*t2b(a,b,i,k)&
-                                                        +fB_ov(j,b)*t2b(a,c,i,k)&
-                                                        +fA_ov(i,a)*t2c(b,c,j,k)
+                                                        +t1a(a,i)*vC_oovv(j,k,b,c)
+                                                !temp3 = temp3 &
+                                                !        +fB_ov(k,c)*t2b(a,b,i,j)&
+                                                !        -fB_ov(k,b)*t2b(a,c,i,j)&
+                                                !        -fB_ov(j,c)*t2b(a,b,i,k)&
+                                                !        +fB_ov(j,b)*t2b(a,c,i,k)&
+                                                !        +fA_ov(i,a)*t2c(b,c,j,k)
 
                                                 LM = temp1*(temp1+temp3)
 
@@ -884,16 +891,17 @@ module ccsdpt_loops
                                                 +t1b(a,i)*vC_oovv(k,j,c,b)&
                                                 +t1b(b,i)*vC_oovv(k,j,a,c)&
                                                 +t1b(a,j)*vC_oovv(i,k,c,b)&
-                                                +t1b(b,j)*vC_oovv(i,k,a,c)&
-                                                +fB_ov(k,c)*t2c(a,b,i,j)&
-                                                -fB_ov(k,a)*t2c(c,b,i,j)&
-                                                -fB_ov(k,b)*t2c(a,c,i,j)&
-                                                -fB_ov(i,c)*t2c(a,b,k,j)&
-                                                -fB_ov(j,c)*t2c(a,b,i,k)&
-                                                +fB_ov(i,a)*t2c(c,b,k,j)&
-                                                +fB_ov(i,b)*t2c(a,c,k,j)&
-                                                +fB_ov(j,a)*t2c(c,b,i,k)&
-                                                +fB_ov(j,b)*t2c(a,c,i,k)
+                                                +t1b(b,j)*vC_oovv(i,k,a,c)
+                                                !temp3 = temp3 &
+                                                !+fB_ov(k,c)*t2c(a,b,i,j)&
+                                                !-fB_ov(k,a)*t2c(c,b,i,j)&
+                                                !-fB_ov(k,b)*t2c(a,c,i,j)&
+                                                !-fB_ov(i,c)*t2c(a,b,k,j)&
+                                                !-fB_ov(j,c)*t2c(a,b,i,k)&
+                                                !+fB_ov(i,a)*t2c(c,b,k,j)&
+                                                !+fB_ov(i,b)*t2c(a,c,k,j)&
+                                                !+fB_ov(j,a)*t2c(c,b,i,k)&
+                                                !+fB_ov(j,b)*t2c(a,c,i,k)
 
                                                 LM = temp1*(temp1+temp3)
 
@@ -993,16 +1001,17 @@ module ccsdpt_loops
                                                 +t1a(a,i)*vA_oovv(k,j,c,b)&
                                                 +t1a(b,i)*vA_oovv(k,j,a,c)&
                                                 +t1a(a,j)*vA_oovv(i,k,c,b)&
-                                                +t1a(b,j)*vA_oovv(i,k,a,c)&
-                                                +fA_ov(k,c)*t2a(a,b,i,j)&
-                                                -fA_ov(k,a)*t2a(c,b,i,j)&
-                                                -fA_ov(k,b)*t2a(a,c,i,j)&
-                                                -fA_ov(i,c)*t2a(a,b,k,j)&
-                                                -fA_ov(j,c)*t2a(a,b,i,k)&
-                                                +fA_ov(i,a)*t2a(c,b,k,j)&
-                                                +fA_ov(i,b)*t2a(a,c,k,j)&
-                                                +fA_ov(j,a)*t2a(c,b,i,k)&
-                                                +fA_ov(j,b)*t2a(a,c,i,k)
+                                                +t1a(b,j)*vA_oovv(i,k,a,c)
+                                                !temp3 = temp3 &
+                                                !+fA_ov(k,c)*t2a(a,b,i,j)&
+                                                !-fA_ov(k,a)*t2a(c,b,i,j)&
+                                                !-fA_ov(k,b)*t2a(a,c,i,j)&
+                                                !-fA_ov(i,c)*t2a(a,b,k,j)&
+                                                !-fA_ov(j,c)*t2a(a,b,i,k)&
+                                                !+fA_ov(i,a)*t2a(c,b,k,j)&
+                                                !+fA_ov(i,b)*t2a(a,c,k,j)&
+                                                !+fA_ov(j,a)*t2a(c,b,i,k)&
+                                                !+fA_ov(j,b)*t2a(a,c,i,k)
 
                                                 LM = temp1*(temp1+temp3)
                                                 if (abs(LM) == 0.0d0) cycle
@@ -1139,12 +1148,13 @@ module ccsdpt_loops
                                                        -t1a(a,j)*vB_oovv(i,k,b,c)&
                                                        -t1a(b,i)*vB_oovv(j,k,a,c)&
                                                        +t1a(b,j)*vB_oovv(i,k,a,c)&
-                                                       +t1b(c,k)*vA_oovv(i,j,a,b)&
-                                                       +t2b(b,c,j,k)*fA_ov(i,a)&
-                                                       -t2b(b,c,i,k)*fA_ov(j,a)&
-                                                       -t2b(a,c,j,k)*fA_ov(i,b)&
-                                                       +t2b(a,c,i,k)*fA_ov(j,b)&
-                                                       +t2a(a,b,i,j)*fB_ov(k,c)
+                                                       +t1b(c,k)*vA_oovv(i,j,a,b)
+                                               !temp3 = temp3 &
+                                               !        +t2b(b,c,j,k)*fA_ov(i,a)&
+                                               !        -t2b(b,c,i,k)*fA_ov(j,a)&
+                                               !        -t2b(a,c,j,k)*fA_ov(i,b)&
+                                               !        +t2b(a,c,i,k)*fA_ov(j,b)&
+                                               !        +t2a(a,b,i,j)*fB_ov(k,c)
 
                                                 LM = temp1*(temp1+temp3)
                                                 if (abs(LM) == 0.0d0) cycle
@@ -1285,12 +1295,13 @@ module ccsdpt_loops
                                                         -t1b(b,k)*vB_oovv(i,j,a,c)&
                                                         -t1b(c,j)*vB_oovv(i,k,a,b)&
                                                         +t1b(b,j)*vB_oovv(i,k,a,c)&
-                                                        +t1a(a,i)*vC_oovv(j,k,b,c)&
-                                                        +fB_ov(k,c)*t2b(a,b,i,j)&
-                                                        -fB_ov(k,b)*t2b(a,c,i,j)&
-                                                        -fB_ov(j,c)*t2b(a,b,i,k)&
-                                                        +fB_ov(j,b)*t2b(a,c,i,k)&
-                                                        +fA_ov(i,a)*t2c(b,c,j,k)
+                                                        +t1a(a,i)*vC_oovv(j,k,b,c)
+                                                !temp3 = temp3 &
+                                                !        +fB_ov(k,c)*t2b(a,b,i,j)&
+                                                !        -fB_ov(k,b)*t2b(a,c,i,j)&
+                                                !        -fB_ov(j,c)*t2b(a,b,i,k)&
+                                                !        +fB_ov(j,b)*t2b(a,c,i,k)&
+                                                !        +fA_ov(i,a)*t2c(b,c,j,k)
 
                                                 LM = temp1*(temp1+temp3)
                                                 if (abs(LM) == 0.0d0) cycle
@@ -1393,16 +1404,17 @@ module ccsdpt_loops
                                                 +t1b(a,i)*vC_oovv(k,j,c,b)&
                                                 +t1b(b,i)*vC_oovv(k,j,a,c)&
                                                 +t1b(a,j)*vC_oovv(i,k,c,b)&
-                                                +t1b(b,j)*vC_oovv(i,k,a,c)&
-                                                +fB_ov(k,c)*t2c(a,b,i,j)&
-                                                -fB_ov(k,a)*t2c(c,b,i,j)&
-                                                -fB_ov(k,b)*t2c(a,c,i,j)&
-                                                -fB_ov(i,c)*t2c(a,b,k,j)&
-                                                -fB_ov(j,c)*t2c(a,b,i,k)&
-                                                +fB_ov(i,a)*t2c(c,b,k,j)&
-                                                +fB_ov(i,b)*t2c(a,c,k,j)&
-                                                +fB_ov(j,a)*t2c(c,b,i,k)&
-                                                +fB_ov(j,b)*t2c(a,c,i,k)
+                                                +t1b(b,j)*vC_oovv(i,k,a,c)
+                                                !temp3 = temp3 &
+                                                !+fB_ov(k,c)*t2c(a,b,i,j)&
+                                                !-fB_ov(k,a)*t2c(c,b,i,j)&
+                                                !-fB_ov(k,b)*t2c(a,c,i,j)&
+                                                !-fB_ov(i,c)*t2c(a,b,k,j)&
+                                                !-fB_ov(j,c)*t2c(a,b,i,k)&
+                                                !+fB_ov(i,a)*t2c(c,b,k,j)&
+                                                !+fB_ov(i,b)*t2c(a,c,k,j)&
+                                                !+fB_ov(j,a)*t2c(c,b,i,k)&
+                                                !+fB_ov(j,b)*t2c(a,c,i,k)
 
                                                 LM = temp1*(temp1+temp3)
                                                 if (abs(LM) == 0.0d0) cycle
@@ -1503,16 +1515,17 @@ module ccsdpt_loops
                                                 +t1a(a,i)*vA_oovv(k,j,c,b)&
                                                 +t1a(b,i)*vA_oovv(k,j,a,c)&
                                                 +t1a(a,j)*vA_oovv(i,k,c,b)&
-                                                +t1a(b,j)*vA_oovv(i,k,a,c)&
-                                                +fA_ov(k,c)*t2a(a,b,i,j)&
-                                                -fA_ov(k,a)*t2a(c,b,i,j)&
-                                                -fA_ov(k,b)*t2a(a,c,i,j)&
-                                                -fA_ov(i,c)*t2a(a,b,k,j)&
-                                                -fA_ov(j,c)*t2a(a,b,i,k)&
-                                                +fA_ov(i,a)*t2a(c,b,k,j)&
-                                                +fA_ov(i,b)*t2a(a,c,k,j)&
-                                                +fA_ov(j,a)*t2a(c,b,i,k)&
-                                                +fA_ov(j,b)*t2a(a,c,i,k)
+                                                +t1a(b,j)*vA_oovv(i,k,a,c)
+                                                !temp3 = temp3 &
+                                                !+fA_ov(k,c)*t2a(a,b,i,j)&
+                                                !-fA_ov(k,a)*t2a(c,b,i,j)&
+                                                !-fA_ov(k,b)*t2a(a,c,i,j)&
+                                                !-fA_ov(i,c)*t2a(a,b,k,j)&
+                                                !-fA_ov(j,c)*t2a(a,b,i,k)&
+                                                !+fA_ov(i,a)*t2a(c,b,k,j)&
+                                                !+fA_ov(i,b)*t2a(a,c,k,j)&
+                                                !+fA_ov(j,a)*t2a(c,b,i,k)&
+                                                !+fA_ov(j,b)*t2a(a,c,i,k)
 
                                                 LM = temp1*(temp1+temp3)
 
@@ -1639,12 +1652,13 @@ module ccsdpt_loops
                                                        -t1a(a,j)*vB_oovv(i,k,b,c)&
                                                        -t1a(b,i)*vB_oovv(j,k,a,c)&
                                                        +t1a(b,j)*vB_oovv(i,k,a,c)&
-                                                       +t1b(c,k)*vA_oovv(i,j,a,b)&
-                                                       +t2b(b,c,j,k)*fA_ov(i,a)&
-                                                       -t2b(b,c,i,k)*fA_ov(j,a)&
-                                                       -t2b(a,c,j,k)*fA_ov(i,b)&
-                                                       +t2b(a,c,i,k)*fA_ov(j,b)&
-                                                       +t2a(a,b,i,j)*fB_ov(k,c)
+                                                       +t1b(c,k)*vA_oovv(i,j,a,b)
+                                               !temp3 = temp3 &
+                                               !        +t2b(b,c,j,k)*fA_ov(i,a)&
+                                               !        -t2b(b,c,i,k)*fA_ov(j,a)&
+                                               !        -t2b(a,c,j,k)*fA_ov(i,b)&
+                                               !        +t2b(a,c,i,k)*fA_ov(j,b)&
+                                               !        +t2a(a,b,i,j)*fB_ov(k,c)
 
                                                 LM = temp1*(temp1+temp3)
 
@@ -1777,12 +1791,13 @@ module ccsdpt_loops
                                                         -t1b(b,k)*vB_oovv(i,j,a,c)&
                                                         -t1b(c,j)*vB_oovv(i,k,a,b)&
                                                         +t1b(b,j)*vB_oovv(i,k,a,c)&
-                                                        +t1a(a,i)*vC_oovv(j,k,b,c)&
-                                                        +fB_ov(k,c)*t2b(a,b,i,j)&
-                                                        -fB_ov(k,b)*t2b(a,c,i,j)&
-                                                        -fB_ov(j,c)*t2b(a,b,i,k)&
-                                                        +fB_ov(j,b)*t2b(a,c,i,k)&
-                                                        +fA_ov(i,a)*t2c(b,c,j,k)
+                                                        +t1a(a,i)*vC_oovv(j,k,b,c)
+                                                !temp3 = temp3 &
+                                                !        +fB_ov(k,c)*t2b(a,b,i,j)&
+                                                !        -fB_ov(k,b)*t2b(a,c,i,j)&
+                                                !        -fB_ov(j,c)*t2b(a,b,i,k)&
+                                                !        +fB_ov(j,b)*t2b(a,c,i,k)&
+                                                !        +fA_ov(i,a)*t2c(b,c,j,k)
 
                                                 LM = temp1*(temp1+temp3)
 
@@ -1876,16 +1891,17 @@ module ccsdpt_loops
                                                 +t1b(a,i)*vC_oovv(k,j,c,b)&
                                                 +t1b(b,i)*vC_oovv(k,j,a,c)&
                                                 +t1b(a,j)*vC_oovv(i,k,c,b)&
-                                                +t1b(b,j)*vC_oovv(i,k,a,c)&
-                                                +fB_ov(k,c)*t2c(a,b,i,j)&
-                                                -fB_ov(k,a)*t2c(c,b,i,j)&
-                                                -fB_ov(k,b)*t2c(a,c,i,j)&
-                                                -fB_ov(i,c)*t2c(a,b,k,j)&
-                                                -fB_ov(j,c)*t2c(a,b,i,k)&
-                                                +fB_ov(i,a)*t2c(c,b,k,j)&
-                                                +fB_ov(i,b)*t2c(a,c,k,j)&
-                                                +fB_ov(j,a)*t2c(c,b,i,k)&
-                                                +fB_ov(j,b)*t2c(a,c,i,k)
+                                                +t1b(b,j)*vC_oovv(i,k,a,c)
+                                                !temp3 = temp3 &
+                                                !+fB_ov(k,c)*t2c(a,b,i,j)&
+                                                !-fB_ov(k,a)*t2c(c,b,i,j)&
+                                                !-fB_ov(k,b)*t2c(a,c,i,j)&
+                                                !-fB_ov(i,c)*t2c(a,b,k,j)&
+                                                !-fB_ov(j,c)*t2c(a,b,i,k)&
+                                                !+fB_ov(i,a)*t2c(c,b,k,j)&
+                                                !+fB_ov(i,b)*t2c(a,c,k,j)&
+                                                !+fB_ov(j,a)*t2c(c,b,i,k)&
+                                                !+fB_ov(j,b)*t2c(a,c,i,k)
 
                                                 LM = temp1*(temp1+temp3)
 
