@@ -59,8 +59,8 @@ A list of all computational options available in CCpy:
   - CR-EOMCC(2,3) and its size-intensive δ-CR-EOMCC(2,3) extension
   - EOMCCSDt
   - EOMCCSDT
-  - ec-CC-II [See J. Chem. Theory Comput. 2021, 17, 4006]
-  - ec-CC-II_{3} [See J. Chem. Theory Comput. 2021, 17, 4006]
+  - ec-CC-II [See J. Chem. Theory Comput. 17, 4006 (2021)]
+  - ec-CC-II_{3} [See J. Chem. Theory Comput. 17, 4006 (2021)]
   - ec-CC_II_{3,4} (unpublished)
   - DEA-EOMCCSD(3p-1h)
   
