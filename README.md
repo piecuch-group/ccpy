@@ -81,7 +81,3 @@ using the open-source Quantum Package software (https://github.com/QuantumPackag
 
 # Contact
 Karthik Gururangan - gururang@msu.edu
-
-J. Emiliano Deustua - edeustua@gmail.com
-
-CCpy is affiliated with the Piecuch Group at Michigan State University (https://www2.chemistry.msu.edu/faculty/piecuch/)
