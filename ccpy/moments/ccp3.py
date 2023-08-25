@@ -539,14 +539,12 @@ def calc_ccp3_with_selection(T, L, corr_energy, H, H0, system, pspace, num_add, 
 
 def calc_ccpert3(T, corr_energy, H, system, pspace, use_RHF=False):
     """
-    Calculate the ground-state CCSD(T) correction to the CCSD energy.
+    Calculate the ground-state CC(P;Q)_(T) correction to the CC(P) energy associated
+    with the P space `pspace`.
     """
     t_start = time.time()
 
     #### aaa correction ####
-    # calculate intermediates
-    #I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
-    # perform correction in-loop
     dA_aaa = ccsdpt_loops.ccsdpt_loops.ccsdpta_p(
         pspace["aaa"],
         T.a, T.aa,
@@ -556,10 +554,6 @@ def calc_ccpert3(T, corr_energy, H, system, pspace, use_RHF=False):
         system.noccupied_alpha, system.nunoccupied_alpha,
     )
     #### aab correction ####
-    # calculate intermediates
-    #I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    #I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
-    #I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     dA_aab = ccsdpt_loops.ccsdpt_loops.ccsdptb_p(
         pspace["aab"],
         T.a, T.b, T.aa, T.ab,
@@ -572,13 +566,12 @@ def calc_ccpert3(T, corr_energy, H, system, pspace, use_RHF=False):
         system.noccupied_alpha, system.nunoccupied_alpha,
         system.noccupied_beta, system.nunoccupied_beta,
     )
-
+    # If using RHF, can terminate now
     if use_RHF:
+        # Sum corrections for each spin case, using that aaa=bbb and aab=abb for RHF symmetry
         correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
     else:
-        #I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
-        #I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
-        #I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+        ### abb correction ###
         dA_abb = ccsdpt_loops.ccsdpt_loops.ccsdptc_p(
             pspace["abb"],
             T.a, T.b, T.ab, T.bb,
@@ -592,8 +585,7 @@ def calc_ccpert3(T, corr_energy, H, system, pspace, use_RHF=False):
             system.noccupied_alpha, system.nunoccupied_alpha,
             system.noccupied_beta, system.nunoccupied_beta,
         )
-
-        #I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
+        ### bbb correction ###
         dA_bbb = ccsdpt_loops.ccsdpt_loops.ccsdptd_p(
             pspace["bbb"],
             T.b, T.bb,
@@ -602,7 +594,7 @@ def calc_ccpert3(T, corr_energy, H, system, pspace, use_RHF=False):
             H.b.oo, H.b.vv,
             system.noccupied_beta, system.nunoccupied_beta,
         )
-
+        # Sum the corrections from each spincase
         correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
 
     t_end = time.time()

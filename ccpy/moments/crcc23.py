@@ -141,11 +141,19 @@ def calc_ccsdpt(T, corr_energy, H, system, use_RHF=False):
     """
     Calculate the ground-state CCSD(T) correction to the CCSD energy.
     """
-    t_start = time.time()
+    # This formulation exploits the correspondence between the CR-CC(2,3)_A
+    # method and CCSD(T). The CR-CC(2,3)_A code can be converted to CCSD(T)
+    # by the following approximations [see Włoch et al., J. Phys. Chem. A 2007, 111, 11359]:
+    # Using delta(2,3)_A = m(abcijk) * l(ijkabc)_A, approximate
+    # m(abcijk) = < ijkabc | H(2) | 0 > => < ijkabc | (V_N * T2)_C | 0 >
+    # l(ijkabc)_A = < 0 | (L1 + L2) * H(2) | 0 >/D_MP(abcijk) => < 0 | (T1* + T2*) * V_N | ijkabc >/D_MP(abcijk)
+    # Note that all F_N terms present in CR-CC(2,3) (e.g., originating from < 0 | (L2 * H1)_DC | ijkabc >
+    # are ignored. This is important to get the correct results when using orbitals that do not
+    # obey Brillouin's Thorem, e.g., open-shell ROHF orbitals using the conventional GAMESS
+    # canonicalziation scheme.
 
+    t_start = time.time()
     #### aaa correction ####
-    # calculate intermediates
-    #I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
     dA_aaa = ccsdpt_loops.ccsdpt_loops.ccsdpta_opt(
         T.a, T.aa,
@@ -155,10 +163,6 @@ def calc_ccsdpt(T, corr_energy, H, system, use_RHF=False):
         system.noccupied_alpha, system.nunoccupied_alpha,
     )
     #### aab correction ####
-    # calculate intermediates
-    #I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    #I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
-    #I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     dA_aab = ccsdpt_loops.ccsdpt_loops.ccsdptb_opt(
         T.a, T.b, T.aa, T.ab,
         H.ab.ovoo, H.ab.vooo, H.aa.vooo,
@@ -170,12 +174,12 @@ def calc_ccsdpt(T, corr_energy, H, system, use_RHF=False):
         system.noccupied_alpha, system.nunoccupied_alpha,
         system.noccupied_beta, system.nunoccupied_beta,
     )
+    # Can stop here if RHF symmetry is used
     if use_RHF:
+        # Sum corrections from each spincase, using RHF symmetry to set aaa=bbb and aab=abb
         correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
     else:
-        #I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
-        #I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
-        #I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+        #### abb correction ####
         dA_abb = ccsdpt_loops.ccsdpt_loops.ccsdptc_opt(
             T.a, T.b, T.ab, T.bb,
             H.ab.vooo, H.bb.vooo, H.ab.ovoo,
@@ -188,8 +192,7 @@ def calc_ccsdpt(T, corr_energy, H, system, use_RHF=False):
             system.noccupied_alpha, system.nunoccupied_alpha,
             system.noccupied_beta, system.nunoccupied_beta,
         )
-
-        #I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
+        #### bbb correction ####
         dA_bbb = ccsdpt_loops.ccsdpt_loops.ccsdptd_opt(
             T.b, T.bb,
             H.bb.vooo, H.bb.vvov, H.bb.oovv, H.b.ov,
@@ -197,7 +200,7 @@ def calc_ccsdpt(T, corr_energy, H, system, use_RHF=False):
             H.b.oo, H.b.vv,
             system.noccupied_beta, system.nunoccupied_beta,
         )
-
+        # Sum corrections from each spincase
         correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
 
     t_end = time.time()
@@ -213,10 +216,7 @@ def calc_ccsdpt(T, corr_energy, H, system, use_RHF=False):
     print('   -------------------------------------')
     print("   Completed in  ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
     print("   CCSD = {:>10.10f}".format(system.reference_energy + corr_energy))
-    print(
-        "   CCSD(T) = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
-            total_energy_A, energy_A, correction_A
-        )
+    print("   CCSD(T) = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(total_energy_A, energy_A, correction_A)
     )
 
     return Eccsdpt, deltapt

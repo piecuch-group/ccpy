@@ -675,6 +675,8 @@ class AdaptDriver:
                                "bbb": np.ones((1, 6))}
 
         # Save the bare Hamiltonian for later iterations if using CR-CC(2,3)
+        # since H will get overwritten to HBar. When using CCSD(T), H never
+        # changes, so you don't need to do this.
         if not self.options["perturbative"]:
             self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
 
