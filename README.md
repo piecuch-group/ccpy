@@ -49,8 +49,10 @@ A list of all computational options available in CCpy:
   - CR-CC(2,3)
   - CCSDt
   - CC(t;3)
-  - CIPSI-driven CC(P;Q) aimed at converging CCSDT
-  - Adaptive CC(P;Q) aimed at converging CCSDT (In press at The Journal of Chemical Physics, see https://arxiv.org/abs/2306.09638)
+  - CIPSI-driven CC(P;Q) aimed at converging CCSDT [J. Chem. Phys. 155, 174114 (2021), see https://doi.org/10.1063/5.0064400 and c.f. 
+https://doi.org/10.48550/arXiv.2107.10994]
+  - Adaptive CC(P;Q) aimed at converging CCSDT [J. Chem. Phys. 159, 084108 (2023), see https://doi.org/10.1063/5.0162873 and c.f.
+https://doi.org/10.48550/arXiv.2306.09638]
   - CCSDT
   - CR-CC(2,4)
   - CCSDTQ (available for RHF reference only)
@@ -59,9 +61,11 @@ A list of all computational options available in CCpy:
   - CR-EOMCC(2,3) and its size-intensive δ-CR-EOMCC(2,3) extension
   - EOMCCSDt
   - EOMCCSDT
-  - ec-CC-II
-  - ec-CC-II_{3}
-  - ec-CC_II_{3,4} (unpublished)
+  - ec-CC-II [J. Chem. Theory Comput. 17, 4006 (2021), see https://doi.org/10.1021/acs.jctc.1c00181 and c.f. 
+https://doi.org/10.48550/arXiv.2102.10143]
+  - ec-CC-II_{3} [J. Chem. Theory Comput. 17, 4006 (2021), see https://doi.org/10.1021/acs.jctc.1c00181 and c.f. 
+https://doi.org/10.48550/arXiv.2102.10143]
+  - ec-CC_II_{3,4} 
   - DEA-EOMCCSD(3p-1h)
   
 # Installation
@@ -77,7 +81,3 @@ using the open-source Quantum Package software (https://github.com/QuantumPackag
 
 # Contact
 Karthik Gururangan - gururang@msu.edu
-
-J. Emiliano Deustua - edeustua@gmail.com
-
-CCpy is affiliated with the Piecuch Group at Michigan State University (https://www2.chemistry.msu.edu/faculty/piecuch/)
