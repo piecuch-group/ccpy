@@ -29,13 +29,14 @@ class Driver:
     @classmethod
     def from_pyscf(cls, meanfield, nfrozen, ndelete=0, normal_ordered=True, dump_integrals=False, sorted=True):
         return cls(
-            *load_pyscf_integrals(meanfield, nfrozen, ndelete, normal_ordered=normal_ordered, dump_integrals=dump_integrals,
-                                  sorted=sorted))
+                    *load_pyscf_integrals(meanfield, nfrozen, ndelete, normal_ordered=normal_ordered, dump_integrals=dump_integrals, sorted=sorted)
+                  )
 
     @classmethod
     def from_gamess(cls, logfile, nfrozen, ndelete=0, fcidump=None, onebody=None, twobody=None, normal_ordered=True, sorted=True, data_type=np.float64):
-        return cls(*load_gamess_integrals(logfile, fcidump, onebody, twobody, nfrozen, ndelete, normal_ordered=normal_ordered, sorted=sorted,
-                                   data_type=data_type))
+        return cls(
+                    *load_gamess_integrals(logfile, fcidump, onebody, twobody, nfrozen, ndelete, normal_ordered=normal_ordered, sorted=sorted, data_type=data_type)
+                   )
 
     def __init__(self, system, hamiltonian, max_number_states=100):
         self.system = system
