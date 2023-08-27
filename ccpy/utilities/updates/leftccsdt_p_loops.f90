@@ -3,9 +3,7 @@ module leftccsdt_p_loops
         implicit none
 
         contains
-
-!    LH.aaa += (9.0 / 36.0) * np.einsum("eima,ebcmjk->abcijk", H.aa.voov, L.aaa, optimize=True)
-
+           
               subroutine update_l3a(resid,&
                                     l1a, l2a,&
                                     l3a_amps, l3a_excits,&
@@ -1570,7 +1568,150 @@ module leftccsdt_p_loops
                   !!!! END OMP PARALLEL SECTION !!!!
 
               end subroutine update_l3a
-           
+!def build_LH_3B(L, LH, H, X):
+!
+!    # < 0 | L1 * H(2) | ijk~abc~ >
+!    LH.aab = np.einsum("ai,jkbc->abcijk", L.a, H.ab.oovv, optimize=True)
+!    LH.aab += 0.25 * np.einsum("ck,ijab->abcijk", L.b, H.aa.oovv, optimize=True)
+!
+!    # < 0 | L2 * H(2) | ijk~abc~ >
+!
+!    LH.aab += np.einsum("bcjk,ia->abcijk", L.ab, H.a.ov, optimize=True)
+!    LH.aab += 0.25 * np.einsum("abij,kc->abcijk", L.aa, H.b.ov, optimize=True)
+!
+!    LH.aab += 0.5 * np.einsum("ekbc,aeij->abcijk", H.ab.vovv, L.aa, optimize=True)
+!    LH.aab -= 0.5 * np.einsum("jkmc,abim->abcijk", H.ab.ooov, L.aa, optimize=True)
+!    LH.aab += np.einsum("ieac,bejk->abcijk", H.ab.ovvv, L.ab, optimize=True)
+!    LH.aab -= np.einsum("ikam,bcjm->abcijk", H.ab.oovo, L.ab, optimize=True)
+!    LH.aab += 0.5 * np.einsum("eiba,ecjk->abcijk", H.aa.vovv, L.ab, optimize=True)
+!    LH.aab -= 0.5 * np.einsum("jima,bcmk->abcijk", H.aa.ooov, L.ab, optimize=True)
+!
+!    LH.aab += 0.5 * np.einsum("ekbc,ijae->abcijk", X.ab.vovv, H.aa.oovv, optimize=True)
+!    LH.aab -= 0.5 * np.einsum("jkmc,imab->abcijk", X.ab.ooov, H.aa.oovv, optimize=True)
+!    LH.aab += np.einsum("ieac,jkbe->abcijk", X.ab.ovvv, H.ab.oovv, optimize=True)
+!    LH.aab -= np.einsum("ikam,jmbc->abcijk", X.ab.oovo, H.ab.oovv, optimize=True)
+!    LH.aab += 0.5 * np.einsum("eiba,jkec->abcijk", X.aa.vovv, H.ab.oovv, optimize=True)
+!    LH.aab -= 0.5 * np.einsum("jima,mkbc->abcijk", X.aa.ooov, H.ab.oovv, optimize=True)
+!
+!    # < 0 | L3 * H(2) | ijk~abc~ >
+!    LH.aab -= 0.5 * np.einsum("im,abcmjk->abcijk", H.a.oo, L.aab, optimize=True)
+!    LH.aab -= 0.25 * np.einsum("km,abcijm->abcijk", H.b.oo, L.aab, optimize=True)
+!    LH.aab += 0.5 * np.einsum("ea,ebcijk->abcijk", H.a.vv, L.aab, optimize=True)
+!    LH.aab += 0.25 * np.einsum("ec,abeijk->abcijk", H.b.vv, L.aab, optimize=True)
+!    LH.aab += 0.125 * np.einsum("ijmn,abcmnk->abcijk", H.aa.oooo, L.aab, optimize=True)
+!    LH.aab += 0.5 * np.einsum("jkmn,abcimn->abcijk", H.ab.oooo, L.aab, optimize=True)
+!    LH.aab += 0.125 * np.einsum("efab,efcijk->abcijk", H.aa.vvvv, L.aab, optimize=True)
+!    LH.aab += 0.5 * np.einsum("efbc,aefijk->abcijk", H.ab.vvvv, L.aab, optimize=True)
+!    LH.aab += np.einsum("eima,ebcmjk->abcijk", H.aa.voov, L.aab, optimize=True)
+!    LH.aab += np.einsum("ieam,becjmk->abcijk", H.ab.ovvo, L.abb, optimize=True)
+!    LH.aab += 0.25 * np.einsum("ekmc,abeijm->abcijk", H.ab.voov, L.aaa, optimize=True)
+!    LH.aab += 0.25 * np.einsum("ekmc,abeijm->abcijk", H.bb.voov, L.aab, optimize=True)
+!    LH.aab -= 0.5 * np.einsum("ekam,ebcijm->abcijk", H.ab.vovo, L.aab, optimize=True)
+!    LH.aab -= 0.5 * np.einsum("iemc,abemjk->abcijk", H.ab.ovov, L.aab, optimize=True)
+!
+!    LH.aab -= np.transpose(LH.aab, (1, 0, 2, 3, 4, 5))
+!    LH.aab -= np.transpose(LH.aab, (0, 1, 2, 4, 3, 5))
+!
+!    return LH
+              subroutine update_l3b(resid,&
+                                    l1a, l1b, l2a, l2b,&
+                                    l3a_amps, l3a_excits,&
+                                    l3b_amps, l3b_excits,&
+                                    l3c_amps, l3c_excits,&
+                                    h1a_ov, h1a_oo, h1a_vv,&
+                                    h1b_ov, h1b_oo, h1b_vv,&
+                                    h2a_oooo, h2a_ooov, h2a_oovv,&
+                                    h2a_voov, h2a_vovv, h2a_vvvv,&
+                                    h2b_oooo, h2b_ooov, h2b_oovo, h2b_oovv,&
+                                    h2b_voov, h2b_vovo, h2b_ovov, h2b_ovvo,&
+                                    h2b_vovv, h2b_ovvv, h2b_vvvv,&
+                                    h2c_voov,&
+                                    x2a_ooov, x2a_vovv,&
+                                    x2b_ooov, x2b_oovo, x2b_vovv, x2b_ovvv,&
+                                    n3aaa, n3aab, n3abb,&
+                                    noa, nua, nob, nub)
+                  ! Input dimension variables
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aaa, n3aab, n3abb
+                  ! Input L arrays
+                  real(kind=8), intent(in) :: l1a(nua,noa), l1b(nub,nob)
+                  real(kind=8), intent(in) :: l2a(nua,nua,noa,noa), l2b(nua,nub,noa,nob)
+                  integer, intent(in) :: l3a_excits(6,n3aaa), l3c_excits(6,n3abb)
+                  real(kind=8), intent(in) :: l3a_amps(n3aaa), l3c_amps(n3abb)
+                  ! Input H and X arrays
+                  real(kind=8), intent(in) :: h1a_ov(noa,nua), h1b_ov(nob,nub)
+                  real(kind=8), intent(in) :: h1a_oo(noa,noa), h1b_oo(nob,nob)
+                  real(kind=8), intent(in) :: h1a_vv(nua,nua), h1b_vv(nub,nub)
+                  real(kind=8), intent(in) :: h2a_oooo(noa,noa,noa,noa), h2b_oooo(noa,nob,noa,nob)
+                  real(kind=8), intent(in) :: h2a_ooov(noa,noa,noa,nua), h2b_ooov(noa,nob,noa,nub), h2b_oovo(noa,nob,nua,nob)
+                  real(kind=8), intent(in) :: h2a_oovv(noa,noa,nua,nua), h2b_oovv(noa,nob,nua,nub)
+                  real(kind=8), intent(in) :: h2a_voov(nua,noa,noa,nua)
+                  real(kind=8), intent(in) :: h2a_vovv(nua,noa,nua,nua), h2b_vovv(nua,nob,nua,nub), h2b_ovvv(noa,nub,nua,nub)
+                  real(kind=8), intent(in) :: h2a_vvvv(nua,nua,nua,nua), h2b_vvvv(nua,nub,nua,nub)
+                  real(kind=8), intent(in) :: h2b_voov(nua,nob,noa,nub), h2b_vovo(nua,nob,nua,nob), h2b_ovov(noa,nub,noa,nub), h2b_ovvo(noa,nub,nua,nob)
+                  real(kind=8), intent(in) :: x2a_ooov(noa,noa,noa,nua), x2b_ooov(noa,nob,noa,nub), x2b_oovo(noa,nob,nua,nob)
+                  real(kind=8), intent(in) :: x2a_vovv(nua,noa,nua,nua), x2b_vovv(nua,nob,nua,nub), x2b_ovvv(noa,nub,nua,nub)
+                  real(kind=8), intent(in) :: h2c_voov(nub,nob,nob,nub)
+                  ! Output and Inout variables
+                  real(kind=8), intent(out) :: resid(n3aab)
+                  integer, intent(inout) :: l3b_excits(6,n3aab)
+                  !f2py intent(in,out) :: l3b_excits(6,0:n3aab-1)
+                  real(kind=8), intent(inout) :: l3b_amps(n3aab)
+                  !f2py intent(in,out) :: l3b_amps(0:n3aab-1)
+                  ! Local variables
+                  integer, allocatable :: excits_buff(:,:)
+                  real(kind=8), allocatable :: amps_buff(:)
+                  integer, allocatable :: idx_table(:,:,:,:)
+                  integer, allocatable :: loc_arr(:,:)
+                  real(kind=8) :: l_amp, hmatel, hmatel1, res
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet, jdet
+                  integer :: idx, nloc
+
+                  resid = 0.0d0
+                  
+                  !!!! diagram 1: -A(ij) h1a(im)*l3b(abcmjk)
+                  !!!! diagram 5: A(ij) 1/2 h2a(ijmn)*l3b(abcmnk)
+                  !!! SB: (1,2,3,6) LOOP !!!
+                  ! allocate new sorting arrays
+                  nloc = nua*(nua-1)/2*nub*nob
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(nua,nua,nub,noa))
+                  call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, noa)
+                  call sort4(l3b_excits, l3b_amps, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, noa, nloc, n3aab, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp l3b_excits,&
+                  !$omp l3b_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H1A_oo,H2A_oooo,&
+                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aab
+                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
+                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     idx = idx_table(a,b,c,k)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        l = l3b_excits(4,jdet); m = l3b_excits(5,jdet);
+                        ! compute < lmk~abc~ | h2a(oooo) | ijk~abc~ >
+                        hmatel = h2a_oooo(i,j,l,m)
+                        ! compute < lmk~abc~ | h1a(oo) | ijk~abc~ > = -A(ij)A(lm) h1a_oo(i,l) * delta(j,m)
+                        if (m==j) hmatel = hmatel - h1a_oo(i,l)
+                        if (m==i) hmatel = hmatel + h1a_oo(j,l)
+                        if (l==j) hmatel = hmatel + h1a_oo(i,m)
+                        if (l==i) hmatel = hmatel - h1a_oo(j,m)
+                        resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
+                     end do
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+                 
+        end subroutine update_l3b
+        
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SORTING FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

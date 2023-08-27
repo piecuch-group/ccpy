@@ -7,7 +7,6 @@ MODULES := cc_loops \
 		   crcc24_opt_loops \
 		   mbgf_loops \
 		   mbpt_loops \
-		   ccp_loops \
 		   ccsdt_p_loops \
 		   eomccsdt_p_loops \
 		   leftccsdt_p_loops \
