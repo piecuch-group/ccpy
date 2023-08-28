@@ -1,8 +1,18 @@
 import numpy as np
-from itertools import combinations_with_replacement
 
-# [TODO]: Make sparse array operator class that holds 1D array of amplitudes and COO array of indices
 # [TODO]: Allow Cluster Operators to load in the values from another Cluster Operator of lower rank (or different P space)
+
+class PspaceOperator:
+
+    def __init__(self, n_amps, data_type=np.float64):
+        if n_amps == 0:
+            self.amplitudes = np.zeros(shape=(1,), dtype=data_type)
+            self.excitations = np.ones((1, 6), data_type=np.int32)
+        self.amplitudes = np.zeros(n_amps, dtype=data_type)
+        self.excitations = np.zeros((n_amps, 6), data_type=np.int32)
+
+    def flatten(self):
+        return self.amplitudes
 
 class ActiveOperator:
 
@@ -112,12 +122,15 @@ class ClusterOperator:
 
                 # This is trying to set a zero 1D vector for the P space components
                 elif i in p_orders:
-                   setattr(self, name, np.zeros(excitation_count[j], dtype=data_type))
-                   if excitation_count[j] == 0:
-                        setattr(self, name, np.zeros(shape=(1,), dtype=data_type))
-                   self.dimensions.append((excitation_count[j],))
-                   ndim += excitation_count[j]
-
+                    setattr(self, name, np.zeros(excitation_count[j], dtype=data_type))
+                    if excitation_count[j] == 0:
+                         setattr(self, name, np.zeros(shape=(1,), dtype=data_type))
+                    self.dimensions.append((excitation_count[j],))
+                    ndim += excitation_count[j]
+                   # developmental, for the PspaceOperator
+                   #setattr(self, name, PspaceOperator(excitation_count[j], data_type=data_type))
+                   #self.dimensions.append((excitation_count[j],))
+                   #ndim += excitation_count[j]
                 else:
                     setattr(self, name, np.zeros(dimensions, dtype=data_type))
                     self.dimensions.append(dimensions)
@@ -146,6 +159,11 @@ class ClusterOperator:
             if isinstance(getattr(self, name), ActiveOperator):
                 getattr(self, name).unflatten(T_flat[prev : prev + getattr(self, name).ndim])
                 prev += getattr(self, name).ndim
+            # Developing for the PspaceOperator
+            #elif isinstance(getattr(self, name), ActiveOperator):
+            #    ndim = np.prod(dims)
+            #    setattr(getattr(self, name), "amplitudes", np.reshape(T_flat[prev: ndim + prev], dims))
+            #    prev += ndim
             else:
                 ndim = np.prod(dims)
                 setattr(self, name, np.reshape(T_flat[prev: ndim + prev], dims))
