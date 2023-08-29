@@ -1,5 +1,5 @@
 """Module with functions that perform the CC with singles, doubles,
-and triples (CCSDT) calculation for a molecular system."""
+and P-space triples [CC(P)] calculation for a molecular system."""
 import numpy as np
 
 from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
@@ -225,7 +225,6 @@ def update_t2a(T, dT, H, H0, shift, t3_excitations):
 
     return T, dT
 
-
 # @profile
 def update_t2b(T, dT, H, H0, shift, t3_excitations):
     """
@@ -309,7 +308,6 @@ def update_t2b(T, dT, H, H0, shift, t3_excitations):
 
     return T, dT
 
-
 # @profile
 def update_t2c(T, dT, H, H0, shift, t3_excitations):
     """
@@ -369,7 +367,6 @@ def update_t2c(T, dT, H, H0, shift, t3_excitations):
 
     return T, dT
 
-
 # @profile
 def update_t3a(T, dT, H, H0, shift, t3_excitations):
     """
@@ -392,7 +389,6 @@ def update_t3a(T, dT, H, H0, shift, t3_excitations):
     t3_excitations["aaa"] = t3_excitations["aaa"].T
 
     return T, dT, t3_excitations
-
 
 # @profile
 def update_t3b(T, dT, H, H0, shift, t3_excitations):
