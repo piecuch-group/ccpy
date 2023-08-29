@@ -338,6 +338,7 @@ module leftccsdt_p_loops
                   integer :: idx, nloc
 
                   resid = 0.0d0
+                  !if (n3aaa/=0) then
                   !!!! diagram 1: -A(i/jk) h1a(im) * l3a(abcmjk)
                   !!!! diagram 3: 1/2 A(k/ij) h2a(ijmn) * l3a(abcmnk)
                   ! NOTE: WITHIN THESE LOOPS, H1A(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
@@ -1651,9 +1652,11 @@ module leftccsdt_p_loops
                      end if
                   end do
                   ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)                  
+                  deallocate(loc_arr,idx_table)
+                  !end if
                  
                   !!!! diagram 6: A(i/jk)A(a/bc) h2b(ieam) * l3b(bcejkm)
+                  !if (n3aab/=0) then
                   ! allocate and copy over l3b arrays
                   allocate(amps_buff(n3aab),excits_buff(6,n3aab))
                   amps_buff(:) = l3b_amps(:)
@@ -1776,6 +1779,7 @@ module leftccsdt_p_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate l3 buffer arrays
                   deallocate(amps_buff,excits_buff)
+                  !end if
                   
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -1910,6 +1914,7 @@ module leftccsdt_p_loops
 
                   resid = 0.0d0
                   
+                  !if (n3aab/=0) then
                   !!!! diagram 1: -A(ij) h1a(im)*l3b(abcmjk)
                   !!!! diagram 5: A(ij) 1/2 h2a(ijmn)*l3b(abcmnk)
                   !!! SB: (1,2,3,6) LOOP !!!
@@ -2610,8 +2615,10 @@ module leftccsdt_p_loops
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
+                  !end if
                  
                   !!!! diagram 13: h2b(ekmc)*l3a(abeijm) !!!!
+                  !if (n3aaa/=0) then
                   ! allocate and initialize the copy of l3a
                   allocate(amps_buff(n3aaa))
                   allocate(excits_buff(6,n3aaa))
@@ -2876,9 +2883,11 @@ module leftccsdt_p_loops
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate l3 buffer arrays
-                  deallocate(amps_buff,excits_buff) 
+                  deallocate(amps_buff,excits_buff)
+                  !end if
                  
                   !!!! diagram 14: A(ab)A(ij) h2b(jebm)*l3c(aecimk)
+                  !if (n3abb/=0) then
                   ! allocate and initialize the copy of l3c
                   allocate(amps_buff(n3abb))
                   allocate(excits_buff(6,n3abb))
@@ -3132,6 +3141,7 @@ module leftccsdt_p_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate l3 buffer arrays
                   deallocate(amps_buff,excits_buff)
+                  !end if
                   
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -3262,6 +3272,7 @@ module leftccsdt_p_loops
 
                   resid = 0.0d0
                   
+                  !if (n3abb/=0) then
                   !!!! diagram 1: -A(jk) h1b(km)*l3c(abcijm)
                   !!!! diagram 5: A(jk) 1/2 h2c(jkmn)*l3c(abcimn)
                   !!! SB: (2,3,1,4) LOOP !!!
@@ -3962,9 +3973,11 @@ module leftccsdt_p_loops
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)           
+                  deallocate(loc_arr,idx_table)
+                  !end if
 
                   !!!! diagram 13: h2b(ieam)*l3d(ebcmjk)
+                  !if (n3bbb/=0) then
                   ! allocate and initialize the copy of l3d
                   allocate(amps_buff(n3bbb))
                   allocate(excits_buff(6,n3bbb))
@@ -4248,9 +4261,11 @@ module leftccsdt_p_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate l3 buffer arrays
                   deallocate(amps_buff,excits_buff)
+                  !end if
 
                   !!!! diagram 14: A(bc)A(jk) h2b(ejmb)*l3b(aecimk)
-                  ! allocate and initialize the copy of l3a
+                  !if (n3aab/=0) then
+                  ! allocate and initialize the copy of l3b
                   allocate(amps_buff(n3aab))
                   allocate(excits_buff(6,n3aab))
                   amps_buff(:) = l3b_amps(:)
@@ -4503,6 +4518,7 @@ module leftccsdt_p_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate l3 buffer arrays
                   deallocate(amps_buff,excits_buff)
+                  !end if
 
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -4625,6 +4641,7 @@ module leftccsdt_p_loops
                   integer :: idx, nloc
 
                   resid = 0.0d0
+                  !if (n3bbb/=0) then
                   !!!! diagram 1: -A(i/jk) h1b(im) * l3d(abcmjk)
                   !!!! diagram 3: 1/2 A(k/ij) h2c(ijmn) * l3d(abcmnk)
                   ! NOTE: WITHIN THESE LOOPS, H1B(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
@@ -5939,8 +5956,10 @@ module leftccsdt_p_loops
                   end do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
+                  !end if
                   
                   !!!! diagram 6: A(i/jk)A(a/bc) h2b(eima) * l3c(ebcmjk)
+                  !if (n3abb/=0) then
                   ! allocate and copy over t3c arrays
                   allocate(amps_buff(n3abb),excits_buff(6,n3abb))
                   amps_buff(:) = l3c_amps(:)
@@ -6063,6 +6082,7 @@ module leftccsdt_p_loops
                  deallocate(loc_arr,idx_table)
                  ! deallocate l3 buffer arrays
                  deallocate(amps_buff,excits_buff)
+                 !end if
            
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&

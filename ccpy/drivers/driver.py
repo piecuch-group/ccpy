@@ -692,13 +692,14 @@ class Driver:
 
 class AdaptDriver:
 
-    def __init__(self, driver, percentage, full_storage=False, perturbative=False, pspace_analysis=True):
+    def __init__(self, driver, percentage, full_storage=False, perturbative=False, pspace_analysis=True, two_body_left=False):
         from ccpy.utilities.pspace import get_empty_pspace
         self.driver = driver
         self.percentage = percentage
         self.options = {"full storage": full_storage,
                         "perturbative": perturbative,
-                        "P space analysis": pspace_analysis}
+                        "P space analysis": pspace_analysis,
+                        "two_body_left": two_body_left}
 
         self.nmacro = len(self.percentage)
         self.ccp_energy = np.zeros(self.nmacro)
@@ -780,10 +781,11 @@ class AdaptDriver:
         """Runs iterative CC(P), and if needed, HBar and iterative left-CC calculations."""
         self.driver.run_cc(method="ccsdt_p", t3_excitations=self.t3_excitations)
         if not self.options["perturbative"]:
-            self.driver.run_hbar(method="ccsd")
-            if imacro < 1:
+            if self.options["two_body_left"]:
+                self.driver.run_hbar(method="ccsd")
                 self.driver.run_leftcc(method="left_ccsd")
             else:
+                self.driver.run_hbar(method="ccsdt_p", t3_excitations=self.t3_excitations)
                 self.driver.run_leftcc(method="left_ccsdt_p", t3_excitations=self.t3_excitations, l3_excitations=self.t3_excitations)
         self.ccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy
 

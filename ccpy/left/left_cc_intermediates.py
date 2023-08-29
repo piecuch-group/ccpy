@@ -145,29 +145,8 @@ def build_left_ccsdt_intermediates(L, T, system):
 
     return X
 
-def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, system, RHF_symmetry=False):
+def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, system, do_t3, do_l3, RHF_symmetry=False):
     """Calculate the L*T intermediates used in the left-CCSDT equations"""
-
-    # determine whether t3 updates should be done. Stupid compatibility with
-    # empty sections of t3_excitations
-    do_l3 = {"aaa" : True, "aab" : True, "abb" : True, "bbb" : True}
-    do_t3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
-    if np.array_equal(t3_excitations["aaa"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
-        do_t3["aaa"] = False
-    if np.array_equal(t3_excitations["aab"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
-        do_t3["aab"] = False
-    if np.array_equal(t3_excitations["abb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
-        do_t3["abb"] = False
-    if np.array_equal(t3_excitations["bbb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
-        do_t3["bbb"] = False
-    if np.array_equal(l3_excitations["aaa"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
-        do_l3["aaa"] = False
-    if np.array_equal(l3_excitations["aab"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
-        do_l3["aab"] = False
-    if np.array_equal(l3_excitations["abb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
-        do_l3["abb"] = False
-    if np.array_equal(l3_excitations["bbb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
-        do_l3["bbb"] = False
 
     nua, noa = T.a.shape
     nub, nob = T.b.shape
@@ -189,6 +168,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                L.aaa, l3_excitations["aaa"].T,
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
+                                                               do_t3["aaa"], do_t3["aab"], do_t3["abb"],
                                                                noa, nua, nob, nub,
     )
     X.a.vv = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x1a_vv(
@@ -198,6 +178,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                L.aaa, l3_excitations["aaa"].T,
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
+                                                               do_t3["aaa"], do_t3["aab"], do_t3["abb"],
                                                                noa, nua, nob, nub,
     )
     ## aa intermediates ##
@@ -216,6 +197,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                T.aab, t3_excitations["aab"].T,
                                                                L.aaa, l3_excitations["aaa"].T,
                                                                L.aab, l3_excitations["aab"].T,
+                                                               do_t3["aaa"], do_t3["aab"],
                                                                noa, nua, nob, nub,
     )
     X.aa.vvvv = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x2a_vvvv(
@@ -223,6 +205,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                T.aab, t3_excitations["aab"].T,
                                                                L.aaa, l3_excitations["aaa"].T,
                                                                L.aab, l3_excitations["aab"].T,
+                                                               do_t3["aaa"], do_t3["aab"],
                                                                noa, nua, nob, nub,
     )
     X.aa.voov = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x2a_voov(
@@ -232,6 +215,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                L.aaa, l3_excitations["aaa"].T,
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
+                                                               do_t3["aaa"], do_t3["aab"], do_t3["abb"],
                                                                noa, nua, nob, nub,
     )
     ## ab intermediates ##
@@ -260,6 +244,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                T.abb, t3_excitations["abb"].T,
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
+                                                               do_t3["aab"], do_t3["abb"],
                                                                noa, nua, nob, nub,
     )
     X.ab.vvvv = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x2b_vvvv(
@@ -267,6 +252,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                T.abb, t3_excitations["abb"].T,
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
+                                                               do_t3["aab"], do_t3["abb"],
                                                                noa, nua, nob, nub,
     )
     X.ab.voov = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x2b_voov(
@@ -276,6 +262,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
                                                                L.bbb, l3_excitations["bbb"].T,
+                                                               do_t3["abb"], do_l3["aab"], do_l3["abb"],
                                                                noa, nua, nob, nub,
     )
     X.ab.ovvo = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x2b_ovvo(
@@ -285,6 +272,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                L.aaa, l3_excitations["aaa"].T,
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
+                                                               do_t3["aab"], do_t3["abb"], do_l3["abb"],
                                                                noa, nua, nob, nub,
     )
     X.ab.vovo = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x2b_vovo(
@@ -292,6 +280,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                T.abb, t3_excitations["abb"].T,
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
+                                                               do_t3["aab"], do_t3["abb"],
                                                                noa, nua, nob, nub,
     )
     X.ab.ovov = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x2b_ovov(
@@ -299,6 +288,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                T.abb, t3_excitations["abb"].T,
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
+                                                               do_t3["aab"], do_t3["abb"],
                                                                noa, nua, nob, nub,
     )
     if RHF_symmetry:
@@ -325,6 +315,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
                                                                L.bbb, l3_excitations["bbb"].T,
+                                                               do_t3["aab"], do_t3["abb"], do_t3["bbb"],
                                                                noa, nua, nob, nub,
         )
         X.b.vv = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x1b_vv(
@@ -334,6 +325,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
                                                                L.bbb, l3_excitations["bbb"].T,
+                                                               do_t3["aab"], do_t3["abb"], do_t3["bbb"],
                                                                noa, nua, nob, nub,
         )
         ## bb intermediates ##
@@ -352,6 +344,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                T.bbb, t3_excitations["bbb"].T,
                                                                L.abb, l3_excitations["abb"].T,
                                                                L.bbb, l3_excitations["bbb"].T,
+                                                               do_t3["abb"], do_t3["bbb"],
                                                                noa, nua, nob, nub,
         )
         X.bb.vvvv = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x2c_vvvv(
@@ -359,6 +352,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                T.bbb, t3_excitations["bbb"].T,
                                                                L.abb, l3_excitations["abb"].T,
                                                                L.bbb, l3_excitations["bbb"].T,
+                                                               do_t3["abb"], do_t3["bbb"],
                                                                noa, nua, nob, nub,
         )
         X.bb.voov = leftccsdt_p_intermediates.leftccsdt_p_intermediates.compute_x2c_voov(
@@ -368,6 +362,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
                                                                L.aab, l3_excitations["aab"].T,
                                                                L.abb, l3_excitations["abb"].T,
                                                                L.bbb, l3_excitations["bbb"].T,
+                                                               do_t3["aab"], do_t3["abb"], do_t3["bbb"],
                                                                noa, nua, nob, nub,
         )
     return X

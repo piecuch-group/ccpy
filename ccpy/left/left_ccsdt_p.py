@@ -24,10 +24,9 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system, t3_excitation
         do_l3["abb"] = False
     if np.array_equal(l3_excitations["bbb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
         do_l3["bbb"] = False
-    build_X = do_t3["aaa"] or do_t3["aab"] or do_t3["abb"] or do_t3["bbb"] or do_l3["aaa"] or do_l3["aab"] or do_l3["abb"] or do_l3["bbb"]
 
     # get LT intermediates
-    X = build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, system, RHF_symmetry=flag_RHF)
+    X = build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, system, do_t3, do_l3, RHF_symmetry=flag_RHF)
 
     # build L1
     LH = build_LH_1A(L, LH, T, H, X)

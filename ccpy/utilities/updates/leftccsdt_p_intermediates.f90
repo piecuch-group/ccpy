@@ -74,6 +74,7 @@ module leftccsdt_p_intermediates
                                         l3a_amps, l3a_excits,&
                                         l3b_amps, l3b_excits,&
                                         l3c_amps, l3c_excits,&
+                                        do_aaa_t, do_aab_t, do_abb_t,&
                                         n3aaa_t, n3aab_t, n3abb_t,&
                                         n3aaa_l, n3aab_l, n3abb_l,&
                                         noa, nua, nob, nub)
@@ -81,6 +82,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa_t, n3aab_t, n3abb_t
                   integer, intent(in) :: n3aaa_l, n3aab_l, n3abb_l
+                  logical, intent(in) :: do_aaa_t, do_aab_t, do_abb_t
 
                   integer, intent(in) :: t3a_excits(6,n3aaa_t)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
@@ -105,9 +107,10 @@ module leftccsdt_p_intermediates
                   real(kind=8) :: t_amp, l_amp, lt_amp
                   integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet, jdet
                   integer :: idx
-
+                  
                   x1a_oo = 0.0d0
                   !!!! X1A(mi) = 1/6 l3a(efgmno) t3a(efgino) -> X1A(im) = 1/6 l3a(abcijk) * t3a(abcmjk)
+                  if (do_aaa_t) then
                   ! copy t3a into buffer
                   allocate(t3_amps_buff(n3aaa_t), t3_excits_buff(6,n3aaa_t))
                   t3_amps_buff(:) = t3a_amps(:)
@@ -264,7 +267,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,t3_amps_buff,t3_excits_buff)
+                  end if
                   !!!! X1A(mi) = 1/6 l3b(efgmno) t3b(efgino) -> X1A(im) = 1/6 l3b(abcijk) * t3b(abcmjk)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(t3_amps_buff(n3aab_t), t3_excits_buff(6,n3aab_t))
                   t3_amps_buff(:) = t3b_amps(:)
@@ -294,7 +299,9 @@ module leftccsdt_p_intermediates
                      end do
                   end do
                   deallocate(loc_arr,idx_table,t3_amps_buff,t3_excits_buff)
+                  end if
                   !!!! X1A(mi) = 1/6 l3c(efgmno) t3c(efgino) -> X1A(im) = 1/6 l3c(abcijk) * t3c(abcmjk)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(t3_amps_buff(n3abb_t), t3_excits_buff(6,n3abb_t))
                   t3_amps_buff(:) = t3c_amps(:)
@@ -359,6 +366,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,t3_amps_buff,t3_excits_buff)
+                  end if
 
               end subroutine compute_x1a_oo
 
@@ -369,6 +377,7 @@ module leftccsdt_p_intermediates
                                         l3a_amps, l3a_excits,&
                                         l3b_amps, l3b_excits,&
                                         l3c_amps, l3c_excits,&
+                                        do_aaa_t, do_aab_t, do_abb_t,&
                                         n3aaa_t, n3aab_t, n3abb_t,&
                                         n3aaa_l, n3aab_l, n3abb_l,&
                                         noa, nua, nob, nub)
@@ -376,6 +385,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa_t, n3aab_t, n3abb_t
                   integer, intent(in) :: n3aaa_l, n3aab_l, n3abb_l
+                  logical, intent(in) :: do_aaa_t, do_aab_t, do_abb_t
 
                   integer, intent(in) :: t3a_excits(6,n3aaa_t)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
@@ -403,6 +413,7 @@ module leftccsdt_p_intermediates
 
                   x1a_vv = 0.0d0
                   !!!! x1a(ea) <- -1/6 l3a(abcijk) t3a(ebcijk)
+                  if (do_aaa_t) then
                   ! copy t3a into buffer
                   allocate(amps_buff(n3aaa_t), excits_buff(6,n3aaa_t))
                   amps_buff(:) = t3a_amps(:)
@@ -548,7 +559,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,amps_buff,excits_buff)
+                  end if
                   !!!! x1a(ea) <- -l3b(abcijk) t3b(ebcijk)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(amps_buff(n3aab_t), excits_buff(6,n3aab_t))
                   amps_buff(:) = t3b_amps(:)
@@ -578,7 +591,9 @@ module leftccsdt_p_intermediates
                      end do
                   end do
                   deallocate(loc_arr,idx_table,amps_buff,excits_buff)
+                  end if
                   !!!! x1a(ea) <- -1/4 l3c(abcijk) t3c(ebcijk)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(amps_buff(n3abb_t), excits_buff(6,n3abb_t))
                   amps_buff(:) = t3c_amps(:)
@@ -641,6 +656,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,amps_buff,excits_buff)
+                  end if
 
               end subroutine compute_x1a_vv
 
@@ -714,6 +730,7 @@ module leftccsdt_p_intermediates
                                         l3b_amps, l3b_excits,&
                                         l3c_amps, l3c_excits,&
                                         l3d_amps, l3d_excits,&
+                                        do_aab_t, do_abb_t, do_bbb_t,&
                                         n3aab_t, n3abb_t, n3bbb_t,&
                                         n3aab_l, n3abb_l, n3bbb_l,&
                                         noa, nua, nob, nub)
@@ -721,6 +738,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab_t, n3abb_t, n3bbb_t
                   integer, intent(in) :: n3aab_l, n3abb_l, n3bbb_l
+                  logical, intent(in) :: do_aab_t, do_abb_t, do_bbb_t
 
                   integer, intent(in) :: t3b_excits(6,n3aab_t)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
@@ -748,6 +766,7 @@ module leftccsdt_p_intermediates
 
                   x1b_oo = 0.0d0
                   !!!! X1A(mi) = 1/6 l3a(efgmno) t3a(efgino) -> X1A(im) = 1/6 l3a(abcijk) * t3a(abcmjk)
+                  if (do_bbb_t) then
                   ! copy t3d into buffer
                   allocate(t3_amps_buff(n3bbb_t), t3_excits_buff(6,n3bbb_t))
                   t3_amps_buff(:) = t3d_amps(:)
@@ -904,7 +923,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,t3_amps_buff,t3_excits_buff)
+                  end if
                   !!!! x1b(mi) = l3c(abcijk) * t3c(abcijm)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(t3_amps_buff(n3abb_t), t3_excits_buff(6,n3abb_t))
                   t3_amps_buff(:) = t3c_amps(:)
@@ -933,7 +954,9 @@ module leftccsdt_p_intermediates
                      end do
                   end do
                   deallocate(loc_arr,idx_table,t3_amps_buff,t3_excits_buff)
+                  end if
                   !!!! x1b(mi) = l3b(abcijk) * t3b(abcijm)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(t3_amps_buff(n3aab_t), t3_excits_buff(6,n3aab_t))
                   t3_amps_buff(:) = t3b_amps(:)
@@ -995,6 +1018,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,t3_amps_buff,t3_excits_buff)
+                  end if
 
               end subroutine compute_x1b_oo
 
@@ -1005,6 +1029,7 @@ module leftccsdt_p_intermediates
                                         l3b_amps, l3b_excits,&
                                         l3c_amps, l3c_excits,&
                                         l3d_amps, l3d_excits,&
+                                        do_aab_t, do_abb_t, do_bbb_t,&
                                         n3aab_t, n3abb_t, n3bbb_t,&
                                         n3aab_l, n3abb_l, n3bbb_l,&
                                         noa, nua, nob, nub)
@@ -1012,6 +1037,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab_t, n3abb_t, n3bbb_t
                   integer, intent(in) :: n3aab_l, n3abb_l, n3bbb_l
+                  logical, intent(in) :: do_aab_t, do_abb_t, do_bbb_t
 
                   integer, intent(in) :: t3b_excits(6,n3aab_t)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
@@ -1039,6 +1065,7 @@ module leftccsdt_p_intermediates
 
                   x1b_vv = 0.0d0
                   !!!! x1a(ea) <- -1/6 l3a(abcijk) t3a(ebcijk)
+                  if (do_bbb_t) then
                   ! copy t3d into buffer
                   allocate(amps_buff(n3bbb_t), excits_buff(6,n3bbb_t))
                   amps_buff(:) = t3d_amps(:)
@@ -1184,7 +1211,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,amps_buff,excits_buff)
+                  end if
                   !!!! x1b(ea) <- -1/6 l3b(abcijk) t3b(abeijk)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(amps_buff(n3aab_t), excits_buff(6,n3aab_t))
                   amps_buff(:) = t3b_amps(:)
@@ -1246,7 +1275,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,amps_buff,excits_buff)
+                  end if
                   !!!! x1b(ea) <- -l3c(abcijk) t3c(abeijk)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(amps_buff(n3abb_t), excits_buff(6,n3abb_t))
                   amps_buff(:) = t3c_amps(:)
@@ -1275,6 +1306,7 @@ module leftccsdt_p_intermediates
                      end do
                   end do
                   deallocate(loc_arr,idx_table,amps_buff,excits_buff)
+                  end if
 
               end subroutine compute_x1b_vv
 
@@ -1723,6 +1755,7 @@ module leftccsdt_p_intermediates
                                           t3b_amps, t3b_excits,&
                                           l3a_amps, l3a_excits,&
                                           l3b_amps, l3b_excits,&
+                                          do_aaa_t, do_aab_t,&
                                           n3aaa_t, n3aab_t,&
                                           n3aaa_l, n3aab_l,&
                                           noa, nua, nob, nub)
@@ -1730,6 +1763,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa_t, n3aab_t
                   integer, intent(in) :: n3aaa_l, n3aab_l
+                  logical, intent(in) :: do_aaa_t, do_aab_t
 
                   integer, intent(in) :: t3a_excits(6,n3aaa_t)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
@@ -1754,6 +1788,7 @@ module leftccsdt_p_intermediates
 
                   x2a_oooo = 0.0d0
                   !!!! x2a(ijmn) = 1/6 l3a(abcijk) t3a(abcmnk)
+                  if (do_aaa_t) then
                   ! copy t3a into buffer
                   allocate(amps_buff(n3aaa_t),excits_buff(6,n3aaa_t))
                   amps_buff(:) = t3a_amps(:)
@@ -1863,7 +1898,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   !!!! x2a(ijmn) = 1/6 l3b(abcijk) t3b(abcmnk)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
                   amps_buff(:) = t3b_amps(:)
@@ -1889,6 +1926,7 @@ module leftccsdt_p_intermediates
                      end do
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   ! explicitly enforce antisymmetry 
                   ! To ensure this works, all computations to x2a_oooo(i,j,k,l) should be to
                   ! permutationally unique elements, meaning only for i<j and k<l
@@ -1911,6 +1949,7 @@ module leftccsdt_p_intermediates
                                           t3b_amps, t3b_excits,&
                                           l3a_amps, l3a_excits,&
                                           l3b_amps, l3b_excits,&
+                                          do_aaa_t, do_aab_t,&
                                           n3aaa_t, n3aab_t,&
                                           n3aaa_l, n3aab_l,&
                                           noa, nua, nob, nub)
@@ -1918,6 +1957,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa_t, n3aab_t
                   integer, intent(in) :: n3aaa_l, n3aab_l
+                  logical, intent(in) :: do_aaa_t, do_aab_t
 
                   integer, intent(in) :: t3a_excits(6,n3aaa_t)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
@@ -1942,6 +1982,7 @@ module leftccsdt_p_intermediates
 
                   x2a_vvvv = 0.0d0
                   !!!! x2a(deab) = 1/6 l3a(abcijk) t3a(decijk)
+                  if (do_aaa_t) then
                   ! copy t3a into buffer
                   allocate(amps_buff(n3aaa_t),excits_buff(6,n3aaa_t))
                   amps_buff(:) = t3a_amps(:)
@@ -2050,7 +2091,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   !!!! x2a(deab) = 1/6 l3b(abcijk) t3b(decijk)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
                   amps_buff(:) = t3b_amps(:)
@@ -2075,6 +2118,7 @@ module leftccsdt_p_intermediates
                      end do
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   ! explicitly enforce antisymmetry 
                   ! To ensure this works, all computations to x2a_vvvv(a,b,c,d) should be to
                   ! permutationally unique elements, meaning only for a<b and c<d
@@ -2099,6 +2143,7 @@ module leftccsdt_p_intermediates
                                           l3a_amps, l3a_excits,&
                                           l3b_amps, l3b_excits,&
                                           l3c_amps, l3c_excits,&
+                                          do_aaa_t, do_aab_t, do_abb_t,&
                                           n3aaa_t, n3aab_t, n3abb_t,&
                                           n3aaa_l, n3aab_l, n3abb_l,&
                                           noa, nua, nob, nub)
@@ -2106,6 +2151,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa_t, n3aab_t, n3abb_t
                   integer, intent(in) :: n3aaa_l, n3aab_l, n3abb_l
+                  logical, intent(in) :: do_aaa_t, do_aab_t, do_abb_t
 
                   integer, intent(in) :: t3a_excits(6,n3aaa_t)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
@@ -2134,6 +2180,7 @@ module leftccsdt_p_intermediates
 
                   x2a_voov = 0.0d0
                   !!!! x2a(eima) <- 1/4 l3a(abcijk) t3a(ebcmjk)
+                  if (do_aaa_t) then
                   ! copy t3a into buffer
                   allocate(amps_buff(n3aaa_t),excits_buff(6,n3aaa_t))
                   amps_buff(:) = t3a_amps(:)
@@ -2947,7 +2994,9 @@ module leftccsdt_p_intermediates
                   end do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   !!!! x2a(eima) <- 1/4 l3b(abcijk) t3b(ebcmjk)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
                   amps_buff(:) = t3b_amps(:)
@@ -3125,7 +3174,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   !!!! x2a(dila) <- 1/4 l3c(abcijk) t3c(dbcljk)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
                   amps_buff(:) = t3c_amps(:)
@@ -3149,6 +3200,7 @@ module leftccsdt_p_intermediates
                       end do
                   end do 
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
 
               end subroutine compute_x2a_voov                    
 
@@ -3157,6 +3209,7 @@ module leftccsdt_p_intermediates
                                           t3c_amps, t3c_excits,&
                                           l3b_amps, l3b_excits,&
                                           l3c_amps, l3c_excits,&
+                                          do_aab_t, do_abb_t,&
                                           n3aab_t, n3abb_t,&
                                           n3aab_l, n3abb_l,&
                                           noa, nua, nob, nub)
@@ -3164,6 +3217,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab_t, n3abb_t
                   integer, intent(in) :: n3aab_l, n3abb_l
+                  logical, intent(in) :: do_aab_t, do_abb_t
 
                   integer, intent(in) :: t3b_excits(6,n3aab_t)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
@@ -3188,6 +3242,7 @@ module leftccsdt_p_intermediates
 
                   x2b_oooo = 0.0d0
                   !!!! x2b(jkmn) = 1/2 l3b(abcijk) t3b(abcimn)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
                   amps_buff(:) = t3b_amps(:)
@@ -3245,7 +3300,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   !!!! x2b(jkmn) = 1/2 l3c(abcijk) t3c(abclmk)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
                   amps_buff(:) = t3c_amps(:)
@@ -3303,6 +3360,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
 
               end subroutine compute_x2b_oooo
 
@@ -3311,6 +3369,7 @@ module leftccsdt_p_intermediates
                                           t3c_amps, t3c_excits,&
                                           l3b_amps, l3b_excits,&
                                           l3c_amps, l3c_excits,&
+                                          do_aab_t, do_abb_t,&
                                           n3aab_t, n3abb_t,&
                                           n3aab_l, n3abb_l,&
                                           noa, nua, nob, nub)
@@ -3318,6 +3377,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab_t, n3abb_t
                   integer, intent(in) :: n3aab_l, n3abb_l
+                  logical, intent(in) :: do_aab_t, do_abb_t
 
                   integer, intent(in) :: t3b_excits(6,n3aab_t)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
@@ -3342,6 +3402,7 @@ module leftccsdt_p_intermediates
 
                   x2b_vvvv = 0.0d0
                   !!!! x2b(abef) = 1/2 l3b(egfmon) t3b(agbmon) -> x2b(efbc) = 1/2 l3b(abcijk) t3b(aefijk)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(t3_amps_buff(n3aab_t),t3_excits_buff(6,n3aab_t))
                   t3_amps_buff(:) = t3b_amps(:)
@@ -3403,7 +3464,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,t3_amps_buff,t3_excits_buff)
+                  end if
                   !!!! x2b(efab) <- 1/2 l3c(abcijk) t3c(efcijk)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(t3_amps_buff(n3abb_t),t3_excits_buff(6,n3abb_t))
                   t3_amps_buff(:) = t3c_amps(:)
@@ -3465,6 +3528,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,t3_amps_buff,t3_excits_buff)
+                  end if
 
               end subroutine compute_x2b_vvvv
 
@@ -3475,6 +3539,7 @@ module leftccsdt_p_intermediates
                                           l3b_amps, l3b_excits,&
                                           l3c_amps, l3c_excits,&
                                           l3d_amps, l3d_excits,&
+                                          do_abb_t, do_aab_l, do_abb_l,&
                                           n3aaa_t, n3aab_t, n3abb_t,&
                                           n3aab_l, n3abb_l, n3bbb_l,&
                                           noa, nua, nob, nub)
@@ -3482,6 +3547,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa_t, n3aab_t, n3abb_t
                   integer, intent(in) :: n3aab_l, n3abb_l, n3bbb_l
+                  logical, intent(in) :: do_abb_t, do_aab_l, do_abb_l
 
                   integer, intent(in) :: t3a_excits(6,n3aaa_t)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
@@ -3509,7 +3575,8 @@ module leftccsdt_p_intermediates
                   integer :: idx, nloc
 
                   x2b_voov = 0.0d0
-                  !!!! x2b(cmke) <- 1/4 l3b(abeijm) t3a(abcijk) 
+                  !!!! x2b(cmke) <- 1/4 l3b(abeijm) t3a(abcijk)
+                  if (do_aab_l) then
                   ! copy l3b into buffer
                   allocate(amps_buff(n3aab_l),excits_buff(6,n3aab_l))
                   amps_buff(:) = l3b_amps(:)
@@ -3615,7 +3682,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,amps_buff,excits_buff)
-                  !!!! x2b(amie) <- l3c(bcejkm) t3b(abcijk) : This one's tricky. See diagram 14 in update_t3b_p in ccsdt_p for help. 
+                  end if
+                  !!!! x2b(amie) <- l3c(bcejkm) t3b(abcijk) : This one's tricky. See diagram 14 in update_t3b_p in ccsdt_p for help.
+                  if (do_abb_l) then
                   ! copy l3c into buffer
                   allocate(amps_buff(n3abb_l),excits_buff(6,n3abb_l))
                   amps_buff(:) = l3c_amps(:)
@@ -3801,7 +3870,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   !!!! x2b(ekmc) <- 1/4 l3d(abcijk) t3c(eabmij) : a little tricky, see diagram 6 of update_t3d_p for help.
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
                   amps_buff(:) = t3c_amps(:)
@@ -3900,6 +3971,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,amps_buff,excits_buff)
+                  end if
 
               end subroutine compute_x2b_voov
 
@@ -3910,6 +3982,7 @@ module leftccsdt_p_intermediates
                                           l3a_amps, l3a_excits,&
                                           l3b_amps, l3b_excits,&
                                           l3c_amps, l3c_excits,&
+                                          do_aab_t, do_abb_t, do_abb_l,&
                                           n3aab_t, n3abb_t, n3bbb_t,&
                                           n3aaa_l, n3aab_l, n3abb_l,&
                                           noa, nua, nob, nub)
@@ -3917,6 +3990,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab_t, n3abb_t, n3bbb_t
                   integer, intent(in) :: n3aaa_l, n3aab_l, n3abb_l
+                  logical, intent(in) :: do_aab_t, do_abb_t, do_abb_l
 
                   integer, intent(in) :: t3b_excits(6,n3aab_t)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
@@ -3944,7 +4018,8 @@ module leftccsdt_p_intermediates
                   integer :: idx, nloc
 
                   x2b_ovvo = 0.0d0
-                  !!!! x2b(kecm) <- 1/4 l3a(abcijk) t3b(abeijm) 
+                  !!!! x2b(kecm) <- 1/4 l3a(abcijk) t3b(abeijm)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
                   amps_buff(:) = t3b_amps(:)
@@ -4043,7 +4118,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
-                  !!!! x2b(ieam) <- l3b(abcijk) t3c(becjmk) 
+                  end if
+                  !!!! x2b(ieam) <- l3b(abcijk) t3c(becjmk)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
                   amps_buff(:) = t3c_amps(:)
@@ -4236,7 +4313,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
-                  !!!! x2b(ladi) <- 1/4 l3c(dbcljk) t3d(abcijk) 
+                  end if
+                  !!!! x2b(ladi) <- 1/4 l3c(dbcljk) t3d(abcijk)
+                  if (do_abb_l) then
                   ! copy l3c into buffer
                   allocate(amps_buff(n3abb_l),excits_buff(6,n3abb_l))
                   amps_buff(:) = l3c_amps(:)
@@ -4336,6 +4415,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
 
               end subroutine compute_x2b_ovvo
 
@@ -4344,6 +4424,7 @@ module leftccsdt_p_intermediates
                                           t3c_amps, t3c_excits,&
                                           l3b_amps, l3b_excits,&
                                           l3c_amps, l3c_excits,&
+                                          do_aab_t, do_abb_t,&
                                           n3aab_t, n3abb_t,&
                                           n3aab_l, n3abb_l,&
                                           noa, nua, nob, nub)
@@ -4351,6 +4432,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab_t, n3abb_t
                   integer, intent(in) :: n3aab_l, n3abb_l
+                  logical, intent(in) :: do_aab_t, do_abb_t
 
                   integer, intent(in) :: t3b_excits(6,n3aab_t)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
@@ -4374,7 +4456,8 @@ module leftccsdt_p_intermediates
                   integer :: idx, nloc
 
                   x2b_vovo = 0.0d0
-                  !!!! x2b(ekma) <- -1/2 l3b(abcijk) t3b(ebcijm) 
+                  !!!! x2b(ekma) <- -1/2 l3b(abcijk) t3b(ebcijm)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
                   amps_buff(:) = t3b_amps(:)
@@ -4432,7 +4515,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
-                  !!!! x2b(ekma) <- -1/2 l3c(abcijk) t3c(ebcijm) 
+                  end if
+                  !!!! x2b(ekma) <- -1/2 l3c(abcijk) t3c(ebcijm)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
                   amps_buff(:) = t3c_amps(:)
@@ -4490,6 +4575,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
 
               end subroutine compute_x2b_vovo
 
@@ -4498,6 +4584,7 @@ module leftccsdt_p_intermediates
                                           t3c_amps, t3c_excits,&
                                           l3b_amps, l3b_excits,&
                                           l3c_amps, l3c_excits,&
+                                          do_aab_t, do_abb_t,&
                                           n3aab_t, n3abb_t,&
                                           n3aab_l, n3abb_l,&
                                           noa, nua, nob, nub)
@@ -4505,6 +4592,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab_t, n3abb_t
                   integer, intent(in) :: n3aab_l, n3abb_l
+                  logical, intent(in) :: do_aab_t, do_abb_t
 
                   integer, intent(in) :: t3b_excits(6,n3aab_t)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
@@ -4528,7 +4616,8 @@ module leftccsdt_p_intermediates
                   integer :: idx, nloc
 
                   x2b_ovov = 0.0d0
-                  !!!! x2b(iemc) <- -1/2 l3b(abcijk) t3b(abemjk) 
+                  !!!! x2b(iemc) <- -1/2 l3b(abcijk) t3b(abemjk)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
                   amps_buff(:) = t3b_amps(:)
@@ -4586,7 +4675,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
-                  !!!! x2b(iemc) <- -1/2 l3c(abcijk) t3c(abemjk) 
+                  end if
+                  !!!! x2b(iemc) <- -1/2 l3c(abcijk) t3c(abemjk)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
                   amps_buff(:) = t3c_amps(:)
@@ -4644,6 +4735,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
 
               end subroutine compute_x2b_ovov
 
@@ -4652,6 +4744,7 @@ module leftccsdt_p_intermediates
                                           t3d_amps, t3d_excits,&
                                           l3c_amps, l3c_excits,&
                                           l3d_amps, l3d_excits,&
+                                          do_abb_t, do_bbb_t,&
                                           n3abb_t, n3bbb_t,&
                                           n3abb_l, n3bbb_l,&
                                           noa, nua, nob, nub)
@@ -4659,6 +4752,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3abb_t, n3bbb_t
                   integer, intent(in) :: n3abb_l, n3bbb_l
+                  logical, intent(in) :: do_abb_t, do_bbb_t
 
                   integer, intent(in) :: t3c_excits(6,n3abb_t)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
@@ -4683,6 +4777,7 @@ module leftccsdt_p_intermediates
 
                   x2c_oooo = 0.0d0
                   !!!! x2a(ijmn) = 1/6 l3a(abcijk) t3a(abcmnk)
+                  if (do_bbb_t) then
                   ! copy t3d into buffer
                   allocate(amps_buff(n3bbb_t),excits_buff(6,n3bbb_t))
                   amps_buff(:) = t3d_amps(:)
@@ -4792,7 +4887,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   !!!! x2c(jkmn) = 1/6 l3c(abcijk) t3c(abcimn)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
                   amps_buff(:) = t3c_amps(:)
@@ -4818,6 +4915,7 @@ module leftccsdt_p_intermediates
                      end do
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   ! explicitly enforce antisymmetry 
                   ! To ensure this works, all computations to x2a_oooo(i,j,k,l) should be to
                   ! permutationally unique elements, meaning only for i<j and k<l
@@ -4840,6 +4938,7 @@ module leftccsdt_p_intermediates
                                           t3d_amps, t3d_excits,&
                                           l3c_amps, l3c_excits,&
                                           l3d_amps, l3d_excits,&
+                                          do_abb_t, do_bbb_t,&
                                           n3abb_t, n3bbb_t,&
                                           n3abb_l, n3bbb_l,&
                                           noa, nua, nob, nub)
@@ -4847,6 +4946,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3abb_t, n3bbb_t
                   integer, intent(in) :: n3abb_l, n3bbb_l
+                  logical, intent(in) :: do_abb_t, do_bbb_t
 
                   integer, intent(in) :: t3c_excits(6,n3abb_t)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
@@ -4871,6 +4971,7 @@ module leftccsdt_p_intermediates
 
                   x2c_vvvv = 0.0d0
                   !!!! x2a(deab) = 1/6 l3a(abcijk) t3a(decijk)
+                  if (do_bbb_t) then
                   ! copy t3a into buffer
                   allocate(amps_buff(n3bbb_t),excits_buff(6,n3bbb_t))
                   amps_buff(:) = t3d_amps(:)
@@ -4979,7 +5080,9 @@ module leftccsdt_p_intermediates
                      end if
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   !!!! x2c(efbc) = 1/6 l3c(abcijk) t3c(aefijk)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
                   amps_buff(:) = t3c_amps(:)
@@ -5004,6 +5107,7 @@ module leftccsdt_p_intermediates
                      end do
                   end do
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   ! explicitly enforce antisymmetry 
                   ! To ensure this works, all computations to x2c_vvvv(a,b,c,d) should be to
                   ! permutationally unique elements, meaning only for a<b and c<d
@@ -5028,6 +5132,7 @@ module leftccsdt_p_intermediates
                                           l3b_amps, l3b_excits,&
                                           l3c_amps, l3c_excits,&
                                           l3d_amps, l3d_excits,&
+                                          do_aab_t, do_abb_t, do_bbb_t,&
                                           n3aab_t, n3abb_t, n3bbb_t,&
                                           n3aab_l, n3abb_l, n3bbb_l,&
                                           noa, nua, nob, nub)
@@ -5035,6 +5140,7 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab_t, n3abb_t, n3bbb_t
                   integer, intent(in) :: n3aab_l, n3abb_l, n3bbb_l
+                  logical, intent(in) :: do_aab_t, do_abb_t, do_bbb_t
 
                   integer, intent(in) :: t3b_excits(6,n3aab_t)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
@@ -5063,6 +5169,7 @@ module leftccsdt_p_intermediates
 
                   x2c_voov = 0.0d0
                   !!!! x2c(eima) <- 1/4 l3d(abcijk) t3d(ebcmjk)
+                  if (do_bbb_t) then
                   ! copy t3d into buffer
                   allocate(amps_buff(n3bbb_t),excits_buff(6,n3bbb_t))
                   amps_buff(:) = t3d_amps(:)
@@ -5876,7 +5983,9 @@ module leftccsdt_p_intermediates
                   end do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   !!!! x2c(eima) <- 1/4 l3b(abcijk) t3b(abeijm)
+                  if (do_aab_t) then
                   ! copy t3b into buffer
                   allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
                   amps_buff(:) = t3b_amps(:)
@@ -5901,7 +6010,9 @@ module leftccsdt_p_intermediates
                      end do
                   end do 
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
                   !!!! x2c(eima) <- l3c(abcijk) t3c(abeijm)
+                  if (do_abb_t) then
                   ! copy t3c into buffer
                   allocate(amps_buff(n3aab_t),excits_buff(6,n3abb_t))
                   amps_buff(:) = t3c_amps(:)
@@ -6079,6 +6190,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do 
                   deallocate(loc_arr,idx_table,excits_buff,amps_buff)
+                  end if
 
               end subroutine compute_x2c_voov
 
