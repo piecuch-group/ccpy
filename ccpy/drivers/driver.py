@@ -11,7 +11,7 @@ import ccpy.left
 import ccpy.eom_guess
 import ccpy.eomcc
 
-from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, left_ccp_jacobi, eomcc_davidson, eomcc_block_davidson, eccc_jacobi
+from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, eomcc_davidson, eomcc_block_davidson, eccc_jacobi
 from ccpy.energy.cc_energy import get_LR, get_r0, get_rel
 
 from ccpy.models.integrals import Integral
@@ -91,7 +91,7 @@ class Driver:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
-        elif method.lower() in ["ccsdt", "eomccsdt", "left_ccsdt", "left_ccsdt_p_slow"]:
+        elif method.lower() in ["ccsdt", "eomccsdt", "left_ccsdt", "left_ccsdt_p"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
@@ -489,10 +489,12 @@ class Driver:
         self.print_options()
 
         # regardless of restart status, initialize residual anew
-        LH = ClusterOperator(self.system,
-                             order=self.operator_params["order"],
-                             active_orders=self.operator_params["active_orders"],
-                             num_active=self.operator_params["number_active_indices"])
+        if t3_excitations is None and l3_excitations is None:
+            LH = ClusterOperator(self.system,
+                                 order=self.operator_params["order"],
+                                 active_orders=self.operator_params["active_orders"],
+                                 num_active=self.operator_params["number_active_indices"])
+
         for i in state_index:
             print("   Left CC calculation for root %d started on" % i, get_timestamp())
             # decide whether this is a ground-state calculation
@@ -500,31 +502,63 @@ class Driver:
                 ground_state = True
             else:
                 ground_state = False
+                # WATCH OUT: LR function will be different for EOMCC(P) case
                 LR_function = partial(get_LR, self.R[i])
 
-            # initialize the left CC operator anew, or use restart
-            if self.L[i] is None:
-                self.L[i] = ClusterOperator(self.system,
-                                            order=self.operator_params["order"],
-                                            active_orders=self.operator_params["active_orders"],
-                                            num_active=self.operator_params["number_active_indices"])
-                # set initial value based on ground- or excited-state
-                if ground_state:
-                    self.L[i].unflatten(self.T.flatten()[:self.L[i].ndim])
-                else:
-                    self.L[i].unflatten(self.R[i].flatten())
-
-            # Zero out the residual
-            LH.unflatten(0.0 * LH.flatten())
-
-            if pspace is None:
-                self.L[i], _, LR, is_converged = left_cc_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian, 
-                                                                LR_function, self.vertical_excitation_energy[i],
-                                                                ground_state, self.system, self.options)
+            # Create either the standard CC or CC(P) cluster operator
+            if t3_excitations is None and l3_excitations is None:
+                # initialize the left CC operator anew, or use restart
+                if self.L[i] is None:
+                    self.L[i] = ClusterOperator(self.system,
+                                                order=self.operator_params["order"],
+                                                active_orders=self.operator_params["active_orders"],
+                                                num_active=self.operator_params["number_active_indices"])
+                    # set initial value based on ground- or excited-state
+                    if ground_state:
+                        self.L[i].unflatten(self.T.flatten()[:self.L[i].ndim])
+                    else:
+                        self.L[i].unflatten(self.R[i].flatten())
+                # Zero out the residual
+                LH.unflatten(0.0 * LH.flatten())
             else:
-                self.L[i], _, LR, is_converged = left_ccp_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian, 
-                                                                 LR_function, self.vertical_excitation_energy[i],
-                                                                 ground_state, self.system, self.options, pspace)
+                # Get dimensions of L3 spincases in P space
+                n3aaa = l3_excitations["aaa"].shape[0]
+                n3aab = l3_excitations["aab"].shape[0]
+                n3abb = l3_excitations["abb"].shape[0]
+                n3bbb = l3_excitations["bbb"].shape[0]
+                excitation_count = [[n3aaa, n3aab, n3abb, n3bbb]]
+
+                # If RHF, copy aab into abb and aaa in bbb
+                if self.options["RHF_symmetry"]:
+                    assert (n3aaa == n3bbb)
+                    assert (n3aab == n3abb)
+                    l3_excitations["bbb"] = l3_excitations["aaa"].copy()
+                    l3_excitations["abb"] = l3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
+                # Create the left CC(P) operator
+                if self.L[i] is None:
+                    self.L[i] = ClusterOperator(self.system,
+                                                order=self.operator_params["order"],
+                                                p_orders=self.operator_params["pspace_orders"],
+                                                pspace_sizes=excitation_count)
+                    # set initial value based on ground- or excited-state
+                    if ground_state:
+                        self.L[i].unflatten(self.T.flatten())
+                    else:
+                        self.L[i].unflatten(self.R[i].flatten())
+                # Regardless of restart status, make LH anew. It could be of different length for different roots
+                LH = ClusterOperator(self.system,
+                                     order=self.operator_params["order"],
+                                     p_orders=self.operator_params["pspace_orders"],
+                                     pspace_sizes=excitation_count)
+                # Zero out the residual
+                LH.unflatten(0.0 * LH.flatten())
+
+            # Run the left CC calculation
+            self.L[i], _, LR, is_converged = left_cc_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian,
+                                                            LR_function, self.vertical_excitation_energy[i],
+                                                            ground_state, self.system, self.options,
+                                                            t3_excitations, l3_excitations)
+
             if not ground_state:
                 self.L[i].unflatten(1.0 / LR_function(self.L[i]) * self.L[i].flatten())
 
@@ -715,12 +749,42 @@ class AdaptDriver:
         # Count the excitations in the current P space
         excitation_count = count_excitations_in_pspace(self.pspace, self.driver.system)
 
+        # The adaptive P spaces do not follow the same pattern of the CIPSI-generated P spaces
+        # is this just a difference in how CI vs. CC gets spin adapted or is this a problem?
+        # E.g., if the aaa and aab do not completely overlap, is S2 symmetry broken for RHF?
+        # Clearly at the CCSDT limit, this condition is filled, so spin symmetry is restored.
+        # noa, nob, nua, nub = self.bare_hamiltonian.ab.oovv.shape
+        # for a in range(nua):
+        #     for b in range(a + 1, nua):
+        #         for c in range(b + 1, nua):
+        #             for i in range(noa):
+        #                 for j in range(i + 1, noa):
+        #                     for k in range(j + 1, noa):
+        #                         if self.pspace["aaa"][a, b, c, i, j, k] == 1:
+        #                             if self.pspace["aab"][a, b, c, i, j, k] != 1:
+        #                                 print("aab VIOLATION")
+        #                             if self.pspace["bbb"][a, b, c, i, j, k] != 1:
+        #                                 print("bbb VIOLATION")
+        # noa, nob, nua, nub = self.bare_hamiltonian.ab.oovv.shape
+        # for a in range(nua):
+        #     for b in range(a + 1, nua):
+        #         for c in range(nub):
+        #             for i in range(noa):
+        #                 for j in range(i + 1, noa):
+        #                     for k in range(nob):
+        #                         if self.pspace["aab"][a, b, c, i, j, k] == 1:
+        #                             if self.pspace["abb"][c, a, b, k, i, j] != 1:
+        #                                 print("VIOLATION")
+
     def run_ccp(self, imacro):
         """Runs iterative CC(P), and if needed, HBar and iterative left-CC calculations."""
         self.driver.run_cc(method="ccsdt_p", t3_excitations=self.t3_excitations)
         if not self.options["perturbative"]:
             self.driver.run_hbar(method="ccsd")
-            self.driver.run_leftcc(method="left_ccsd")
+            if imacro < 1:
+                self.driver.run_leftcc(method="left_ccsd")
+            else:
+                self.driver.run_leftcc(method="left_ccsdt_p", t3_excitations=self.t3_excitations, l3_excitations=self.t3_excitations)
         self.ccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy
 
     def run_ccp3(self, imacro):

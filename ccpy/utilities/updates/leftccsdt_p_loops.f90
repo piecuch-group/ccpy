@@ -6140,6 +6140,226 @@ module leftccsdt_p_loops
                   !!!! END OMP PARALLEL SECTION !!!!
            
         end subroutine build_LH_3D
+        
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! L UPDATE LOOPS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        subroutine update_L1(l1a, l1b, X1A, X1B,&
+                             omega,&
+                             H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
+                             shift,&
+                             noa, nua, nob, nub)
+           
+              integer, intent(in) :: noa, nua, nob, nub
+              real(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua),&
+                                          H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub),&
+                                          shift, omega
+
+              real(kind=8), intent(inout) :: l1a(1:nua,1:noa)
+              !f2py intent(in,out) :: l1a(0:nua-1,0:noa-1)
+              real(kind=8), intent(inout) :: l1b(1:nub,1:nob)
+              !f2py intent(in,out) :: l1b(0:nub-1,0:nob-1)
+
+              real(kind=8), intent(inout) :: X1A(1:nua,1:noa)
+              !f2py intent(in,out) :: X1A(0:nua-1,0:noa-1)
+              real(kind=8), intent(inout) :: X1B(1:nub,1:nob)
+              !f2py intent(in,out) :: X1B(0:nub-1,0:nob-1)
+
+              integer :: i, a
+              real(kind=8) :: denom, val
+
+              do i = 1,noa
+                do a = 1,nua
+                  denom = H1A_vv(a,a) - H1A_oo(i,i)
+                  val = omega*l1a(a,i) - X1A(a,i)
+                  l1a(a,i) = l1a(a,i) + val/(denom - omega + shift)
+                  X1A(a,i) = val/(denom - omega + shift)
+                end do
+              end do
+
+              do i = 1,nob
+                do a = 1,nub
+                  denom = H1B_vv(a,a) - H1B_oo(i,i)
+                  val = omega*l1b(a,i) - X1B(a,i)
+                  l1b(a,i) = l1b(a,i) + val/(denom - omega + shift)
+                  X1B(a,i) = val/(denom - omega + shift)
+                end do
+              end do
+
+        end subroutine update_L1
+
+        subroutine update_L2(l2a, l2b, l2c, X2A, X2B, X2C,&
+                             omega,&
+                             H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
+                             shift,&
+                             noa, nua, nob, nub)
+           
+              integer, intent(in) :: noa, nua, nob, nub
+              real(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+                                          H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega
+
+              real(kind=8), intent(inout) :: l2a(1:nua,1:nua,1:noa,1:noa)
+              !f2py intent(in,out) :: l2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+              real(kind=8), intent(inout) :: l2b(1:nua,1:nub,1:noa,1:nob)
+              !f2py intent(in,out) :: l2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+              real(kind=8), intent(inout) :: l2c(1:nub,1:nub,1:nob,1:nob)
+              !f2py intent(in,out) :: l2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+
+              real(kind=8), intent(inout) :: X2A(1:nua,1:nua,1:noa,1:noa)
+              !f2py intent(in,out) :: X2A(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+              real(kind=8), intent(inout) :: X2B(1:nua,1:nub,1:noa,1:nob)
+              !f2py intent(in,out) :: X2B(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+              real(kind=8), intent(inout) :: X2C(1:nub,1:nub,1:nob,1:nob)
+              !f2py intent(in,out) :: X2C(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+
+              integer :: i, j, a, b
+              real(kind=8) :: denom, val
+
+              do i = 1, noa
+                do j = i+1, noa
+                  do a = 1, nua
+                    do b = a+1, nua
+                      denom = H1A_vv(a,a) + H1A_vv(b,b) - H1A_oo(i,i) - H1A_oo(j,j)
+
+                      val = omega*l2a(a,b,i,j) - X2A(a,b,i,j)
+
+                      l2a(a,b,i,j) = l2a(a,b,i,j) + val/(denom - omega + shift)
+                      l2a(b,a,i,j) = -l2a(a,b,i,j)
+                      l2a(a,b,j,i) = -l2a(a,b,i,j)
+                      l2a(b,a,j,i) = l2a(a,b,i,j)
+
+                      X2A(a,b,i,j) = val/(denom - omega + shift)
+                      X2A(b,a,i,j) = -X2A(a,b,i,j)
+                      X2A(a,b,j,i) = -X2A(a,b,i,j)
+                      X2A(b,a,j,i) = X2A(a,b,i,j)
+                    end do
+                  end do
+                end do
+              end do
+
+              do j = 1, nob
+                do i = 1, noa
+                  do b = 1, nub
+                    do a = 1, nua
+                      denom = H1A_vv(a,a) + H1B_vv(b,b) - H1A_oo(i,i) - H1B_oo(j,j)
+
+                      val = omega*l2b(a,b,i,j) - X2B(a,b,i,j)
+
+                      l2b(a,b,i,j) = l2b(a,b,i,j) + val/(denom - omega + shift)
+                      X2B(a,b,i,j) = val/(denom - omega + shift)
+                    end do
+                  end do
+                end do
+              end do
+
+              do i = 1, nob
+                do j = i+1, nob
+                  do a = 1, nub
+                    do b = a+1, nub
+                      denom = H1B_vv(a,a) + H1B_vv(b,b) - H1B_oo(i,i) - H1B_oo(j,j)
+
+                      val = omega*l2c(a,b,i,j) - X2C(a,b,i,j)
+
+                      l2c(a,b,i,j) = l2c(a,b,i,j) + val/(denom - omega + shift)
+                      l2c(b,a,i,j) = -l2c(a,b,i,j)
+                      l2c(a,b,j,i) = -l2c(a,b,i,j)
+                      l2c(b,a,j,i) = l2c(a,b,i,j)
+
+                      X2C(a,b,i,j) = val/(denom - omega + shift)
+                      X2C(b,a,i,j) = -X2C(a,b,i,j)
+                      X2C(a,b,j,i) = -X2C(a,b,i,j)
+                      X2C(b,a,j,i) = X2C(a,b,i,j)
+                    end do
+                  end do
+                end do
+              end do
+
+        end subroutine update_L2
+
+        subroutine update_L3(l3a_amps,l3a_excits,&
+                             l3b_amps,l3b_excits,&
+                             l3c_amps,l3c_excits,&
+                             l3d_amps,l3d_excits,&
+                             X3A,X3B,X3C,X3D,&
+                             omega,&
+                             H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                             shift,&
+                             n3aaa,n3aab,n3abb,n3bbb,&
+                             noa,nua,nob,nub)
+           
+              integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb, n3bbb
+              real(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+                                          H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega
+              integer, intent(in) :: l3a_excits(6,n3aaa), l3b_excits(6,n3aab), l3c_excits(6,n3abb), l3d_excits(6,n3bbb)
+
+              real(kind=8), intent(inout) :: l3a_amps(n3aaa)
+              !f2py intent(in,out) :: l3a_amps(0:n3aaa-1)
+              real(kind=8), intent(inout) :: l3b_amps(n3aab)
+              !f2py intent(in,out) :: l3b_amps(0:n3aab-1)
+              real(kind=8), intent(inout) :: l3c_amps(n3abb)
+              !f2py intent(in,out) :: l3c_amps(0:n3abb-1)
+              real(kind=8), intent(inout) :: l3d_amps(n3bbb)
+              !f2py intent(in,out) :: l3d_amps(0:n3bbb-1)
+
+              real(kind=8), intent(inout) :: X3A(n3aaa)
+              !f2py intent(in,out) :: X3A(0:n3aaa-1)
+              real(kind=8), intent(inout) :: X3B(n3aab)
+              !f2py intent(in,out) :: X3B(0:n3aab-1)
+              real(kind=8), intent(inout) :: X3C(n3abb)
+              !f2py intent(in,out) :: X3C(0:n3abb-1)
+              real(kind=8), intent(inout) :: X3D(n3bbb)
+              !f2py intent(in,out) :: X3D(0:n3bbb-1)
+
+              integer :: i, j, k, a, b, c, idet
+              real(kind=8) :: denom, val
+              
+              do idet = 1, n3aaa
+                 a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
+                 i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                 
+                 denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1A_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1A_vv(C,C)
+                 val = omega*l3a_amps(idet) - X3A(idet)
+                 
+                 l3a_amps(idet) = l3a_amps(idet) + val/(denom - omega + shift)
+                 val = val/(denom - omega + shift)
+                 X3A(idet) = val
+              end do
+              do idet = 1, n3aab
+                 a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
+                 i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                 
+                 denom = -H1A_oo(I,I)-H1A_oo(J,J)-H1B_oo(K,K)+H1A_vv(A,A)+H1A_vv(B,B)+H1B_vv(C,C)
+                 val = omega*l3b_amps(idet) - X3B(idet)
+                 
+                 l3b_amps(idet) = l3b_amps(idet) + val/(denom - omega + shift)
+                 val = val/(denom - omega + shift)
+                 X3B(idet) = val
+              end do
+              do idet = 1, n3abb
+                 a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
+                 i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                 
+                 denom = -H1A_oo(I,I)-H1B_oo(J,J)-H1B_oo(K,K)+H1A_vv(A,A)+H1B_vv(B,B)+H1B_vv(C,C)
+                 val = omega*l3c_amps(idet) - X3C(idet)
+                 
+                 l3c_amps(idet) = l3c_amps(idet) + val/(denom - omega + shift)
+                 val = val/(denom - omega + shift)
+                 X3C(idet) = val
+              end do
+              do idet = 1, n3bbb
+                 a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
+                 i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                 
+                 denom = -H1B_oo(I,I)-H1B_oo(J,J)-H1B_oo(K,K)+H1B_vv(A,A)+H1B_vv(B,B)+H1B_vv(C,C)
+                 val = omega*l3d_amps(idet) - X3D(idet)
+                 
+                 l3d_amps(idet) = l3d_amps(idet) + val/(denom - omega + shift)
+                 val = val/(denom - omega + shift)
+                 X3D(idet) = val
+              end do
+           
+        end subroutine update_L3
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SORTING FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!

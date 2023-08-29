@@ -760,8 +760,7 @@ module cc_loops2
               end do
 
       end subroutine update_R_ccsdt
-
-
+     
       subroutine update_L1(l1a, l1b, X1A, X1B,&
                            omega,&
                            H1A_oo, H1A_vv, H1B_oo, H1B_vv,&

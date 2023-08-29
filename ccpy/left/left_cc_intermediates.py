@@ -148,6 +148,27 @@ def build_left_ccsdt_intermediates(L, T, system):
 def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, system, RHF_symmetry=False):
     """Calculate the L*T intermediates used in the left-CCSDT equations"""
 
+    # determine whether t3 updates should be done. Stupid compatibility with
+    # empty sections of t3_excitations
+    do_l3 = {"aaa" : True, "aab" : True, "abb" : True, "bbb" : True}
+    do_t3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
+    if np.array_equal(t3_excitations["aaa"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_t3["aaa"] = False
+    if np.array_equal(t3_excitations["aab"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_t3["aab"] = False
+    if np.array_equal(t3_excitations["abb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_t3["abb"] = False
+    if np.array_equal(t3_excitations["bbb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_t3["bbb"] = False
+    if np.array_equal(l3_excitations["aaa"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_l3["aaa"] = False
+    if np.array_equal(l3_excitations["aab"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_l3["aab"] = False
+    if np.array_equal(l3_excitations["abb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_l3["abb"] = False
+    if np.array_equal(l3_excitations["bbb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+        do_l3["bbb"] = False
+
     nua, noa = T.a.shape
     nub, nob = T.b.shape
 
@@ -283,7 +304,7 @@ def build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, syste
     if RHF_symmetry:
         X.b.vo = X.a.vo.copy()
         X.b.oo = X.a.oo.copy()
-        X.b.vv = X.b.vv.copy()
+        X.b.vv = X.a.vv.copy()
         X.bb.ooov = X.aa.ooov.copy()
         X.bb.vovv = X.aa.vovv.copy()
         X.bb.oooo = X.aa.oooo.copy()
