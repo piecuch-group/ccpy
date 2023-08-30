@@ -1,6 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import cc_loops
-from ccpy.models.operators import FockOperator
+from ccpy.utilities.updates import cc_loops2
 
 # R.a -> (noa) -> (i)
 # R.aa -> (noa,nua,noa) -> (ibj)
@@ -8,7 +7,7 @@ from ccpy.models.operators import FockOperator
 
 def update(R, omega, H, system):
 
-    R.a, R.aa, R.ab = cc_loops.cc_loops.update_r_2h1p(
+    R.a, R.aa, R.ab = cc_loops2.cc_loops2.update_r_2h1p(
         R.a,
         R.aa,
         R.ab,
@@ -26,7 +25,7 @@ def HR(dR, R, T, H, flag_RHF, system):
     dR.a = build_HR_1A(R, T, H)
     # update R2
     dR.aa = build_HR_2A(R, T, H)
-    dR.ab = build_HR_2C(R, T, H)
+    dR.ab = build_HR_2B(R, T, H)
     return dR.flatten()
 
 def build_HR_1A(R, T, H):
@@ -55,20 +54,20 @@ def build_HR_2A(R, T, H):
     X2A -= np.transpose(X2A, (2, 1, 0))
     return X2A
 
-def build_HR_2C(R, T, H):
+def build_HR_2B(R, T, H):
     """Calculate the projection <ij~b~|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>."""
-    X2C = -1.0 * np.einsum("mbij,m->ibj", H.ab.ovoo, R.a, optimize=True)
-    X2C -= np.einsum("mi,mbj->ibj", H.a.oo, R.ab, optimize=True)
-    X2C -= np.einsum("mj,ibm->ibj", H.b.oo, R.ab, optimize=True)
-    X2C += np.einsum("be,iej->ibj", H.b.vv, R.ab, optimize=True)
-    X2C += np.einsum("mnij,mbn->ibj", H.ab.oooo, R.ab, optimize=True)
-    X2C += np.einsum("mbej,iem->ibj", H.ab.ovvo, R.aa, optimize=True)
-    X2C += np.einsum("bmje,iem->ibj", H.bb.voov, R.ab, optimize=True)
-    X2C -= np.einsum("mbie,mej->ibj", H.ab.ovov, R.ab, optimize=True)
+    X2B = -1.0 * np.einsum("mbij,m->ibj", H.ab.ovoo, R.a, optimize=True)
+    X2B -= np.einsum("mi,mbj->ibj", H.a.oo, R.ab, optimize=True)
+    X2B -= np.einsum("mj,ibm->ibj", H.b.oo, R.ab, optimize=True)
+    X2B += np.einsum("be,iej->ibj", H.b.vv, R.ab, optimize=True)
+    X2B += np.einsum("mnij,mbn->ibj", H.ab.oooo, R.ab, optimize=True)
+    X2B += np.einsum("mbej,iem->ibj", H.ab.ovvo, R.aa, optimize=True)
+    X2B += np.einsum("bmje,iem->ibj", H.bb.voov, R.ab, optimize=True)
+    X2B -= np.einsum("mbie,mej->ibj", H.ab.ovov, R.ab, optimize=True)
     I1 = (
         -0.5 * np.einsum("mnef,mfn->e", H.aa.oovv, R.aa, optimize=True)
         - np.einsum("mnef,mfn->e", H.ab.oovv, R.ab, optimize=True)
     )
-    X2C += np.einsum("e,ebij->ibj", I1, T.ab, optimize=True)
-    return X2C
+    X2B += np.einsum("e,ebij->ibj", I1, T.ab, optimize=True)
+    return X2B
 

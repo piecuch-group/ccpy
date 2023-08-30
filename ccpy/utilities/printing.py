@@ -63,8 +63,34 @@ def deaeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, pr
     print("\n   DEA-EOMCC Calculation Summary (%s)" % convergence_label)
     print("  --------------------------------------------------")
     print(DATA_FMT.format("   Vertical excitation energy", omega))
-    print(DATA_FMT.format("   Total EOMCC energy", system.reference_energy + corr_energy + omega))
+    print(DATA_FMT.format("   Total DEA-EOMCC energy", system.reference_energy + corr_energy + omega))
     print_dea_amplitudes(R, system, R.order, print_thresh)
+    print("")
+
+def ipeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, print_thresh):
+    DATA_FMT = "{:<30} {:>20.8f}"
+    if is_converged:
+        convergence_label = 'converged'
+    else:
+        convergence_label = 'not converged'
+    print("\n   IP-EOMCC Calculation Summary (%s)" % convergence_label)
+    print("  --------------------------------------------------")
+    print(DATA_FMT.format("   Vertical excitation energy", omega))
+    print(DATA_FMT.format("   Total IP-EOMCC energy", system.reference_energy + corr_energy + omega))
+    print_ip_amplitudes(R, system, R.order, print_thresh)
+    print("")
+
+def eaeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, print_thresh):
+    DATA_FMT = "{:<30} {:>20.8f}"
+    if is_converged:
+        convergence_label = 'converged'
+    else:
+        convergence_label = 'not converged'
+    print("\n   EA-EOMCC Calculation Summary (%s)" % convergence_label)
+    print("  --------------------------------------------------")
+    print(DATA_FMT.format("   Vertical excitation energy", omega))
+    print(DATA_FMT.format("   Total EA-EOMCC energy", system.reference_energy + corr_energy + omega))
+    print_ea_amplitudes(R, system, R.order, print_thresh)
     print("")
 
 def leftcc_calculation_summary(L, omega, LR, is_converged, system, print_thresh):
@@ -236,7 +262,116 @@ def print_ee_amplitudes(R, system, order, thresh_print):
                     R.bb[b, a, j, i] = R.bb[a, b, i, j]
                     R.bb[a, b, j, i] = -1.0 * R.bb[a, b, i, j]
                     R.bb[b, a, i, j] = -1.0 * R.bb[a, b, i, j]
+    return
 
+def print_ip_amplitudes(R, system, order, thresh_print):
+
+    # Zero out the non-unique R amplitudes related by permutational symmetry
+    for i in range(system.noccupied_alpha):
+        for b in range(system.nunoccupied_alpha):
+            for j in range(i + 1, system.noccupied_alpha):
+                R.aa[j, b, i] = 0.0
+
+    print("\n   Largest 1h and 2h-1p Excited Amplitudes:")
+    n = 1
+    for i in range(system.noccupied_alpha):
+        if abs(R.a[i]) <= thresh_print: continue
+        print(
+            "      [{}]     {}A  ->   =   {:.6f}".format(
+                n,
+                i + system.nfrozen + 1,
+                R.a[i],
+            )
+        )
+        n += 1
+    for i in range(system.noccupied_alpha):
+        for b in range(system.nunoccupied_alpha):
+            for j in range(i + 1, system.noccupied_alpha):
+                if abs(R.aa[i, b, j]) <= thresh_print: continue
+                print(
+                    "      [{}]     {}A  {}A  ->  {}A  =   {:.6f}".format(
+                        n,
+                        i + system.nfrozen + 1,
+                        b + system.noccupied_alpha + system.nfrozen + 1,
+                        j + system.nfrozen + 1,
+                        R.aa[i, b, j],
+                    )
+                )
+                n += 1
+    for i in range(system.noccupied_alpha):
+        for b in range(system.nunoccupied_beta):
+            for j in range(system.noccupied_beta):
+                if abs(R.ab[i, b, j]) <= thresh_print: continue
+                print(
+                    "      [{}]     {}A  {}B  ->  {}B  =   {:.6f}".format(
+                        n,
+                        i + system.nfrozen + 1,
+                        b + system.noccupied_beta + system.nfrozen + 1,
+                        j + system.nfrozen + 1,
+                        R.ab[i, b, j],
+                    )
+                )
+                n += 1
+    # Restore permutationally redundant amplitudes
+    for i in range(system.noccupied_alpha):
+        for b in range(system.nunoccupied_alpha):
+            for j in range(i + 1, system.noccupied_alpha):
+                R.aa[j, b, i] = -R.aa[i, b, j]
+    return
+
+def print_ea_amplitudes(R, system, order, thresh_print):
+
+    # Zero out the non-unique R amplitudes related by permutational symmetry
+    for a in range(system.nunoccupied_alpha):
+        for b in range(a + 1, system.nunoccupied_alpha):
+            for j in range(system.noccupied_alpha):
+                R.aa[b, a, j] = 0.0
+
+    print("\n   Largest 1p and 2p-1h Excited Amplitudes:")
+    n = 1
+    for a in range(system.nunoccupied_alpha):
+        if abs(R.a[a]) <= thresh_print: continue
+        print(
+            "      [{}]     ->  {}A  =   {:.6f}".format(
+                n,
+                a + system.noccupied_alpha + system.nfrozen + 1,
+                R.a[a],
+            )
+        )
+        n += 1
+    for a in range(system.nunoccupied_alpha):
+        for b in range(a + 1, system.nunoccupied_alpha):
+            for j in range(system.noccupied_alpha):
+                if abs(R.aa[a, b, j]) <= thresh_print: continue
+                print(
+                    "      [{}]     {}A  ->  {}A  {}A  =   {:.6f}".format(
+                        n,
+                        j + system.nfrozen + 1,
+                        a + system.noccupied_alpha + system.nfrozen + 1,
+                        b + system.noccupied_alpha + system.nfrozen + 1,
+                        R.aa[a, b, j],
+                    )
+                )
+                n += 1
+    for a in range(system.nunoccupied_alpha):
+        for b in range(system.nunoccupied_beta):
+            for j in range(system.noccupied_beta):
+                if abs(R.ab[a, b, j]) <= thresh_print: continue
+                print(
+                    "      [{}]     {}B  ->  {}A  {}B  =   {:.6f}".format(
+                        n,
+                        j + system.nfrozen + 1,
+                        a + system.noccupied_alpha + system.nfrozen + 1,
+                        b + system.noccupied_beta + system.nfrozen + 1,
+                        R.ab[a, b, j],
+                    )
+                )
+                n += 1
+    # Restore permutationally redundant amplitudes
+    for a in range(system.nunoccupied_alpha):
+        for b in range(a + 1, system.nunoccupied_alpha):
+            for j in range(system.noccupied_alpha):
+                R.aa[b, a, j] = -R.aa[a, b, j]
     return
 
 def print_dea_amplitudes(R, system, order, thresh_print):
@@ -254,7 +389,7 @@ def print_dea_amplitudes(R, system, order, thresh_print):
                     for k in range(system.noccupied_beta):
                         R.abb[a, c, b, k] = 0.0
 
-    print("\n   Largest Singly and Doubly Excited Amplitudes:")
+    print("\n   Largest 2p and 3p-1h Excited Amplitudes:")
     n = 1
     for a in range(system.nunoccupied_alpha):
         for b in range(system.nunoccupied_beta):
@@ -312,7 +447,6 @@ def print_dea_amplitudes(R, system, order, thresh_print):
                 for c in range(b + 1, system.nunoccupied_beta):
                     for k in range(system.noccupied_beta):
                         R.abb[a, c, b, k] = -R.abb[a, b, c, k]
-
     return
 
 def print_sf_amplitudes(R, system, order, thresh_print):
@@ -387,9 +521,6 @@ def print_sf_amplitudes(R, system, order, thresh_print):
                 for j in range(system.noccupied_alpha):
                     R.bb[b, a, i, j] = -R.bb[a, b, i, j]
     return
-
-
-
 
 class SystemPrinter:
     def __init__(self, system):
