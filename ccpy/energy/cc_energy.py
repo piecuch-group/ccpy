@@ -1,6 +1,7 @@
 """Module containing function to calculate the CC correlation energy."""
 import numpy as np
 from ccpy.models.operators import ClusterOperator, FockOperator
+from ccpy.utilities.updates import leftccsdt_p_loops
 
 def get_ci_energy(C, H0):
 
@@ -91,7 +92,7 @@ def get_rel(R, r0):
     rel = (rel_1 + 2.0 * rel_2)/(rel_0 + rel_1 + rel_2)
     return rel
 
-def get_LR(R, L):
+def get_LR(R, L, l3_excitations=None, r3_excitations=None):
 
     # explicitly enforce biorthonormality
     if isinstance(L, ClusterOperator):
@@ -102,13 +103,24 @@ def get_LR(R, L):
         LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
 
         if L.order == 3 and R.order == 3:
-            LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.aaa, L.aaa, optimize=True)
-            LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.aab, L.aab, optimize=True)
-            LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
-            LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
+            if l3_excitations is None and r3_excitations is None:
+                LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.aaa, L.aaa, optimize=True)
+                LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.aab, L.aab, optimize=True)
+                LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
+                LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
+            else:
+                LR_P = leftccsdt_p_loops.leftccsdt_p_loops.lr(L.aaa, l3_excitations["aaa"],
+                                                              L.aab, l3_excitations["aab"],
+                                                              L.abb, l3_excitations["abb"],
+                                                              L.bbb, l3_excitations["bbb"],
+                                                              R.aaa, r3_excitations["aaa"],
+                                                              R.aab, r3_excitations["aab"],
+                                                              R.abb, r3_excitations["abb"],
+                                                              R.bbb, r3_excitations["bbb"],
+                )
+                LR += LR_P
 
     if isinstance(L, FockOperator):
-
         LR = -np.einsum("m,m->", R.a, L.a, optimize=True)
         LR -= np.einsum("m,m->", R.b, L.b, optimize=True)
         LR -= 0.5 * np.einsum("fnm,fnm->", R.aa, L.aa, optimize=True)

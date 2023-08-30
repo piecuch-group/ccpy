@@ -1,30 +1,34 @@
 """Main calculation driver module of CCpy."""
 import numpy as np
 from importlib import import_module
-from functools import partial
 from copy import deepcopy
 import time
-
 import ccpy.cc
 import ccpy.hbar
 import ccpy.left
 import ccpy.eom_guess
 import ccpy.eomcc
-
-from ccpy.drivers.solvers import cc_jacobi, left_cc_jacobi, eomcc_davidson, eomcc_block_davidson, eccc_jacobi
+from ccpy.drivers.solvers import (
+                cc_jacobi,
+                left_cc_jacobi,
+                eomcc_davidson,
+                eomcc_block_davidson,
+                eccc_jacobi,
+)
 from ccpy.energy.cc_energy import get_LR, get_r0, get_rel
-
 from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator, SpinFlipOperator, FockOperator
-from ccpy.utilities.printing import get_timestamp, cc_calculation_summary, eomcc_calculation_summary, leftcc_calculation_summary, print_ee_amplitudes
-from ccpy.utilities.printing import print_sf_amplitudes, sfeomcc_calculation_summary
-from ccpy.utilities.printing import print_ea_amplitudes, eaeomcc_calculation_summary
-from ccpy.utilities.printing import print_ip_amplitudes, ipeomcc_calculation_summary
-from ccpy.utilities.printing import print_dea_amplitudes, deaeomcc_calculation_summary
-
+from ccpy.utilities.printing import (
+                get_timestamp,
+                cc_calculation_summary,
+                eomcc_calculation_summary, leftcc_calculation_summary, print_ee_amplitudes,
+                print_sf_amplitudes, sfeomcc_calculation_summary,
+                print_ea_amplitudes, eaeomcc_calculation_summary,
+                print_ip_amplitudes, ipeomcc_calculation_summary,
+                print_dea_amplitudes, deaeomcc_calculation_summary,
+)
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
-
 
 class Driver:
 
@@ -93,7 +97,7 @@ class Driver:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
-        elif method.lower() in ["ccsdt", "eomccsdt", "left_ccsdt", "left_ccsdt_p"]:
+        elif method.lower() in ["ccsdt", "eomccsdt", "left_ccsdt"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
@@ -107,7 +111,7 @@ class Driver:
             self.operator_params["number_holes"] = 3
             self.operator_params["active_orders"] = [3]
             self.operator_params["number_active_indices"] = [1]
-        elif method.lower() in ["ccsdt_p"]:
+        elif method.lower() in ["ccsdt_p", "eomccsdt_p", "left_ccsdt_p"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
@@ -582,7 +586,7 @@ class Driver:
             print("   EA-EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
             ct += 1
 
-    def run_leftcc(self, method, state_index=[0], t3_excitations=None, l3_excitations=None, pspace=None):
+    def run_leftcc(self, method, state_index=[0], t3_excitations=None, r3_excitations=None, pspace=None):
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.left.MODULES:
             raise NotImplementedError(
@@ -604,8 +608,8 @@ class Driver:
         # Print the options as a header
         self.print_options()
 
-        # regardless of restart status, initialize residual anew
-        if t3_excitations is None and l3_excitations is None:
+        # regardless of restart status, initialize residual anew for non-CC(P) cases
+        if t3_excitations is None and r3_excitations is None:
             LH = ClusterOperator(self.system,
                                  order=self.operator_params["order"],
                                  active_orders=self.operator_params["active_orders"],
@@ -618,11 +622,11 @@ class Driver:
                 ground_state = True
             else:
                 ground_state = False
-                # WATCH OUT: LR function will be different for EOMCC(P) case
-                LR_function = partial(get_LR, self.R[i])
+                LR_function = lambda L, l3_excitations: get_LR(self.R[i], L, l3_excitations=l3_excitations, r3_excitations=r3_excitations)
 
             # Create either the standard CC or CC(P) cluster operator
-            if t3_excitations is None and l3_excitations is None:
+            if t3_excitations is None and r3_excitations is None:
+                l3_excitations = None
                 # initialize the left CC operator anew, or use restart
                 if self.L[i] is None:
                     self.L[i] = ClusterOperator(self.system,
@@ -637,19 +641,31 @@ class Driver:
                 # Zero out the residual
                 LH.unflatten(0.0 * LH.flatten())
             else:
-                # Get dimensions of L3 spincases in P space
+                # Get the l3_excitations list based on T (ground state) or R (excited states)
+                if ground_state:
+                    l3_excitations = {"aaa" : t3_excitations["aaa"],
+                                      "aab" : t3_excitations["aab"],
+                                      "abb" : t3_excitations["abb"],
+                                      "bbb" : t3_excitations["bbb"]}
+                else:
+                    l3_excitations = {"aaa" : r3_excitations[i]["aaa"],
+                                      "aab" : r3_excitations[i]["aab"],
+                                      "abb" : r3_excitations[i]["abb"],
+                                      "bbb" : r3_excitations[i]["bbb"]}
+
                 n3aaa = l3_excitations["aaa"].shape[0]
                 n3aab = l3_excitations["aab"].shape[0]
                 n3abb = l3_excitations["abb"].shape[0]
                 n3bbb = l3_excitations["bbb"].shape[0]
                 excitation_count = [[n3aaa, n3aab, n3abb, n3bbb]]
-
-                # If RHF, copy aab into abb and aaa in bbb
-                if self.options["RHF_symmetry"]:
-                    assert (n3aaa == n3bbb)
-                    assert (n3aab == n3abb)
-                    l3_excitations["bbb"] = l3_excitations["aaa"].copy()
-                    l3_excitations["abb"] = l3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
+                # If RHF, copy aab into abb and aaa in bbb; this is dangerous for left-CC(P) and EOMCC(P)
+                # because open-shell like triplets can be targetted out of a singlet reference, so RHF_symmetry should
+                # be false in those cases.
+                # if self.options["RHF_symmetry"]:
+                #     assert (n3aaa == n3bbb)
+                #     assert (n3aab == n3abb)
+                #     l3_excitations["bbb"] = l3_excitations["aaa"].copy()
+                #     l3_excitations["abb"] = l3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
                 # Create the left CC(P) operator
                 if self.L[i] is None:
                     self.L[i] = ClusterOperator(self.system,
@@ -676,7 +692,7 @@ class Driver:
                                                             t3_excitations, l3_excitations)
 
             if not ground_state:
-                self.L[i].unflatten(1.0 / LR_function(self.L[i]) * self.L[i].flatten())
+                self.L[i].unflatten(1.0 / LR_function(self.L[i], l3_excitations) * self.L[i].flatten())
 
             leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
             print("   Left CC calculation for root %d ended on" % i, get_timestamp(), "\n")
@@ -902,7 +918,7 @@ class AdaptDriver:
                 self.driver.run_leftcc(method="left_ccsd")
             else:
                 self.driver.run_hbar(method="ccsdt_p", t3_excitations=self.t3_excitations)
-                self.driver.run_leftcc(method="left_ccsdt_p", t3_excitations=self.t3_excitations, l3_excitations=self.t3_excitations)
+                self.driver.run_leftcc(method="left_ccsdt_p", t3_excitations=self.t3_excitations)
         self.ccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy
 
     def run_ccp3(self, imacro):

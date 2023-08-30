@@ -6,7 +6,6 @@ from ccpy.drivers.driver import Driver, AdaptDriver
 
 TEST_DATA_DIR = str(Path(__file__).parent.absolute() / "data")
 
-
 def test_creom23_chplus():
     """
     CH+ at R = Re, where Re = 2.13713 bohr using RHF described using the Olsen
@@ -193,6 +192,21 @@ def test_creom23_chplus():
                 expected_vee[n] + expected_ddeltapq["D"][n],
             )
 
+def test_eomccsdt_chplus():
+
+    driver = Driver.from_gamess(
+        logfile=TEST_DATA_DIR + "/chplus/chplus.log",
+        fcidump=TEST_DATA_DIR + "/chplus/chplus.FCIDUMP",
+        nfrozen=0,
+    )
+    driver.system.print_info()
+    driver.options["maximum_iterations"] = 100 # 4 Sigma state requires ~661 iterations in left-CCSD
+    driver.options["davidson_max_subspace_size"] = 50
+    driver.run_cc(method="ccsdt")
+    driver.run_hbar(method="ccsdt")
+    driver.run_guess(method="cis", multiplicity=1, nroot=10)
+    driver.run_eomcc(method="eomccsdt", state_index=[1])
+    driver.run_leftcc(method="left_ccsdt", state_index=[1])
 
 def test_eomccsdt1_chplus():
     """ """
@@ -605,13 +619,14 @@ def test_adaptive_f2():
 
     driver = Driver.from_pyscf(mf, nfrozen=2)
     driver.system.print_info()
+    #driver.options["RHF_symmetry"] = False
     adaptdriver = AdaptDriver(
         driver,
         percentages,
         full_storage=False,
         perturbative=False,
         pspace_analysis=False,
-        two_body_left=True,
+        two_body_left=False,
     )
     adaptdriver.run()
 
@@ -620,8 +635,8 @@ if __name__ == "__main__":
     #test_mbpt_h2o()
     #test_creom23_chplus()
     #test_eomccsdt1_chplus()
-    #test_adaptive_f2()
+    test_adaptive_f2()
     #test_crcc24_f2()
     #test_cct3_ch()
     #test_ipeom2_h2o()
-    test_eaeom2_h2o()
+    #test_eaeom2_h2o()

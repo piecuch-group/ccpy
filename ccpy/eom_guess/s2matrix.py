@@ -72,7 +72,7 @@ def get_sz2_ip(system):
 def get_sz2_ea(system):
     Ns = float((system.noccupied_alpha + 1) - (system.noccupied_beta))
     sz = Ns / 2.0
-    sz2 = (sz - 1.0) * sz
+    sz2 = (sz - 1.0) * sz # is this needed? seems wrong actually.
     return sz2
 
 def build_s2matrix_cis(system):

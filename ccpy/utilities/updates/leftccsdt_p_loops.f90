@@ -6380,7 +6380,123 @@ module leftccsdt_p_loops
               end do
            
         end subroutine update_L3
+        
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! LR FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        subroutine lr(lr_val,&
+                      l3a_amps,l3a_excits,&
+                      l3b_amps,l3b_excits,&
+                      l3c_amps,l3c_excits,&
+                      l3d_amps,l3d_excits,&
+                      r3a_amps,r3a_excits,&
+                      r3b_amps,r3b_excits,&
+                      r3c_amps,r3c_excits,&
+                      r3d_amps,r3d_excits,&
+                      n3aaa,n3aab,n3abb,n3bbb,&
+                      noa,nua,nob,nub)
+           
+              integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb, n3bbb
+              integer, intent(in) :: l3a_excits(6,n3aaa), l3b_excits(6,n3aab), l3c_excits(6,n3abb), l3d_excits(6,n3bbb)
+              integer, intent(in) :: r3a_excits(6,n3aaa), r3b_excits(6,n3aab), r3c_excits(6,n3abb), r3d_excits(6,n3bbb)
+              
+              real(kind=8), intent(in) :: l3a_amps(n3aaa), r3a_amps(n3aaa)
+              real(kind=8), intent(in) :: l3b_amps(n3aab), r3b_amps(n3aab)
+              real(kind=8), intent(in) :: l3c_amps(n3abb), r3c_amps(n3abb)
+              real(kind=8), intent(in) :: l3d_amps(n3bbb), r3d_amps(n3bbb)
+              
+              real(kind=8), intent(out) :: lr_val
 
+              ! Local variables
+              integer, allocatable :: excits_buff(:,:)
+              real(kind=8), allocatable :: amps_buff(:)
+              integer, allocatable :: idx_table(:,:,:,:)
+              integer, allocatable :: loc_arr(:,:)
+              real(kind=8) :: l_amp, r_amp, val
+              integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet, jdet
+              integer :: idx, nloc
+           
+              lr_val = 0.0d0
+              ! L3*R3
+!              ! allocate copied arrays so that we don't touch the original amplitudes and excitations
+!              allocate(excits_buff(6,n3aaa))
+!              allocate(amps_buff(6,n3aaa))
+!              ! copy over r3a
+!              excits_buff(:,:) = r3a_excits(:,:)
+!              amps_buff(:) = r3a_amps(:)
+!              ! allocate new sorting arrays
+!              nloc = nua*(nua-1)*(nua-2)/6*noa
+!              allocate(loc_arr(nloc,2))
+!              allocate(idx_table(nua,nua,nua,noa))
+!              !!! SB: (1,2,3,4) LOOP !!!
+!              call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/1,noa-2/), nua, nua, nua, noa)
+!              call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nua, noa, nloc, n3aaa, resid)
+!              do idet = 1, n3aaa
+!                 a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
+!                 i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+!                 idx = idx_table(a,b,c,i)
+!                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
+!
+!                 end do
+!              end do
+              
+              ! Using the trivial direct double-loop scheme
+              do idet = 1, n3aaa
+                 l_amp = l3a_amps(idet)
+                 a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
+                 i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                 do jdet = 1, n3aaa
+                    r_amp = r3a_amps(jdet)
+                    d = r3a_excits(1,jdet); e = r3a_excits(2,jdet); f = r3a_excits(3,jdet);
+                    l = r3a_excits(4,jdet); m = r3a_excits(5,jdet); n = r3a_excits(6,jdet);
+                    if (a==d .and. b==e .and. c==f .and. i==l .and. j==m .and. k==n) then
+                       lr_val = lr_val + l_amp * r_amp
+                    end if
+                 end do
+              end do
+              do idet = 1, n3aab
+                 l_amp = l3b_amps(idet)
+                 a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
+                 i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                 do jdet = 1, n3aab
+                    r_amp = r3b_amps(jdet)
+                    d = r3b_excits(1,jdet); e = r3b_excits(2,jdet); f = r3b_excits(3,jdet);
+                    l = r3b_excits(4,jdet); m = r3b_excits(5,jdet); n = r3b_excits(6,jdet);
+                    if (a==d .and. b==e .and. c==f .and. i==l .and. j==m .and. k==n) then
+                       lr_val = lr_val + l_amp * r_amp
+                    end if
+                 end do
+              end do
+              do idet = 1, n3abb
+                 l_amp = l3c_amps(idet)
+                 a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
+                 i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                 do jdet = 1, n3abb
+                    r_amp = r3c_amps(jdet)
+                    d = r3c_excits(1,jdet); e = r3c_excits(2,jdet); f = r3c_excits(3,jdet);
+                    l = r3c_excits(4,jdet); m = r3c_excits(5,jdet); n = r3c_excits(6,jdet);
+                    if (a==d .and. b==e .and. c==f .and. i==l .and. j==m .and. k==n) then
+                       lr_val = lr_val + l_amp * r_amp
+                    end if
+                 end do
+              end do
+              do idet = 1, n3bbb
+                 l_amp = l3d_amps(idet)
+                 a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
+                 i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                 do jdet = 1, n3bbb
+                    r_amp = r3d_amps(jdet)
+                    d = r3d_excits(1,jdet); e = r3d_excits(2,jdet); f = r3d_excits(3,jdet);
+                    l = r3d_excits(4,jdet); m = r3d_excits(5,jdet); n = r3d_excits(6,jdet);
+                    if (a==d .and. b==e .and. c==f .and. i==l .and. j==m .and. k==n) then
+                       lr_val = lr_val + l_amp * r_amp
+                    end if
+                 end do
+              end do
+           
+        end subroutine lr
+        
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SORTING FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

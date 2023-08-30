@@ -6022,7 +6022,7 @@ module leftccsdt_p_intermediates
                   allocate(loc_arr(nloc,2))
                   allocate(idx_table(nua,nub,noa,nob))
                   !!! ABIJ LOOP !!!
-                  call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,noa-1/), nua, nub, noa, nob)
+                  call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
@@ -6064,7 +6064,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do 
                   !!! ACIJ LOOP !!!
-                  call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,noa-1/), nua, nub, noa, nob)
+                  call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
@@ -6106,7 +6106,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do 
                   !!! ABIK LOOP !!!
-                  call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,noa/), nua, nub, noa, nob)
+                  call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
@@ -6148,7 +6148,7 @@ module leftccsdt_p_intermediates
                      end if
                   end do 
                   !!! ACIK LOOP !!!
-                  call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,noa/), nua, nub, noa, nob)
+                  call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)

@@ -1,15 +1,11 @@
 """Module containing the driving solvers"""
 import time
-
 import numpy as np
-
-from ccpy.utilities.printing import print_cc_iteration, print_cc_iteration_header,\
-                                    print_eomcc_iteration, print_eomcc_iteration_header,\
-                                    print_block_eomcc_iteration
-from ccpy.models.operators import ClusterOperator, FockOperator
-
-# [TODO]: CROP algorithm
-# 
+from ccpy.utilities.printing import (
+        print_cc_iteration, print_cc_iteration_header,
+        print_eomcc_iteration, print_eomcc_iteration_header,
+        print_block_eomcc_iteration,
+)
 
 def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     """
@@ -608,7 +604,7 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
 
         # biorthogonalize to R for excited states
         if not ground_state:
-            LR = LR_function(L)
+            LR = LR_function(L, l3_excitations)
             L.unflatten(1.0 / LR * L.flatten())
 
         elapsed_time = time.time() - t1
