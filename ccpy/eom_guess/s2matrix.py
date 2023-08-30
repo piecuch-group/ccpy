@@ -23,7 +23,7 @@ def spin_adapt_guess(S2, H, multiplicity, debug=False):
         omega_ref = omega_ref[idx]
         for i, s2 in enumerate(eval_s2):
             print("root", i + 1, "s2 = ", s2, "mult = ", _get_multiplicity(s2))
-        for i in range(50):
+        for i in range(min(len(omega_ref), 50)):
             print("root", i + 1, "E = ", omega_ref[i])
 
     idx_s2 = [i for i, s2 in enumerate(eval_s2) if abs(_get_multiplicity(s2) - multiplicity) < 1.0e-07]
@@ -58,11 +58,21 @@ def spin_adapt_guess(S2, H, multiplicity, debug=False):
     return omega_adapt, V_adapt
 
 def get_sz2(system, Ms):
-
-    Ns = float( (system.noccupied_alpha + Ms) - (system.noccupied_beta - Ms))
+    Ns = float((system.noccupied_alpha + Ms) - (system.noccupied_beta - Ms))
     sz = Ns / 2.0
     sz2 = (sz + 1.0) * sz
+    return sz2
 
+def get_sz2_ip(system):
+    Ns = float((system.noccupied_alpha - 1) - (system.noccupied_beta))
+    sz = Ns / 2.0
+    sz2 = (sz + 1.0) * sz
+    return sz2
+
+def get_sz2_ea(system):
+    Ns = float((system.noccupied_alpha + 1) - (system.noccupied_beta))
+    sz = Ns / 2.0
+    sz2 = (sz - 1.0) * sz
     return sz2
 
 def build_s2matrix_cis(system):
@@ -383,14 +393,34 @@ def build_s2matrix_1h(system):
         else:
             return 0.0
 
-    sz2 = get_sz2(system, Ms=0) # this needs to be modified potentially
+    sz2 = get_sz2_ip(system) # this needs to be modified potentially
     Sa = np.zeros((system.noccupied_alpha, system.noccupied_alpha))
     ct1 = 0
     for i in range(system.noccupied_alpha):
         ct2 = 0
         for j in range(system.noccupied_alpha):
-            Sa[ct1, ct2] -= sz2 * (i == j)
+            Sa[ct1, ct2] += sz2 * (i == j)
             Sa[ct1, ct2] += chi_beta(i) * (i == j)
+            ct2 += 1
+        ct1 += 1
+    return Sa
+
+def build_s2matrix_1p(system):
+
+    def pi_alpha(p):
+        if p >= system.noccupied_alpha and p < system.nunoccupied_alpha + system.noccupied_alpha:
+            return 1.0
+        else:
+            return 0.0
+
+    sz2 = get_sz2_ea(system) # this needs to be modified potentially
+    Sa = np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha))
+    ct1 = 0
+    for a in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):
+        ct2 = 0
+        for b in range(system.noccupied_alpha, system.noccupied_alpha + system.nunoccupied_alpha):
+            Sa[ct1, ct2] += sz2 * (a == b)
+            Sa[ct1, ct2] += pi_alpha(a) * (a == b)
             ct2 += 1
         ct1 += 1
     return Sa
