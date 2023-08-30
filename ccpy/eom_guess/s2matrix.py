@@ -375,6 +375,26 @@ def build_s2matrix_sfcis(system, Ms):
             ct1 += 1
     return Sbb
 
+def build_s2matrix_1h(system):
+
+    def chi_beta(p):
+        if p >= 0 and p < system.noccupied_beta:
+            return 1.0
+        else:
+            return 0.0
+
+    sz2 = get_sz2(system, Ms=0) # this needs to be modified potentially
+    Sa = np.zeros((system.noccupied_alpha, system.noccupied_alpha))
+    ct1 = 0
+    for i in range(system.noccupied_alpha):
+        ct2 = 0
+        for j in range(system.noccupied_alpha):
+            Sa[ct1, ct2] -= sz2 * (i == j)
+            Sa[ct1, ct2] += chi_beta(i) * (i == j)
+            ct2 += 1
+        ct1 += 1
+    return Sa
+
 def build_s2matrix_2p(system, nactu):
 
     def pi_alpha(p):

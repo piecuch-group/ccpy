@@ -409,7 +409,7 @@ class Driver:
             ct += 1
 
     def run_deaeomcc(self, method, state_index):
-        """Performs the particle-nonconserving EOMCC calculation specified by the user in the input."""
+        """Performs the particle-nonconserving DEA-EOMCC calculation specified by the user in the input."""
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.eomcc.MODULES:
             raise NotImplementedError(
@@ -464,6 +464,63 @@ class Driver:
             deaeomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.correlation_energy,
                                         is_converged, self.system, self.options["amp_print_threshold"])
             print("   DEA-EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
+            ct += 1
+
+    def run_ipeomcc(self, method, state_index):
+        """Performs the particle-nonconserving IP-EOMCC calculation specified by the user in the input."""
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.eomcc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build R
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert (self.flag_hbar)
+
+        # import the specific EOMCC method module and get its update function
+        eom_module = import_module("ccpy.eomcc." + method.lower())
+        HR_function = getattr(eom_module, 'HR')
+        update_function = getattr(eom_module, 'update')
+
+        for i in state_index:
+            if self.R[i] is None:
+                self.R[i] = FockOperator(self.system,
+                                         self.num_particles,
+                                         self.num_holes)
+                self.R[i].unflatten(self.guess_vectors[:, i], order=self.guess_order)
+                self.vertical_excitation_energy[i] = self.guess_energy[i]
+
+        # Form the initial subspace vectors
+        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+
+        # Print the options as a header
+        self.print_options()
+
+        # Create the residual R that is re-used for each root
+        dR = FockOperator(self.system,
+                          self.num_particles,
+                          self.num_holes)
+
+        ct = 0
+        for i in state_index:
+            print("   IP-EOMCC calculation for root %d started on" % i, get_timestamp())
+            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[i]))
+            #print_ip_amplitudes(self.R[i], self.system, self.R[i].order, self.options["amp_print_threshold"])
+            self.R[i], self.vertical_excitation_energy[i], is_converged = eomcc_davidson(HR_function,
+                                                                                         update_function,
+                                                                                         B0[:, ct],
+                                                                                         self.R[i], dR,
+                                                                                         self.vertical_excitation_energy[i],
+                                                                                         self.T,
+                                                                                         self.hamiltonian,
+                                                                                         self.system,
+                                                                                         self.options)
+            #ipeomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.correlation_energy,
+            #                            is_converged, self.system, self.options["amp_print_threshold"])
+            print("   IP-EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
             ct += 1
 
     def run_leftcc(self, method, state_index=[0], t3_excitations=None, l3_excitations=None, pspace=None):

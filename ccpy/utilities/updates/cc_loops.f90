@@ -1209,26 +1209,20 @@ module cc_loops
 
       end subroutine update_t3d_p
 
-      subroutine update_R_2h1p(r1a,r1b,r2a,r2b,r2c,r2d,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
+      subroutine update_R_2h1p(r1a,r2a,r2b,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
 
               implicit none
 
               integer, intent(in) :: noa, nua, nob, nub
               real(8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
-                                  H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
-                                  omega
+                                     H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
+                                     omega
               real(8), intent(inout) :: r1a(1:noa)
               !f2py intent(in,out) :: r1a(0:noa-1)
-              real(8), intent(inout) :: r1b(1:nob)
-              !f2py intent(in,out) :: r1b(0:nob-1)
-              real(8), intent(inout) :: r2a(1:nua,1:noa,1:noa)
-              !f2py intent(in,out) :: r2a(0:nua-1,0:noa-1,0:noa-1)
-              real(8), intent(inout) :: r2b(1:nua,1:noa,1:nob)
-              !f2py intent(in,out) :: r2b(0:nua-1,0:noa-1,0:nob-1)
-              real(8), intent(inout) :: r2c(1:nub,1:nob,1:noa)
-              !f2py intent(in,out) :: r2c(0:nub-1,0:nob-1,0:noa-1)
-              real(8), intent(inout) :: r2d(1:nub,1:nob,1:nob)
-              !f2py intent(in,out) :: r2d(0:nub-1,0:nob-1,0:nob-1)
+              real(8), intent(inout) :: r2a(1:noa,1:nua,1:noa)
+              !f2py intent(in,out) :: r2a(0:noa-1,0:nua-1,0:noa-1)
+              real(8), intent(inout) :: r2b(1:noa,1:nub,1:nob)
+              !f2py intent(in,out) :: r2b(0:noa-1,0:nub-1,0:nob-1)
               integer :: i, j, b
               real(8) :: denom
 
@@ -1237,71 +1231,40 @@ module cc_loops
                   r1a(i) = r1a(i)/(omega-denom+shift)
               end do
 
-              do i = 1,nob
-                  denom = H1B_oo(i,i)
-                  r1b(i) = r1b(i)/(omega-denom+shift)
-              end do
-
-              do i = 1,noa
-                do j = 1,noa
-                   do b = 1,nua
+              do j = 1,noa
+                do b = 1,nua
+                   do i = 1,noa
                       denom = -H1A_vv(b,b) + H1A_oo(i,i) + H1A_oo(j,j)
-                      r2a(b,j,i) = r2a(b,j,i)/(omega-denom+shift)
-                      !r2a(b,j,i) = -r2a(b,i,j)
+                      r2a(i,b,j) = r2a(i,b,j)/(omega-denom+shift)
                   end do
                 end do
               end do
 
-              do i = 1,nob
-                do j = 1,noa
-                   do b = 1,nua
-                      denom = -H1A_vv(b,b) + H1B_oo(i,i) + H1A_oo(j,j)
-                      r2b(b,j,i) = r2b(b,j,i)/(omega-denom+shift)
-                  end do
-                end do
-              end do
-
-              do i = 1,noa
-                do j = 1,nob
-                   do b = 1,nub
+              do j = 1,nob
+                do b = 1,nub
+                   do i = 1,noa
                       denom = -H1B_vv(b,b) + H1A_oo(i,i) + H1B_oo(j,j)
-                      r2c(b,j,i) = r2c(b,j,i)/(omega-denom+shift)
-                  end do
-                end do
-              end do
-
-              do i = 1,nob
-                do j = 1,nob
-                   do b = 1,nub
-                      denom = -H1B_vv(b,b) + H1B_oo(i,i) + H1B_oo(j,j)
-                      r2d(b,j,i) = r2d(b,j,i)/(omega-denom+shift)
-                      !r2d(b,j,i) = -r2d(b,i,j)
+                      r2b(i,b,j) = r2b(i,b,j)/(omega-denom+shift)
                   end do
                 end do
               end do
 
       end subroutine update_R_2h1p
 
-      subroutine update_R_2p1h(r1a,r1b,r2a,r2b,r2c,r2d,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
+      subroutine update_R_2p1h(r1a,r2a,r2b,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
 
               implicit none
 
               integer, intent(in) :: noa, nua, nob, nub
               real(8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
-                                  H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
-                                  omega
+                                     H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
+                                     omega
               real(8), intent(inout) :: r1a(1:nua)
               !f2py intent(in,out) :: r1a(0:nua-1)
-              real(8), intent(inout) :: r1b(1:nub)
-              !f2py intent(in,out) :: r1b(0:nub-1)
               real(8), intent(inout) :: r2a(1:nua,1:nua,1:noa)
               !f2py intent(in,out) :: r2a(0:nua-1,0:nua-1,0:noa-1)
-              real(8), intent(inout) :: r2b(1:nub,1:nua,1:noa)
-              !f2py intent(in,out) :: r2b(0:nub-1,0:nua-1,0:noa-1)
-              real(8), intent(inout) :: r2c(1:nua,1:nub,1:nob)
-              !f2py intent(in,out) :: r2c(0:nua-1,0:nub-1,0:nob-1)
-              real(8), intent(inout) :: r2d(1:nub,1:nub,1:nob)
-              !f2py intent(in,out) :: r2d(0:nub-1,0:nub-1,0:nob-1)
+              real(8), intent(inout) :: r2b(1:nua,1:nub,1:nob)
+              !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1,0:nob-1)
               integer :: j, a, b
               real(8) :: denom
 
@@ -1310,26 +1273,11 @@ module cc_loops
                   r1a(a) = r1a(a)/(omega-denom+shift)
               end do
 
-              do a = 1,nub
-                  denom = -H1B_vv(a,a)
-                  r1b(a) = r1b(a)/(omega-denom+shift)
-              end do
-
               do j = 1,noa
                 do a = 1,nua
                    do b = 1,nua
                       denom = -H1A_vv(a,a) - H1A_vv(b,b) + H1A_oo(j,j)
                       r2a(a,b,j) = r2a(a,b,j)/(omega-denom+shift)
-                      !r2a(a,b,j) = -r2a(b,a,j)
-                  end do
-                end do
-              end do
-
-              do j = 1,noa
-                do a = 1,nub
-                   do b = 1,nua
-                      denom = -H1B_vv(a,a) - H1A_vv(b,b) + H1A_oo(j,j)
-                      r2b(a,b,j) = r2b(a,b,j)/(omega-denom+shift)
                   end do
                 end do
               end do
@@ -1338,17 +1286,7 @@ module cc_loops
                 do a = 1,nua
                    do b = 1,nub
                       denom = -H1A_vv(a,a) - H1B_vv(b,b) + H1B_oo(j,j)
-                      r2c(a,b,j) = r2c(a,b,j)/(omega-denom+shift)
-                  end do
-                end do
-              end do
-
-              do j = 1,nob
-                do a = 1,nub
-                   do b = 1,nub
-                      denom = -H1B_vv(b,b) - H1B_vv(a,a) + H1B_oo(j,j)
-                      r2d(a,b,j) = r2d(a,b,j)/(omega-denom+shift)
-                      !r2d(b,j,i) = -r2d(b,i,j)
+                      r2b(a,b,j) = r2b(a,b,j)/(omega-denom+shift)
                   end do
                 end do
               end do

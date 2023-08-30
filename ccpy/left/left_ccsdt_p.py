@@ -4,8 +4,8 @@ from ccpy.utilities.updates import leftccsdt_p_loops
 
 def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system, t3_excitations, l3_excitations, pspace=None):
 
-    # determine whether t3 updates should be done. Stupid compatibility with
-    # empty sections of t3_excitations
+    # determine whether l3 updates and l3*t3 intermediates should be done. Stupid compatibility with
+    # empty sections of t3_excitations or l3_excitations
     do_l3 = {"aaa" : True, "aab" : True, "abb" : True, "bbb" : True}
     do_t3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
     if np.array_equal(t3_excitations["aaa"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
@@ -30,7 +30,6 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system, t3_excitation
 
     # build L1
     LH = build_LH_1A(L, LH, T, H, X)
-
     if flag_RHF:
         LH.b = LH.a.copy()
     else:

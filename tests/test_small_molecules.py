@@ -372,6 +372,18 @@ def test_cct3_hfhminus_triplet():
         -100.5530293106,
     )
 
+def test_ipeom2_h2o():
+    driver = Driver.from_gamess(
+        logfile=TEST_DATA_DIR + "/h2o/h2o.log",
+        fcidump=TEST_DATA_DIR + "/h2o/h2o.FCIDUMP",
+        nfrozen=0,
+    )
+    driver.system.print_info()
+
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    driver.run_guess(method="ipcis", multiplicity=2, nroot=5, debug=True)
+    driver.run_ipeomcc(method="ipeom2", state_index=[0,1,2,3,4])
 
 def test_ccsdt_ch():
     """ """
@@ -586,6 +598,7 @@ def test_adaptive_f2():
         full_storage=False,
         perturbative=False,
         pspace_analysis=False,
+        two_body_left=True,
     )
     adaptdriver.run()
 
@@ -594,6 +607,7 @@ if __name__ == "__main__":
     #test_mbpt_h2o()
     #test_creom23_chplus()
     #test_eomccsdt1_chplus()
-    test_adaptive_f2()
+    #test_adaptive_f2()
     #test_crcc24_f2()
     #test_cct3_ch()
+    test_ipeom2_h2o()

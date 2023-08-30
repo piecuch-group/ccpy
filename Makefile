@@ -21,6 +21,9 @@ bootstrap: ## Bootstrap project development
 	pre-commit install
 .PHONY: bootstrap
 
+install: ## Install the Python Package
+	pip install -e .
+.PHONY: install
 
 ##@ QA
 
@@ -66,7 +69,6 @@ docs: ## Build documentation
 	$(BLACK) -l 80 docs/examples
 	mkdocs build
 .PHONY: docs
-
 
 ##@ Help
 

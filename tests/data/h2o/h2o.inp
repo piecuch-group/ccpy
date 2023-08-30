@@ -1,0 +1,13 @@
+ $contrl runtyp=energy scftyp=rhf cctyp=ip-eom2
+         ispher=1 $end
+ $system mwords=50 $end
+ $basis gbasis=ccd $end
+ $ccinp ncore=0 maxcc=100 $end
+ $eominp minit=2 mult=2 nstate(1)=1,0,0,0 $end
+ $data
+H2O / Re
+Cnv 2
+
+ O   8.0     0.000000    0.000000    -0.0180/2
+ H   1.0     0.000000    3.030526/2    -2.117796/2
+ $end

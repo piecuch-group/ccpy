@@ -6,9 +6,6 @@ def HR(R, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys):
     X1A = build_HR_1A(
         r1a, r1b, r2a, r2b, r2c, r2d, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys
     )
-    X1B = build_HR_1B(
-        r1a, r1b, r2a, r2b, r2c, r2d, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys
-    )
     X2A = build_HR_2A(
         r1a, r1b, r2a, r2b, r2c, r2d, cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys
     )
