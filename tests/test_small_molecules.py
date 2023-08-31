@@ -410,7 +410,7 @@ def test_eaeom2_h2o():
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="eacis", multiplicity=2, nroot=5, debug=True)
-    driver.run_eaeomcc(method="eaeom2", state_index=[0,1,2,3,4])
+    driver.run_eaeomcc(method="eaeom3", state_index=[0,1,2,3,4])
 
 def test_ccsdt_ch():
     """ """
@@ -635,8 +635,9 @@ if __name__ == "__main__":
     #test_mbpt_h2o()
     #test_creom23_chplus()
     #test_eomccsdt1_chplus()
-    test_adaptive_f2()
+    #test_eomccsdt_chplus()
+    #test_adaptive_f2()
     #test_crcc24_f2()
     #test_cct3_ch()
     #test_ipeom2_h2o()
-    #test_eaeom2_h2o()
+    test_eaeom2_h2o()

@@ -1274,6 +1274,99 @@ module cc_loops2
 
       end subroutine update_R_2p1h
 
+      subroutine update_R_3p2h(r1a,&
+                               r2a,r2b,&
+                               r3a,r3b,r3c,&
+                               omega,&
+                               H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                               shift,&
+                               noa,nua,nob,nub)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua, nob, nub
+              real(8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua),&
+                                     H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift,&
+                                     omega
+              real(kind=8), intent(inout) :: r1a(1:nua)
+              !f2py intent(in,out) :: r1a(0:nua-1)
+              real(kind=8), intent(inout) :: r2a(1:nua,1:nua,1:noa)
+              !f2py intent(in,out) :: r2a(0:nua-1,0:nua-1,0:noa-1)
+              real(kind=8), intent(inout) :: r2b(1:nua,1:nub,1:nob)
+              !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1,0:nob-1)
+              real(kind=8), intent(inout) :: r3a(1:nua,1:nua,1:nua,1:noa,1:noa)
+              !f2py intent(in,out) :: r3a(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+              real(kind=8), intent(inout) :: r3b(1:nua,1:nua,1:nub,1:noa,1:nob)
+              !f2py intent(in,out) :: r3b(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+              real(kind=8), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:nob,1:nob)
+              !f2py intent(in,out) :: r3c(0:nua-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+              integer :: j, k, a, b, c 
+              real(kind=8) :: denom
+
+              do a = 1,nua
+                  denom = -H1A_vv(a,a)
+                  r1a(a) = r1a(a)/(omega-denom+shift)
+              end do
+
+              do j = 1,noa
+                do a = 1,nua
+                   do b = 1,nua
+                      denom = -H1A_vv(a,a) - H1A_vv(b,b) + H1A_oo(j,j)
+                      r2a(a,b,j) = r2a(a,b,j)/(omega-denom+shift)
+                  end do
+                end do
+              end do
+
+              do j = 1,nob
+                do a = 1,nua
+                   do b = 1,nub
+                      denom = -H1A_vv(a,a) - H1B_vv(b,b) + H1B_oo(j,j)
+                      r2b(a,b,j) = r2b(a,b,j)/(omega-denom+shift)
+                  end do
+                end do
+              end do
+
+              do j = 1,noa
+                 do k = 1,noa
+                    do a = 1,nua
+                       do b = 1,nua
+                          do c = 1,nua
+                             denom = -H1A_vv(a,a) - H1A_vv(b,b) - H1A_vv(c,c) + H1A_oo(j,j) + H1A_vv(k,k)
+                             r3a(a,b,c,j,k) = r3a(a,b,c,j,k)/(omega-denom+shift)
+                          end do
+                       end do
+                    end do
+                 end do
+              end do
+
+              do j = 1,noa
+                 do k = 1,nob
+                    do a = 1,nua
+                       do b = 1,nua
+                          do c = 1,nub
+                             denom = -H1A_vv(a,a) - H1A_vv(b,b) - H1B_vv(c,c) + H1A_oo(j,j) + H1B_vv(k,k)
+                             r3b(a,b,c,j,k) = r3b(a,b,c,j,k)/(omega-denom+shift)
+                          end do
+                       end do
+                    end do
+                 end do
+              end do
+
+              do j = 1,nob
+                 do k = 1,nob
+                    do a = 1,nua
+                       do b = 1,nub
+                          do c = 1,nub
+                             denom = -H1A_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c) + H1B_oo(j,j) + H1B_vv(k,k)
+                             r3c(a,b,c,j,k) = r3c(a,b,c,j,k)/(omega-denom+shift)
+                          end do
+                       end do
+                    end do
+                 end do
+              end do
+
+      end subroutine update_R_3p2h
+
       subroutine update_L_2h1p(l1a, l1b, l2a, l2b, l2c, l2d,&
                                X1A, X1B, X2A, X2B, X2C, X2D,&
                                omega,&
