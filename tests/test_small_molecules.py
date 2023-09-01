@@ -410,7 +410,20 @@ def test_eaeom2_h2o():
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="eacis", multiplicity=2, nroot=10, debug=True)
-    driver.run_eaeomcc(method="eaeom3", state_index=[0])
+    driver.run_eaeomcc(method="eaeom2", state_index=[0,1,2,3,4,5])
+
+def test_eaeom3_h2o():
+    driver = Driver.from_gamess(
+        logfile=TEST_DATA_DIR + "/h2o/h2o.log",
+        fcidump=TEST_DATA_DIR + "/h2o/h2o.FCIDUMP",
+        nfrozen=0,
+    )
+    driver.system.print_info()
+
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    driver.run_guess(method="eacis", multiplicity=2, nroot=10, debug=True)
+    driver.run_eaeomcc(method="eaeom3", state_index=[0,1,2,3,4,5])
 
 def test_ccsdt_ch():
     """ """
@@ -640,4 +653,5 @@ if __name__ == "__main__":
     #test_crcc24_f2()
     #test_cct3_ch()
     #test_ipeom2_h2o()
-    test_eaeom2_h2o()
+    #test_eaeom2_h2o()
+    test_eaeom3_h2o()

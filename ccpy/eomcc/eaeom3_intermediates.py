@@ -8,14 +8,14 @@ def get_eaeom3_intermediates(H, R):
 
     X = {"aa" : {}, "ab" : {}}
 
-    # x2a(ami)
+    # x2a(amj)
     X["aa"]["voo"] = (
-                    0.5*np.einsum("mnef,aefin->ami", H.aa.oovv, R.aaa, optimize=True)
-                    +np.einsum("mnef,aefin->ami", H.ab.oovv, R.aab, optimize=True)
-                    +np.einsum("mnif,afn->ami", H.aa.ooov, R.aa, optimize=True)
-                    +np.einsum("mnif,afn->ami", H.ab.ooov, R.ab, optimize=True)
-                    +0.5*np.einsum("amef,efi->ami", H.aa.vovv, R.aa, optimize=True)
-                    +np.einsum("amie,e->ami", H.aa.voov, R.a, optimize=True)
+                    0.5*np.einsum("mnef,aefjn->amj", H.aa.oovv, R.aaa, optimize=True)
+                    +np.einsum("mnef,aefjn->amj", H.ab.oovv, R.aab, optimize=True)
+                    +np.einsum("mnjf,afn->amj", H.aa.ooov, R.aa, optimize=True)
+                    +np.einsum("mnjf,afn->amj", H.ab.ooov, R.ab, optimize=True)
+                    +0.5*np.einsum("amef,efj->amj", H.aa.vovv, R.aa, optimize=True)
+                    +np.einsum("amje,e->amj", H.aa.voov, R.a, optimize=True)
     )
     # x2b(mb~j~)
     X["ab"]["ovo"] = (

@@ -1208,15 +1208,19 @@ module cc_loops2
               real(8) :: denom
 
               do i = 1,noa
-                  denom = H1A_oo(i,i)
-                  r1a(i) = r1a(i)/(omega-denom+shift)
+                  denom = omega + H1A_oo(i,i)
+                  ! If you use CIS-type guess, then omega == -H1A_oo(i,i)
+                  ! exactly, leading to NaNs
+                  if (denom==0.0d0) cycle
+                  r1a(i) = r1a(i)/denom
               end do
 
               do j = 1,noa
                 do b = 1,nua
                    do i = 1,noa
-                      denom = -H1A_vv(b,b) + H1A_oo(i,i) + H1A_oo(j,j)
-                      r2a(i,b,j) = r2a(i,b,j)/(omega-denom+shift)
+                      if (i==j) cycle
+                      denom = omega - H1A_vv(b,b) + H1A_oo(i,i) + H1A_oo(j,j)
+                      r2a(i,b,j) = r2a(i,b,j)/denom
                   end do
                 end do
               end do
@@ -1224,13 +1228,115 @@ module cc_loops2
               do j = 1,nob
                 do b = 1,nub
                    do i = 1,noa
-                      denom = -H1B_vv(b,b) + H1A_oo(i,i) + H1B_oo(j,j)
-                      r2b(i,b,j) = r2b(i,b,j)/(omega-denom+shift)
+                      denom = omega - H1B_vv(b,b) + H1A_oo(i,i) + H1B_oo(j,j)
+                      r2b(i,b,j) = r2b(i,b,j)/denom
                   end do
                 end do
               end do
 
       end subroutine update_R_2h1p
+
+      subroutine update_R_3h2p(r1a,&
+                               r2a,r2b,&
+                               r3a,r3b,r3c,&
+                               omega,&
+                               H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                               shift,&
+                               noa,nua,nob,nub)
+
+              implicit none
+
+              integer, intent(in) :: noa, nua, nob, nub
+              real(8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+                                     H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
+                                     omega
+              real(8), intent(inout) :: r1a(1:noa)
+              !f2py intent(in,out) :: r1a(0:noa-1)
+              real(8), intent(inout) :: r2a(1:noa,1:nua,1:noa)
+              !f2py intent(in,out) :: r2a(0:noa-1,0:nua-1,0:noa-1)
+              real(8), intent(inout) :: r2b(1:noa,1:nub,1:nob)
+              !f2py intent(in,out) :: r2b(0:noa-1,0:nub-1,0:nob-1)
+              real(kind=8), intent(inout) :: r3a(1:noa,1:nua,1:nua,1:noa,1:noa)
+              !f2py intent(in,out) :: r3a(0:noa-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+              real(kind=8), intent(inout) :: r3b(1:noa,1:nua,1:nub,1:noa,1:nob)
+              !f2py intent(in,out) :: r3b(0:noa-1,0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+              real(kind=8), intent(inout) :: r3c(1:noa,1:nub,1:nub,1:nob,1:nob)
+              !f2py intent(in,out) :: r3c(0:noa-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+              integer :: i, j, k, b, c
+              real(8) :: denom
+
+              do i = 1,noa
+                  denom = omega + H1A_oo(i,i)
+                  ! If you use CIS-type guess, then omega == -H1A_oo(i,i)
+                  ! exactly, leading to NaNs
+                  if (denom==0.0d0) cycle
+                  r1a(i) = r1a(i)/denom
+              end do
+
+              do j = 1,noa
+                do b = 1,nua
+                   do i = 1,noa
+                      if (i==j) cycle
+                      denom = omega - H1A_vv(b,b) + H1A_oo(i,i) + H1A_oo(j,j)
+                      r2a(i,b,j) = r2a(i,b,j)/denom
+                  end do
+                end do
+              end do
+
+              do j = 1,nob
+                do b = 1,nub
+                   do i = 1,noa
+                      denom = omega - H1B_vv(b,b) + H1A_oo(i,i) + H1B_oo(j,j)
+                      r2b(i,b,j) = r2b(i,b,j)/denom
+                  end do
+                end do
+              end do
+
+              do j = 1,noa
+                 do k = 1,noa
+                    do i = 1,noa
+                       do b = 1,nua
+                          do c = 1,nua
+                             if (i==j .or. i==k .or. j==k) cycle
+                             if (b==c) cycle
+                             denom = omega - H1A_vv(b,b) - H1A_vv(c,c) + H1A_oo(i,i) + H1A_oo(j,j) + H1A_vv(k,k)
+                             r3a(i,b,c,j,k) = r3a(i,b,c,j,k)/denom
+                          end do
+                       end do
+                    end do
+                 end do
+              end do
+
+              do j = 1,noa
+                 do k = 1,nob
+                    do i = 1,noa
+                       do b = 1,nua
+                          do c = 1,nub
+                             if (i==j) cycle
+                             denom = omega - H1A_vv(b,b) - H1B_vv(c,c) + H1A_oo(i,i) + H1A_oo(j,j) + H1B_vv(k,k)
+                             r3b(i,b,c,j,k) = r3b(i,b,c,j,k)/denom
+                          end do
+                       end do
+                    end do
+                 end do
+              end do
+
+              do j = 1,nob
+                 do k = 1,nob
+                    do i = 1,noa
+                       do b = 1,nub
+                          do c = 1,nub
+                             if (j==k) cycle
+                             if (b==c) cycle
+                             denom = omega - H1B_vv(b,b) - H1B_vv(c,c) + H1A_oo(i,i) + H1B_oo(j,j) + H1B_vv(k,k)
+                             r3c(i,b,c,j,k) = r3c(i,b,c,j,k)/denom
+                          end do
+                       end do
+                    end do
+                 end do
+              end do
+
+      end subroutine update_R_3h2p
 
       subroutine update_R_2p1h(r1a,r2a,r2b,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
 
@@ -1250,15 +1356,19 @@ module cc_loops2
               real(8) :: denom
 
               do a = 1,nua
-                  denom = -H1A_vv(a,a)
-                  r1a(a) = r1a(a)/(omega-denom+shift)
+                  ! If you use CIS-type guess, then omega == H1A_vv(a,a)
+                  ! exactly, leading to NaNs
+                  denom = omega - H1A_vv(a,a)
+                  if (denom==0.0d0) cycle
+                  r1a(a) = r1a(a)/denom
               end do
 
               do j = 1,noa
                 do a = 1,nua
                    do b = 1,nua
-                      denom = -H1A_vv(a,a) - H1A_vv(b,b) + H1A_oo(j,j)
-                      r2a(a,b,j) = r2a(a,b,j)/(omega-denom+shift)
+                      if (a==b) cycle
+                      denom = omega - H1A_vv(a,a) - H1A_vv(b,b) + H1A_oo(j,j)
+                      r2a(a,b,j) = r2a(a,b,j)/denom
                   end do
                 end do
               end do
@@ -1266,11 +1376,12 @@ module cc_loops2
               do j = 1,nob
                 do a = 1,nua
                    do b = 1,nub
-                      denom = -H1A_vv(a,a) - H1B_vv(b,b) + H1B_oo(j,j)
-                      r2b(a,b,j) = r2b(a,b,j)/(omega-denom+shift)
+                      denom = omega - H1A_vv(a,a) - H1B_vv(b,b) + H1B_oo(j,j)
+                      r2b(a,b,j) = r2b(a,b,j)/denom
                   end do
                 end do
               end do
+
 
       end subroutine update_R_2p1h
 
@@ -1304,15 +1415,19 @@ module cc_loops2
               real(kind=8) :: denom
 
               do a = 1,nua
-                  denom = -H1A_vv(a,a)
-                  r1a(a) = r1a(a)/(omega-denom+shift)
+                  denom = omega - H1A_vv(a,a)
+                  ! If you use CIS-type guess, then omega == H1A_vv(i,i)
+                  ! exactly, leading to NaNs
+                  if (denom==0.0d0) cycle
+                  r1a(a) = r1a(a)/denom
               end do
 
               do j = 1,noa
                 do a = 1,nua
                    do b = 1,nua
-                      denom = -H1A_vv(a,a) - H1A_vv(b,b) + H1A_oo(j,j)
-                      r2a(a,b,j) = r2a(a,b,j)/(omega-denom+shift)
+                      if (a==b) cycle
+                      denom = omega - H1A_vv(a,a) - H1A_vv(b,b) + H1A_oo(j,j)
+                      r2a(a,b,j) = r2a(a,b,j)/denom
                   end do
                 end do
               end do
@@ -1320,8 +1435,8 @@ module cc_loops2
               do j = 1,nob
                 do a = 1,nua
                    do b = 1,nub
-                      denom = -H1A_vv(a,a) - H1B_vv(b,b) + H1B_oo(j,j)
-                      r2b(a,b,j) = r2b(a,b,j)/(omega-denom+shift)
+                      denom = omega - H1A_vv(a,a) - H1B_vv(b,b) + H1B_oo(j,j)
+                      r2b(a,b,j) = r2b(a,b,j)/denom
                   end do
                 end do
               end do
@@ -1331,8 +1446,10 @@ module cc_loops2
                     do a = 1,nua
                        do b = 1,nua
                           do c = 1,nua
-                             denom = -H1A_vv(a,a) - H1A_vv(b,b) - H1A_vv(c,c) + H1A_oo(j,j) + H1A_vv(k,k)
-                             r3a(a,b,c,j,k) = r3a(a,b,c,j,k)/(omega-denom+shift)
+                             if (j==k) cycle
+                             if (a==b .or. b==c .or. a==c) cycle
+                             denom = omega - H1A_vv(a,a) - H1A_vv(b,b) - H1A_vv(c,c) + H1A_oo(j,j) + H1A_vv(k,k)
+                             r3a(a,b,c,j,k) = r3a(a,b,c,j,k)/denom
                           end do
                        end do
                     end do
@@ -1344,8 +1461,9 @@ module cc_loops2
                     do a = 1,nua
                        do b = 1,nua
                           do c = 1,nub
-                             denom = -H1A_vv(a,a) - H1A_vv(b,b) - H1B_vv(c,c) + H1A_oo(j,j) + H1B_vv(k,k)
-                             r3b(a,b,c,j,k) = r3b(a,b,c,j,k)/(omega-denom+shift)
+                             if (a==b) cycle
+                             denom = omega - H1A_vv(a,a) - H1A_vv(b,b) - H1B_vv(c,c) + H1A_oo(j,j) + H1B_vv(k,k)
+                             r3b(a,b,c,j,k) = r3b(a,b,c,j,k)/denom
                           end do
                        end do
                     end do
@@ -1357,8 +1475,10 @@ module cc_loops2
                     do a = 1,nua
                        do b = 1,nub
                           do c = 1,nub
-                             denom = -H1A_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c) + H1B_oo(j,j) + H1B_vv(k,k)
-                             r3c(a,b,c,j,k) = r3c(a,b,c,j,k)/(omega-denom+shift)
+                             if (j==k) cycle
+                             if (b==c) cycle
+                             denom = omega - H1A_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c) + H1B_oo(j,j) + H1B_vv(k,k)
+                             r3c(a,b,c,j,k) = r3c(a,b,c,j,k)/denom
                           end do
                        end do
                     end do
