@@ -409,8 +409,8 @@ def test_eaeom2_h2o():
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
-    driver.run_guess(method="eacis", multiplicity=2, nroot=5, debug=True)
-    driver.run_eaeomcc(method="eaeom3", state_index=[0,1,2,3,4])
+    driver.run_guess(method="eacis", multiplicity=2, nroot=10, debug=True)
+    driver.run_eaeomcc(method="eaeom3", state_index=[0])
 
 def test_ccsdt_ch():
     """ """

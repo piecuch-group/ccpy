@@ -1,5 +1,4 @@
 import numpy as np
-from ccpy.models.integrals import Integral
 
 def get_eaeom3_intermediates(H, R):
 
@@ -8,19 +7,19 @@ def get_eaeom3_intermediates(H, R):
     # as a workaround for now.
 
     X = {"aa" : {}, "ab" : {}}
-    \
+
     # x2a(ami)
     X["aa"]["voo"] = (
-                    0.5 * np.einsum("mnef,aefin->ami", H.aa.oovv, R.aaa, optimize=True)
+                    0.5*np.einsum("mnef,aefin->ami", H.aa.oovv, R.aaa, optimize=True)
                     +np.einsum("mnef,aefin->ami", H.ab.oovv, R.aab, optimize=True)
                     +np.einsum("mnif,afn->ami", H.aa.ooov, R.aa, optimize=True)
                     +np.einsum("mnif,afn->ami", H.ab.ooov, R.ab, optimize=True)
-                    +0.5 * np.einsum("amef,efi->ami", H.aa.vovv, R.aa, optimize=True)
+                    +0.5*np.einsum("amef,efi->ami", H.aa.vovv, R.aa, optimize=True)
                     +np.einsum("amie,e->ami", H.aa.voov, R.a, optimize=True)
     )
     # x2b(mb~j~)
     X["ab"]["ovo"] = (
-                    0.5 * np.einsum("mnef,efbnj->mbj", H.aa.oovv, R.aab, optimize=True)
+                    0.5*np.einsum("mnef,efbnj->mbj", H.aa.oovv, R.aab, optimize=True)
                     +np.einsum("mnef,efbnj->mbj", H.ab.oovv, R.abb, optimize=True)
                     -np.einsum("mnej,ebn->mbj", H.ab.oovo, R.ab, optimize=True)
                     +np.einsum("mbef,efj->mbj", H.ab.ovvv, R.ab, optimize=True)
@@ -29,7 +28,7 @@ def get_eaeom3_intermediates(H, R):
     # x2b(am~j~)
     X["ab"]["voo"] = (
                     np.einsum("nmfe,afenj->amj", H.ab.oovv, R.aab, optimize=True)
-                    +0.5 * np.einsum("mnef,aefjn->amj", H.bb.oovv, R.abb, optimize=True)
+                    +0.5*np.einsum("mnef,aefjn->amj", H.bb.oovv, R.abb, optimize=True)
                     +np.einsum("nmfj,afn->amj", H.ab.oovo, R.aa, optimize=True)
                     +np.einsum("mnjf,afn->amj", H.bb.ooov, R.ab, optimize=True)
                     +np.einsum("amef,efj->amj", H.ab.vovv, R.ab, optimize=True)
@@ -38,17 +37,17 @@ def get_eaeom3_intermediates(H, R):
 
     # x2a(abe)
     X["aa"]["vvv"] = (
-                    -0.25 * np.einsum("mnef,abfmn->abe", H.aa.oovv, R.aaa, optimize=True)
-                    -0.5 * np.einsum("mnef,abfmn->abe", H.ab.oovv, R.aab, optimize=True)
-                    +np.einsum("bnef,aem->abe", H.aa.vovv, R.aa, optimize=True)
-                    +np.einsum("bnef,aem->abe", H.ab.vovv, R.ab, optimize=True)
-                    +0.5 * np.einsum("abef,f->abe", H.aa.vvvv, R.a, optimize=True)
+                    -0.25*np.einsum("mnef,abfmn->abe", H.aa.oovv, R.aaa, optimize=True)
+                    -0.5*np.einsum("mnef,abfmn->abe", H.ab.oovv, R.aab, optimize=True)
+                    +np.einsum("bnef,afn->abe", H.aa.vovv, R.aa, optimize=True)
+                    +np.einsum("bnef,afn->abe", H.ab.vovv, R.ab, optimize=True)
+                    +0.5*np.einsum("abef,f->abe", H.aa.vvvv, R.a, optimize=True)
     )
     X["aa"]["vvv"] -= np.transpose(X["aa"]["vvv"], (1, 0, 2))
     # x2b(ab~e~)
     X["ab"]["vvv"] = (
                     -np.einsum("nmfe,afbnm->abe", H.ab.oovv, R.aab, optimize=True)
-                    -0.5 * np.einsum("mnef,abfmn->abe", H.bb.oovv, R.abb, optimize=True)
+                    -0.5*np.einsum("mnef,abfmn->abe", H.bb.oovv, R.abb, optimize=True)
                     +np.einsum("nbfe,afn->abe", H.ab.ovvv, R.aa, optimize=True)
                     +np.einsum("bnef,afn->abe", H.bb.vovv, R.ab, optimize=True)
                     -np.einsum("amfe,fbm->abe", H.ab.vovv, R.ab, optimize=True)
