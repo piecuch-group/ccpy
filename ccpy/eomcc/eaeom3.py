@@ -110,7 +110,7 @@ def build_HR_3A(R, T, X, H):
     X3A += (3.0 / 24.0) * np.einsum("abef,efcjk->abcjk", H.aa.vvvv, R.aaa, optimize=True)  # (3)
     X3A += (1.0 / 24.0) * np.einsum("mnjk,abcmn->abcjk", H.aa.oooo, R.aaa, optimize=True)  # (4)
     X3A += (6.0 / 12.0) * np.einsum("cmke,abejm->abcjk", H.aa.voov, R.aaa, optimize=True)  # (5)
-    X3A += (6.0 / 12.0) * np.einsum("cmke,abejm->abejk", H.ab.voov, R.aab, optimize=True)  # (6)
+    X3A += (6.0 / 12.0) * np.einsum("cmke,abejm->abcjk", H.ab.voov, R.aab, optimize=True)  # (6)
     # moment-like terms
     X3A -= (3.0 / 12.0) * np.einsum("cmkj,abm->abcjk", H.aa.vooo, R.aa, optimize=True)     # (7)
     X3A += (6.0 / 12.0) * np.einsum("cbke,aej->abcjk", H.aa.vvov, R.aa, optimize=True)     # (8)
@@ -132,9 +132,9 @@ def build_HR_3B(R, T, X, H):
     X3B += (1.0 / 2.0) * np.einsum("mcek,abejm->abcjk", H.ab.ovvo, R.aaa, optimize=True) # (6)
     X3B += (1.0 / 2.0) * np.einsum("cmke,abejm->abcjk", H.bb.voov, R.aab, optimize=True) # (7)
     X3B += np.einsum("bmje,aecmk->abcjk", H.aa.voov, R.aab, optimize=True) # (8)
-    X3B += np.einsum("bmje,aecmk->abcjk", H.ab.voov, R.abb, optimize=True) # (9)
     X3B -= np.einsum("bmek,aecjm->abcjk", H.ab.vovo, R.aab, optimize=True) # (10)
     X3B -= (1.0 / 2.0) * np.einsum("mcje,abemk->abcjk", H.ab.ovov, R.aab, optimize=True) # (11)
+    X3B += np.einsum("bmje,aecmk->abcjk", H.ab.voov, R.abb, optimize=True) # (9)
     X3B += (1.0 / 4.0) * np.einsum("abef,efcjk->abcjk", H.aa.vvvv, R.aab, optimize=True) # (12)
     X3B += np.einsum("bcef,aefjk->abcjk", H.ab.vvvv, R.aab, optimize=True) # (13)
     # moment-like terms
@@ -143,8 +143,10 @@ def build_HR_3B(R, T, X, H):
     X3B += np.einsum("bcek,aej->abcjk", H.ab.vvvo, R.aa, optimize=True) # (16)
     X3B += np.einsum("bcje,aek->abcjk", H.ab.vvov, R.ab, optimize=True) # (17)
     X3B += (1.0 / 2.0) * np.einsum("baje,eck->abcjk", H.aa.vvov, R.ab, optimize=True) # (23)
+
     # 3-body Hbar terms factorized using intermediates
     X3B -= (1.0 / 2.0) * np.einsum("mck,abmj->abcjk", X["ab"]["ovo"], T.aa, optimize=True) # (18)
+
     X3B -= np.einsum("amj,bcmk->abcjk", X["aa"]["voo"], T.ab, optimize=True) # (19)
     X3B -= np.einsum("amk,bcjm->abcjk", X["ab"]["voo"], T.ab, optimize=True) # (20)
     X3B += (1.0 / 2.0) * np.einsum("abe,ecjk->abcjk", X["aa"]["vvv"], T.ab, optimize=True) # (21)
@@ -168,8 +170,9 @@ def build_HR_3C(R, T, X, H):
     X3C += (2.0 / 4.0) * np.einsum("cbke,aej->abcjk", H.bb.vvov, R.ab, optimize=True)
     X3C += np.einsum("acek,ebj->abcjk", H.ab.vvvo, R.ab, optimize=True)
     # 3-body Hbar terms factorized using intermediates
-    X3C += (2.0 / 4.0) * np.einsum("abe,ecjk->abcjk", X["ab"]["vvv"], T.bb, optimize=True)
     X3C -= (2.0 / 4.0) * np.einsum("amj,bcmk->abcjk", X["ab"]["voo"], T.bb, optimize=True)
+    X3C -= np.einsum("mck,abmj->abcjk", X["ab"]["ovo"], T.ab, optimize=True)
+    X3C += (2.0 / 4.0) * np.einsum("abe,ecjk->abcjk", X["ab"]["vvv"], T.bb, optimize=True)
     X3C -= np.transpose(X3C, (0, 2, 1, 3, 4)) # antisymmetrize A(bc)
     X3C -= np.transpose(X3C, (0, 1, 2, 4, 3)) # antisymmetrize A(jk)
     return X3C

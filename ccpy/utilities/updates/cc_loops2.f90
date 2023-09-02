@@ -1299,7 +1299,7 @@ module cc_loops2
                           do c = 1,nua
                              if (i==j .or. i==k .or. j==k) cycle
                              if (b==c) cycle
-                             denom = omega - H1A_vv(b,b) - H1A_vv(c,c) + H1A_oo(i,i) + H1A_oo(j,j) + H1A_vv(k,k)
+                             denom = omega - H1A_vv(b,b) - H1A_vv(c,c) + H1A_oo(i,i) + H1A_oo(j,j) + H1A_oo(k,k)
                              r3a(i,b,c,j,k) = r3a(i,b,c,j,k)/denom
                           end do
                        end do
@@ -1313,7 +1313,7 @@ module cc_loops2
                        do b = 1,nua
                           do c = 1,nub
                              if (i==j) cycle
-                             denom = omega - H1A_vv(b,b) - H1B_vv(c,c) + H1A_oo(i,i) + H1A_oo(j,j) + H1B_vv(k,k)
+                             denom = omega - H1A_vv(b,b) - H1B_vv(c,c) + H1A_oo(i,i) + H1A_oo(j,j) + H1B_oo(k,k)
                              r3b(i,b,c,j,k) = r3b(i,b,c,j,k)/denom
                           end do
                        end do
@@ -1328,7 +1328,7 @@ module cc_loops2
                           do c = 1,nub
                              if (j==k) cycle
                              if (b==c) cycle
-                             denom = omega - H1B_vv(b,b) - H1B_vv(c,c) + H1A_oo(i,i) + H1B_oo(j,j) + H1B_vv(k,k)
+                             denom = omega - H1B_vv(b,b) - H1B_vv(c,c) + H1A_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)
                              r3c(i,b,c,j,k) = r3c(i,b,c,j,k)/denom
                           end do
                        end do
@@ -1448,7 +1448,7 @@ module cc_loops2
                           do c = 1,nua
                              if (j==k) cycle
                              if (a==b .or. b==c .or. a==c) cycle
-                             denom = omega - H1A_vv(a,a) - H1A_vv(b,b) - H1A_vv(c,c) + H1A_oo(j,j) + H1A_vv(k,k)
+                             denom = omega - H1A_vv(a,a) - H1A_vv(b,b) - H1A_vv(c,c) + H1A_oo(j,j) + H1A_oo(k,k)
                              r3a(a,b,c,j,k) = r3a(a,b,c,j,k)/denom
                           end do
                        end do
@@ -1462,7 +1462,7 @@ module cc_loops2
                        do b = 1,nua
                           do c = 1,nub
                              if (a==b) cycle
-                             denom = omega - H1A_vv(a,a) - H1A_vv(b,b) - H1B_vv(c,c) + H1A_oo(j,j) + H1B_vv(k,k)
+                             denom = omega - H1A_vv(a,a) - H1A_vv(b,b) - H1B_vv(c,c) + H1A_oo(j,j) + H1B_oo(k,k)
                              r3b(a,b,c,j,k) = r3b(a,b,c,j,k)/denom
                           end do
                        end do
@@ -1477,7 +1477,7 @@ module cc_loops2
                           do c = 1,nub
                              if (j==k) cycle
                              if (b==c) cycle
-                             denom = omega - H1A_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c) + H1B_oo(j,j) + H1B_vv(k,k)
+                             denom = omega - H1A_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c) + H1B_oo(j,j) + H1B_oo(k,k)
                              r3c(a,b,c,j,k) = r3c(a,b,c,j,k)/denom
                           end do
                        end do

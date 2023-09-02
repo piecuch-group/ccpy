@@ -15,8 +15,9 @@ def get_eaeom3_intermediates(H, R):
                     +np.einsum("mnjf,afn->amj", H.aa.ooov, R.aa, optimize=True)
                     +np.einsum("mnjf,afn->amj", H.ab.ooov, R.ab, optimize=True)
                     +0.5*np.einsum("amef,efj->amj", H.aa.vovv, R.aa, optimize=True)
-                    +np.einsum("amje,e->amj", H.aa.voov, R.a, optimize=True) # what do we do about this one???
+                    -np.einsum("amje,e->amj", H.aa.voov, R.a, optimize=True) # CAREFUL: this is a minus sign
     )
+
     # x2b(mb~j~)
     X["ab"]["ovo"] = (
                     0.5*np.einsum("mnef,efbnj->mbj", H.aa.oovv, R.aab, optimize=True)
@@ -25,6 +26,7 @@ def get_eaeom3_intermediates(H, R):
                     +np.einsum("mbef,efj->mbj", H.ab.ovvv, R.ab, optimize=True)
                     +np.einsum("mbfj,f->mbj", H.ab.ovvo, R.a, optimize=True)
     )
+
     # x2b(am~j~)
     X["ab"]["voo"] = (
                     np.einsum("nmfe,afenj->amj", H.ab.oovv, R.aab, optimize=True)
