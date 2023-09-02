@@ -61,6 +61,9 @@ https://doi.org/10.48550/arXiv.2306.09638]
   - CR-EOMCC(2,3) and its size-intensive δ-CR-EOMCC(2,3) extension
   - EOMCCSDt
   - EOMCCSDT
+  - IP-EOMCCSD(2h-1p)
+  - EA-EOMCCSD(2p-1h)
+  - EA-EOMCCSD(3p-2h)
   - ec-CC-II [J. Chem. Theory Comput. 17, 4006 (2021); see https://doi.org/10.1021/acs.jctc.1c00181; cf. also
 https://doi.org/10.48550/arXiv.2102.10143]
   - ec-CC-II_{3} [J. Chem. Theory Comput. 17, 4006 (2021); see https://doi.org/10.1021/acs.jctc.1c00181; cf. also 
