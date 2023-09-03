@@ -45,8 +45,8 @@ energetics for the missing many-electron correlations using the generalized mome
   - CR-CC(2,3)
   - CCSDt
   - CC(t;3)
-  - CIPSI-driven CC(P;Q) aimed at converging CCSDT (see Ref. [1])
-  - Adaptive CC(P;Q) aimed at converging CCSDT (see Ref. [2])
+  - CIPSI-driven CC(*P*;*Q*) aimed at converging CCSDT (see Ref. [1])
+  - Adaptive CC(*P*;*Q*) aimed at converging CCSDT (see Ref. [2])
   - CCSDT
   - CR-CC(2,4)
   - CCSDTQ (available for closed shells only)
@@ -57,7 +57,7 @@ energetics for the missing many-electron correlations using the generalized mome
 ### EOMCC approaches for ground, excited, attached, and ionized states
   - EOMCCSD
   - Spin-Flip (SF) EOMCCSD
-  - CR-EOMCC(2,3) and its size-intensive δ-CR-EOMCC(2,3) extension
+  - CR-EOMCC(2,3) and its size-intensive *δ*-CR-EOMCC(2,3) extension
   - EOMCCSDt
   - EOMCCSDT
   - IP-EOMCCSD(2h-1p)
@@ -66,18 +66,18 @@ energetics for the missing many-electron correlations using the generalized mome
   - DEA-EOMCCSD(3p-1h)
 
 <p align="justify">
-Because CCpy is primarily used for CC method development work, we use interfaces to GAMESS and Pyscf to obtain the mean-field (typically Hartree-Fock)
-reference state and associated molecular orbital one- and two-electron integrals prior to performing the correlated CC calculations. All implementations
+Because CCpy is primarily used for CC method development work, we use interfaces to GAMESS and PySCF to obtain the mean-field (typically Hartree-Fock)
+reference state and associated one- and two-electron integrals in the molecular orbital basis prior to performing the correlated CC calculations. All implementations
 in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references. 
 </p>
 
 #### References
-[1] J. Chem. Phys. 155, 174114 (2021); see https://doi.org/10.1063/5.0064400; cf. also 
-https://doi.org/10.48550/arXiv.2107.10994 <br />
-[2] J. Chem. Phys. 159, 084108 (2023); see https://doi.org/10.1063/5.0162873; cf. also
-https://doi.org/10.48550/arXiv.2306.09638 <br />
-[3] J. Chem. Theory Comput. 17, 4006 (2021); see https://doi.org/10.1021/acs.jctc.1c00181; cf. also
-https://doi.org/10.48550/arXiv.2102.10143  
+[1] K. Gururangan, J. E. Deustua, J. Shen, and P. Piecuch, J. Chem. Phys. **155**, 174114 (2021) <br />
+(see https://doi.org/10.1063/5.0064400; cf. also https://doi.org/10.48550/arXiv.2107.10994) <br />
+[2] K. Gururangan and P. Piecuch, J. Chem. Phys. **159**, 084108 (2023) <br />
+(see https://doi.org/10.1063/5.0162873; cf. also https://doi.org/10.48550/arXiv.2306.09638) <br />
+[3] I. Magoulas, K. Gururangan, P. Piecuch, J. E. Deustua, and J. Shen, J. Chem. Theory Comput. **17**, 4006 (2021) <br />
+(see https://doi.org/10.1021/acs.jctc.1c00181; cf. also https://doi.org/10.48550/arXiv.2102.10143)
 
 # Installation
 <p align="justify">
