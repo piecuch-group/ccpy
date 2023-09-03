@@ -54,7 +54,7 @@ energetics for the missing many-electron correlations using the generalized mome
   - ec-CC-II<sub>3</sub> (see Ref. [3])
   - ec-CC_II<sub>3,4</sub> (see Ref. [3])
 
-### EOMCC approaches for electronic excited, attached, and ionized states
+### EOMCC approaches for ground, excited, attached, and ionized states
   - EOMCCSD
   - Spin-Flip (SF) EOMCCSD
   - CR-EOMCC(2,3) and its size-intensive δ-CR-EOMCC(2,3) extension
