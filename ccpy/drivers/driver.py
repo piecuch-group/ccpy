@@ -278,6 +278,9 @@ class Driver:
             self.guess_order = 1
         elif method.lower()in ["cisd", "sfcisd", "deacis", "dipcis"]:
             self.guess_order = 2
+        # This is important. Turn off RHF symmetry (even for closed-shell references) when targetting non-singlets
+        if multiplicity != 1:
+            self.options["RHF_symmetry"] = False
         # Run the initial guess function and save all eigenpairs
         self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, nroot, nact_occupied, nact_unoccupied, debug=debug)
 
