@@ -82,26 +82,34 @@ in CCpy are based on the spin-integrated spinorbital formulation and are compati
 
 # Installation
 <p align="justify">
-Installation should be simple. Simply clone this git repository and run `make install` followed by `make all` inside of it. You will
+To install CCpy, clone this git repository and run `make install` followed by `make all` inside of it. The former command 
+compiles the Fortran modules used in CCpy and the latter command installs a locally editable copy of CCpy using pip. You will
 need a working gfortran compiler as well as locations for BLAS (preferably MKL) libraries, which enter in the Makefile as the environment
-variable $MKLROOT. For a given computer architecture, the Intel Link Line Advisor is a useful tool to figure out what compiler flags need to be included.
-(https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-link-line-advisor.html#gs.jxf4xw)
+variable $MKLROOT. For a given computer architecture, the Intel Link Line Advisor is a useful tool to figure out what compiler flags need to be included
+(see https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-link-line-advisor.html#gs.jxf4xw).
 
-If you want to run mean-field calculations using GAMESS as an input to CCpy, you will need to install the `cclib` package 
-(`conda install --channel conda-forge cclib`) in order to parse the output of GAMESS calculations.  If you want to use PySCF to run
-the mean-field calculation, then simply install it with `pip install pyscf`.
+Currently, CCpy relies on external software to provide Hartree-Fock molecular orbitals and the asssociated one- and two-electron integrals 
+as inputs to the CC calculations. CCpy provides interfaces that process the outputs of mean-field solutions computed using either GAMESS or 
+PySCF (interfaces to other open-source software, such as psi4, will be added in the future). In order to use the Hartree-Fock states computed 
+with GAMESS, you will need to install the `cclib` package (this can be done with `conda install --channel conda-forge cclib`) in order to 
+parse the output of GAMESS calculations. In order to initialize CC calculations in CCpy using Hartree-Fock solutions computed with PySCF, 
+install it with `pip install pyscf`.
 
 In all selected CI based computations, including the ec-CC-II and CIPSI-driven CC(P;Q), we currently rely on the CIPSI wave functions obtained 
-using the open-source Quantum Package software (https://github.com/QuantumPackage/qp2).
+using the open-source Quantum Package software (see https://github.com/QuantumPackage/qp2 for information on how to download and install Quantum
+Package).
 
 ### Getting Started
-Documentation is scarce at the moment, so please bear with us as we put it together. You can hopefully get started using the majority of the options
-available in CCpy by looking at examples found in the `test_small_molecules.py` script within the `tests` directory. In the meantime, feel free to 
+Documentation is scarce at the moment, so please bear with us as we put it together. You can hopefully get started using the majority of the 
+computational options available in CCpy by looking at the example scripts contained within the `tests` directory. In the meantime, feel free to 
 e-mail me (contact details given below) if you need additional information or more specific assistance. 
 </p>
 
 # Contact Information
 Karthik Gururangan - gururang@msu.edu
+
+(Doctoral student in the [Piecuch Group](https://www2.chemistry.msu.edu/faculty/piecuch/) at Michigan State University)
+
 <p align="justify">
 In addition to using GitHub's Issues feature, feel free to send me an e-mail if you have any questions about using
 CCpy or are seeking additional information about its functionality. CCpy is an open-source code and any contributions
