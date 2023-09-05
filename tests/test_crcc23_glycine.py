@@ -1,15 +1,11 @@
-from pathlib import Path
+"""CR-CC(2,3) computation for the glycine molecule.
+(This example was taken from the CC tests in GAMESS)."""
 
 import numpy as np
-from pyscf import scf, gto
+from pyscf import gto, scf
 from ccpy.drivers.driver import Driver
 
-
-TEST_DATA_DIR = str(Path(__file__).parent.absolute() / "data")
-
-
 def test_crcc23_glycine():
-    """ """
     geometry = [
         ["O", (-2.877091949897, -1.507375565672, -0.398996049903)],
         ["C", (-0.999392972049, -0.222326510867, 0.093940021615)],
@@ -71,3 +67,6 @@ def test_crcc23_glycine():
         + driver.deltapq[0]["D"],
         -283.6898593860,
     )
+
+if __name__ == "__main__":
+    test_crcc23_glycine()

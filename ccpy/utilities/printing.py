@@ -67,7 +67,7 @@ def deaeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, pr
     print_dea_amplitudes(R, system, R.order, print_thresh)
     print("")
 
-def ipeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, print_thresh):
+def ipeomcc_calculation_summary(R, omega, corr_energy, rel, is_converged, system, print_thresh):
     DATA_FMT = "{:<30} {:>20.8f}"
     if is_converged:
         convergence_label = 'converged'
@@ -76,11 +76,12 @@ def ipeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, pri
     print("\n   IP-EOMCC Calculation Summary (%s)" % convergence_label)
     print("  --------------------------------------------------")
     print(DATA_FMT.format("   Vertical excitation energy", omega))
+    print(DATA_FMT.format("   Relative excitation level", rel))
     print(DATA_FMT.format("   Total IP-EOMCC energy", system.reference_energy + corr_energy + omega))
     print_ip_amplitudes(R, system, R.order, print_thresh)
     print("")
 
-def eaeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, print_thresh):
+def eaeomcc_calculation_summary(R, omega, corr_energy, rel, is_converged, system, print_thresh):
     DATA_FMT = "{:<30} {:>20.8f}"
     if is_converged:
         convergence_label = 'converged'
@@ -89,6 +90,7 @@ def eaeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, pri
     print("\n   EA-EOMCC Calculation Summary (%s)" % convergence_label)
     print("  --------------------------------------------------")
     print(DATA_FMT.format("   Vertical excitation energy", omega))
+    print(DATA_FMT.format("   Relative excitation level", rel))
     print(DATA_FMT.format("   Total EA-EOMCC energy", system.reference_energy + corr_energy + omega))
     print_ea_amplitudes(R, system, R.order, print_thresh)
     print("")

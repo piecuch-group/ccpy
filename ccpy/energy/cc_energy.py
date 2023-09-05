@@ -72,13 +72,9 @@ def get_r0(R, H, omega):
     return r0 / omega
 
 def get_rel(R, r0):
-    """
-       Compute the reduced excitation level (REL) metric, given by
-       \sum_{n=0}^{N} n*<0|(R_{\mu,n})^+ R_{\mu,n})|0>/\sum_{n=0}^{N} <0|(R_{\mu,n})^+ R_{\mu,n})|0>.
-       We assume only CCSD-level contributions (e.g., REL for EOMCCSDT, EOMCCSDt, etc. will not include
-       effects of R3).
-       [See J. Chem. Phys. 122, 214107 (2005)].
-    """
+    """Compute the reduced excitation level (REL) metric, given by
+    \sum_{n=0}^{N} n*<0|(R_{\mu,n})^+ R_{\mu,n})|0>/\sum_{n=0}^{N} <0|(R_{\mu,n})^+ R_{\mu,n})|0>.
+    [See J. Chem. Phys. 122, 214107 (2005)]."""
     rel_0 = r0**2
     rel_1 = (
             np.einsum("ai,ai->", R.a, R.a, optimize=True)
@@ -90,6 +86,30 @@ def get_rel(R, r0):
             + 0.25 * np.einsum("abij,abij->", R.bb, R.bb, optimize=True)
     )
     rel = (rel_1 + 2.0 * rel_2)/(rel_0 + rel_1 + rel_2)
+    return rel
+
+def get_rel_ea(R):
+    """Compute the reduced excitation level (REL) metric for electron-attached states."""
+    rel_1 = (
+            np.einsum("a,a->", R.a, R.a, optimize=True)
+    )
+    rel_2 = (
+            0.5 * np.einsum("abj,abj->", R.aa, R.aa, optimize=True)
+            + np.einsum("abj,abj->", R.ab, R.ab, optimize=True)
+    )
+    rel = (rel_1 + 2.0 * rel_2)/(rel_1 + rel_2)
+    return rel
+
+def get_rel_ip(R):
+    """Compute the reduced excitation level (REL) metric for electron-ionized states."""
+    rel_1 = (
+            np.einsum("i,i->", R.a, R.a, optimize=True)
+    )
+    rel_2 = (
+            0.5 * np.einsum("ibj,ibj->", R.aa, R.aa, optimize=True)
+            + np.einsum("ibj,ibj->", R.ab, R.ab, optimize=True)
+    )
+    rel = (rel_1 + 2.0 * rel_2)/(rel_1 + rel_2)
     return rel
 
 def get_LR(R, L, l3_excitations=None, r3_excitations=None):

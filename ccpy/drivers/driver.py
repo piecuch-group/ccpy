@@ -15,7 +15,7 @@ from ccpy.drivers.solvers import (
                 eomcc_block_davidson,
                 eccc_jacobi,
 )
-from ccpy.energy.cc_energy import get_LR, get_r0, get_rel
+from ccpy.energy.cc_energy import get_LR, get_r0, get_rel, get_rel_ea, get_rel_ip
 from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator, SpinFlipOperator, FockOperator
 from ccpy.utilities.printing import (
@@ -527,8 +527,10 @@ class Driver:
                                                                                          self.hamiltonian,
                                                                                          self.system,
                                                                                          self.options)
+            # compute the relative excitation level (REL) metric
+            self.relative_excitation_level[i] = get_rel_ip(self.R[i])
             ipeomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.correlation_energy,
-                                       is_converged, self.system, self.options["amp_print_threshold"])
+                                       self.relative_excitation_level[i], is_converged, self.system, self.options["amp_print_threshold"])
             print("   IP-EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
             ct += 1
 
@@ -584,8 +586,10 @@ class Driver:
                                                                                          self.hamiltonian,
                                                                                          self.system,
                                                                                          self.options)
+            # compute the relative excitation level (REL) metric
+            self.relative_excitation_level[i] = get_rel_ea(self.R[i])
             eaeomcc_calculation_summary(self.R[i], self.vertical_excitation_energy[i], self.correlation_energy,
-                                      is_converged, self.system, self.options["amp_print_threshold"])
+                                      self.relative_excitation_level[i], is_converged, self.system, self.options["amp_print_threshold"])
             print("   EA-EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
             ct += 1
 
