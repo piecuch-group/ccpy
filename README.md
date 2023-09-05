@@ -61,6 +61,7 @@ energetics for the missing many-electron correlations using the generalized mome
   - EOMCCSDt
   - EOMCCSDT
   - IP-EOMCCSD(2h-1p)
+  - IP-EOMCCSD(3h-2p)
   - EA-EOMCCSD(2p-1h)
   - EA-EOMCCSD(3p-2h)
   - DEA-EOMCCSD(3p-1h)
