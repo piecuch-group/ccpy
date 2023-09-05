@@ -404,6 +404,24 @@ def test_ipeom2_ohminus():
     driver.run_guess(method="ipcis", multiplicity=2, nroot=5, debug=False)
     driver.run_ipeomcc(method="ipeom2", state_index=[0,1,2,3,4])
 
+def test_ipeom3_ohminus():
+    mol = gto.M(atom='''O  0.0  0.0  -0.8
+                        H  0.0  0.0   0.8''',
+                basis="cc-pvdz",
+                charge=-1,
+                spin=0,
+                cart=False,
+                symmetry="C2V")
+    mf = scf.RHF(mol)
+    mf.kernel()
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    driver.system.print_info()
+
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    driver.run_guess(method="ipcis", multiplicity=2, nroot=5, debug=False)
+    driver.run_ipeomcc(method="ipeom3", state_index=[0,1,2,3,4])
+
 def test_eaeom2_chplus():
     driver = Driver.from_gamess(
         logfile=TEST_DATA_DIR + "/chplus/chplus.log",
@@ -658,6 +676,7 @@ if __name__ == "__main__":
     #test_adaptive_f2()
     #test_crcc24_f2()
     #test_cct3_ch()
-    test_ipeom2_ohminus()
+    #test_ipeom2_ohminus()
+    test_ipeom3_ohminus()
     #test_eaeom2_chplus()
     #test_eaeom3_chplus()
