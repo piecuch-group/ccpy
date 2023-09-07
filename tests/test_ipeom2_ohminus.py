@@ -21,7 +21,9 @@ def test_ipeom2_ohminus():
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="ipcis", multiplicity=2, nroot=5, debug=False)
-    driver.run_ipeomcc(method="ipeom2", state_index=[0,1,2,3,4])
+    driver.run_ipeomcc(method="ipeom2", state_index=[0])
+
+    driver.run_leftipeomcc(method="left_ipeom2", state_index=[0])
 
 if __name__ == "__main__":
     test_ipeom2_ohminus()

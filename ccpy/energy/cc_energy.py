@@ -114,6 +114,7 @@ def get_rel_ip(R):
 
 def get_LR(R, L, l3_excitations=None, r3_excitations=None):
 
+    LR = 0.0
     # explicitly enforce biorthonormality
     if isinstance(L, ClusterOperator):
         LR =  np.einsum("em,em->", R.a, L.a, optimize=True)
@@ -139,13 +140,9 @@ def get_LR(R, L, l3_excitations=None, r3_excitations=None):
                                                               R.bbb, r3_excitations["bbb"],
                 )
                 LR += LR_P
-
-    if isinstance(L, FockOperator):
+    elif isinstance(L, FockOperator):
         LR = -np.einsum("m,m->", R.a, L.a, optimize=True)
-        LR -= np.einsum("m,m->", R.b, L.b, optimize=True)
-        LR -= 0.5 * np.einsum("fnm,fnm->", R.aa, L.aa, optimize=True)
-        LR -= np.einsum("fnm,fnm->", R.ab, L.ab, optimize=True)
-        LR -= np.einsum("fnm,fnm->", R.ba, L.ba, optimize=True)
-        LR -= 0.5 * np.einsum("fnm,fnm->", R.bb, L.bb, optimize=True)
+        LR -= 0.5 * np.einsum("mfn,mfn->", R.aa, L.aa, optimize=True)
+        LR -= np.einsum("mfn,mfn->", R.ab, L.ab, optimize=True)
 
     return LR

@@ -26,14 +26,12 @@ def HR(dR, R, T, H, flag_RHF, system):
 
     # Get H*R intermediates
     X = get_eomccsd_intermediates(H, R, system)
-
     # update R1
     dR.a = build_HR_1A(R, H)
     if flag_RHF:
         dR.b = dR.a.copy()
     else:
         dR.b = build_HR_1B(R, H)
-
     # update R2
     dR.aa = build_HR_2A(R, T, X, H)
     dR.ab = build_HR_2B(R, T, X, H)
@@ -41,7 +39,6 @@ def HR(dR, R, T, H, flag_RHF, system):
         dR.bb = dR.aa.copy()
     else:
         dR.bb = build_HR_2C(R, T, X, H)
-
     return dR.flatten()
 
 def build_HR_1A(R, H):
@@ -58,7 +55,6 @@ def build_HR_1A(R, H):
     X1A += np.einsum("me,aeim->ai", H.b.ov, R.ab, optimize=True)
     return X1A
 
-
 def build_HR_1B(R, H):
     # < i~a~ | [H(2)*(R1+R2)]_C | 0 >
     X1B = -np.einsum("mi,am->ai", H.b.oo, R.b, optimize=True)
@@ -72,7 +68,6 @@ def build_HR_1B(R, H):
     X1B += np.einsum("me,eami->ai", H.a.ov, R.ab, optimize=True)
     X1B += np.einsum("me,aeim->ai", H.b.ov, R.bb, optimize=True)
     return X1B
-
 
 def build_HR_2A(R, T, X, H):
     # < ijab | [H(2)*(R1+R2)]_C | 0 >

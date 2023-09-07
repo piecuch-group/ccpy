@@ -1487,8 +1487,8 @@ module cc_loops2
 
       end subroutine update_R_3p2h
 
-      subroutine update_L_2h1p(l1a, l1b, l2a, l2b, l2c, l2d,&
-                               X1A, X1B, X2A, X2B, X2C, X2D,&
+      subroutine update_L_2h1p(l1a, l2a, l2b,&
+                               X1A, X2A, X2B,&
                                omega,&
                                H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
                                shift,&
@@ -1498,33 +1498,21 @@ module cc_loops2
 
               integer, intent(in) :: noa, nua, nob, nub
               real(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
-                                     H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega
+                                          H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega
 
               real(kind=8), intent(inout) :: l1a(1:noa)
               !f2py intent(in,out) :: l1a(0:noa-1)
-              real(kind=8), intent(inout) :: l1b(1:nob)
-              !f2py intent(in,out) :: l1b(0:nob-1)
-              real(kind=8), intent(inout) :: l2a(1:nua,1:noa,1:noa)
-              !f2py intent(in,out) :: l2a(0:nua-1,0:noa-1,0:noa-1)
-              real(kind=8), intent(inout) :: l2b(1:nua,1:noa,1:nob)
-              !f2py intent(in,out) :: l2b(0:nua-1,0:noa-1,0:nob-1)
-              real(kind=8), intent(inout) :: l2c(1:nub,1:nob,1:noa)
-              !f2py intent(in,out) :: l2c(0:nub-1,0:nob-1,0:noa-1)
-              real(kind=8), intent(inout) :: l2d(1:nub,1:nob,1:nob)
-              !f2py intent(in,out) :: l2d(0:nub-1,0:nob-1,0:nob-1)
+              real(kind=8), intent(inout) :: l2a(1:noa,1:nua,1:noa)
+              !f2py intent(in,out) :: l2a(0:noa-1,0:nua-1,0:noa-1)
+              real(kind=8), intent(inout) :: l2b(1:noa,1:nub,1:nob)
+              !f2py intent(in,out) :: l2b(0:noa-1,0:nub-1,0:nob-1)
 
               real(kind=8), intent(inout) :: X1A(1:noa)
               !f2py intent(in,out) :: X1A(0:noa-1)
-              real(kind=8), intent(inout) :: X1B(1:nob)
-              !f2py intent(in,out) :: X1B(0:nob-1)
-              real(kind=8), intent(inout) :: X2A(1:nua,1:noa,1:noa)
-              !f2py intent(in,out) :: X2A(0:nua-1,0:noa-1,0:noa-1)
-              real(kind=8), intent(inout) :: X2B(1:nua,1:noa,1:nob)
-              !f2py intent(in,out) :: X2B(0:nua-1,0:noa-1,0:nob-1)
-              real(kind=8), intent(inout) :: X2C(1:nub,1:nob,1:noa)
-              !f2py intent(in,out) :: X2C(0:nub-1,0:nob-1,0:noa-1)
-              real(kind=8), intent(inout) :: X2D(1:nub,1:nob,1:nob)
-              !f2py intent(in,out) :: X2D(0:nub-1,0:nob-1,0:nob-1)
+              real(kind=8), intent(inout) :: X2A(1:noa,1:nua,1:noa)
+              !f2py intent(in,out) :: X2A(0:noa-1,0:nua-1,0:noa-1)
+              real(kind=8), intent(inout) :: X2B(1:noa,1:nub,1:nob)
+              !f2py intent(in,out) :: X2B(0:noa-1,0:nub-1,0:nob-1)
 
               integer :: i, j, b
               real(kind=8) :: denom, val
@@ -1533,66 +1521,27 @@ module cc_loops2
                   val = X1A(i)
                   denom = H1A_oo(i,i)
                   l1a(i) = l1a(i) - (val - omega * l1a(i))/(denom - omega + shift)
-
                   X1A(i) = val - omega * l1a(i)
               end do
 
-              do i = 1,nob
-                  val = X1B(i)
-                  denom = H1B_oo(i,i)
-                  l1b(i) = l1b(i) - (val - omega * l1b(i))/(denom - omega + shift)
-
-                  X1B(i) = val - omega * l1b(i)
-              end do
-
-              do i = 1,noa
-                do j = 1,noa
-                   do b = 1,nua
-                      val = X2A(b, j, i)
+              do j = 1,noa
+                do b = 1,nua
+                   do i = 1,noa
+                      val = X2A(i,b,j)
                       denom = -H1A_vv(b,b) + H1A_oo(i,i) + H1A_oo(j,j)
-                      l2a(b,j,i) = l2a(b,j,i) - (val - omega * l2a(b, j, i))/(denom - omega + shift)
-                      !l2a(b,i,j) = -1.0 * l2a(b,j,i)
-
-                       X2A(b, j, i) = val - omega * l2a(b, j, i)
-                       !X2A(b, i, j) = -1.0 * X2A(b, j, i)
+                      l2a(i,b,j) = l2a(i,b,j) - (val - omega * l2a(i,b,j))/(denom - omega + shift)
+                      X2A(i,b,j) = val - omega * l2a(i,b,j)
                   end do
                 end do
               end do
 
-              do i = 1,nob
-                do j = 1,noa
-                   do b = 1,nua
-                      val = X2B(b, j, i)
-                      denom = -H1A_vv(b,b) + H1B_oo(i,i) + H1A_oo(j,j)
-                      l2b(b,j,i) = l2b(b,j,i) - (val - omega * l2b(b, j, i))/(denom - omega + shift)
-
-                      X2B(b, j, i) = val - omega * l2b(b, j, i)
-                  end do
-                end do
-              end do
-
-              do i = 1,noa
-                do j = 1,nob
-                   do b = 1,nub
-                      val = X2C(b, j, i)
+              do j = 1,nob
+                do b = 1,nub
+                   do i = 1,noa
+                      val = X2B(i,b,j)
                       denom = -H1B_vv(b,b) + H1A_oo(i,i) + H1B_oo(j,j)
-                      l2c(b,j,i) = l2c(b,j,i) - (val - omega * l2c(b, j, i))/(denom - omega + shift)
-
-                      X2C(b, j, i) = val - omega * l2c(b, j, i)
-                  end do
-                end do
-              end do
-
-              do i = 1,nob
-                do j = 1,nob
-                   do b = 1,nub
-                      val = X2D(b, j, i)
-                      denom = -H1B_vv(b,b) + H1B_oo(i,i) + H1B_oo(j,j)
-                      l2d(b,j,i) = l2d(b,j,i) - (val - omega * l2d(b, j, i))/(denom - omega + shift)
-                      !l2d(b,i,j) = -1.0 * l2d(b,j,i)
-
-                      X2D(b, j, i) = val - omega * l2d(b, j, i)
-                      !X2D(b, i, j) = -1.0 * X2D(b, j, i)
+                      l2b(i,b,j) = l2b(i,b,j) - (val - omega * l2b(i,b,j))/(denom - omega + shift)
+                      X2B(i,b,j) = val - omega * l2b(i,b,j)
                   end do
                 end do
               end do

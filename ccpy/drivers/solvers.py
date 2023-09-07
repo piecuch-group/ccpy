@@ -7,6 +7,9 @@ from ccpy.utilities.printing import (
         print_block_eomcc_iteration,
 )
 
+# [TODO]: (1) Add left-EOMCC single-root Davidson solver
+# [TODO]: (2) Add biorthogonal L and R single-root Davidson solver (non-Hermitian Hirao-Nakatsuji algorithm)
+
 def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     """
     Diagonalize the similarity-transformed Hamiltonian HBar using the
@@ -43,10 +46,9 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
         # store old energy
         omega_old = omega.copy()
 
-        # solve projection subspace eigenproblem: G_{IJ} = sum_K B_{KI} S_{KJ}
-        for p in range(curr_size):
-            G[curr_size - 1, p] = np.dot(B[:, curr_size - 1].T, sigma[:, p])
-            G[p, curr_size - 1] = np.dot(sigma[:, curr_size - 1].T, B[:, p])
+        # solve projection subspace eigenproblem: G_{IJ} = sum_K B_{KI} S_{KJ} (vectorized)
+        G[curr_size - 1, :curr_size] = np.einsum("k,kp->p", B[:, curr_size - 1], sigma[:, :curr_size])
+        G[:curr_size, curr_size - 1] = np.einsum("k,kp->p", sigma[:, curr_size - 1], B[:, :curr_size])
         e, alpha_full = np.linalg.eig(G[:curr_size, :curr_size])
 
         # select root
@@ -80,6 +82,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
 
         # update residual vector
         R = update_r(R, omega, H, system)
+        # orthogonalize residual against subspace vectors (would be nice to vectorize this)
         q = R.flatten()
         for p in range(curr_size):
             b = B[:, p] / np.linalg.norm(B[:, p])
@@ -240,6 +243,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
 #             break
 #
 #     return R, omega, is_converged
+
 def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_index, options):
     """
     Diagonalize the similarity-transformed Hamiltonian HBar using the

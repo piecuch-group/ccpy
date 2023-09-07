@@ -704,6 +704,52 @@ class Driver:
             leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
             print("   Left CC calculation for root %d ended on" % i, get_timestamp(), "\n")
 
+    def run_leftipeomcc(self, method, state_index=[0], t3_excitations=None, r3_excitations=None):
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.left.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build L
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+        # Ensure that Hbar is set upon entry
+        assert(self.flag_hbar)
+        # import the specific CC method module and get its update function
+        lcc_mod = import_module("ccpy.left." + method.lower())
+        update_function = getattr(lcc_mod, 'update')
+        # Print the options as a header
+        self.print_options()
+        # regardless of restart status, initialize residual anew for non-CC(P) cases
+        LH = FockOperator(self.system,
+                          self.num_particles,
+                          self.num_holes)
+        for i in state_index:
+            print("   Left IP-EOMCC calculation for root %d started on" % i, get_timestamp())
+            # decide whether this is a ground-state calculation
+            ground_state = False
+            LR_function = lambda L, l3_excitations: get_LR(self.R[i], L, l3_excitations=l3_excitations, r3_excitations=r3_excitations)
+            # Create either the standard CC or CC(P) cluster operator
+            if self.L[i] is None:
+                self.L[i] = FockOperator(self.system,
+                                         self.num_particles,
+                                         self.num_holes)
+                # set initial value based on ground- or excited-state
+                self.L[i].unflatten(self.R[i].flatten())
+            l3_excitations = None
+            # Zero out the residual
+            LH.unflatten(0.0 * LH.flatten())
+            # Run the left CC calculation
+            self.L[i], _, LR, is_converged = left_cc_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian,
+                                                            LR_function, self.vertical_excitation_energy[i],
+                                                            ground_state, self.system, self.options,
+                                                            t3_excitations, l3_excitations)
+            # Perform final biorthgonalization to R
+            self.L[i].unflatten(1.0 / LR_function(self.L[i], l3_excitations) * self.L[i].flatten())
+
+            #leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
+            print("   Left IP-EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
+
     def run_eccc(self, method, external_wavefunction, t3_excitations=None):
         from ccpy.extcorr.external_correction import cluster_analysis
 
