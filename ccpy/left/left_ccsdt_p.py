@@ -429,7 +429,7 @@ def build_LH_3A(L, LH, H, X, l3_excitations):
                                             H.ab.ovvo,
                                             X.aa.ooov, X.aa.vovv,
     )
-    # re-transpose l3_excitations to maintian consistency with rest of code
+    # re-transpose l3_excitations to maintain consistency with rest of code
     l3_excitations["aaa"] = l3_excitations["aaa"].T
     return LH, L, l3_excitations
 
@@ -451,7 +451,7 @@ def build_LH_3B(L, LH, H, X, l3_excitations):
                                             X.aa.ooov, X.aa.vovv,
                                             X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
     )
-    # re-transpose l3_excitations to maintian consistency with rest of code
+    # re-transpose l3_excitations to maintain consistency with rest of code
     l3_excitations["aab"] = l3_excitations["aab"].T
     return LH, L, l3_excitations
 
@@ -473,7 +473,7 @@ def build_LH_3C(L, LH, H, X, l3_excitations):
                                             X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
                                             X.bb.ooov, X.bb.vovv,
     )
-    # re-transpose l3_excitations to maintian consistency with rest of code
+    # re-transpose l3_excitations to maintain consistency with rest of code
     l3_excitations["abb"] = l3_excitations["abb"].T
     return LH, L, l3_excitations
 
@@ -488,6 +488,6 @@ def build_LH_3D(L, LH, H, X, l3_excitations):
                                             H.bb.voov, H.bb.vovv, H.bb.vvvv,
                                             X.bb.ooov, X.bb.vovv,
     )
-    # re-transpose l3_excitations to maintian consistency with rest of code
+    # re-transpose l3_excitations to maintain consistency with rest of code
     l3_excitations["bbb"] = l3_excitations["bbb"].T
     return LH, L, l3_excitations

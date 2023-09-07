@@ -4,7 +4,7 @@ the equation-of-motion (EOM) CC with singles, doubles, and triples (EOMCCSDT).""
 import numpy as np
 from ccpy.utilities.updates import cc_loops
 
-from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, add_R3_terms
+from ccpy.eomcc.eomccsdt_intermediates import get_eomccsdt_intermediates, add_R3_terms
 
 
 def update(R, omega, H, system):
@@ -30,7 +30,7 @@ def update(R, omega, H, system):
 
 def HR(dR, R, T, H, flag_RHF, system):
 
-    X = get_eomccsd_intermediates(H, R, T, system)
+    X = get_eomccsdt_intermediates(H, R, T, system)
     X = add_R3_terms(X, H, R)
 
     dR.a = build_HR_1A(R, T, H)

@@ -3,7 +3,7 @@ import numpy as np
 from ccpy.models.integrals import Integral
 
 
-def get_eomccsd_intermediates(H, R, T, system):
+def get_eomccsdt_intermediates(H, R, T, system):
     """Calculate the CCSD-like intermediates for CCSDT. This routine
     should only calculate terms with T2 and any remaining terms outside of the CCS intermediate
     routine."""
