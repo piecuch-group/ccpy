@@ -2,7 +2,7 @@
 energies and linear excitation amplitudes for excited states using
 the equation-of-motion (EOM) CC with singles, doubles, and active-space triples (EOMCCSDt)."""
 
-from ccpy.eomcc.eomccsdt_intermediates import get_eomccsdt_intermediates
+from ccpy.eomcc.eomccsdt1_intermediates import get_eomccsdt1_intermediates
 from ccpy.eomcc.eomccsdt1_updates.intermediates import add_HR3_intermediates
 from ccpy.eomcc.eomccsdt1_updates import *
 
@@ -93,7 +93,7 @@ def update(R, omega, H, system):
 
 def HR(dR, R, T, H, flag_RHF, system):
 
-    HR = get_eomccsdt_intermediates(H, R, T, system)
+    HR = get_eomccsdt1_intermediates(H, R, T, system)
     HR = add_HR3_intermediates(HR, H, R, system)
 
     dR = r1a_update.build(dR, R, H, system)
