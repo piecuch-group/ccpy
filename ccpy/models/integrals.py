@@ -71,7 +71,8 @@ class SortedIntegral:
                 if use_none:
                     self.__dict__["".join(attr)] = None
                 else:
-                    self.__dict__["".join(attr)] = matrix[tuple(slicearr)]
+                    # make array F_CONTIGUOUS
+                    self.__dict__["".join(attr)] = np.asfortranarray(matrix[tuple(slicearr)])
                 self.slices.append(''.join(attr))
 
 class Integral:
@@ -96,7 +97,7 @@ class Integral:
                 if use_none:
                     matrices[name] = None
                 else:
-                    matrices[name] = np.zeros(dimension, dtype=data_type)
+                    matrices[name] = np.zeros(dimension, dtype=data_type, order="F")
         return cls(system, order, matrices, sorted=True, use_none=use_none)
 
     # @classmethod

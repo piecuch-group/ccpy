@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def load_gamess_integrals(
     gamess_logfile,
     fcidump_file=None,
@@ -59,7 +58,6 @@ def load_gamess_integrals(
 
     return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
 
-
 def get_reference_energy(gamess_logfile):
 
     with open(gamess_logfile, "r") as f:
@@ -70,7 +68,6 @@ def get_reference_energy(gamess_logfile):
                 hf_energy = float(line.split()[4])
                 break
     return hf_energy
-
 
 def get_nuclear_repulsion(gamess_logfile):
 
@@ -83,7 +80,6 @@ def get_nuclear_repulsion(gamess_logfile):
                 e_nuclear = float(line.split()[-1])
                 break
     return e_nuclear
-
 
 def get_point_group(gamess_logfile):
     """Dumb way of getting the point group from GAMESS log files.
@@ -114,16 +110,6 @@ def get_point_group(gamess_logfile):
         point_group = 'C1'
     return point_group
 
-
-def get_number_orbitals(onebody_file):
-    with open(onebody_file) as f_in:
-        lines = f_in.readlines()
-        ct = 0
-        for line in lines:
-            ct += 1
-    return int(-0.5 + np.sqrt(0.25 + 2 * x))
-
-
 def load_onebody_integrals(onebody_file, system, data_type):
     """This function reads the onebody.inp file from GAMESS
     and returns a numpy matrix.
@@ -141,7 +127,7 @@ def load_onebody_integrals(onebody_file, system, data_type):
         Onebody part of the bare Hamiltonian in the MO basis (Z)
     """
     norb = system.norbitals + system.nfrozen - system.ndelete
-    e1int = np.zeros((norb, norb), dtype=data_type)
+    e1int = np.zeros((norb, norb), dtype=data_type, order="F")
     try:
         with open(onebody_file) as f_in:
             lines = f_in.readlines()
@@ -178,7 +164,7 @@ def load_twobody_integrals(twobody_file, system, data_type):
     try:
         norb = system.norbitals + system.nfrozen - system.ndelete
         # initialize numpy array
-        e2int = np.zeros((norb, norb, norb, norb), dtype=data_type)
+        e2int = np.zeros((norb, norb, norb, norb), dtype=data_type, order="F")
         # open file
         with open(twobody_file) as f_in:
             # loop over lines
@@ -223,8 +209,8 @@ def load_from_fcidump(fcidump, system):
         Nuclear repulsion energy (in hartree)
     """
     norb = system.norbitals + system.nfrozen - system.ndelete
-    e1int = np.zeros((norb, norb))
-    e2int = np.zeros((norb, norb, norb, norb))
+    e1int = np.zeros((norb, norb), order="F")
+    e2int = np.zeros((norb, norb, norb, norb), order="F")
 
     with open(fcidump) as f:
         for ct, line in enumerate(f.readlines()):

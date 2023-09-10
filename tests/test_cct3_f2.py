@@ -23,6 +23,7 @@ def test_cct3_f2():
 
     driver = Driver.from_pyscf(mf, nfrozen=2)
     driver.system.set_active_space(nact_occupied=5, nact_unoccupied=1)
+
     driver.run_cc(method="ccsdt1")
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")
@@ -56,5 +57,5 @@ def test_cct3_f2():
         -199.0579347513,
     )
 
-    if __name__ == "__main__":
-        test_cct3_f2()
+if __name__ == "__main__":
+    test_cct3_f2()

@@ -6,10 +6,10 @@ class PspaceOperator:
 
     def __init__(self, n_amps, data_type=np.float64):
         if n_amps == 0:
-            self.amplitudes = np.zeros(shape=(1,), dtype=data_type)
-            self.excitations = np.ones((1, 6), data_type=np.int32)
-        self.amplitudes = np.zeros(n_amps, dtype=data_type)
-        self.excitations = np.zeros((n_amps, 6), data_type=np.int32)
+            self.amplitudes = np.zeros(shape=(1,), dtype=data_type, order="F")
+            self.excitations = np.ones((1, 6), data_type=np.int32, order="F")
+        self.amplitudes = np.zeros(n_amps, dtype=data_type, order="F")
+        self.excitations = np.zeros((n_amps, 6), data_type=np.int32, order="F")
 
     def flatten(self):
         return self.amplitudes
@@ -56,7 +56,7 @@ class ActiveOperator:
                             self.slices.append(temp)
                             self.dimensions.append(dimensions)
                             self.ndim += np.prod(dimensions)
-                            setattr(self, temp, np.zeros(dimensions, dtype=data_type))
+                            setattr(self, temp, np.zeros(dimensions, dtype=data_type, order="F"))
 
 
     def get_hole_combinations(self, n):
@@ -122,9 +122,9 @@ class ClusterOperator:
 
                 # This is trying to set a zero 1D vector for the P space components
                 elif i in p_orders:
-                    setattr(self, name, np.zeros(excitation_count[j], dtype=data_type))
+                    setattr(self, name, np.zeros(excitation_count[j], dtype=data_type, order="F"))
                     if excitation_count[j] == 0:
-                         setattr(self, name, np.zeros(shape=(1,), dtype=data_type))
+                         setattr(self, name, np.zeros(shape=(1,), dtype=data_type, order="F"))
                     self.dimensions.append((excitation_count[j],))
                     ndim += excitation_count[j]
                    # developmental, for the PspaceOperator
@@ -132,7 +132,7 @@ class ClusterOperator:
                    #self.dimensions.append((excitation_count[j],))
                    #ndim += excitation_count[j]
                 else:
-                    setattr(self, name, np.zeros(dimensions, dtype=data_type))
+                    setattr(self, name, np.zeros(dimensions, dtype=data_type, order="F"))
                     self.dimensions.append(dimensions)
                     ndim += np.prod(dimensions)
 
@@ -226,7 +226,7 @@ class FockOperator:
             name = spin
             dimensions = dim
 
-            setattr(self, name, np.zeros(dimensions, dtype=data_type))
+            setattr(self, name, np.zeros(dimensions, dtype=data_type, order="F"))
             self.spin_cases.append(name)
             self.dimensions.append(dimensions)
             ndim += np.prod(dimensions)
@@ -241,7 +241,7 @@ class FockOperator:
                     name = spin + name_base
                     dimensions = dim + dimension_base
 
-                    setattr(self, name, np.zeros(dimensions, dtype=data_type))
+                    setattr(self, name, np.zeros(dimensions, dtype=data_type, order="F"))
                     self.spin_cases.append(name)
                     self.dimensions.append(dimensions)
                     ndim += np.prod(dimensions)
@@ -287,22 +287,22 @@ class SpinFlipOperator:
         nub = system.nunoccupied_beta
         if self.Ms == -1:
             if self.order == 1: # single spin-flip
-                setattr(self, "b", np.zeros((nub, noa))) # r1(a~|i)
+                setattr(self, "b", np.zeros((nub, noa), order="F")) # r1(a~|i)
                 setattr(self, "spin_cases", ["b"])
                 setattr(self, "dimensions", [(nub, noa)])
             elif self.order == 2: # singles and doubles spin-flip
-                setattr(self, "b", np.zeros((nub, noa))) # r1(a~|i)
-                setattr(self, "ab", np.zeros((nua, nub, noa, noa))) # r2(ab~|ij)
-                setattr(self, "bb", np.zeros((nub, nub, nob, noa))) # r2(a~b~|i~j)
+                setattr(self, "b", np.zeros((nub, noa), order="F")) # r1(a~|i)
+                setattr(self, "ab", np.zeros((nua, nub, noa, noa), order="F")) # r2(ab~|ij)
+                setattr(self, "bb", np.zeros((nub, nub, nob, noa), order="F")) # r2(a~b~|i~j)
                 setattr(self, "spin_cases", ["b", "ab", "bb"])
                 setattr(self, "dimensions", [(nub, noa), (nua, nub, noa, noa), (nub, nub, nob, noa)])
             elif self.order == 3: # singles, doubles, and triples spin-flip
-                setattr(self, "b", np.zeros((nub, noa))) # r1(a~|i)
-                setattr(self, "ab", np.zeros((nua, nub, noa, noa))) # r2(ab~|ij)
-                setattr(self, "bb", np.zeros((nub, nub, nob, noa))) # r2(a~b~|i~j)
-                setattr(self, "aab", np.zeros((nua, nua, nub, noa, noa, noa))) # r3(abc~|ijk)
-                setattr(self, "abb", np.zeros((nua, nub, nub, noa, nob, noa))) # r3(ab~c~|ij~k)
-                setattr(self, "bbb", np.zeros((nub, nub, nub, nob, nob, noa))) # r3(a~b~c~|i~j~k)
+                setattr(self, "b", np.zeros((nub, noa), order="F")) # r1(a~|i)
+                setattr(self, "ab", np.zeros((nua, nub, noa, noa), order="F")) # r2(ab~|ij)
+                setattr(self, "bb", np.zeros((nub, nub, nob, noa), order="F")) # r2(a~b~|i~j)
+                setattr(self, "aab", np.zeros((nua, nua, nub, noa, noa, noa), order="F")) # r3(abc~|ijk)
+                setattr(self, "abb", np.zeros((nua, nub, nub, noa, nob, noa), order="F")) # r3(ab~c~|ij~k)
+                setattr(self, "bbb", np.zeros((nub, nub, nub, nob, nob, noa), order="F")) # r3(a~b~c~|i~j~k)
                 setattr(self, "spin_cases", ["b", "ab", "bb", "aab", "abb", "bbb"])
                 setattr(self, "dimensions", [(nub, noa), (nua, nub, noa, noa), (nub, nub, nob, noa),
                                        (nua, nua, nub, noa, noa, noa),

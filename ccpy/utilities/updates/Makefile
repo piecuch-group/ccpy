@@ -5,6 +5,7 @@ MODULES := cc_loops \
 		   ccsdpt_loops \
 		   crcc24_loops \
 		   crcc24_opt_loops \
+		   cc3_loops \
 		   mbgf_loops \
 		   mbpt_loops \
 		   ccsdt_p_loops \

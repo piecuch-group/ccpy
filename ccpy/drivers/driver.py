@@ -93,7 +93,7 @@ class Driver:
         self.fock.b.vv = self.hamiltonian.b.vv.copy()
 
     def set_operator_params(self, method):
-        if method.lower() in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2"]:
+        if method.lower() in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2", "cc3"]:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
@@ -226,6 +226,7 @@ class Driver:
                                          order=self.operator_params["order"],
                                          p_orders=self.operator_params["pspace_orders"],
                                          pspace_sizes=excitation_count)
+
             # regardless of restart status, initialize residual anew
             dT = ClusterOperator(self.system,
                                  order=self.operator_params["order"],
@@ -821,15 +822,14 @@ class Driver:
                                                                           self.system, self.options["RHF_symmetry"])
         elif method.lower() == "ccsd(t)":
             from ccpy.moments.crcc23 import calc_ccsdpt
-            # Warn the user if they run using HBar instead of H; we will not disallow it, however
-            if self.flag_hbar:
-                print("WARNING: CCSD(T) is using similarity-transformed Hamiltonian! Results will not match conventional CCSD(T)!")
+            # Ensure that only the bare Hamiltonian is used
+            assert(not self.flag_hbar)
             _, self.deltapq[0] = calc_ccsdpt(self.T, self.correlation_energy, self.hamiltonian, self.system, self.options["RHF_symmetry"])
 
         elif method.lower() == "cct3":
             from ccpy.moments.cct3 import calc_cct3
             # Ensure that HBar is set
-            assert(self.flag_hbar)
+            assert self.flag_hbar
             # Perform ground-state correction
             _, self.deltapq[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
                                            self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
@@ -837,8 +837,8 @@ class Driver:
         elif method.lower() == "ccp3":
             from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full
             # Ensure that both HBar and pspace are set
-            assert(self.flag_hbar)
-            assert(pspace)
+            assert self.flag_hbar
+            assert pspace
             # Perform ground-state correction
             if two_body_approx: # Use the 2BA (requires only L1, L2 and HBar of CCSD)
                 _, self.deltapq[0] = calc_ccp3_2ba(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
@@ -848,7 +848,7 @@ class Driver:
         elif method.lower() == "ccp3(t)":
             from ccpy.moments.ccp3 import calc_ccpert3
             # Ensure that pspace is set
-            assert(pspace)
+            assert pspace
             # Warn the user if they run using HBar instead of H; we will not disallow it, however
             if self.flag_hbar:
                 print("WARNING: CC(P;3)_(T) is using similarity-transformed Hamiltonian! Results will not match conventional CCSD(T)!")
@@ -862,7 +862,7 @@ class Driver:
         if method.lower() == "crcc24":
             from ccpy.moments.crcc24 import calc_crcc24
             # Ensure that HBar is set
-            assert(self.flag_hbar)
+            assert self.flag_hbar
             # Perform ground-state correction
             _, self.deltapq[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
         else:
@@ -890,10 +890,10 @@ class AdaptDriver:
         self.ccp_energy = np.zeros(self.nmacro)
         self.ccpq_energy = np.zeros(self.nmacro)
         self.pspace = get_empty_pspace(self.driver.system, 3, use_bool=True)
-        self.t3_excitations = {"aaa": np.ones((1, 6)),
-                               "aab": np.ones((1, 6)),
-                               "abb": np.ones((1, 6)),
-                               "bbb": np.ones((1, 6))}
+        self.t3_excitations = {"aaa": np.ones((1, 6), order="F"),
+                               "aab": np.ones((1, 6), order="F"),
+                               "abb": np.ones((1, 6), order="F"),
+                               "bbb": np.ones((1, 6), order="F")}
 
         # Save the bare Hamiltonian for later iterations if using CR-CC(2,3)
         # since H will get overwritten to HBar. When using CCSD(T), H never

@@ -67,10 +67,13 @@ def load_pyscf_integrals(
     e1int = np.einsum(
         "pi,pq,qj->ij", mo_coeff, kinetic_aoints + nuclear_aoints, mo_coeff, optimize=True
     )
+    # put integrals into Fortran order
+    e1int = np.asfortranarray(e1int)
     e2int = np.transpose(
         np.reshape(ao2mo.kernel(molecule, mo_coeff, compact=False), 4 * (norbitals,)),
-        (0, 2, 1, 3),
+        (0, 2, 1, 3)
     )
+    e2int = np.asfortranarray(e2int)
     #e2int = np.einsum(
     #     "pi,qj,rk,sl,pqrs->ijkl", mo_coeff, mo_coeff, mo_coeff, mo_coeff, eri_aoints, optimize=True
     #)

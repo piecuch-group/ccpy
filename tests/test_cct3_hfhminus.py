@@ -1,6 +1,6 @@
 """ CC(t;3) computation for the open-shell (HFH)- molecule in the triplet
 ground state using the D2H-symmetric H-F distance of 2.0 angstrom described
-using the 6-31g(1d,1p) basis set.
+using the 6-31g(1d,1p) basis set. Active space consists of (2,2).
 Reference: J. Chem. Theory Comput. 8, 4968 (2012)
 """
 
@@ -16,7 +16,7 @@ def test_cct3_hfhminus():
         fcidump=TEST_DATA_DIR + "/hfhminus-triplet/hfhminus-triplet.FCIDUMP",
         nfrozen=1,
     )
-    driver.system.set_active_space(nact_unoccupied=1, nact_occupied=1)
+    driver.system.set_active_space(nact_unoccupied=2, nact_occupied=2)
     driver.system.print_info()
 
     driver.run_cc(method="ccsdt1")
@@ -27,29 +27,29 @@ def test_cct3_hfhminus():
     # Check reference energy
     assert np.allclose(driver.system.reference_energy, -100.3591573557)
     # Check CCSDt energy
-    assert np.allclose(driver.correlation_energy, -0.1925359236)
+    assert np.allclose(driver.correlation_energy, -0.19275952)
     assert np.allclose(
-        driver.system.reference_energy + driver.correlation_energy, -100.5516932793
+        driver.system.reference_energy + driver.correlation_energy, -100.5519168770
     )
     # Check CC(t;3)_A energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltapq[0]["A"], -0.1936455544
+        driver.correlation_energy + driver.deltapq[0]["A"], -0.1936570574
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
         + driver.deltapq[0]["A"],
-        -100.5528029101,
+        -100.5528144130,
     )
     # Check CC(t;3)_D energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltapq[0]["D"], -0.1938719549
+        driver.correlation_energy + driver.deltapq[0]["D"], -0.1938411916
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
         + driver.deltapq[0]["D"],
-        -100.5530293106,
+        -100.5529985472,
     )
 
 if __name__ == "__main__":

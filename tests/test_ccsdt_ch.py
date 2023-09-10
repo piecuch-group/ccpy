@@ -14,6 +14,7 @@ def test_ccsdt_ch():
     )
     driver.system.print_info()
 
+    driver.options["RHF_symmetry"] = False
     driver.run_cc(method="ccsdt")
 
     # Check reference energy
