@@ -43,6 +43,7 @@ energetics for the missing many-electron correlations using the generalized mome
   - CCSD
   - CCSD(T)
   - CR-CC(2,3)
+  - CC3
   - CCSDt
   - CC(t;3)
   - CIPSI-driven CC(*P*;*Q*) aimed at converging CCSDT (see Ref. [1])
