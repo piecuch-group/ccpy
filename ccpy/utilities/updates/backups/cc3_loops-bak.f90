@@ -1,10 +1,9 @@
 module cc3_loops
- 
-	use omp_lib
- 
+	
 	implicit none
 	
 	contains
+      
                subroutine update_t(t1a,t1b,t2a,t2b,t2c,&
                                    resid_a,resid_b,resid_aa,resid_ab,resid_bb,&
                                    X1A,X1B,X2A,X2B,X2C,&
@@ -107,24 +106,60 @@ module cc3_loops
                               call dgemm('n','n',nua**2,nua,nua,0.5d0,H2A_vvov_1243(:,:,:,i),nua**2,t2a(:,:,j,k),nua,1.0d0,temp,nua**2)
                               call dgemm('n','n',nua**2,nua,nua,-0.5d0,H2A_vvov_1243(:,:,:,j),nua**2,t2a(:,:,i,k),nua,1.0d0,temp,nua**2)
                               call dgemm('n','n',nua**2,nua,nua,-0.5d0,H2A_vvov_1243(:,:,:,k),nua**2,t2a(:,:,j,i),nua,1.0d0,temp,nua**2)
-                              !$omp parallel shared(temp,vA_oovv,h1a_ov,h2a_ooov,h2a_vovv,i,j,k)
-                              !$omp do schedule(static)
                               do a = 1,nua
                                  do b = a+1,nua
                                     do c = b+1,nua
                                        t3_denom = fA_oo(i,i)+fA_oo(j,j)+fA_oo(k,k)-fA_vv(a,a)-fA_vv(b,b)-fA_vv(c,c)
                                        t3a = temp(a,b,c) + temp(b,c,a) + temp(c,a,b) - temp(a,c,b) - temp(b,a,c) - temp(c,b,a)
                                        t3a = t3a / t3_denom
+!                                       !!! DEVECTORIZED CONSTRUCTION OF t3a AMPLITUDE !!!
+!                                       ! diagram contraction over hole line
+!                                       t3a_o = 0.0d0
+!                                       do m = 1,noa
+!                                          ! compute t3a_o(abcijk) = A(a/bc)A(k/ij) -h2a(amij) * t2a(bcmk)
+!                                          ! (1)
+!                                          t3a_o = t3a_o - h2a_vooo(a,m,i,j) * t2a(b,c,m,k) ! (1)
+!                                          t3a_o = t3a_o + h2a_vooo(a,m,k,j) * t2a(b,c,m,i) ! (ik)
+!                                          t3a_o = t3a_o + h2a_vooo(a,m,i,k) * t2a(b,c,m,j) ! (jk)
+!                                          ! (ab)
+!                                          t3a_o = t3a_o + h2a_vooo(b,m,i,j) * t2a(a,c,m,k) ! (1)
+!                                          t3a_o = t3a_o - h2a_vooo(b,m,k,j) * t2a(a,c,m,i) ! (ik)
+!                                          t3a_o = t3a_o - h2a_vooo(b,m,i,k) * t2a(a,c,m,j) ! (jk)
+!                                          ! (ac)
+!                                          t3a_o = t3a_o + h2a_vooo(c,m,i,j) * t2a(b,a,m,k) ! (1)
+!                                          t3a_o = t3a_o - h2a_vooo(c,m,k,j) * t2a(b,a,m,i) ! (ik)
+!                                          t3a_o = t3a_o - h2a_vooo(c,m,i,k) * t2a(b,a,m,j) ! (jk)
+!                                       end do
+!                                       ! diagram contraction over particle line
+!                                       t3a_v = 0.0d0
+!                                       do e = 1,nua
+!                                          ! compute t3a_v(abcijk) = A(c/ab)A(i/jk) h2a(abie) * t2a(ecjk)
+!                                          ! (1)
+!                                          t3a_v = t3a_v + h2a_vvov(a,b,i,e) * t2a(e,c,j,k) ! (1)
+!                                          t3a_v = t3a_v - h2a_vvov(a,b,j,e) * t2a(e,c,i,k) ! (ij)
+!                                          t3a_v = t3a_v - h2a_vvov(a,b,k,e) * t2a(e,c,j,i) ! (ik)
+!                                          ! (ac)
+!                                          t3a_v = t3a_v - h2a_vvov(c,b,i,e) * t2a(e,a,j,k) ! (1)
+!                                          t3a_v = t3a_v + h2a_vvov(c,b,j,e) * t2a(e,a,i,k) ! (ij)
+!                                          t3a_v = t3a_v + h2a_vvov(c,b,k,e) * t2a(e,a,j,i) ! (ik)
+!                                          ! (bc)
+!                                          t3a_v = t3a_v - h2a_vvov(a,c,i,e) * t2a(e,b,j,k) ! (1)
+!                                          t3a_v = t3a_v + h2a_vvov(a,c,j,e) * t2a(e,b,i,k) ! (ij)
+!                                          t3a_v = t3a_v + h2a_vvov(a,c,k,e) * t2a(e,b,j,i) ! (ik)
+!                                       end do
+!                                       ! total t3a element
+!                                       t3a = (t3a_o + t3a_v) / t3_denom
                                        ! A(a/bc)A(i/jk) vA(jkbc)*t3a(abcijk)
-                                       resid_a(a,i) = resid_a(a,i) + vA_oovv(j,k,b,c) * t3a ! (1)
-                                       resid_a(b,i) = resid_a(b,i) - vA_oovv(j,k,a,c) * t3a ! (ae)
-                                       resid_a(c,i) = resid_a(c,i) - vA_oovv(j,k,b,a) * t3a ! (af)
-                                       resid_a(a,j) = resid_a(a,j) - vA_oovv(i,k,b,c) * t3a ! (im)
-                                       resid_a(b,j) = resid_a(b,j) + vA_oovv(i,k,a,c) * t3a ! (ae)(im)
-                                       resid_a(c,j) = resid_a(c,j) + vA_oovv(i,k,b,a) * t3a ! (af)(im)
-                                       resid_a(a,k) = resid_a(a,k) - vA_oovv(j,i,b,c) * t3a ! (in)
-                                       resid_a(b,k) = resid_a(b,k) + vA_oovv(j,i,a,c) * t3a ! (ae)(in)
-                                       resid_a(c,k) = resid_a(c,k) + vA_oovv(j,i,b,a) * t3a ! (af)(in)
+                                       m = j; n = k; e = b; f = c;
+                                       resid_a(a,i) = resid_a(a,i) + vA_oovv(m,n,e,f) * t3a ! (1)
+                                       resid_a(e,i) = resid_a(e,i) - vA_oovv(m,n,a,f) * t3a ! (ae)
+                                       resid_a(f,i) = resid_a(f,i) - vA_oovv(m,n,e,a) * t3a ! (af)
+                                       resid_a(a,m) = resid_a(a,m) - vA_oovv(i,n,e,f) * t3a ! (im)
+                                       resid_a(e,m) = resid_a(e,m) + vA_oovv(i,n,a,f) * t3a ! (ae)(im)
+                                       resid_a(f,m) = resid_a(f,m) + vA_oovv(i,n,e,a) * t3a ! (af)(im)
+                                       resid_a(a,n) = resid_a(a,n) - vA_oovv(m,i,e,f) * t3a ! (in)
+                                       resid_a(e,n) = resid_a(e,n) + vA_oovv(m,i,a,f) * t3a ! (ae)(in)
+                                       resid_a(f,n) = resid_a(f,n) + vA_oovv(m,i,e,a) * t3a ! (af)(in)
                                        ! A(ij)A(ab) [A(m/ij)A(e/ab) h1a(me) * t3a(abeijm)]
                                        resid_aa(a,b,i,j) = resid_aa(a,b,i,j) + H1A_ov(k,c) * t3a ! (1)
                                        resid_aa(a,b,k,j) = resid_aa(a,b,k,j) - H1A_ov(i,c) * t3a ! (im)
@@ -160,8 +195,6 @@ module cc3_loops
                                     end do
                                  end do
                               end do
-                              !$omp end do
-                              !$omp end parallel
                            end do
                         end do
                       end do
@@ -194,6 +227,41 @@ module cc3_loops
                                        t3_denom = fA_oo(i,i)+fA_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fA_vv(b,b)-fB_vv(c,c)
                                        t3b = temp(a,b,c) - temp(b,a,c)
                                        t3b = t3b / t3_denom
+!                                       !!! DEVECTORIZED CONSTRUCTION OF t3b AMPLITUDE !!!
+!                                       t3b_o = 0.0d0
+!                                       do m = 1,noa
+!                                          ! compute t3b_o(abcijk) = A(ab) -h2a(amij) * t2b(bcmk)
+!                                          t3b_o = t3b_o - h2a_vooo(a,m,i,j) * t2b(b,c,m,k)
+!                                          t3b_o = t3b_o + h2a_vooo(b,m,i,j) * t2b(a,c,m,k)
+!                                          ! compute t3b_o(abcijk) = A(ij) -h2b(mcjk) * t2a(abim)
+!                                          t3b_o = t3b_o - h2b_ovoo(m,c,j,k) * t2a(a,b,i,m)
+!                                          t3b_o = t3b_o + h2b_ovoo(m,c,i,k) * t2a(a,b,j,m)
+!                                       end do
+!                                       do m = 1,nob
+!                                          ! compute t3b_o(abcijk) = A(ij)A(ab) -h2b(amik) * t2b(bcjm)
+!                                          t3b_o = t3b_o - h2b_vooo(a,m,i,k) * t2b(b,c,j,m) ! (1)
+!                                          t3b_o = t3b_o + h2b_vooo(a,m,j,k) * t2b(b,c,i,m) ! (ij)
+!                                          t3b_o = t3b_o + h2b_vooo(b,m,i,k) * t2b(a,c,j,m) ! (ab)
+!                                          t3b_o = t3b_o - h2b_vooo(b,m,j,k) * t2b(a,c,i,m) ! (ij)(ab)
+!                                       end do
+!                                       t3b_v = 0.0d0
+!                                       do e = 1,nua
+!                                          ! compute t3b_v(abcijk) = A(ab) h2b(bcek) * t2a(aeij)
+!                                          t3b_v = t3b_v + h2b_vvvo(b,c,e,k) * t2a(a,e,i,j)
+!                                          t3b_v = t3b_v - h2b_vvvo(a,c,e,k) * t2a(b,e,i,j)
+!                                          ! compute t3b_v(abcijk) = A(ij) h2a(abie) * t2b(ecjk)
+!                                          t3b_v = t3b_v + h2a_vvov(a,b,i,e) * t2b(e,c,j,k)
+!                                          t3b_v = t3b_v - h2a_vvov(a,b,j,e) * t2b(e,c,i,k)
+!                                       end do
+!                                       do e = 1,nub
+!                                          ! compute t3b_v(abcijk) = A(ab)A(ij) h2b(acie) * t2b(bejk)
+!                                          t3b_v = t3b_v + h2b_vvov(a,c,i,e) * t2b(b,e,j,k) ! (1)
+!                                          t3b_v = t3b_v - h2b_vvov(a,c,j,e) * t2b(b,e,i,k) ! (ij)
+!                                          t3b_v = t3b_v - h2b_vvov(b,c,i,e) * t2b(a,e,j,k) ! (ab)
+!                                          t3b_v = t3b_v + h2b_vvov(b,c,j,e) * t2b(a,e,i,k) ! (ij)(ab)
+!                                       end do
+!                                       ! total t3b element
+!                                       t3b = (t3b_o + t3b_v) / t3_denom
                                        ! A(ij)A(ab) vB(jkbc) * t3b(abcijk)
                                        m = j; n = k; e = b; f = c;
                                        resid_a(a,i) = resid_a(a,i) + vB_oovv(m,n,e,f) * t3b ! (1)
@@ -268,6 +336,41 @@ module cc3_loops
                                        t3_denom = fA_oo(i,i)+fB_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fB_vv(b,b)-fB_vv(c,c)
                                        t3c = temp(a,b,c) - temp(a,c,b)
                                        t3c = t3c / t3_denom
+!                                       !!! DEVECTORIZED CONSTRUCTION OF t3c AMPLITUDE !!!
+!                                       t3c_o = 0.0d0
+!                                       do m = 1,noa
+!                                          ! compute t3c_o(abcijk) = A(bc)A(jk) -h2b(mbij) * t2b(acmk)
+!                                          t3c_o = t3c_o - h2b_ovoo(m,b,i,j) * t2b(a,c,m,k) ! (1)
+!                                          t3c_o = t3c_o + h2b_ovoo(m,b,i,k) * t2b(a,c,m,j) ! (jk)
+!                                          t3c_o = t3c_o + h2b_ovoo(m,c,i,j) * t2b(a,b,m,k) ! (bc)
+!                                          t3c_o = t3c_o - h2b_ovoo(m,c,i,k) * t2b(a,b,m,j) ! (jk)(bc)
+!                                       end do
+!                                       do m = 1,nob
+!                                          ! compute t3c_o(abcijk) = A(bc) -h2c(cmkj) * t2b(abim)
+!                                          t3c_o = t3c_o - h2c_vooo(c,m,k,j) * t2b(a,b,i,m)
+!                                          t3c_o = t3c_o + h2c_vooo(b,m,k,j) * t2b(a,c,i,m)
+!                                          ! compute t3c_o(abcijk) = A(jk) -h2b(amij) * t2c(bcmk)
+!                                          t3c_o = t3c_o - h2b_vooo(a,m,i,j) * t2c(b,c,m,k)
+!                                          t3c_o = t3c_o + h2b_vooo(a,m,i,k) * t2c(b,c,m,j)
+!                                       end do
+!                                       t3c_v = 0.0d0
+!                                       do e = 1,nua
+!                                          ! compute t3c_v(abcijk) = A(bc)A(jk) h2b(abej) * t2b(ecik)
+!                                          t3c_v = t3c_v + h2b_vvvo(a,b,e,j) * t2b(e,c,i,k) ! (1)
+!                                          t3c_v = t3c_v - h2b_vvvo(a,b,e,k) * t2b(e,c,i,j) ! (jk)
+!                                          t3c_v = t3c_v - h2b_vvvo(a,c,e,j) * t2b(e,b,i,k) ! (bc)
+!                                          t3c_v = t3c_v + h2b_vvvo(a,c,e,k) * t2b(e,b,i,j) ! (jk)(bc)
+!                                       end do
+!                                       do e = 1,nub
+!                                          ! compute t3c_v(abcijk) = A(bc) h2b(abie) * t2c(ecjk)
+!                                          t3c_v = t3c_v + h2b_vvov(a,b,i,e) * t2c(e,c,j,k)
+!                                          t3c_v = t3c_v - h2b_vvov(a,c,i,e) * t2c(e,b,j,k)
+!                                          ! compute t3c_v(abcijk) = A(jk) h2c(cbke) * t2b(aeij)
+!                                          t3c_v = t3c_v + h2c_vvov(c,b,k,e) * t2b(a,e,i,j)
+!                                          t3c_v = t3c_v - h2c_vvov(c,b,j,e) * t2b(a,e,i,k)
+!                                       end do
+!                                       ! total t3c element
+!                                       t3c = (t3c_o + t3c_v) / t3_denom
                                        ! vC(jkbc) * t3c(abcijk)
                                        resid_a(a,i) = resid_a(a,i) + vC_oovv(j,k,b,c) * t3c ! (1)
                                        ! A(bc)A(jk) vB(ijab) * t3c(abcijk)
@@ -331,6 +434,43 @@ module cc3_loops
                                        t3_denom = fB_oo(i,i)+fB_oo(j,j)+fB_oo(k,k)-fB_vv(a,a)-fB_vv(b,b)-fB_vv(c,c)
                                        t3d = temp(a,b,c) + temp(b,c,a) + temp(c,a,b) - temp(a,c,b) - temp(b,a,c) - temp(c,b,a)
                                        t3d = t3d / t3_denom
+!                                       !!! DEVECTORIZED CONSTRUCTION OF t3d AMPLITUDE !!!
+!                                       ! diagram contraction over hole line
+!                                       t3d_o = 0.0d0
+!                                       do m = 1,nob
+!                                          ! compute t3d_o(abcijk) = A(a/bc)A(k/ij) -h2c(amij) * t2c(bcmk)
+!                                          ! (1)
+!                                          t3d_o = t3d_o - h2c_vooo(a,m,i,j) * t2c(b,c,m,k) ! (1)
+!                                          t3d_o = t3d_o + h2c_vooo(a,m,k,j) * t2c(b,c,m,i) ! (ik)
+!                                          t3d_o = t3d_o + h2c_vooo(a,m,i,k) * t2c(b,c,m,j) ! (jk)
+!                                          ! (ab)
+!                                          t3d_o = t3d_o + h2c_vooo(b,m,i,j) * t2c(a,c,m,k) ! (1)
+!                                          t3d_o = t3d_o - h2c_vooo(b,m,k,j) * t2c(a,c,m,i) ! (ik)
+!                                          t3d_o = t3d_o - h2c_vooo(b,m,i,k) * t2c(a,c,m,j) ! (jk)
+!                                          ! (ac)
+!                                          t3d_o = t3d_o + h2c_vooo(c,m,i,j) * t2c(b,a,m,k) ! (1)
+!                                          t3d_o = t3d_o - h2c_vooo(c,m,k,j) * t2c(b,a,m,i) ! (ik)
+!                                          t3d_o = t3d_o - h2c_vooo(c,m,i,k) * t2c(b,a,m,j) ! (jk)
+!                                       end do
+!                                       ! diagram contraction over particle line
+!                                       t3d_v = 0.0d0
+!                                       do e = 1,nub
+!                                          ! compute t3d_v(abcijk) = A(c/ab)A(i/jk) h2c(abie) * t2c(ecjk)
+!                                          ! (1)
+!                                          t3d_v = t3d_v + h2c_vvov(a,b,i,e) * t2c(e,c,j,k) ! (1)
+!                                          t3d_v = t3d_v - h2c_vvov(a,b,j,e) * t2c(e,c,i,k) ! (ij)
+!                                          t3d_v = t3d_v - h2c_vvov(a,b,k,e) * t2c(e,c,j,i) ! (ik)
+!                                          ! (ac)
+!                                          t3d_v = t3d_v - h2c_vvov(c,b,i,e) * t2c(e,a,j,k) ! (1)
+!                                          t3d_v = t3d_v + h2c_vvov(c,b,j,e) * t2c(e,a,i,k) ! (ij)
+!                                          t3d_v = t3d_v + h2c_vvov(c,b,k,e) * t2c(e,a,j,i) ! (ik)
+!                                          ! (bc)
+!                                          t3d_v = t3d_v - h2c_vvov(a,c,i,e) * t2c(e,b,j,k) ! (1)
+!                                          t3d_v = t3d_v + h2c_vvov(a,c,j,e) * t2c(e,b,i,k) ! (ij)
+!                                          t3d_v = t3d_v + h2c_vvov(a,c,k,e) * t2c(e,b,j,i) ! (ik)
+!                                       end do
+!                                       ! total t3d element
+!                                       t3d = (t3d_o + t3d_v) / t3_denom
                                        ! A(a/bc)A(i/jk) vC(jkbc)*t3d(abcijk)
                                        m = j; n = k; e = b; f = c;
                                        resid_b(a,i) = resid_b(a,i) + vC_oovv(m,n,e,f) * t3d ! (1)
