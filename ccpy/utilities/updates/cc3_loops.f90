@@ -66,14 +66,15 @@ module cc3_loops
                       real(kind=8), intent(out) :: resid_ab(1:nua,1:nub,1:noa,1:nob)
                       real(kind=8), intent(out) :: resid_bb(1:nub,1:nub,1:nob,1:nob)
 
-                      integer :: i, j, k, a, b, c, m, n, e, f
+                      integer :: i, j, k, a, b, c
                       real(kind=8) :: denom, val
                       real(kind=8) :: t3a_o, t3a_v, t3b_o, t3b_v, t3c_o, t3c_v, t3d_o, t3d_v
                       real(kind=8) :: t3a, t3b, t3c, t3d
                       real(kind=8) :: t3_denom
                       
-                      ! reordered arrays for DGEMMs
+                      ! allocatable array to hold t3(abc) for a given (i,j,k) block
                       real(kind=8), allocatable :: temp(:,:,:)
+                      ! reordered arrays for the DGEMM operations
                       real(kind=8) :: H2A_vvov_1243(nua,nua,nua,noa)
                       real(kind=8) :: H2B_vvov_1243(nua,nub,nub,noa), t2b_1243(nua,nub,nob,noa)
                       real(kind=8) :: H2C_vvov_4213(nub,nub,nub,noa), H2C_vooo_2134(nob,nub,nob,nob)
@@ -85,6 +86,7 @@ module cc3_loops
                       resid_aa = 0.0d0
                       resid_ab = 0.0d0
                       resid_bb = 0.0d0
+                      
                       ! Call reordering routines for arrays entering DGEMM
                       call reorder1243(H2A_vvov,H2A_vvov_1243)
                       call reorder1243(H2B_vvov,H2B_vvov_1243)
@@ -108,7 +110,7 @@ module cc3_loops
                               call dgemm('n','n',nua**2,nua,nua,-0.5d0,H2A_vvov_1243(:,:,:,j),nua**2,t2a(:,:,i,k),nua,1.0d0,temp,nua**2)
                               call dgemm('n','n',nua**2,nua,nua,-0.5d0,H2A_vvov_1243(:,:,:,k),nua**2,t2a(:,:,j,i),nua,1.0d0,temp,nua**2)
                               !$omp parallel shared(temp,vA_oovv,h1a_ov,h2a_ooov,h2a_vovv,i,j,k),&
-                              !$omp private(t3a,t3_denom,a,b,c,m,n,e,f)
+                              !$omp private(t3a,t3_denom,a,b,c)
                               !$omp do schedule(static) reduction(+:resid_a,resid_aa)
                               do a = 1,nua
                                  do b = a+1,nua
@@ -137,27 +139,25 @@ module cc3_loops
                                        resid_aa(a,c,k,j) = resid_aa(a,c,k,j) + H1A_ov(i,b) * t3a ! (im)(be)
                                        resid_aa(a,c,i,k) = resid_aa(a,c,i,k) + H1A_ov(j,b) * t3a ! (jm)(be)
                                        ! A(ij)A(ab) [A(j/mn)A(f/ab) -h2a(mnif) * t3a(abfmjn)]
-                                       f = c; n = k; m = i;
-                                       resid_aa(a,b,:,j) = resid_aa(a,b,:,j) - H2A_ooov(m,n,:,f) * t3a ! (1)
-                                       resid_aa(a,b,:,m) = resid_aa(a,b,:,m) + H2A_ooov(j,n,:,f) * t3a ! (jm)
-                                       resid_aa(a,b,:,n) = resid_aa(a,b,:,n) + H2A_ooov(m,j,:,f) * t3a ! (jn)
-                                       resid_aa(f,b,:,j) = resid_aa(f,b,:,j) + H2A_ooov(m,n,:,a) * t3a ! (af)
-                                       resid_aa(f,b,:,m) = resid_aa(f,b,:,m) - H2A_ooov(j,n,:,a) * t3a ! (jm)(af)
-                                       resid_aa(f,b,:,n) = resid_aa(f,b,:,n) - H2A_ooov(m,j,:,a) * t3a ! (jn)(af)
-                                       resid_aa(a,f,:,j) = resid_aa(a,f,:,j) + H2A_ooov(m,n,:,b) * t3a ! (bf)
-                                       resid_aa(a,f,:,m) = resid_aa(a,f,:,m) - H2A_ooov(j,n,:,b) * t3a ! (jm)(bf)
-                                       resid_aa(a,f,:,n) = resid_aa(a,f,:,n) - H2A_ooov(m,j,:,b) * t3a ! (jn)(bf)
+                                       resid_aa(a,b,:,j) = resid_aa(a,b,:,j) - H2A_ooov(i,k,:,c) * t3a ! (1)
+                                       resid_aa(a,b,:,i) = resid_aa(a,b,:,i) + H2A_ooov(j,k,:,c) * t3a ! (jm)
+                                       resid_aa(a,b,:,k) = resid_aa(a,b,:,k) + H2A_ooov(i,j,:,c) * t3a ! (jn)
+                                       resid_aa(c,b,:,j) = resid_aa(c,b,:,j) + H2A_ooov(i,k,:,a) * t3a ! (af)
+                                       resid_aa(c,b,:,i) = resid_aa(c,b,:,i) - H2A_ooov(j,k,:,a) * t3a ! (jm)(af)
+                                       resid_aa(c,b,:,k) = resid_aa(c,b,:,k) - H2A_ooov(i,j,:,a) * t3a ! (jn)(af)
+                                       resid_aa(a,c,:,j) = resid_aa(a,c,:,j) + H2A_ooov(i,k,:,b) * t3a ! (bf)
+                                       resid_aa(a,c,:,i) = resid_aa(a,c,:,i) - H2A_ooov(j,k,:,b) * t3a ! (jm)(bf)
+                                       resid_aa(a,c,:,k) = resid_aa(a,c,:,k) - H2A_ooov(i,j,:,b) * t3a ! (jn)(bf)
                                        ! A(ij)A(ab) [A(n/ij)A(b/ef) h2a(anef) * t3a(ebfijn)]
-                                       e = a; f = c; n = k;
-                                       resid_aa(:,b,i,j) = resid_aa(:,b,i,j) + H2A_vovv(:,n,e,f) * t3a ! (1)
-                                       resid_aa(:,b,n,j) = resid_aa(:,b,n,j) - H2A_vovv(:,i,e,f) * t3a ! (in)
-                                       resid_aa(:,b,i,n) = resid_aa(:,b,i,n) - H2A_vovv(:,j,e,f) * t3a ! (jn)
-                                       resid_aa(:,e,i,j) = resid_aa(:,e,i,j) - H2A_vovv(:,n,b,f) * t3a ! (be)
-                                       resid_aa(:,e,n,j) = resid_aa(:,e,n,j) + H2A_vovv(:,i,b,f) * t3a ! (in)(be)
-                                       resid_aa(:,e,i,n) = resid_aa(:,e,i,n) + H2A_vovv(:,j,b,f) * t3a ! (jn)(be)
-                                       resid_aa(:,f,i,j) = resid_aa(:,f,i,j) - H2A_vovv(:,n,e,b) * t3a ! (bf)
-                                       resid_aa(:,f,n,j) = resid_aa(:,f,n,j) + H2A_vovv(:,i,e,b) * t3a ! (in)(bf)
-                                       resid_aa(:,f,i,n) = resid_aa(:,f,i,n) + H2A_vovv(:,j,e,b) * t3a ! (jn)(bf)
+                                       resid_aa(:,b,i,j) = resid_aa(:,b,i,j) + H2A_vovv(:,k,a,c) * t3a ! (1)
+                                       resid_aa(:,b,k,j) = resid_aa(:,b,k,j) - H2A_vovv(:,i,a,c) * t3a ! (in)
+                                       resid_aa(:,b,i,k) = resid_aa(:,b,i,k) - H2A_vovv(:,j,a,c) * t3a ! (jn)
+                                       resid_aa(:,a,i,j) = resid_aa(:,a,i,j) - H2A_vovv(:,k,b,c) * t3a ! (be)
+                                       resid_aa(:,a,k,j) = resid_aa(:,a,k,j) + H2A_vovv(:,i,b,c) * t3a ! (in)(be)
+                                       resid_aa(:,a,i,k) = resid_aa(:,a,i,k) + H2A_vovv(:,j,b,c) * t3a ! (jn)(be)
+                                       resid_aa(:,c,i,j) = resid_aa(:,c,i,j) - H2A_vovv(:,k,a,b) * t3a ! (bf)
+                                       resid_aa(:,c,k,j) = resid_aa(:,c,k,j) + H2A_vovv(:,i,a,b) * t3a ! (in)(bf)
+                                       resid_aa(:,c,i,k) = resid_aa(:,c,i,k) + H2A_vovv(:,j,a,b) * t3a ! (jn)(bf)
                                     end do
                                  end do
                               end do
@@ -194,7 +194,7 @@ module cc3_loops
                               !$omp h2a_ooov,h2a_vovv,&
                               !$omp h2b_ooov,h2b_oovo,h2b_vvov,h2b_vvvo,&
                               !$omp i,j,k),&
-                              !$omp private(t3b,t3_denom,a,b,c,m,n,e,f)
+                              !$omp private(t3b,t3_denom,a,b,c)
                               !$omp do schedule(static) reduction(+:resid_a,resid_b,resid_aa,resid_ab)
                               do a = 1,nua
                                  do b = a+1,nua
@@ -203,23 +203,20 @@ module cc3_loops
                                        t3b = temp(a,b,c) - temp(b,a,c)
                                        t3b = t3b / t3_denom
                                        ! A(ij)A(ab) vB(jkbc) * t3b(abcijk)
-                                       m = j; n = k; e = b; f = c;
-                                       resid_a(a,i) = resid_a(a,i) + vB_oovv(m,n,e,f) * t3b ! (1)
-                                       resid_a(e,i) = resid_a(e,i) - vB_oovv(m,n,a,f) * t3b ! (ae)
-                                       resid_a(a,m) = resid_a(a,m) - vB_oovv(i,n,e,f) * t3b ! (im)
-                                       resid_a(e,m) = resid_a(e,m) + vB_oovv(i,n,a,f) * t3b ! (ae)(im)
+                                       resid_a(a,i) = resid_a(a,i) + vB_oovv(j,k,b,c) * t3b ! (1)
+                                       resid_a(b,i) = resid_a(b,i) - vB_oovv(j,k,a,c) * t3b ! (ae)
+                                       resid_a(a,j) = resid_a(a,j) - vB_oovv(i,k,b,c) * t3b ! (im)
+                                       resid_a(b,j) = resid_a(b,j) + vB_oovv(i,k,a,c) * t3b ! (ae)(im)
                                        ! vA(ijab) * t3b(abcijk)
                                        resid_b(c,k) = resid_b(c,k) + vA_oovv(i,j,a,b) * t3b ! (1)
                                        ! A(ij)A(ab) [h1b(me) * t3b(abeijm)]
                                        resid_aa(a,b,i,j) = resid_aa(a,b,i,j) + H1B_ov(k,c) * t3b ! (1)
                                        ! A(ij)A(ab) [A(jm) -h2b(mnif) * t3b(abfmjn)]
-                                       f = c; m = i; n = k;
-                                       resid_aa(a,b,:,j) = resid_aa(a,b,:,j) - H2B_ooov(m,n,:,f) * t3b ! (1)
-                                       resid_aa(a,b,:,m) = resid_aa(a,b,:,m) + H2B_ooov(j,n,:,f) * t3b ! (jm)
+                                       resid_aa(a,b,:,j) = resid_aa(a,b,:,j) - H2B_ooov(i,k,:,c) * t3b ! (1)
+                                       resid_aa(a,b,:,i) = resid_aa(a,b,:,i) + H2B_ooov(j,k,:,c) * t3b ! (jm)
                                        ! A(ij)A(ab) [A(be) h2b(anef) * t3b(ebfijn)] (!!! expensive; ~3s)
-                                       e = a; f = c; n = k;
-                                       resid_aa(:,b,i,j) = resid_aa(:,b,i,j) + H2B_vovv(:,n,e,f) * t3b ! (1)
-                                       resid_aa(:,e,i,j) = resid_aa(:,e,i,j) - H2B_vovv(:,n,b,f) * t3b ! (be)
+                                       resid_aa(:,b,i,j) = resid_aa(:,b,i,j) + H2B_vovv(:,k,a,c) * t3b ! (1)
+                                       resid_aa(:,a,i,j) = resid_aa(:,a,i,j) - H2B_vovv(:,k,b,c) * t3b ! (be)
                                        ! A(af) -h2a(mnif) * t3b(afbmnj)
                                        resid_ab(a,c,:,k) = resid_ab(a,c,:,k) - H2A_ooov(i,j,:,b) * t3b ! (1)
                                        resid_ab(b,c,:,k) = resid_ab(b,c,:,k) + H2A_ooov(i,j,:,a) * t3b ! (af)
@@ -277,7 +274,7 @@ module cc3_loops
                               !$omp h2c_ooov,h2c_vovv,&
                               !$omp h2b_ooov,h2b_oovo,h2b_vvov,h2b_vvvo,&
                               !$omp i,j,k),&
-                              !$omp private(t3c,t3_denom,a,b,c,m,n,e,f)
+                              !$omp private(t3c,t3_denom,a,b,c)
                               !$omp do schedule(static) reduction(+:resid_a,resid_b,resid_ab,resid_bb)
                               do a = 1,nua
                                  do b = 1,nub
@@ -345,7 +342,7 @@ module cc3_loops
                               call dgemm('n','n',nub**2,nub,nub,-0.5d0,H2C_vvov_1243(:,:,:,j),nub**2,t2c(:,:,i,k),nub,1.0d0,temp,nub**2)
                               call dgemm('n','n',nub**2,nub,nub,-0.5d0,H2C_vvov_1243(:,:,:,k),nub**2,t2c(:,:,j,i),nub,1.0d0,temp,nub**2)
                               !$omp parallel shared(temp,vC_oovv,h1b_ov,h2c_ooov,h2c_vovv,i,j,k),&
-                              !$omp private(t3d,t3_denom,a,b,c,m,n,e,f)
+                              !$omp private(t3d,t3_denom,a,b,c)
                               !$omp do schedule(static) reduction(+:resid_b,resid_bb)
                               do a = 1,nub
                                  do b = a+1,nub
@@ -354,49 +351,45 @@ module cc3_loops
                                        t3d = temp(a,b,c) + temp(b,c,a) + temp(c,a,b) - temp(a,c,b) - temp(b,a,c) - temp(c,b,a)
                                        t3d = t3d / t3_denom
                                        ! A(a/bc)A(i/jk) vC(jkbc)*t3d(abcijk)
-                                       m = j; n = k; e = b; f = c;
-                                       resid_b(a,i) = resid_b(a,i) + vC_oovv(m,n,e,f) * t3d ! (1)
-                                       resid_b(e,i) = resid_b(e,i) - vC_oovv(m,n,a,f) * t3d ! (ae)
-                                       resid_b(f,i) = resid_b(f,i) - vC_oovv(m,n,e,a) * t3d ! (af)
-                                       resid_b(a,m) = resid_b(a,m) - vC_oovv(i,n,e,f) * t3d ! (im)
-                                       resid_b(e,m) = resid_b(e,m) + vC_oovv(i,n,a,f) * t3d ! (ae)(im)
-                                       resid_b(f,m) = resid_b(f,m) + vC_oovv(i,n,e,a) * t3d ! (af)(im)
-                                       resid_b(a,n) = resid_b(a,n) - vC_oovv(m,i,e,f) * t3d ! (in)
-                                       resid_b(e,n) = resid_b(e,n) + vC_oovv(m,i,a,f) * t3d ! (ae)(in)
-                                       resid_b(f,n) = resid_b(f,n) + vC_oovv(m,i,e,a) * t3d ! (af)(in)
+                                       resid_b(a,i) = resid_b(a,i) + vC_oovv(j,k,b,c) * t3d ! (1)
+                                       resid_b(b,i) = resid_b(b,i) - vC_oovv(j,k,a,c) * t3d ! (ae)
+                                       resid_b(c,i) = resid_b(c,i) - vC_oovv(j,k,b,a) * t3d ! (af)
+                                       resid_b(a,j) = resid_b(a,j) - vC_oovv(i,k,b,c) * t3d ! (im)
+                                       resid_b(b,j) = resid_b(b,j) + vC_oovv(i,k,a,c) * t3d ! (ae)(im)
+                                       resid_b(c,j) = resid_b(c,j) + vC_oovv(i,k,b,a) * t3d ! (af)(im)
+                                       resid_b(a,k) = resid_b(a,k) - vC_oovv(j,i,b,c) * t3d ! (in)
+                                       resid_b(b,k) = resid_b(b,k) + vC_oovv(j,i,a,c) * t3d ! (ae)(in)
+                                       resid_b(c,k) = resid_b(c,k) + vC_oovv(j,i,b,a) * t3d ! (af)(in)
                                        ! A(ij)A(ab) [A(m/ij)A(e/ab) h1b(me) * t3d(abeijm)]
-                                       e = c; m = k;
-                                       resid_bb(a,b,i,j) = resid_bb(a,b,i,j) + H1B_ov(m,e) * t3d ! (1)
-                                       resid_bb(a,b,m,j) = resid_bb(a,b,m,j) - H1B_ov(i,e) * t3d ! (im)
-                                       resid_bb(a,b,i,m) = resid_bb(a,b,i,m) - H1B_ov(j,e) * t3d ! (jm)
-                                       resid_bb(e,b,i,j) = resid_bb(e,b,i,j) - H1B_ov(m,a) * t3d ! (ae)
-                                       resid_bb(e,b,m,j) = resid_bb(e,b,m,j) + H1B_ov(i,a) * t3d ! (im)(ae)
-                                       resid_bb(e,b,i,m) = resid_bb(e,b,i,m) + H1B_ov(j,a) * t3d ! (jm)(ae)
-                                       resid_bb(a,e,i,j) = resid_bb(a,e,i,j) - H1B_ov(m,b) * t3d ! (be)
-                                       resid_bb(a,e,m,j) = resid_bb(a,e,m,j) + H1B_ov(i,b) * t3d ! (im)(be)
-                                       resid_bb(a,e,i,m) = resid_bb(a,e,i,m) + H1B_ov(j,b) * t3d ! (jm)(be)
+                                       resid_bb(a,b,i,j) = resid_bb(a,b,i,j) + H1B_ov(k,c) * t3d ! (1)
+                                       resid_bb(a,b,k,j) = resid_bb(a,b,k,j) - H1B_ov(i,c) * t3d ! (im)
+                                       resid_bb(a,b,i,k) = resid_bb(a,b,i,k) - H1B_ov(j,c) * t3d ! (jm)
+                                       resid_bb(c,b,i,j) = resid_bb(c,b,i,j) - H1B_ov(k,a) * t3d ! (ae)
+                                       resid_bb(c,b,k,j) = resid_bb(c,b,k,j) + H1B_ov(i,a) * t3d ! (im)(ae)
+                                       resid_bb(c,b,i,k) = resid_bb(c,b,i,k) + H1B_ov(j,a) * t3d ! (jm)(ae)
+                                       resid_bb(a,c,i,j) = resid_bb(a,c,i,j) - H1B_ov(k,b) * t3d ! (be)
+                                       resid_bb(a,c,k,j) = resid_bb(a,c,k,j) + H1B_ov(i,b) * t3d ! (im)(be)
+                                       resid_bb(a,c,i,k) = resid_bb(a,c,i,k) + H1B_ov(j,b) * t3d ! (jm)(be)
                                        ! A(ij)A(ab) [A(j/mn)A(f/ab) -h2c(mnif) * t3d(abfmjn)]
-                                       f = c; m = i; n = k;
-                                       resid_bb(a,b,:,j) = resid_bb(a,b,:,j) - H2C_ooov(m,n,:,f) * t3d ! (1)
-                                       resid_bb(a,b,:,m) = resid_bb(a,b,:,m) + H2C_ooov(j,n,:,f) * t3d ! (jm)
-                                       resid_bb(a,b,:,n) = resid_bb(a,b,:,n) + H2C_ooov(m,j,:,f) * t3d ! (jn)
-                                       resid_bb(f,b,:,j) = resid_bb(f,b,:,j) + H2C_ooov(m,n,:,a) * t3d ! (af)
-                                       resid_bb(f,b,:,m) = resid_bb(f,b,:,m) - H2C_ooov(j,n,:,a) * t3d ! (jm)(af)
-                                       resid_bb(f,b,:,n) = resid_bb(f,b,:,n) - H2C_ooov(m,j,:,a) * t3d ! (jn)(af)
-                                       resid_bb(a,f,:,j) = resid_bb(a,f,:,j) + H2C_ooov(m,n,:,b) * t3d ! (bf)
-                                       resid_bb(a,f,:,m) = resid_bb(a,f,:,m) - H2C_ooov(j,n,:,b) * t3d ! (jm)(bf)
-                                       resid_bb(a,f,:,n) = resid_bb(a,f,:,n) - H2C_ooov(m,j,:,b) * t3d ! (jn)(bf)
+                                       resid_bb(a,b,:,j) = resid_bb(a,b,:,j) - H2C_ooov(i,k,:,c) * t3d ! (1)
+                                       resid_bb(a,b,:,i) = resid_bb(a,b,:,i) + H2C_ooov(j,k,:,c) * t3d ! (jm)
+                                       resid_bb(a,b,:,k) = resid_bb(a,b,:,k) + H2C_ooov(i,j,:,c) * t3d ! (jn)
+                                       resid_bb(c,b,:,j) = resid_bb(c,b,:,j) + H2C_ooov(i,k,:,a) * t3d ! (af)
+                                       resid_bb(c,b,:,i) = resid_bb(c,b,:,i) - H2C_ooov(j,k,:,a) * t3d ! (jm)(af)
+                                       resid_bb(c,b,:,k) = resid_bb(c,b,:,k) - H2C_ooov(i,j,:,a) * t3d ! (jn)(af)
+                                       resid_bb(a,c,:,j) = resid_bb(a,c,:,j) + H2C_ooov(i,k,:,b) * t3d ! (bf)
+                                       resid_bb(a,c,:,i) = resid_bb(a,c,:,i) - H2C_ooov(j,k,:,b) * t3d ! (jm)(bf)
+                                       resid_bb(a,c,:,k) = resid_bb(a,c,:,k) - H2C_ooov(i,j,:,b) * t3d ! (jn)(bf)
                                        ! A(ij)A(ab) [A(n/ij)A(b/ef) h2c(anef) * t3d(ebfijn)]
-                                       e = a; f = c; n = k;
-                                       resid_bb(:,b,i,j) = resid_bb(:,b,i,j) + H2C_vovv(:,n,e,f) * t3d ! (1)
-                                       resid_bb(:,b,n,j) = resid_bb(:,b,n,j) - H2C_vovv(:,i,e,f) * t3d ! (in)
-                                       resid_bb(:,b,i,n) = resid_bb(:,b,i,n) - H2C_vovv(:,j,e,f) * t3d ! (jn)
-                                       resid_bb(:,e,i,j) = resid_bb(:,e,i,j) - H2C_vovv(:,n,b,f) * t3d ! (be)
-                                       resid_bb(:,e,n,j) = resid_bb(:,e,n,j) + H2C_vovv(:,i,b,f) * t3d ! (in)(be)
-                                       resid_bb(:,e,i,n) = resid_bb(:,e,i,n) + H2C_vovv(:,j,b,f) * t3d ! (jn)(be)
-                                       resid_bb(:,f,i,j) = resid_bb(:,f,i,j) - H2C_vovv(:,n,e,b) * t3d ! (bf)
-                                       resid_bb(:,f,n,j) = resid_bb(:,f,n,j) + H2C_vovv(:,i,e,b) * t3d ! (in)(bf)
-                                       resid_bb(:,f,i,n) = resid_bb(:,f,i,n) + H2C_vovv(:,j,e,b) * t3d ! (jn)(bf)
+                                       resid_bb(:,b,i,j) = resid_bb(:,b,i,j) + H2C_vovv(:,k,a,c) * t3d ! (1)
+                                       resid_bb(:,b,k,j) = resid_bb(:,b,k,j) - H2C_vovv(:,i,a,c) * t3d ! (in)
+                                       resid_bb(:,b,i,k) = resid_bb(:,b,i,k) - H2C_vovv(:,j,a,c) * t3d ! (jn)
+                                       resid_bb(:,a,i,j) = resid_bb(:,a,i,j) - H2C_vovv(:,k,b,c) * t3d ! (be)
+                                       resid_bb(:,a,k,j) = resid_bb(:,a,k,j) + H2C_vovv(:,i,b,c) * t3d ! (in)(be)
+                                       resid_bb(:,a,i,k) = resid_bb(:,a,i,k) + H2C_vovv(:,j,b,c) * t3d ! (jn)(be)
+                                       resid_bb(:,c,i,j) = resid_bb(:,c,i,j) - H2C_vovv(:,k,a,b) * t3d ! (bf)
+                                       resid_bb(:,c,k,j) = resid_bb(:,c,k,j) + H2C_vovv(:,i,a,b) * t3d ! (in)(bf)
+                                       resid_bb(:,c,i,k) = resid_bb(:,c,i,k) + H2C_vovv(:,j,a,b) * t3d ! (jn)(bf)
                                     end do
                                  end do
                               end do
@@ -428,13 +421,16 @@ module cc3_loops
                          do j = i+1,noa
                             do a = 1,nua
                                do b = a+1,nua
-                                  resid_aa(a,b,i,j) = resid_aa(a,b,i,j) - resid_aa(b,a,i,j) - resid_aa(a,b,j,i) + resid_aa(b,a,j,i)
                                   denom = fA_oo(i,i) + fA_oo(j,j) - fA_vv(a,a) - fA_vv(b,b)
+                                  
+                                  resid_aa(a,b,i,j) = resid_aa(a,b,i,j) - resid_aa(b,a,i,j) - resid_aa(a,b,j,i) + resid_aa(b,a,j,i)
                                   val = X2A(a,b,i,j) - X2A(b,a,i,j) - X2A(a,b,j,i) + X2A(b,a,j,i)
+                                  
                                   resid_aa(a,b,i,j) = (resid_aa(a,b,i,j) + val)/(denom - shift)
                                   resid_aa(b,a,i,j) = -resid_aa(a,b,i,j)
                                   resid_aa(a,b,j,i) = -resid_aa(a,b,i,j)
                                   resid_aa(b,a,j,i) = resid_aa(a,b,i,j)
+                                  
                                   t2a(a,b,i,j) = t2a(a,b,i,j) + resid_aa(a,b,i,j)
                                   t2a(b,a,i,j) = -t2a(a,b,i,j)
                                   t2a(a,b,j,i) = -t2a(a,b,i,j)
@@ -460,13 +456,16 @@ module cc3_loops
                          do j = i+1,nob
                             do a = 1,nub
                                do b = a+1,nub
-                                  resid_bb(a,b,i,j) = resid_bb(a,b,i,j) - resid_bb(b,a,i,j) - resid_bb(a,b,j,i) + resid_bb(b,a,j,i)
                                   denom = fB_oo(i,i) + fB_oo(j,j) - fB_vv(a,a) - fB_vv(b,b)
+                                  
+                                  resid_bb(a,b,i,j) = resid_bb(a,b,i,j) - resid_bb(b,a,i,j) - resid_bb(a,b,j,i) + resid_bb(b,a,j,i)
                                   val = X2C(a,b,i,j) - X2C(b,a,i,j) - X2C(a,b,j,i) + X2C(b,a,j,i)
+                                  
                                   resid_bb(a,b,i,j) = (resid_bb(a,b,i,j) + val)/(denom - shift)
                                   resid_bb(b,a,i,j) = -resid_bb(a,b,i,j)
                                   resid_bb(a,b,j,i) = -resid_bb(a,b,i,j)
                                   resid_bb(b,a,j,i) = resid_bb(a,b,i,j)
+                                  
                                   t2c(a,b,i,j) = t2c(a,b,i,j) + resid_bb(a,b,i,j)
                                   t2c(b,a,i,j) = -t2c(a,b,i,j)
                                   t2c(a,b,j,i) = -t2c(a,b,i,j)
