@@ -3149,9 +3149,9 @@ module leftccsdt_p_loops
                   !$omp l1a,l1b,l2a,l2b,&
                   !$omp H1A_ov,H1B_ov,&
                   !$omp H2A_oovv,H2B_oovv,&
-                  !$omp H2A_ooov,H2A_vovv,
+                  !$omp H2A_ooov,H2A_vovv,&
                   !$omp H2B_ooov,H2B_oovo,H2B_vovv,H2B_ovvv,&
-                  !$omp X2A_ooov,X2A_vovv,
+                  !$omp X2A_ooov,X2A_vovv,&
                   !$omp X2B_ooov,X2B_oovo,X2B_vovv,X2B_ovvv,&
                   !$omp noa,nua,nob,nub,n3aab),&
                   !$omp private(idet,a,b,c,d,i,j,k,l,m,n,e,f,&
@@ -4525,7 +4525,7 @@ module leftccsdt_p_loops
                   !$omp l3c_excits,&
                   !$omp l1a,l1b,l2b,l2c,&
                   !$omp H1A_ov,H1B_ov,H2B_oovv,H2C_oovv,&
-                  !$omp H2C_vovv,H2A_ooov,&
+                  !$omp H2C_vovv,H2C_ooov,&
                   !$omp H2B_vovv,H2B_ovvv,H2B_ooov,H2B_oovo,&
                   !$omp X2C_vovv,X2C_ooov,&
                   !$omp X2B_vovv,X2B_ovvv,X2B_ooov,X2B_oovo,&
@@ -5976,7 +5976,7 @@ module leftccsdt_p_loops
                   !$omp l3d_excits,excits_buff,&
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
+                  !$omp H2B_voov,&
                   !$omp noa,nua,nob,nub,n3bbb),&
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)

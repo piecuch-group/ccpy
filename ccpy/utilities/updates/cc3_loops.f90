@@ -1,10 +1,10 @@
 module cc3_loops
  
-	use omp_lib
+    use omp_lib
  
-	implicit none
-	
-	contains
+    implicit none
+    
+    contains
                subroutine update_t(t1a,t1b,t2a,t2b,t2c,&
                                    resid_a,resid_b,resid_aa,resid_ab,resid_bb,&
                                    X1A,X1B,X2A,X2B,X2C,&
@@ -107,8 +107,9 @@ module cc3_loops
                               call dgemm('n','n',nua**2,nua,nua,0.5d0,H2A_vvov_1243(:,:,:,i),nua**2,t2a(:,:,j,k),nua,1.0d0,temp,nua**2)
                               call dgemm('n','n',nua**2,nua,nua,-0.5d0,H2A_vvov_1243(:,:,:,j),nua**2,t2a(:,:,i,k),nua,1.0d0,temp,nua**2)
                               call dgemm('n','n',nua**2,nua,nua,-0.5d0,H2A_vvov_1243(:,:,:,k),nua**2,t2a(:,:,j,i),nua,1.0d0,temp,nua**2)
-                              !$omp parallel shared(temp,vA_oovv,h1a_ov,h2a_ooov,h2a_vovv,i,j,k)
-                              !$omp do schedule(static)
+                              !$omp parallel shared(temp,vA_oovv,h1a_ov,h2a_ooov,h2a_vovv,i,j,k),&
+                              !$omp private(t3a,t3_denom,a,b,c,m,n,e,f)
+                              !$omp do schedule(static) reduction(+:resid_a,resid_aa)
                               do a = 1,nua
                                  do b = a+1,nua
                                     do c = b+1,nua
@@ -188,6 +189,13 @@ module cc3_loops
                               call dgemm('n','n',nua**2,nub,nua,-0.5d0,H2A_vvov_1243(:,:,:,j),nua**2,t2b(:,:,i,k),nua,1.0d0,temp,nua**2)
                               ! Diagram 6: -A(ab) I2A(amij)*t2b(bcmk)
                               call dgemm('n','t',nua,nua*nub,noa,-1.0d0,H2A_vooo(:,:,i,j),nua,t2b(:,:,:,k),nua*nub,1.0d0,temp,nua)
+                              !$omp parallel shared(temp,vA_oovv,vB_oovv,vC_oovv,&
+                              !$omp h1a_ov,h1b_ov,&
+                              !$omp h2a_ooov,h2a_vovv,&
+                              !$omp h2b_ooov,h2b_oovo,h2b_vvov,h2b_vvvo,&
+                              !$omp i,j,k),&
+                              !$omp private(t3b,t3_denom,a,b,c,m,n,e,f)
+                              !$omp do schedule(static) reduction(+:resid_a,resid_b,resid_aa,resid_ab)
                               do a = 1,nua
                                  do b = a+1,nua
                                     do c = 1,nub
@@ -236,6 +244,8 @@ module cc3_loops
                                     end do
                                  end do
                               end do
+                              !$omp end do
+                              !$omp end parallel
                            end do
                          end do
                       end do
@@ -262,6 +272,13 @@ module cc3_loops
                               ! Diagram 6: -A(jk)A(bc) I2B_ovoo(m,b,i,j)*t2b(a,c,m,k) -> -A(jk)A(bc) I2B_ovoo(m,c,i,k)*t2b(a,b,m,j)
                               call dgemm('n','n',nua*nub,nub,noa,-1.0d0,t2b(:,:,:,j),nua*nub,H2B_ovoo(:,:,i,k),noa,1.0d0,temp,nua*nub)
                               call dgemm('n','n',nua*nub,nub,noa,1.0d0,t2b(:,:,:,k),nua*nub,H2B_ovoo(:,:,i,j),noa,1.0d0,temp,nua*nub)
+                              !$omp parallel shared(temp,vA_oovv,vB_oovv,vC_oovv,&
+                              !$omp h1a_ov,h1b_ov,&
+                              !$omp h2c_ooov,h2c_vovv,&
+                              !$omp h2b_ooov,h2b_oovo,h2b_vvov,h2b_vvvo,&
+                              !$omp i,j,k),&
+                              !$omp private(t3c,t3_denom,a,b,c,m,n,e,f)
+                              !$omp do schedule(static) reduction(+:resid_a,resid_b,resid_ab,resid_bb)
                               do a = 1,nua
                                  do b = 1,nub
                                     do c = b+1,nub
@@ -307,6 +324,8 @@ module cc3_loops
                                     end do
                                  end do
                               end do
+                              !$omp end do
+                              !$omp end parallel
                            end do
                          end do
                       end do
@@ -325,6 +344,9 @@ module cc3_loops
                               call dgemm('n','n',nub**2,nub,nub,0.5d0,H2C_vvov_1243(:,:,:,i),nub**2,t2c(:,:,j,k),nub,1.0d0,temp,nub**2)
                               call dgemm('n','n',nub**2,nub,nub,-0.5d0,H2C_vvov_1243(:,:,:,j),nub**2,t2c(:,:,i,k),nub,1.0d0,temp,nub**2)
                               call dgemm('n','n',nub**2,nub,nub,-0.5d0,H2C_vvov_1243(:,:,:,k),nub**2,t2c(:,:,j,i),nub,1.0d0,temp,nub**2)
+                              !$omp parallel shared(temp,vC_oovv,h1b_ov,h2c_ooov,h2c_vovv,i,j,k),&
+                              !$omp private(t3d,t3_denom,a,b,c,m,n,e,f)
+                              !$omp do schedule(static) reduction(+:resid_b,resid_bb)
                               do a = 1,nub
                                  do b = a+1,nub
                                     do c = b+1,nub
@@ -378,6 +400,8 @@ module cc3_loops
                                     end do
                                  end do
                               end do
+                              !$omp end do
+                              !$omp end parallel
                            end do
                         end do
                       end do
