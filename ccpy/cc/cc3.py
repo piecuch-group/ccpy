@@ -7,6 +7,9 @@ from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_cc3_intermediates
 from ccpy.utilities.updates import cc3_loops
 
+#import time
+
+#@profile
 def update(T, dT, H, shift, flag_RHF, system):
 
     # CCS-like transformed intermediates for CC3
@@ -41,7 +44,10 @@ def update(T, dT, H, shift, flag_RHF, system):
     hbar.bb.ooov += H.bb.ooov
     hbar.bb.vovv += H.bb.vovv
 
+    #t1 = time.time()
     # Update all T1 and T2 clusters together by computing T3 on-the-fly once
+    # it would be nice if the T1-transformed X intermediates here were simply the
+    # elements of the CCS-transformed hbar computed before T2 builds.
     T.a, T.b, T.aa, T.ab, T.bb, dT.a, dT.b, dT.aa, dT.ab, dT.bb = cc3_loops.cc3_loops.update_t(
         T.a, T.b, T.aa, T.ab, T.bb,
         dT.a, dT.b, dT.aa, dT.ab, dT.bb,
@@ -55,9 +61,23 @@ def update(T, dT, H, shift, flag_RHF, system):
         X["ab"]["vooo"], X["ab"]["ovoo"], X["ab"]["vvov"], X["ab"]["vvvo"],
         X["bb"]["vooo"], X["bb"]["vvov"],
         shift)
-
+    # T.a, T.b, T.aa, T.ab, T.bb, dT.a, dT.b, dT.aa, dT.ab, dT.bb = cc3_loops.cc3_loops.update_t(
+    #     T.a, T.b, T.aa, T.ab, T.bb,
+    #     dT.a, dT.b, dT.aa, dT.ab, dT.bb,
+    #     H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+    #     hbar.a.ov, hbar.b.ov,
+    #     H.aa.oovv, H.ab.oovv, H.bb.oovv,
+    #     hbar.aa.ooov, hbar.aa.vovv,
+    #     hbar.ab.ooov, hbar.ab.oovo, hbar.ab.vovv, hbar.ab.ovvv,
+    #     hbar.bb.ooov, hbar.bb.vovv,
+    #     hbar.aa.vooo, hbar.aa.vvov,
+    #     hbar.ab.vooo, hbar.ab.ovoo, hbar.ab.vvov, hbar.ab.vvvo,
+    #     hbar.bb.vooo, hbar.bb.vvov,
+    #     shift)
+    #print("T update took", time.time() - t1, "s")
     return T, dT
 
+#@profile
 def build_t1a(T, dT, H):
     """
     Compute CCSD part of t1a projection <ia|(H_N e^(T1+T2))_C|0>.
@@ -99,6 +119,7 @@ def build_t1a(T, dT, H):
     dT.a += H.a.vo
     return dT
 
+#@profile
 def build_t1b(T, dT, H):
     """
     Compute CCSD part of t1b projection <i~a~|(H_N e^(T1+T2))_C|0>.
@@ -140,7 +161,7 @@ def build_t1b(T, dT, H):
     dT.b += H.b.vo
     return dT
 
-# @profile
+#@profile
 def build_t2a(T, dT, H, H0):
     """
     Compute CCSD part of t2a projection <ijab|(H_N e^(T1+T2))_C|0>.
@@ -187,7 +208,7 @@ def build_t2a(T, dT, H, H0):
     dT.aa += 0.25 * H0.aa.vvoo
     return dT
 
-# @profile
+#@profile
 def build_t2b(T, dT, H, H0):
     """
     Compute CCSD part of t2b projection <ij~ab~|(H_N e^(T1+T2))_C|0>.
@@ -257,7 +278,7 @@ def build_t2b(T, dT, H, H0):
     dT.ab += H0.ab.vvoo
     return dT
 
-# @profile
+#@profile
 def build_t2c(T, dT, H, H0):
     """
     Compute CCSD part of t2c projection <i~j~a~b~|(H_N e^(T1+T2))_C|0>.

@@ -276,7 +276,7 @@ module cc3_loops
                                        f = c; m = i; n = k;
                                        resid_aa(a,b,:,j) = resid_aa(a,b,:,j) - H2B_ooov(m,n,:,f) * t3b ! (1)
                                        resid_aa(a,b,:,m) = resid_aa(a,b,:,m) + H2B_ooov(j,n,:,f) * t3b ! (jm)
-                                       ! A(ij)A(ab) [A(be) h2b(anef) * t3b(ebfijn)]
+                                       ! A(ij)A(ab) [A(be) h2b(anef) * t3b(ebfijn)] (!!! expensive; ~3s)
                                        e = a; f = c; n = k;
                                        resid_aa(:,b,i,j) = resid_aa(:,b,i,j) + H2B_vovv(:,n,e,f) * t3b ! (1)
                                        resid_aa(:,e,i,j) = resid_aa(:,e,i,j) - H2B_vovv(:,n,b,f) * t3b ! (be)
@@ -288,10 +288,10 @@ module cc3_loops
                                        resid_ab(b,c,i,:) = resid_ab(b,c,i,:) + H2B_oovo(j,k,a,:) * t3b ! (af)
                                        resid_ab(a,c,j,:) = resid_ab(a,c,j,:) + H2B_oovo(i,k,b,:) * t3b ! (in)
                                        resid_ab(b,c,j,:) = resid_ab(b,c,j,:) - H2B_oovo(i,k,a,:) * t3b ! (af)(in)
-                                       ! A(in) h2a(anef) * t3b(efbinj)
+                                       ! A(in) h2a(anef) * t3b(efbinj) (!!! expensive; effect is not much, ~1-2s)
                                        resid_ab(:,c,i,k) = resid_ab(:,c,i,k) + H2A_vovv(:,j,a,b) * t3b ! (1)
                                        resid_ab(:,c,j,k) = resid_ab(:,c,j,k) - H2A_vovv(:,i,a,b) * t3b ! (in)
-                                       ! A(af)A(in) h2b(nbfe) * t3b(afeinj)
+                                       ! A(af)A(in) h2b(nbfe) * t3b(afeinj) (!!! expensive; LARGE effect ~8-10s)
                                        resid_ab(a,:,i,k) = resid_ab(a,:,i,k) + H2B_ovvv(j,:,b,c) * t3b ! (1)
                                        resid_ab(b,:,i,k) = resid_ab(b,:,i,k) - H2B_ovvv(j,:,a,c) * t3b ! (af)
                                        resid_ab(a,:,j,k) = resid_ab(a,:,j,k) - H2B_ovvv(i,:,b,c) * t3b ! (in)
@@ -386,10 +386,10 @@ module cc3_loops
                                        resid_ab(a,b,:,k) = resid_ab(a,b,:,k) + H2B_ooov(i,j,:,c) * t3c ! (bf)
                                        resid_ab(a,c,:,j) = resid_ab(a,c,:,j) + H2B_ooov(i,k,:,b) * t3c ! (jn)
                                        resid_ab(a,b,:,j) = resid_ab(a,b,:,j) - H2B_ooov(i,k,:,c) * t3c ! (bf)(jn)
-                                       ! A(jn) h2c(bnef) * t3c(afeinj)
+                                       ! A(jn) h2c(bnef) * t3c(afeinj) (!!! expensive)
                                        resid_ab(a,:,i,k) = resid_ab(a,:,i,k) + H2C_vovv(:,j,c,b) * t3c ! (1)
                                        resid_ab(a,:,i,j) = resid_ab(a,:,i,j) - H2C_vovv(:,k,c,b) * t3c ! (jn)
-                                       ! A(bf)A(jn) h2b(anef) * t3c(efbinj)
+                                       ! A(bf)A(jn) h2b(anef) * t3c(efbinj) (!!! expensive; LARGE effect)
                                        resid_ab(:,c,i,k) = resid_ab(:,c,i,k) + H2B_vovv(:,j,a,b) * t3c ! (1)
                                        resid_ab(:,b,i,k) = resid_ab(:,b,i,k) - H2B_vovv(:,j,a,c) * t3c ! (bf)
                                        resid_ab(:,c,i,j) = resid_ab(:,c,i,j) - H2B_vovv(:,k,a,b) * t3c ! (jn)
@@ -401,7 +401,7 @@ module cc3_loops
                                        resid_ab(a,b,i,j) = resid_ab(a,b,i,j) + H1B_ov(k,c) * t3c ! (jm)(be)
                                        ! A(ij)A(ab) [h1a(me) * t3c(eabmij)]
                                        resid_bb(b,c,j,k) = resid_bb(b,c,j,k) + H1A_ov(i,a) * t3c ! (1)
-                                       ! A(ij)A(ab) [A(be) h2b(nafe) * t3c(febnij)]
+                                       ! A(ij)A(ab) [A(be) h2b(nafe) * t3c(febnij)] (!!! expensive)
                                        resid_bb(:,c,j,k) = resid_bb(:,c,j,k) + H2B_ovvv(i,:,a,b) * t3c ! (1)
                                        resid_bb(:,b,j,k) = resid_bb(:,b,j,k) - H2B_ovvv(i,:,a,c) * t3c ! (be)
                                        ! A(ij)A(ab) [A(jm) -h2b(nmfi) * t3c(fabnmj)]
