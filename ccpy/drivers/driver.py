@@ -13,6 +13,7 @@ from ccpy.drivers.solvers import (
                 left_cc_jacobi,
                 eomcc_davidson,
                 eomcc_block_davidson,
+                eomcc_nonlinear_diis,
                 eccc_jacobi,
 )
 from ccpy.energy.cc_energy import get_LR, get_r0, get_rel, get_rel_ea, get_rel_ip
@@ -92,8 +93,13 @@ class Driver:
         self.fock.a.vv = self.hamiltonian.a.vv.copy()
         self.fock.b.vv = self.hamiltonian.b.vv.copy()
 
+        # Potentially used container for the CCS-transformed intermediates used in CC3 models. This is required
+        # because the CCSDT-like HBar used for R1 and R2 updates in CC3 overwrites the parts of Hbar needed to compute
+        # the intermediates used in R3 equation.
+        self.cc3_intermediates = None
+
     def set_operator_params(self, method):
-        if method.lower() in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2", "cc3"]:
+        if method.lower() in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2", "cc3", "eomcc3"]:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
@@ -259,7 +265,10 @@ class Driver:
         # Replace the driver hamiltonian with the Hbar
         print("")
         print("   HBar construction began on", get_timestamp(), end="")
-        self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.system, t3_excitations)
+        if method.lower() == "cc3":
+            self.hamiltonian, self.cc3_intermediates = hbar_build_function(self.T, self.hamiltonian, self.system)
+        else:
+            self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.system, t3_excitations)
         print("... completed on", get_timestamp(), "\n")
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
@@ -295,6 +304,9 @@ class Driver:
         # Set operator parameters needed to build R
         self.set_operator_params(method)
         self.options["method"] = method.upper()
+        # If running EOM-CC3, use the nonlinear excited state DIIS solver
+        if method.lower() == "eomcc3":
+            self.options["davidson_solver"] = "diis"
 
         # Ensure that Hbar is set upon entry
         assert(self.flag_hbar)
@@ -345,6 +357,23 @@ class Driver:
                                           self.r0[istate], self.relative_excitation_level[istate], is_converged[j], istate, self.system,
                                           self.options["amp_print_threshold"])
             print("   Multiroot EOMCC calculation ended on", get_timestamp(), "\n")
+
+        elif self.options["davidson_solver"] == "diis": # used for EOM-CC3 calculations ONLY!
+            assert method.lower() == "eomcc3"
+            for j, istate in enumerate(state_index):
+                print("   EOMCC calculation for root %d started on" % istate, get_timestamp())
+                print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
+                print_ee_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+                self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_nonlinear_diis(HR_function, update_function, B0[:, j],
+                                                                                                             self.R[istate], dR, self.vertical_excitation_energy[istate],
+                                                                                                             self.T, self.hamiltonian, self.cc3_intermediates, self.fock,
+                                                                                                             self.system, self.options)
+                # Compute r0 a posteriori
+                self.r0[istate] = get_r0(self.R[istate], self.hamiltonian, self.vertical_excitation_energy[istate])
+                # compute the relative excitation level (REL) metric
+                self.relative_excitation_level[istate] = get_rel(self.R[istate], self.r0[istate])
+                eomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.r0[istate], self.relative_excitation_level[istate], is_converged, istate, self.system, self.options["amp_print_threshold"])
+                print("   EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
         else:
             for j, istate in enumerate(state_index):
                 print("   EOMCC calculation for root %d started on" % istate, get_timestamp())

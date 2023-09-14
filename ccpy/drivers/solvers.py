@@ -10,6 +10,55 @@ from ccpy.utilities.printing import (
 # [TODO]: (1) Add left-EOMCC single-root Davidson solver
 # [TODO]: (2) Add biorthogonal L and R single-root Davidson solver (non-Hermitian Hirao-Nakatsuji algorithm)
 
+def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, options):
+    from ccpy.drivers.diis import DIIS
+    # start clock for the root
+    t_root_start = time.time()
+    # print header
+    print_eomcc_iteration_header()
+    # Instantiate DIIS accelerator
+    diis_engine = DIIS(R, options["diis_size"], options["diis_out_of_core"], vecfile="r.npy", residfile="dr.npy")
+    # Initial values
+    R.unflatten(B0)
+    # begin iteration loop
+    is_converged = False
+    for niter in range(options["maximum_iterations"]):
+        t1 = time.time()
+        # store old energy
+        omega_old = omega.copy()
+        # normalize the right eigenvector
+        R.unflatten(R.flatten() / np.linalg.norm(R.flatten()))
+        # compute H*R for a given omega
+        sigma = HR(dR, R, T, H, X, fock, omega, options["RHF_symmetry"], system)
+        # update the value of omega
+        omega = np.dot(sigma.T, R.flatten())
+        # compute the residual H(omega)*R - omega*R
+        dR.unflatten(sigma - omega * R.flatten())
+        residual = np.linalg.norm(dR.flatten())
+        delta_energy = omega - omega_old
+        # check convergence logicals
+        if residual < options["amp_convergence"] and abs(delta_energy) < options["energy_convergence"]:
+            is_converged = True
+            # print the iteration of convergence
+            elapsed_time = time.time() - t1
+            print_eomcc_iteration(niter, omega, residual, delta_energy, elapsed_time)
+            break
+        # perturbational update step u_K = r_K / (omega - D_K), where D_K = (MP) energy denominator
+        dR = update_r(dR, omega, fock, system)
+        # add the correction vector to R
+        R.unflatten(R.flatten() + dR.flatten())
+        # save new R and dR vectors for DIIS
+        diis_engine.push(R, dR, niter)
+        # Do DIIS extrapolation
+        if niter >= options["diis_size"]:
+            R.unflatten(diis_engine.extrapolate())
+        # print the iteration of convergence
+        elapsed_time = time.time() - t1
+        print_eomcc_iteration(niter, omega, residual, delta_energy, elapsed_time)
+
+    t_root_end = time.time()
+    return R, omega, is_converged
+
 def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     """
     Diagonalize the similarity-transformed Hamiltonian HBar using the
@@ -363,7 +412,7 @@ def eccc_jacobi(update_t, T, dT, H, T_ext, VT_ext, system, options):
         diis_engine = DIIS(T, options["diis_size"], options["diis_out_of_core"])
 
     # Jacobi/DIIS iterations
-    num_throw_away = 3
+    num_throw_away = 0
     ndiis_cycle = 0
     energy = 0.0
     energy_old = get_cc_energy(T, H)
@@ -444,7 +493,7 @@ def cc_jacobi(update_t, T, dT, H, system, options, t3_excitations=None):
         diis_engine = DIIS(T, options["diis_size"], options["diis_out_of_core"])
 
     # Jacobi/DIIS iterations
-    num_throw_away = 3
+    num_throw_away = 0
     ndiis_cycle = 0
     energy = 0.0
     energy_old = get_cc_energy(T, H)
