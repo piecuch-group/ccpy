@@ -59,6 +59,7 @@ energetics for the missing many-electron correlations using the generalized mome
   - EOMCCSD
   - Spin-Flip (SF) EOMCCSD
   - CR-EOMCC(2,3) and its size-intensive *δ*-CR-EOMCC(2,3) extension
+  - EOM-CC3
   - EOMCCSDt
   - EOMCCSDT
   - IP-EOMCCSD(2h-1p)
