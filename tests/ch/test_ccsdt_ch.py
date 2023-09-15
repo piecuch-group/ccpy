@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 from ccpy.drivers.driver import Driver
 
-TEST_DATA_DIR = str(Path(__file__).parent.absolute() / "data")
+TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
 def test_ccsdt_ch():
     driver = Driver.from_gamess(

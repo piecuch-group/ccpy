@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 from ccpy.drivers.driver import Driver
 
-TEST_DATA_DIR = str(Path(__file__).parent.absolute() / "data")
+TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
 def test_creom23_chplus():
     selected_states = [0, 1, 2, 3, 4, 5, 9] # Pick guess vectors for states (I knew this beforehand)

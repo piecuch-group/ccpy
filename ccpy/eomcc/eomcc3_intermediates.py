@@ -47,57 +47,58 @@ def get_eomccsd_intermediates(H, R, system):
     )
     return X
 
-def get_HR1_intermediates(H, R):
+def get_HR1_intermediates(H, R, system):
     """Calculate the (H(1)*R1)_C intermediates for EOMCC3, where
     H(1) = exp(-T1) H exp(T1) is the CCS-like similarity transformed
     Hamiltonian."""
 
     # Use a dictionary to hold the intermediates because we only need
     # a few parts
-    I = {"aa": {"vooo": None, "vvov": None, "oooo": None, "vvvv": None, "voov": None},
-         "ab": {"vooo": None, "ovoo": None, "vvov": None, "vvvo": None, "oooo": None, "vvvv": None,
-                "voov": None, "ovvo": None, "ovov": None, "vovo": None},
-         "bb": {"vooo": None, "vvov": None, "oooo": None, "vvvv": None, "voov": None}}
+    HR1 = Integral.from_empty(system, 2, data_type=np.float64, use_none=True)
+    # I = {"aa": {"vooo": None, "vvov": None, "oooo": None, "vvvv": None, "voov": None},
+    #      "ab": {"vooo": None, "ovoo": None, "vvov": None, "vvvo": None, "oooo": None, "vvvv": None,
+    #             "voov": None, "ovvo": None, "ovov": None, "vovo": None},
+    #      "bb": {"vooo": None, "vvov": None, "oooo": None, "vvvv": None, "voov": None}}
 
-    I["aa"]["vvov"] = (
+    HR1.aa.vvov = (
         -np.einsum("anie,bn->abie", H.aa.voov, R.a, optimize=True)
         +0.5 * np.einsum("abfe,fi->abie", H.aa.vvvv, R.a, optimize=True)
     )
-    I["aa"]["vvov"] -= np.transpose(I["aa"]["vvov"], (1, 0, 2, 3))
-    I["aa"]["vooo"] = (
+    HR1.aa.vvov -= np.transpose(HR1.aa.vvov, (1, 0, 2, 3))
+    HR1.aa.vooo = (
          np.einsum("amif,fj->amij", H.aa.voov, R.a, optimize=True)
         -0.5 * np.einsum("nmij,an->amij", H.aa.oooo, R.a, optimize=True)
     )
-    I["aa"]["vooo"] -= np.transpose(I["aa"]["vooo"], (0, 1, 3, 2))
-    I["ab"]["vvov"] = (
+    HR1.aa.vooo -= np.transpose(HR1.aa.vooo, (0, 1, 3, 2))
+    HR1.ab.vvov = (
         -np.einsum("nbie,an->abie", H.ab.ovov, R.a, optimize=True)
         +np.einsum("abfe,fi->abie", H.ab.vvvv, R.a, optimize=True)
         -np.einsum("amie,bm->abie", H.ab.voov, R.b, optimize=True)
     )
-    I["ab"]["vvvo"] = (
+    HR1.ab.vvvo = (
         -np.einsum("amej,bm->abej", H.ab.vovo, R.b, optimize=True)
         +np.einsum("abef,fj->abej", H.ab.vvvv, R.b, optimize=True)
         -np.einsum("mbej,am->abej", H.ab.ovvo, R.a, optimize=True)
     )
-    I["ab"]["vooo"] = (
+    HR1.ab.vooo = (
          np.einsum("amej,ei->amij", H.ab.vovo, R.a, optimize=True)
         -np.einsum("nmij,an->amij", H.ab.oooo, R.a, optimize=True)
         +np.einsum("amie,ej->amij", H.ab.voov, R.b, optimize=True)
     )
-    I["ab"]["ovoo"] = (
+    HR1.ab.ovoo = (
          np.einsum("mbie,ej->mbij", H.ab.ovov, R.b, optimize=True)
         -np.einsum("mnij,bn->mbij", H.ab.oooo, R.b, optimize=True)
         +np.einsum("mbej,ei->mbij", H.ab.ovvo, R.a, optimize=True)
     )
-    I["bb"]["vvov"] = (
+    HR1.bb.vvov = (
             -np.einsum("anie,bn->abie", H.bb.voov, R.b, optimize=True)
             + 0.5 * np.einsum("abfe,fi->abie", H.bb.vvvv, R.b, optimize=True)
     )
-    I["bb"]["vvov"] -= np.transpose(I["bb"]["vvov"], (1, 0, 2, 3))
-    I["bb"]["vooo"] = (
+    HR1.bb.vvov -= np.transpose(HR1.bb.vvov, (1, 0, 2, 3))
+    HR1.bb.vooo = (
             np.einsum("amif,fj->amij", H.bb.voov, R.b, optimize=True)
             - 0.5 * np.einsum("nmij,an->amij", H.bb.oooo, R.b, optimize=True)
     )
-    I["bb"]["vooo"] -= np.transpose(I["bb"]["vooo"], (0, 1, 3, 2))
+    HR1.bb.vooo -= np.transpose(HR1.bb.vooo, (0, 1, 3, 2))
 
-    return I
+    return HR1

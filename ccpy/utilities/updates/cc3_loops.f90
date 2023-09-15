@@ -7,7 +7,6 @@ module cc3_loops
     contains
                subroutine update_t(t1a,t1b,t2a,t2b,t2c,&
                                    resid_a,resid_b,resid_aa,resid_ab,resid_bb,&
-                                   X1A,X1B,X2A,X2B,X2C,&
                                    fA_oo,fA_vv,fB_oo,fB_vv,&
                                    h1a_ov,h1b_ov,&
                                    vA_oovv,vB_oovv,vC_oovv,&
@@ -43,11 +42,6 @@ module cc3_loops
                                                   h2b_vvvo(nua,nub,nua,nob),&
                                                   h2c_vooo(nub,nob,nob,nob),&
                                                   h2c_vvov(nub,nub,nob,nub)
-                      real(kind=8), intent(in) :: X1A(1:nua,1:noa)
-                      real(kind=8), intent(in) :: X1B(1:nub,1:nob)
-                      real(kind=8), intent(in) :: X2A(1:nua,1:nua,1:noa,1:noa)
-                      real(kind=8), intent(in) :: X2B(1:nua,1:nub,1:noa,1:nob)
-                      real(kind=8), intent(in) :: X2C(1:nub,1:nub,1:nob,1:nob)
                       real(kind=8), intent(in) :: shift
                       
                       real(kind=8), intent(inout) :: t1a(1:nua,1:noa)
@@ -60,11 +54,18 @@ module cc3_loops
                       !f2py intent(in,out) :: t2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
                       real(kind=8), intent(inout) :: t2c(1:nub,1:nub,1:nob,1:nob)
                       !f2py intent(in,out) :: t2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
-                      real(kind=8), intent(out) :: resid_a(1:nua,1:noa)
-                      real(kind=8), intent(out) :: resid_b(1:nub,1:nob)
-                      real(kind=8), intent(out) :: resid_aa(1:nua,1:nua,1:noa,1:noa)
-                      real(kind=8), intent(out) :: resid_ab(1:nua,1:nub,1:noa,1:nob)
-                      real(kind=8), intent(out) :: resid_bb(1:nub,1:nub,1:nob,1:nob)
+                      
+                      ! Upon entry, resid_* holds CCSD residual projections (not antisymmetrized yet)
+                      real(kind=8), intent(inout) :: resid_a(1:nua,1:noa)
+                      !f2py intent(in,out) :: resid_a(0:nua-1,0:noa-1)
+                      real(kind=8), intent(inout) :: resid_b(1:nub,1:nob)
+                      !f2py intent(in,out) :: resid_b(0:nub-1,0:nob-1)
+                      real(kind=8), intent(inout) :: resid_aa(1:nua,1:nua,1:noa,1:noa)
+                      !f2py intent(in,out) :: resid_aa(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+                      real(kind=8), intent(inout) :: resid_ab(1:nua,1:nub,1:noa,1:nob)
+                      !f2py intent(in,out) :: resid_ab(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+                      real(kind=8), intent(inout) :: resid_bb(1:nub,1:nub,1:nob,1:nob)
+                      !f2py intent(in,out) :: resid_bb(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
 
                       integer :: i, j, k, a, b, c
                       real(kind=8) :: denom, val
@@ -79,13 +80,6 @@ module cc3_loops
                       real(kind=8) :: H2B_vvov_1243(nua,nub,nub,noa), t2b_1243(nua,nub,nob,noa)
                       real(kind=8) :: H2C_vvov_4213(nub,nub,nub,noa), H2C_vooo_2134(nob,nub,nob,nob)
                       real(kind=8) :: H2C_vvov_1243(nub,nub,nub,nob)
-                      
-                      ! Allocate residual containers (these will hold contractions with T3)
-                      resid_a = 0.0d0
-                      resid_b = 0.0d0
-                      resid_aa = 0.0d0
-                      resid_ab = 0.0d0
-                      resid_bb = 0.0d0
                       
                       ! Call reordering routines for arrays entering DGEMM
                       call reorder1243(H2A_vvov,H2A_vvov_1243)
@@ -415,7 +409,7 @@ module cc3_loops
                       do i = 1,noa
                          do a = 1,nua
                             denom = fA_oo(i,i) - fA_vv(a,a)
-                            resid_a(a,i) = (resid_a(a,i) + X1A(a,i))/(denom - shift)
+                            resid_a(a,i) = resid_a(a,i)/(denom - shift)
                             t1a(a,i) = t1a(a,i) + resid_a(a,i)
                          end do
                       end do
@@ -423,7 +417,7 @@ module cc3_loops
                       do i = 1,nob
                          do a = 1,nub
                             denom = fB_oo(i,i) - fB_vv(a,a)
-                            resid_b(a,i) = (resid_b(a,i) + X1B(a,i))/(denom - shift)
+                            resid_b(a,i) = resid_b(a,i)/(denom - shift)
                             t1b(a,i) = t1b(a,i) + resid_b(a,i)
                          end do
                       end do
@@ -435,9 +429,9 @@ module cc3_loops
                                   denom = fA_oo(i,i) + fA_oo(j,j) - fA_vv(a,a) - fA_vv(b,b)
                                   
                                   resid_aa(a,b,i,j) = resid_aa(a,b,i,j) - resid_aa(b,a,i,j) - resid_aa(a,b,j,i) + resid_aa(b,a,j,i)
-                                  val = X2A(a,b,i,j) - X2A(b,a,i,j) - X2A(a,b,j,i) + X2A(b,a,j,i)
+                                  !val = X2A(a,b,i,j) - X2A(b,a,i,j) - X2A(a,b,j,i) + X2A(b,a,j,i)
                                   
-                                  resid_aa(a,b,i,j) = (resid_aa(a,b,i,j) + val)/(denom - shift)
+                                  resid_aa(a,b,i,j) = resid_aa(a,b,i,j)/(denom - shift)
                                   resid_aa(b,a,i,j) = -resid_aa(a,b,i,j)
                                   resid_aa(a,b,j,i) = -resid_aa(a,b,i,j)
                                   resid_aa(b,a,j,i) = resid_aa(a,b,i,j)
@@ -456,7 +450,7 @@ module cc3_loops
                             do a = 1,nua
                                do b = 1,nub
                                   denom = fA_oo(i,i) + fB_oo(j,j) - fA_vv(a,a) - fB_vv(b,b)
-                                  resid_ab(a,b,i,j) = (resid_ab(a,b,i,j) + X2B(a,b,i,j))/(denom - shift)
+                                  resid_ab(a,b,i,j) = resid_ab(a,b,i,j)/(denom - shift)
                                   t2b(a,b,i,j) = t2b(a,b,i,j) + resid_ab(a,b,i,j)
                                end do
                             end do
@@ -470,9 +464,9 @@ module cc3_loops
                                   denom = fB_oo(i,i) + fB_oo(j,j) - fB_vv(a,a) - fB_vv(b,b)
                                   
                                   resid_bb(a,b,i,j) = resid_bb(a,b,i,j) - resid_bb(b,a,i,j) - resid_bb(a,b,j,i) + resid_bb(b,a,j,i)
-                                  val = X2C(a,b,i,j) - X2C(b,a,i,j) - X2C(a,b,j,i) + X2C(b,a,j,i)
+                                  !val = X2C(a,b,i,j) - X2C(b,a,i,j) - X2C(a,b,j,i) + X2C(b,a,j,i)
                                   
-                                  resid_bb(a,b,i,j) = (resid_bb(a,b,i,j) + val)/(denom - shift)
+                                  resid_bb(a,b,i,j) = resid_bb(a,b,i,j)/(denom - shift)
                                   resid_bb(b,a,i,j) = -resid_bb(a,b,i,j)
                                   resid_bb(a,b,j,i) = -resid_bb(a,b,i,j)
                                   resid_bb(b,a,j,i) = resid_bb(a,b,i,j)
@@ -502,7 +496,6 @@ module cc3_loops
        
                subroutine build_HR(resid_a,resid_b,resid_aa,resid_ab,resid_bb,&
                                    t2a,t2b,t2c,r2a,r2b,r2c,&
-                                   X1A,X1B,X2A,X2B,X2C,&
                                    fA_oo,fA_vv,fB_oo,fB_vv,&
                                    h1a_ov,h1b_ov,&
                                    vA_oovv,vB_oovv,vC_oovv,&
@@ -520,40 +513,48 @@ module cc3_loops
                                    noa,nua,nob,nub)
 
                       integer, intent(in) :: noa, nua, nob, nub
+                      ! fock matrices used for MP denominators
                       real(kind=8), intent(in) :: fA_oo(noa,noa), fA_vv(nua,nua),&
-                                                  fB_oo(nob,nob), fB_vv(nub,nub),&
-                                                  h1a_ov(noa,nua),h1b_ov(nob,nub),&
+                                                  fB_oo(nob,nob), fB_vv(nub,nub)
+                      ! CCSD-like Hbar matrix elements (includes T1 and T2) used in contractions with R3
+                      real(kind=8), intent(in) :: h1a_ov(noa,nua),h1b_ov(nob,nub),&
                                                   vA_oovv(noa,noa,nua,nua),vB_oovv(noa,nob,nua,nub),vC_oovv(nob,nob,nub,nub),&
                                                   h2a_ooov(noa,noa,noa,nua),h2a_vovv(nua,noa,nua,nua),&
                                                   h2b_ooov(noa,nob,noa,nub),h2b_oovo(noa,nob,nua,nob),h2b_vovv(nua,nob,nua,nub),h2b_ovvv(noa,nub,nua,nub),&
-                                                  h2c_ooov(nob,nob,nob,nub),h2c_vovv(nub,nob,nub,nub),&
-                                                  h2a_vooo(nua,noa,noa,noa),h2a_vvov(nua,nua,noa,nua),&
+                                                  h2c_ooov(nob,nob,nob,nub),h2c_vovv(nub,nob,nub,nub)
+                      ! CCS-like Hbar matrix elements (includes T1 only) used to construct T3 and R3 on-the-fly
+                      real(kind=8), intent(in) :: h2a_vooo(nua,noa,noa,noa),h2a_vvov(nua,nua,noa,nua),&
                                                   h2b_vooo(nua,nob,noa,nob),h2b_ovoo(noa,nub,noa,nob),h2b_vvov(nua,nub,noa,nub),h2b_vvvo(nua,nub,nua,nob),&
-                                                  h2c_vooo(nub,nob,nob,nob),h2c_vvov(nub,nub,nob,nub),&
-                                                  x1a_ov(noa,nua),x1b_ov(nob,nub),&
-                                                  x2a_vooo(nua,noa,noa,noa),x2a_vvov(nua,nua,noa,nua),&
+                                                  h2c_vooo(nub,nob,nob,nob),h2c_vvov(nub,nub,nob,nub)
+                      ! EOMCCSD-like [H(2)*(R1+R2)]_C intermediates used to contract with T3 in R2 updates
+                      real(kind=8), intent(in) :: x1a_ov(noa,nua),x1b_ov(nob,nub)
+                      ! EOMCC3 intermediates formed by taking (H(1)*R1)_C used to construct R3 on-the-fly
+                      real(kind=8), intent(in) :: x2a_vooo(nua,noa,noa,noa),x2a_vvov(nua,nua,noa,nua),&
                                                   x2b_vooo(nua,nob,noa,nob),x2b_ovoo(noa,nub,noa,nob),x2b_vvov(nua,nub,noa,nub),x2b_vvvo(nua,nub,nua,nob),&
                                                   x2c_vooo(nub,nob,nob,nob),x2c_vvov(nub,nub,nob,nub)
+                      ! Input T and R amplitudes
                       real(kind=8), intent(in) :: t2a(1:nua,1:nua,1:noa,1:noa)
                       real(kind=8), intent(in) :: t2b(1:nua,1:nub,1:noa,1:nob)
                       real(kind=8), intent(in) :: t2c(1:nub,1:nub,1:nob,1:nob)
                       real(kind=8), intent(in) :: r2a(1:nua,1:nua,1:noa,1:noa)
                       real(kind=8), intent(in) :: r2b(1:nua,1:nub,1:noa,1:nob)
                       real(kind=8), intent(in) :: r2c(1:nub,1:nub,1:nob,1:nob)
-                      real(kind=8), intent(in) :: X1A(1:nua,1:noa)
-                      real(kind=8), intent(in) :: X1B(1:nub,1:nob)
-                      real(kind=8), intent(in) :: X2A(1:nua,1:nua,1:noa,1:noa)
-                      real(kind=8), intent(in) :: X2B(1:nua,1:nub,1:noa,1:nob)
-                      real(kind=8), intent(in) :: X2C(1:nub,1:nub,1:nob,1:nob)
+                      ! Current eigenvalue omega (HR is a function of omega in folded eigenvalue problem!)
                       real(kind=8), intent(in) :: omega
                       
-                      real(kind=8), intent(out) :: resid_a(1:nua,1:noa)
-                      real(kind=8), intent(out) :: resid_b(1:nub,1:nob)
-                      real(kind=8), intent(out) :: resid_aa(1:nua,1:nua,1:noa,1:noa)
-                      real(kind=8), intent(out) :: resid_ab(1:nua,1:nub,1:noa,1:nob)
-                      real(kind=8), intent(out) :: resid_bb(1:nub,1:nub,1:nob,1:nob)
+                      ! Upon entry, resid_* holds HR projections of the EOMCCSD-like parts (not antisymmetrized yet)
+                      real(kind=8), intent(inout) :: resid_a(1:nua,1:noa)
+                      !f2py intent(in,out) :: resid_a(0:nua-1,0:noa-1)
+                      real(kind=8), intent(inout) :: resid_b(1:nub,1:nob)
+                      !f2py intent(in,out) :: resid_b(0:nub-1,0:nob-1)
+                      real(kind=8), intent(inout) :: resid_aa(1:nua,1:nua,1:noa,1:noa)
+                      !f2py intent(in,out) :: resid_aa(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+                      real(kind=8), intent(inout) :: resid_ab(1:nua,1:nub,1:noa,1:nob)
+                      !f2py intent(in,out) :: resid_ab(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+                      real(kind=8), intent(inout) :: resid_bb(1:nub,1:nub,1:nob,1:nob)
+                      !f2py intent(in,out) :: resid_bb(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
 
-                      integer :: i, j, k, a, b, c, m, e
+                      integer :: i, j, k, a, b, c
                       real(kind=8) :: denom, val
                       real(kind=8) :: t3a_o, t3a_v, t3b_o, t3b_v, t3c_o, t3c_v, t3d_o, t3d_v
                       real(kind=8) :: t3a, t3b, t3c, t3d
@@ -574,13 +575,6 @@ module cc3_loops
                       real(kind=8) :: X2C_vvov_4213(nub,nub,nub,noa), X2C_vooo_2134(nob,nub,nob,nob)
                       real(kind=8) :: X2C_vvov_1243(nub,nub,nub,nob)
                       
-                      ! Allocate residual containers (these will hold contractions with T3 and R3)
-                      resid_a = 0.0d0
-                      resid_b = 0.0d0
-                      resid_aa = 0.0d0
-                      resid_ab = 0.0d0
-                      resid_bb = 0.0d0
-                      
                       ! Call reordering routines for arrays entering DGEMM
                       call reorder1243(H2A_vvov,H2A_vvov_1243)
                       call reorder1243(H2B_vvov,H2B_vvov_1243)
@@ -588,7 +582,7 @@ module cc3_loops
                       call reorder4213(H2C_vvov,H2C_vvov_4213)
                       call reorder2134(H2C_vooo,H2C_vooo_2134)
                       call reorder1243(H2C_vvov,H2C_vvov_1243)
-                      
+                      ! Copy the above for contractions in EOM parts
                       call reorder1243(X2A_vvov,X2A_vvov_1243)
                       call reorder1243(X2B_vvov,X2B_vvov_1243)
                       call reorder1243(r2b,r2b_1243)
@@ -1118,16 +1112,10 @@ module cc3_loops
                       do i = 1,nob
                          resid_bb(:,:,i,i) = 0.0d0
                       end do
-                      ! Add on the R3 and T3 contributions to the underlying HR projections
-                      resid_a = resid_a + X1A
-                      resid_b = resid_b + X1B
-                      resid_aa = resid_aa + X2A
-                      resid_ab = resid_ab + X2B
-                      resid_bb = resid_bb + X2C
 
                end subroutine build_HR
        
-               subroutine update_r(r1a,r1b,r2a,r2b,r2c,&
+               subroutine update_R(r1a,r1b,r2a,r2b,r2c,&
                                    omega,&
                                    fA_oo,fA_vv,fB_oo,fB_vv,&
                                    noa,nua,nob,nub)

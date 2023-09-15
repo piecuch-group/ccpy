@@ -1,38 +1,39 @@
-"""EOMCCSD computation for the open-shell CH molcule."""
+"""EOMCCSDt computation for the open-shell CH molcule."""
 
 from pathlib import Path
 import numpy as np
 from ccpy.drivers.driver import Driver
 
-TEST_DATA_DIR = str(Path(__file__).parent.absolute() / "data")
+TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
-def test_eomccsd_ch():
+def test_eomccsdt1_ch():
     driver = Driver.from_gamess(
         logfile=TEST_DATA_DIR + "/ch/ch.log",
         fcidump=TEST_DATA_DIR + "/ch/ch.FCIDUMP",
-        nfrozen=0,
+        nfrozen=1,
     )
     driver.system.print_info()
+    driver.system.set_active_space(nact_occupied=1, nact_unoccupied=1)
 
-    driver.run_cc(method="ccsd")
-    driver.run_hbar(method="ccsd")
+    driver.run_cc(method="ccsdt1")
+    driver.run_hbar(method="ccsdt1")
     driver.run_guess(method="cis", multiplicity=2, nroot=10)
-    driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3])
+    driver.run_eomcc(method="eomccsdt1", state_index=[1, 2, 3])
 
-    expected_vee = [0.0, 0.00016954, 0.11798458, 0.12122133]
-    expected_total_energy = [-38.38631169 + omega for omega in expected_vee]
+    expected_vee = [0.0, 0.00015539, 0.12326569, 0.11287039]
+    expected_total_energy = [-38.38596742 + omega for omega in expected_vee]
 
     # Check reference energy
-    assert np.allclose(driver.system.reference_energy, -38.27132475)
+    assert np.allclose(driver.system.reference_energy, -38.2713247488)
     for n in range(4):
         if n == 0:
             # Check CCSD energy
-            assert np.allclose(driver.correlation_energy, -0.11498694)
+            assert np.allclose(driver.correlation_energy, -0.11464267)
             assert np.allclose(
-                driver.system.reference_energy + driver.correlation_energy, -38.38631169
+                driver.system.reference_energy + driver.correlation_energy, -38.38596742
             )
         else:
-            # Check EOMCCSD energy
+            # Check EOMCCSDt energy
             assert np.allclose(driver.vertical_excitation_energy[n], expected_vee[n])
             assert np.allclose(
                 driver.system.reference_energy
@@ -41,4 +42,4 @@ def test_eomccsd_ch():
                 expected_total_energy[n],
             )
 if __name__ == "__main__":
-    test_eomccsd_ch()
+    test_eomccsdt1_ch()
