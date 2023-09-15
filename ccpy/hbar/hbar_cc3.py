@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import cc3_loops
+from ccpy.utilities.updates import hbar_cc3
 
 def build_hbar_cc3(T, H0, system, *args):
     """Calculate the one- and two-body components of the CC3 similarity-transformed
@@ -369,94 +369,17 @@ def build_hbar_cc3(T, H0, system, *args):
     Q1 -= np.transpose(Q1, (1, 0, 2, 3))
     X.bb.vvov = H0.bb.vvov + Q1 + np.einsum("abfe,fi->abie", X.bb.vvvv, T.b, optimize=True)
 
-    # Compute t3 from CC3 perturbative expressions
-    t3_aaa = compute_t3a(T, X, H0)
-    t3_aab = compute_t3b(T, X, H0)
-    t3_abb = compute_t3c(T, X, H0)
-    t3_bbb = compute_t3d(T, X, H0)
-    # Add in the t3-dependent terms to Hbar
-    H.aa.vooo += (
-            + 0.5 * np.einsum("mnef,aefijn->amij", H0.aa.oovv, t3_aaa, optimize=True)
-            + np.einsum("mnef,aefijn->amij", H0.ab.oovv, t3_aab, optimize=True)
-    )
-    H.ab.vooo += (
-            + np.einsum("nmfe,afeinj->amij", H0.ab.oovv, t3_aab, optimize=True)
-            + 0.5 * np.einsum("mnef,aefijn->amij", H0.bb.oovv, t3_abb, optimize=True)
-    )
-    H.ab.ovoo += (
-            + 0.5 * np.einsum("mnef,efajni->maji", H0.aa.oovv, t3_aab, optimize=True)
-            + np.einsum("mnef,efajni->maji", H0.ab.oovv, t3_abb, optimize=True)
-    )
-    H.bb.vooo += (
-            + 0.5 * np.einsum("mnef,aefijn->amij", H0.bb.oovv, t3_bbb, optimize=True)
-            + np.einsum("nmfe,faenij->amij", H0.ab.oovv, t3_abb, optimize=True)
-    )
-    H.aa.vvov += (
-            - 0.5 * np.einsum("mnef,abfimn->abie", H0.aa.oovv, t3_aaa, optimize=True)
-            - np.einsum("mnef,abfimn->abie", H0.ab.oovv, t3_aab, optimize=True)
-    )
-    H.ab.vvov += (
-            - np.einsum("nmfe,afbinm->abie", H0.ab.oovv, t3_aab, optimize=True)
-            - 0.5 * np.einsum("mnef,afbinm->abie", H0.bb.oovv, t3_abb, optimize=True)
-    )
-    H.ab.vvvo += (
-            - 0.5 * np.einsum("mnef,bfamni->baei", H0.aa.oovv, t3_aab, optimize=True)
-            - np.einsum("mnef,bfamni->baei", H0.ab.oovv, t3_abb, optimize=True)
-    )
-    H.bb.vvov += (
-            - 0.5 * np.einsum("mnef,abfimn->abie", H0.bb.oovv, t3_bbb, optimize=True)
-            - np.einsum("nmfe,fabnim->abie", H0.ab.oovv, t3_abb, optimize=True)
+    # Add in the t3-dependent terms to Hbar computed on-the-fly
+    H.aa.vooo, H.aa.vvov, H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.bb.vooo, H.bb.vvov = hbar_cc3.hbar_cc3.build_hbar(
+            H.aa.vooo, H.aa.vvov,
+            H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo,
+            H.bb.vooo, H.bb.vvov,
+            T.aa, T.ab, T.bb,
+            X.aa.vooo, X.aa.vvov,
+            X.ab.vooo, X.ab.ovoo, X.ab.vvov, X.ab.vvvo,
+            X.bb.vooo, X.bb.vvov,
+            H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+            H0.aa.oovv, H0.ab.oovv, H0.bb.oovv,
     )
 
     return H, X
-
-def compute_t3a(T, X, H0):
-    """
-    Update t3a amplitudes by calculating the projection <ijkabc|(H_N e^(T1+T2+T3))_C|0>.
-    """
-    # MM(2,3)A
-    x3a = -0.25 * np.einsum("amij,bcmk->abcijk", X.aa.vooo, T.aa, optimize=True)
-    x3a += 0.25 * np.einsum("abie,ecjk->abcijk", X.aa.vvov, T.aa, optimize=True)
-    t3_aaa = cc3_loops.cc3_loops.compute_t3a(x3a, H0.a.oo, H0.a.vv)
-    return t3_aaa
-
-# @profile
-def compute_t3b(T, X, H0):
-    """
-    Update t3b amplitudes by calculating the projection <ijk~abc~|(H_N e^(T1+T2+T3))_C|0>.
-    """
-    # MM(2,3)B
-    x3b = 0.5 * np.einsum("bcek,aeij->abcijk", X.ab.vvvo, T.aa, optimize=True)
-    x3b -= 0.5 * np.einsum("mcjk,abim->abcijk", X.ab.ovoo, T.aa, optimize=True)
-    x3b += np.einsum("acie,bejk->abcijk", X.ab.vvov, T.ab, optimize=True)
-    x3b -= np.einsum("amik,bcjm->abcijk", X.ab.vooo, T.ab, optimize=True)
-    x3b += 0.5 * np.einsum("abie,ecjk->abcijk", X.aa.vvov, T.ab, optimize=True)
-    x3b -= 0.5 * np.einsum("amij,bcmk->abcijk", X.aa.vooo, T.ab, optimize=True)
-    t3_aab = cc3_loops.cc3_loops.compute_t3b(x3b, H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv)
-    return t3_aab
-
-# @profile
-def compute_t3c(T, X, H0):
-    """
-    Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N e^(T1+T2+T3))_C|0>.
-    """
-    # MM(2,3)C
-    x3c = 0.5 * np.einsum("abie,ecjk->abcijk", X.ab.vvov, T.bb, optimize=True)
-    x3c -= 0.5 * np.einsum("amij,bcmk->abcijk", X.ab.vooo, T.bb, optimize=True)
-    x3c += 0.5 * np.einsum("cbke,aeij->abcijk", X.bb.vvov, T.ab, optimize=True)
-    x3c -= 0.5 * np.einsum("cmkj,abim->abcijk", X.bb.vooo, T.ab, optimize=True)
-    x3c += np.einsum("abej,ecik->abcijk", X.ab.vvvo, T.ab, optimize=True)
-    x3c -= np.einsum("mbij,acmk->abcijk", X.ab.ovoo, T.ab, optimize=True)
-    t3_abb = cc3_loops.cc3_loops.compute_t3c(x3c, H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv)
-    return t3_abb
-
-# @profile
-def compute_t3d(T, X, H0):
-    """
-    Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N e^(T1+T2+T3))_C|0>.
-    """
-    # MM(2,3)D
-    x3d = -0.25 * np.einsum("amij,bcmk->abcijk", X.bb.vooo, T.bb, optimize=True)
-    x3d += 0.25 * np.einsum("abie,ecjk->abcijk", X.bb.vvov, T.bb, optimize=True)
-    t3_bbb = cc3_loops.cc3_loops.compute_t3d(x3d, H0.b.oo, H0.b.vv)
-    return t3_bbb

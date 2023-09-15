@@ -158,7 +158,7 @@ module cc3_loops
                       deallocate(temp)
                       ! contribution from t3b
                       allocate(temp(nua,nua,nub))
-                      allocate(t(nua,nua,nub))
+                      !allocate(t(nua,nua,nub))
                       do i = 1,noa
                          do j = i+1,noa
                            do k = 1,nob
@@ -180,15 +180,15 @@ module cc3_loops
                               ! Diagram 6: -A(ab) I2A(amij)*t2b(bcmk)
                               call dgemm('n','t',nua,nua*nub,noa,-1.0d0,H2A_vooo(:,:,i,j),nua,t2b(:,:,:,k),nua*nub,1.0d0,temp,nua)
                               
-                              do a = 1,nua
-                                 do b = a+1,nua
-                                    do c = 1,nub
-                                       t3_denom = fA_oo(i,i)+fA_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fA_vv(b,b)-fB_vv(c,c)
-                                       t(a,b,c) = (temp(a,b,c) - temp(b,a,c)) / t3_denom
-                                       t(b,a,c) = -t(a,b,c)
-                                    end do
-                                 end do
-                              end do
+!                              do a = 1,nua
+!                                 do b = a+1,nua
+!                                    do c = 1,nub
+!                                       t3_denom = fA_oo(i,i)+fA_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fA_vv(b,b)-fB_vv(c,c)
+!                                       t(a,b,c) = (temp(a,b,c) - temp(b,a,c)) / t3_denom
+!                                       t(b,a,c) = -t(a,b,c)
+!                                    end do
+!                                 end do
+!                              end do
                               !!! A(ij)A(ab) [A(be) h2b(anef) * t3b(ebfijn)] (!!! expensive; ~3s)
                               ! x(e,b) <- H[k](e,ac) * T_132[i,j,k](ac,b) = -H[k](e,ac) * T_213(b,ac)
                               !resid_aa(:,b,i,j) = resid_aa(:,b,i,j) + H2B_vovv(:,k,a,c) * t3b ! (1)
@@ -266,6 +266,7 @@ module cc3_loops
                          end do
                       end do
                       deallocate(temp)
+                      !deallocate(t)
                       ! contribution from t3c
                       allocate(temp(nua,nub,nub))
                       do i = 1,noa

@@ -52,13 +52,7 @@ def get_HR1_intermediates(H, R, system):
     H(1) = exp(-T1) H exp(T1) is the CCS-like similarity transformed
     Hamiltonian."""
 
-    # Use a dictionary to hold the intermediates because we only need
-    # a few parts
     HR1 = Integral.from_empty(system, 2, data_type=np.float64, use_none=True)
-    # I = {"aa": {"vooo": None, "vvov": None, "oooo": None, "vvvv": None, "voov": None},
-    #      "ab": {"vooo": None, "ovoo": None, "vvov": None, "vvvo": None, "oooo": None, "vvvv": None,
-    #             "voov": None, "ovvo": None, "ovov": None, "vovo": None},
-    #      "bb": {"vooo": None, "vvov": None, "oooo": None, "vvvv": None, "voov": None}}
 
     HR1.aa.vvov = (
         -np.einsum("anie,bn->abie", H.aa.voov, R.a, optimize=True)

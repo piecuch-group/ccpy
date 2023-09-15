@@ -6,6 +6,7 @@ MODULES := cc_loops \
 		   crcc24_loops \
 		   crcc24_opt_loops \
 		   cc3_loops \
+		   hbar_cc3 \
 		   mbgf_loops \
 		   mbpt_loops \
 		   ccsdt_p_loops \
