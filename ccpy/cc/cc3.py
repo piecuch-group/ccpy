@@ -3,7 +3,8 @@ and iterative perturbative triples (CC3) calculation for a molecular system."""
 
 import numpy as np
 
-from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt, get_cc3_intermediates
+from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
+from ccpy.hbar.hbar_cc3 import get_cc3_intermediates
 from ccpy.utilities.updates import cc3_loops
 
 #import time
