@@ -321,7 +321,7 @@ def build_hbar_cc3(T, H0, system, *args):
     Q1 -= np.transpose(Q1, (0, 1, 3, 2))
     X.aa.vooo = H0.aa.vooo + Q1 - np.einsum("nmij,an->amij", X.aa.oooo, T.a, optimize=True)
     # added in for ROHF
-    X.aa.vooo += np.einsum("me,aeij->amij", H0.a.ov, T.aa, optimize=True)
+    #X.aa.vooo += np.einsum("me,aeij->amij", H0.a.ov, T.aa, optimize=True)
 
     Q1 = H0.ab.voov + np.einsum("amfe,fi->amie", H0.ab.vovv, T.a, optimize=True)
     X.ab.vooo = H0.ab.vooo + (
@@ -330,7 +330,7 @@ def build_hbar_cc3(T, H0, system, *args):
             + np.einsum("amie,ej->amij", Q1, T.b, optimize=True)
     )
     # added in for ROHF
-    X.ab.vooo += np.einsum("me,aeik->amik", H0.b.ov, T.ab, optimize=True)
+    #X.ab.vooo += np.einsum("me,aeik->amik", H0.b.ov, T.ab, optimize=True)
 
     Q1 = H0.ab.ovov + np.einsum("mafe,fj->maje", H0.ab.ovvv, T.a, optimize=True)
     X.ab.ovoo = H0.ab.ovoo + (
@@ -339,14 +339,14 @@ def build_hbar_cc3(T, H0, system, *args):
             + np.einsum("maei,ej->maji", H0.ab.ovvo, T.a, optimize=True)
     )
     # added in for ROHF
-    X.ab.ovoo += np.einsum("me,ecjk->mcjk", H0.a.ov, T.ab, optimize=True)
+    #X.ab.ovoo += np.einsum("me,ecjk->mcjk", H0.a.ov, T.ab, optimize=True)
 
     Q1 = H0.bb.voov + 0.5 * np.einsum("amef,ei->amif", H0.bb.vovv, T.b, optimize=True)
     Q1 = np.einsum("amif,fj->amij", Q1, T.b, optimize=True)
     Q1 -= np.transpose(Q1, (0, 1, 3, 2))
     X.bb.vooo = H0.bb.vooo + Q1 - np.einsum("nmij,an->amij", X.bb.oooo, T.b, optimize=True)
     # added in for ROHF
-    X.bb.vooo += np.einsum("me,aeij->amij", H0.b.ov, T.bb, optimize=True)
+    #X.bb.vooo += np.einsum("me,aeij->amij", H0.b.ov, T.bb, optimize=True)
 
     Q1 = H0.aa.ovov - 0.5 * np.einsum("mnie,bn->mbie", H0.aa.ooov, T.a, optimize=True)
     Q1 = -np.einsum("mbie,am->abie", Q1, T.a, optimize=True)

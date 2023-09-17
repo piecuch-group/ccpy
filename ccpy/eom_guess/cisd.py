@@ -107,440 +107,581 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
     # total dimension
     ndim = n1a + n1b + n2a + n2b + n2c
 
-    # < ia | H | jb >
+    idx_a = np.zeros((system.nunoccupied_alpha, system.noccupied_alpha), dtype=np.int32)
+    ct = 1
+    for a in range(system.nunoccupied_alpha):
+        for i in range(system.noccupied_alpha):
+            idx_a[a, i] = ct
+            ct += 1
+    idx_b = np.zeros((system.nunoccupied_beta, system.noccupied_beta), dtype=np.int32)
+    ct = 1
+    for a in range(system.nunoccupied_beta):
+        for i in range(system.noccupied_beta):
+            idx_b[a, i] = ct
+            ct += 1
+    idx_aa = np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.noccupied_alpha, system.noccupied_alpha), dtype=np.int32)
+    ct = 1
+    for a in range(nactu_a):
+        for b in range(a + 1, nactu_a):
+            for i in range(noa - nacto_a, noa):
+                for j in range(i + 1, noa):
+                    idx_aa[a, b, i, j] = ct
+                    idx_aa[b, a, i, j] = -ct
+                    idx_aa[a, b, j, i] = -ct
+                    idx_aa[b, a, j, i] = ct
+                    ct += 1
+    idx_ab = np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.noccupied_alpha, system.noccupied_beta), dtype=np.int32)
+    ct = 1
+    for a in range(nactu_a):
+        for b in range(nactu_b):
+            for i in range(noa - nacto_a, noa):
+                for j in range(nob - nacto_b, nob):
+                    idx_ab[a, b, i, j] = ct
+                    ct += 1
+    idx_bb = np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.noccupied_beta, system.noccupied_beta), dtype=np.int32)
+    ct = 1
+    for a in range(nactu_b):
+        for b in range(a + 1, nactu_b):
+            for i in range(nob - nacto_b, nob):
+                for j in range(i + 1, nob):
+                    idx_bb[a, b, i, j] = ct
+                    idx_bb[b, a, i, j] = -ct
+                    idx_bb[a, b, j, i] = -ct
+                    idx_bb[b, a, j, i] = ct
+                    ct += 1
+    ####################################################################################
+    # ALPHA SINGLES
+    ####################################################################################
     a_H_a = np.zeros((n1a, n1a))
-    ct1 = 0
-    for a in range(system.nunoccupied_alpha):
-        for i in range(system.noccupied_alpha):
-            ct2 = 0
-            for b in range(system.nunoccupied_alpha):
-                for j in range(system.noccupied_alpha):
-                    a_H_a[ct1, ct2] = (
-                          H.a.vv[a, b] * (i == j)
-                        - H.a.oo[j, i] * (a == b)
-                        + H.aa.voov[a, j, i, b]
-                    )
-                    ct2 += 1
-            ct1 += 1
-    #print("norm of a_H_a = ", np.linalg.norm(a_H_a.flatten()))
-    # < ia | H | j~b~ >
     a_H_b = np.zeros((n1a, n1b))
-    ct1 = 0
-    for a in range(system.nunoccupied_alpha):
-        for i in range(system.noccupied_alpha):
-            ct2 = 0
-            for b in range(system.nunoccupied_beta):
-                for j in range(system.noccupied_beta):
-                    a_H_b[ct1, ct2] = H.ab.voov[a, j, i, b]
-                    ct2 += 1
-            ct1 += 1
-    #print("norm of a_H_b = ", np.linalg.norm(a_H_b.flatten()))
-    # < i~a~ | H | jb >
-    b_H_a = np.zeros((n1b, n1a))
-    ct1 = 0
-    for a in range(system.nunoccupied_beta):
-        for i in range(system.noccupied_beta):
-            ct2 = 0
-            for b in range(system.nunoccupied_alpha):
-                for j in range(system.noccupied_alpha):
-                    b_H_a[ct1, ct2] = H.ab.ovvo[j, a, b, i]
-                    ct2 += 1
-            ct1 += 1
-    #print("norm of b_H_a = ", np.linalg.norm(b_H_a.flatten()))
-    # < i~a~ | H | j~b~ >
-    b_H_b = np.zeros((n1b, n1b))
-    ct1 = 0
-    for a in range(system.nunoccupied_beta):
-        for i in range(system.noccupied_beta):
-            ct2 = 0
-            for b in range(system.nunoccupied_beta):
-                for j in range(system.noccupied_beta):
-                    b_H_b[ct1, ct2] = (
-                          H.b.vv[a, b] * (i == j)
-                        - H.b.oo[j, i] * (a == b)
-                        + H.bb.voov[a, j, i, b]
-                    )
-                    ct2 += 1
-            ct1 += 1
-    #print("norm of b_H_b = ", np.linalg.norm(b_H_b.flatten()))
-    # < ia | H | jkbc >
     a_H_aa = np.zeros((n1a, n2a))
-    idet = 0
-    for a in range(nua):
-        for i in range(noa):
-            jdet = 0
-            for b in range(nactu_a):
-                for c in range(b + 1, nactu_a):
-                    for j in range(noa - nacto_a, noa):
-                        for k in range(j + 1, noa):
-                            hmatel = (
-                               (i == k) * (a == c) * H.a.ov[j, b]
-                              +(i == j) * (a == b) * H.a.ov[k, c]
-                              -(i == j) * (a == c) * H.a.ov[k, b]
-                              -(i == k) * (a == b) * H.a.ov[j, c]
-                              -(a == b) * H.aa.ooov[j, k, i, c]
-                              +(a == c) * H.aa.ooov[j, k, i, b]
-                              +(i == j) * H.aa.vovv[a, k, b, c]
-                              -(i == k) * H.aa.vovv[a, j, b, c]
-                            )
-                            a_H_aa[idet, jdet] = hmatel
-                            jdet += 1
-            idet += 1
-    #print("norm of a_H_aa = ", np.linalg.norm(a_H_aa.flatten()))
-    # < ia | H | jk~bc~ >
     a_H_ab = np.zeros((n1a, n2b))
-    idet = 0
     for a in range(nua):
         for i in range(noa):
-            jdet = 0
-            for b in range(nactu_a):
-                for c in range(nactu_b):
-                    for j in range(noa - nacto_a, noa):
-                        for k in range(nob - nacto_b, nob):
-                            hmatel = (
-                                (i == j) * H.ab.vovv[a, k, b, c]
-                               -(a == b) * H.ab.ooov[j, k, i, c]
-                               +(i == j) * (a == b) * H.b.ov[k, c]
-
-                            )
-                            a_H_ab[idet, jdet] = hmatel
-                            jdet += 1
-            idet += 1
-    #print("norm of a_H_ab = ", np.linalg.norm(a_H_ab.flatten()))
-    # < i~a~ | H | jk~bc~ >
+            idet = idx_a[a, i]
+            I = abs(idet) - 1
+            # -h1a(mi) * r1a(am)
+            for m in range(noa):
+                jdet = idx_a[a, m]
+                J = abs(jdet) - 1
+                a_H_a[I, J] -= H.a.oo[m, i]
+            # h1a(ae) * r1a(ei)
+            for e in range(nua):
+                jdet = idx_a[e, i]
+                J = abs(jdet) - 1
+                a_H_a[I, J] += H.a.vv[a, e]
+            # h2a(amie) * r1a(em)
+            for e in range(nua):
+                for m in range(noa):
+                    jdet = idx_a[e, m]
+                    J = abs(jdet) - 1
+                    a_H_a[I, J] += H.aa.voov[a, m, i, e]
+            # h2b(amie) * r1b(em)
+            for e in range(nub):
+                for m in range(nob):
+                    jdet = idx_b[e, m]
+                    J = abs(jdet) - 1
+                    a_H_b[I, J] += H.ab.voov[a, m, i, e]
+            # h1a(me) * r2a(aeim)
+            for e in range(nactu_a):
+                for m in range(noa - nacto_a, noa):
+                    jdet = idx_aa[a, e, i, m]
+                    if jdet != 0:
+                        J = abs(jdet) - 1
+                        phase = np.sign(jdet)
+                        a_H_aa[I, J] += H.a.ov[m, e] * phase
+            # -1/2 h2a(mnif) * r2a(afmn)
+            for m in range(noa - nacto_a, noa):
+                for n in range(m + 1, noa):
+                    for f in range(nactu_a):
+                        jdet = idx_aa[a, f, m, n]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            a_H_aa[I, J] -= H.aa.ooov[m, n, i, f] * phase
+            # 1/2 h2a(anef) * r2a(efin)
+            for e in range(nactu_a):
+                for f in range(e + 1, nactu_a):
+                    for n in range(noa - nacto_a, noa):
+                        jdet = idx_aa[e, f, i, n]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            a_H_aa[I, J] += H.aa.vovv[a, n, e, f] * phase
+            # h1b(me) * r2b(aeim)
+            for e in range(nactu_b):
+                for m in range(nob - nacto_b, nob):
+                    jdet = idx_ab[a, e, i, m]
+                    if jdet != 0:
+                        J = abs(jdet) - 1
+                        a_H_ab[I, J] += H.b.ov[m, e]
+            # -h2b(mnif) * r2b(afmn)
+            for m in range(noa - nacto_a, noa):
+                for n in range(nob - nacto_b, nob):
+                    for f in range(nactu_b):
+                        jdet = idx_ab[a, f, m, n]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            a_H_ab[I, J] -= H.ab.ooov[m, n, i, f]
+            # h2b(anef) * r2b(efin)
+            for e in range(nactu_a):
+                for f in range(nactu_b):
+                    for n in range(nob - nacto_b, nob):
+                        jdet = idx_ab[e, f, i, n]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            a_H_ab[I, J] += H.ab.vovv[a, n, e, f]
+    ####################################################################################
+    # BETA SINGLES
+    ####################################################################################
+    b_H_a = np.zeros((n1b, n1a))
+    b_H_b = np.zeros((n1b, n1b))
     b_H_ab = np.zeros((n1b, n2b))
-    idet = 0
-    for a in range(nub):
-        for i in range(nob):
-            jdet = 0
-            for b in range(nactu_a):
-                for c in range(nactu_b):
-                    for j in range(noa - nacto_a, noa):
-                        for k in range(nob - nacto_b, nob):
-                            hmatel = (
-                                (i == k) * H.ab.ovvv[j, a, b, c]
-                               -(a == c) * H.ab.oovo[j, k, b, i]
-                               +(i == k) * (a == c) * H.a.ov[j, b]
-
-                            )
-                            b_H_ab[idet, jdet] = hmatel
-                            jdet += 1
-            idet += 1
-    #print("norm of b_H_ab = ", np.linalg.norm(b_H_ab.flatten()))
-    # < i~a~ | H | j~k~b~c~ >
     b_H_bb = np.zeros((n1b, n2c))
-    idet = 0
     for a in range(nub):
         for i in range(nob):
-            jdet = 0
-            for b in range(nactu_b):
-                for c in range(b + 1, nactu_b):
-                    for j in range(nob - nacto_b, nob):
-                        for k in range(j + 1, nob):
-                            hmatel = (
-                               (i == k) * (a == c) * H.b.ov[j, b]
-                              +(i == j) * (a == b) * H.b.ov[k, c]
-                              -(i == j) * (a == c) * H.b.ov[k, b]
-                              -(i == k) * (a == b) * H.b.ov[j, c]
-                              -(a == b) * H.bb.ooov[j, k, i, c]
-                              +(a == c) * H.bb.ooov[j, k, i, b]
-                              +(i == j) * H.bb.vovv[a, k, b, c]
-                              -(i == k) * H.bb.vovv[a, j, b, c]
-                            )
-                            b_H_bb[idet, jdet] = hmatel
-                            jdet += 1
-            idet += 1
-    #print("norm of b_H_bb = ", np.linalg.norm(b_H_bb.flatten()))
-    # < ijab | H | kc >
+            idet = idx_b[a, i]
+            I = abs(idet) - 1
+            # -h1b(mi) * r1b(am)
+            for m in range(nob):
+                jdet = idx_b[a, m]
+                J = abs(jdet) - 1
+                b_H_b[I, J] -= H.b.oo[m, i]
+            # h1b(ae) * r1b(ei)
+            for e in range(nub):
+                jdet = idx_b[e, i]
+                J = abs(jdet) - 1
+                b_H_b[I, J] += H.b.vv[a, e]
+            # h2c(amie) * r1b(em)
+            for e in range(nub):
+                for m in range(nob):
+                    jdet = idx_b[e, m]
+                    J = abs(jdet) - 1
+                    b_H_b[I, J] += H.bb.voov[a, m, i, e]
+            # h2b(maei) * r1a(em)
+            for e in range(nua):
+                for m in range(noa):
+                    jdet = idx_a[e, m]
+                    J = abs(jdet) - 1
+                    b_H_a[I, J] += H.ab.ovvo[m, a, e, i]
+            # h1b(me) * r2c(aeim)
+            for e in range(nactu_b):
+                for m in range(nob - nacto_b, nob):
+                    jdet = idx_bb[a, e, i, m]
+                    if jdet != 0:
+                        J = abs(jdet) - 1
+                        phase = np.sign(jdet)
+                        b_H_bb[I, J] += H.b.ov[m, e] * phase
+            # 1/2 h2c(anef) * r2c(efin)
+            for e in range(nactu_b):
+                for f in range(e + 1, nactu_b):
+                    for n in range(nob - nacto_b, nob):
+                        jdet = idx_bb[e, f, i, n]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            b_H_bb[I, J] += H.bb.vovv[a, n, e, f] * phase
+            # -1/2 h2c(mnif) * r2c(afmn)
+            for m in range(nob - nacto_b, nob):
+                for n in range(m + 1, nob):
+                    for f in range(nactu_b):
+                        jdet = idx_bb[a, f, m, n]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            b_H_bb[I, J] -= H.bb.ooov[m, n, i, f] * phase
+            # h1a(me) * r2b(eami)
+            for e in range(nactu_a):
+                for m in range(noa - nacto_a, noa):
+                    jdet = idx_ab[e, a, m, i]
+                    if jdet != 0:
+                        J = abs(jdet) - 1
+                        b_H_ab[I, J] += H.a.ov[m, e]
+            # -h2b(nmfi) * r2b(fanm)
+            for m in range(nob - nacto_b, nob):
+                for n in range(noa - nacto_a, noa):
+                    for f in range(nactu_a):
+                        jdet = idx_ab[f, a, n, m]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            b_H_ab[I, J] -= H.ab.oovo[n, m, f, i]
+            # h2b(nafe) * r2b(feni)
+            for e in range(nactu_b):
+                for f in range(nactu_a):
+                    for n in range(noa - nacto_a, noa):
+                        jdet = idx_ab[f, e, n, i]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            b_H_ab[I, J] += H.ab.ovvv[n, a, f, e]
+    ####################################################################################
+    # ALPHA-ALPHA DOUBLES
+    ####################################################################################
     aa_H_a = np.zeros((n2a, n1a))
-    idet = 0
-    for a in range(nactu_a):
-        for b in range(a + 1, nactu_a):
-            for i in range(noa - nacto_a, noa):
-                for j in range(i + 1, noa):
-                    jdet = 0
-                    for c in range(nua):
-                        for k in range(noa):
-                            hmatel = (
-                                 (j == k) * H.aa.vvov[a, b, i, c]
-                                +(i == k) * H.aa.vvov[b, a, j, c]
-                                -(b == c) * H.aa.vooo[a, k, i, j]
-                                -(a == c) * H.aa.vooo[b, k, j, i]
-                            )
-                            aa_H_a[idet, jdet] = hmatel
-                            jdet += 1
-                    idet += 1
-    #print("norm of aa_H_a = ", np.linalg.norm(aa_H_a.flatten()))
-    # < ij~ab~ | H | kc >
-    ab_H_a = np.zeros((n2b, n1a))
-    idet = 0
-    for a in range(nactu_a):
-        for b in range(nactu_b):
-            for i in range(noa - nacto_a, noa):
-                for j in range(nob - nacto_b, nob):
-                    jdet = 0
-                    for c in range(nua):
-                        for k in range(noa):
-                            hmatel = (
-                                 (i == k) * H.ab.vvvo[a, b, c, j]
-                                -(a == c) * H.ab.ovoo[k, b, i, j]
-                            )
-                            ab_H_a[idet, jdet] = hmatel
-                            jdet += 1
-                    idet += 1
-    #print("norm of ab_H_a = ", np.linalg.norm(ab_H_a.flatten()))
-    # < ij~ab~ | H | k~c~ >
-    ab_H_b = np.zeros((n2b, n1b))
-    idet = 0
-    for a in range(nactu_a):
-        for b in range(nactu_b):
-            for i in range(noa - nacto_a, noa):
-                for j in range(nob - nacto_b, nob):
-                    jdet = 0
-                    for c in range(nub):
-                        for k in range(nob):
-                            hmatel = (
-                                 (j == k) * H.ab.vvov[a, b, i, c]
-                                -(b == c) * H.ab.vooo[a, k, i, j]
-                            )
-                            ab_H_b[idet, jdet] = hmatel
-                            jdet += 1
-                    idet += 1
-    #print("norm of ab_H_b = ", np.linalg.norm(ab_H_b.flatten()))
-    # < i~j~a~b~ | H | k~c~ >
-    bb_H_b = np.zeros((n2c, n1b))
-    idet = 0
-    for a in range(nactu_b):
-        for b in range(a + 1, nactu_b):
-            for i in range(nob - nacto_b, nob):
-                for j in range(i + 1, nob):
-                    jdet = 0
-                    for c in range(nub):
-                        for k in range(nob):
-                            hmatel = (
-                                 (j == k) * H.bb.vvov[a, b, i, c]
-                                +(i == k) * H.bb.vvov[b, a, j, c]
-                                -(b == c) * H.bb.vooo[a, k, i, j]
-                                -(a == c) * H.bb.vooo[b, k, j, i]
-                            )
-                            bb_H_b[idet, jdet] = hmatel
-                            jdet += 1
-                    idet += 1
-    #print("norm of bb_H_b = ", np.linalg.norm(bb_H_b.flatten()))
-    # < ijab | H | klcd >
     aa_H_aa = np.zeros((n2a, n2a))
-    idet = 0
-    for a in range(nactu_a):
-        for b in range(a + 1, nactu_a):
-            for i in range(noa - nacto_a, noa):
-                for j in range(i + 1, noa):
-                    jdet = 0
-                    for c in range(nactu_a):
-                        for d in range(c + 1, nactu_a):
-                            for k in range(noa - nacto_a, noa):
-                                for l in range(k + 1, noa):
-                                    hmatel = (
-                                        (a == c) * (b ==d) *
-                                        (
-                                                -(j == l) * H.a.oo[k, i]
-                                                +(i == l) * H.a.oo[k, j]
-                                                +(j == k) * H.a.oo[l, i]
-                                                -(i == k) * H.a.oo[l, j]
-                                        )
-                                        + (j == l) * (i == k) *
-                                        (
-                                                + (b == d) * H.a.vv[a, c]
-                                                - (b == c) * H.a.vv[a, d]
-                                                + (a == c) * H.a.vv[b, d]
-                                                - (a == d) * H.a.vv[b, c]
-                                        )
-                                        + (i == k) * (a == c) * H.aa.voov[b, l, j, d]
-                                        - (i == k) * (a == d) * H.aa.voov[b, l, j, c]
-                                        - (i == k) * (b == c) * H.aa.voov[a, l, j, d]
-                                        + (i == k) * (b == d) * H.aa.voov[a, l, j, c]
-                                        - (i == l) * (a == c) * H.aa.voov[b, k, j, d]
-                                        + (i == l) * (a == d) * H.aa.voov[b, k, j, c]
-                                        + (i == l) * (b == c) * H.aa.voov[a, k, j, d]
-                                        - (i == l) * (b == d) * H.aa.voov[a, k, j, c]
-                                        - (j == k) * (a == c) * H.aa.voov[b, l, i, d]
-                                        + (j == k) * (a == d) * H.aa.voov[b, l, i, c]
-                                        + (j == k) * (b == c) * H.aa.voov[a, l, i, d]
-                                        - (j == k) * (b == d) * H.aa.voov[a, l, i, c]
-                                        + (j == l) * (a == c) * H.aa.voov[b, k, i, d]
-                                        - (j == l) * (a == d) * H.aa.voov[b, k, i, c]
-                                        - (j == l) * (b == c) * H.aa.voov[a, k, i, d]
-                                        + (j == l) * (b == d) * H.aa.voov[a, k, i, c]
-                                        + (b == d) * (a == c) * H.aa.oooo[k, l, i, j]
-                                        + (i == k) * (j == l) * H.aa.vvvv[a, b, c, d]
-                                    )
-                                    aa_H_aa[idet, jdet] = hmatel
-                                    jdet += 1
-                    idet += 1
-    #print("norm of aa_H_aa = ", np.linalg.norm(aa_H_aa.flatten()))
-    # < ijab | H | kl~cd~ >
     aa_H_ab = np.zeros((n2a, n2b))
-    idet = 0
     for a in range(nactu_a):
         for b in range(a + 1, nactu_a):
             for i in range(noa - nacto_a, noa):
                 for j in range(i + 1, noa):
-                    jdet = 0
-                    for c in range(nactu_a):
-                        for d in range(nactu_b):
-                            for k in range(noa - nacto_a, noa):
-                                for l in range(nob - nacto_b, nob):
-                                    hmatel = (
-                                         (i == k) * (a == c) * H.ab.voov[b, l, j, d]
-                                        -(i == k) * (b == c) * H.ab.voov[a, l, j, d]
-                                        -(j == k) * (a == c) * H.ab.voov[b, l, i, d]
-                                        +(j == k) * (b == c) * H.ab.voov[a, l, i, d]
-                                    )
-                                    aa_H_ab[idet, jdet] = hmatel
-                                    jdet += 1
-                    idet += 1
-    #print("norm of aa_H_ab = ", np.linalg.norm(aa_H_ab.flatten()))
-    # < ij~ab~ | H | klcd >
+                    idet = idx_aa[a, b, i, j]
+                    I = abs(idet) - 1
+                    # -A(ab) h2a(amij) * r1a(bm)
+                    for m in range(noa):
+                        # (1)
+                        jdet = idx_a[b, m]
+                        J = abs(jdet) - 1
+                        aa_H_a[I, J] -= H.aa.vooo[a, m, i, j]
+                        # (ab)
+                        jdet = idx_a[a, m]
+                        J = abs(jdet) - 1
+                        aa_H_a[I, J] += H.aa.vooo[b, m, i, j]
+                    # A(ij) h2a(abie) * r1a(ej)
+                    for e in range(nua):
+                        # (1)
+                        jdet = idx_a[e, i]
+                        J = abs(jdet) - 1
+                        aa_H_a[I, J] += H.aa.vvov[b, a, j, e]
+                        # (ij)
+                        jdet = idx_a[e, j]
+                        J = abs(jdet) - 1
+                        aa_H_a[I, J] -= H.aa.vvov[b, a, i, e]
+                    # -A(ij) h1a(mi) * r2a(abmj)
+                    for m in range(noa - nacto_a, noa):
+                        # (1)
+                        jdet = idx_aa[a, b, m, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            aa_H_aa[I, J] -= H.a.oo[m, i] * phase
+                        # (ij)
+                        jdet = idx_aa[a, b, m, i]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            aa_H_aa[I, J] += H.a.oo[m, j] * phase
+                    # A(ab) h1a(ae) * r2a(ebij)
+                    for e in range(nactu_a):
+                        # (1)
+                        jdet = idx_aa[e, b, i, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            aa_H_aa[I, J] += H.a.vv[a, e] * phase
+                        # (ab)
+                        jdet = idx_aa[e, a, i, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            aa_H_aa[I, J] -= H.a.vv[b, e] * phase
+                    # 1/2 h2a(mnij) * r2a(abmn)
+                    for m in range(noa - nacto_a, noa):
+                        for n in range(m + 1, noa):
+                            jdet = idx_aa[a, b, m, n]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                aa_H_aa[I, J] += H.aa.oooo[m, n, i, j] * phase
+                    # 1/2 h2a(abef) * r2a(efij)
+                    for e in range(nactu_a):
+                        for f in range(e + 1, nactu_a):
+                            jdet = idx_aa[e, f, i, j]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                aa_H_aa[I, J] += H.aa.vvvv[a, b, e, f] * phase
+                    # A(ij)A(ab) h2a(amie) * r2a(ebmj)
+                    for e in range(nactu_a):
+                        for m in range(noa - nacto_a, noa):
+                            # (1)
+                            jdet = idx_aa[e, b, m, j]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                aa_H_aa[I, J] += H.aa.voov[a, m, i, e] * phase
+                            # (ij)
+                            jdet = idx_aa[e, b, m, i]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                aa_H_aa[I, J] -= H.aa.voov[a, m, j, e] * phase
+                            # (ab)
+                            jdet = idx_aa[e, a, m, j]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                aa_H_aa[I, J] -= H.aa.voov[b, m, i, e] * phase
+                            # (ij)(ab)
+                            jdet = idx_aa[e, a, m, i]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                aa_H_aa[I, J] += H.aa.voov[b, m, j, e] * phase
+                    # A(ij)A(ab) h2b(bmje) * r2b(aeim)
+                    for e in range(nactu_b):
+                        for m in range(nob - nacto_b, nob):
+                            # (1)
+                            jdet = idx_ab[a, e, i, m]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                aa_H_ab[I, J] += H.ab.voov[b, m, j, e]
+                            # (ab)
+                            jdet = idx_ab[b, e, i, m]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                aa_H_ab[I, J] -= H.ab.voov[a, m, j, e]
+                            # (ij)
+                            jdet = idx_ab[a, e, j, m]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                aa_H_ab[I, J] -= H.ab.voov[b, m, i, e]
+                            # (ij)(ab)
+                            jdet = idx_ab[b, e, j, m]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                aa_H_ab[I, J] += H.ab.voov[a, m, i, e]
+    ####################################################################################
+    # ALPHA-BETA DOUBLES
+    ####################################################################################
+    ab_H_a = np.zeros((n2b, n1a))
+    ab_H_b = np.zeros((n2b, n1b))
     ab_H_aa = np.zeros((n2b, n2a))
-    idet = 0
-    for a in range(nactu_a):
-        for b in range(nactu_b):
-            for i in range(noa - nacto_a, noa):
-                for j in range(nob - nacto_b, nob):
-                    jdet = 0
-                    for c in range(nactu_a):
-                        for d in range(c + 1, nactu_a):
-                            for k in range(noa - nacto_a, noa):
-                                for l in range(k + 1, noa):
-                                    hmatel = (
-                                         (i == k) * (a == c) * H.ab.ovvo[l, b, d, j]
-                                        -(i == k) * (a == d) * H.ab.ovvo[l, b, c, j]
-                                        -(i == l) * (a == c) * H.ab.ovvo[k, b, d, j]
-                                        +(i == l) * (a == d) * H.ab.ovvo[k, b, c, j]
-                                    )
-                                    ab_H_aa[idet, jdet] = hmatel
-                                    jdet += 1
-                    idet += 1
-    #print("norm of ab_H_aa = ", np.linalg.norm(ab_H_aa.flatten()))
-    # < ij~ab~ | H | kl~cd~ >
     ab_H_ab = np.zeros((n2b, n2b))
-    idet = 0
-    for a in range(nactu_a):
-        for b in range(nactu_b):
-            for i in range(noa - nacto_a, noa):
-                for j in range(nob - nacto_b, nob):
-                    jdet = 0
-                    for c in range(nactu_a):
-                        for d in range(nactu_b):
-                            for k in range(noa - nacto_a, noa):
-                                for l in range(nob - nacto_b, nob):
-                                    hmatel = (
-                                         (j == l) * (b == d) * H.aa.voov[a, k, i, c]
-                                        +(j == l) * (i == k) * H.ab.vvvv[a, b, c, d]
-                                        +(a == c) * (i == k) * H.bb.voov[b, l, j, d]
-                                        +(a == c) * (b == d) * H.ab.oooo[k, l, i, j]
-                                        -(j == l) * (a == c) * H.ab.ovov[k, b, i, d]
-                                        -(i == k) * (b == d) * H.ab.vovo[a, l, c, j]
-                                        -(j == l) * (a == c) * (b == d) * H.a.oo[k, i]
-                                        -(a == c) * (b == d) * (i == k) * H.b.oo[l, j]
-                                        +(i == k) * (b == d) * (j == l) * H.a.vv[a, c]
-                                        +(j == l) * (i == k) * (a == c) * H.b.vv[b, d]
-                                    )
-                                    ab_H_ab[idet, jdet] = hmatel
-                                    jdet += 1
-                    idet += 1
-    #print("norm of ab_H_ab = ", np.linalg.norm(ab_H_ab.flatten()))
-    # < ij~ab~ | H | k~l~c~d~ >
     ab_H_bb = np.zeros((n2b, n2c))
-    idet = 0
     for a in range(nactu_a):
         for b in range(nactu_b):
             for i in range(noa - nacto_a, noa):
                 for j in range(nob - nacto_b, nob):
-                    jdet = 0
-                    for c in range(nactu_b):
-                        for d in range(c + 1, nactu_b):
-                            for k in range(nob - nacto_b, nob):
-                                for l in range(k + 1, nob):
-                                    hmatel = (
-                                         (j == k) * (b == c) * H.ab.voov[a, l, i, d]
-                                        -(j == k) * (b == d) * H.ab.voov[a, l, i, c]
-                                        -(j == l) * (b == c) * H.ab.voov[a, k, i, d]
-                                        +(j == l) * (b == d) * H.ab.voov[a, k, i, c]
-                                    )
-                                    ab_H_bb[idet, jdet] = hmatel
-                                    jdet += 1
-                    idet += 1
-    #print("norm of ab_H_bb = ", np.linalg.norm(ab_H_bb.flatten()))
-    # < i~j~a~b~ | H | kl~cd~ >
+                    idet = idx_ab[a, b, i, j]
+                    I = abs(idet) - 1
+                    # -h2b(mbij) * r1a(am)
+                    for m in range(noa):
+                        jdet = idx_a[a, m]
+                        J = abs(jdet) - 1
+                        ab_H_a[I, J] -= H.ab.ovoo[m, b, i, j]
+                    # h2b(abej) * r1a(ei)
+                    for e in range(nua):
+                        jdet = idx_a[e, i]
+                        J = abs(jdet) - 1
+                        ab_H_a[I, J] += H.ab.vvvo[a, b, e, j]
+                    # -h2b(amij) * r1b(bm)
+                    for m in range(nob):
+                        jdet = idx_b[b, m]
+                        J = abs(jdet) - 1
+                        ab_H_b[I, J] -= H.ab.vooo[a, m, i, j]
+                    # h2b(abie) * r1b(ej)
+                    for e in range(nub):
+                        jdet = idx_b[e, j]
+                        J = abs(jdet) - 1
+                        ab_H_b[I, J] += H.ab.vvov[a, b, i, e]
+                    # h2b(mbej) * r2a(aeim)
+                    for e in range(nactu_a):
+                        for m in range(noa - nacto_a, noa):
+                            jdet = idx_aa[a, e, i, m]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                ab_H_aa[I, J] += H.ab.ovvo[m, b, e, j] * phase
+                    # -h1a(mi) * r2b(abmj)
+                    for m in range(noa - nacto_a, noa):
+                        jdet = idx_ab[a, b, m, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            ab_H_ab[I, J] -= H.a.oo[m, i]
+                    # -h1b(mj) * r2b(abim)
+                    for m in range(nob - nacto_b, nob):
+                        jdet = idx_ab[a, b, i, m]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            ab_H_ab[I, J] -= H.b.oo[m, j]
+                    # h1a(ae) * r2b(ebij)
+                    for e in range(nactu_a):
+                        jdet = idx_ab[e, b, i, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            ab_H_ab[I, J] += H.a.vv[a, e]
+                    # h1a(be) * r2b(aeij)
+                    for e in range(nactu_b):
+                        jdet = idx_ab[a, e, i, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            ab_H_ab[I, J] += H.b.vv[b, e]
+                    # h2b(mnij) * r2b(abmn)
+                    for m in range(noa - nacto_a, noa):
+                        for n in range(nob - nacto_b, nob):
+                            jdet = idx_ab[a, b, m, n]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                ab_H_ab[I, J] += H.ab.oooo[m, n, i, j]
+                    # h2b(abef) * r2b(efij)
+                    for e in range(nactu_a):
+                        for f in range(nactu_b):
+                            jdet = idx_ab[e, f, i, j]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                ab_H_ab[I, J] += H.ab.vvvv[a, b, e, f]
+                    # h2a(amie) * r2b(ebmj)
+                    for e in range(nactu_a):
+                        for m in range(noa - nacto_a, noa):
+                            jdet = idx_ab[e, b, m, j]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                ab_H_ab[I, J] += H.aa.voov[a, m, i, e]
+                    # h2c(bmje) * r2b(aeim)
+                    for e in range(nactu_b):
+                        for m in range(nob - nacto_b, nob):
+                            jdet = idx_ab[a, e, i, m]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                ab_H_ab[I, J] += H.bb.voov[b, m, j, e]
+                    # -h2b(amej) * r2b(ebim)
+                    for e in range(nactu_a):
+                        for m in range(nob - nacto_b, nob):
+                            jdet = idx_ab[e, b, i, m]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                ab_H_ab[I, J] -= H.ab.vovo[a, m, e, j]
+                    # -h2b(mbie) * r2b(aemj)
+                    for e in range(nactu_b):
+                        for m in range(noa - nacto_a, noa):
+                            jdet = idx_ab[a, e, m, j]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                ab_H_ab[I, J] -= H.ab.ovov[m, b, i, e]
+                    # h2b(amie) * r2c(bejm)
+                    for e in range(nactu_b):
+                        for m in range(nob - nacto_b, nob):
+                            jdet = idx_bb[b, e, j, m]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                ab_H_bb[I, J] += H.ab.voov[a, m, i, e] * phase
+    ####################################################################################
+    # BETA-BETA DOUBLES
+    ####################################################################################
+    bb_H_b = np.zeros((n2c, n1b))
     bb_H_ab = np.zeros((n2c, n2b))
-    idet = 0
-    for a in range(nactu_b):
-        for b in range(a + 1, nactu_b):
-            for i in range(nob - nacto_b, nob):
-                for j in range(i + 1, nob):
-                    jdet = 0
-                    for c in range(nactu_a):
-                        for d in range(nactu_b):
-                            for k in range(noa - nacto_a, noa):
-                                for l in range(nob - nacto_b, nob):
-                                    hmatel = (
-                                         (i == l) * (a == d) * H.ab.ovvo[k, b, c, j]
-                                        -(i == l) * (b == d) * H.ab.ovvo[k, a, c, j]
-                                        -(j == l) * (a == d) * H.ab.ovvo[k, b, c, i]
-                                        +(j == l) * (b == d) * H.ab.ovvo[k, a, c, i]
-                                    )
-                                    bb_H_ab[idet, jdet] = hmatel
-                                    jdet += 1
-                    idet += 1
-    #print("norm of bb_H_ab = ", np.linalg.norm(bb_H_ab.flatten()))
-    # < i~j~a~b~ | H | k~l~c~d~ >
     bb_H_bb = np.zeros((n2c, n2c))
-    idet = 0
     for a in range(nactu_b):
         for b in range(a + 1, nactu_b):
             for i in range(nob - nacto_b, nob):
                 for j in range(i + 1, nob):
-                    jdet = 0
-                    for c in range(nactu_b):
-                        for d in range(c + 1, nactu_b):
-                            for k in range(nob - nacto_b, nob):
-                                for l in range(k + 1, nob):
-                                    hmatel = (
-                                        (a == c) * (b ==d) * (
-                                                -(j == l) * H.b.oo[k, i]
-                                                +(i == l) * H.b.oo[k, j]
-                                                +(j == k) * H.b.oo[l, i]
-                                                -(i == k) * H.b.oo[l, j]
-                                            )
-                                        + (j == l) * (i == k) * (
-                                                + (b == d) * H.b.vv[a, c]
-                                                - (b == c) * H.b.vv[a, d]
-                                                + (a == c) * H.b.vv[b, d]
-                                                - (a == d) * H.b.vv[b, c]
-                                            )
-                                        + (i == k) * (a == c) * H.bb.voov[b, l, j, d]
-                                        - (i == k) * (a == d) * H.bb.voov[b, l, j, c]
-                                        - (i == k) * (b == c) * H.bb.voov[a, l, j, d]
-                                        + (i == k) * (b == d) * H.bb.voov[a, l, j, c]
-                                        - (i == l) * (a == c) * H.bb.voov[b, k, j, d]
-                                        + (i == l) * (a == d) * H.bb.voov[b, k, j, c]
-                                        + (i == l) * (b == c) * H.bb.voov[a, k, j, d]
-                                        - (i == l) * (b == d) * H.bb.voov[a, k, j, c]
-                                        - (j == k) * (a == c) * H.bb.voov[b, l, i, d]
-                                        + (j == k) * (a == d) * H.bb.voov[b, l, i, c]
-                                        + (j == k) * (b == c) * H.bb.voov[a, l, i, d]
-                                        - (j == k) * (b == d) * H.bb.voov[a, l, i, c]
-                                        + (j == l) * (a == c) * H.bb.voov[b, k, i, d]
-                                        - (j == l) * (a == d) * H.bb.voov[b, k, i, c]
-                                        - (j == l) * (b == c) * H.bb.voov[a, k, i, d]
-                                        + (j == l) * (b == d) * H.bb.voov[a, k, i, c]
-                                        + (b == d) * (a == c) * H.bb.oooo[k, l, i, j]
-                                        + (i == k) * (j == l) * H.bb.vvvv[a, b, c, d]
-                                    )
-                                    bb_H_bb[idet, jdet] = hmatel
-                                    jdet += 1
-                    idet += 1
-    #print("norm of bb_H_bb = ", np.linalg.norm(bb_H_bb.flatten()))
+                    idet = idx_bb[a, b, i, j]
+                    I = abs(idet) - 1
+                    # -A(ab) h2c(amij) * r1b(bm)
+                    for m in range(nob):
+                        # (1)
+                        jdet = idx_b[b, m]
+                        J = abs(jdet) - 1
+                        bb_H_b[I, J] -= H.bb.vooo[a, m, i, j]
+                        # (ab)
+                        jdet = idx_b[a, m]
+                        J = abs(jdet) - 1
+                        bb_H_b[I, J] += H.bb.vooo[b, m, i, j]
+                    # A(ij) h2c(abie) * r1b(ej)
+                    for e in range(nub):
+                        # (1)
+                        jdet = idx_b[e, i]
+                        J = abs(jdet) - 1
+                        bb_H_b[I, J] += H.bb.vvov[b, a, j, e]
+                        # (ij)
+                        jdet = idx_b[e, j]
+                        J = abs(jdet) - 1
+                        bb_H_b[I, J] -= H.bb.vvov[b, a, i, e]
+                    # -A(ij) h1b(mi) * r2c(abmj)
+                    for m in range(nob - nacto_b, nob):
+                        # (1)
+                        jdet = idx_bb[a, b, m, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            bb_H_bb[I, J] -= H.b.oo[m, i] * phase
+                        # (ij)
+                        jdet = idx_bb[a, b, m, i]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            bb_H_bb[I, J] += H.b.oo[m, j] * phase
+                    # A(ab) h1b(ae) * r2c(ebij)
+                    for e in range(nactu_b):
+                        # (1)
+                        jdet = idx_bb[e, b, i, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            bb_H_bb[I, J] += H.b.vv[a, e] * phase
+                        # (ab)
+                        jdet = idx_bb[e, a, i, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            phase = np.sign(jdet)
+                            bb_H_bb[I, J] -= H.b.vv[b, e] * phase
+                    # 1/2 h2c(mnij) * r2c(abmn)
+                    for m in range(nob - nacto_b, nob):
+                        for n in range(m + 1, nob):
+                            jdet = idx_bb[a, b, m, n]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                bb_H_bb[I, J] += H.bb.oooo[m, n, i, j] * phase
+                    # 1/2 h2c(abef) * r2c(efij)
+                    for e in range(nactu_b):
+                        for f in range(e + 1, nactu_b):
+                            jdet = idx_bb[e, f, i, j]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                bb_H_bb[I, J] += H.bb.vvvv[a, b, e, f] * phase
+                    # A(ij)A(ab) h2c(amie) * r2c(ebmj)
+                    for e in range(nactu_b):
+                        for m in range(nob - nacto_b, nob):
+                            # (1)
+                            jdet = idx_bb[e, b, m, j]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                bb_H_bb[I, J] += H.bb.voov[a, m, i, e] * phase
+                            # (ij)
+                            jdet = idx_bb[e, b, m, i]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                bb_H_bb[I, J] -= H.bb.voov[a, m, j, e] * phase
+                            # (ab)
+                            jdet = idx_bb[e, a, m, j]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                bb_H_bb[I, J] -= H.bb.voov[b, m, i, e] * phase
+                            # (ij)(ab)
+                            jdet = idx_bb[e, a, m, i]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                phase = np.sign(jdet)
+                                bb_H_bb[I, J] += H.bb.voov[b, m, j, e] * phase
+                    # A(ij)A(ab) h2b(mbej) * r2b(eami)
+                    for e in range(nactu_a):
+                        for m in range(noa - nacto_a, noa):
+                            # (1)
+                            jdet = idx_ab[e, a, m, i]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                bb_H_ab[I, J] += H.ab.ovvo[m, b, e, j]
+                            # (ab)
+                            jdet = idx_ab[e, b, m, i]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                bb_H_ab[I, J] -= H.ab.ovvo[m, a, e, j]
+                            # (ij)
+                            jdet = idx_ab[e, a, m, j]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                bb_H_ab[I, J] -= H.ab.ovvo[m, b, e, i]
+                            # (ab)(ij)
+                            jdet = idx_ab[e, b, m, j]
+                            if jdet != 0:
+                                J = abs(jdet) - 1
+                                bb_H_ab[I, J] += H.ab.ovvo[m, a, e, i]
+
     # Zero blocks
     a_H_bb = np.zeros((n1a, n2c))
     b_H_aa = np.zeros((n1b, n2a))

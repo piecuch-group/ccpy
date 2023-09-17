@@ -11,7 +11,7 @@ def spin_adapt_guess(S2, H, multiplicity, debug=False):
     if multiplicity == -1:
         omega, V = np.linalg.eig(H)
         idx = np.argsort(omega)
-        return omega[idx], V[:, idx]
+        return np.real(omega[idx]), np.real(V[:, idx])
 
     ndim = H.shape[0]
 

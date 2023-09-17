@@ -1,4 +1,17 @@
 module ccsdt_p_loops
+    
+      ! The challenge now is how to incorporate parallelism into this code using OpenMP. One nice way to do it is the
+      ! followng. Define F(resid_part, t, H) to be one big function that computes all contributions to the section of
+      ! the residual array resid_part. The function F is not parallel. What we can do is the following
+      !
+      ! nparts = floor(n3 / nthreads) + 1
+      ! parallel do ipart = 1,nparts-1
+      !    resid(sub_section) = F(resid(sub_section), t, H)
+      ! end parallel do
+      !
+      ! Something like this is preferable to what we have now, where each loop over idet=1,n3 is parallelized
+      ! because the above solution minimizes the number of times you are starting and stopping the threads. In
+      ! fact, for a given spincase update, the threads are started and stopped only once.
 
       use omp_lib
 

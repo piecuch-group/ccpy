@@ -25,7 +25,7 @@ def test_cc3_ch2():
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -39.024868, atol=1.0e-07)
 
     driver.run_hbar(method="cc3")
-    driver.run_guess(method="cisd", nroot=10, multiplicity=1, nact_occupied=2, nact_unoccupied=4)
+    driver.run_guess(method="cisd", nroot=10, multiplicity=3, nact_occupied=2, nact_unoccupied=4)
     driver.options["RHF_symmetry"] = False
     driver.run_eomcc(method="eomcc3", state_index=[i + 1 for i in range(10)])
 
