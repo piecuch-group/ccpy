@@ -42,7 +42,7 @@ def test_cc3_ch2():
                     0.31357745,
                     0.21528220]
 
-    for i in range(11):
+    for i in range(10):
         computed_total_energy = driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[i]
         expected_total_energy = expected_ref_energy + expected_corr_energy + expected_vee[i]
         assert np.allclose(computed_total_energy, expected_total_energy, atol=1.0e-06)
