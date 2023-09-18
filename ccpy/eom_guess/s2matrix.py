@@ -372,7 +372,7 @@ def build_s2matrix_cisd(system, nacto, nactu):
          np.concatenate((ab_S_a, ab_S_b, ab_S_aa, ab_S_ab, ab_S_bb), axis=1),
          np.concatenate((bb_S_a, bb_S_b, bb_S_aa, bb_S_ab, bb_S_bb), axis=1)
          ), axis=0
-    ), a_S_a, a_S_b, a_S_ab, b_S_b, b_S_ab, aa_S_aa, aa_S_ab, ab_S_ab, ab_S_bb, bb_S_bb
+    )
 
 def build_s2matrix_sfcis(system, Ms):
 

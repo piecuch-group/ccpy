@@ -1,6 +1,6 @@
 import numpy as np
 import time
-from ccpy.eom_guess.s2matrix import build_s2matrix_cisd, spin_adapt_guess
+from ccpy.eom_guess.s2matrix import spin_adapt_guess
 
 def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, use_symmetry=True, debug=False):
 
@@ -23,20 +23,18 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
     print("   Active unoccupied alpha = ", min(nactu, nua))
     print("   Active unoccupied beta = ", min(nactu + (system.multiplicity - 1), nub))
 
-    #t1 = time.time()
-    #S2mat, _, _, _, _, _, _, _, _, _, _ = build_s2matrix_cisd(system, nacto, nactu)
-    #print("   Time requried for S2 matrix =", time.time() - t1, "seconds")
-
     for irrep, nroot in roots_per_irrep.items():
         if nroot == 0: continue
         if not use_symmetry: irrep = None
 
         # Build the indexing arrays for the given irrep
-        idx_a, idx_b, idx_aa, idx_ab, idx_bb = get_index_arrays(nacto, nactu, system, irrep)
+        idx_a, idx_b, idx_aa, idx_ab, idx_bb, ndim_irrep = get_index_arrays(nacto, nactu, system, irrep)
         t1 = time.time()
+        # Compute the CISd-like Hamiltonian
         Hmat = build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb, system)
-        S2mat, _, _, _, _, _, _, _, _, _, _ = build_s2matrix(system, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb)
-        t2 = time.time()
+        # Compute the S2 matrix in the same projection subspace
+        S2mat = build_s2matrix(system, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb)
+        # Project H onto the spin subspace with the specified multiplicity
         omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=debug)
 
         nroot = min(nroot, V_act.shape[1])
@@ -50,26 +48,11 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
             if kout == nroot:
                 break
 
-        # t1 = time.time()
-        # Hmat = build_cisd_hamiltonian(H, system, nacto, nactu, irrep)
-        # t2 = time.time()
-        # omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=debug)
-        #
-        # nroot = min(nroot, V_act.shape[1])
-        # kout = 0
-        # for i in range(len(omega)):
-        #     if omega[i] == 0.0: continue
-        #     V[:, n_found] = scatter(V_act[:, i], nacto, nactu, system)
-        #     omega_guess[n_found] = omega[i]
-        #     n_found += 1
-        #     kout += 1
-        #     if kout == nroot:
-        #         break
-
+        elapsed_time = time.time() - t1
         print("   -----------------------------------")
         print("   Target symmetry irrep = ", irrep, f"({system.point_group})")
-        print("   Dimension of eigenvalue problem = ", V_act.shape[0])
-        print("   Time required for H matrix = ", t2 - t1, "seconds")
+        print("   Dimension of eigenvalue problem = ", ndim_irrep)
+        print("   Elapsed time = ", np.round(elapsed_time, 2), "seconds")
         for i in range(n_found - kout, n_found):
             print("   Eigenvalue of root", i + 1, " = ", np.round(omega_guess[i], 8))
 
@@ -874,21 +857,12 @@ def build_s2matrix(system, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb):
                             ind2 = abs(jdet) - 1
                             ab_S_ab[ind1, ind2] -= 1.0
                     # +d(J~,L~) d(A,C) <K|D~> <B~|I>
-                    ### THIS WORKS FOR DOUBLETS (nsocc=1) but not for nsocc>1
-                    # if I in socc and B + nob in socc:
-                    #    for s in socc:
-                    #        jdet = idx_ab[A, I - nob, s, J]
-                    #        if jdet != 0:
-                    #           ind2 = abs(jdet) - 1
-                    #           ab_S_ab[ind1, ind2] += 1.0
-                    ###
-                    if I in socc and B + nob in socc:
+                    if I in socc and I == B + nob:
                         for s in socc:
                             jdet = idx_ab[A, s - nob, s, J]
                             if jdet != 0:
                                 ind2 = abs(jdet) - 1
-                                ab_S_ab[ind2, ind2] += 1.0
-
+                                ab_S_ab[ind1, ind2] += 1.0
                     # < IJ~AB~ | S2 | K~L~C~D~ >
                     # -A(K~L~)A(C~D~) d(J~,L~) d(B~,D~) <K~|I> <A|C~>
                     if chi_beta(I) == 1.0:
@@ -928,7 +902,7 @@ def build_s2matrix(system, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb):
          np.concatenate((a_S_ab.T, b_S_ab.T, aa_S_ab.T, ab_S_ab, ab_S_bb), axis=1),
          np.concatenate((bb_S_a, bb_S_b, bb_S_aa, ab_S_bb.T, bb_S_bb), axis=1)
          ), axis=0)
-    return S2mat, a_S_a, a_S_b, a_S_ab, b_S_b, b_S_ab, aa_S_aa, aa_S_ab, ab_S_ab, ab_S_bb, bb_S_bb
+    return S2mat
 
 def get_index_arrays(nacto, nactu, system, target_irrep):
 
@@ -954,12 +928,14 @@ def get_index_arrays(nacto, nactu, system, target_irrep):
         sym1 = lambda a, i: sym(i) ^ sym(a) ^ ref_sym == target_sym
         sym2 = lambda a, b, i, j: sym(i) ^ sym(a) ^ sym(j) ^ sym(b) ^ ref_sym == target_sym
 
+    ndim = 0
     idx_a = np.zeros((nua, noa), dtype=np.int32)
     ct = 1
     for a in range(nua):
         for i in range(noa):
             if sym1(a + noa, i):
                 idx_a[a, i] = ct
+                ndim += 1
             ct += 1
     idx_b = np.zeros((nub, nob), dtype=np.int32)
     ct = 1
@@ -967,6 +943,7 @@ def get_index_arrays(nacto, nactu, system, target_irrep):
         for i in range(nob):
             if sym1(a + nob, i):
                 idx_b[a, i] = ct
+                ndim += 1
             ct += 1
     idx_aa = np.zeros((nua, nua, noa, noa), dtype=np.int32)
     ct = 1
@@ -979,6 +956,7 @@ def get_index_arrays(nacto, nactu, system, target_irrep):
                         idx_aa[b, a, i, j] = -ct
                         idx_aa[a, b, j, i] = -ct
                         idx_aa[b, a, j, i] = ct
+                        ndim += 1
                     ct += 1
     idx_ab = np.zeros((nua, nub, noa, nob), dtype=np.int32)
     ct = 1
@@ -988,6 +966,7 @@ def get_index_arrays(nacto, nactu, system, target_irrep):
                 for j in range(nob - nacto_b, nob):
                     if sym2(a + noa, b + nob, i, j):
                         idx_ab[a, b, i, j] = ct
+                        ndim += 1
                     ct += 1
     idx_bb = np.zeros((nub, nub, nob, nob), dtype=np.int32)
     ct = 1
@@ -1000,6 +979,7 @@ def get_index_arrays(nacto, nactu, system, target_irrep):
                         idx_bb[b, a, i, j] = -ct
                         idx_bb[a, b, j, i] = -ct
                         idx_bb[b, a, j, i] = ct
+                        ndim += 1
                     ct += 1
 
-    return idx_a, idx_b, idx_aa, idx_ab, idx_bb
+    return idx_a, idx_b, idx_aa, idx_ab, idx_bb, ndim
