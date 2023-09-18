@@ -27,7 +27,7 @@ def test_cc3_h2o():
     driver.run_cc(method="cc3")
 
     driver.run_hbar(method="cc3")
-    driver.run_guess(method="cis", nroot=10, multiplicity=1)
+    driver.run_guess(method="cis", roots_per_irrep={"A1": 0, "B1": 0, "B2": 1, "A2": 0}, multiplicity=1)
     driver.run_eomcc(method="eomcc3", state_index=[1])
 
     # Check the CC3 correlation energy

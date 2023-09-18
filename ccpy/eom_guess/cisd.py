@@ -1,36 +1,61 @@
 import numpy as np
+import time
 from ccpy.eom_guess.s2matrix import build_s2matrix_cisd, spin_adapt_guess
 
-def run_diagonalization(system, H, multiplicity, nroot, nacto, nactu, debug=False):
+def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, use_symmetry=True, debug=False):
 
-    Hmat = build_cisd_hamiltonian(H, system, nacto, nactu)
-    S2mat = build_s2matrix_cisd(system, nacto, nactu)
-    omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=debug)
+    nroots_total = 0
+    for key, value in roots_per_irrep.items():
+        nroots_total += value
 
-    nroot = min(nroot, V_act.shape[1])
     noa, nob, nua, nub = H.ab.oovv.shape
-    ndim = noa*nua + nob*nub + noa**2*nua**2 + noa*nob*nua*nub + nob**2*nub**2
-    V = np.zeros((ndim, nroot))
-    for i in range(nroot):
-        V[:, i] = scatter(V_act[:, i], nacto, nactu, system)
+    ndim = noa * nua + nob * nub + noa ** 2 * nua ** 2 + noa * nob * nua * nub + nob ** 2 * nub ** 2
+    V = np.zeros((ndim, nroots_total))
+    omega_guess = np.zeros(nroots_total)
+    n_found = 0
 
     # print results of initial guess procedure
-    print("   Eigenvalues of CISd initial guess")
+    print("   CISd initial guess routine")
+    print("   --------------------------")
     print("   Multiplicity = ", multiplicity)
-    print("   Dimension of eigenvalue problem = ", V_act.shape[0])
     print("   Active occupied alpha = ", min(nacto + (system.multiplicity - 1), noa))
     print("   Active occupied beta = ", min(nacto, nob))
     print("   Active unoccupied alpha = ", min(nactu, nua))
     print("   Active unoccupied beta = ", min(nactu + (system.multiplicity - 1), nub))
-    print("   -----------------------------------")
-    for i in range(nroot):
-        print("   Eigenvalue of root", i + 1, " = ", omega[i])
-    print("")
 
-    return omega[:nroot], V
+    t1 = time.time()
+    S2mat = build_s2matrix_cisd(system, nacto, nactu)
+    print("   Time requried for S2 matrix =", time.time() - t1, "seconds")
+
+    for irrep, nroot in roots_per_irrep.items():
+        if nroot == 0: continue
+        if not use_symmetry: irrep = None
+        t1 = time.time()
+        Hmat = build_cisd_hamiltonian(H, system, nacto, nactu, irrep)
+        t2 = time.time()
+        omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=debug)
+
+        nroot = min(nroot, V_act.shape[1])
+        kout = 0
+        for i in range(len(omega)):
+            if omega[i] == 0.0: continue
+            V[:, n_found] = scatter(V_act[:, i], nacto, nactu, system)
+            omega_guess[n_found] = omega[i]
+            n_found += 1
+            kout += 1
+            if kout == nroot:
+                break
+
+        print("   -----------------------------------")
+        print("   Target symmetry irrep = ", irrep, f"({system.point_group})")
+        print("   Dimension of eigenvalue problem = ", V_act.shape[0])
+        print("   Time required for H matrix = ", t2 - t1, "seconds")
+        for i in range(n_found - kout, n_found):
+            print("   Eigenvalue of root", i + 1, " = ", np.round(omega_guess[i], 8))
+
+    return omega_guess, V
 
 def scatter(V_in, nacto, nactu, system):
-
     # orbital dimensions
     noa = system.noccupied_alpha
     nob = system.noccupied_beta
@@ -88,7 +113,7 @@ def scatter(V_in, nacto, nactu, system):
                         offset += 1
     return np.hstack((V_a_out.flatten(), V_b_out.flatten(), V_aa_out.flatten(), V_ab_out.flatten(), V_bb_out.flatten()))
 
-def build_cisd_hamiltonian(H, system, nacto, nactu):
+def build_cisd_hamiltonian(H, system, nacto, nactu, target_irrep):
 
     noa, nob, nua, nub = H.ab.oovv.shape
 
@@ -107,48 +132,8 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
     # total dimension
     ndim = n1a + n1b + n2a + n2b + n2c
 
-    idx_a = np.zeros((system.nunoccupied_alpha, system.noccupied_alpha), dtype=np.int32)
-    ct = 1
-    for a in range(system.nunoccupied_alpha):
-        for i in range(system.noccupied_alpha):
-            idx_a[a, i] = ct
-            ct += 1
-    idx_b = np.zeros((system.nunoccupied_beta, system.noccupied_beta), dtype=np.int32)
-    ct = 1
-    for a in range(system.nunoccupied_beta):
-        for i in range(system.noccupied_beta):
-            idx_b[a, i] = ct
-            ct += 1
-    idx_aa = np.zeros((system.nunoccupied_alpha, system.nunoccupied_alpha, system.noccupied_alpha, system.noccupied_alpha), dtype=np.int32)
-    ct = 1
-    for a in range(nactu_a):
-        for b in range(a + 1, nactu_a):
-            for i in range(noa - nacto_a, noa):
-                for j in range(i + 1, noa):
-                    idx_aa[a, b, i, j] = ct
-                    idx_aa[b, a, i, j] = -ct
-                    idx_aa[a, b, j, i] = -ct
-                    idx_aa[b, a, j, i] = ct
-                    ct += 1
-    idx_ab = np.zeros((system.nunoccupied_alpha, system.nunoccupied_beta, system.noccupied_alpha, system.noccupied_beta), dtype=np.int32)
-    ct = 1
-    for a in range(nactu_a):
-        for b in range(nactu_b):
-            for i in range(noa - nacto_a, noa):
-                for j in range(nob - nacto_b, nob):
-                    idx_ab[a, b, i, j] = ct
-                    ct += 1
-    idx_bb = np.zeros((system.nunoccupied_beta, system.nunoccupied_beta, system.noccupied_beta, system.noccupied_beta), dtype=np.int32)
-    ct = 1
-    for a in range(nactu_b):
-        for b in range(a + 1, nactu_b):
-            for i in range(nob - nacto_b, nob):
-                for j in range(i + 1, nob):
-                    idx_bb[a, b, i, j] = ct
-                    idx_bb[b, a, i, j] = -ct
-                    idx_bb[a, b, j, i] = -ct
-                    idx_bb[b, a, j, i] = ct
-                    ct += 1
+    idx_a, idx_b, idx_aa, idx_ab, idx_bb = get_index_arrays(nacto, nactu, system, target_irrep)
+
     ####################################################################################
     # ALPHA SINGLES
     ####################################################################################
@@ -159,27 +144,32 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
     for a in range(nua):
         for i in range(noa):
             idet = idx_a[a, i]
+            if idet == 0: continue
             I = abs(idet) - 1
             # -h1a(mi) * r1a(am)
             for m in range(noa):
                 jdet = idx_a[a, m]
+                if jdet == 0: continue
                 J = abs(jdet) - 1
                 a_H_a[I, J] -= H.a.oo[m, i]
             # h1a(ae) * r1a(ei)
             for e in range(nua):
                 jdet = idx_a[e, i]
+                if jdet == 0: continue
                 J = abs(jdet) - 1
                 a_H_a[I, J] += H.a.vv[a, e]
             # h2a(amie) * r1a(em)
             for e in range(nua):
                 for m in range(noa):
                     jdet = idx_a[e, m]
+                    if jdet == 0: continue
                     J = abs(jdet) - 1
                     a_H_a[I, J] += H.aa.voov[a, m, i, e]
             # h2b(amie) * r1b(em)
             for e in range(nub):
                 for m in range(nob):
                     jdet = idx_b[e, m]
+                    if jdet == 0: continue
                     J = abs(jdet) - 1
                     a_H_b[I, J] += H.ab.voov[a, m, i, e]
             # h1a(me) * r2a(aeim)
@@ -241,27 +231,32 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
     for a in range(nub):
         for i in range(nob):
             idet = idx_b[a, i]
+            if idet == 0: continue
             I = abs(idet) - 1
             # -h1b(mi) * r1b(am)
             for m in range(nob):
                 jdet = idx_b[a, m]
+                if jdet == 0: continue
                 J = abs(jdet) - 1
                 b_H_b[I, J] -= H.b.oo[m, i]
             # h1b(ae) * r1b(ei)
             for e in range(nub):
                 jdet = idx_b[e, i]
+                if jdet == 0: continue
                 J = abs(jdet) - 1
                 b_H_b[I, J] += H.b.vv[a, e]
             # h2c(amie) * r1b(em)
             for e in range(nub):
                 for m in range(nob):
                     jdet = idx_b[e, m]
+                    if jdet == 0: continue
                     J = abs(jdet) - 1
                     b_H_b[I, J] += H.bb.voov[a, m, i, e]
             # h2b(maei) * r1a(em)
             for e in range(nua):
                 for m in range(noa):
                     jdet = idx_a[e, m]
+                    if jdet == 0: continue
                     J = abs(jdet) - 1
                     b_H_a[I, J] += H.ab.ovvo[m, a, e, i]
             # h1b(me) * r2c(aeim)
@@ -324,27 +319,32 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
             for i in range(noa - nacto_a, noa):
                 for j in range(i + 1, noa):
                     idet = idx_aa[a, b, i, j]
+                    if idet == 0: continue
                     I = abs(idet) - 1
                     # -A(ab) h2a(amij) * r1a(bm)
                     for m in range(noa):
                         # (1)
                         jdet = idx_a[b, m]
-                        J = abs(jdet) - 1
-                        aa_H_a[I, J] -= H.aa.vooo[a, m, i, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            aa_H_a[I, J] -= H.aa.vooo[a, m, i, j]
                         # (ab)
                         jdet = idx_a[a, m]
-                        J = abs(jdet) - 1
-                        aa_H_a[I, J] += H.aa.vooo[b, m, i, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            aa_H_a[I, J] += H.aa.vooo[b, m, i, j]
                     # A(ij) h2a(abie) * r1a(ej)
                     for e in range(nua):
                         # (1)
                         jdet = idx_a[e, i]
-                        J = abs(jdet) - 1
-                        aa_H_a[I, J] += H.aa.vvov[b, a, j, e]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            aa_H_a[I, J] += H.aa.vvov[b, a, j, e]
                         # (ij)
                         jdet = idx_a[e, j]
-                        J = abs(jdet) - 1
-                        aa_H_a[I, J] -= H.aa.vvov[b, a, i, e]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            aa_H_a[I, J] -= H.aa.vvov[b, a, i, e]
                     # -A(ij) h1a(mi) * r2a(abmj)
                     for m in range(noa - nacto_a, noa):
                         # (1)
@@ -452,25 +452,30 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
             for i in range(noa - nacto_a, noa):
                 for j in range(nob - nacto_b, nob):
                     idet = idx_ab[a, b, i, j]
+                    if idet == 0: continue
                     I = abs(idet) - 1
                     # -h2b(mbij) * r1a(am)
                     for m in range(noa):
                         jdet = idx_a[a, m]
+                        if jdet == 0: continue
                         J = abs(jdet) - 1
                         ab_H_a[I, J] -= H.ab.ovoo[m, b, i, j]
                     # h2b(abej) * r1a(ei)
                     for e in range(nua):
                         jdet = idx_a[e, i]
+                        if jdet == 0: continue
                         J = abs(jdet) - 1
                         ab_H_a[I, J] += H.ab.vvvo[a, b, e, j]
                     # -h2b(amij) * r1b(bm)
                     for m in range(nob):
                         jdet = idx_b[b, m]
+                        if jdet == 0: continue
                         J = abs(jdet) - 1
                         ab_H_b[I, J] -= H.ab.vooo[a, m, i, j]
                     # h2b(abie) * r1b(ej)
                     for e in range(nub):
                         jdet = idx_b[e, j]
+                        if jdet == 0: continue
                         J = abs(jdet) - 1
                         ab_H_b[I, J] += H.ab.vvov[a, b, i, e]
                     # h2b(mbej) * r2a(aeim)
@@ -566,27 +571,32 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
             for i in range(nob - nacto_b, nob):
                 for j in range(i + 1, nob):
                     idet = idx_bb[a, b, i, j]
+                    if idet == 0: continue
                     I = abs(idet) - 1
                     # -A(ab) h2c(amij) * r1b(bm)
                     for m in range(nob):
                         # (1)
                         jdet = idx_b[b, m]
-                        J = abs(jdet) - 1
-                        bb_H_b[I, J] -= H.bb.vooo[a, m, i, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            bb_H_b[I, J] -= H.bb.vooo[a, m, i, j]
                         # (ab)
                         jdet = idx_b[a, m]
-                        J = abs(jdet) - 1
-                        bb_H_b[I, J] += H.bb.vooo[b, m, i, j]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            bb_H_b[I, J] += H.bb.vooo[b, m, i, j]
                     # A(ij) h2c(abie) * r1b(ej)
                     for e in range(nub):
                         # (1)
                         jdet = idx_b[e, i]
-                        J = abs(jdet) - 1
-                        bb_H_b[I, J] += H.bb.vvov[b, a, j, e]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            bb_H_b[I, J] += H.bb.vvov[b, a, j, e]
                         # (ij)
                         jdet = idx_b[e, j]
-                        J = abs(jdet) - 1
-                        bb_H_b[I, J] -= H.bb.vvov[b, a, i, e]
+                        if jdet != 0:
+                            J = abs(jdet) - 1
+                            bb_H_b[I, J] -= H.bb.vvov[b, a, i, e]
                     # -A(ij) h1b(mi) * r2c(abmj)
                     for m in range(nob - nacto_b, nob):
                         # (1)
@@ -695,3 +705,77 @@ def build_cisd_hamiltonian(H, system, nacto, nactu):
          np.concatenate((a_H_bb.T, bb_H_b, aa_H_bb.T, bb_H_ab, bb_H_bb), axis=1)
          ), axis=0
     )
+
+def get_index_arrays(nacto, nactu, system, target_irrep):
+
+    noa = system.noccupied_alpha
+    nua = system.nunoccupied_alpha
+    nob = system.noccupied_beta
+    nub = system.nunoccupied_beta
+
+    # set active space parameters
+    nacto_a = min(nacto + (system.multiplicity - 1), noa)
+    nacto_b = min(nacto, nob)
+    nactu_a = min(nactu, nua)
+    nactu_b = min(nactu + (system.multiplicity - 1), nub)
+
+    if target_irrep is None:
+        sym1 = lambda a, i: True
+        sym2 = lambda a, b, i, j: True
+    else:
+        sym = lambda orbital_number: system.point_group_irrep_to_number[system.orbital_symmetries[orbital_number]]
+        ref_sym = system.point_group_irrep_to_number[system.reference_symmetry]
+        target_sym = system.point_group_irrep_to_number[target_irrep]
+
+        sym1 = lambda a, i: sym(i) ^ sym(a) ^ ref_sym == target_sym
+        sym2 = lambda a, b, i, j: sym(i) ^ sym(a) ^ sym(j) ^ sym(b) ^ ref_sym == target_sym
+
+    idx_a = np.zeros((nua, noa), dtype=np.int32)
+    ct = 1
+    for a in range(nua):
+        for i in range(noa):
+            if sym1(a + noa, i):
+                idx_a[a, i] = ct
+            ct += 1
+    idx_b = np.zeros((nub, nob), dtype=np.int32)
+    ct = 1
+    for a in range(nub):
+        for i in range(nob):
+            if sym1(a + nob, i):
+                idx_b[a, i] = ct
+            ct += 1
+    idx_aa = np.zeros((nua, nua, noa, noa), dtype=np.int32)
+    ct = 1
+    for a in range(nactu_a):
+        for b in range(a + 1, nactu_a):
+            for i in range(noa - nacto_a, noa):
+                for j in range(i + 1, noa):
+                    if sym2(a + noa, b + noa, i, j):
+                        idx_aa[a, b, i, j] = ct
+                        idx_aa[b, a, i, j] = -ct
+                        idx_aa[a, b, j, i] = -ct
+                        idx_aa[b, a, j, i] = ct
+                    ct += 1
+    idx_ab = np.zeros((nua, nub, noa, nob), dtype=np.int32)
+    ct = 1
+    for a in range(nactu_a):
+        for b in range(nactu_b):
+            for i in range(noa - nacto_a, noa):
+                for j in range(nob - nacto_b, nob):
+                    if sym2(a + noa, b + nob, i, j):
+                        idx_ab[a, b, i, j] = ct
+                    ct += 1
+    idx_bb = np.zeros((nub, nub, nob, nob), dtype=np.int32)
+    ct = 1
+    for a in range(nactu_b):
+        for b in range(a + 1, nactu_b):
+            for i in range(nob - nacto_b, nob):
+                for j in range(i + 1, nob):
+                    if sym2(a + nob, b + nob, i, j):
+                        idx_bb[a, b, i, j] = ct
+                        idx_bb[b, a, i, j] = -ct
+                        idx_bb[a, b, j, i] = -ct
+                        idx_bb[b, a, j, i] = ct
+                    ct += 1
+
+    return idx_a, idx_b, idx_aa, idx_ab, idx_bb

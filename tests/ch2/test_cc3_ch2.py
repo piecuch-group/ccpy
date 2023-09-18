@@ -25,9 +25,27 @@ def test_cc3_ch2():
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -39.024868, atol=1.0e-07)
 
     driver.run_hbar(method="cc3")
-    driver.run_guess(method="cisd", nroot=10, multiplicity=3, nact_occupied=2, nact_unoccupied=4)
+    driver.run_guess(method="cisd", roots_per_irrep={"A1": 3, "B1": 3, "B2": 2, "A2": 1}, multiplicity=1, nact_occupied=2, nact_unoccupied=4)
     driver.options["RHF_symmetry"] = False
-    driver.run_eomcc(method="eomcc3", state_index=[i + 1 for i in range(10)])
+    driver.run_eomcc(method="eomcc3", state_index=[1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    expected_ref_energy = -38.88142579
+    expected_corr_energy = -0.14344228
+    expected_vee = [0.0,
+                    0.18837284,
+                    0.23924155,
+                    0.31138281,
+                    0.06571101,
+                    0.34831055,
+                    0.06571101,
+                    0.28371563,
+                    0.31357745,
+                    0.21528220]
+
+    for i in range(11):
+        computed_total_energy = driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[i]
+        expected_total_energy = expected_ref_energy + expected_corr_energy + expected_vee[i]
+        assert np.allclose(computed_total_energy, expected_total_energy, atol=1.0e-06)
 
 if __name__ == "__main__":
     test_cc3_ch2()

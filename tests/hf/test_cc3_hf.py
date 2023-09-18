@@ -24,7 +24,7 @@ def test_cc3_hf():
     driver.options["RHF_symmetry"] = False
     driver.run_cc(method="cc3")
     driver.run_hbar(method="cc3")
-    driver.run_guess(method="cis", nroot=5, multiplicity=1)
+    driver.run_guess(method="cis", roots_per_irrep={"A1": 0, "B1": 1, "B2": 0, "A2": 0}, multiplicity=1)
     driver.run_eomcc(method="eomcc3", state_index=[1])
 
     # Check CC3 correlation energy

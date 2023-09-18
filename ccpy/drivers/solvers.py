@@ -647,8 +647,8 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
             diis_engine.push(L, LH, niter)
 
         # Do DIIS extrapolation
-        #if (niter + 1) % options["diis_size"] == 0 and do_diis: # this criterion works better I've found...
-        if niter >= options["diis_size"] + num_throw_away and do_diis:
+        if (niter + 1) % options["diis_size"] == 0 and do_diis: # this criterion works better I've found...
+        #if niter >= options["diis_size"] + num_throw_away and do_diis:
             ndiis_cycle += 1
             L.unflatten(diis_engine.extrapolate())
 

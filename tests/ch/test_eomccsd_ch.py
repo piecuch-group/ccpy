@@ -16,10 +16,10 @@ def test_eomccsd_ch():
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
-    driver.run_guess(method="cis", multiplicity=2, nroot=10)
+    driver.run_guess(method="cis", multiplicity=2, roots_per_irrep={"A1": 1, "B1": 1, "B2": 0, "A2": 1})
     driver.run_eomcc(method="eomccsd", state_index=[1, 2, 3])
 
-    expected_vee = [0.0, 0.00016954, 0.11798458, 0.12122133]
+    expected_vee = [0.0, 0.12122133, 0.00016954, 0.11798458]
     expected_total_energy = [-38.38631169 + omega for omega in expected_vee]
 
     # Check reference energy

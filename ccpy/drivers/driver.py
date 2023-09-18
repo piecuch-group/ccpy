@@ -273,7 +273,7 @@ class Driver:
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
 
-    def run_guess(self, method, multiplicity, nroot, nact_occupied=-1, nact_unoccupied=-1, debug=False):
+    def run_guess(self, method, multiplicity, roots_per_irrep, nact_occupied=-1, nact_unoccupied=-1, use_symmetry=True, debug=False):
         """Performs the initial guess for a subsequent EOMCC calculation."""
         # check if requested EOM guess calculation is implemented in modules
         if method.lower() not in ccpy.eom_guess.MODULES:
@@ -292,7 +292,7 @@ class Driver:
         if multiplicity != 1:
             self.options["RHF_symmetry"] = False
         # Run the initial guess function and save all eigenpairs
-        self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, nroot, nact_occupied, nact_unoccupied, debug=debug)
+        self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, roots_per_irrep, nact_occupied, nact_unoccupied, debug=debug, use_symmetry=use_symmetry)
 
     def run_eomcc(self, method, state_index, t3_excitations=None, r3_excitations=None):
         """Performs the EOMCC calculation specified by the user in the input."""

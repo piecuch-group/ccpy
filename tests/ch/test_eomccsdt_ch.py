@@ -19,7 +19,7 @@ def test_eomccsdt_ch():
     driver.options["davidson_max_subspace_size"] = 50
     driver.run_cc(method="ccsdt")
     driver.run_hbar(method="ccsdt")
-    driver.run_guess(method="cis", multiplicity=2, nroot=10)
+    driver.run_guess(method="cis", multiplicity=2, roots_per_irrep={"A1": 1, "B1": 1, "B2": 0, "A2": 1})
     driver.run_eomcc(method="eomccsdt", state_index=[1, 2, 3])
     # Run left CCSDT for ground and excited states
     driver.options["energy_shift"] = 0.0
@@ -28,7 +28,7 @@ def test_eomccsdt_ch():
     expected_ref_energy = -38.27132475
     expected_cc_energy = -38.38774854
     expected_corr_energy = -0.11642379
-    expected_vee = [0.0, 0.00001342, 0.12216165, 0.11075965]
+    expected_vee = [0.0, 0.11075965, 0.00001342, 0.12216165]
     expected_total_energy = [expected_cc_energy + omega for omega in expected_vee]
 
     # Check reference energy

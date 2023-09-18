@@ -20,8 +20,8 @@ def test_ipeom3_ohminus():
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
-    driver.run_guess(method="ipcis", multiplicity=2, nroot=5, debug=False)
-    driver.run_ipeomcc(method="ipeom3", state_index=[0,1,2,3,4])
+    driver.run_guess(method="ipcis", multiplicity=2, roots_per_irrep={"A1": 5, "B1": 0, "B2": 0, "A2": 0}, debug=False, use_symmetry=False)
+    driver.run_ipeomcc(method="ipeom3", state_index=[0, 1, 2, 3, 4])
 
 if __name__ == "__main__":
     test_ipeom3_ohminus()

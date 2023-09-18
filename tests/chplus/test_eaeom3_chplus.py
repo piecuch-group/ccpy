@@ -17,8 +17,8 @@ def test_eaeom3_chplus():
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
-    driver.run_guess(method="eacis", multiplicity=2, nroot=10, debug=False)
-    driver.run_eaeomcc(method="eaeom3", state_index=[0,1,2,3,4,5])
+    driver.run_guess(method="eacis", multiplicity=2, roots_per_irrep={"A1": 6, "B1": 0, "B2": 0, "A2": 0}, debug=False, use_symmetry=False)
+    driver.run_eaeomcc(method="eaeom3", state_index=[0, 1, 2, 3, 4, 5])
 
 if __name__ == "__main__":
     test_eaeom3_chplus()
