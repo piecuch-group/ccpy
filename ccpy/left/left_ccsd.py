@@ -43,6 +43,12 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
                                                          H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                          shift)
 
+    if flag_RHF:
+        L.b = L.a.copy()
+        L.bb = L.aa.copy()
+        LH.b = LH.a.copy()
+        LH.bb = LH.aa.copy()
+
     return L, LH
 
 def build_LH_1A(L, LH, T, H):

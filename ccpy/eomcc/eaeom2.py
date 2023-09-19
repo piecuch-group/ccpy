@@ -5,7 +5,7 @@ from ccpy.utilities.updates import cc_loops2
 # R.aa -> (nua,nua,noa) -> (abj)
 # R.ab -> (nua,nub,nob) -> (ab~j~)
 
-def update(R, omega, H, system):
+def update(R, omega, H, RHF_symmetry, system):
 
     R.a, R.aa, R.ab = cc_loops2.cc_loops2.update_r_2p1h(
         R.a,

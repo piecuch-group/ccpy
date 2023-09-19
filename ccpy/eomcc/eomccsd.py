@@ -5,7 +5,7 @@ import numpy as np
 from ccpy.eomcc.eomccsd_intermediates import get_eomccsd_intermediates
 from ccpy.utilities.updates import cc_loops2
 
-def update(R, omega, H, system):
+def update(R, omega, H, RHF_symmetry, system):
 
     R.a, R.b, R.aa, R.ab, R.bb = cc_loops2.cc_loops2.update_r(
         R.a,
@@ -20,6 +20,11 @@ def update(R, omega, H, system):
         H.b.vv,
         0.0,
     )
+
+    if RHF_symmetry:
+        R.b = R.a.copy()
+        R.bb = R.aa.copy()
+
     return R
 
 def HR(dR, R, T, H, flag_RHF, system):

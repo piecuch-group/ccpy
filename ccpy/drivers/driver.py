@@ -266,9 +266,9 @@ class Driver:
         print("")
         print("   HBar construction began on", get_timestamp(), end="")
         if method.lower() == "cc3":
-            self.hamiltonian, self.cc3_intermediates = hbar_build_function(self.T, self.hamiltonian, self.system)
+            self.hamiltonian, self.cc3_intermediates = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system)
         else:
-            self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.system, t3_excitations)
+            self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system, t3_excitations)
         print("... completed on", get_timestamp(), "\n")
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
@@ -286,7 +286,7 @@ class Driver:
         # Set operator parameters needed to build the guess R vector
         if method.lower() in ["cis", "sfcis", "eacis", "ipcis"]:
             self.guess_order = 1
-        elif method.lower()in ["cisd", "sfcisd", "deacis", "dipcis"]:
+        elif method.lower() in ["cisd", "sfcisd", "deacis", "dipcis", "eacisd", "ipcisd"]:
             self.guess_order = 2
         # This is important. Turn off RHF symmetry (even for closed-shell references) when targetting non-singlets
         if multiplicity != 1:

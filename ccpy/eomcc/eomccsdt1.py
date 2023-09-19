@@ -6,7 +6,7 @@ from ccpy.eomcc.eomccsdt1_intermediates import get_eomccsdt1_intermediates
 from ccpy.eomcc.eomccsdt1_updates.intermediates import add_HR3_intermediates
 from ccpy.eomcc.eomccsdt1_updates import *
 
-def update(R, omega, H, system):
+def update(R, omega, H, RHF_symmetry, system):
     
     # update R1
     R = r1a_update.update(R, omega, H)

@@ -44,7 +44,7 @@ def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, 
             print_eomcc_iteration(niter, omega, residual, delta_energy, elapsed_time)
             break
         # perturbational update step u_K = r_K / (omega - D_K), where D_K = (MP) energy denominator
-        dR = update_r(dR, omega, fock, system)
+        dR = update_r(dR, omega, fock, options["RHF_symmetry"], system)
         # add the correction vector to R
         R.unflatten(R.flatten() + dR.flatten())
         # save new R and dR vectors for DIIS
@@ -130,7 +130,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
             break
 
         # update residual vector
-        R = update_r(R, omega, H, system)
+        R = update_r(R, omega, H, options["RHF_symmetry"], system)
         # orthogonalize residual against subspace vectors (would be nice to vectorize this)
         q = R.flatten()
         for p in range(curr_size):
@@ -371,7 +371,7 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
                 is_converged[j] = True
             else:
                 # update the residual vector
-                R[istate] = update_r(R[istate], omega[istate], H, system)
+                R[istate] = update_r(R[istate], omega[istate], H, options["RHF_symmetry"], system)
                 q = R[istate].flatten()
                 for p in range(curr_size + num_add):
                     b = B[:, p] / np.linalg.norm(B[:, p])

@@ -26,7 +26,7 @@ def test_cc3_ch2():
 
     driver.run_hbar(method="cc3")
     driver.run_guess(method="cisd", roots_per_irrep={"A1": 3, "B1": 3, "B2": 2, "A2": 1}, multiplicity=1, nact_occupied=2, nact_unoccupied=4)
-    driver.options["RHF_symmetry"] = False
+    #driver.options["RHF_symmetry"] = False
     driver.run_eomcc(method="eomcc3", state_index=[1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     expected_ref_energy = -38.88142579

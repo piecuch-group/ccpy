@@ -50,8 +50,11 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system, t3_excitation
         LH, L, l3_excitations = build_LH_3B(L, LH, H, X, l3_excitations)
     if flag_RHF:
         L.abb = L.aab.copy()
+        LH.abb = LH.aab.copy()
         l3_excitations["abb"] = l3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
+
         L.bbb = L.aaa.copy()
+        LH.bbb = LH.aaa.copy()
         l3_excitations["bbb"] = l3_excitations["aaa"].copy()
     else:
         if do_l3["abb"]:
@@ -85,6 +88,22 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system, t3_excitation
                                                          omega,
                                                          H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                          shift)
+
+    if flag_RHF:
+        L.b = L.a.copy()
+        LH.b = LH.a.copy()
+
+        L.bb = L.aa.copy()
+        LH.bb = LH.aa.copy()
+
+        L.abb = L.aab.copy()
+        LH.abb = LH.aab.copy()
+        l3_excitations["abb"] = l3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
+
+        L.bbb = L.aaa.copy()
+        LH.bbb = LH.aaa.copy()
+        l3_excitations["bbb"] = l3_excitations["aaa"].copy()
+
     return L, LH
 
 def build_LH_1A(L, LH, T, H, X):

@@ -1,6 +1,6 @@
 import numpy as np
 
-def build_hbar_ccsdt1(T, H0, system, *args):
+def build_hbar_ccsdt1(T, H0, RHF_symmetry, system, *args):
     """Calculate the CCSDt similarity-transformed Hamiltonian (H_N e^(T1+T2))_C."""
     from copy import deepcopy
     from ccpy.utilities.active_space import get_active_slices
@@ -1146,5 +1146,19 @@ def build_hbar_ccsdt1(T, H0, system, *args):
             + 1.0 * np.einsum('nMFe,FbaniM->abie', H.ab.oovv[oa, Ob, Va, :], T.abb.VvvooO, optimize=True)
             + 1.0 * np.einsum('NMFe,FbaNiM->abie', H.ab.oovv[Oa, Ob, Va, :], T.abb.VvvOoO, optimize=True)
     )
+
+    # For RHF symmetry, copy a parts to b and aa parts to bb
+    if RHF_symmetry:
+        H.b.ov = H.a.ov.copy()
+        H.b.oo = H.a.oo.copy()
+        H.b.vv = H.a.vv.copy()
+        H.bb.oooo = H.aa.oooo.copy()
+        H.bb.ooov = H.aa.ooov.copy()
+        H.bb.vooo = H.aa.vooo.copy()
+        H.bb.oovv = H.aa.oovv.copy()
+        H.bb.voov = H.aa.voov.copy()
+        H.bb.vovv = H.aa.vovv.copy()
+        H.bb.vvov = H.aa.vvov.copy()
+        H.bb.vvvv = H.aa.vvvv.copy()
 
     return H

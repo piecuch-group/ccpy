@@ -9,7 +9,7 @@ from ccpy.utilities.updates import cc_loops2
 # R.aab -> (nua,nua,nub,noa,nob) -> (abc~jk~)
 # R.abb -> (nua,nub,nub,nob,nob) -> (ab~c~j~k~)
 
-def update(R, omega, H, system):
+def update(R, omega, H, RHF_symmetry, system):
 
     R.a, R.aa, R.ab, R.aaa, R.aab, R.abb = cc_loops2.cc_loops2.update_r_3p2h(
         R.a,

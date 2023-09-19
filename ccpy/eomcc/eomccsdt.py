@@ -6,7 +6,7 @@ from ccpy.utilities.updates import cc_loops
 from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eomccsdt_intermediates, add_R3_terms
 
 
-def update(R, omega, H, system):
+def update(R, omega, H, RHF_symmetry, system):
     R.a, R.b, R.aa, R.ab, R.bb, R.aaa, R.aab, R.abb, R.bbb = cc_loops.cc_loops.update_r_ccsdt(
         R.a,
         R.b,
@@ -24,6 +24,12 @@ def update(R, omega, H, system):
         H.b.vv,
         0.0,
     )
+    if RHF_symmetry:
+        R.b = R.a.copy()
+        R.bb = R.aa.copy()
+        R.abb = R.aab.transpose((2, 1, 0, 5, 4, 3))
+        R.bbb = R.aaa.copy()
+
     return R
 
 def HR(dR, R, T, H, flag_RHF, system):

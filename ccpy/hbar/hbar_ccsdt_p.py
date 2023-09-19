@@ -1,7 +1,7 @@
 import numpy as np
 from ccpy.utilities.updates import hbar_ccsdt_p
 
-def build_hbar_ccsdt_p(T, H0, system, t3_excitations, *args):
+def build_hbar_ccsdt_p(T, H0, RHF_symmetry, system, t3_excitations, *args):
     """Calculate the CCSDT similarity-transformed Hamiltonian (H_N e^(T1+T2))_C.
     Copied as-is from original CCpy implementation."""
     from copy import deepcopy
@@ -256,6 +256,20 @@ def build_hbar_ccsdt_p(T, H0, system, t3_excitations, *args):
     )
 
     H = add_VT3_intermediates(T, t3_excitations, H)
+
+    # For RHF symmetry, copy a parts to b and aa parts to bb
+    if RHF_symmetry:
+        H.b.ov = H.a.ov.copy()
+        H.b.oo = H.a.oo.copy()
+        H.b.vv = H.a.vv.copy()
+        H.bb.oooo = H.aa.oooo.copy()
+        H.bb.ooov = H.aa.ooov.copy()
+        H.bb.vooo = H.aa.vooo.copy()
+        H.bb.oovv = H.aa.oovv.copy()
+        H.bb.voov = H.aa.voov.copy()
+        H.bb.vovv = H.aa.vovv.copy()
+        H.bb.vvov = H.aa.vvov.copy()
+        H.bb.vvvv = H.aa.vvvv.copy()
 
     return H
 

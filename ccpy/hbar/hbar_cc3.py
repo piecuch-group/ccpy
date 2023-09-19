@@ -2,7 +2,7 @@ import numpy as np
 from ccpy.utilities.updates import hbar_cc3
 from ccpy.models.integrals import Integral
 
-def build_hbar_cc3(T, H0, system, *args):
+def build_hbar_cc3(T, H0, RHF_symmetry, system, *args):
     """Calculate the one- and two-body components of the CC3 similarity-transformed
      Hamiltonian (H_N e^(T1+T2+T3))_C, where T3 = <ijkabc|(V_N*T2)_C|0>/-D_MP, where
      D_MP = e_a+e_b+e_c-e_i-e_j-e_k."""
@@ -384,6 +384,20 @@ def build_hbar_cc3(T, H0, system, *args):
             H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
             H0.aa.oovv, H0.ab.oovv, H0.bb.oovv,
     )
+
+    # For RHF symmetry, copy a parts to b and aa parts to bb
+    if RHF_symmetry:
+        H.b.ov = H.a.ov.copy()
+        H.b.oo = H.a.oo.copy()
+        H.b.vv = H.a.vv.copy()
+        H.bb.oooo = H.aa.oooo.copy()
+        H.bb.ooov = H.aa.ooov.copy()
+        H.bb.vooo = H.aa.vooo.copy()
+        H.bb.oovv = H.aa.oovv.copy()
+        H.bb.voov = H.aa.voov.copy()
+        H.bb.vovv = H.aa.vovv.copy()
+        H.bb.vvov = H.aa.vvov.copy()
+        H.bb.vvvv = H.aa.vvvv.copy()
 
     return H, X
 

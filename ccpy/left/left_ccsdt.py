@@ -56,6 +56,19 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
                                                          H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                          shift)
 
+    if flag_RHF:
+        L.b = L.a.copy()
+        L.bb = L.aa.copy()
+        L.bbb = L.aaa.copy()
+        L.abb = np.transpose(L.aab, (2, 0, 1, 5, 3, 4))
+        L.bbb = L.aaa.copy()
+
+        LH.b = LH.a.copy()
+        LH.bb = LH.aa.copy()
+        LH.bbb = LH.aaa.copy()
+        LH.abb = np.transpose(LH.aab, (2, 0, 1, 5, 3, 4))
+        LH.bbb = LH.aaa.copy()
+
     return L, LH
 
 def build_LH_1A(L, LH, T, H, X):
