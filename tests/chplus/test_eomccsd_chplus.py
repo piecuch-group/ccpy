@@ -17,8 +17,6 @@ def test_eomccsd_chplus():
         nfrozen=0,
     )
     driver.system.print_info()
-    driver.options["maximum_iterations"] = 1000 # 4 Sigma state requires ~661 iterations in left-CCSD
-    driver.options["davidson_max_subspace_size"] = 50
     driver.options["RHF_symmetry"] = False
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
