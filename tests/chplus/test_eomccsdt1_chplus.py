@@ -29,7 +29,7 @@ def test_eomccsdt1_chplus():
 
     expected_vee = [0.0, 0.31753748, 0.49704224, 0.63315928,  # sigma states
                     0.11879449, 0.52261185,  # pi states
-                    0.25800905, 0.61916891   # delta states
+                    0.25800905, 0.61916891]   # delta states
     expected_total_energy = [-38.01904114 + omega for omega in expected_vee]
 
     # Check reference energy
