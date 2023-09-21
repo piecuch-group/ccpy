@@ -22,12 +22,12 @@ def test_eomccsdt_chplus():
     expected_ref_energy = -37.90276818
     expected_cc_energy = -38.01951563
     expected_corr_energy = -0.11674744
-    expected_vee = [0.0, 0.31689457, 0.49705838, 0.63264386, 0.11859434, 0.52137274, 0.25740252, 0.61720742]
+    expected_vee = [0.0, 0.0, 0.31689457, 0.49705838, 0.63264386, 0.11859434, 0.52137274, 0.25740252, 0.61720742]
     expected_total_energy = [expected_cc_energy + omega for omega in expected_vee]
 
     # Check reference energy
     assert np.allclose(driver.system.reference_energy, expected_ref_energy)
-    for n in [0, 2, 3, 4, 5, 6, 7, 8]:
+    for n in [0, 1, 2, 3, 4, 5, 6, 7, 8]:
         if n == 0:
             # Check CCSDT energy
             assert np.allclose(driver.correlation_energy, expected_corr_energy)
