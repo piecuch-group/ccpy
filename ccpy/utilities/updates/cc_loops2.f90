@@ -1643,5 +1643,63 @@ module cc_loops2
               end do; end do; end do; end do;
 
       end subroutine update_R_3p1h
+   
+      subroutine update_R_4p2h(r2b,r3b,r3c,r4b,r4c,r4d,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
+
+              integer, intent(in) :: noa, nua, nob, nub
+              real(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+                                          H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
+                                          omega
+              real(kind=8), intent(inout) :: r2b(1:nua,1:nub)
+              !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1)
+              real(kind=8), intent(inout) :: r3b(1:nua,1:nub,1:nua,1:noa)
+              !f2py intent(in,out) :: r3b(0:nua-1,0:nub-1,0:nua-1,0:noa-1)
+              real(kind=8), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:nob)
+              !f2py intent(in,out) :: r3c(0:nua-1,0:nub-1,0:nub-1,0:nob-1)
+              real(kind=8), intent(inout) :: r4b(1:nua,1:nub,1:nua,1:nua,1:noa,1:noa)
+              !f2py intent(in,out) :: r4b(0:nua-1,0:nub-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+              real(kind=8), intent(inout) :: r4c(1:nua,1:nub,1:nua,1:nub,1:noa,1:nob)
+              !f2py intent(in,out) :: r4c(0:nua-1,0:nub-1,0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+              real(kind=8), intent(inout) :: r4d(1:nua,1:nub,1:nub,1:nub,1:nob,1:nob)
+              !f2py intent(in,out) :: r4d(0:nua-1,0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+              integer :: a, b, c, d, k, l
+              real(kind=8) :: denom
+
+              do a = 1,nua; do b = 1,nub;
+                  denom = H1A_vv(a,a) + H1B_vv(b,b)
+                  r2b(a,b) = r2b(a,b)/(omega - denom)
+              end do; end do;
+
+              do a = 1,nua; do b = 1,nub; do c = 1,nua; do k = 1,noa;
+                  if (a==c) cycle
+                  denom = H1A_vv(a,a) + H1B_vv(b,b) + H1A_vv(c,c) - H1A_oo(k,k)
+                  r3b(a,b,c,k) = r3b(a,b,c,k)/(omega - denom)
+              end do; end do; end do; end do;
+
+              do a = 1,nua; do b = 1,nub; do c = 1,nub; do k = 1,nob;
+                  if (b==c) cycle
+                  denom = H1A_vv(a,a) + H1B_vv(b,b) + H1B_vv(c,c) - H1B_oo(k,k)
+                  r3c(a,b,c,k) = r3c(a,b,c,k)/(omega - denom)
+              end do; end do; end do; end do;
+            
+              do a = 1,nua; do b = 1,nub; do c = 1,nua; do d=1,nua; do k = 1,noa; do l=1,noa;
+                  if (a==c .or. a==d .or. c==d .or. k==l) cycle
+                  denom = H1A_vv(a,a) + H1B_vv(b,b) + H1A_vv(c,c) + H1A_vv(d,d) - H1A_oo(k,k) - H1A_oo(l,l)
+                  r4b(a,b,c,d,k,l) = r4b(a,b,c,d,k,l)/(omega - denom)
+              end do; end do; end do; end do; end do; end do;
+            
+              do a = 1,nua; do b = 1,nub; do c = 1,nua; do d=1,nub; do k = 1,noa; do l=1,nob;
+                  if (a==c .or. b==d) cycle
+                  denom = H1A_vv(a,a) + H1B_vv(b,b) + H1A_vv(c,c) + H1B_vv(d,d) - H1A_oo(k,k) - H1B_oo(l,l)
+                  r4c(a,b,c,d,k,l) = r4c(a,b,c,d,k,l)/(omega - denom)
+              end do; end do; end do; end do; end do; end do;
+            
+              do a = 1,nua; do b = 1,nub; do c = 1,nub; do d=1,nub; do k = 1,nob; do l=1,nob;
+                  if (b==c .or. b==d .or. c==d .or. k==l) cycle
+                  denom = H1A_vv(a,a) + H1B_vv(b,b) + H1B_vv(c,c) + H1B_vv(d,d) - H1B_oo(k,k) - H1B_oo(l,l)
+                  r4d(a,b,c,d,k,l) = r4d(a,b,c,d,k,l)/(omega - denom)
+              end do; end do; end do; end do; end do; end do;
+
+      end subroutine update_R_4p2h
 
 end module cc_loops2

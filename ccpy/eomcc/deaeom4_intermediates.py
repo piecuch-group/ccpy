@@ -1,15 +1,11 @@
 import numpy as np
 
-from ccpy.models.integrals import Integral
+def get_deaeom4_intermediates(H, R):
 
-
-def get_deaeom4_intermediates(H, R, T, system):
-
-    # Create new 2-body integral object
-    #X = Integral.from_empty(system, 2, data_type=H.a.oo.dtype)
-    X = {"ab": {"vo": None, "ov": None},
-         "aba": {},
-         "abb": {}}
+    # Create dictionary to store intermediates, which have spincases that resemble those of the DEA R operator itself
+    X = {"ab": {"vo": 0, "ov": 0},
+         "aba": {"vvvv": 0, "vvoo": 0},
+         "abb": {"vvvv": 0, "vvoo": 0}}
 
     # x(mb~)
     X["ab"]["ov"] = (
@@ -22,6 +18,76 @@ def get_deaeom4_intermediates(H, R, T, system):
             np.einsum("amef,ef->am", H.ab.vovv, R.ab, optimize=True)
             + 0.5 * np.einsum("nmfe,aefn->am", H.bb.oovv, R.abb, optimize=True)
             + np.einsum("nmfe,aefn->am", H.ab.oovv, R.aba, optimize=True)
+    )
+    # x(ab~ce)
+    X["aba"]["vvvv"] = (
+            # A(ac) h2a(cnef) r_aba(ab~fn)
+            np.einsum("cnef,abfn->abce", H.aa.vovv, R.aba, optimize=True)
+            # A(ac) h2b(cn~ef~) r_abb(ab~f~n~)
+            + np.einsum("cnef,abfn->abce", H.ab.vovv, R.abb, optimize=True)
+            # A(ac) h2b(cb~ef~) r_ab(af~)
+            + np.einsum("cbef,af->abce", H.ab.vvvv, R.ab, optimize=True)
+            # h2a(acfe) r_ab(fb~)
+            + 0.5 * np.einsum("acfe,fb->abce", H.aa.vvvv, R.ab, optimize=True)
+            # -1/2 h2a(mnef) r_abaa(ab~cfmn)
+            - 0.25 * np.einsum("mnef,abcfmn->abce", H.aa.oovv, R.abaa, optimize=True)
+            # -h2b(mn~ef~) r_abab(ab~cf~mn~)
+            - 0.5 * np.einsum("mnef,abcfmn->abce", H.ab.oovv, R.abab, optimize=True)
+    )
+    X["aba"]["vvvv"] -= np.transpose(X["aba"]["vvvv"], (2, 1, 0, 3)) # antisymmetrize A(ac)
+    # x(ab~c~e~)
+    X["abb"]["vvvv"] = (
+            # A(bc) h2b(nc~fe~) r_aba(ab~fn)
+            np.einsum("ncfe,abfn->abce", H.ab.ovvv, R.aba, optimize=True)
+            # A(bc) h2c(c~n~e~f~) r_abb(ab~f~n~)
+            + np.einsum("cnef,abfn->abce", H.bb.vovv, R.abb, optimize=True)
+            # h2c(b~c~e~f~) r_ab(af~)
+            + 0.5 * np.einsum("bcef,af->abce", H.bb.vvvv, R.ab, optimize=True)
+            # A(bc) h2b(ac~fe~) r_ab(fb~)
+            + np.einsum("acfe,fb->abce", H.ab.vvvv, R.ab, optimize=True)
+            # -1/2 h2c(mnef) r_abbb(ab~c~f~m~n~)
+            - 0.25 * np.einsum("mnef,abcfmn->abce", H.bb.oovv, R.abbb, optimize=True)
+            # -h2b(nm~fe~) r_abab(ab~fc~nm~)
+            - 0.5 * np.einsum("nmfe,abfcnm->abce", H.ab.oovv, R.abab, optimize=True)
+    )
+    X["abb"]["vvvv"] -= np.transpose(X["abb"]["vvvv"], (0, 2, 1, 3)) # antisymmetrize A(bc)
+    # x(ab~mk)
+    X["aba"]["vvoo"] = (
+        # h2a(mnkf) r_aba(ab~fn)
+        np.einsum("mnkf,abfn->abmk", H.aa.ooov, R.aba, optimize=True)
+        # h2b(mn~kf~) r_abb(ab~f~n~)
+        + np.einsum("mnkf,abfn->abmk", H.ab.ooov, R.abb, optimize=True)
+        # 1/2 h2a(amef) r_aba(eb~fk)
+        + 0.5 * np.einsum("amef,ebfk->abmk", H.aa.vovv, R.aba, optimize=True)
+        # h2b(mb~fe~) r_aba(ae~fk)
+        + np.einsum("mbfe,aefk->abmk", H.ab.ovvv, R.aba, optimize=True)
+        # h2a(amfk) r_ab(fb~) -> -h2a(amkf) r_ab(fb~)
+        - np.einsum("amkf,fb->abmk", H.aa.voov, R.ab, optimize=True)
+        # h2b(mb~kf~) r_ab(af~)
+        + np.einsum("mbkf,af->abmk", H.ab.ovov, R.ab, optimize=True)
+        # 1/2 h2a(mnef) r_abaa(ab~efkn)
+        + 0.5 * np.einsum("mnef,abefkn->abmk", H.aa.oovv, R.abaa, optimize=True)
+        # h2b(mn~ef~) r_abab(ab~ef~kn~)
+        + np.einsum("mnef,abefkn->abmk", H.ab.oovv, R.abab, optimize=True)
+    )
+    # x(ab~m~k~)
+    X["abb"]["vvoo"] = (
+        # h2b(nmfk) r_aba(ab~fn)
+        np.einsum("nmfk,abfn->abmk", H.ab.oovo, R.aba, optimize=True)
+        # h2c(m~n~k~f~) r_abb(ab~f~n~)
+        + np.einsum("mnkf,abfn->abmk", H.bb.ooov, R.abb, optimize=True)
+        # 1/2 h2c(b~m~e~f~) r_abb(ae~f~k~)
+        + 0.5 * np.einsum("bmef,aefk->abmk", H.bb.vovv, R.abb, optimize=True)
+        # h2b(am~ef~) r_abb(eb~f~k~)
+        + np.einsum("amef,ebfk->abmk", H.ab.vovv, R.abb, optimize=True)
+        # h2b(am~fk~) r_ab(fb~)
+        + np.einsum("amfk,fb->abmk", H.ab.vovo, R.ab, optimize=True)
+        # h2c(b~m~f~k~) r_ab(af~) -> -h2c(b~m~k~f~) r_ab(af~)
+        - np.einsum("bmkf,af->abmk", H.bb.voov, R.ab, optimize=True)
+        # 1/2 h2c(m~n~e~f~) r_abbb(ab~e~f~k~n~)
+        + 0.5 * np.einsum("mnef,abefkn->abmk", H.bb.oovv, R.abbb, optimize=True)
+        # h2b(nm~fe~) r_abab(ab~fe~nk~)
+        + np.einsum("nmfe,abfenk->abmk", H.ab.oovv, R.abab, optimize=True)
     )
 
     return X
