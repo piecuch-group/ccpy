@@ -16,6 +16,8 @@ def update(R, omega, H, RHF_symmetry, system):
         H.b.vv,
         0.0,
     )
+    if RHF_symmetry:
+        R.abb = np.transpose(R.aba, (1, 0, 2, 3))
     return R
 
 def HR(dR, R, T, H, flag_RHF, system):
@@ -24,7 +26,10 @@ def HR(dR, R, T, H, flag_RHF, system):
     dR.ab = build_HR_2B(R, T, H)
     # update R3
     dR.aba = build_HR_3B(R, T, H)
-    dR.abb = build_HR_3C(R, T, H)
+    if flag_RHF:
+        dR.abb = np.transpose(dR.aba, (1, 0, 2, 3))
+    else:
+        dR.abb = build_HR_3C(R, T, H)
 
     return dR.flatten()
 

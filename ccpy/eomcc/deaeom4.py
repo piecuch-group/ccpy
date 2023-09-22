@@ -20,6 +20,9 @@ def update(R, omega, H, RHF_symmetry, system):
         H.b.vv,
         0.0,
     )
+    if RHF_symmetry:
+       R.abb = np.transpose(R.aba, (1, 0, 2, 3))
+       R.abbb = np.transpose(R.abaa, (1, 0, 2, 3, 4, 5))
     return R
 
 def HR(dR, R, T, H, flag_RHF, system):
@@ -29,11 +32,19 @@ def HR(dR, R, T, H, flag_RHF, system):
     dR.ab = build_HR_2B(R, T, H)
     # update R3
     dR.aba = build_HR_3B(R, T, H, X)
-    dR.abb = build_HR_3C(R, T, H, X)
+    if flag_RHF:
+        dR.abb = np.transpose(dR.aba, (1, 0, 2, 3))
+    else:
+        dR.abb = build_HR_3C(R, T, H, X)
     # update R4
     dR.abaa = build_HR_4B(R, T, H, X)
     dR.abab = build_HR_4C(R, T, H, X)
-    dR.abbb = build_HR_4D(R, T, H, X)
+    if flag_RHF:
+      dR.abbb = np.transpose(dR.abaa, (1, 0, 2, 3, 4, 5))
+    else:
+        dR.abbb = build_HR_4D(R, T, H, X)
+
+
 
     return dR.flatten()
 
@@ -160,6 +171,9 @@ def build_HR_4B(R, T, H, X):
     x4b += (6.0 / 12.0) * np.einsum("dmle,abcekm->abcdkl", H.ab.voov, R.abab, optimize=True)
     # diagram 12: -A(kl) h2b(mb~le~) r_abaa(ae~cdkm)
     x4b -= (2.0 / 12.0) * np.einsum("mble,aecdkm->abcdkl", H.ab.ovov, R.abaa, optimize=True)
+    ### 4-body Hbar term ###
+    # diagram 15: A(c/ad)A(kl) x_ab(mn~) t2a(adml) t2b(cb~kn~)
+    x4b += (6.0 / 12.0) * np.einsum("mn,adml,cbkn->abcdkl", X["ab"]["oo"], T.aa, T.ab, optimize=True)
     # antisymmetrize A(acd)A(kl)
     x4b -= np.transpose(x4b, (0, 1, 2, 3, 5, 4)) # A(kl)
     x4b -= np.transpose(x4b, (0, 1, 3, 2, 4, 5)) # A(cd)
@@ -213,6 +227,11 @@ def build_HR_4C(R, T, H, X):
     x4c -= (2.0 / 4.0) * np.einsum("mdke,abceml->abcdkl", H.ab.ovov, R.abab, optimize=True)
     # diagram 18: -A(ac) h2b(cm~el~) r_abab(ab~ed~km~)
     x4c -= (2.0 / 4.0) * np.einsum("cmel,abedkm->abcdkl", H.ab.vovo, R.abab, optimize=True)
+    ### 4-body HBar ###
+    # diagram 23: x_ab(mn~) t2a(acmk) t2c(b~d~n~l~)
+    x4c += (1.0 / 4.0) * np.einsum("mn,acmk,bdnl->abcdkl", X["ab"]["oo"], T.aa, T.bb, optimize=True)
+    # diagram 24: A(ac)A(bd) x_ab(mn~) t2b(ad~ml~) t2b(cb~kn~)
+    x4c += np.einsum("mn,adml,cbkn->abcdkl", X["ab"]["oo"], T.ab, T.ab, optimize=True)
     # antisymmetrize A(ac)A(bd)
     x4c -= np.transpose(x4c, (2, 1, 0, 3, 4, 5)) # A(ac)
     x4c -= np.transpose(x4c, (0, 3, 2, 1, 4, 5)) # A(bd)
@@ -249,6 +268,9 @@ def build_HR_4D(R, T, H, X):
     x4d += (6.0 / 12.0) * np.einsum("dmle,abcekm->abcdkl", H.bb.voov, R.abbb, optimize=True)
     # diagram 12: -A(kl) h2b(am~el~) r_abbb(eb~c~d~k~m~)
     x4d -= (2.0 / 12.0) * np.einsum("amel,ebcdkm->abcdkl", H.ab.vovo, R.abbb, optimize=True)
+    ### 4-body Hbar term ###
+    # diagram 15: A(d/bc)A(kl) x_ab(mn~) t2b(ad~ml~) t2c(b~c~n~k~)
+    x4d += (6.0 / 12.0) * np.einsum("mn,adml,bcnk->abcdkl", X["ab"]["oo"], T.ab, T.bb, optimize=True)
     # antisymmetrize A(bcd)A(kl)
     x4d -= np.transpose(x4d, (0, 1, 2, 3, 5, 4)) # A(kl)
     x4d -= np.transpose(x4d, (0, 1, 3, 2, 4, 5)) # A(cd)

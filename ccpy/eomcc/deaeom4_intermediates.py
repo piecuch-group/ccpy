@@ -19,6 +19,10 @@ def get_deaeom4_intermediates(H, R):
             + 0.5 * np.einsum("nmfe,aefn->am", H.bb.oovv, R.abb, optimize=True)
             + np.einsum("nmfe,aefn->am", H.ab.oovv, R.aba, optimize=True)
     )
+    # x(mn~)
+    X["ab"]["oo"] = (
+            np.einsum("mnef,ef->mn", H.ab.oovv, R.ab, optimize=True)
+    )
     # x(ab~ce)
     X["aba"]["vvvv"] = (
             # A(ac) h2a(cnef) r_aba(ab~fn)
@@ -41,8 +45,8 @@ def get_deaeom4_intermediates(H, R):
             np.einsum("ncfe,abfn->abce", H.ab.ovvv, R.aba, optimize=True)
             # A(bc) h2c(c~n~e~f~) r_abb(ab~f~n~)
             + np.einsum("cnef,abfn->abce", H.bb.vovv, R.abb, optimize=True)
-            # h2c(b~c~e~f~) r_ab(af~)
-            + 0.5 * np.einsum("bcef,af->abce", H.bb.vvvv, R.ab, optimize=True)
+            # h2c(b~c~f~e~) r_ab(af~)
+            + 0.5 * np.einsum("bcfe,af->abce", H.bb.vvvv, R.ab, optimize=True)
             # A(bc) h2b(ac~fe~) r_ab(fb~)
             + np.einsum("acfe,fb->abce", H.ab.vvvv, R.ab, optimize=True)
             # -1/2 h2c(mnef) r_abbb(ab~c~f~m~n~)
