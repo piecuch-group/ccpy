@@ -44,8 +44,6 @@ def HR(dR, R, T, H, flag_RHF, system):
     else:
         dR.abbb = build_HR_4D(R, T, H, X)
 
-
-
     return dR.flatten()
 
 def build_HR_2B(R, T, H):
@@ -152,6 +150,8 @@ def build_HR_4B(R, T, H, X):
     x4b -= (6.0 / 12.0) * np.einsum("abml,cdkm->abcdkl", X["aba"]["vvoo"], T.aa, optimize=True)
     # diagram 14: A(c/ad) x_aba(ab~de) t2a(cekl)
     x4b += (3.0 / 12.0) * np.einsum("abde,cekl->abcdkl", X["aba"]["vvvv"], T.aa, optimize=True)
+    # diagram 15: -A(b/ac)A(kl) x_aba(am~ck) t2b(db~lm~)
+    x4b -= (6.0 / 12.0) * np.einsum("amck,dblm->abcdkl", X["aba"]["vovo"], T.ab, optimize=True)
     ### Terms < klab~cd | (H(2)R(4p-2h)_C | 0 > ###
     # diagram 4: A(d/ac) h1a(de) r_abaa(ab~cekl)
     x4b += (3.0 / 12.0) * np.einsum("de,abcekl->abcdkl", H.a.vv, R.abaa, optimize=True)
@@ -198,6 +198,10 @@ def build_HR_4C(R, T, H, X):
     x4c -= np.einsum("abmk,cdml->abcdkl", X["aba"]["vvoo"], T.ab, optimize=True)
     # diagram 22: -A(ac)A(bd) x_abb(ab~m~l~) t2b(cd~km~)
     x4c -= np.einsum("abml,cdkm->abcdkl", X["abb"]["vvoo"], T.ab, optimize=True)
+    # diagram 23: -x_aba(am~ck) t2c(b~d~m~l~)
+    x4c -= (1.0 / 4.0) * np.einsum("amck,bdml->abcdkl", X["aba"]["vovo"], T.bb, optimize=True)
+    # diagram 24: -x_abb(mb~d~l~) t2a(acmk)
+    x4c -= (1.0 / 4.0) * np.einsum("mbdl,acmk->abcdkl", X["abb"]["ovvo"], T.aa, optimize=True)
     ### Terms < kl~ab~cd~ | (H(2)R(4p-2h)_C | 0 > ###
     # diagram 5: A(ac) h1a(ae) r_abab(eb~cd~kl~)
     x4c += (2.0 / 4.0) * np.einsum("ae,ebcdkl->abcdkl", H.a.vv, R.abab, optimize=True)

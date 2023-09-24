@@ -56,7 +56,10 @@ def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, 
         elapsed_time = time.time() - t1
         print_eomcc_iteration(niter, omega, residual, delta_energy, elapsed_time)
 
-    t_root_end = time.time()
+    # print the time taken for the root
+    minutes, seconds = divmod(time.time() - t_root_start, 60)
+    print(f"   Completed in {minutes:.1f}m {seconds:.1f}s")
+
     return R, omega, is_converged
 
 def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
@@ -161,7 +164,9 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
 
     # store the actual root you've solved for
     R.unflatten(r)
-    t_root_end = time.time()
+    # print the time taken for the root
+    minutes, seconds = divmod(time.time() - t_root_start, 60)
+    print(f"   Completed in {minutes:.1f}m {seconds:.1f}s")
 
     return R, omega, is_converged
 
