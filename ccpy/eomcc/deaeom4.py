@@ -40,7 +40,7 @@ def HR(dR, R, T, H, flag_RHF, system):
     dR.abaa = build_HR_4B(R, T, H, X)
     dR.abab = build_HR_4C(R, T, H, X)
     if flag_RHF:
-      dR.abbb = np.transpose(dR.abaa, (1, 0, 2, 3, 4, 5))
+        dR.abbb = np.transpose(dR.abaa, (1, 0, 2, 3, 4, 5))
     else:
         dR.abbb = build_HR_4D(R, T, H, X)
 
@@ -126,8 +126,8 @@ def build_HR_3C(R, T, H, X):
     # (13)
     x3c -= 0.5 * np.einsum("mk,abcm->abck", H.b.oo, R.abb, optimize=True)
     # additional R(4p-2h) terms
-    x3c += 0.5 * np.einsum("me,abeckm->abck", H.a.ov, R.abab, optimize=True)
-    x3c += 0.5 * np.einsum("me,abeckm->abck", H.b.ov, R.abbb, optimize=True)
+    x3c += 0.5 * np.einsum("me,abecmk->abck", H.a.ov, R.abab, optimize=True)
+    x3c += 0.5 * np.einsum("me,abecmk->abck", H.b.ov, R.abbb, optimize=True)
     x3c -= 0.5 * np.einsum("nmfk,abfcnm->abck", H.ab.oovo, R.abab, optimize=True)
     x3c -= 0.25 * np.einsum("mnkf,abcfmn->abck", H.bb.ooov, R.abbb, optimize=True)
     x3c += np.einsum("ncfe,abfenk->abck", H.ab.ovvv, R.abab, optimize=True)
@@ -190,6 +190,10 @@ def build_HR_4C(R, T, H, X):
     x4c -= (2.0 / 4.0) * np.einsum("mdkl,abcm->abcdkl", H.ab.ovoo, R.aba, optimize=True)
     # diagram 4: -A(ac) h2b(cm~kl~) r_abb(ab~d~m~)
     x4c -= (2.0 / 4.0) * np.einsum("cmkl,abdm->abcdkl", H.ab.vooo, R.abb, optimize=True)
+    # diagram 25: h2a(cake) * r_abb(eb~d~l~)
+    x4c += (1.0 / 4.0) * np.einsum("cake,ebdl->abcdkl", H.aa.vvov, R.abb, optimize=True)
+    # diagram 26: h2c(d~b~l~e~) r_aba(ae~ck)
+    x4c += (1.0 / 4.0) * np.einsum("dble,aeck->abcdkl", H.bb.vvov, R.aba, optimize=True)
     # diagram 19: A(ac) x_abb(ab~d~e~) t2b(ce~kl~)
     x4c += (2.0 / 4.0) * np.einsum("abde,cekl->abcdkl", X["abb"]["vvvv"], T.ab, optimize=True)
     # diagram 20: A(bd) x_aba(ab~ce) t2b(ed~kl~)
@@ -248,11 +252,13 @@ def build_HR_4D(R, T, H, X):
     # diagram 2: A(c/bd)A(kl) h2b(ac~ek~) r_abb(eb~d~l~)
     x4d += (6.0 / 12.0) * np.einsum("acek,ebdl->abcdkl", H.ab.vvvo, R.abb, optimize=True)
     # diagram 3: -A(c/bd) h2c(c~m~k~l~) r_abb(ab~d~m~)
-    x4d -= (3.0 / 12.0) * np.einsum("cmkl,abdm->abcdkl", H.ab.vooo, R.abb, optimize=True)
+    x4d -= (3.0 / 12.0) * np.einsum("cmkl,abdm->abcdkl", H.bb.vooo, R.abb, optimize=True)
     # diagram 13: A(c/bd) x_abb(ab~d~e~) t2c(c~e~k~l~)
     x4d += (3.0 / 12.0) * np.einsum("abde,cekl->abcdkl", X["abb"]["vvvv"], T.bb, optimize=True)
     # diagram 14: -A(b/cd)A(kl) x_abb(ab~m~l~) t2c(c~d~k~m~)
     x4d -= (6.0 / 12.0) * np.einsum("abml,cdkm->abcdkl", X["abb"]["vvoo"], T.bb, optimize=True)
+    # diagram 15: -A(d/bc)A(kl) x_abb(mb~c~k~) t2b(ad~ml~)
+    x4d -= (6.0 / 12.0) * np.einsum("mbck,adml->abcdkl", X["abb"]["ovvo"], T.ab, optimize=True)
     ### Terms < klab~cd | (H(2)R(4p-2h)_C | 0 > ###
     # diagram 4: A(d/bc) h1b(d~e~) r_abbb(ab~c~e~k~l~)
     x4d += (3.0 / 12.0) * np.einsum("de,abcekl->abcdkl", H.b.vv, R.abbb, optimize=True)

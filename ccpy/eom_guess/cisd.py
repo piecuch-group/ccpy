@@ -59,7 +59,6 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
     return omega_guess, V
 
 def scatter(V_in, nacto, nactu, system):
-#def scatter(V_act[:, i], nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb, system):
     # orbital dimensions
     noa = system.noccupied_alpha
     nob = system.noccupied_beta
@@ -135,8 +134,6 @@ def build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb
     n2c = int(nacto_b * (nacto_b - 1) / 2 * nactu_b * (nactu_b - 1) / 2)
     # total dimension
     ndim = n1a + n1b + n2a + n2b + n2c
-
-    #idx_a, idx_b, idx_aa, idx_ab, idx_bb = get_index_arrays(nacto, nactu, system, target_irrep)
 
     ####################################################################################
     # ALPHA SINGLES

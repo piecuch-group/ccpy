@@ -8,7 +8,8 @@ from pyscf import scf, gto
 from ccpy.drivers.driver import Driver
 
 def test_ccsdpt_f2():
-    geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]
+    geometry = [["F", (0.0, 0.0, -2.66816)],
+                ["F", (0.0, 0.0, 2.66816)]]
     mol = gto.M(
         atom=geometry,
         basis="cc-pvtz",
