@@ -143,10 +143,8 @@ def build_HR_3B(R, T, X, H):
     X3B += np.einsum("bcek,aej->abcjk", H.ab.vvvo, R.aa, optimize=True) # (16)
     X3B += np.einsum("bcje,aek->abcjk", H.ab.vvov, R.ab, optimize=True) # (17)
     X3B += (1.0 / 2.0) * np.einsum("baje,eck->abcjk", H.aa.vvov, R.ab, optimize=True) # (23)
-
     # 3-body Hbar terms factorized using intermediates
     X3B -= (1.0 / 2.0) * np.einsum("mck,abmj->abcjk", X["ab"]["ovo"], T.aa, optimize=True) # (18)
-
     X3B -= np.einsum("amj,bcmk->abcjk", X["aa"]["voo"], T.ab, optimize=True) # (19)
     X3B -= np.einsum("amk,bcjm->abcjk", X["ab"]["voo"], T.ab, optimize=True) # (20)
     X3B += (1.0 / 2.0) * np.einsum("abe,ecjk->abcjk", X["aa"]["vvv"], T.ab, optimize=True) # (21)
