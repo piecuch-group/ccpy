@@ -3,6 +3,12 @@ module eomccsdt_p_loops
       use omp_lib
 
       implicit none
+   
+      ! Checklist for converting (H*R3)_C update into (X*T3)_C
+      ! [ ] - idet loop is over R3 quantities; idet = 1, n3_r
+      ! [ ] - jdet loop is over T3 quantities; jdet = loc_arr(idx,1), loc_arr(idx,2)
+      ! [ ] - replace n3_r parameter in sort4 to n3_t
+      ! [ ] - remove resid from sort4 function when sorting T3 excitations
 
       contains
 
@@ -123,7 +129,7 @@ module eomccsdt_p_loops
                                      t2a,&
                                      t3a_amps, t3a_excits,&
                                      t3b_amps, t3b_excits,&
-                                     h1a_ov, h1a_oo, h1a_vv,&
+                                     h1a_oo, h1a_vv,&
                                      h2a_oooo, h2a_vooo, h2a_oovv,&
                                      h2a_voov, h2a_vvov, h2a_vvvv,&
                                      h2b_voov,&
@@ -144,7 +150,6 @@ module eomccsdt_p_loops
                   real(kind=8), intent(in) :: r3b_amps(n3aab_r), t3b_amps(n3aab_t)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
                   ! Input H and X arrays
-                  real(kind=8), intent(in) :: h1a_ov(noa,nua)
                   real(kind=8), intent(in) :: h1a_oo(noa,noa)
                   real(kind=8), intent(in) :: h1a_vv(nua,nua)
                   real(kind=8), intent(in) :: h2a_oooo(noa,noa,noa,noa)
@@ -396,6 +401,223 @@ module eomccsdt_p_loops
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   
+                  !!!! diagram 2a: A(a/bc) h1a(ae) * r3a(ebcijk)
+                  !!!! diagram 4a: 1/2 A(c/ab) h2a(abef) * r3a(ebcijk)
+                  ! NOTE: WITHIN THESE LOOPS, H1A(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
+                  ! allocate new sorting arrays
+                  nloc = noa*(noa-1)*(noa-2)/6*nua
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(noa,noa,noa,nua))
+                  !!! IJKA LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H1A_vv,H2A_vvvv,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,a)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); f = r3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkaef >
+                        hmatel = h2a_vvvv(b,c,e,f)
+                        ! compute < ijkabc | h1a(vv) | ijkaef > = A(bc)A(ef) h1a_vv(b,e) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 + h1a_vv(b,e) ! (1)
+                        if (b==f) hmatel1 = hmatel1 - h1a_vv(c,e) ! (bc)
+                        if (c==e) hmatel1 = hmatel1 - h1a_vv(b,f) ! (ef)
+                        if (b==e) hmatel1 = hmatel1 + h1a_vv(c,f) ! (bc)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     ! (ab)
+                     idx = idx_table(i,j,k,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); f = r3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkbef >
+                        hmatel = -h2a_vvvv(a,c,e,f)
+                        ! compute < ijkabc | h1a(vv) | ijkbef > = -A(ac)A(ef) h1a_vv(a,e) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 - h1a_vv(a,e) ! (1)
+                        if (a==f) hmatel1 = hmatel1 + h1a_vv(c,e) ! (ac)
+                        if (c==e) hmatel1 = hmatel1 + h1a_vv(a,f) ! (ef)
+                        if (a==e) hmatel1 = hmatel1 - h1a_vv(c,f) ! (ac)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(i,j,k,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); f = r3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkcef >
+                        hmatel = -h2a_vvvv(b,a,e,f)
+                        ! compute < ijkabc | h1a(vv) | ijkcef > = -A(ab)A(ef) h1a_vv(b,e) * delta(a,f)
+                        hmatel1 = 0.0d0
+                        if (a==f) hmatel1 = hmatel1 - h1a_vv(b,e) ! (1)
+                        if (b==f) hmatel1 = hmatel1 + h1a_vv(a,e) ! (ab)
+                        if (a==e) hmatel1 = hmatel1 + h1a_vv(b,f) ! (ef)
+                        if (b==e) hmatel1 = hmatel1 - h1a_vv(a,f) ! (ab)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  !!! IJKB LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/2,nua-1/), noa, noa, noa, nua)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H1A_vv,H2A_vvvv,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,b)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); f = r3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdbf >
+                        hmatel = h2a_vvvv(a,c,d,f)
+                        ! compute < ijkabc | h1a(vv) | ijkdbf > = A(ac)A(df) h1a_vv(a,d) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 + h1a_vv(a,d) ! (1)
+                        if (a==f) hmatel1 = hmatel1 - h1a_vv(c,d) ! (ac)
+                        if (c==d) hmatel1 = hmatel1 - h1a_vv(a,f) ! (df)
+                        if (a==d) hmatel1 = hmatel1 + h1a_vv(c,f) ! (ac)(df)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     ! (ab)
+                     idx = idx_table(i,j,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); f = r3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdaf >
+                        hmatel = -h2a_vvvv(b,c,d,f)
+                        ! compute < ijkabc | h1a(vv) | ijkdaf > = -A(bc)A(df) h1a_vv(b,d) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 - h1a_vv(b,d) ! (1)
+                        if (b==f) hmatel1 = hmatel1 + h1a_vv(c,d) ! (bc)
+                        if (c==d) hmatel1 = hmatel1 + h1a_vv(b,f) ! (df)
+                        if (b==d) hmatel1 = hmatel1 - h1a_vv(c,f) ! (bc)(df)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(i,j,k,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); f = r3a_excits(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdcf >
+                        hmatel = -h2a_vvvv(a,b,d,f)
+                        ! compute < ijkabc | h1a(vv) | ijkdcf > = -A(ab)A(df) h1a_vv(a,d) * delta(b,f)
+                        hmatel1 = 0.0d0
+                        if (b==f) hmatel1 = hmatel1 - h1a_vv(a,d) ! (1)
+                        if (a==f) hmatel1 = hmatel1 + h1a_vv(b,d) ! (ab)
+                        if (b==d) hmatel1 = hmatel1 + h1a_vv(a,f) ! (df)
+                        if (a==d) hmatel1 = hmatel1 - h1a_vv(b,f) ! (ab)(df)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  !!! IJKC LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H1A_vv,H2A_vvvv,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,c)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); e = r3a_excits(2,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdec >
+                        hmatel = h2a_vvvv(a,b,d,e)
+                        ! compute < ijkabc | h1a(vv) | ijkdec > = A(ab)A(de) h1a_vv(a,d) * delta(b,e)
+                        hmatel1 = 0.0d0
+                        if (b==e) hmatel1 = hmatel1 + h1a_vv(a,d) ! (1)
+                        if (a==e) hmatel1 = hmatel1 - h1a_vv(b,d) ! (ab)
+                        if (b==d) hmatel1 = hmatel1 - h1a_vv(a,e) ! (de)
+                        if (a==d) hmatel1 = hmatel1 + h1a_vv(b,e) ! (ab)(de)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     ! (ac)
+                     idx = idx_table(i,j,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); e = r3a_excits(2,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdea >
+                        hmatel = -h2a_vvvv(c,b,d,e)
+                        ! compute < ijkabc | h1a(vv) | ijkdea > = -A(bc)A(de) h1a_vv(c,d) * delta(b,e)
+                        hmatel1 = 0.0d0
+                        if (b==e) hmatel1 = hmatel1 - h1a_vv(c,d) ! (1)
+                        if (c==e) hmatel1 = hmatel1 + h1a_vv(b,d) ! (bc)
+                        if (b==d) hmatel1 = hmatel1 + h1a_vv(c,e) ! (de)
+                        if (c==d) hmatel1 = hmatel1 - h1a_vv(b,e) ! (bc)(de)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(i,j,k,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); e = r3a_excits(2,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdeb >
+                        hmatel = -h2a_vvvv(a,c,d,e)
+                        ! compute < ijkabc | h1a(vv) | ijkdeb > = -A(ac)A(de) h1a_vv(a,d) * delta(c,e)
+                        hmatel1 = 0.0d0
+                        if (c==e) hmatel1 = hmatel1 - h1a_vv(a,d) ! (1)
+                        if (a==e) hmatel1 = hmatel1 + h1a_vv(c,d) ! (ac)
+                        if (c==d) hmatel1 = hmatel1 + h1a_vv(a,e) ! (de)
+                        if (a==d) hmatel1 = hmatel1 - h1a_vv(c,e) ! (ac)(de)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+                  
                   !!!! diagram 1b: -A(i/jk) x1a(mi) * t3a(abcmjk)
                   !!!! diagram 3b: 1/2 A(i/jk) x2a(mnij) * t3a(abcmnk)
                   ! NOTE: WITHIN THESE LOOPS, X1A(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
@@ -413,7 +635,7 @@ module eomccsdt_p_loops
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nua, noa, nloc, n3aaa_t)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
-                  !$omp excits_buff,&
+                  !$omp excits_buff,r3a_excits,&
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp X1A_oo,X2A_oooo,&
@@ -421,9 +643,9 @@ module eomccsdt_p_loops
                   !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
-                  do idet = 1, n3aaa_t
-                     a = excits_buff(1,idet); b = excits_buff(2,idet); c = excits_buff(3,idet);
-                     i = excits_buff(4,idet); j = excits_buff(5,idet); k = excits_buff(6,idet);
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
@@ -479,10 +701,10 @@ module eomccsdt_p_loops
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCI LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/1,noa-2/), nua, nua, nua, noa)
-                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nua, noa, nloc, n3aaa_t, resid)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nua, noa, nloc, n3aaa_t)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
-                  !$omp excits_buff,&
+                  !$omp excits_buff,r3a_excits,&
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp X1A_oo,X2A_oooo,&
@@ -490,9 +712,9 @@ module eomccsdt_p_loops
                   !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
-                  do idet = 1, n3aaa_t
-                     a = excits_buff(1,idet); b = excits_buff(2,idet); c = excits_buff(3,idet);
-                     i = excits_buff(4,idet); j = excits_buff(5,idet); k = excits_buff(6,idet);
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,i)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
@@ -548,10 +770,10 @@ module eomccsdt_p_loops
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/2,noa-1/), nua, nua, nua, noa)
-                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nua, noa, nloc, n3aaa_t, resid)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nua, noa, nloc, n3aaa_t)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
-                  !$omp excits_buff,&
+                  !$omp excits_buff,r3a_excits,&
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp X1A_oo,X2A_oooo,&
@@ -559,9 +781,9 @@ module eomccsdt_p_loops
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
-                  do idet = 1, n3aaa_t
-                     a = excits_buff(1,idet); b = excits_buff(2,idet); c = excits_buff(3,idet);
-                     i = excits_buff(4,idet); j = excits_buff(5,idet); k = excits_buff(6,idet);
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
@@ -619,6 +841,232 @@ module eomccsdt_p_loops
                   deallocate(excits_buff,amps_buff)
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
+
+                  !!!! diagram 2b: A(a/bc) x1a(ae) * t3a(ebcijk)
+                  !!!! diagram 4b: 1/2 A(c/ab) x2a(abef) * t3a(ebcijk)
+                  ! NOTE: WITHIN THESE LOOPS, X1A(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
+                  ! allocate and initialize the copy of t3a
+                  allocate(amps_buff(n3aaa_t))
+                  allocate(excits_buff(6,n3aaa_t))
+                  amps_buff(:) = t3a_amps(:)
+                  excits_buff(:,:) = t3a_excits(:,:)
+                  ! allocate new sorting arrays
+                  nloc = noa*(noa-1)*(noa-2)/6*nua
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(noa,noa,noa,nua))
+                  !!! IJKA LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X1A_vv,X2A_vvvv,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,a)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkaef >
+                        hmatel = x2a_vvvv(b,c,e,f)
+                        ! compute < ijkabc | h1a(vv) | ijkaef > = A(bc)A(ef) x1a_vv(b,e) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 + x1a_vv(b,e) ! (1)
+                        if (b==f) hmatel1 = hmatel1 - x1a_vv(c,e) ! (bc)
+                        if (c==e) hmatel1 = hmatel1 - x1a_vv(b,f) ! (ef)
+                        if (b==e) hmatel1 = hmatel1 + x1a_vv(c,f) ! (bc)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     ! (ab)
+                     idx = idx_table(i,j,k,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkbef >
+                        hmatel = -x2a_vvvv(a,c,e,f)
+                        ! compute < ijkabc | h1a(vv) | ijkbef > = -A(ac)A(ef) x1a_vv(a,e) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 - x1a_vv(a,e) ! (1)
+                        if (a==f) hmatel1 = hmatel1 + x1a_vv(c,e) ! (ac)
+                        if (c==e) hmatel1 = hmatel1 + x1a_vv(a,f) ! (ef)
+                        if (a==e) hmatel1 = hmatel1 - x1a_vv(c,f) ! (ac)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(i,j,k,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkcef >
+                        hmatel = -x2a_vvvv(b,a,e,f)
+                        ! compute < ijkabc | h1a(vv) | ijkcef > = -A(ab)A(ef) x1a_vv(b,e) * delta(a,f)
+                        hmatel1 = 0.0d0
+                        if (a==f) hmatel1 = hmatel1 - x1a_vv(b,e) ! (1)
+                        if (b==f) hmatel1 = hmatel1 + x1a_vv(a,e) ! (ab)
+                        if (a==e) hmatel1 = hmatel1 + x1a_vv(b,f) ! (ef)
+                        if (b==e) hmatel1 = hmatel1 - x1a_vv(a,f) ! (ab)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  !!! IJKB LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/2,nua-1/), noa, noa, noa, nua)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X1A_vv,X2A_vvvv,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,b)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdbf >
+                        hmatel = x2a_vvvv(a,c,d,f)
+                        ! compute < ijkabc | h1a(vv) | ijkdbf > = A(ac)A(df) x1a_vv(a,d) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 + x1a_vv(a,d) ! (1)
+                        if (a==f) hmatel1 = hmatel1 - x1a_vv(c,d) ! (ac)
+                        if (c==d) hmatel1 = hmatel1 - x1a_vv(a,f) ! (df)
+                        if (a==d) hmatel1 = hmatel1 + x1a_vv(c,f) ! (ac)(df)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     ! (ab)
+                     idx = idx_table(i,j,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdaf >
+                        hmatel = -x2a_vvvv(b,c,d,f)
+                        ! compute < ijkabc | h1a(vv) | ijkdaf > = -A(bc)A(df) x1a_vv(b,d) * delta(c,f)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 - x1a_vv(b,d) ! (1)
+                        if (b==f) hmatel1 = hmatel1 + x1a_vv(c,d) ! (bc)
+                        if (c==d) hmatel1 = hmatel1 + x1a_vv(b,f) ! (df)
+                        if (b==d) hmatel1 = hmatel1 - x1a_vv(c,f) ! (bc)(df)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(i,j,k,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdcf >
+                        hmatel = -x2a_vvvv(a,b,d,f)
+                        ! compute < ijkabc | h1a(vv) | ijkdcf > = -A(ab)A(df) x1a_vv(a,d) * delta(b,f)
+                        hmatel1 = 0.0d0
+                        if (b==f) hmatel1 = hmatel1 - x1a_vv(a,d) ! (1)
+                        if (a==f) hmatel1 = hmatel1 + x1a_vv(b,d) ! (ab)
+                        if (b==d) hmatel1 = hmatel1 + x1a_vv(a,f) ! (df)
+                        if (a==d) hmatel1 = hmatel1 - x1a_vv(b,f) ! (ab)(df)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  !!! IJKC LOOP !!!
+                  call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X1A_vv,X2A_vvvv,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(i,j,k,c)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdec >
+                        hmatel = x2a_vvvv(a,b,d,e)
+                        ! compute < ijkabc | h1a(vv) | ijkdec > = A(ab)A(de) x1a_vv(a,d) * delta(b,e)
+                        hmatel1 = 0.0d0
+                        if (b==e) hmatel1 = hmatel1 + x1a_vv(a,d) ! (1)
+                        if (a==e) hmatel1 = hmatel1 - x1a_vv(b,d) ! (ab)
+                        if (b==d) hmatel1 = hmatel1 - x1a_vv(a,e) ! (de)
+                        if (a==d) hmatel1 = hmatel1 + x1a_vv(b,e) ! (ab)(de)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     ! (ac)
+                     idx = idx_table(i,j,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdea >
+                        hmatel = -x2a_vvvv(c,b,d,e)
+                        ! compute < ijkabc | h1a(vv) | ijkdea > = -A(bc)A(de) x1a_vv(c,d) * delta(b,e)
+                        hmatel1 = 0.0d0
+                        if (b==e) hmatel1 = hmatel1 - x1a_vv(c,d) ! (1)
+                        if (c==e) hmatel1 = hmatel1 + x1a_vv(b,d) ! (bc)
+                        if (b==d) hmatel1 = hmatel1 + x1a_vv(c,e) ! (de)
+                        if (c==d) hmatel1 = hmatel1 - x1a_vv(b,e) ! (bc)(de)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(i,j,k,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        ! compute < ijkabc | h2a(vvvv) | ijkdeb >
+                        hmatel = -x2a_vvvv(a,c,d,e)
+                        ! compute < ijkabc | h1a(vv) | ijkdeb > = -A(ac)A(de) x1a_vv(a,d) * delta(c,e)
+                        hmatel1 = 0.0d0
+                        if (c==e) hmatel1 = hmatel1 - x1a_vv(a,d) ! (1)
+                        if (a==e) hmatel1 = hmatel1 + x1a_vv(c,d) ! (ac)
+                        if (c==d) hmatel1 = hmatel1 + x1a_vv(a,e) ! (de)
+                        if (a==d) hmatel1 = hmatel1 - x1a_vv(c,e) ! (ac)(de)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate temporary amplitude arrays
+                  deallocate(excits_buff,amps_buff)
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+                 
+                 
                  
               end subroutine build_hr_3a
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
