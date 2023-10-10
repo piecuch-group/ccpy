@@ -259,9 +259,6 @@ def get_eomccsdt_intermediates(H, R, T, X_eomccsd, system):
         + np.einsum("mnei,ebmj->bnji", H.ab.oovo, R.ab, optimize=True)
     )
     X.bb.vooo -= np.transpose(X.bb.vooo, (0, 1, 3, 2))
-
-
-
     return X
 
 def add_R3_terms(X, H, R):
