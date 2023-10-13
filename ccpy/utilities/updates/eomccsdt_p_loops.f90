@@ -13,8 +13,9 @@ module eomccsdt_p_loops
       contains
 
                subroutine build_hr_1a(x1a,&
-                                      r3a_excits, r3b_excits, r3c_excits,&
-                                      r3a_amps, r3b_amps, r3c_amps,&
+                                      r3a_amps, r3a_excits,&
+                                      r3b_amps, r3b_excits,&
+                                      r3c_amps, r3c_excits,&
                                       h2a_oovv, h2b_oovv, h2c_oovv,&
                                       n3aaa, n3aab, n3abb,&
                                       noa, nua, nob, nub)
@@ -68,8 +69,9 @@ module eomccsdt_p_loops
               end subroutine build_hr_1a
          
               subroutine build_hr_1b(x1b,&
-                                     r3b_excits, r3c_excits, r3d_excits,&
-                                     r3b_amps, r3c_amps, r3d_amps,&
+                                     r3b_amps, r3b_excits,&
+                                     r3c_amps, r3c_excits,&
+                                     r3d_amps, r3d_excits,&
                                      h2a_oovv, h2b_oovv, h2c_oovv,&
                                      n3aab, n3abb, n3bbb,&
                                      noa, nua, nob, nub)
@@ -121,7 +123,438 @@ module eomccsdt_p_loops
                           x1b(f,n) = x1b(f,n) + h2c_oovv(m,i,e,a) * r_amp ! (af)(in)
                       end do
               end subroutine build_hr_1b
+
+              subroutine build_hr_2a(sigma_2a,&
+                                     r3a_amps, r3a_excits,&
+                                     r3b_amps, r3b_excits,&
+                                     t3a_amps, t3a_excits,&
+                                     t3b_amps, t3b_excits,&
+                                     h1a_ov, h1b_ov,&
+                                     h2a_ooov, h2a_vovv,&
+                                     h2b_ooov, h2b_vovv,&
+                                     x1a_ov, x1b_ov,&
+                                     n3aaa_r, n3aab_r,&
+                                     n3aaa_t, n3aab_t,&
+                                     noa, nua, nob, nub)
+                  ! Input dimension variables
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aaa_r, n3aaa_t, n3aab_r, n3aab_t
+                  ! Input R and T arrays
+                  integer, intent(in) :: r3a_excits(6,n3aaa_r), r3b_excits(6,n3aab_r)
+                  integer, intent(in) :: t3a_excits(6,n3aaa_t), t3b_excits(6,n3aab_t) 
+                  real(kind=8), intent(in) :: r3a_amps(n3aaa_r), r3b_amps(n3aab_r)
+                  real(kind=8), intent(in) :: t3a_amps(n3aaa_t), t3b_amps(n3aab_t)
+                  ! Input H and X arrays
+                  real(kind=8), intent(in) :: h1a_ov(noa,nua), h1b_ov(nob,nub)
+                  real(kind=8), intent(in) :: h2a_ooov(noa,noa,noa,nua)
+                  real(kind=8), intent(in) :: h2a_vovv(nua,noa,nua,nua)
+                  real(kind=8), intent(in) :: h2b_ooov(noa,nob,noa,nub)
+                  real(kind=8), intent(in) :: h2b_vovv(nua,nob,nua,nub)
+                  real(kind=8), intent(in) :: x1a_ov(noa,nua), x1b_ov(nob,nub)
+                  ! Output and Inout variables
+                  real(kind=8), intent(inout) :: sigma_2a(nua,nua,noa,noa)
+                  !f2py intent(in,out) :: sigma_2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+                  ! Local variables
+                  real(kind=8) :: t_amp, r_amp, val
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  ! compute < ijab | (H(2) * T3)_C | 0 >
+                  do idet = 1, n3aaa_r
+                      r_amp = r3a_amps(idet)
+
+                      ! A(ij)A(ab) [A(m/ij)A(e/ab) h1a(me) * t3a(abeijm)]
+                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); e = r3a_excits(3,idet);
+                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); m = r3a_excits(6,idet);
+                      sigma_2a(a,b,i,j) = sigma_2a(a,b,i,j) + h1a_ov(m,e) * r_amp ! (1)
+                      sigma_2a(a,b,m,j) = sigma_2a(a,b,m,j) - h1a_ov(i,e) * r_amp ! (im)
+                      sigma_2a(a,b,i,m) = sigma_2a(a,b,i,m) - h1a_ov(j,e) * r_amp ! (jm)
+                      sigma_2a(e,b,i,j) = sigma_2a(e,b,i,j) - h1a_ov(m,a) * r_amp ! (ae)
+                      sigma_2a(e,b,m,j) = sigma_2a(e,b,m,j) + h1a_ov(i,a) * r_amp ! (im)(ae)
+                      sigma_2a(e,b,i,m) = sigma_2a(e,b,i,m) + h1a_ov(j,a) * r_amp ! (jm)(ae)
+                      sigma_2a(a,e,i,j) = sigma_2a(a,e,i,j) - h1a_ov(m,b) * r_amp ! (be)
+                      sigma_2a(a,e,m,j) = sigma_2a(a,e,m,j) + h1a_ov(i,b) * r_amp ! (im)(be)
+                      sigma_2a(a,e,i,m) = sigma_2a(a,e,i,m) + h1a_ov(j,b) * r_amp ! (jm)(be)
+
+                      ! A(ij)A(ab) [A(j/mn)A(f/ab) -h2a(mnif) * t3a(abfmjn)]
+                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); f = r3a_excits(3,idet);
+                      m = r3a_excits(4,idet); j = r3a_excits(5,idet); n = r3a_excits(6,idet);
+                      sigma_2a(a,b,:,j) = sigma_2a(a,b,:,j) - h2a_ooov(m,n,:,f) * r_amp ! (1)
+                      sigma_2a(a,b,:,m) = sigma_2a(a,b,:,m) + h2a_ooov(j,n,:,f) * r_amp ! (jm)
+                      sigma_2a(a,b,:,n) = sigma_2a(a,b,:,n) + h2a_ooov(m,j,:,f) * r_amp ! (jn)
+                      sigma_2a(f,b,:,j) = sigma_2a(f,b,:,j) + h2a_ooov(m,n,:,a) * r_amp ! (af)
+                      sigma_2a(f,b,:,m) = sigma_2a(f,b,:,m) - h2a_ooov(j,n,:,a) * r_amp ! (jm)(af)
+                      sigma_2a(f,b,:,n) = sigma_2a(f,b,:,n) - h2a_ooov(m,j,:,a) * r_amp ! (jn)(af)
+                      sigma_2a(a,f,:,j) = sigma_2a(a,f,:,j) + h2a_ooov(m,n,:,b) * r_amp ! (bf)
+                      sigma_2a(a,f,:,m) = sigma_2a(a,f,:,m) - h2a_ooov(j,n,:,b) * r_amp ! (jm)(bf)
+                      sigma_2a(a,f,:,n) = sigma_2a(a,f,:,n) - h2a_ooov(m,j,:,b) * r_amp ! (jn)(bf)
+
+                      ! A(ij)A(ab) [A(n/ij)A(b/ef) h2a(anef) * t3a(ebfijn)]
+                      e = r3a_excits(1,idet); b = r3a_excits(2,idet); f = r3a_excits(3,idet);
+                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); n = r3a_excits(6,idet);
+                      sigma_2a(:,b,i,j) = sigma_2a(:,b,i,j) + h2a_vovv(:,n,e,f) * r_amp ! (1)
+                      sigma_2a(:,b,n,j) = sigma_2a(:,b,n,j) - h2a_vovv(:,i,e,f) * r_amp ! (in)
+                      sigma_2a(:,b,i,n) = sigma_2a(:,b,i,n) - h2a_vovv(:,j,e,f) * r_amp ! (jn)
+                      sigma_2a(:,e,i,j) = sigma_2a(:,e,i,j) - h2a_vovv(:,n,b,f) * r_amp ! (be)
+                      sigma_2a(:,e,n,j) = sigma_2a(:,e,n,j) + h2a_vovv(:,i,b,f) * r_amp ! (in)(be)
+                      sigma_2a(:,e,i,n) = sigma_2a(:,e,i,n) + h2a_vovv(:,j,b,f) * r_amp ! (jn)(be)
+                      sigma_2a(:,f,i,j) = sigma_2a(:,f,i,j) - h2a_vovv(:,n,e,b) * r_amp ! (bf)
+                      sigma_2a(:,f,n,j) = sigma_2a(:,f,n,j) + h2a_vovv(:,i,e,b) * r_amp ! (in)(bf)
+                      sigma_2a(:,f,i,n) = sigma_2a(:,f,i,n) + H2A_vovv(:,j,e,b) * r_amp ! (jn)(bf)
+                  end do
+                  do idet = 1, n3aab_r
+                      r_amp = r3b_amps(idet)
+
+                      ! A(ij)A(ab) [h1b(me) * t3b(abeijm)]
+                      a = r3b_excits(1,idet); b = r3b_excits(2,idet); e = r3b_excits(3,idet);
+                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); m = r3b_excits(6,idet);
+                      sigma_2a(a,b,i,j) = sigma_2a(a,b,i,j) + h1b_ov(m,e) * r_amp ! (1)
+
+                      ! A(ij)A(ab) [A(jm) -h2b(mnif) * t3b(abfmjn)]
+                      a = r3b_excits(1,idet); b = r3b_excits(2,idet); f = r3b_excits(3,idet);
+                      m = r3b_excits(4,idet); j = r3b_excits(5,idet); n = r3b_excits(6,idet);
+                      sigma_2a(a,b,:,j) = sigma_2a(a,b,:,j) - h2b_ooov(m,n,:,f) * r_amp ! (1)
+                      sigma_2a(a,b,:,m) = sigma_2a(a,b,:,m) + h2b_ooov(j,n,:,f) * r_amp ! (jm)
+
+                      ! A(ij)A(ab) [A(be) h2b(anef) * t3b(ebfijn)]
+                      e = r3b_excits(1,idet); b = r3b_excits(2,idet); f = r3b_excits(3,idet);
+                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); n = r3b_excits(6,idet);
+                      sigma_2a(:,b,i,j) = sigma_2a(:,b,i,j) + h2b_vovv(:,n,e,f) * r_amp ! (1)
+                      sigma_2a(:,e,i,j) = sigma_2a(:,e,i,j) - h2b_vovv(:,n,b,f) * r_amp ! (be)
+                  end do
+                  do idet = 1, n3aaa_t
+                      t_amp = t3a_amps(idet)
+
+                      ! A(ij)A(ab) [A(m/ij)A(e/ab) x1a(me) * t3a(abeijm)]
+                      a = t3a_excits(1,idet); b = t3a_excits(2,idet); e = t3a_excits(3,idet);
+                      i = t3a_excits(4,idet); j = t3a_excits(5,idet); m = t3a_excits(6,idet);
+                      sigma_2a(a,b,i,j) = sigma_2a(a,b,i,j) + x1a_ov(m,e) * t_amp ! (1)
+                      sigma_2a(a,b,m,j) = sigma_2a(a,b,m,j) - x1a_ov(i,e) * t_amp ! (im)
+                      sigma_2a(a,b,i,m) = sigma_2a(a,b,i,m) - x1a_ov(j,e) * t_amp ! (jm)
+                      sigma_2a(e,b,i,j) = sigma_2a(e,b,i,j) - x1a_ov(m,a) * t_amp ! (ae)
+                      sigma_2a(e,b,m,j) = sigma_2a(e,b,m,j) + x1a_ov(i,a) * t_amp ! (im)(ae)
+                      sigma_2a(e,b,i,m) = sigma_2a(e,b,i,m) + x1a_ov(j,a) * t_amp ! (jm)(ae)
+                      sigma_2a(a,e,i,j) = sigma_2a(a,e,i,j) - x1a_ov(m,b) * t_amp ! (be)
+                      sigma_2a(a,e,m,j) = sigma_2a(a,e,m,j) + x1a_ov(i,b) * t_amp ! (im)(be)
+                      sigma_2a(a,e,i,m) = sigma_2a(a,e,i,m) + x1a_ov(j,b) * t_amp ! (jm)(be)
+                  end do
+                  do idet = 1, n3aab_t
+                      t_amp = t3b_amps(idet)
+                      ! A(ij)A(ab) [x1b(me) * t3b(abeijm)]
+                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); e = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); m = t3b_excits(6,idet);
+                      sigma_2a(a,b,i,j) = sigma_2a(a,b,i,j) + x1b_ov(m,e) * t_amp ! (1)
+                  end do
+                  ! antisymmetrize (this replaces the x2a -= np.transpose(x2a, (...)) stuff in vector update
+                  do i = 1, noa
+                      do j = i+1, noa
+                          do a = 1, nua
+                              do b = a+1, nua
+                                  val = sigma_2a(b,a,j,i) - sigma_2a(a,b,j,i) - sigma_2a(b,a,i,j) + sigma_2a(a,b,i,j)
+                                  sigma_2a(b,a,j,i) =  val
+                                  sigma_2a(a,b,j,i) = -val
+                                  sigma_2a(b,a,i,j) = -val
+                                  sigma_2a(a,b,i,j) =  val
+                              end do
+                          end do
+                      end do
+                  end do
+                  ! (H(2) * T3)_C terms are vectorized and generally broadcast to diagonal elements, which should
+                  ! be 0. Set them to 0 manually (you need to do this).
+                  do a = 1, nua
+                     sigma_2a(a,a,:,:) = 0.0d0
+                  end do
+                  do i = 1, noa
+                     sigma_2a(:,:,i,i) = 0.0d0
+                  end do
  
+              end subroutine build_hr_2a
+         
+              subroutine build_hr_2b(sigma_2b,&
+                                     r3b_amps, r3b_excits,&
+                                     r3c_amps, r3c_excits,&
+                                     t3b_amps, t3b_excits,&
+                                     t3c_amps, t3c_excits,&
+                                     h1a_ov, h1b_ov,&
+                                     h2a_ooov, h2a_vovv,&
+                                     h2b_ooov, h2b_vovv, h2b_oovo, h2b_ovvv,&
+                                     h2c_ooov, h2c_vovv,&
+                                     x1a_ov, x1b_ov,&
+                                     n3aab_r, n3abb_r,&
+                                     n3aab_t, n3abb_t,&
+                                     noa, nua, nob, nub)
+                  ! Input dimension variables
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aab_r, n3aab_t, n3abb_r, n3abb_t
+                  ! Input R and T arrays
+                  integer, intent(in) :: r3b_excits(6,n3aab_r), r3c_excits(6,n3abb_r)
+                  integer, intent(in) :: t3b_excits(6,n3aab_t), t3c_excits(6,n3abb_t)
+                  real(kind=8), intent(in) :: r3b_amps(n3aab_r), r3c_amps(n3abb_r)
+                  real(kind=8), intent(in) :: t3b_amps(n3aab_t), t3c_amps(n3abb_t)
+                  ! Input H and X arrays
+                  real(kind=8), intent(in) :: h1a_ov(noa,nua), h1b_ov(nob,nub)
+                  real(kind=8), intent(in) :: h2a_ooov(noa,noa,noa,nua)
+                  real(kind=8), intent(in) :: h2a_vovv(nua,noa,nua,nua)
+                  real(kind=8), intent(in) :: h2b_ooov(noa,nob,noa,nub)
+                  real(kind=8), intent(in) :: h2b_vovv(nua,nob,nua,nub)
+                  real(kind=8), intent(in) :: h2b_oovo(noa,nob,nua,nob)
+                  real(kind=8), intent(in) :: h2b_ovvv(noa,nub,nua,nub)
+                  real(kind=8), intent(in) :: h2c_ooov(nob,nob,nob,nub)
+                  real(kind=8), intent(in) :: h2c_vovv(nub,nob,nub,nub)
+                  real(kind=8), intent(in) :: x1a_ov(noa,nua), x1b_ov(nob,nub)
+                  ! Output and Inout variables
+                  real(kind=8), intent(inout) :: sigma_2b(nua,nub,noa,nob)
+                  !f2py intent(in,out) :: sigma_2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+                  ! Local variables
+                  real(kind=8) :: t_amp, r_amp, val
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+                  
+                  do idet = 1, n3aab_r
+                      r_amp = r3b_amps(idet)
+                      
+                      ! A(af) -h2a(mnif) * r3b(afbmnj)
+                      a = r3b_excits(1,idet); f = r3b_excits(2,idet); b = r3b_excits(3,idet);
+                      m = r3b_excits(4,idet); n = r3b_excits(5,idet); j = r3b_excits(6,idet);
+                      sigma_2b(a,b,:,j) = sigma_2b(a,b,:,j) - h2a_ooov(m,n,:,f) * r_amp ! (1)
+                      sigma_2b(f,b,:,j) = sigma_2b(f,b,:,j) + h2a_ooov(m,n,:,a) * r_amp ! (af)
+
+                      ! A(af)A(in) -h2b(nmfj) * r3b(afbinm)
+                      a = r3b_excits(1,idet); f = r3b_excits(2,idet); b = r3b_excits(3,idet);
+                      i = r3b_excits(4,idet); n = r3b_excits(5,idet); m = r3b_excits(6,idet);
+                      sigma_2b(a,b,i,:) = sigma_2b(a,b,i,:) - h2b_oovo(n,m,f,:) * r_amp ! (1)
+                      sigma_2b(f,b,i,:) = sigma_2b(f,b,i,:) + h2b_oovo(n,m,a,:) * r_amp ! (af)
+                      sigma_2b(a,b,n,:) = sigma_2b(a,b,n,:) + h2b_oovo(i,m,f,:) * r_amp ! (in)
+                      sigma_2b(f,b,n,:) = sigma_2b(f,b,n,:) - h2b_oovo(i,m,a,:) * r_amp ! (af)(in)
+
+                      ! A(in) h2a(anef) * r3b(efbinj)
+                      e = r3b_excits(1,idet); f = r3b_excits(2,idet); b = r3b_excits(3,idet);
+                      i = r3b_excits(4,idet); n = r3b_excits(5,idet); j = r3b_excits(6,idet);
+                      sigma_2b(:,b,i,j) = sigma_2b(:,b,i,j) + h2a_vovv(:,n,e,f) * r_amp ! (1)
+                      sigma_2b(:,b,n,j) = sigma_2b(:,b,n,j) - h2a_vovv(:,i,e,f) * r_amp ! (in)
+
+                      ! A(af)A(in) h2b(nbfe) * r3b(afeinj)
+                      a = r3b_excits(1,idet); f = r3b_excits(2,idet); e = r3b_excits(3,idet);
+                      i = r3b_excits(4,idet); n = r3b_excits(5,idet); j = r3b_excits(6,idet);
+                      sigma_2b(a,:,i,j) = sigma_2b(a,:,i,j) + h2b_ovvv(n,:,f,e) * r_amp ! (1)
+                      sigma_2b(f,:,i,j) = sigma_2b(f,:,i,j) - h2b_ovvv(n,:,a,e) * r_amp ! (af)
+                      sigma_2b(a,:,n,j) = sigma_2b(a,:,n,j) - h2b_ovvv(i,:,f,e) * r_amp ! (in)
+                      sigma_2b(f,:,n,j) = sigma_2b(f,:,n,j) + h2b_ovvv(i,:,a,e) * r_amp ! (af)(in)
+
+                      ! A(ae)A(im) h1a(me) * r3b(aebimj)
+                      a = r3b_excits(1,idet); e = r3b_excits(2,idet); b = r3b_excits(3,idet);
+                      i = r3b_excits(4,idet); m = r3b_excits(5,idet); j = r3b_excits(6,idet);
+                      sigma_2b(a,b,i,j) = sigma_2b(a,b,i,j) + h1a_ov(m,e) * r_amp ! (1)
+                      sigma_2b(a,b,m,j) = sigma_2b(a,b,m,j) - h1a_ov(i,e) * r_amp ! (im)
+                      sigma_2b(e,b,i,j) = sigma_2b(e,b,i,j) - h1a_ov(m,a) * r_amp ! (ae)
+                      sigma_2b(e,b,m,j) = sigma_2b(e,b,m,j) + h1a_ov(i,a) * r_amp ! (im)(ae)
+                  end do
+                  do idet = 1, n3aab_t
+                      t_amp = t3b_amps(idet)
+                      ! A(ae)A(im) x1(me) * t3b(aebimj)
+                      a = t3b_excits(1,idet); e = t3b_excits(2,idet); b = t3b_excits(3,idet);
+                      i = t3b_excits(4,idet); m = t3b_excits(5,idet); j = t3b_excits(6,idet);
+                      sigma_2b(a,b,i,j) = sigma_2b(a,b,i,j) + x1a_ov(m,e) * t_amp ! (1)
+                      sigma_2b(a,b,m,j) = sigma_2b(a,b,m,j) - x1a_ov(i,e) * t_amp ! (im)
+                      sigma_2b(e,b,i,j) = sigma_2b(e,b,i,j) - x1a_ov(m,a) * t_amp ! (ae)
+                      sigma_2b(e,b,m,j) = sigma_2b(e,b,m,j) + x1a_ov(i,a) * t_amp ! (im)(ae)
+                  end do
+                  do idet = 1, n3abb_r
+                      r_amp = r3c_amps(idet)
+
+                      ! A(bf) -h2c(mnjf) * r3c(afbinm)
+                      a = r3c_excits(1,idet); f = r3c_excits(2,idet); b = r3c_excits(3,idet);
+                      i = r3c_excits(4,idet); n = r3c_excits(5,idet); m = r3c_excits(6,idet);
+                      sigma_2b(a,b,i,:) = sigma_2b(a,b,i,:) - h2c_ooov(m,n,:,f) * r_amp ! (1)
+                      sigma_2b(a,f,i,:) = sigma_2b(a,f,i,:) + h2c_ooov(m,n,:,b) * r_amp ! (bf)
+
+                      ! A(bf)A(jn) -h2b(mnif) * r3c(afbmnj)
+                      a = r3c_excits(1,idet); f = r3c_excits(2,idet); b = r3c_excits(3,idet);
+                      m = r3c_excits(4,idet); n = r3c_excits(5,idet); j = r3c_excits(6,idet);
+                      sigma_2b(a,b,:,j) = sigma_2b(a,b,:,j) - h2b_ooov(m,n,:,f) * r_amp ! (1)
+                      sigma_2b(a,f,:,j) = sigma_2b(a,f,:,j) + h2b_ooov(m,n,:,b) * r_amp ! (bf)
+                      sigma_2b(a,b,:,n) = sigma_2b(a,b,:,n) + h2b_ooov(m,j,:,f) * r_amp ! (jn)
+                      sigma_2b(a,f,:,n) = sigma_2b(a,f,:,n) - h2b_ooov(m,j,:,b) * r_amp ! (bf)(jn)
+
+                      ! A(jn) h2c(bnef) * r3c(afeinj)
+                      a = r3c_excits(1,idet); f = r3c_excits(2,idet); e = r3c_excits(3,idet);
+                      i = r3c_excits(4,idet); n = r3c_excits(5,idet); j = r3c_excits(6,idet);
+                      sigma_2b(a,:,i,j) = sigma_2b(a,:,i,j) + h2c_vovv(:,n,e,f) * r_amp ! (1)
+                      sigma_2b(a,:,i,n) = sigma_2b(a,:,i,n) - h2c_vovv(:,j,e,f) * r_amp ! (jn)
+
+                      ! A(bf)A(jn) h2b(anef) * r3c(efbinj)
+                      e = r3c_excits(1,idet); f = r3c_excits(2,idet); b = r3c_excits(3,idet);
+                      i = r3c_excits(4,idet); n = r3c_excits(5,idet); j = r3c_excits(6,idet);
+                      sigma_2b(:,b,i,j) = sigma_2b(:,b,i,j) + h2b_vovv(:,n,e,f) * r_amp ! (1)
+                      sigma_2b(:,f,i,j) = sigma_2b(:,f,i,j) - h2b_vovv(:,n,e,b) * r_amp ! (bf)
+                      sigma_2b(:,b,i,n) = sigma_2b(:,b,i,n) - h2b_vovv(:,j,e,f) * r_amp ! (jn)
+                      sigma_2b(:,f,i,n) = sigma_2b(:,f,i,n) + h2b_vovv(:,j,e,b) * r_amp ! (bf)(jn)
+
+                      ! [A(be)A(mj) h1b(me) * r3c(aebimj)]
+                      a = r3c_excits(1,idet); e = r3c_excits(2,idet); b = r3c_excits(3,idet);
+                      i = r3c_excits(4,idet); m = r3c_excits(5,idet); j = r3c_excits(6,idet);
+                      sigma_2b(a,b,i,j) = sigma_2b(a,b,i,j) + h1b_ov(m,e) * r_amp ! (1)
+                      sigma_2b(a,b,i,m) = sigma_2b(a,b,i,m) - h1b_ov(j,e) * r_amp ! (jm)
+                      sigma_2b(a,e,i,j) = sigma_2b(a,e,i,j) - h1b_ov(m,b) * r_amp ! (be)
+                      sigma_2b(a,e,i,m) = sigma_2b(a,e,i,m) + h1b_ov(j,b) * r_amp ! (jm)(be)
+                  end do
+                  do idet = 1, n3abb_t
+                      t_amp = t3c_amps(idet)
+                      ! [A(be)A(mj) h1b(me) * t3c(aebimj)]
+                      a = t3c_excits(1,idet); e = t3c_excits(2,idet); b = t3c_excits(3,idet);
+                      i = t3c_excits(4,idet); m = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      sigma_2b(a,b,i,j) = sigma_2b(a,b,i,j) + x1b_ov(m,e) * t_amp ! (1)
+                      sigma_2b(a,b,i,m) = sigma_2b(a,b,i,m) - x1b_ov(j,e) * t_amp ! (jm)
+                      sigma_2b(a,e,i,j) = sigma_2b(a,e,i,j) - x1b_ov(m,b) * t_amp ! (be)
+                      sigma_2b(a,e,i,m) = sigma_2b(a,e,i,m) + x1b_ov(j,b) * t_amp ! (jm)(be)
+                  end do
+                 
+              end subroutine build_hr_2b
+
+              subroutine build_hr_2c(sigma_2c,&
+                                     r3c_amps, r3c_excits,&
+                                     r3d_amps, r3d_excits,&
+                                     t3c_amps, t3c_excits,&
+                                     t3d_amps, t3d_excits,&
+                                     h1a_ov, h1b_ov,&
+                                     h2b_oovo, h2b_ovvv,&
+                                     h2c_ooov, h2c_vovv,&
+                                     x1a_ov, x1b_ov,&
+                                     n3abb_r, n3bbb_r,&
+                                     n3abb_t, n3bbb_t,&
+                                     noa, nua, nob, nub)
+                  ! Input dimension variables
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3abb_r, n3abb_t, n3bbb_r, n3bbb_t
+                  ! Input R and T arrays
+                  integer, intent(in) :: r3c_excits(6,n3abb_r), r3d_excits(6,n3bbb_r)
+                  integer, intent(in) :: t3c_excits(6,n3abb_t), t3d_excits(6,n3bbb_t) 
+                  real(kind=8), intent(in) :: r3c_amps(n3abb_r), r3d_amps(n3bbb_r)
+                  real(kind=8), intent(in) :: t3c_amps(n3abb_t), t3d_amps(n3bbb_t)
+                  ! Input H and X arrays
+                  real(kind=8), intent(in) :: h1a_ov(noa,nua), h1b_ov(nob,nub)
+                  real(kind=8), intent(in) :: h2b_oovo(noa,nob,nua,nob)
+                  real(kind=8), intent(in) :: h2b_ovvv(noa,nub,nua,nub)
+                  real(kind=8), intent(in) :: h2c_ooov(nob,nob,nob,nub)
+                  real(kind=8), intent(in) :: h2c_vovv(nub,nob,nub,nub)
+                  real(kind=8), intent(in) :: x1a_ov(noa,nua), x1b_ov(nob,nub)
+                  ! Output and Inout variables
+                  real(kind=8), intent(inout) :: sigma_2c(nub,nub,nob,nob)
+                  !f2py intent(in,out) :: sigma_2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+                  ! Local variables
+                  real(kind=8) :: t_amp, r_amp, val
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  ! compute < ijab | (H(2) * T3)_C | 0 >
+                  do idet = 1, n3abb_r
+                      r_amp = r3c_amps(idet)
+
+                      ! A(ij)A(ab) [h1a(me) * r3c(eabmij)]
+                      e = r3c_excits(1,idet); a = r3c_excits(2,idet); b = r3c_excits(3,idet);
+                      m = r3c_excits(4,idet); i = r3c_excits(5,idet); j = r3c_excits(6,idet);
+                      sigma_2c(a,b,i,j) = sigma_2c(a,b,i,j) + h1a_ov(m,e) * r_amp ! (1)
+            
+                      ! A(ij)A(ab) [A(be) h2b(nafe) * r3c(febnij)]
+                      f = r3c_excits(1,idet); e = r3c_excits(2,idet); b = r3c_excits(3,idet);
+                      n = r3c_excits(4,idet); i = r3c_excits(5,idet); j = r3c_excits(6,idet);
+                      sigma_2c(:,b,i,j) = sigma_2c(:,b,i,j) + h2b_ovvv(n,:,f,e) * r_amp ! (1)
+                      sigma_2c(:,e,i,j) = sigma_2c(:,e,i,j) - h2b_ovvv(n,:,f,b) * r_amp ! (be)
+
+                      ! A(ij)A(ab) [A(jm) -h2b(nmfi) * r3c(fabnmj)]
+                      f = r3c_excits(1,idet); a = r3c_excits(2,idet); b = r3c_excits(3,idet);
+                      n = r3c_excits(4,idet); m = r3c_excits(5,idet); j = r3c_excits(6,idet);
+                      sigma_2c(a,b,:,j) = sigma_2c(a,b,:,j) - h2b_oovo(n,m,f,:) * r_amp ! (1)
+                      sigma_2c(a,b,:,m) = sigma_2c(a,b,:,m) + h2b_oovo(n,j,f,:) * r_amp ! (jm)
+                  end do
+                  do idet = 1, n3bbb_r
+                      r_amp = r3d_amps(idet)
+
+                      ! A(ij)A(ab) [A(m/ij)A(e/ab) h1b(me) * r3d(abeijm)]
+                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); e = r3d_excits(3,idet);
+                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); m = r3d_excits(6,idet);
+                      sigma_2c(a,b,i,j) = sigma_2c(a,b,i,j) + h1b_ov(m,e) * r_amp ! (1)
+                      sigma_2c(a,b,m,j) = sigma_2c(a,b,m,j) - h1b_ov(i,e) * r_amp ! (im)
+                      sigma_2c(a,b,i,m) = sigma_2c(a,b,i,m) - h1b_ov(j,e) * r_amp ! (jm)
+                      sigma_2c(e,b,i,j) = sigma_2c(e,b,i,j) - h1b_ov(m,a) * r_amp ! (ae)
+                      sigma_2c(e,b,m,j) = sigma_2c(e,b,m,j) + h1b_ov(i,a) * r_amp ! (im)(ae)
+                      sigma_2c(e,b,i,m) = sigma_2c(e,b,i,m) + h1b_ov(j,a) * r_amp ! (jm)(ae)
+                      sigma_2c(a,e,i,j) = sigma_2c(a,e,i,j) - h1b_ov(m,b) * r_amp ! (be)
+                      sigma_2c(a,e,m,j) = sigma_2c(a,e,m,j) + h1b_ov(i,b) * r_amp ! (im)(be)
+                      sigma_2c(a,e,i,m) = sigma_2c(a,e,i,m) + h1b_ov(j,b) * r_amp ! (jm)(be)
+
+                      ! A(ij)A(ab) [A(j/mn)A(f/ab) -h2c(mnif) * r3d(abfmjn)]
+                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); f = r3d_excits(3,idet);
+                      m = r3d_excits(4,idet); j = r3d_excits(5,idet); n = r3d_excits(6,idet);
+                      sigma_2c(a,b,:,j) = sigma_2c(a,b,:,j) - h2c_ooov(m,n,:,f) * r_amp ! (1)
+                      sigma_2c(a,b,:,m) = sigma_2c(a,b,:,m) + h2c_ooov(j,n,:,f) * r_amp ! (jm)
+                      sigma_2c(a,b,:,n) = sigma_2c(a,b,:,n) + h2c_ooov(m,j,:,f) * r_amp ! (jn)
+                      sigma_2c(f,b,:,j) = sigma_2c(f,b,:,j) + h2c_ooov(m,n,:,a) * r_amp ! (af)
+                      sigma_2c(f,b,:,m) = sigma_2c(f,b,:,m) - h2c_ooov(j,n,:,a) * r_amp ! (jm)(af)
+                      sigma_2c(f,b,:,n) = sigma_2c(f,b,:,n) - h2c_ooov(m,j,:,a) * r_amp ! (jn)(af)
+                      sigma_2c(a,f,:,j) = sigma_2c(a,f,:,j) + h2c_ooov(m,n,:,b) * r_amp ! (bf)
+                      sigma_2c(a,f,:,m) = sigma_2c(a,f,:,m) - h2c_ooov(j,n,:,b) * r_amp ! (jm)(bf)
+                      sigma_2c(a,f,:,n) = sigma_2c(a,f,:,n) - h2c_ooov(m,j,:,b) * r_amp ! (jn)(bf)
+
+                      ! A(ij)A(ab) [A(n/ij)A(b/ef) h2c(anef) * r3d(ebfijn)]
+                      e = r3d_excits(1,idet); b = r3d_excits(2,idet); f = r3d_excits(3,idet);
+                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); n = r3d_excits(6,idet);
+                      sigma_2c(:,b,i,j) = sigma_2c(:,b,i,j) + h2c_vovv(:,n,e,f) * r_amp ! (1)
+                      sigma_2c(:,b,n,j) = sigma_2c(:,b,n,j) - h2c_vovv(:,i,e,f) * r_amp ! (in)
+                      sigma_2c(:,b,i,n) = sigma_2c(:,b,i,n) - h2c_vovv(:,j,e,f) * r_amp ! (jn)
+                      sigma_2c(:,e,i,j) = sigma_2c(:,e,i,j) - h2c_vovv(:,n,b,f) * r_amp ! (be)
+                      sigma_2c(:,e,n,j) = sigma_2c(:,e,n,j) + h2c_vovv(:,i,b,f) * r_amp ! (in)(be)
+                      sigma_2c(:,e,i,n) = sigma_2c(:,e,i,n) + h2c_vovv(:,j,b,f) * r_amp ! (jn)(be)
+                      sigma_2c(:,f,i,j) = sigma_2c(:,f,i,j) - h2c_vovv(:,n,e,b) * r_amp ! (bf)
+                      sigma_2c(:,f,n,j) = sigma_2c(:,f,n,j) + h2c_vovv(:,i,e,b) * r_amp ! (in)(bf)
+                      sigma_2c(:,f,i,n) = sigma_2c(:,f,i,n) + h2c_vovv(:,j,e,b) * r_amp ! (jn)(bf)
+                  end do
+                  do idet = 1, n3abb_t
+                      t_amp = t3c_amps(idet)
+
+                      ! A(ij)A(ab) [h1a(me) * t3c(eabmij)]
+                      e = t3c_excits(1,idet); a = t3c_excits(2,idet); b = t3c_excits(3,idet);
+                      m = t3c_excits(4,idet); i = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      sigma_2c(a,b,i,j) = sigma_2c(a,b,i,j) + x1a_ov(m,e) * t_amp ! (1)
+                  end do
+                  do idet = 1, n3bbb_t
+                      t_amp = t3d_amps(idet)
+
+                      ! A(ij)A(ab) [A(m/ij)A(e/ab) x1b(me) * t3d(abeijm)]
+                      a = t3d_excits(1,idet); b = t3d_excits(2,idet); e = t3d_excits(3,idet);
+                      i = t3d_excits(4,idet); j = t3d_excits(5,idet); m = t3d_excits(6,idet);
+                      sigma_2c(a,b,i,j) = sigma_2c(a,b,i,j) + x1b_ov(m,e) * t_amp ! (1)
+                      sigma_2c(a,b,m,j) = sigma_2c(a,b,m,j) - x1b_ov(i,e) * t_amp ! (im)
+                      sigma_2c(a,b,i,m) = sigma_2c(a,b,i,m) - x1b_ov(j,e) * t_amp ! (jm)
+                      sigma_2c(e,b,i,j) = sigma_2c(e,b,i,j) - x1b_ov(m,a) * t_amp ! (ae)
+                      sigma_2c(e,b,m,j) = sigma_2c(e,b,m,j) + x1b_ov(i,a) * t_amp ! (im)(ae)
+                      sigma_2c(e,b,i,m) = sigma_2c(e,b,i,m) + x1b_ov(j,a) * t_amp ! (jm)(ae)
+                      sigma_2c(a,e,i,j) = sigma_2c(a,e,i,j) - x1b_ov(m,b) * t_amp ! (be)
+                      sigma_2c(a,e,m,j) = sigma_2c(a,e,m,j) + x1b_ov(i,b) * t_amp ! (im)(be)
+                      sigma_2c(a,e,i,m) = sigma_2c(a,e,i,m) + x1b_ov(j,b) * t_amp ! (jm)(be)
+                  end do
+                  ! antisymmetrize (this replaces the x2c -= np.transpose(x2c, (...)) stuff in vector update
+                  do i = 1, nob
+                      do j = i+1, nob
+                          do a = 1, nub
+                              do b = a+1, nub
+                                  val = sigma_2c(b,a,j,i) - sigma_2c(a,b,j,i) - sigma_2c(b,a,i,j) + sigma_2c(a,b,i,j)
+                                  sigma_2c(b,a,j,i) =  val
+                                  sigma_2c(a,b,j,i) = -val
+                                  sigma_2c(b,a,i,j) = -val
+                                  sigma_2c(a,b,i,j) =  val
+                              end do
+                          end do
+                      end do
+                  end do
+                  ! (H(2) * T3)_C terms are vectorized and generally broadcast to diagonal elements, which should
+                  ! be 0. Set them to 0 manually (you need to do this).
+                  do a = 1, nub
+                     sigma_2c(a,a,:,:) = 0.0d0
+                  end do
+                  do i = 1, nob
+                     sigma_2c(:,:,i,i) = 0.0d0
+                  end do
+ 
+              end subroutine build_hr_2c
+         
               subroutine build_hr_3a(resid,&
                                      r2a,&
                                      r3a_amps, r3a_excits,&
@@ -179,10 +612,11 @@ module eomccsdt_p_loops
                   real(kind=8), allocatable :: amps_buff(:)
                   integer, allocatable :: idx_table(:,:,:,:)
                   integer, allocatable :: loc_arr(:,:)
-                  real(kind=8) :: l_amp, hmatel, hmatel1, res
+                  real(kind=8) :: l_amp, hmatel, hmatel1, res_mm23
                   integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet, jdet
                   integer :: idx, nloc
-
+                  
+                  ! Zero the container that holds H*R
                   resid = 0.0d0
                   !!!! diagram 1a: -A(i/jk) h1a(mi) * r3a(abcmjk)
                   !!!! diagram 3a: 1/2 A(i/jk) h2a(mnij) * r3a(abcmnk)
@@ -618,6 +1052,1011 @@ module eomccsdt_p_loops
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   
+                  !!!! diagram 5a: A(i/jk)A(a/bc) h2a(amie) * r3a(ebcmjk)
+                  ! allocate sorting arrays (can be reused for each permutation)
+                  nloc = (nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(nua,nua,noa,noa))
+                  !!! ABIJ LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnabf >
+                        hmatel = h2a_voov(c,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnbcf >
+                        hmatel = h2a_voov(a,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnacf >
+                        hmatel = -h2a_voov(b,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknabf >
+                        hmatel = h2a_voov(c,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(ik)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknbcf >
+                        hmatel = h2a_voov(a,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(ik)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknacf >
+                        hmatel = -h2a_voov(b,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknabf >
+                        hmatel = -h2a_voov(c,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(jk)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknbcf >
+                        hmatel = -h2a_voov(a,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(jk)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknacf >
+                        hmatel = h2a_voov(b,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! ACIJ LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnaec >
+                        hmatel = h2a_voov(b,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnbec >
+                        hmatel = -h2a_voov(a,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnaeb >
+                        hmatel = -h2a_voov(c,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknaec >
+                        hmatel = h2a_voov(b,n,i,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(ik)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknbec >
+                        hmatel = -h2a_voov(a,n,i,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(ik)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknaeb >
+                        hmatel = -h2a_voov(c,n,i,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknaec >
+                        hmatel = -h2a_voov(b,n,j,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(jk)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknbec >
+                        hmatel = h2a_voov(a,n,j,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(jk)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknaeb >
+                        hmatel = h2a_voov(c,n,j,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! BCIJ LOOP !!!
+                  call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijndbc >
+                        hmatel = h2a_voov(a,n,k,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijndac >
+                        hmatel = -h2a_voov(b,n,k,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijndab >
+                        hmatel = h2a_voov(c,n,k,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jkndbc >
+                        hmatel = h2a_voov(a,n,i,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(ik)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jkndac >
+                        hmatel = -h2a_voov(b,n,i,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(ik)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jkndab >
+                        hmatel = h2a_voov(c,n,i,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ikndbc >
+                        hmatel = -h2a_voov(a,n,j,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(jk)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ikndac >
+                        hmatel = h2a_voov(b,n,j,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(jk)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ikndab >
+                        hmatel = -h2a_voov(c,n,j,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! ABIK LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkabf >
+                        hmatel = h2a_voov(c,m,j,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkbcf >
+                        hmatel = h2a_voov(a,m,j,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkacf >
+                        hmatel = -h2a_voov(b,m,j,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkabf >
+                        hmatel = -h2a_voov(c,m,i,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(ij)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkbcf >
+                        hmatel = -h2a_voov(a,m,i,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(ij)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkacf >
+                        hmatel = h2a_voov(b,m,i,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjabf >
+                        hmatel = -h2a_voov(c,m,k,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(jk)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjbcf >
+                        hmatel = -h2a_voov(a,m,k,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(jk)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjacf >
+                        hmatel = h2a_voov(b,m,k,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! ACIK LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkaec >
+                        hmatel = h2a_voov(b,m,j,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkbec >
+                        hmatel = -h2a_voov(a,m,j,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkaeb >
+                        hmatel = -h2a_voov(c,m,j,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkaec >
+                        hmatel = -h2a_voov(b,m,i,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(ij)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkbec >
+                        hmatel = h2a_voov(a,m,i,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(ij)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkaeb >
+                        hmatel = h2a_voov(c,m,i,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjaec >
+                        hmatel = -h2a_voov(b,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(jk)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjbec >
+                        hmatel = h2a_voov(a,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(jk)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjaeb >
+                        hmatel = h2a_voov(c,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! BCIK LOOP !!!
+                  call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkdbc >
+                        hmatel = h2a_voov(a,m,j,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkdac >
+                        hmatel = -h2a_voov(b,m,j,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkdab >
+                        hmatel = h2a_voov(c,m,j,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkdbc >
+                        hmatel = -h2a_voov(a,m,i,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(ij)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkdac >
+                        hmatel = h2a_voov(b,m,i,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(ij)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkdab >
+                        hmatel = -h2a_voov(c,m,i,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjdbc >
+                        hmatel = -h2a_voov(a,m,k,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(jk)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjdac >
+                        hmatel = h2a_voov(b,m,k,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(jk)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjdab >
+                        hmatel = -h2a_voov(c,m,k,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! ABJK LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkabf >
+                        hmatel = h2a_voov(c,l,i,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkbcf >
+                        hmatel = h2a_voov(a,l,i,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkacf >
+                        hmatel = -h2a_voov(b,l,i,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likabf >
+                        hmatel = -h2a_voov(c,l,j,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(ij)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likbcf >
+                        hmatel = -h2a_voov(a,l,j,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(ij)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likacf >
+                        hmatel = h2a_voov(b,l,j,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijabf >
+                        hmatel = h2a_voov(c,l,k,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(ik)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijbcf >
+                        hmatel = h2a_voov(a,l,k,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(ik)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijacf >
+                        hmatel = -h2a_voov(b,l,k,f)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! ACJK LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkaec >
+                        hmatel = h2a_voov(b,l,i,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkbec >
+                        hmatel = -h2a_voov(a,l,i,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkaeb >
+                        hmatel = -h2a_voov(c,l,i,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likaec >
+                        hmatel = -h2a_voov(b,l,j,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(ij)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likbec >
+                        hmatel = h2a_voov(a,l,j,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(ij)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likaeb >
+                        hmatel = h2a_voov(c,l,j,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijaec >
+                        hmatel = h2a_voov(b,l,k,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(ik)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijbec >
+                        hmatel = -h2a_voov(a,l,k,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (bc)(ik)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijaeb >
+                        hmatel = -h2a_voov(c,l,k,e)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! BCJK LOOP !!!
+                  call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
+                  call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkdbc >
+                        hmatel = h2a_voov(a,l,i,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkdac >
+                        hmatel = -h2a_voov(b,l,i,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkdab >
+                        hmatel = h2a_voov(c,l,i,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likdbc >
+                        hmatel = -h2a_voov(a,l,j,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(ij)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likdac >
+                        hmatel = h2a_voov(b,l,j,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(ij)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likdab >
+                        hmatel = -h2a_voov(c,l,j,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijdbc >
+                        hmatel = h2a_voov(a,l,k,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ab)(ik)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijdac >
+                        hmatel = -h2a_voov(b,l,k,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(ik)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijdab >
+                        hmatel = h2a_voov(c,l,k,d)
+                        resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+
+                  !!!! diagram 6a: A(i/jk)A(a/bc) h2b(amie) * r3b(abeijm)
+                  ! allocate and copy over t3b arrays
+                  allocate(amps_buff(n3aab_r),excits_buff(6,n3aab_r))
+                  amps_buff(:) = r3b_amps(:)
+                  excits_buff(:,:) = r3b_excits(:,:)
+                  ! allocate sorting arrays (can be reused for each permutation)
+                  nloc = nua*(nua-1)/2*noa*(noa-1)/2
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(nua,nua,noa,noa))
+                  !!! ABIJ LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab_r)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2B_voov,&
+                  !$omp noa,nua,nob,nub,n3aaa),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ijn~abf~ >
+                        hmatel = h2b_voov(c,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | jkn~abf~ >
+                        hmatel = h2b_voov(c,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ikn~abf~ >
+                        hmatel = -h2b_voov(c,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ijn~bcf~ >
+                        hmatel = h2b_voov(a,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)(ac)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | jkn~bcf~ >
+                        hmatel = h2b_voov(a,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)(ac)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ikn~bcf~ >
+                        hmatel = -h2b_voov(a,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ijn~acf~ >
+                        hmatel = -h2b_voov(b,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)(bc)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | jkn~acf~ >
+                        hmatel = -h2b_voov(b,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)(bc)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ikn~acf~ >
+                        hmatel = h2b_voov(b,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do   
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+                  ! deallocate buffer arrays
+                  deallocate(amps_buff,excits_buff) 
+                  
                   !!!! diagram 1b: -A(i/jk) x1a(mi) * t3a(abcmjk)
                   !!!! diagram 3b: 1/2 A(i/jk) x2a(mnij) * t3a(abcmnk)
                   ! NOTE: WITHIN THESE LOOPS, X1A(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
@@ -639,7 +2078,7 @@ module eomccsdt_p_loops
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp X1A_oo,X2A_oooo,&
-                  !$omp noa,nua,n3aaa_t),&
+                  !$omp noa,nua,n3aaa_r),&
                   !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
@@ -708,7 +2147,7 @@ module eomccsdt_p_loops
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp X1A_oo,X2A_oooo,&
-                  !$omp noa,nua,n3aaa_t),&
+                  !$omp noa,nua,n3aaa_r),&
                   !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
@@ -777,7 +2216,7 @@ module eomccsdt_p_loops
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp X1A_oo,X2A_oooo,&
-                  !$omp noa,nua,n3aaa_t),&
+                  !$omp noa,nua,n3aaa_r),&
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
@@ -838,7 +2277,7 @@ module eomccsdt_p_loops
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate temporary amplitude arrays
-                  deallocate(excits_buff,amps_buff)
+                  !deallocate(excits_buff,amps_buff)
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -846,10 +2285,10 @@ module eomccsdt_p_loops
                   !!!! diagram 4b: 1/2 A(c/ab) x2a(abef) * t3a(ebcijk)
                   ! NOTE: WITHIN THESE LOOPS, X1A(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
                   ! allocate and initialize the copy of t3a
-                  allocate(amps_buff(n3aaa_t))
-                  allocate(excits_buff(6,n3aaa_t))
-                  amps_buff(:) = t3a_amps(:)
-                  excits_buff(:,:) = t3a_excits(:,:)
+                  !allocate(amps_buff(n3aaa_t))
+                  !allocate(excits_buff(6,n3aaa_t))
+                  !amps_buff(:) = t3a_amps(:)
+                  !excits_buff(:,:) = t3a_excits(:,:)
                   ! allocate new sorting arrays
                   nloc = noa*(noa-1)*(noa-2)/6*nua
                   allocate(loc_arr(nloc,2))
@@ -859,7 +2298,7 @@ module eomccsdt_p_loops
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa_t)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
-                  !$omp excits_buff,&
+                  !$omp excits_buff,r3a_excits,&
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp X1A_vv,X2A_vvvv,&
@@ -928,7 +2367,7 @@ module eomccsdt_p_loops
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa_t)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
-                  !$omp excits_buff,&
+                  !$omp excits_buff,r3a_excits,&
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp X1A_vv,X2A_vvvv,&
@@ -997,7 +2436,7 @@ module eomccsdt_p_loops
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa_t)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
-                  !$omp excits_buff,&
+                  !$omp excits_buff,r3a_excits,&
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp X1A_vv,X2A_vvvv,&
@@ -1062,11 +2501,1081 @@ module eomccsdt_p_loops
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate temporary amplitude arrays
+                  !deallocate(excits_buff,amps_buff)
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+
+                  !!!! diagram 5b: A(i/jk)A(a/bc) x2a(amie) * t3a(ebcmjk)
+                  ! allocate sorting arrays (can be reused for each permutation)
+                  nloc = (nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(nua,nua,noa,noa))
+                  !!! ABIJ LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnabf >
+                        hmatel = x2a_voov(c,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnbcf >
+                        hmatel = x2a_voov(a,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnacf >
+                        hmatel = -x2a_voov(b,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknabf >
+                        hmatel = x2a_voov(c,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(ik)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknbcf >
+                        hmatel = x2a_voov(a,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(ik)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknacf >
+                        hmatel = -x2a_voov(b,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknabf >
+                        hmatel = -x2a_voov(c,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(jk)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknbcf >
+                        hmatel = -x2a_voov(a,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(jk)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknacf >
+                        hmatel = x2a_voov(b,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! ACIJ LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnaec >
+                        hmatel = x2a_voov(b,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnbec >
+                        hmatel = -x2a_voov(a,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijnaeb >
+                        hmatel = -x2a_voov(c,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknaec >
+                        hmatel = x2a_voov(b,n,i,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(ik)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknbec >
+                        hmatel = -x2a_voov(a,n,i,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(ik)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jknaeb >
+                        hmatel = -x2a_voov(c,n,i,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknaec >
+                        hmatel = -x2a_voov(b,n,j,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(jk)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknbec >
+                        hmatel = x2a_voov(a,n,j,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(jk)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | iknaeb >
+                        hmatel = x2a_voov(c,n,j,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! BCIJ LOOP !!!
+                  call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijndbc >
+                        hmatel = x2a_voov(a,n,k,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijndac >
+                        hmatel = -x2a_voov(b,n,k,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ijndab >
+                        hmatel = x2a_voov(c,n,k,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jkndbc >
+                        hmatel = x2a_voov(a,n,i,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(ik)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jkndac >
+                        hmatel = -x2a_voov(b,n,i,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(ik)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | jkndab >
+                        hmatel = x2a_voov(c,n,i,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ikndbc >
+                        hmatel = -x2a_voov(a,n,j,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(jk)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ikndac >
+                        hmatel = x2a_voov(b,n,j,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(jk)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2a(voov) | ikndab >
+                        hmatel = -x2a_voov(c,n,j,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! ABIK LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkabf >
+                        hmatel = x2a_voov(c,m,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkbcf >
+                        hmatel = x2a_voov(a,m,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkacf >
+                        hmatel = -x2a_voov(b,m,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkabf >
+                        hmatel = -x2a_voov(c,m,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(ij)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkbcf >
+                        hmatel = -x2a_voov(a,m,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(ij)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkacf >
+                        hmatel = x2a_voov(b,m,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjabf >
+                        hmatel = -x2a_voov(c,m,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(jk)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjbcf >
+                        hmatel = -x2a_voov(a,m,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(jk)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjacf >
+                        hmatel = x2a_voov(b,m,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! ACIK LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkaec >
+                        hmatel = x2a_voov(b,m,j,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkbec >
+                        hmatel = -x2a_voov(a,m,j,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkaeb >
+                        hmatel = -x2a_voov(c,m,j,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkaec >
+                        hmatel = -x2a_voov(b,m,i,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(ij)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkbec >
+                        hmatel = x2a_voov(a,m,i,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(ij)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkaeb >
+                        hmatel = x2a_voov(c,m,i,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjaec >
+                        hmatel = -x2a_voov(b,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(jk)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjbec >
+                        hmatel = x2a_voov(a,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(jk)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjaeb >
+                        hmatel = x2a_voov(c,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! BCIK LOOP !!!
+                  call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkdbc >
+                        hmatel = x2a_voov(a,m,j,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkdac >
+                        hmatel = -x2a_voov(b,m,j,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imkdab >
+                        hmatel = x2a_voov(c,m,j,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkdbc >
+                        hmatel = -x2a_voov(a,m,i,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(ij)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkdac >
+                        hmatel = x2a_voov(b,m,i,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(ij)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | jmkdab >
+                        hmatel = -x2a_voov(c,m,i,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjdbc >
+                        hmatel = -x2a_voov(a,m,k,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(jk)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjdac >
+                        hmatel = x2a_voov(b,m,k,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(jk)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        ! compute < ijkabc | h2a(voov) | imjdab >
+                        hmatel = -x2a_voov(c,m,k,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! ABJK LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkabf >
+                        hmatel = x2a_voov(c,l,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkbcf >
+                        hmatel = x2a_voov(a,l,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkacf >
+                        hmatel = -x2a_voov(b,l,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likabf >
+                        hmatel = -x2a_voov(c,l,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(ij)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likbcf >
+                        hmatel = -x2a_voov(a,l,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(ij)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likacf >
+                        hmatel = x2a_voov(b,l,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijabf >
+                        hmatel = x2a_voov(c,l,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(ik)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijbcf >
+                        hmatel = x2a_voov(a,l,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(ik)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijacf >
+                        hmatel = -x2a_voov(b,l,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! ACJK LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkaec >
+                        hmatel = x2a_voov(b,l,i,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkbec >
+                        hmatel = -x2a_voov(a,l,i,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkaeb >
+                        hmatel = -x2a_voov(c,l,i,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likaec >
+                        hmatel = -x2a_voov(b,l,j,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(ij)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likbec >
+                        hmatel = x2a_voov(a,l,j,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(ij)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likaeb >
+                        hmatel = x2a_voov(c,l,j,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijaec >
+                        hmatel = x2a_voov(b,l,k,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(ik)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijbec >
+                        hmatel = -x2a_voov(a,l,k,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)(ik)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijaeb >
+                        hmatel = -x2a_voov(c,l,k,e)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! BCJK LOOP !!!
+                  call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkdbc >
+                        hmatel = x2a_voov(a,l,i,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkdac >
+                        hmatel = -x2a_voov(b,l,i,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | ljkdab >
+                        hmatel = x2a_voov(c,l,i,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ij)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likdbc >
+                        hmatel = -x2a_voov(a,l,j,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(ij)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likdac >
+                        hmatel = x2a_voov(b,l,j,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(ij)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | likdab >
+                        hmatel = -x2a_voov(c,l,j,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijdbc >
+                        hmatel = x2a_voov(a,l,k,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ab)(ik)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijdac >
+                        hmatel = -x2a_voov(b,l,k,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)(ik)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        ! compute < ijkabc | h2a(voov) | lijdab >
+                        hmatel = x2a_voov(c,l,k,d)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  ! deallocate temporary amplitude arrays
                   deallocate(excits_buff,amps_buff)
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                 
-                 
+
+                  !!!! diagram 6b: A(i/jk)A(a/bc) x2b(amie) * t3b(abeijm)
+                  ! allocate and copy over t3b arrays
+                  allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
+                  amps_buff(:) = t3b_amps(:)
+                  excits_buff(:,:) = t3b_excits(:,:)
+                  ! allocate sorting arrays (can be reused for each permutation)
+                  nloc = nua*(nua-1)/2*noa*(noa-1)/2
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(nua,nua,noa,noa))
+                  !!! ABIJ LOOP !!!
+                  call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2B_voov,&
+                  !$omp noa,nua,nob,nub,n3aaa_r),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa_r
+                     a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                     i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+                     ! (1)
+                     idx = idx_table(a,b,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ijn~abf~ >
+                        hmatel = x2b_voov(c,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)
+                     idx = idx_table(a,b,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | jkn~abf~ >
+                        hmatel = x2b_voov(c,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)
+                     idx = idx_table(a,b,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ikn~abf~ >
+                        hmatel = -x2b_voov(c,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ac)
+                     idx = idx_table(b,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ijn~bcf~ >
+                        hmatel = x2b_voov(a,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)(ac)
+                     idx = idx_table(b,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | jkn~bcf~ >
+                        hmatel = x2b_voov(a,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)(ac)
+                     idx = idx_table(b,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ikn~bcf~ >
+                        hmatel = -x2b_voov(a,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bc)
+                     idx = idx_table(a,c,i,j)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ijn~acf~ >
+                        hmatel = -x2b_voov(b,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (ik)(bc)
+                     idx = idx_table(a,c,j,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | jkn~acf~ >
+                        hmatel = -x2b_voov(b,n,i,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (jk)(bc)
+                     idx = idx_table(a,c,i,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        ! compute < ijkabc | h2b(voov) | ikn~acf~ >
+                        hmatel = x2b_voov(b,n,j,f)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do   
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+                  ! deallocate buffer arrays
+                  deallocate(amps_buff,excits_buff) 
+
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r2a,t2a,&
+                  !$omp H2A_vvov,H2A_vooo,&
+                  !$omp X2A_vvov,X2A_vooo,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(idet,a,b,c,d,i,j,k,l,m,n,e,f,&
+                  !$omp res_mm23)
+                  !$omp do schedule(static)
+                  do idet = 1, n3aaa_r
+                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+
+                      res_mm23 = 0.0d0
+                      do e = 1, nua
+                           ! A(i/jk)(c/ab) h2a(abie) * r2a(ecjk)
+                          res_mm23 = res_mm23 + h2a_vvov(a,b,i,e) * r2a(e,c,j,k)
+                          res_mm23 = res_mm23 - h2a_vvov(c,b,i,e) * r2a(e,a,j,k)
+                          res_mm23 = res_mm23 - h2a_vvov(a,c,i,e) * r2a(e,b,j,k)
+                          res_mm23 = res_mm23 - h2a_vvov(a,b,j,e) * r2a(e,c,i,k)
+                          res_mm23 = res_mm23 + h2a_vvov(c,b,j,e) * r2a(e,a,i,k)
+                          res_mm23 = res_mm23 + h2a_vvov(a,c,j,e) * r2a(e,b,i,k)
+                          res_mm23 = res_mm23 - h2a_vvov(a,b,k,e) * r2a(e,c,j,i)
+                          res_mm23 = res_mm23 + h2a_vvov(c,b,k,e) * r2a(e,a,j,i)
+                          res_mm23 = res_mm23 + h2a_vvov(a,c,k,e) * r2a(e,b,j,i)
+                           ! A(i/jk)(c/ab) x2a(abie) * t2a(ecjk)
+                          res_mm23 = res_mm23 + x2a_vvov(a,b,i,e) * t2a(e,c,j,k)
+                          res_mm23 = res_mm23 - x2a_vvov(c,b,i,e) * t2a(e,a,j,k)
+                          res_mm23 = res_mm23 - x2a_vvov(a,c,i,e) * t2a(e,b,j,k)
+                          res_mm23 = res_mm23 - x2a_vvov(a,b,j,e) * t2a(e,c,i,k)
+                          res_mm23 = res_mm23 + x2a_vvov(c,b,j,e) * t2a(e,a,i,k)
+                          res_mm23 = res_mm23 + x2a_vvov(a,c,j,e) * t2a(e,b,i,k)
+                          res_mm23 = res_mm23 - x2a_vvov(a,b,k,e) * t2a(e,c,j,i)
+                          res_mm23 = res_mm23 + x2a_vvov(c,b,k,e) * t2a(e,a,j,i)
+                          res_mm23 = res_mm23 + x2a_vvov(a,c,k,e) * t2a(e,b,j,i)
+                      end do
+                      do m = 1, noa
+                          ! -A(k/ij)A(a/bc) h2a(amij) * r2a(bcmk)
+                          res_mm23 = res_mm23 - h2a_vooo(a,m,i,j) * r2a(b,c,m,k)
+                          res_mm23 = res_mm23 + h2a_vooo(b,m,i,j) * r2a(a,c,m,k)
+                          res_mm23 = res_mm23 + h2a_vooo(c,m,i,j) * r2a(b,a,m,k)
+                          res_mm23 = res_mm23 + h2a_vooo(a,m,k,j) * r2a(b,c,m,i)
+                          res_mm23 = res_mm23 - h2a_vooo(b,m,k,j) * r2a(a,c,m,i)
+                          res_mm23 = res_mm23 - h2a_vooo(c,m,k,j) * r2a(b,a,m,i)
+                          res_mm23 = res_mm23 + h2a_vooo(a,m,i,k) * r2a(b,c,m,j)
+                          res_mm23 = res_mm23 - h2a_vooo(b,m,i,k) * r2a(a,c,m,j)
+                          res_mm23 = res_mm23 - h2a_vooo(c,m,i,k) * r2a(b,a,m,j)
+                          ! -A(k/ij)A(a/bc) x2a(amij) * t2a(bcmk)
+                          res_mm23 = res_mm23 - x2a_vooo(a,m,i,j) * t2a(b,c,m,k)
+                          res_mm23 = res_mm23 + x2a_vooo(b,m,i,j) * t2a(a,c,m,k)
+                          res_mm23 = res_mm23 + x2a_vooo(c,m,i,j) * t2a(b,a,m,k)
+                          res_mm23 = res_mm23 + x2a_vooo(a,m,k,j) * t2a(b,c,m,i)
+                          res_mm23 = res_mm23 - x2a_vooo(b,m,k,j) * t2a(a,c,m,i)
+                          res_mm23 = res_mm23 - x2a_vooo(c,m,k,j) * t2a(b,a,m,i)
+                          res_mm23 = res_mm23 + x2a_vooo(a,m,i,k) * t2a(b,c,m,j)
+                          res_mm23 = res_mm23 - x2a_vooo(b,m,i,k) * t2a(a,c,m,j)
+                          res_mm23 = res_mm23 - x2a_vooo(c,m,i,k) * t2a(b,a,m,j)
+                      end do
+                      resid(idet) = resid(idet) + res_mm23
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                  
               end subroutine build_hr_3a
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
