@@ -6237,6 +6237,272 @@ module eomccsdt_p_loops
                   !!!! END OMP PARALLEL SECTION !!!!
 
               end subroutine build_hr_3b
+
+              subroutine build_hr_3c(resid,&
+                                     r2b,r2c,&
+                                     r3b_amps, r3b_excits,&
+                                     r3c_amps, r3c_excits,&
+                                     r3d_amps, r3d_excits,&
+                                     t2b,t2c,&
+                                     t3b_amps, t3b_excits,&
+                                     t3c_amps, t3c_excits,&
+                                     t3d_amps, t3d_excits,&
+                                     h1a_oo, h1a_vv, h1b_oo, h1b_vv,&
+                                     h2a_oovv, h2a_voov,&
+                                     h2b_oooo, h2b_vooo, h2b_ovoo,&
+                                     h2b_oovv, h2b_voov, h2b_vovo,&
+                                     h2b_ovov, h2b_ovvo, h2b_vvov,&
+                                     h2b_vvvo, h2b_vvvv,&
+                                     h2c_oooo, h2c_vooo, h2c_oovv,&
+                                     h2c_voov, h2c_vvov, h2c_vvvv,&
+                                     x1a_oo, x1a_vv, x1b_oo, x1b_vv,&
+                                     x2a_oovv, x2a_voov,&
+                                     x2b_oooo, x2b_vooo, x2b_ovoo,&
+                                     x2b_oovv, x2b_voov, x2b_vovo,&
+                                     x2b_ovov, x2b_ovvo, x2b_vvov,&
+                                     x2b_vvvo, x2b_vvvv,&
+                                     x2c_oooo, x2c_vooo, x2c_oovv,&
+                                     x2c_voov, x2c_vvov, x2c_vvvv,&
+                                     n3aab_r, n3abb_r, n3bbb_r,&
+                                     n3aab_t, n3abb_t, n3bbb_t,&
+                                     noa, nua, nob, nub)
+                  ! Input dimension variables
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aab_r, n3aab_t 
+                  integer, intent(in) :: n3abb_r, n3abb_t
+                  integer, intent(in) :: n3bbb_r, n3bbb_t
+                  ! Input R and T arrays
+                  real(kind=8), intent(in) :: r2b(nua,nub,noa,nob), t2b(nua,nub,noa,nob)
+                  real(kind=8), intent(in) :: r2c(nub,nub,nob,nob), t2c(nub,nub,nob,nob)
+                  integer, intent(in) :: r3b_excits(6,n3aab_r), t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: r3d_excits(6,n3bbb_r), t3d_excits(6,n3bbb_t)
+                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  real(kind=8), intent(in) :: r3b_amps(n3aab_r), t3b_amps(n3aab_t)
+                  real(kind=8), intent(in) :: r3d_amps(n3bbb_r), t3d_amps(n3bbb_t)
+                  real(kind=8), intent(in) :: t3c_amps(n3abb_t)
+                  ! Input H arrays
+                  real(kind=8), intent(in) :: h1a_oo(noa,noa), h1b_oo(nob,nob)
+                  real(kind=8), intent(in) :: h1a_vv(nua,nua), h1b_vv(nub,nub)
+                  real(kind=8), intent(in) :: h2a_oovv(noa,noa,nua,nua)
+                  real(kind=8), intent(in) :: h2a_voov(nua,noa,noa,nua)
+                  real(kind=8), intent(in) :: h2b_oooo(noa,nob,noa,nob)
+                  real(kind=8), intent(in) :: h2b_vooo(nua,nob,noa,nob)
+                  real(kind=8), intent(in) :: h2b_ovoo(noa,nub,noa,nob)
+                  real(kind=8), intent(in) :: h2b_oovv(noa,nob,nua,nub)
+                  real(kind=8), intent(in) :: h2b_voov(nua,nob,noa,nub)
+                  real(kind=8), intent(in) :: h2b_vovo(nua,nob,nua,nob)
+                  real(kind=8), intent(in) :: h2b_ovov(noa,nub,noa,nub)
+                  real(kind=8), intent(in) :: h2b_ovvo(noa,nub,nua,nob)
+                  real(kind=8), intent(in) :: h2b_vvov(nua,nub,noa,nub)
+                  real(kind=8), intent(in) :: h2b_vvvo(nua,nub,nua,nob)
+                  real(kind=8), intent(in) :: h2b_vvvv(nua,nub,nua,nub)
+                  real(kind=8), intent(in) :: h2c_oooo(nob,nob,nob,nob)
+                  real(kind=8), intent(in) :: h2c_vooo(nub,nob,nob,nob)
+                  real(kind=8), intent(in) :: h2c_oovv(nob,nob,nub,nub)
+                  real(kind=8), intent(in) :: h2c_voov(nub,nob,nob,nub)
+                  real(kind=8), intent(in) :: h2c_vvov(nub,nub,nob,nub)
+                  real(kind=8), intent(in) :: h2c_vvvv(nub,nub,nub,nub)
+                  ! Input X arrays
+                  real(kind=8), intent(in) :: x1a_oo(noa,noa), x1b_oo(nob,nob)
+                  real(kind=8), intent(in) :: x1a_vv(nua,nua), x1b_vv(nub,nub)
+                  real(kind=8), intent(in) :: x2a_oovv(noa,noa,nua,nua)
+                  real(kind=8), intent(in) :: x2a_voov(nua,noa,noa,nua)
+                  real(kind=8), intent(in) :: x2b_oooo(noa,nob,noa,nob)
+                  real(kind=8), intent(in) :: x2b_vooo(nua,nob,noa,nob)
+                  real(kind=8), intent(in) :: x2b_ovoo(noa,nub,noa,nob)
+                  real(kind=8), intent(in) :: x2b_oovv(noa,nob,nua,nub)
+                  real(kind=8), intent(in) :: x2b_voov(nua,nob,noa,nub)
+                  real(kind=8), intent(in) :: x2b_vovo(nua,nob,nua,nob)
+                  real(kind=8), intent(in) :: x2b_ovov(noa,nub,noa,nub)
+                  real(kind=8), intent(in) :: x2b_ovvo(noa,nub,nua,nob)
+                  real(kind=8), intent(in) :: x2b_vvov(nua,nub,noa,nub)
+                  real(kind=8), intent(in) :: x2b_vvvo(nua,nub,nua,nob)
+                  real(kind=8), intent(in) :: x2b_vvvv(nua,nub,nua,nub)
+                  real(kind=8), intent(in) :: x2c_oooo(nob,nob,nob,nob)
+                  real(kind=8), intent(in) :: x2c_vooo(nub,nob,nob,nob)
+                  real(kind=8), intent(in) :: x2c_oovv(nob,nob,nub,nub)
+                  real(kind=8), intent(in) :: x2c_voov(nub,nob,nob,nub)
+                  real(kind=8), intent(in) :: x2c_vvov(nub,nub,nob,nub)
+                  real(kind=8), intent(in) :: x2c_vvvv(nub,nub,nub,nub)
+                  ! Output and Inout variables
+                  real(kind=8), intent(out) :: resid(n3abb_r)
+                  integer, intent(inout) :: r3c_excits(6,n3abb_r)
+                  !f2py intent(in,out) :: r3c_excits(6,0:n3abb_r-1)
+                  real(kind=8), intent(inout) :: r3c_amps(n3abb_r)
+                  !f2py intent(in,out) :: r3c_amps(0:n3abb_r-1)
+                  ! Local variables
+                  integer, allocatable :: excits_buff(:,:)
+                  real(kind=8), allocatable :: amps_buff(:)
+                  integer, allocatable :: idx_table(:,:,:,:)
+                  integer, allocatable :: loc_arr(:,:)
+                  real(kind=8) :: t_amp, r_amp, hmatel, hmatel1, res_mm23
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet, jdet
+                  integer :: idx, nloc
+                  
+                  ! Zero the container that holds H*R
+                  resid = 0.0d0
+
+                  !!!! diagram 1a: -A(jk) h1b(mk)*r3c(abcijm)
+                  !!!! diagram 5a: A(jk) 1/2 h2c(mnjk)*r3c(abcimn)
+                  !!! BCAI LOOP !!!
+                  ! allocate new sorting arrays
+                  nloc = nub*(nub-1)/2*nua*noa
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(nub,nub,nua,noa))
+                  call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,noa/), nub, nub, nua, nob)
+                  call sort4(r3c_excits, r3c_amps, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, nob, nloc, n3abb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3c_excits,&
+                  !$omp r3c_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H1B_oo,H2C_oooo,&
+                  !$omp noa,nua,nob,nub,n3abb_r),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3abb_r
+                     a = r3c_excits(1,idet); b = r3c_excits(2,idet); c = r3c_excits(3,idet);
+                     i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
+                     idx = idx_table(b,c,a,i)
+                     ! (1)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        m = r3c_excits(5,jdet); n = r3c_excits(6,jdet);
+                        ! compute < ij~k~ab~c~ | h2c(oooo) | im~n~ab~c~ >
+                        hmatel = h2c_oooo(m,n,j,k)
+                        ! compute < ij~k~ab~c~ | h1b(oo) | im~n~ab~c~ > = -A(jk)A(mn) h1b_oo(m,j) * delta(n,k)
+                        if (n==k) hmatel = hmatel - h1b_oo(m,j) ! (1)
+                        if (n==j) hmatel = hmatel + h1b_oo(m,k) ! (jk)
+                        if (m==k) hmatel = hmatel + h1b_oo(n,j) ! (mn)
+                        if (m==j) hmatel = hmatel - h1b_oo(n,k) ! (jk)(mn)
+                        resid(idet) = resid(idet) + hmatel * r3c_amps(jdet)
+                     end do
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+                  !!!! diagram 1b: -A(jk) x1b(mk)*t3c(abcijm)
+                  !!!! diagram 5b: A(jk) 1/2 x2c(mnjk)*t3c(abcimn)
+                  !!! BCAI LOOP !!!
+                  ! allocate temporary arrays
+                  allocate(excits_buff(6,n3abb_t),amps_buff(n3abb_t))
+                  excits_buff(:,:) = t3c_excits(:,:)
+                  amps_buff(:) = t3c_amps(:)
+                  ! allocate new sorting arrays
+                  nloc = nub*(nub-1)/2*nua*noa
+                  allocate(loc_arr(nloc,2))
+                  allocate(idx_table(nub,nub,nua,noa))
+                  call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,noa/), nub, nub, nua, nob)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, nob, nloc, n3abb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3c_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp x1b_oo,x2c_oooo,&
+                  !$omp noa,nua,nob,nub,n3abb_r),&
+                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
+                  do idet = 1, n3abb_r
+                     a = r3c_excits(1,idet); b = r3c_excits(2,idet); c = r3c_excits(3,idet);
+                     i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
+                     idx = idx_table(b,c,a,i)
+                     ! (1)
+                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        m = excits_buff(5,jdet); n = excits_buff(6,jdet);
+                        ! compute < ij~k~ab~c~ | h2c(oooo) | im~n~ab~c~ >
+                        hmatel = x2c_oooo(m,n,j,k)
+                        ! compute < ij~k~ab~c~ | h1b(oo) | im~n~ab~c~ > = -A(jk)A(mn) h1b_oo(m,j) * delta(n,k)
+                        if (n==k) hmatel = hmatel - x1b_oo(m,j) ! (1)
+                        if (n==j) hmatel = hmatel + x1b_oo(m,k) ! (jk)
+                        if (m==k) hmatel = hmatel + x1b_oo(n,j) ! (mn)
+                        if (m==j) hmatel = hmatel - x1b_oo(n,k) ! (jk)(mn)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+                  ! deallocate temporary arrays
+                  deallocate(excits_buff,amps_buff)
+
+
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3c_excits,&
+                  !$omp t2b,t2c,r2b,r2c,&
+                  !$omp h2c_vvov,h2c_vooo,h2b_vvvo,h2b_vvov,h2b_vooo,h2b_ovoo,&
+                  !$omp x2c_vvov,x2c_vooo,x2b_vvvo,x2b_vvov,x2b_vooo,x2b_ovoo,&
+                  !$omp noa,nua,nob,nub,n3abb_r),&
+                  !$omp private(idet,a,b,c,d,i,j,k,l,m,n,e,f,res_mm23)
+                  !$omp do schedule(static)
+                  do idet = 1, n3abb_r
+                      a = r3c_excits(1,idet); b = r3c_excits(2,idet); c = r3c_excits(3,idet);
+                      i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
+                      res_mm23 = 0.0
+                      do e = 1, nua
+                          ! A(jk)A(bc) h2b(abej) * r2b(ecik)
+                          res_mm23 = res_mm23 + h2b_vvvo(a,b,e,j) * r2b(e,c,i,k)
+                          res_mm23 = res_mm23 - h2b_vvvo(a,b,e,k) * r2b(e,c,i,j)
+                          res_mm23 = res_mm23 - h2b_vvvo(a,c,e,j) * r2b(e,b,i,k)
+                          res_mm23 = res_mm23 + h2b_vvvo(a,c,e,k) * r2b(e,b,i,j)
+                          ! A(jk)A(bc) x2b(abej) * t2b(ecik)
+                          res_mm23 = res_mm23 + x2b_vvvo(a,b,e,j) * t2b(e,c,i,k)
+                          res_mm23 = res_mm23 - x2b_vvvo(a,b,e,k) * t2b(e,c,i,j)
+                          res_mm23 = res_mm23 - x2b_vvvo(a,c,e,j) * t2b(e,b,i,k)
+                          res_mm23 = res_mm23 + x2b_vvvo(a,c,e,k) * t2b(e,b,i,j)
+                      end do
+                      do e = 1, nub
+                          ! A(bc) h2B(abie) * r2c(ecjk)
+                          res_mm23 = res_mm23 + h2B_vvov(a,b,i,e) * r2c(e,c,j,k)
+                          res_mm23 = res_mm23 - h2B_vvov(a,c,i,e) * r2c(e,b,j,k)
+                          ! A(jk) h2C(cbke) * r2b(aeij)
+                          res_mm23 = res_mm23 + h2C_vvov(c,b,k,e) * r2b(a,e,i,j)
+                          res_mm23 = res_mm23 - h2C_vvov(c,b,j,e) * r2b(a,e,i,k)
+                          ! A(bc) x2B(abie) * t2c(ecjk)
+                          res_mm23 = res_mm23 + x2B_vvov(a,b,i,e) * t2c(e,c,j,k)
+                          res_mm23 = res_mm23 - x2B_vvov(a,c,i,e) * t2c(e,b,j,k)
+                          ! A(jk) x2C(cbke) * t2b(aeij)
+                          res_mm23 = res_mm23 + x2C_vvov(c,b,k,e) * t2b(a,e,i,j)
+                          res_mm23 = res_mm23 - x2C_vvov(c,b,j,e) * t2b(a,e,i,k)
+                      end do
+                      do m = 1, noa
+                          ! -A(kj)A(bc) h2b(mbij) * r2b(acmk)
+                          res_mm23 = res_mm23 - h2B_ovoo(m,b,i,j) * r2b(a,c,m,k)
+                          res_mm23 = res_mm23 + h2B_ovoo(m,c,i,j) * r2b(a,b,m,k)
+                          res_mm23 = res_mm23 + h2B_ovoo(m,b,i,k) * r2b(a,c,m,j)
+                          res_mm23 = res_mm23 - h2B_ovoo(m,c,i,k) * r2b(a,b,m,j)
+                          ! -A(kj)A(bc) x2b(mbij) * t2b(acmk)
+                          res_mm23 = res_mm23 - x2B_ovoo(m,b,i,j) * t2b(a,c,m,k)
+                          res_mm23 = res_mm23 + x2B_ovoo(m,c,i,j) * t2b(a,b,m,k)
+                          res_mm23 = res_mm23 + x2B_ovoo(m,b,i,k) * t2b(a,c,m,j)
+                          res_mm23 = res_mm23 - x2B_ovoo(m,c,i,k) * t2b(a,b,m,j)
+                      end do
+                      do m = 1, nob
+                          ! -A(jk) h2b(amij) * r2c(bcmk)
+                          res_mm23 = res_mm23 - h2B_vooo(a,m,i,j) * r2c(b,c,m,k)
+                          res_mm23 = res_mm23 + h2B_vooo(a,m,i,k) * r2c(b,c,m,j)
+                          ! -A(bc) h2c(cmkj) * r2b(abim)
+                          res_mm23 = res_mm23 - h2C_vooo(c,m,k,j) * r2b(a,b,i,m)
+                          res_mm23 = res_mm23 + h2C_vooo(b,m,k,j) * r2b(a,c,i,m)
+                          ! -A(jk) x2b(amij) * t2c(bcmk)
+                          res_mm23 = res_mm23 - x2B_vooo(a,m,i,j) * t2c(b,c,m,k)
+                          res_mm23 = res_mm23 + x2B_vooo(a,m,i,k) * t2c(b,c,m,j)
+                          ! -A(bc) x2c(cmkj) * t2b(abim)
+                          res_mm23 = res_mm23 - x2C_vooo(c,m,k,j) * t2b(a,b,i,m)
+                          res_mm23 = res_mm23 + x2C_vooo(b,m,k,j) * t2b(a,c,i,m)
+                      end do
+                      resid(idet) = resid(idet) + res_mm23
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
+              end subroutine build_hr_3c
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SORTING FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
