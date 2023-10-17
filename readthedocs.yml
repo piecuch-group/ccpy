@@ -10,7 +10,7 @@ build:
 
 # Set the Python version and other tools
 python:
-  version: 3.10
+  version: 3.8
   install:
     - method: pip
       path: .
