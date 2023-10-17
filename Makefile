@@ -12,7 +12,6 @@ AUTOFLAKE := autoflake -ir --remove-all-unused-imports --ignore-init-module-impo
 MYPY := mypy ccpy
 PYLINT := pylint ccpy
 
-
 ##@ Getting Started
 
 bootstrap: ## Bootstrap project development
@@ -64,11 +63,6 @@ check-dist: ## Check distribution
 	python setup.py sdist
 	twine check dist/*
 .PHONY: check-dist
-
-docs: ## Build documentation
-	$(BLACK) -l 80 docs/examples
-	mkdocs build
-.PHONY: docs
 
 ##@ Help
 
