@@ -21,8 +21,11 @@ containing subroutines that are callable from Python and interoperable with Nump
 
    installation
    getting_started
+   cc_calculations
+   ccpq_calculations
+   eccc_calculations
    contact_information
-
+   references
 
 
 Indices and tables
