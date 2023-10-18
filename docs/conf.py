@@ -50,6 +50,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
+    #'sphinxcontrib.bibtex'
 ]
 
 autosummary_generate = True
@@ -83,6 +84,9 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'default'
+
+# Bibtex bibliography
+#bibtex_bibfiles = ["refs.bib"]
 
 
 # -- Options for HTML output -------------------------------------------------

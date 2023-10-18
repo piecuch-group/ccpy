@@ -1,5 +1,5 @@
 Contact Information
-===================
+###################
 Karthik Gururangan - gururang@msu.edu
 
 (Doctoral student in the `Piecuch Group <https://www2.chemistry.msu.edu/faculty/piecuch/>`_ at Michigan State University)

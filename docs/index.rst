@@ -16,21 +16,19 @@ To this end, CCpy employs a hybrid Python-Fortran programming approach made poss
 containing subroutines that are callable from Python and interoperable with Numpy arrays. 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    installation
    getting_started
-   cc_calculations
-   ccpq_calculations
-   eccc_calculations
-   contact_information
+   computational_options
+   examples
    references
+   contact_information
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. Indices and tables
+   ==================
+   * :ref:`genindex`
+   * :ref:`modindex`
+   * :ref:`search`
+..

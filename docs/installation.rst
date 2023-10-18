@@ -1,5 +1,5 @@
 Installation
-===============
+############
 To install CCpy, you will need a Python environment with the following packages:
 
 * Python 3.8+

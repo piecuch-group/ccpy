@@ -1,12 +1,13 @@
 Getting Started
-===============
+###############
 
 Using the PySCF Interface
-----------------------------
+*************************
 Let's build a simple example showing how we can run a ground-state
 CCSD calculation for the water molecule described with the cc-pVDZ basis
 set using the interface to PySCF. For this example, we will use the
-symmetrically stretched geometry of Reference [1].
+symmetrically stretched geometry from
+J. Olsen, P. Jørgensen, H. Koch, A. Balkova, and R. J. Bartlett, *J. Chem. Phys.* **104**, 8007 (1996).
 
 First, we need to import the relevant modules from PySCF and prepare a RHF
 calculation in calculation. This is done by first specifying the nuclear
@@ -55,7 +56,7 @@ calculation, we can run ::
         driver.run_cc(method="ccsd")
 
 Using the GAMESS Interface
------------------------------
+**************************
 Let's now run the same example using the interface to GAMESS. This is
 slightly more complicated because we need to run GAMESS externally
 in order to obtain the output log file as well as an FCIDUMP file
