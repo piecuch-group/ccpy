@@ -29,22 +29,22 @@ def test_cct3_ch():
     )
     # Check CC(t;3)_A energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltapq[0]["A"], -0.1160181452
+        driver.correlation_energy + driver.deltap3[0]["A"], -0.1160181452
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
-        + driver.deltapq[0]["A"],
+        + driver.deltap3[0]["A"],
         -38.3873428940,
     )
     # Check CC(t;3)_D energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltapq[0]["D"], -0.1162820915
+        driver.correlation_energy + driver.deltap3[0]["D"], -0.1162820915
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
-        + driver.deltapq[0]["D"],
+        + driver.deltap3[0]["D"],
         -38.3876068402,
     )
 

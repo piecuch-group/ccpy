@@ -26,25 +26,25 @@ def test_creom23_chplus():
     # Sigma states (including ground state)
     sigma = [None for x in range(4)]
     sigma[0] = (driver.system.reference_energy + driver.correlation_energy,
-                driver.system.reference_energy + driver.correlation_energy + driver.deltapq[0]["D"])
+                driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"])
     sigma[1] = (driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2],
-                driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltapq[2]["D"])
+                driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"])
     sigma[2] = (driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3],
-                driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltapq[3]["D"])
+                driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"])
     sigma[3] = (driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[4],
-                driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[4] + driver.deltapq[4]["D"])
+                driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[4] + driver.deltap3[4]["D"])
     # Pi states
     pi = [None for x in range(2)]
     pi[0] = (driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[5],
-             driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[5] + driver.deltapq[5]["D"])
+             driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[5] + driver.deltap3[5]["D"])
     pi[1] = (driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[6],
-             driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[6] + driver.deltapq[6]["D"])
+             driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[6] + driver.deltap3[6]["D"])
     # Delta states
     delta = [None for x in range(2)]
     delta[0] = (driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[7],
-                driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[7] + driver.deltapq[7]["D"])
+                driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[7] + driver.deltap3[7]["D"])
     delta[1] = (driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[8],
-                driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[8] + driver.deltapq[8]["D"])
+                driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[8] + driver.deltap3[8]["D"])
 
     sigma_ccsdt = [-38.019516, -37.702621, -37.522457, -37.386872]
     for i in range(4):

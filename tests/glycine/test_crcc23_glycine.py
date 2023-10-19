@@ -49,22 +49,22 @@ def test_crcc23_glycine():
     )
     # Check CR-CC(2,3)_A energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltapq[0]["A"], -0.8546012006
+        driver.correlation_energy + driver.deltap3[0]["A"], -0.8546012006
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
-        + driver.deltapq[0]["A"],
+        + driver.deltap3[0]["A"],
         -283.6870085004,
     )
     # Check CR-CC(2,3)_D energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltapq[0]["D"], -0.8574520862
+        driver.correlation_energy + driver.deltap3[0]["D"], -0.8574520862
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
-        + driver.deltapq[0]["D"],
+        + driver.deltap3[0]["D"],
         -283.6898593860,
     )
 

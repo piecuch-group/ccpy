@@ -19,7 +19,7 @@ In order to use the interface to GAMESS, you must have:
 
 In order to use the interface to PySCF, you must have:
 
-* PySCF (:code:`pip install pyscf`)
+* PySCF (:code:`pip install pyscf` or :code:`conda install -c conda-forge pyscf`; the latter is more useful for MacOS)
 
 Once you have these packages installed, you can install CCpy in the same environment using::
 

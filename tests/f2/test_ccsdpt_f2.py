@@ -35,12 +35,12 @@ def test_ccsdpt_f2():
     )
     # Check CCSD(T) energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltapq[0]["A"], -0.7814280834
+        driver.correlation_energy + driver.deltap3[0]["A"], -0.7814280834
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
-        + driver.deltapq[0]["A"],
+        + driver.deltap3[0]["A"],
         -199.2646983796,
     )
 

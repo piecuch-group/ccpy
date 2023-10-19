@@ -33,22 +33,22 @@ def test_cct3_hfhminus():
     )
     # Check CC(t;3)_A energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltapq[0]["A"], -0.1936570574
+        driver.correlation_energy + driver.deltap3[0]["A"], -0.1936570574
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
-        + driver.deltapq[0]["A"],
+        + driver.deltap3[0]["A"],
         -100.5528144130,
     )
     # Check CC(t;3)_D energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltapq[0]["D"], -0.1938411916
+        driver.correlation_energy + driver.deltap3[0]["D"], -0.1938411916
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
-        + driver.deltapq[0]["D"],
+        + driver.deltap3[0]["D"],
         -100.5529985472,
     )
 

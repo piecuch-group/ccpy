@@ -31,6 +31,7 @@ from ccpy.utilities.printing import (
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
 
+
 class Driver:
 
     @classmethod
@@ -45,33 +46,33 @@ class Driver:
                     *load_gamess_integrals(logfile, fcidump, onebody, twobody, nfrozen, ndelete, normal_ordered=normal_ordered, sorted=sorted, data_type=data_type)
                    )
 
-    def __init__(self, system, hamiltonian, max_number_states=100):
+    def __init__(self, system, hamiltonian, max_number_states=50):
         self.system = system
         self.hamiltonian = hamiltonian
         self.flag_hbar = False
-        self.options = {"method" : None,
+        self.options = {"method": None,
                         "maximum_iterations": 80,
-                        "amp_convergence" : 1.0e-07,
-                        "energy_convergence" : 1.0e-07,
-                        "energy_shift" : 0.0,
-                        "diis_size" : 6,
-                        "RHF_symmetry" : (self.system.noccupied_alpha == self.system.noccupied_beta),
-                        "diis_out_of_core" : False,
-                        "amp_print_threshold" : 0.025,
-                        "davidson_max_subspace_size" : 30,
-                        "davidson_solver" : "standard",
-                        "davidson_selection_method" : "overlap"}
+                        "amp_convergence": 1.0e-07,
+                        "energy_convergence": 1.0e-07,
+                        "energy_shift": 0.0,
+                        "diis_size": 6,
+                        "RHF_symmetry": (self.system.noccupied_alpha == self.system.noccupied_beta),
+                        "diis_out_of_core": False,
+                        "amp_print_threshold": 0.025,
+                        "davidson_max_subspace_size": 30,
+                        "davidson_solver": "standard",
+                        "davidson_selection_method": "overlap"}
 
         # Disable DIIS for small problems to avoid inherent singularity
         if self.system.noccupied_alpha * self.system.nunoccupied_beta <= 4:
             self.options["diis_size"] = -1
 
-        self.operator_params = {"order" : 0,
-                                "number_particles" : 0,
-                                "number_holes" : 0,
-                                "active_orders" : [None],
-                                "number_active_indices" : [None],
-                                "pspace_orders" : [None]}
+        self.operator_params = {"order": 0,
+                                "number_particles": 0,
+                                "number_holes": 0,
+                                "active_orders": [None],
+                                "number_active_indices": [None],
+                                "pspace_orders": [None]}
         self.T = None
         self.L = [None] * max_number_states
         self.R = [None] * max_number_states
@@ -83,8 +84,10 @@ class Driver:
         self.guess_energy = None
         self.guess_vectors = None
         self.guess_order = 0
-        self.deltapq = [None] * max_number_states
-        self.ddeltapq = [None] * max_number_states
+        self.deltap3 = [None] * max_number_states
+        self.ddeltap3 = [None] * max_number_states
+        self.deltap4 = [None] * max_number_states
+        self.ddeltap4 = [None] * max_number_states
 
         # Store alpha and beta fock matrices for later usage before HBar overwrites bare Hamiltonian
         self.fock = Integral.from_empty(system, 1, data_type=self.hamiltonian.a.oo.dtype)
@@ -843,24 +846,24 @@ class Driver:
             for i in state_index:
                 # Perform ground-state correction
                 if i == 0:
-                    _, self.deltapq[i] = calc_crcc23(self.T, self.L[i], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+                    _, self.deltap3[i] = calc_crcc23(self.T, self.L[i], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
                 else:
                     # Perform excited-state corrections
-                    _, self.deltapq[i], self.ddeltapq[i] = calc_creomcc23(self.T, self.R[i], self.L[i], self.r0[i],
+                    _, self.deltap3[i], self.ddeltap3[i] = calc_creomcc23(self.T, self.R[i], self.L[i], self.r0[i],
                                                                           self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                           self.system, self.options["RHF_symmetry"])
         elif method.lower() == "ccsd(t)":
             from ccpy.moments.crcc23 import calc_ccsdpt
             # Ensure that only the bare Hamiltonian is used
             assert(not self.flag_hbar)
-            _, self.deltapq[0] = calc_ccsdpt(self.T, self.correlation_energy, self.hamiltonian, self.system, self.options["RHF_symmetry"])
+            _, self.deltap3[0] = calc_ccsdpt(self.T, self.correlation_energy, self.hamiltonian, self.system, self.options["RHF_symmetry"])
 
         elif method.lower() == "cct3":
             from ccpy.moments.cct3 import calc_cct3
             # Ensure that HBar is set
             assert self.flag_hbar
             # Perform ground-state correction
-            _, self.deltapq[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
+            _, self.deltap3[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
                                            self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
 
         elif method.lower() == "ccp3":
@@ -870,9 +873,9 @@ class Driver:
             assert pspace
             # Perform ground-state correction
             if two_body_approx: # Use the 2BA (requires only L1, L2 and HBar of CCSD)
-                _, self.deltapq[0] = calc_ccp3_2ba(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
+                _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
             else: # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
-                _, self.delta_pq[0] = calc_ccp3_full(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
+                _, self.deltap3[0] = calc_ccp3_full(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
 
         elif method.lower() == "ccp3(t)":
             from ccpy.moments.ccp3 import calc_ccpert3
@@ -882,7 +885,7 @@ class Driver:
             if self.flag_hbar:
                 print("WARNING: CC(P;3)_(T) is using similarity-transformed Hamiltonian! Results will not match conventional CCSD(T)!")
             # Perform ground-state correction
-            _, self.deltapq[0] = calc_ccpert3(self.T, self.correlation_energy, self.hamiltonian, self.system, pspace, self.options["RHF_symmetry"])
+            _, self.deltap3[0] = calc_ccpert3(self.T, self.correlation_energy, self.hamiltonian, self.system, pspace, self.options["RHF_symmetry"])
         else:
             raise NotImplementedError("Triples correction {} not implemented".format(method.lower()))
 
@@ -893,7 +896,7 @@ class Driver:
             # Ensure that HBar is set
             assert self.flag_hbar
             # Perform ground-state correction
-            _, self.deltapq[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+            _, self.deltap4[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
         else:
             raise NotImplementedError("Quadruples correction {} not implemented".format(method.lower()))
 
@@ -1024,7 +1027,7 @@ class AdaptDriver:
             else:
                 triples_list = []
                 self.driver.run_ccp3(method="ccp3", state_index=[0], two_body_approx=True, pspace=self.pspace)
-                self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltapq[0]["D"]
+                self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltap3[0]["D"]
         else: # CCSD(T) method
             if imacro < self.nmacro - 1:
                 self.ccpq_energy[imacro], triples_list = calc_ccpert3_with_selection(self.driver.T, 
@@ -1037,7 +1040,7 @@ class AdaptDriver:
             else:
                 triples_list = []
                 self.driver.run_ccp3(method="ccp3(t)", state_index=[0], pspace=self.pspace)
-                self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltapq[0]["A"]
+                self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltap3[0]["A"]
 
         return triples_list
 
@@ -1061,7 +1064,7 @@ class AdaptDriver:
             else:
                 moments = []
                 self.driver.run_ccp3(method="ccp3", state_index=[0], two_body_approx=True, pspace=self.pspace)
-                self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltapq[0]["D"]
+                self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltap3[0]["D"]
         else: # CCSD(T) method
             if imacro < self.nmacro - 1:
                 self.ccpq_energy[imacro], moments = calc_ccpert3_with_moments(self.driver.T, 
@@ -1073,7 +1076,7 @@ class AdaptDriver:
             else:
                 moments = []
                 self.driver.run_ccp3(method="ccp3(t)", state_index=[0], pspace=self.pspace)
-                self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltapq[0]["A"]
+                self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltap3[0]["A"]
 
         return moments
 
