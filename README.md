@@ -1,8 +1,7 @@
 
 # CCpy: A coupled-cluster package written in Python.
 
----
-# Overview
+## Overview
 <p align="justify">
 CCpy is a research-level Python package for performing non-relativistic electronic structure calculations for molecular systems 
 using methods based on the ground-state coupled-cluster (CC) theory and its equation-of-motion (EOM) extension
@@ -13,7 +12,7 @@ with the f2py package, which allows one to compile Fortran code into shared obje
 that are callable from Python and interoperable with Numpy arrays. 
 </p>
 
-# Available Computational Options
+## Available Computational Options
 <p align="justify">
 CCpy specializes in applying the CC(P;Q) and externally corrected (ec) CC methodologies developed in the Piecuch group at 
 Michigan State University. In CC(P;Q), the energetics obtained by solving the ground- or excited-state CC/EOMCC equations in
@@ -81,7 +80,7 @@ in CCpy are based on the spin-integrated spinorbital formulation and are compati
 [3] I. Magoulas, K. Gururangan, P. Piecuch, J. E. Deustua, and J. Shen, J. Chem. Theory Comput. **17**, 4006 (2021) <br />
 (see https://doi.org/10.1021/acs.jctc.1c00181; cf. also https://doi.org/10.48550/arXiv.2102.10143)
 
-# Installation
+## Installation
 <p align="justify">
 To install CCpy, clone this git repository and run `make install` followed by `make all` inside of it. The former command 
 compiles the Fortran modules used in CCpy and the latter command installs a locally editable copy of CCpy using pip. You will
@@ -106,13 +105,20 @@ computational options available in CCpy by looking at the example scripts contai
 e-mail me (contact details given below) if you need additional information or more specific assistance. 
 </p>
 
-# Contact Information
-Karthik Gururangan - gururang@msu.edu
+## CCpy Development Team
 
-(Doctoral student in the [Piecuch Group](https://www2.chemistry.msu.edu/faculty/piecuch/) at Michigan State University)
+Karthik Gururangan  
+Doctoral student, Department of Chemistry, Michigan State University  
+e-mail: gururang@msu.edu  
 
-<p align="justify">
-In addition to using GitHub's Issues feature, feel free to send me an e-mail if you have any questions about using
-CCpy or are seeking additional information about its functionality. CCpy is an open-source code and any contributions
-or suggestions that would improve it are welcomed and appreciated!
-</p>
+Dr. J. Emiliano Deustua  
+COO and Co-founder, Examol  
+
+Professor Piotr Piecuch  
+University Distinguished Professor and Michigan State University Foundation Professor, Department of Chemistry, Michigan State University  
+Adjunct Professor, Department of Physics and Astronomy, Michigan State University
+
+CCpy is an open-source code developed and maintained by the [Piecuch Group](https://www2.chemistry.msu.edu/faculty/piecuch/) 
+at Michigan State University. In addition to using GitHub's Issues feature, feel free to send an e-mail to gururang@msu.edu if 
+you have any questions about using CCpy or are seeking additional information about its functionality.
+
