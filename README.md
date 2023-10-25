@@ -82,27 +82,10 @@ in CCpy are based on the spin-integrated spinorbital formulation and are compati
 
 ## Installation
 <p align="justify">
-To install CCpy, clone this git repository and run `make install` followed by `make all` inside of it. The former command 
-compiles the Fortran modules used in CCpy and the latter command installs a locally editable copy of CCpy using pip. You will
-need a working gfortran compiler as well as locations for BLAS (preferably MKL) libraries, which enter in the Makefile as the environment
-variable $MKLROOT. For a given computer architecture, the Intel Link Line Advisor is a useful tool to figure out what compiler flags need to be included
-(see https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-link-line-advisor.html#gs.jxf4xw).
+  
+Installation instructions are provided in the CCpy documentation, which is created using `sphinx`.
+Please see the `docs` directory for instructions on how to compile and view the documentation.
 
-Currently, CCpy relies on external software to provide Hartree-Fock molecular orbitals and the asssociated one- and two-electron integrals 
-as inputs to the CC calculations. CCpy provides interfaces that process the outputs of mean-field solutions computed using either GAMESS or 
-PySCF (interfaces to other open-source software, such as psi4, will be added in the future). In order to use the Hartree-Fock states computed 
-with GAMESS, you will need to install the `cclib` package (this can be done with `conda install --channel conda-forge cclib`) in order to 
-parse the output of GAMESS calculations. In order to initialize CC calculations in CCpy using Hartree-Fock solutions computed with PySCF, 
-install it with `pip install pyscf`.
-
-In all selected CI based computations, including the ec-CC-II and CIPSI-driven CC(P;Q), we currently rely on the CIPSI wave functions obtained 
-using the open-source Quantum Package software (see https://github.com/QuantumPackage/qp2 for information on how to download and install Quantum
-Package).
-
-### Getting Started
-Documentation is scarce at the moment, so please bear with us as we put it together. You can hopefully get started using the majority of the 
-computational options available in CCpy by looking at the example scripts contained within the `tests` directory. In the meantime, feel free to 
-e-mail me (contact details given below) if you need additional information or more specific assistance. 
 </p>
 
 ## CCpy Development Team
