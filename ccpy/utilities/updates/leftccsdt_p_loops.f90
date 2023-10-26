@@ -6397,7 +6397,8 @@ module leftccsdt_p_loops
                       n3aaa,n3aab,n3abb,n3bbb,&
                       noa,nua,nob,nub)
            
-              integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb, n3bbb
+              integer, intent(in) :: noa, nua, nob, nub
+              integer, intent(in) :: n3aaa, n3aab, n3abb, n3bbb
               integer, intent(in) :: l3a_excits(6,n3aaa), l3b_excits(6,n3aab), l3c_excits(6,n3abb), l3d_excits(6,n3bbb)
               integer, intent(in) :: r3a_excits(6,n3aaa), r3b_excits(6,n3aab), r3c_excits(6,n3abb), r3d_excits(6,n3bbb)
               

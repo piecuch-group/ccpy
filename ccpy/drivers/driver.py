@@ -767,10 +767,10 @@ class Driver:
                                       "abb" : t3_excitations["abb"],
                                       "bbb" : t3_excitations["bbb"]}
                 else:
-                    l3_excitations = {"aaa" : r3_excitations[i]["aaa"],
-                                      "aab" : r3_excitations[i]["aab"],
-                                      "abb" : r3_excitations[i]["abb"],
-                                      "bbb" : r3_excitations[i]["bbb"]}
+                    l3_excitations = {"aaa" : r3_excitations["aaa"],
+                                      "aab" : r3_excitations["aab"],
+                                      "abb" : r3_excitations["abb"],
+                                      "bbb" : r3_excitations["bbb"]}
 
                 n3aaa = l3_excitations["aaa"].shape[0]
                 n3aab = l3_excitations["aab"].shape[0]
