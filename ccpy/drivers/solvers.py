@@ -62,7 +62,7 @@ def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, 
 
     return R, omega, is_converged
 
-def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
+def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_excitations=None, r3_excitations=None):
     """
     Diagonalize the similarity-transformed Hamiltonian HBar using the
     non-Hermitian Davidson algorithm.
@@ -87,7 +87,10 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
     B[:, 0] = B0
     R.unflatten(B[:, 0])
     dR.unflatten(dR.flatten() * 0.0)
-    sigma[:, 0] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+    if t3_excitations or r3_excitations:
+        sigma[:, 0] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
+    else:
+        sigma[:, 0] = HR(dR, R, T, H, options["RHF_symmetry"], system)
     if noffset == 1:
         restart_block[:, 0] = B0
 
@@ -133,7 +136,10 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
             break
 
         # update residual vector
-        R = update_r(R, omega, H, options["RHF_symmetry"], system)
+        if t3_excitations or r3_excitations:
+            R = update_r(R, omega, H, options["RHF_symmetry"], system, r3_excitations)
+        else:
+            R = update_r(R, omega, H, options["RHF_symmetry"], system)
         # orthogonalize residual against subspace vectors (would be nice to vectorize this)
         q = R.flatten()
         for p in range(curr_size):
@@ -145,7 +151,10 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
         # If below maximum subspace size, expand the subspace
         if curr_size < max_size:
             B[:, curr_size] = q
-            sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+            if t3_excitations or r3_excitations:
+                sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
+            else:
+                sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system)
         else:
             # Basic restart - use the last approximation to the eigenvector
             print("       **Deflating subspace**")
@@ -153,7 +162,10 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
             for j in range(restart_block.shape[1]):
                 R.unflatten(restart_block[:, j])
                 B[:, j] = R.flatten()
-                sigma[:, j] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+                if t3_excitations or r3_excitations:
+                    sigma[:, j] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
+                else:
+                    sigma[:, j] = HR(dR, R, T, H, options["RHF_symmetry"], system)
             curr_size = restart_block.shape[1] - 1
 
         # print the iteration of convergence
@@ -298,7 +310,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options):
 #
 #     return R, omega, is_converged
 
-def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_index, options):
+def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_index, options, t3_excitations=None, r3_excitations=None):
     """
     Diagonalize the similarity-transformed Hamiltonian HBar using the
     non-Hermitian block Davidson algorithm.
@@ -325,7 +337,10 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
         B[:, j] = B0[:, j]
         R[istate].unflatten(B[:, j])
         dR.unflatten(dR.flatten() * 0.0)
-        sigma[:, j] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
+        if t3_excitations and r3_excitations:
+            sigma[:, j] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
+        else:
+            sigma[:, j] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
         num_add += 1
         curr_size += 1
 
@@ -376,7 +391,10 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
                 is_converged[j] = True
             else:
                 # update the residual vector
-                R[istate] = update_r(R[istate], omega[istate], H, options["RHF_symmetry"], system)
+                if t3_excitations and r3_excitations:
+                    R[istate] = update_r(R[istate], omega[istate], H, options["RHF_symmetry"], system, r3_excitations)
+                else:
+                    R[istate] = update_r(R[istate], omega[istate], H, options["RHF_symmetry"], system)
                 q = R[istate].flatten()
                 for p in range(curr_size + num_add):
                     b = B[:, p] / np.linalg.norm(B[:, p])
@@ -384,7 +402,10 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
                 q /= np.linalg.norm(q)
                 R[istate].unflatten(q)
                 B[:, curr_size + num_add] = q
-                sigma[:, curr_size + num_add] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
+                if t3_excitations and r3_excitations:
+                    sigma[:, curr_size + num_add] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
+                else:
+                    sigma[:, curr_size + num_add] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
                 num_add += 1
 
             # Store the root you've solved for

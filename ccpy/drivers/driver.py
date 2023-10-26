@@ -297,6 +297,85 @@ class Driver:
         # Run the initial guess function and save all eigenpairs
         self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, roots_per_irrep, nact_occupied, nact_unoccupied, debug=debug, use_symmetry=use_symmetry)
 
+    def run_eomccp(self, method, state_index, t3_excitations, r3_excitations):
+        """Performs the EOMCC calculation specified by the user in the input."""
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.eomcc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build R
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert (self.flag_hbar)
+
+        # import the specific EOMCC(P) method module and get its update function
+        eom_module = import_module("ccpy.eomcc." + method.lower())
+        HR_function = getattr(eom_module, 'HR')
+        update_function = getattr(eom_module, 'update')
+
+        # Get dimensions of R3 spincases in P space
+        n3aaa_r = r3_excitations["aaa"].shape[0]
+        n3aab_r = r3_excitations["aab"].shape[0]
+        n3abb_r = r3_excitations["abb"].shape[0]
+        n3bbb_r = r3_excitations["bbb"].shape[0]
+        excitation_count = [[n3aaa_r, n3aab_r, n3abb_r, n3bbb_r]]
+
+        # If RHF, copy aab into abb and aaa in bbb
+        if self.options["RHF_symmetry"]:
+            assert (n3aaa_r == n3bbb_r)
+            assert (n3aab_r == n3abb_r)
+            r3_excitations["bbb"] = r3_excitations["aaa"].copy()
+            r3_excitations["abb"] = r3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
+
+        for i in state_index:
+            if self.R[i] is None:
+                self.R[i] = ClusterOperator(self.system,
+                                         order=self.operator_params["order"],
+                                         p_orders=self.operator_params["pspace_orders"],
+                                         pspace_sizes=excitation_count)
+                # regardless of restart status, initialize residual anew
+                dR = ClusterOperator(self.system,
+                                     order=self.operator_params["order"],
+                                     p_orders=self.operator_params["pspace_orders"],
+                                     pspace_sizes=excitation_count)
+                self.R[i].unflatten(self.guess_vectors[:, i - 1], order=self.guess_order)
+                self.vertical_excitation_energy[i] = self.guess_energy[i - 1]
+
+        # Form the initial subspace vectors
+        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+
+        # Print the options as a header
+        self.print_options()
+
+        for j, istate in enumerate(state_index):
+            print("   EOMCC(P) calculation for root %d started on" % istate, get_timestamp())
+            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
+            print_ee_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+            self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
+                                                                                                   update_function,
+                                                                                                   B0[:, j],
+                                                                                                   self.R[istate],
+                                                                                                   dR,
+                                                                                                   self.vertical_excitation_energy[istate],
+                                                                                                   self.T,
+                                                                                                   self.hamiltonian,
+                                                                                                   self.system,
+                                                                                                   self.options,
+                                                                                                   t3_excitations,
+                                                                                                   r3_excitations)
+            # Compute r0 a posteriori
+            self.r0[istate] = get_r0(self.R[istate], self.hamiltonian, self.vertical_excitation_energy[istate])
+            # compute the relative excitation level (REL) metric
+            self.relative_excitation_level[istate] = get_rel(self.R[istate], self.r0[istate])
+            eomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate],
+                                      self.correlation_energy, self.r0[istate],
+                                      self.relative_excitation_level[istate], is_converged, istate, self.system,
+                                      self.options["amp_print_threshold"])
+            print("   EOMCC(P) calculation for root %d ended on" % istate, get_timestamp(), "\n")
+
     def run_eomcc(self, method, state_index, t3_excitations=None, r3_excitations=None):
         """Performs the EOMCC calculation specified by the user in the input."""
         # check if requested CC calculation is implemented in modules

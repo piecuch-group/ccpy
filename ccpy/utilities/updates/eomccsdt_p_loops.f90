@@ -11960,6 +11960,132 @@ module eomccsdt_p_loops
 
               end subroutine build_hr_3d
 
+              subroutine update_r(r1a,r1b,r2a,r2b,r2c,&
+                                  r3a_amps, r3a_excits,&
+                                  r3b_amps, r3b_excits,&
+                                  r3c_amps, r3c_excits,&
+                                  r3d_amps, r3d_excits,&
+                                  omega,&
+                                  h1a_oo, h1a_vv, h1b_oo, h1b_vv,&
+                                  n3aaa, n3aab, n3abb, n3bbb,&
+                                  noa, nua, nob, nub)
+
+                      integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb, n3bbb
+                      integer, intent(in) :: r3a_excits(6,n3aaa), r3b_excits(6,n3aab), r3c_excits(6,n3abb), r3d_excits(6,n3bbb)
+                      real(kind=8), intent(in) :: h1a_oo(noa,noa), h1a_vv(nua,nua), h1b_oo(nob,nob), h1b_vv(nub,nub)
+                      real(kind=8), intent(in) :: omega
+                      
+                      real(kind=8), intent(inout) :: r1a(1:nua,1:noa)
+                      !f2py intent(in,out) :: r1a(0:nua-1,0:noa-1)
+                      real(kind=8), intent(inout) :: r1b(1:nub,1:nob)
+                      !f2py intent(in,out) :: r1b(0:nub-1,0:nob-1)
+                      real(kind=8), intent(inout) :: r2a(1:nua,1:nua,1:noa,1:noa)
+                      !f2py intent(in,out) :: r2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+                      real(kind=8), intent(inout) :: r2b(1:nua,1:nub,1:noa,1:nob)
+                      !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+                      real(kind=8), intent(inout) :: r2c(1:nub,1:nub,1:nob,1:nob)
+                      !f2py intent(in,out) :: r2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+                      real(kind=8), intent(inout) :: r3a_amps(n3aaa)
+                      !f2py intent(in,out) :: r3a_amps(0:n3aaa-1) 
+                      real(kind=8), intent(inout) :: r3b_amps(n3aab)
+                      !f2py intent(in,out) :: r3b_amps(0:n3aab-1) 
+                      real(kind=8), intent(inout) :: r3c_amps(n3abb)
+                      !f2py intent(in,out) :: r3c_amps(0:n3abb-1) 
+                      real(kind=8), intent(inout) :: r3d_amps(n3bbb)
+                      !f2py intent(in,out) :: r3d_amps(0:n3bbb-1) 
+                      
+                      integer :: i, j, k, a, b, c, idet
+                      real(kind=8) :: denom
+
+                      do i = 1,noa
+                        do a = 1,nua
+                          denom = H1A_vv(a,a) - H1A_oo(i,i)
+                          r1a(a,i) = r1a(a,i)/(omega - denom)
+                        end do
+                      end do
+
+                      do i = 1,nob
+                        do a = 1,nub
+                          denom = H1B_vv(a,a) - H1B_oo(i,i)
+                          r1b(a,i) = r1b(a,i)/(omega - denom)
+                        end do
+                      end do
+
+                      do i = 1,noa
+                        do j = 1,noa
+                          do a = 1,nua
+                            do b = 1,nua
+                              denom = H1A_vv(a,a) + H1A_vv(b,b) - H1A_oo(i,i) - H1A_oo(j,j)
+                              r2a(b,a,j,i) = r2a(b,a,j,i)/(omega - denom)
+                            end do
+                          end do
+                        end do
+                      end do
+
+                      do j = 1,nob
+                        do i = 1,noa
+                          do b = 1,nub
+                            do a = 1,nua
+                              denom = H1A_vv(a,a) + H1B_vv(b,b) - H1A_oo(i,i) - H1B_oo(j,j)
+                              r2b(a,b,i,j) = r2b(a,b,i,j)/(omega - denom)
+                            end do
+                          end do
+                        end do
+                      end do
+
+                      do i = 1,nob
+                        do j = 1,nob
+                          do a = 1,nub
+                            do b = 1,nub
+                              denom = H1B_vv(a,a) + H1B_vv(b,b) - H1B_oo(i,i) - H1B_oo(j,j)
+                              r2c(b,a,j,i) = r2c(b,a,j,i)/(omega - denom)
+                            end do
+                          end do
+                        end do
+                      end do
+
+                      do idet = 1, n3aaa
+                         a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
+                         i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
+
+                         denom = H1A_vv(a,a) + H1A_vv(b,b) + H1A_vv(c,c)&
+                                -H1A_oo(i,i) - H1A_oo(j,j) - H1A_oo(k,k)
+                         
+                         r3a_amps(idet) = r3a_amps(idet)/(omega - denom)
+                      end do
+
+                      do idet = 1, n3aab
+                         a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
+                         i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
+
+                         denom = H1A_vv(a,a) + H1A_vv(b,b) + H1B_vv(c,c)&
+                                -H1A_oo(i,i) - H1A_oo(j,j) - H1B_oo(k,k)
+                         
+                         r3b_amps(idet) = r3b_amps(idet)/(omega - denom)
+                      end do
+
+                      do idet = 1, n3abb
+                         a = r3c_excits(1,idet); b = r3c_excits(2,idet); c = r3c_excits(3,idet);
+                         i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
+
+                         denom = H1A_vv(a,a) + H1B_vv(b,b) + H1B_vv(c,c)&
+                                -H1A_oo(i,i) - H1B_oo(j,j) - H1B_oo(k,k)
+                         
+                         r3c_amps(idet) = r3c_amps(idet)/(omega - denom)
+                      end do
+
+                      do idet = 1, n3bbb
+                         a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
+                         i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
+
+                         denom = H1B_vv(a,a) + H1B_vv(b,b) + H1B_vv(c,c)&
+                                -H1B_oo(i,i) - H1B_oo(j,j) - H1B_oo(k,k)
+                         
+                         r3d_amps(idet) = r3d_amps(idet)/(omega - denom)
+                      end do
+
+              end subroutine update_r
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SORTING FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

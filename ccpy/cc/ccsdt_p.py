@@ -11,13 +11,13 @@ def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace=None):
     # determine whether t3 updates should be done. Stupid compatibility with
     # empty sections of t3_excitations
     do_t3 = {"aaa" : True, "aab" : True, "abb" : True, "bbb" : True}
-    if np.array_equal(t3_excitations["aaa"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+    if np.array_equal(t3_excitations["aaa"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["aaa"] = False
-    if np.array_equal(t3_excitations["aab"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+    if np.array_equal(t3_excitations["aab"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["aab"] = False
-    if np.array_equal(t3_excitations["abb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+    if np.array_equal(t3_excitations["abb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["abb"] = False
-    if np.array_equal(t3_excitations["bbb"][0,:], np.array([1.,1.,1.,1.,1.,1.])):
+    if np.array_equal(t3_excitations["bbb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["bbb"] = False
     build_hbar = do_t3["aaa"] or do_t3["aab"] or do_t3["abb"] or do_t3["bbb"]
 
