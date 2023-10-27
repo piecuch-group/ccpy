@@ -3,7 +3,7 @@ module hbar_cc3
 	implicit none
 	
 	contains
-					subroutine build_hbar(h2a_vooo,h2a_vvov,&
+			subroutine build_hbar(h2a_vooo,h2a_vvov,&
                                      h2b_vooo,h2b_ovoo,h2b_vvov,h2b_vvvo,&
                                      h2c_vooo,h2c_vvov,&
                                      t2a,t2b,t2c,&
@@ -64,12 +64,12 @@ module hbar_cc3
                       real(kind=8) :: X2C_vvov_1243(nub,nub,nub,nob)
                       
                       ! Call reordering routines for arrays entering DGEMM
-                      call reorder1243(X2A_vvov,X2A_vvov_1243)
-                      call reorder1243(X2B_vvov,X2B_vvov_1243)
-                      call reorder1243(t2b,t2b_1243)
-                      call reorder4213(X2C_vvov,X2C_vvov_4213)
-                      call reorder2134(X2C_vooo,X2C_vooo_2134)
-                      call reorder1243(X2C_vvov,X2C_vvov_1243)
+                      call reorder4(x2a_vvov_1243, x2a_vvov, (/1,2,4,3/))
+                      call reorder4(x2b_vvov_1243, x2b_vvov, (/1,2,4,3/))
+                      call reorder4(t2b_1243, t2b, (/1,2,4,3/))
+                      call reorder4(x2c_vvov_4213, x2c_vvov, (/4,2,1,3/))
+                      call reorder4(x2c_vooo_2134, x2c_vooo, (/2,1,3,4/))
+                      call reorder4(x2c_vvov_1243, x2c_vvov, (/1,2,4,3/))
                       
                       ! Scale these terms by 1/2 to account for antisymmetrizer applied at the end
                       h2a_vooo = 0.5d0 * h2a_vooo
@@ -350,256 +350,30 @@ module hbar_cc3
                             h2c_vvov(b,a,:,:) = -h2c_vvov(a,b,:,:)
                          end do
                       end do
-               end subroutine build_hbar
-	              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! REORDER ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         
-!               subroutine reorder4(y, x, iorder)
-!
-!                   integer, intent(in) :: iorder(4)
-!                   real(kind=8), intent(in) :: x(:,:,:,:)
-!
-!                   real(kind=8), intent(out) :: y(:,:,:,:)
-!
-!                   integer :: i, j, k, l
-!                   integer :: vec(4)
-!
-!                   y = 0.0d0
-!                   do i = 1, size(x,1)
-!                      do j = 1, size(x,2)
-!                         do k = 1, size(x,3)
-!                            do l = 1, size(x,4)
-!                               vec = (/i,j,k,l/)
-!                               y(vec(iorder(1)),vec(iorder(2)),vec(iorder(3)),vec(iorder(4))) = x(i,j,k,l)
-!                            end do
-!                         end do
-!                      end do
-!                   end do
-!
-!               end subroutine reorder4
+            end subroutine build_hbar
 
-              subroutine reorder3412(x_in,x_out)
+            subroutine reorder4(y, x, iorder)
 
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
+                   integer, intent(in) :: iorder(4)
+                   real(kind=8), intent(in) :: x(:,:,:,:)
 
-                      integer :: i1, i2, i3, i4
+                   real(kind=8), intent(out) :: y(:,:,:,:)
 
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i4,i1,i2) = x_in(i1,i2,i3,i4)
-                               end do
+                   integer :: i, j, k, l
+                   integer :: vec(4)
+
+                   y = 0.0d0
+                   do i = 1, size(x,1)
+                      do j = 1, size(x,2)
+                         do k = 1, size(x,3)
+                            do l = 1, size(x,4)
+                               vec = (/i,j,k,l/)
+                               y(vec(iorder(1)),vec(iorder(2)),vec(iorder(3)),vec(iorder(4))) = x(i,j,k,l)
                             end do
                          end do
                       end do
+                   end do
 
-             end subroutine reorder3412
+            end subroutine reorder4
 
-             subroutine reorder1342(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i1,i3,i4,i2) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder1342
-
-            subroutine reorder3421(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i4,i2,i1) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder3421
-
-             subroutine reorder2134(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i1,i3,i4) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2134
-
-            subroutine reorder1243(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i1,i2,i4,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder1243
-
-             subroutine reorder4213(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i2,i1,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4213
-
-             subroutine reorder4312(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i3,i1,i2) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4312
-
-             subroutine reorder2341(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i3,i4,i1) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2341
-
-             subroutine reorder2143(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i1,i4,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2143
-
-             subroutine reorder4123(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i1,i2,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4123
-
-             subroutine reorder3214(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i2,i1,i4) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder3214
-   
-             subroutine reorder132(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:)
-
-                      integer :: i1, i2, i3
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               x_out(i1,i3,i2) = x_in(i1,i2,i3)
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder132
 end module hbar_cc3
