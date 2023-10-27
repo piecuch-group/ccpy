@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from itertools import permutations
 
 from ccpy.utilities.determinants import get_excits_from, get_excits_to, get_spincase, spatial_orb_idx, get_excit_rank
@@ -197,6 +198,110 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
             excitations[spincase] = np.ones((1, 6))
 
     return pspace, excitations, excitation_count_by_symmetry
+
+def get_pspace_from_qmc(ewalkers_file, system, threshold_walkers=1, nexcit=3):
+
+    HF = [i for i in range(1, system.nelectrons + 1)]
+
+    nua = system.nunoccupied_alpha
+    nub = system.nunoccupied_beta
+    noa = system.noccupied_alpha
+    nob = system.noccupied_beta
+    
+    # Currently, implementation only works with closed-shells
+    assert noa == nob and nua == nub
+    nu = nua
+    no = noa
+    # Full P space
+    pspace = np.zeros((nub, nub, nub, noa, noa, noa), dtype=np.int32)
+
+    excitations = {"aaa": [], "aab": [], "abb": [], "bbb": []}
+    num_triples = 0
+    num_aaa = 0
+    num_aab = 0
+    num_abb = 0
+    num_bbb = 0
+    with open(ewalkers_file, "r") as f:
+        for line in f.readlines():
+            # Stores the information per line in a list
+            # fields[0] -> determinant number
+            # fields[1] -> signed walker population
+            # fields[2:] -> spinorbital occupiation of correlated electrons (there are N numbers here)
+            fields = [int(x) for x in line.split()]
+            if abs(fields[1]) >= threshold_walkers:
+                det = fields[2:]
+                excits_from = list(set(HF) - set(det)) # this gives me occupied i,j,k,... in the excitation
+                excits_to = list(set(det) - set(HF)) # this gives unoccupied a,b,c,... in the excitation
+                
+                excitation_rank = len(excits_from)
+                if excitation_rank == 3: # only process if you find a triple
+                    num_triples += 1
+
+                    # sort the excitation indices
+                    excits_from = [i for i in sorted(excits_from)]
+                    excits_to = [a for a in sorted(excits_to)]
+                    # convert to spatial
+                    occ = [math.ceil(x/2) for x in excits_from]
+                    unocc = [math.ceil(x/2) for x in excits_to]
+
+                    for p_unocc in permutations(unocc):
+                        for p_occ in permutations(occ):
+                            a, b, c = p_unocc
+                            i, j, k = p_occ
+                            pspace[a - 1 - no, b - 1 - no, c - 1 - no, i - 1, j - 1, k - 1] = 1
+
+    # Extract aaa triples
+    for a in range(nu):
+        for b in range(a + 1, nu):
+            for c in range(b + 1, nu):
+                for i in range(no):
+                    for j in range(i + 1, no):
+                        for k in range(j + 1, no):
+                            if pspace[a, b, c, i, j, k] == 1:
+                                excitations["aaa"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
+    # Extract aab triples
+    for a in range(nu):
+        for b in range(a + 1, nu):
+            for c in range(nu):
+                for i in range(no):
+                    for j in range(i + 1, no):
+                        for k in range(no):
+                            if pspace[a, b, c, i, j, k] == 1:
+                                excitations["aab"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
+    # Extract abb triples
+    for a in range(nu):
+        for b in range(nu):
+            for c in range(b + 1, nu):
+                for i in range(no):
+                    for j in range(no):
+                        for k in range(j + 1, no):
+                            if pspace[a, b, c, i, j, k] == 1:
+                                excitations["abb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
+    # Extract bbb triples
+    for a in range(nu):
+        for b in range(a + 1, nu):
+            for c in range(b + 1, nu):
+                for i in range(no):
+                    for j in range(i + 1, no):
+                        for k in range(j + 1, no):
+                            if pspace[a, b, c, i, j, k] == 1:
+                                excitations["bbb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
+
+    # Convert the spin-integrated lists into Numpy arrays
+    for spincase, array in excitations.items():
+        excitations[spincase] = np.asarray(array)
+        if len(excitations[spincase].shape) < 2:
+            excitations[spincase] = np.ones((1, 6))  
+   
+    print("Summary")
+    print("=======")
+    print("Found", num_triples, "triples")
+    print("     num_aaa  = ", len(excitations["aaa"]))
+    print("     num_aab  = ", len(excitations["aab"]))
+    print("     num_abb  = ", len(excitations["abb"]))
+    print("     num_bbb  = ", len(excitations["bbb"]))
+
+    return excitations
 
 def count_excitations_in_pspace(pspace, system):
 
