@@ -82,12 +82,12 @@ module cc3_loops
                       real(kind=8) :: H2C_vvov_1243(nub,nub,nub,nob)
                       
                       ! Call reordering routines for arrays entering DGEMM
-                      call reorder1243(H2A_vvov,H2A_vvov_1243)
-                      call reorder1243(H2B_vvov,H2B_vvov_1243)
-                      call reorder1243(t2b,t2b_1243)
-                      call reorder4213(H2C_vvov,H2C_vvov_4213)
-                      call reorder2134(H2C_vooo,H2C_vooo_2134)
-                      call reorder1243(H2C_vvov,H2C_vvov_1243)
+                      call reorder4(h2a_vvov_1243, h2a_vvov, (/1,2,4,3/))
+                      call reorder4(h2b_vvov_1243, h2b_vvov, (/1,2,4,3/))
+                      call reorder4(t2b_1243, t2b, (/1,2,4,3/))
+                      call reorder4(h2c_vvov_4213, h2c_vvov, (/4,2,1,3/))
+                      call reorder4(h2c_vooo_2134, h2c_vooo, (/2,1,3,4/))
+                      call reorder4(h2c_vvov_1243, h2c_vvov, (/1,2,4,3/))
 
                       ! contribution from t3a
                       allocate(temp(nua,nua,nua))
