@@ -330,51 +330,45 @@ class Driver:
             r3_excitations["bbb"] = r3_excitations["aaa"].copy()
             r3_excitations["abb"] = r3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
 
-        for i in state_index:
-            if self.R[i] is None:
-                self.R[i] = ClusterOperator(self.system,
-                                         order=self.operator_params["order"],
-                                         p_orders=self.operator_params["pspace_orders"],
-                                         pspace_sizes=excitation_count)
-                # regardless of restart status, initialize residual anew
-                dR = ClusterOperator(self.system,
-                                     order=self.operator_params["order"],
-                                     p_orders=self.operator_params["pspace_orders"],
-                                     pspace_sizes=excitation_count)
-                self.R[i].unflatten(self.guess_vectors[:, i - 1], order=self.guess_order)
-                self.vertical_excitation_energy[i] = self.guess_energy[i - 1]
+        if self.R[state_index] is None:
+            self.R[state_index] = ClusterOperator(self.system,
+                                                  order=self.operator_params["order"],
+                                                  p_orders=self.operator_params["pspace_orders"],
+                                                  pspace_sizes=excitation_count)
+            # regardless of restart status, initialize residual anew
+            dR = ClusterOperator(self.system,
+                                 order=self.operator_params["order"],
+                                 p_orders=self.operator_params["pspace_orders"],
+                                 pspace_sizes=excitation_count)
+            self.R[state_index].unflatten(self.guess_vectors[:, state_index - 1], order=self.guess_order)
+            self.vertical_excitation_energy[state_index] = self.guess_energy[state_index - 1]
 
-        # Form the initial subspace vectors
-        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+        # Form the initial subspace vector
+        B0, _ = np.linalg.qr(self.R[state_index].flatten()[:, np.newaxis])
 
         # Print the options as a header
         self.print_options()
-
-        for j, istate in enumerate(state_index):
-            print("   EOMCC(P) calculation for root %d started on" % istate, get_timestamp())
-            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
-            print_ee_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
-            self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
-                                                                                                   update_function,
-                                                                                                   B0[:, j],
-                                                                                                   self.R[istate],
-                                                                                                   dR,
-                                                                                                   self.vertical_excitation_energy[istate],
-                                                                                                   self.T,
-                                                                                                   self.hamiltonian,
-                                                                                                   self.system,
-                                                                                                   self.options,
-                                                                                                   t3_excitations,
-                                                                                                   r3_excitations)
-            # Compute r0 a posteriori
-            self.r0[istate] = get_r0(self.R[istate], self.hamiltonian, self.vertical_excitation_energy[istate])
-            # compute the relative excitation level (REL) metric
-            self.relative_excitation_level[istate] = get_rel(self.R[istate], self.r0[istate])
-            eomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate],
-                                      self.correlation_energy, self.r0[istate],
-                                      self.relative_excitation_level[istate], is_converged, istate, self.system,
-                                      self.options["amp_print_threshold"])
-            print("   EOMCC(P) calculation for root %d ended on" % istate, get_timestamp(), "\n")
+        print("   EOMCC(P) calculation for root %d started on" % state_index, get_timestamp())
+        print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[state_index]))
+        print_ee_amplitudes(self.R[state_index], self.system, self.R[state_index].order, self.options["amp_print_threshold"])
+        self.R[state_index], self.vertical_excitation_energy[state_index], is_converged = eomcc_davidson(HR_function,
+                                                                                                         update_function,
+                                                                                                         B0[:, 0],
+                                                                                                         self.R[state_index],
+                                                                                                         dR,
+                                                                                                         self.vertical_excitation_energy[state_index],
+                                                                                                         self.T,
+                                                                                                         self.hamiltonian,
+                                                                                                         self.system,
+                                                                                                         self.options,
+                                                                                                         t3_excitations,
+                                                                                                         r3_excitations)
+        # Compute r0 a posteriori
+        self.r0[state_index] = get_r0(self.R[state_index], self.hamiltonian, self.vertical_excitation_energy[state_index])
+        # compute the relative excitation level (REL) metric
+        self.relative_excitation_level[state_index] = get_rel(self.R[state_index], self.r0[state_index])
+        eomcc_calculation_summary(self.R[state_index], self.vertical_excitation_energy[state_index], self.correlation_energy, self.r0[state_index], self.relative_excitation_level[state_index], is_converged, state_index, self.system, self.options["amp_print_threshold"])
+        print("   EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
 
     def run_eomcc(self, method, state_index, t3_excitations=None, r3_excitations=None):
         """Performs the EOMCC calculation specified by the user in the input."""
@@ -882,7 +876,6 @@ class Driver:
         # Set operator parameters needed to build L
         self.set_operator_params(method)
         self.options["method"] = method.upper()
-
         # Ensure that Hbar is set upon entry
         assert(self.flag_hbar)
 
@@ -893,62 +886,51 @@ class Driver:
 
         # Print the options as a header
         self.print_options()
+        # Save the right eigenvalue
+        omega_right = self.vertical_excitation_energy[state_index]
 
-        for i in state_index:
-            # Get the l3_excitations list based R
-            l3_excitations = {"aaa": r3_excitations["aaa"],
-                              "aab": r3_excitations["aab"],
-                              "abb": r3_excitations["abb"],
-                              "bbb": r3_excitations["bbb"]}
-            n3aaa = l3_excitations["aaa"].shape[0]
-            n3aab = l3_excitations["aab"].shape[0]
-            n3abb = l3_excitations["abb"].shape[0]
-            n3bbb = l3_excitations["bbb"].shape[0]
-            excitation_count = [[n3aaa, n3aab, n3abb, n3bbb]]
-            # Create the left CC(P) operator
-            if self.L[i] is None:
-                self.L[i] = ClusterOperator(self.system,
-                                            order=self.operator_params["order"],
-                                            p_orders=self.operator_params["pspace_orders"],
-                                            pspace_sizes=excitation_count)
-                # set initial value based on excited-state
-                self.L[i].unflatten(self.R[i].flatten())
-            # Regardless of restart status, make LH anew. It could be of different length for different roots
-            LH = ClusterOperator(self.system,
-                                 order=self.operator_params["order"],
-                                 p_orders=self.operator_params["pspace_orders"],
-                                 pspace_sizes=excitation_count)
-            # Zero out the residual
-            LH.unflatten(0.0 * LH.flatten())
+        # Get the l3_excitations list based R
+        l3_excitations = {"aaa": r3_excitations["aaa"],
+                          "aab": r3_excitations["aab"],
+                          "abb": r3_excitations["abb"],
+                          "bbb": r3_excitations["bbb"]}
+        excitation_count = [[excits.shape[0] for _, excits in l3_excitations.items()]]
+        # Create the left CC(P) operator
+        if self.L[state_index] is None:
+            self.L[state_index] = ClusterOperator(self.system,
+                                                  order=self.operator_params["order"],
+                                                  p_orders=self.operator_params["pspace_orders"],
+                                                  pspace_sizes=excitation_count)
+            # set initial value based on excited-state
+            self.L[state_index].unflatten(self.R[state_index].flatten())
+        # Regardless of restart status, make LH anew. It could be of different length for different roots
+        LH = ClusterOperator(self.system,
+                             order=self.operator_params["order"],
+                             p_orders=self.operator_params["pspace_orders"],
+                             pspace_sizes=excitation_count)
 
-        # Form the initial subspace vectors
-        B0, _ = np.linalg.qr(np.asarray([self.L[i].flatten() for i in state_index]).T)
-
-        # Print the options as a header
-        self.print_options()
-
-        for j, istate in enumerate(state_index):
-            print("   Left-EOMCC(P) calculation for root %d started on" % istate, get_timestamp())
-            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
-            print_ee_amplitudes(self.L[istate], self.system, self.L[istate].order, self.options["amp_print_threshold"])
-            self.L[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(LH_function,
-                                                                                                   update_function,
-                                                                                                   B0[:, j],
-                                                                                                   self.L[istate],
-                                                                                                   LH,
-                                                                                                   self.vertical_excitation_energy[istate],
-                                                                                                   self.T,
-                                                                                                   self.hamiltonian,
-                                                                                                   self.system,
-                                                                                                   self.options,
-                                                                                                   t3_excitations,
-                                                                                                   r3_excitations)
-            # Create the LR normalization function
-            LR_function = lambda L, l3_excitations: get_LR(self.R[istate], L, l3_excitations=l3_excitations, r3_excitations=r3_excitations)
-            LR = LR_function(self.L[istate], l3_excitations)
-            self.L[istate].unflatten(1.0 / LR * self.L[istate].flatten())
-            leftcc_calculation_summary(self.L[istate], self.vertical_excitation_energy[istate], LR, is_converged, self.system, self.options["amp_print_threshold"])
-            print("   Left-EOMCC(P) calculation for root %d ended on" % istate, get_timestamp(), "\n")
+        print("   Left-EOMCC(P) calculation for root %d started on" % state_index, get_timestamp())
+        print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[state_index]))
+        print_ee_amplitudes(self.L[state_index], self.system, self.L[state_index].order, self.options["amp_print_threshold"])
+        self.L[state_index], self.vertical_excitation_energy[state_index], is_converged = eomcc_davidson(LH_function,
+                                                                                                         update_function,
+                                                                                                         self.L[state_index].flatten(),
+                                                                                                         self.L[state_index],
+                                                                                                         LH,
+                                                                                                         self.vertical_excitation_energy[state_index],
+                                                                                                         self.T,
+                                                                                                         self.hamiltonian,
+                                                                                                         self.system,
+                                                                                                         self.options,
+                                                                                                         t3_excitations,
+                                                                                                         r3_excitations)
+        # Compute L*R and normalize the computed left vector by LR
+        LR = get_LR(self.R[state_index], self.L[state_index], l3_excitations=l3_excitations, r3_excitations=r3_excitations)
+        self.L[state_index].unflatten(1.0 / LR * self.L[state_index].flatten())
+        leftcc_calculation_summary(self.L[state_index], self.vertical_excitation_energy[state_index], LR, is_converged, self.system, self.options["amp_print_threshold"])
+        print("   Left-EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
+        # Before leaving, verify that the excitation energy obtained in the left diagonalization matches
+        assert abs(omega_right - self.vertical_excitation_energy[state_index]) <= self.options["energy_convergence"]
 
     def run_leftipeomcc(self, method, state_index=[0], t3_excitations=None, r3_excitations=None):
         # check if requested CC calculation is implemented in modules
