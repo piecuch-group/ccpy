@@ -1,6 +1,6 @@
 import numpy as np
 from ccpy.left.left_cc_intermediates import build_left_ccsdt_p_intermediates
-from ccpy.utilities.updates import leftccsdt_p_loops
+from ccpy.utilities.updates import leftccsdt_p_loops, eomccsdt_p_loops
 
 def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system, t3_excitations, l3_excitations, pspace=None):
 
@@ -105,6 +105,110 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system, t3_excitation
         l3_excitations["bbb"] = l3_excitations["aaa"].copy()
 
     return L, LH
+
+def update_l(L, omega, H, RHF_symmetry, system, l3_excitations):
+    L.a, L.b, L.aa, L.ab, L.bb, L.aaa, L.aab, L.abb, L.bbb = eomccsdt_p_loops.eomccsdt_p_loops.update_r(
+        L.a,
+        L.b,
+        L.aa,
+        L.ab,
+        L.bb,
+        L.aaa,
+        l3_excitations["aaa"].T,
+        L.aab,
+        l3_excitations["aab"].T,
+        L.abb,
+        l3_excitations["abb"].T,
+        L.bbb,
+        l3_excitations["bbb"].T,
+        omega,
+        H.a.oo,
+        H.a.vv,
+        H.b.oo,
+        H.b.vv,
+    )
+    if RHF_symmetry:
+        L.b = L.a.copy()
+        L.bb = L.aa.copy()
+        L.abb = L.aab.copy()
+        L.bbb = L.aaa.copy()
+    return L
+
+def LH_fun(LH, L, T, H, flag_RHF, system, t3_excitations, l3_excitations, pspace=None):
+    # determine whether l3 updates and l3*t3 intermediates should be done. Stupid compatibility with
+    # empty sections of t3_excitations or l3_excitations
+    do_l3 = {"aaa" : True, "aab" : True, "abb" : True, "bbb" : True}
+    do_t3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
+    if np.array_equal(t3_excitations["aaa"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["aaa"] = False
+    if np.array_equal(t3_excitations["aab"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["aab"] = False
+    if np.array_equal(t3_excitations["abb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["abb"] = False
+    if np.array_equal(t3_excitations["bbb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["bbb"] = False
+    if np.array_equal(l3_excitations["aaa"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_l3["aaa"] = False
+    if np.array_equal(l3_excitations["aab"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_l3["aab"] = False
+    if np.array_equal(l3_excitations["abb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_l3["abb"] = False
+    if np.array_equal(l3_excitations["bbb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_l3["bbb"] = False
+
+    # get LT intermediates
+    X = build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, system, do_t3, do_l3, RHF_symmetry=flag_RHF)
+
+    # build L1
+    LH = build_LH_1A(L, LH, T, H, X)
+    if flag_RHF:
+        LH.b = LH.a.copy()
+    else:
+        LH = build_LH_1B(L, LH, T, H, X)
+
+    # build L2
+    LH = build_LH_2A(L, LH, T, H, X, l3_excitations)
+    LH = build_LH_2B(L, LH, T, H, X, l3_excitations)
+    if flag_RHF:
+        LH.bb = LH.aa.copy()
+    else:
+        LH = build_LH_2C(L, LH, T, H, X, l3_excitations)
+
+    # build L3
+    if do_l3["aaa"]:
+        LH, L, l3_excitations = build_LH_3A(L, LH, H, X, l3_excitations)
+    if do_l3["aab"]:
+        LH, L, l3_excitations = build_LH_3B(L, LH, H, X, l3_excitations)
+    if flag_RHF:
+        L.abb = L.aab.copy()
+        LH.abb = LH.aab.copy()
+        l3_excitations["abb"] = l3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
+
+        L.bbb = L.aaa.copy()
+        LH.bbb = LH.aaa.copy()
+        l3_excitations["bbb"] = l3_excitations["aaa"].copy()
+    else:
+        if do_l3["abb"]:
+            LH, L, l3_excitations = build_LH_3C(L, LH, H, X, l3_excitations)
+        if do_l3["bbb"]:
+            LH, L, l3_excitations = build_LH_3D(L, LH, H, X, l3_excitations)
+
+    if flag_RHF:
+        L.b = L.a.copy()
+        LH.b = LH.a.copy()
+
+        L.bb = L.aa.copy()
+        LH.bb = LH.aa.copy()
+
+        L.abb = L.aab.copy()
+        LH.abb = LH.aab.copy()
+        l3_excitations["abb"] = l3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
+
+        L.bbb = L.aaa.copy()
+        LH.bbb = LH.aaa.copy()
+        l3_excitations["bbb"] = l3_excitations["aaa"].copy()
+
+    return LH.flatten()
 
 def build_LH_1A(L, LH, T, H, X):
 
