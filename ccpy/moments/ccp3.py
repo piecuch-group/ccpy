@@ -401,7 +401,7 @@ def calc_ccp3_with_selection(T, L, corr_energy, H, H0, system, pspace, num_add, 
     # calculate intermediates
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list = ccp3_loops.ccp3_loops.crcc23a_p_with_selection(
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list = ccp3_adaptive_loops.ccp3_adaptive_loops.crcc23a_p_with_selection(
         moments,
         triples_list,
         pspace['aaa'],
@@ -419,7 +419,7 @@ def calc_ccp3_with_selection(T, L, corr_energy, H, H0, system, pspace, num_add, 
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list = ccp3_loops.ccp3_loops.crcc23b_p_with_selection(
+    dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list = ccp3_adaptive_loops.ccp3_adaptive_loops.crcc23b_p_with_selection(
         moments,
         triples_list,
         pspace['aab'],
@@ -448,7 +448,7 @@ def calc_ccp3_with_selection(T, L, corr_energy, H, H0, system, pspace, num_add, 
         I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
-        dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list = ccp3_loops.ccp3_loops.crcc23c_p_with_selection(
+        dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list = ccp3_adaptive_loops.ccp3_adaptive_loops.crcc23c_p_with_selection(
             moments,
             triples_list,
             pspace['abb'],
@@ -470,7 +470,7 @@ def calc_ccp3_with_selection(T, L, corr_energy, H, H0, system, pspace, num_add, 
         )
 
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
-        dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list = ccp3_loops.ccp3_loops.crcc23d_p_with_selection(
+        dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list = ccp3_adaptive_loops.ccp3_adaptive_loops.crcc23d_p_with_selection(
             moments,
             triples_list,
             pspace['bbb'],

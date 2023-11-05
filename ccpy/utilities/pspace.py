@@ -206,7 +206,7 @@ def get_pspace_from_qmc(ewalkers_file, system, sym_target=None, threshold_walker
             return True
         else:
             sym_excit = (
-                      system.point_group_irrep_to_number[system.reference_symmetry]
+                    system.point_group_irrep_to_number[system.reference_symmetry]
                     ^ system.point_group_irrep_to_number[system.orbital_symmetries[i - 1]]
                     ^ system.point_group_irrep_to_number[system.orbital_symmetries[j - 1]]
                     ^ system.point_group_irrep_to_number[system.orbital_symmetries[k - 1]]

@@ -48,6 +48,43 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
 
     return L, LH
 
+def update_l(L, omega, H, RHF_symmetry, system):
+
+    L.a, L.b, L.aa, L.ab, L.bb = cc_loops2.cc_loops2.update_r(
+        L.a,
+        L.b,
+        L.aa,
+        L.ab,
+        L.bb,
+        omega,
+        H.a.oo,
+        H.a.vv,
+        H.b.oo,
+        H.b.vv,
+        0.0,
+    )
+    if RHF_symmetry:
+        L.b = L.a.copy()
+        L.bb = L.aa.copy()
+    return L
+
+def LH_fun(LH, L, T, H, flag_RHF, system):
+
+    # build L1
+    LH = build_LH_1A(L, LH, T, H)
+    if flag_RHF:
+        LH.b = LH.a.copy()
+    else:
+        LH = build_LH_1B(L, LH, T, H)
+    # build L2
+    LH = build_LH_2A(L, LH, T, H)
+    LH = build_LH_2B(L, LH, T, H)
+    if flag_RHF:
+        LH.bb = LH.aa.copy()
+    else:
+        LH = build_LH_2C(L, LH, T, H)
+    return LH.flatten()
+
 def build_LH_1A(L, LH, T, H):
 
     LH.a = np.einsum("ea,ei->ai", H.a.vv, L.a, optimize=True)

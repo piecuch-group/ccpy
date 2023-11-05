@@ -71,6 +71,58 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
 
     return L, LH
 
+def update_l(L, omega, H, RHF_symmetry, system):
+    L.a, L.b, L.aa, L.ab, L.bb, L.aaa, L.aab, L.abb, L.bbb = cc_loops2.cc_loops2.update_r_ccsdt(
+        L.a,
+        L.b,
+        L.aa,
+        L.ab,
+        L.bb,
+        L.aaa,
+        L.aab,
+        L.abb,
+        L.bbb,
+        omega,
+        H.a.oo,
+        H.a.vv,
+        H.b.oo,
+        H.b.vv,
+        0.0,
+    )
+    if RHF_symmetry:
+        L.b = L.a.copy()
+        L.bb = L.aa.copy()
+        L.abb = L.aab.transpose((2, 1, 0, 5, 4, 3))
+        L.bbb = L.aaa.copy()
+    return L
+
+def LH_fun(LH, L, T, H, flag_RHF, system):
+    # get LT intermediates
+    X = build_left_ccsdt_intermediates(L, T, system)
+    # build L1
+    LH = build_LH_1A(L, LH, T, H, X)
+    if flag_RHF:
+        LH.b = LH.a.copy()
+    else:
+        LH = build_LH_1B(L, LH, T, H, X)
+    # build L2
+    LH = build_LH_2A(L, LH, T, H, X)
+    LH = build_LH_2B(L, LH, T, H, X)
+    if flag_RHF:
+        LH.bb = LH.aa.copy()
+    else:
+        LH = build_LH_2C(L, LH, T, H, X)
+    # build L3
+    LH = build_LH_3A(L, LH, H, X)
+    LH = build_LH_3B(L, LH, H, X)
+    if flag_RHF:
+        LH.abb = np.transpose(LH.aab, (2, 0, 1, 5, 3, 4))
+        LH.bbb = LH.aaa.copy()
+    else:
+        LH = build_LH_3C(L, LH, H, X)
+        LH = build_LH_3D(L, LH, H, X)
+    return LH.flatten()
+
 def build_LH_1A(L, LH, T, H, X):
 
     LH.a = np.einsum("ea,ei->ai", H.a.vv, L.a, optimize=True)

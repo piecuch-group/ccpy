@@ -816,6 +816,91 @@ class Driver:
             leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
             print("   Left CC calculation for root %d ended on" % i, get_timestamp(), "\n")
 
+    def run_lefteomcc(self, method, state_index, t3_excitations=None, r3_excitations=None, pspace=None):
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.left.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build L
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert(self.flag_hbar)
+
+        # import the specific CC method module and get its update function
+        lcc_mod = import_module("ccpy.left." + method.lower())
+        update_function = getattr(lcc_mod, 'update_l')
+        LH_function = getattr(lcc_mod, "LH_fun")
+
+        # Print the options as a header
+        self.print_options()
+
+        for i in state_index:
+            # Create either the standard CC or CC(P) cluster operator
+            if t3_excitations is None and r3_excitations is None:
+                l3_excitations = None
+                if self.L[i] is None:
+                    self.L[i] = ClusterOperator(self.system,
+                                                order=self.operator_params["order"],
+                                                active_orders=self.operator_params["active_orders"],
+                                                num_active=self.operator_params["number_active_indices"])
+                    self.L[i].unflatten(self.R[i].flatten())
+            else:
+                # Get the l3_excitations list based R
+                l3_excitations = {"aaa": r3_excitations["aaa"],
+                                  "aab": r3_excitations["aab"],
+                                  "abb": r3_excitations["abb"],
+                                  "bbb": r3_excitations["bbb"]}
+                n3aaa = l3_excitations["aaa"].shape[0]
+                n3aab = l3_excitations["aab"].shape[0]
+                n3abb = l3_excitations["abb"].shape[0]
+                n3bbb = l3_excitations["bbb"].shape[0]
+                excitation_count = [[n3aaa, n3aab, n3abb, n3bbb]]
+                # Create the left CC(P) operator
+                if self.L[i] is None:
+                    self.L[i] = ClusterOperator(self.system,
+                                                order=self.operator_params["order"],
+                                                p_orders=self.operator_params["pspace_orders"],
+                                                pspace_sizes=excitation_count)
+                    # set initial value based on excited-state
+                    self.L[i].unflatten(self.R[i].flatten())
+                # Regardless of restart status, make LH anew. It could be of different length for different roots
+                LH = ClusterOperator(self.system,
+                                     order=self.operator_params["order"],
+                                     p_orders=self.operator_params["pspace_orders"],
+                                     pspace_sizes=excitation_count)
+                # Zero out the residual
+                LH.unflatten(0.0 * LH.flatten())
+
+        # Form the initial subspace vectors
+        B0, _ = np.linalg.qr(np.asarray([self.L[i].flatten() for i in state_index]).T)
+
+        # Print the options as a header
+        self.print_options()
+
+        # Create the residual L*H that is re-used for each root
+        if t3_excitations is None and r3_excitations is None:
+            LH = ClusterOperator(self.system,
+                                 order=self.operator_params["order"],
+                                 active_orders=self.operator_params["active_orders"],
+                                 num_active=self.operator_params["number_active_indices"])
+
+        for j, istate in enumerate(state_index):
+            print("   Left-EOMCC calculation for root %d started on" % istate, get_timestamp())
+            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
+            print_ee_amplitudes(self.L[istate], self.system, self.L[istate].order, self.options["amp_print_threshold"])
+            self.L[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(LH_function, update_function, B0[:, j],
+                                                                                                   self.L[istate], LH, self.vertical_excitation_energy[istate],
+                                                                                                   self.T, self.hamiltonian, self.system, self.options)
+            # Create the LR normalization function
+            LR_function = lambda L, l3_excitations: get_LR(self.R[istate], L, l3_excitations=l3_excitations, r3_excitations=r3_excitations)
+            LR = LR_function(self.L[istate], l3_excitations)
+            self.L[istate].unflatten(1.0 / LR * self.L[istate].flatten())
+            leftcc_calculation_summary(self.L[istate], self.vertical_excitation_energy[istate], LR, is_converged, self.system, self.options["amp_print_threshold"])
+            print("   Left-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
+
     def run_leftipeomcc(self, method, state_index=[0], t3_excitations=None, r3_excitations=None):
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.left.MODULES:
@@ -858,8 +943,7 @@ class Driver:
                                                             t3_excitations, l3_excitations)
             # Perform final biorthgonalization to R
             self.L[i].unflatten(1.0 / LR_function(self.L[i], l3_excitations) * self.L[i].flatten())
-
-            #leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
+            leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
             print("   Left IP-EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
 
     def run_eccc(self, method, external_wavefunction, t3_excitations=None):
@@ -950,11 +1034,15 @@ class Driver:
             # Ensure that both HBar and pspace are set
             assert self.flag_hbar
             assert pspace
-            # Perform ground-state correction
-            if two_body_approx: # Use the 2BA (requires only L1, L2 and HBar of CCSD)
-                _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
-            else: # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
-                _, self.deltap3[0] = calc_ccp3_full(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
+            for i in state_index:
+                if i == 0: # Ground-state correction
+                    if two_body_approx: # Use the 2BA (requires only L1, L2 and HBar of CCSD)
+                        _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
+                    else: # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
+                        _, self.deltap3[0] = calc_ccp3_full(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
+                else: # Excited-states correction
+                    pass
+
 
         elif method.lower() == "ccp3(t)":
             from ccpy.moments.ccp3 import calc_ccpert3
