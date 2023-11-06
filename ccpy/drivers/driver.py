@@ -103,11 +103,11 @@ class Driver:
         self.cc3_intermediates = None
 
     def set_operator_params(self, method):
-        if method.lower() in ["cc2", "eomcc2"]:
+        if method.lower() in ["eomcc2"]:
             self.operator_params["order"] = 1
             self.operator_params["number_particles"] = 1
             self.operator_params["number_holes"] = 1
-        elif method.lower() in ["ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2", "cc3", "eomcc3"]:
+        elif method.lower() in ["cc2", "ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2", "cc3", "eomcc3"]:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
@@ -190,8 +190,47 @@ class Driver:
         else:
             raise NotImplementedError("MBPT method {} not implemented".format(method.lower()))
 
-    # [TODO]: Separate CC and CC(P) calculations into separate functions
-    def run_cc(self, method, t3_excitations=None):
+    def run_cc(self, method):
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.cc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build T
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # import the specific CC method module and get its update function
+        cc_mod = import_module("ccpy.cc." + method.lower())
+        update_function = getattr(cc_mod, 'update')
+
+        # Print the options as a header
+        self.print_options()
+        print("   CC calculation started on", get_timestamp())
+
+        # Create either the standard CC cluster operator
+        if self.T is None:
+            self.T = ClusterOperator(self.system,
+                                     order=self.operator_params["order"],
+                                     active_orders=self.operator_params["active_orders"],
+                                     num_active=self.operator_params["number_active_indices"])
+        # regardless of restart status, initialize residual anew
+        dT = ClusterOperator(self.system,
+                             order=self.operator_params["order"],
+                             active_orders=self.operator_params["active_orders"],
+                             num_active=self.operator_params["number_active_indices"])
+        # Run the CC calculation
+        self.T, self.correlation_energy, _ = cc_jacobi(update_function,
+                                                self.T,
+                                                dT,
+                                                self.hamiltonian,
+                                                self.system,
+                                                self.options,
+                                               )
+        cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
+        print("   CC calculation ended on", get_timestamp())
+
+    def run_ccp(self, method, t3_excitations):
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.cc.MODULES:
             raise NotImplementedError(
@@ -210,58 +249,44 @@ class Driver:
 
         # Print the options as a header
         self.print_options()
-        print("   CC calculation started on", get_timestamp())
+        print("   CC(P) calculation started on", get_timestamp())
 
-        # Create either the standard CC or CC(P) cluster operator
-        if t3_excitations is None:
-            if self.T is None:
-                self.T = ClusterOperator(self.system,
-                                         order=self.operator_params["order"],
-                                         active_orders=self.operator_params["active_orders"],
-                                         num_active=self.operator_params["number_active_indices"])
-            # regardless of restart status, initialize residual anew
-            dT = ClusterOperator(self.system,
-                                 order=self.operator_params["order"],
-                                 active_orders=self.operator_params["active_orders"],
-                                 num_active=self.operator_params["number_active_indices"])
-        else:
-            # Get dimensions of T3 spincases in P space
-            n3aaa = t3_excitations["aaa"].shape[0]
-            n3aab = t3_excitations["aab"].shape[0]
-            n3abb = t3_excitations["abb"].shape[0]
-            n3bbb = t3_excitations["bbb"].shape[0]
-            excitation_count = [[n3aaa, n3aab, n3abb, n3bbb]]
+        # Create the CC(P) cluster operator
+        n3aaa = t3_excitations["aaa"].shape[0]
+        n3aab = t3_excitations["aab"].shape[0]
+        n3abb = t3_excitations["abb"].shape[0]
+        n3bbb = t3_excitations["bbb"].shape[0]
+        excitation_count = [[n3aaa, n3aab, n3abb, n3bbb]]
 
-            # If RHF, copy aab into abb and aaa in bbb
-            if self.options["RHF_symmetry"]:
-                assert (n3aaa == n3bbb)
-                assert (n3aab == n3abb)
-                t3_excitations["bbb"] = t3_excitations["aaa"].copy()
-                t3_excitations["abb"] = t3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
+        # If RHF, copy aab into abb and aaa in bbb
+        if self.options["RHF_symmetry"]:
+            assert (n3aaa == n3bbb)
+            assert (n3aab == n3abb)
+            t3_excitations["bbb"] = t3_excitations["aaa"].copy()
+            t3_excitations["abb"] = t3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
 
-            if self.T is None:
-                self.T = ClusterOperator(self.system,
-                                         order=self.operator_params["order"],
-                                         p_orders=self.operator_params["pspace_orders"],
-                                         pspace_sizes=excitation_count)
+        if self.T is None:
+            self.T = ClusterOperator(self.system,
+                                     order=self.operator_params["order"],
+                                     p_orders=self.operator_params["pspace_orders"],
+                                     pspace_sizes=excitation_count)
 
-            # regardless of restart status, initialize residual anew
-            dT = ClusterOperator(self.system,
-                                 order=self.operator_params["order"],
-                                 p_orders=self.operator_params["pspace_orders"],
-                                 pspace_sizes=excitation_count)
-        # Run the CC calculation
+        # regardless of restart status, initialize residual anew
+        dT = ClusterOperator(self.system,
+                             order=self.operator_params["order"],
+                             p_orders=self.operator_params["pspace_orders"],
+                             pspace_sizes=excitation_count)
+        # Run the CC(P) calculation
         # NOTE: It may not look like it, but t3_excitations is permuted and matches T at this point. It changes from its value at input!
         self.T, self.correlation_energy, _ = cc_jacobi(update_function,
-                                                self.T,
-                                                dT,
-                                                self.hamiltonian,
-                                                self.system,
-                                                self.options,
-                                                t3_excitations,
-                                               )
+                                                       self.T,
+                                                       dT,
+                                                       self.hamiltonian,
+                                                       self.system,
+                                                       self.options,
+                                                       t3_excitations)
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
-        print("   CC calculation ended on", get_timestamp())
+        print("   CC(P) calculation ended on", get_timestamp())
 
     def run_hbar(self, method, t3_excitations=None):
         # check if requested CC calculation is implemented in modules
@@ -701,7 +726,7 @@ class Driver:
             eaeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
             print("   EA-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
 
-    def run_leftcc(self, method, state_index=[0], t3_excitations=None, r3_excitations=None, pspace=None):
+    def run_leftcc(self, method, state_index=[0]):
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.left.MODULES:
             raise NotImplementedError(
@@ -723,16 +748,11 @@ class Driver:
         # Print the options as a header
         self.print_options()
 
-        # Convert excitations array to Fortran continuous
-        t3_excitations = convert_excitations_c_to_f(t3_excitations)
-        r3_excitations = convert_excitations_c_to_f(r3_excitations)
-
-        # regardless of restart status, initialize residual anew for non-CC(P) cases
-        if t3_excitations is None and r3_excitations is None:
-            LH = ClusterOperator(self.system,
-                                 order=self.operator_params["order"],
-                                 active_orders=self.operator_params["active_orders"],
-                                 num_active=self.operator_params["number_active_indices"])
+        # regardless of restart status, initialize residual anew
+        LH = ClusterOperator(self.system,
+                             order=self.operator_params["order"],
+                             active_orders=self.operator_params["active_orders"],
+                             num_active=self.operator_params["number_active_indices"])
 
         for i in state_index:
             print("   Left CC calculation for root %d started on" % i, get_timestamp())
@@ -741,77 +761,30 @@ class Driver:
                 ground_state = True
             else:
                 ground_state = False
-                LR_function = lambda L, l3_excitations: get_LR(self.R[i], L, l3_excitations=l3_excitations, r3_excitations=r3_excitations)
+                LR_function = lambda L, l3_excitations: get_LR(self.R[i], L, l3_excitations=None, r3_excitations=None)
 
-            # Create either the standard CC or CC(P) cluster operator
-            if t3_excitations is None and r3_excitations is None:
-                l3_excitations = None
-                # initialize the left CC operator anew, or use restart
-                if self.L[i] is None:
-                    self.L[i] = ClusterOperator(self.system,
-                                                order=self.operator_params["order"],
-                                                active_orders=self.operator_params["active_orders"],
-                                                num_active=self.operator_params["number_active_indices"])
-                    # set initial value based on ground- or excited-state
-                    if ground_state:
-                        self.L[i].unflatten(self.T.flatten()[:self.L[i].ndim])
-                    else:
-                        self.L[i].unflatten(self.R[i].flatten())
-                # Zero out the residual
-                LH.unflatten(0.0 * LH.flatten())
-            else:
-                # Get the l3_excitations list based on T (ground state) or R (excited states)
+            # Create either the standard CC cluster operator
+            # initialize the left CC operator anew, or use restart
+            if self.L[i] is None:
+                self.L[i] = ClusterOperator(self.system,
+                                            order=self.operator_params["order"],
+                                            active_orders=self.operator_params["active_orders"],
+                                            num_active=self.operator_params["number_active_indices"])
+                # set initial value based on ground- or excited-state
                 if ground_state:
-                    l3_excitations = {"aaa" : t3_excitations["aaa"],
-                                      "aab" : t3_excitations["aab"],
-                                      "abb" : t3_excitations["abb"],
-                                      "bbb" : t3_excitations["bbb"]}
+                    self.L[i].unflatten(self.T.flatten()[:self.L[i].ndim])
                 else:
-                    l3_excitations = {"aaa" : r3_excitations["aaa"],
-                                      "aab" : r3_excitations["aab"],
-                                      "abb" : r3_excitations["abb"],
-                                      "bbb" : r3_excitations["bbb"]}
-
-                n3aaa = l3_excitations["aaa"].shape[0]
-                n3aab = l3_excitations["aab"].shape[0]
-                n3abb = l3_excitations["abb"].shape[0]
-                n3bbb = l3_excitations["bbb"].shape[0]
-                excitation_count = [[n3aaa, n3aab, n3abb, n3bbb]]
-                # If RHF, copy aab into abb and aaa in bbb; this is dangerous for left-CC(P) and EOMCC(P)
-                # because open-shell like triplets can be targetted out of a singlet reference, so RHF_symmetry should
-                # be false in those cases.
-                # if self.options["RHF_symmetry"]:
-                #     assert (n3aaa == n3bbb)
-                #     assert (n3aab == n3abb)
-                #     l3_excitations["bbb"] = l3_excitations["aaa"].copy()
-                #     l3_excitations["abb"] = l3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
-                # Create the left CC(P) operator
-                if self.L[i] is None:
-                    self.L[i] = ClusterOperator(self.system,
-                                                order=self.operator_params["order"],
-                                                p_orders=self.operator_params["pspace_orders"],
-                                                pspace_sizes=excitation_count)
-                    # set initial value based on ground- or excited-state
-                    if ground_state:
-                        self.L[i].unflatten(self.T.flatten())
-                    else:
-                        self.L[i].unflatten(self.R[i].flatten())
-                # Regardless of restart status, make LH anew. It could be of different length for different roots
-                LH = ClusterOperator(self.system,
-                                     order=self.operator_params["order"],
-                                     p_orders=self.operator_params["pspace_orders"],
-                                     pspace_sizes=excitation_count)
-                # Zero out the residual
-                LH.unflatten(0.0 * LH.flatten())
+                    self.L[i].unflatten(self.R[i].flatten())
+            # Zero out the residual
+            LH.unflatten(0.0 * LH.flatten())
 
             # Run the left CC calculation
             self.L[i], _, LR, is_converged = left_cc_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian,
                                                             LR_function, self.vertical_excitation_energy[i],
-                                                            ground_state, self.system, self.options,
-                                                            t3_excitations, l3_excitations)
+                                                            ground_state, self.system, self.options)
 
             if not ground_state:
-                self.L[i].unflatten(1.0 / LR_function(self.L[i], l3_excitations) * self.L[i].flatten())
+                self.L[i].unflatten(1.0 / LR_function(self.L[i], None) * self.L[i].flatten())
 
             leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
             print("   Left CC calculation for root %d ended on" % i, get_timestamp(), "\n")
@@ -879,6 +852,98 @@ class Driver:
             self.L[istate].unflatten(1.0 / LR * self.L[istate].flatten())
             leftcc_calculation_summary(self.L[istate], self.vertical_excitation_energy[istate], LR, is_converged, self.system, self.options["amp_print_threshold"])
             print("   Left-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
+
+    def run_leftccp(self, method, t3_excitations, state_index=[0], r3_excitations=None, pspace=None):
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.left.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build L
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert(self.flag_hbar)
+
+        # import the specific CC method module and get its update function
+        lcc_mod = import_module("ccpy.left." + method.lower())
+        update_function = getattr(lcc_mod, 'update')
+
+        LR_function = None
+
+        # Print the options as a header
+        self.print_options()
+
+        # Convert excitations array to Fortran continuous
+        t3_excitations = convert_excitations_c_to_f(t3_excitations)
+        r3_excitations = convert_excitations_c_to_f(r3_excitations)
+
+        for i in state_index:
+            print("   Left CC(P) calculation for root %d started on" % i, get_timestamp())
+            # decide whether this is a ground-state calculation
+            if i == 0: 
+                ground_state = True
+            else:
+                ground_state = False
+                LR_function = lambda L, l3_excitations: get_LR(self.R[i], L, l3_excitations=l3_excitations, r3_excitations=r3_excitations)
+
+            # Create either the CC(P) cluster operator
+            # Get the l3_excitations list based on T (ground state) or R (excited states)
+            if ground_state:
+                l3_excitations = {"aaa" : t3_excitations["aaa"],
+                                  "aab" : t3_excitations["aab"],
+                                  "abb" : t3_excitations["abb"],
+                                  "bbb" : t3_excitations["bbb"]}
+            else:
+                l3_excitations = {"aaa" : r3_excitations["aaa"],
+                                  "aab" : r3_excitations["aab"],
+                                  "abb" : r3_excitations["abb"],
+                                  "bbb" : r3_excitations["bbb"]}
+
+            n3aaa = l3_excitations["aaa"].shape[0]
+            n3aab = l3_excitations["aab"].shape[0]
+            n3abb = l3_excitations["abb"].shape[0]
+            n3bbb = l3_excitations["bbb"].shape[0]
+            excitation_count = [[n3aaa, n3aab, n3abb, n3bbb]]
+            # If RHF, copy aab into abb and aaa in bbb; this is dangerous for left-CC(P) and EOMCC(P)
+            # because open-shell like triplets can be targetted out of a singlet reference, so RHF_symmetry should
+            # be false in those cases.
+            # if self.options["RHF_symmetry"]:
+            #     assert (n3aaa == n3bbb)
+            #     assert (n3aab == n3abb)
+            #     l3_excitations["bbb"] = l3_excitations["aaa"].copy()
+            #     l3_excitations["abb"] = l3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
+            # Create the left CC(P) operator
+            if self.L[i] is None:
+                self.L[i] = ClusterOperator(self.system,
+                                            order=self.operator_params["order"],
+                                            p_orders=self.operator_params["pspace_orders"],
+                                            pspace_sizes=excitation_count)
+                # set initial value based on ground- or excited-state
+                if ground_state:
+                    self.L[i].unflatten(self.T.flatten())
+                else:
+                    self.L[i].unflatten(self.R[i].flatten())
+            # Regardless of restart status, make LH anew. It could be of different length for different roots
+            LH = ClusterOperator(self.system,
+                                 order=self.operator_params["order"],
+                                 p_orders=self.operator_params["pspace_orders"],
+                                 pspace_sizes=excitation_count)
+            # Zero out the residual
+            LH.unflatten(0.0 * LH.flatten())
+
+            # Run the left CC calculation
+            self.L[i], _, LR, is_converged = left_cc_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian,
+                                                            LR_function, self.vertical_excitation_energy[i],
+                                                            ground_state, self.system, self.options,
+                                                            t3_excitations, l3_excitations)
+
+            if not ground_state:
+                self.L[i].unflatten(1.0 / LR_function(self.L[i], l3_excitations) * self.L[i].flatten())
+
+            leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
+            print("   Left CC(P) calculation for root %d ended on" % i, get_timestamp(), "\n")
 
     def run_lefteomccp(self, method, state_index, t3_excitations, r3_excitations):
         # check if requested CC calculation is implemented in modules
@@ -1215,14 +1280,14 @@ class AdaptDriver:
 
     def run_ccp(self, imacro):
         """Runs iterative CC(P), and if needed, HBar and iterative left-CC calculations."""
-        self.driver.run_cc(method="ccsdt_p", t3_excitations=self.t3_excitations)
+        self.driver.run_ccp(method="ccsdt_p", t3_excitations=self.t3_excitations)
         if not self.options["perturbative"]:
             if self.options["two_body_left"]:
                 self.driver.run_hbar(method="ccsd")
                 self.driver.run_leftcc(method="left_ccsd")
             else:
                 self.driver.run_hbar(method="ccsdt_p", t3_excitations=self.t3_excitations)
-                self.driver.run_leftcc(method="left_ccsdt_p", t3_excitations=self.t3_excitations)
+                self.driver.run_leftccp(method="left_ccsdt_p", t3_excitations=self.t3_excitations)
         self.ccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy
 
     def run_ccp3(self, imacro):
