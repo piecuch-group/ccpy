@@ -13,6 +13,16 @@
 
 import numpy as np
 
+def convert_excitations_c_to_f(excitations):
+    if excitations is None:
+        return excitations
+    for key, value in excitations.items():
+        if value.flags["F_CONTIGUOUS"]:
+            continue
+        else:
+            excitations[key] = np.asfortranarray(value, dtype=np.int32)
+    return excitations
+
 def print_memory_usage():
     """Displays the percentage of used RAM and available memory. Useful for
     investigating the memory usages of various routines."""
@@ -25,12 +35,10 @@ def print_memory_usage():
     print(int(memory / (1024 * 1024)), "MB")
     return
 
-
 def clean_up(fid, n):
     for i in range(n):
         remove_file(fid + "-" + str(i + 1) + ".npy")
     return
-
 
 def remove_file(filePath):
     import os
@@ -40,7 +48,6 @@ def remove_file(filePath):
     except OSError:
         pass
     return
-
 
 def read_amplitudes_from_jun(amlitude_file, system, order, amp_type='T', iroot=0):
     from scipy.io import FortranFile

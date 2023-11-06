@@ -28,6 +28,7 @@ from ccpy.utilities.printing import (
                 print_ip_amplitudes, ipeomcc_calculation_summary,
                 print_dea_amplitudes, deaeomcc_calculation_summary,
 )
+from ccpy.utilities.utilities import convert_excitations_c_to_f
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
 
@@ -199,6 +200,9 @@ class Driver:
         cc_mod = import_module("ccpy.cc." + method.lower())
         update_function = getattr(cc_mod, 'update')
 
+        # Convert excitations array to Fortran continuous
+        t3_excitations = convert_excitations_c_to_f(t3_excitations)
+
         # Print the options as a header
         self.print_options()
         print("   CC calculation started on", get_timestamp())
@@ -315,6 +319,10 @@ class Driver:
         eom_module = import_module("ccpy.eomcc." + method.lower())
         HR_function = getattr(eom_module, 'HR')
         update_function = getattr(eom_module, 'update')
+
+        # Convert excitations array to Fortran continuous
+        t3_excitations = convert_excitations_c_to_f(t3_excitations)
+        r3_excitations = convert_excitations_c_to_f(r3_excitations)
 
         # Get dimensions of R3 spincases in P space
         n3aaa_r = r3_excitations["aaa"].shape[0]
@@ -714,6 +722,10 @@ class Driver:
         # Print the options as a header
         self.print_options()
 
+        # Convert excitations array to Fortran continuous
+        t3_excitations = convert_excitations_c_to_f(t3_excitations)
+        r3_excitations = convert_excitations_c_to_f(r3_excitations)
+
         # regardless of restart status, initialize residual anew for non-CC(P) cases
         if t3_excitations is None and r3_excitations is None:
             LH = ClusterOperator(self.system,
@@ -883,6 +895,10 @@ class Driver:
         lcc_mod = import_module("ccpy.left." + method.lower())
         update_function = getattr(lcc_mod, 'update_l')
         LH_function = getattr(lcc_mod, "LH_fun")
+
+        # Convert excitations array to Fortran continuous
+        t3_excitations = convert_excitations_c_to_f(t3_excitations)
+        r3_excitations = convert_excitations_c_to_f(r3_excitations)
 
         # Print the options as a header
         self.print_options()
