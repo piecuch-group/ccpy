@@ -20,7 +20,7 @@ def convert_excitations_c_to_f(excitations):
         if value.flags["F_CONTIGUOUS"]:
             continue
         else:
-            excitations[key] = np.asfortranarray(value, dtype=np.int32)
+            excitations[key] = np.asfortranarray(value)
     return excitations
 
 def print_memory_usage():
