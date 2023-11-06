@@ -13,7 +13,7 @@ def cluster_analysis(wavefunction_file, hamiltonian, system):
 
     print("   Performing cluster analysis")
     print("   ------------------------------")
-    t1 = time.time()
+    t1 = time.perf_counter()
 
     # Create the VT4 storage object
     VT_ext = Integral.from_empty(system, 2, data_type=hamiltonian.a.oo.dtype, use_none=True)
@@ -46,7 +46,7 @@ def cluster_analysis(wavefunction_file, hamiltonian, system):
     print("   Performing < ijab | [V_N, T4(ext)] | 0 > contraction")
     VT_ext.aa.vvoo, VT_ext.ab.vvoo, VT_ext.bb.vvoo = contract_vt4_doubles(C4_excitations, hamiltonian, T4_amplitudes, system)
 
-    elapsed_time = time.time() - t1
+    elapsed_time = time.perf_counter() - t1
     minutes, seconds = divmod(elapsed_time, 60)
     time_str = f"({minutes:.1f}m {seconds:.1f}s)"
     print("   --------------------")

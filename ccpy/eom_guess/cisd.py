@@ -29,7 +29,7 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
 
         # Build the indexing arrays for the given irrep
         idx_a, idx_b, idx_aa, idx_ab, idx_bb, ndim_irrep = get_index_arrays(nacto, nactu, system, irrep)
-        t1 = time.time()
+        t1 = time.perf_counter()
         # Compute the CISd-like Hamiltonian
         Hmat = build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb, system)
         # Compute the S2 matrix in the same projection subspace
@@ -48,7 +48,7 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
             if kout == nroot:
                 break
 
-        elapsed_time = time.time() - t1
+        elapsed_time = time.perf_counter() - t1
         print("   -----------------------------------")
         print("   Target symmetry irrep = ", irrep, f"({system.point_group})")
         print("   Dimension of eigenvalue problem = ", ndim_irrep)

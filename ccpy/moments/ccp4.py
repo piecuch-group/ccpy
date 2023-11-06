@@ -16,7 +16,7 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
     _, delta24_full = calc_crcc24(T, L, H, H0, system, use_RHF=use_RHF)
 
     # Now, compute the correction for determinants in the P space (which should be a short list hopefully)
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -189,7 +189,7 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
     correction_C = delta24_full["C"] - correction_C
     correction_D = delta24_full["D"] - correction_D
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results

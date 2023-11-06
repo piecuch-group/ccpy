@@ -11,7 +11,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -57,7 +57,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False):
         correction_C = 2.0 * dC_aaa + 2.0 * dC_aab
         correction_D = 2.0 * dD_aaa + 2.0 * dD_aab
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results

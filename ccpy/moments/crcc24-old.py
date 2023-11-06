@@ -11,7 +11,7 @@ def crcc24(cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys, flag_RHF=True, iroot=0):
         "\n==================================++Entering CR-CC(2,4) Routine++============================="
     )
 
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     if flag_RHF:
         print("Using closed-shell RHF symmetry")
@@ -144,7 +144,7 @@ def crcc24(cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys, flag_RHF=True, iroot=0):
     Ecrcc24 = {"A": E24A, "B": E24B, "C": E24C, "D": E24D}
     delta24 = {"A": deltaA, "B": deltaB, "C": deltaC, "D": deltaD}
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
     print("finished in ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
     return Ecrcc24, delta24

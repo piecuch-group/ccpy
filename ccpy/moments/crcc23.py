@@ -9,7 +9,7 @@ def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
     """
     Calculate the ground-state CR-CC(2,3) correction to the CCSD energy.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
     
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -93,7 +93,7 @@ def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
         correction_C = dC_aaa + dC_aab + dC_abb + dC_bbb
         correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     energy_A = corr_energy + correction_A
@@ -152,7 +152,7 @@ def calc_ccsdpt(T, corr_energy, H, system, use_RHF=False):
     # obey Brillouin's Thorem, e.g., open-shell ROHF orbitals using the conventional GAMESS
     # canonicalziation scheme.
 
-    t_start = time.time()
+    t_start = time.perf_counter()
     #### aaa correction ####
     # perform correction in-loop
     dA_aaa = ccsdpt_loops.ccsdpt_loops.ccsdpta_opt(
@@ -203,7 +203,7 @@ def calc_ccsdpt(T, corr_energy, H, system, use_RHF=False):
         # Sum corrections from each spincase
         correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results

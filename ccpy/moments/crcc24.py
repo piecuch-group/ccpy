@@ -10,7 +10,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     """
     Calculate the ground-state CR-CC(2,4) correction to the CCSD energy.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
     
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -19,7 +19,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
 
     #### aaaa correction ####
-    t1 = time.time()
+    t1 = time.perf_counter()
     dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = aaaa_correction(T, L, H, H0, d3aaa_o, d3aaa_v)
     # dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = crcc24_opt_loops.crcc24_opt_loops.crcc24a_opt(
     #     T.aa,
@@ -37,7 +37,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     # )
 
     #### aaab correction ####
-    t1 = time.time()
+    t1 = time.perf_counter()
     dA_aaab, dB_aaab, dC_aaab, dD_aaab = aaab_correction(T, L, H, H0, d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v)
     # dA_aaab, dB_aaab, dC_aaab, dD_aaab = crcc24_loops.crcc24_loops.crcc24b(
     #     T.aa,
@@ -73,7 +73,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     # )
 
     #### aabb correction ####
-    t1 = time.time()
+    t1 = time.perf_counter()
     dA_aabb, dB_aabb, dC_aabb, dD_aabb = aabb_correction(T, L, H, H0, d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v)
     # dA_aabb, dB_aabb, dC_aabb, dD_aabb = crcc24_opt_loops.crcc24_opt_loops.crcc24c_opt(
     #     T.aa,
@@ -123,7 +123,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
 
     else:
         #### abbb correction ####
-        t1 = time.time()
+        t1 = time.perf_counter()
         dA_abbb, dB_abbb, dC_abbb, dD_abbb = abbb_correction(T, L, H, H0, d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v)
         #dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_opt_loops.crcc24_opt_loops.crcc24d_opt(
         #    T.ab,
@@ -159,7 +159,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
         #)
 
         #### bbbb correction ####
-        t1 = time.time()
+        t1 = time.perf_counter()
         dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = bbbb_correction(T, L, H, H0, d3bbb_o, d3bbb_v)
         # dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_opt_loops.crcc24_opt_loops.crcc24e_opt(
         #     T.bb,
@@ -181,7 +181,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
         correction_C = dC_aaaa + dC_aaab + dC_aabb + dC_abbb + dC_bbbb
         correction_D = dD_aaaa + dD_aaab + dD_aabb + dD_abbb + dD_bbbb
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     energy_A = corr_energy + correction_A

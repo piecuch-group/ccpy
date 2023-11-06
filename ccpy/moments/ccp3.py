@@ -11,7 +11,7 @@ def calc_ccp3_full(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -57,7 +57,7 @@ def calc_ccp3_full(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
         correction_C = 2.0 * dC_aaa + 2.0 * dC_aab
         correction_D = 2.0 * dD_aaa + 2.0 * dD_aab
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     energy_A = corr_energy + correction_A
@@ -105,7 +105,7 @@ def calc_ccp3_2ba(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -196,7 +196,7 @@ def calc_ccp3_2ba(T, L, corr_energy, H, H0, system, pspace, use_RHF=False):
         correction_C = dC_aaa + dC_aab + dC_abb + dC_bbb
         correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     energy_A = corr_energy + correction_A
@@ -243,7 +243,7 @@ def calc_ccp3_with_moments(T, L, corr_energy, H, H0, system, pspace, use_RHF=Fal
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy and return the full moment arrays.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -336,7 +336,7 @@ def calc_ccp3_with_moments(T, L, corr_energy, H, H0, system, pspace, use_RHF=Fal
         correction_C = dC_aaa + dC_aab + dC_abb + dC_bbb
         correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results
@@ -384,7 +384,7 @@ def calc_ccp3_with_selection(T, L, corr_energy, H, H0, system, pspace, num_add, 
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -488,7 +488,7 @@ def calc_ccp3_with_selection(T, L, corr_energy, H, H0, system, pspace, num_add, 
         correction_C = dC_aaa + dC_aab + dC_abb + dC_bbb
         correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results
@@ -542,7 +542,7 @@ def calc_ccpert3(T, corr_energy, H, system, pspace, use_RHF=False):
     Calculate the ground-state CC(P;Q)_(T) correction to the CC(P) energy associated
     with the P space `pspace`.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     #### aaa correction ####
     dA_aaa = ccsdpt_loops.ccsdpt_loops.ccsdpta_p(
@@ -597,7 +597,7 @@ def calc_ccpert3(T, corr_energy, H, system, pspace, use_RHF=False):
         # Sum the corrections from each spincase
         correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results
@@ -623,7 +623,7 @@ def calc_ccpert3_with_selection(T, corr_energy, H, system, pspace, num_add, use_
     """
     Calculate the ground-state CCSD(T) correction to the CC(P) energy.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     # initialize empty moments vector and triples list
     num_add = int(num_add)
@@ -706,7 +706,7 @@ def calc_ccpert3_with_selection(T, corr_energy, H, system, pspace, num_add, use_
 
         correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results
@@ -737,7 +737,7 @@ def calc_ccpert3_with_moments(T, corr_energy, H, system, pspace, use_RHF=False):
 
     moments = {"aaa": [], "aab": [], "abb": [], "bbb": []}
 
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     #### aaa correction ####
     # calculate intermediates
@@ -806,7 +806,7 @@ def calc_ccpert3_with_moments(T, corr_energy, H, system, pspace, use_RHF=False):
 
         correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results

@@ -11,7 +11,7 @@ def calc_ecccp3(T, L, C, H, H0, system, pspace, use_RHF=False):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy for internal T3 amplitudes.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -104,7 +104,7 @@ def calc_ecccp3(T, L, C, H, H0, system, pspace, use_RHF=False):
         correction_C_ext = dC_aaa_ext + dC_aab_ext + dC_abb_ext + dC_bbb_ext
         correction_D_ext = dD_aaa_ext + dD_aab_ext + dD_abb_ext + dD_bbb_ext
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results

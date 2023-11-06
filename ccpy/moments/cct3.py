@@ -11,7 +11,7 @@ def calc_cct3(T, L, corr_energy, H, H0, system, use_RHF=False, num_active=1):
     """
     Calculate the ground-state CC(t;3) correction to the CCSDt energy.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -104,7 +104,7 @@ def calc_cct3(T, L, corr_energy, H, H0, system, use_RHF=False, num_active=1):
         correction_C = dC_aaa + dC_aab + dC_abb + dC_bbb
         correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     energy_A = corr_energy + correction_A
@@ -152,7 +152,7 @@ def calc_eomcct3(T, R, L, r0, omega, H, H0, system, use_RHF=False, num_active=1)
     """
     Calculate the excited-state CC(t;3) correction to the EOMCCSDt energy.
     """
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     nroot = len(R)
     assert (len(omega) == nroot)
@@ -307,7 +307,7 @@ def calc_eomcct3(T, R, L, r0, omega, H, H0, system, use_RHF=False, num_active=1)
             correction_C[n] = dC_aaa + dC_aab + dC_abb + dC_bbb
             correction_D[n] = dD_aaa + dD_aab + dD_abb + dD_bbb
 
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results

@@ -206,10 +206,10 @@ class Driver:
         # Create either the standard CC or CC(P) cluster operator
         if t3_excitations is None:
             if self.T is None:
-                    self.T = ClusterOperator(self.system,
-                                             order=self.operator_params["order"],
-                                             active_orders=self.operator_params["active_orders"],
-                                             num_active=self.operator_params["number_active_indices"])
+                self.T = ClusterOperator(self.system,
+                                         order=self.operator_params["order"],
+                                         active_orders=self.operator_params["active_orders"],
+                                         num_active=self.operator_params["number_active_indices"])
             # regardless of restart status, initialize residual anew
             dT = ClusterOperator(self.system,
                                  order=self.operator_params["order"],
@@ -1298,9 +1298,9 @@ class AdaptDriver:
 
         # Step 0: Perform the preliminary excitation counting
         print("   Preliminary excitation count...", end=" ")
-        t1 = time.time()
+        t1 = time.perf_counter()
         self.excitation_count()
-        print("completed in", time.time() - t1, "seconds")
+        print("completed in", time.perf_counter() - t1, "seconds")
         print("   Excitation Count Summary:")
         spin_fact = 1.0
         if self.driver.options["RHF_symmetry"]:
