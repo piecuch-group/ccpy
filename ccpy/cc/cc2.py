@@ -16,6 +16,10 @@ def update(T, dT, H, shift, flag_RHF, system):
 
     # CCS intermediates
     hbar = get_ccs_intermediates_opt(T, H)
+    # Add parts needed to make vvvv terms work out
+    hbar.aa.vvov += 0.5 * np.einsum("abef,ei->abif", H.aa.vvvv, T.a, optimize=True)
+    hbar.ab.vvov += np.einsum("abef,ei->abif", H.ab.vvvv, T.a, optimize=True)
+    hbar.bb.vvov += 0.5 * np.einsum("abef,ei->abif", H.bb.vvvv, T.b, optimize=True)
 
     # update T2
     T, dT = update_t2a(T, dT, hbar, H, shift)
@@ -120,10 +124,11 @@ def update_t2a(T, dT, H, H0, shift):
     """
     Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2))_C|0>.
     """
-    #tau = np.einsum('ai,bj->abij', T.a, T.a, optimize=True)
     dT.aa = -0.5 * np.einsum("amij,bm->abij", H.aa.vooo, T.a, optimize=True)
     dT.aa += 0.5 * np.einsum("abie,ej->abij", H.aa.vvov, T.a, optimize=True)
-    #dT.aa += 0.25 * np.einsum("abef,efij->abij", H.aa.vvvv, tau, optimize=True)
+    # Need iterative Fock terms in this scheme
+    dT.aa -= 0.5 * np.einsum("mi,abmj->abij", H0.a.oo, T.aa, optimize=True)
+    dT.aa += 0.5 * np.einsum("ae,ebij->abij", H0.a.vv, T.aa, optimize=True)
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
         T.aa, dT.aa + 0.25 * H0.aa.vvoo, H0.a.oo, H0.a.vv, shift
     )
@@ -133,12 +138,15 @@ def update_t2b(T, dT, H, H0, shift):
     """
     Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2))_C|0>.
     """
-    #tau = np.einsum('ai,bj->abij', T.a, T.b, optimize=True)
     dT.ab = -np.einsum("mbij,am->abij", H.ab.ovoo, T.a, optimize=True)
     dT.ab -= np.einsum("amij,bm->abij", H.ab.vooo, T.b, optimize=True)
     dT.ab += np.einsum("abej,ei->abij", H.ab.vvvo, T.a, optimize=True)
     dT.ab += np.einsum("abie,ej->abij", H.ab.vvov, T.b, optimize=True)
-    #dT.ab += np.einsum("abef,efij->abij", H.ab.vvvv, tau, optimize=True)
+    # Need iterative Fock terms in this scheme
+    dT.ab -= np.einsum("mi,abmj->abij", H0.a.oo, T.ab, optimize=True)
+    dT.ab -= np.einsum("mj,abim->abij", H0.b.oo, T.ab, optimize=True)
+    dT.ab += np.einsum("ae,ebij->abij", H0.a.vv, T.ab, optimize=True)
+    dT.ab += np.einsum("be,aeij->abij", H0.b.vv, T.ab, optimize=True)
     T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
         T.ab, dT.ab + H0.ab.vvoo, H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv, shift
     )
@@ -148,10 +156,11 @@ def update_t2c(T, dT, H, H0, shift):
     """
     Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2))_C|0>.
     """
-    #tau = np.einsum('ai,bj->abij', T.b, T.b, optimize=True)
     dT.bb = -0.5 * np.einsum("amij,bm->abij", H.bb.vooo, T.b, optimize=True)
     dT.bb += 0.5 * np.einsum("abie,ej->abij", H.bb.vvov, T.b, optimize=True)
-    #dT.bb += 0.25 * np.einsum("abef,efij->abij", H.bb.vvvv, tau, optimize=True)
+    # Need iterative Fock terms in this scheme
+    dT.bb -= 0.5 * np.einsum("mi,abmj->abij", H0.b.oo, T.bb, optimize=True)
+    dT.bb += 0.5 * np.einsum("ae,ebij->abij", H0.b.vv, T.bb, optimize=True)
     T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
         T.bb, dT.bb + 0.25 * H0.bb.vvoo, H0.b.oo, H0.b.vv, shift
     )
