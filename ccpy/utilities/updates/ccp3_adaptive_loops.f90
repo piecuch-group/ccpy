@@ -93,7 +93,7 @@ module ccp3_adaptive_loops
 
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, num_add
-                        logical(kind=1), intent(in) :: pspace(nua, nua, nua, noa, noa, noa)
+                        logical(kind=1), intent(in) :: pspace(nua,nua,nua,noa,noa,noa)
                         real(kind=8), intent(in) :: fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
                         H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
                         H2A_voov(1:nua,1:noa,1:noa,1:nua),&
@@ -107,8 +107,8 @@ module ccp3_adaptive_loops
 
                         real(kind=8), intent(inout) :: moments(num_add)
                         !f2py intent(in,out) :: moments(0:num_add-1)
-                        integer, intent(inout) :: triples_list(num_add, 6)
-                        !f2py intent(in,out) :: triples_list(0:num_add-1, 0:5)
+                        integer, intent(inout) :: triples_list(num_add,6)
+                        !f2py intent(in,out) :: triples_list(0:num_add-1,0:5)
 
                         integer :: i, j, k, a, b, c, nua2, idx_min
                         real(kind=8) :: D, temp1, temp2, temp3, LM, X3A(nua,nua,nua), L3A(nua,nua,nua)
