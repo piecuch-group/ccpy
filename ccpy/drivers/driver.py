@@ -72,7 +72,7 @@ class Driver:
                                 "number_particles": 0,
                                 "number_holes": 0,
                                 "active_orders": [None],
-                                "number_active_indices": [None],
+                                "number_active_indices": None,
                                 "pspace_orders": [None]}
         self.T = None
         self.L = [None] * max_number_states
@@ -103,11 +103,11 @@ class Driver:
         self.cc3_intermediates = None
 
     def set_operator_params(self, method):
-        if method.lower() in ["eomcc2"]:
+        if method.lower() in ["ccs"]:
             self.operator_params["order"] = 1
             self.operator_params["number_particles"] = 1
             self.operator_params["number_holes"] = 1
-        elif method.lower() in ["cc2", "ccd", "ccsd", "eomccsd", "left_ccsd", "eccc2", "cc3", "eomcc3"]:
+        elif method.lower() in ["cc2", "ccd", "ccsd", "eomcc2", "eomccsd", "left_ccsd", "eccc2", "cc3", "eomcc3"]:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
@@ -1146,13 +1146,23 @@ class Driver:
             _, self.deltap3[0] = calc_ccsdpt(self.T, self.correlation_energy, self.hamiltonian, self.system, self.options["RHF_symmetry"])
 
         elif method.lower() == "cct3":
-            from ccpy.moments.cct3 import calc_cct3
+            from ccpy.moments.cct3 import calc_cct3, calc_eomcct3
             # Ensure that HBar is set
             assert self.flag_hbar
-            # Perform ground-state correction
-            _, self.deltap3[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
-                                           self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
-
+            for i in state_index:
+                if i == 0:
+                    # Perform ground-state correction
+                    # WARNING: Set this value to [1] as a failsafe since CC(t;3) can also be run through CC(P) and left-CC(P) routines
+                    if not self.operator_params["number_active_indices"]: self.operator_params["number_active_indices"] = [1]
+                    _, self.deltap3[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
+                                                   self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
+                else:
+                    # Perform excited-state correction
+                    # WARNING: Set this value to [1] as a failsafe since EOMCC(t;3) is going to be run through EOMCC(P) and left-EOMCC(P) routines
+                    if not self.operator_params["number_active_indices"]: self.operator_params["number_active_indices"] = [1]
+                    _, self.deltap3[i] = calc_eomcct3(self.T, self.R[i], self.L[i], self.r0[i],
+                                                      self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                      self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
         elif method.lower() == "ccp3":
             from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full
             # Ensure that both HBar and pspace are set

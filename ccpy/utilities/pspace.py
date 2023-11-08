@@ -656,8 +656,14 @@ def adaptive_triples_selection_from_moments(moments, pspace, t3_excitations, num
 
     return new_pspace, new_t3_excitations
 
-def get_active_pspace(system, nact_o, nact_u, num_active=1):
+def get_active_pspace(system, num_active=1):
     from ccpy.utilities.active_space import active_hole, active_particle
+
+    assert system.num_act_occupied_alpha == system.num_act_occupied_beta
+    assert system.num_act_unoccupied_alpha == system.num_act_unoccupied_beta
+
+    nact_o = system.num_act_occupied_alpha
+    nact_u = system.num_act_unoccupied_alpha
 
     def count_active_occ_alpha(occ):
         return sum([active_hole(i, system.noccupied_alpha, nact_o) for i in occ])
@@ -672,43 +678,53 @@ def get_active_pspace(system, nact_o, nact_u, num_active=1):
         return sum([active_particle(a, nact_u) for a in unocc])
 
     pspace = get_empty_pspace(system, 3)
+    excitations = {"aaa": [], "aab": [], "abb": [], "bbb": []}
 
     # aaa
     for i in range(system.noccupied_alpha):
-        for j in range(system.noccupied_alpha):
-            for k in range(system.noccupied_alpha):
+        for j in range(i + 1, system.noccupied_alpha):
+            for k in range(j + 1, system.noccupied_alpha):
                 for a in range(system.nunoccupied_alpha):
-                    for b in range(system.nunoccupied_alpha):
-                        for c in range(system.nunoccupied_alpha):
+                    for b in range(a + 1, system.nunoccupied_alpha):
+                        for c in range(b + 1, system.nunoccupied_alpha):
                             if count_active_occ_alpha([i, j, k]) >= num_active and count_active_unocc_alpha([a, b, c]) >= num_active:
-                                pspace[0]["aaa"][a, b, c, i, j, k] = 1
+                                pspace["aaa"][a, b, c, i, j, k] = 1
+                                excitations["aaa"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # aab
     for i in range(system.noccupied_alpha):
-        for j in range(system.noccupied_alpha):
+        for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
                 for a in range(system.nunoccupied_alpha):
-                    for b in range(system.nunoccupied_alpha):
+                    for b in range(a + 1, system.nunoccupied_alpha):
                         for c in range(system.nunoccupied_beta):
                             if (count_active_occ_alpha([i, j]) + count_active_occ_beta([k])) >= num_active and (count_active_unocc_alpha([a, b]) + count_active_unocc_beta([c])) >= num_active:
-                                pspace[0]["aab"][a, b, c, i, j, k] = 1
-
+                                pspace["aab"][a, b, c, i, j, k] = 1
+                                excitations["aab"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # abb
     for i in range(system.noccupied_alpha):
         for j in range(system.noccupied_beta):
-            for k in range(system.noccupied_beta):
+            for k in range(j + 1, system.noccupied_beta):
                 for a in range(system.nunoccupied_alpha):
                     for b in range(system.nunoccupied_beta):
-                        for c in range(system.nunoccupied_beta):
+                        for c in range(b + 1, system.nunoccupied_beta):
                             if (count_active_occ_alpha([i]) + count_active_occ_beta([j, k])) >= num_active and (count_active_unocc_alpha([a]) + count_active_unocc_beta([b, c])) >= num_active:
-                                pspace[0]["abb"][a, b, c, i, j, k] = 1
+                                pspace["abb"][a, b, c, i, j, k] = 1
+                                excitations["abb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # bbb
     for i in range(system.noccupied_beta):
-        for j in range(system.noccupied_beta):
-            for k in range(system.noccupied_beta):
+        for j in range(i + 1, system.noccupied_beta):
+            for k in range(j + 1, system.noccupied_beta):
                 for a in range(system.nunoccupied_beta):
-                    for b in range(system.nunoccupied_beta):
-                        for c in range(system.nunoccupied_beta):
+                    for b in range(a + 1, system.nunoccupied_beta):
+                        for c in range(b + 1, system.nunoccupied_beta):
                             if count_active_occ_beta([i, j, k]) >= num_active and count_active_unocc_beta([a, b, c]) >= num_active:
-                                pspace[0]["bbb"][a, b, c, i, j, k] = 1
+                                pspace["bbb"][a, b, c, i, j, k] = 1
+                                excitations["bbb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
 
-    return pspace
+    # Convert the spin-integrated lists into Numpy arrays
+    for spincase, array in excitations.items():
+        excitations[spincase] = np.asarray(array)
+        if len(excitations[spincase].shape) < 2:
+            excitations[spincase] = np.ones((1, 6))
+
+    return excitations, pspace

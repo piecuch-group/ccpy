@@ -29,7 +29,6 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
     d3abb_v, d3abb_o = abb_H3_abb_diagonal(T, H, system)
     d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
 
-
     #### aaa correction ####
     # calculate intermediates
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
