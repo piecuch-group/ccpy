@@ -175,7 +175,7 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     chi2A_vvvo, chi2A_ovoo = calc_eomm23a_intermediates(T, R, H)
     # perform correction in-loop
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa = cct3_loops.cct3_loops.creomcc23a_opt(omega, r0, T.aa, R.aa, L.a, L.aa,
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa, ddA_aaa, ddB_aaa, ddC_aaa, ddD_aaa = cct3_loops.cct3_loops.creomcc23a_opt(omega, r0, T.aa, R.aa, L.a, L.aa,
                                                                           H.aa.vooo, I2A_vvov, H.aa.vvov,
                                                                           chi2A_vvvo, chi2A_ovoo,
                                                                           H.aa.oovv, H.a.ov, H.aa.vovv, H.aa.ooov,
@@ -201,7 +201,7 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
         chi2B_vooo,
     ) = calc_eomcc23b_intermediates(T, R, H)
     # perform correction in-loop
-    dA_aab, dB_aab, dC_aab, dD_aab = cct3_loops.cct3_loops.creomcc23b_opt(omega, r0, T.aa, T.ab, R.aa,
+    dA_aab, dB_aab, dC_aab, dD_aab, ddA_aab, ddB_aab, ddC_aab, ddD_aab = cct3_loops.cct3_loops.creomcc23b_opt(omega, r0, T.aa, T.ab, R.aa,
                                                                           R.ab, L.a, L.b, L.aa, L.ab,
                                                                           I2B_ovoo, I2B_vooo, I2A_vooo, H.ab.vvvo,
                                                                           H.ab.vvov,
@@ -235,6 +235,11 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
         correction_B = 2.0 * dB_aaa + 2.0 * dB_aab
         correction_C = 2.0 * dC_aaa + 2.0 * dC_aab
         correction_D = 2.0 * dD_aaa + 2.0 * dD_aab
+
+        dcorrection_A = 2.0 * ddA_aaa + 2.0 * ddA_aab
+        dcorrection_B = 2.0 * ddB_aaa + 2.0 * ddB_aab
+        dcorrection_C = 2.0 * ddC_aaa + 2.0 * ddC_aab
+        dcorrection_D = 2.0 * ddD_aaa + 2.0 * ddD_aab
     else:
         #### abb correction ####
         # calculate intermediates
@@ -249,7 +254,7 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
             chi2B_vvvo,
             chi2B_ovoo,
         ) = calc_eomcc23c_intermediates(T, R, H)
-        dA_abb, dB_abb, dC_abb, dD_abb = cct3_loops.cct3_loops.creomcc23c_opt(omega, r0, T.ab, T.bb, R.ab,
+        dA_abb, dB_abb, dC_abb, dD_abb, ddA_abb, ddB_abb, ddC_abb, ddD_abb = cct3_loops.cct3_loops.creomcc23c_opt(omega, r0, T.ab, T.bb, R.ab,
                                                                               R.bb, L.a, L.b, L.ab,
                                                                               L.bb,
                                                                               I2B_vooo, I2C_vooo, I2B_ovoo,
@@ -282,7 +287,7 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
         # calculate intermediates
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
         chi2C_vvvo, chi2C_ovoo = calc_eomm23d_intermediates(T, R, H)
-        dA_bbb, dB_bbb, dC_bbb, dD_bbb = cct3_loops.cct3_loops.creomcc23d_opt(omega, r0, T.bb, R.bb,
+        dA_bbb, dB_bbb, dC_bbb, dD_bbb, ddA_bbb, ddB_bbb, ddC_bbb, ddD_bbb = cct3_loops.cct3_loops.creomcc23d_opt(omega, r0, T.bb, R.bb,
                                                                               L.b, L.bb,
                                                                               H.bb.vooo, I2C_vvov, H.bb.vvov,
                                                                               chi2C_vvvo, chi2C_ovoo, H.bb.oovv,
@@ -300,6 +305,11 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
         correction_C = dC_aaa + dC_aab + dC_abb + dC_bbb
         correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
 
+        dcorrection_A = ddA_aaa + ddA_aab + ddA_abb + ddA_bbb
+        dcorrection_B = ddB_aaa + ddB_aab + ddB_abb + ddB_bbb
+        dcorrection_C = ddC_aaa + ddC_aab + ddC_abb + ddC_bbb
+        dcorrection_D = ddD_aaa + ddD_aab + ddD_abb + ddD_bbb
+
     t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
 
@@ -312,6 +322,16 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
     total_energy_B = system.reference_energy + energy_B
     total_energy_C = system.reference_energy + energy_C
     total_energy_D = system.reference_energy + energy_D
+
+    delta_vee_A = omega + dcorrection_A
+    delta_vee_B = omega + dcorrection_B
+    delta_vee_C = omega + dcorrection_C
+    delta_vee_D = omega + dcorrection_D
+
+    delta_vee_eV_A = hartreetoeV * delta_vee_A 
+    delta_vee_eV_B = hartreetoeV * delta_vee_B
+    delta_vee_eV_C = hartreetoeV * delta_vee_C
+    delta_vee_eV_D = hartreetoeV * delta_vee_D
 
     print('   EOMCC(t;3) Calculation Summary')
     print('   ------------------------------')
@@ -338,11 +358,32 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
             total_energy_D, energy_D, correction_D
         )
     )
+    print(
+        "   δ-EOMCC(t;3)_A = {:>10.10f}     δ_A = {:>10.10f}     VEE = {:>10.5f} eV".format(
+            delta_vee_A, dcorrection_A, delta_vee_eV_A
+        )
+    )
+    print(
+        "   δ-EOMCC(t;3)_B = {:>10.10f}     δ_B = {:>10.10f}     VEE = {:>10.5f} eV".format(
+            delta_vee_B, dcorrection_B, delta_vee_eV_B
+        )
+    )
+    print(
+        "   δ-EOMCC(t;3)_C = {:>10.10f}     δ_C = {:>10.10f}     VEE = {:>10.5f} eV".format(
+            delta_vee_C, dcorrection_C, delta_vee_eV_C
+        )
+    )
+    print(
+        "   δ-EOMCC(t;3)_D = {:>10.10f}     δ_D = {:>10.10f}     VEE = {:>10.5f} eV\n".format(
+            delta_vee_D, dcorrection_D, delta_vee_eV_D
+        )
+    )
 
     Ecrcc23 = {"A": total_energy_A, "B": total_energy_B, "C": total_energy_C, "D": total_energy_D}
     delta23 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
+    ddelta23 = {"A": dcorrection_A, "B": dcorrection_B, "C": dcorrection_C, "D": dcorrection_D}
 
-    return Ecrcc23, delta23
+    return Ecrcc23, delta23, ddelta23
 
 
 def calc_eomm23a_intermediates(T, R, H):

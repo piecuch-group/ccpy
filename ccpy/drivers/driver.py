@@ -1160,9 +1160,9 @@ class Driver:
                     # Perform excited-state correction
                     # WARNING: Set this value to [1] as a failsafe since EOMCC(t;3) is going to be run through EOMCC(P) and left-EOMCC(P) routines
                     if not self.operator_params["number_active_indices"]: self.operator_params["number_active_indices"] = [1]
-                    _, self.deltap3[i] = calc_eomcct3(self.T, self.R[i], self.L[i], self.r0[i],
-                                                      self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
-                                                      self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
+                    _, self.deltap3[i], self.ddeltap3[i] = calc_eomcct3(self.T, self.R[i], self.L[i], self.r0[i],
+                                                                        self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                                        self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
         elif method.lower() == "ccp3":
             from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full
             # Ensure that both HBar and pspace are set
