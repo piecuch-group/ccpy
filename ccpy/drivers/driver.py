@@ -389,7 +389,7 @@ class Driver:
             self.vertical_excitation_energy[state_index] = self.guess_energy[state_index - 1]
 
         # Form the initial subspace vector
-        B0, _ = np.linalg.qr(self.R[state_index].flatten()[:, np.newaxis])
+        # B0, _ = np.linalg.qr(self.R[state_index].flatten()[:, np.newaxis])
 
         # Print the options as a header
         self.print_options()
@@ -398,7 +398,8 @@ class Driver:
         print_ee_amplitudes(self.R[state_index], self.system, self.R[state_index].order, self.options["amp_print_threshold"])
         self.R[state_index], self.vertical_excitation_energy[state_index], is_converged = eomcc_davidson(HR_function,
                                                                                                          update_function,
-                                                                                                         B0[:, 0],
+                                                                                                         #B0[:, 0],
+                                                                                                         self.R[state_index].flatten() / np.linalg.norm(self.R[state_index].flatten()),
                                                                                                          self.R[state_index],
                                                                                                          dR,
                                                                                                          self.vertical_excitation_energy[state_index],
@@ -446,9 +447,6 @@ class Driver:
                 self.R[i].unflatten(self.guess_vectors[:, i - 1], order=self.guess_order)
                 self.vertical_excitation_energy[i] = self.guess_energy[i - 1]
 
-        # Form the initial subspace vectors
-        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
-
         # Print the options as a header
         self.print_options()
 
@@ -460,6 +458,8 @@ class Driver:
 
         if self.options["davidson_solver"] == "multiroot":
             print("   Multiroot EOMCC calculation started on", get_timestamp(), "\n")
+            # Form the initial subspace vectors
+            B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
             print("   Energy of initial guess")
             for istate in state_index:
                 print("      Root  {} = {:>10.10f}".format(istate, self.vertical_excitation_energy[istate]))
@@ -485,7 +485,12 @@ class Driver:
                 print("   EOMCC calculation for root %d started on" % istate, get_timestamp())
                 print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
                 print_ee_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
-                self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_nonlinear_diis(HR_function, update_function, B0[:, j],
+                # self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_nonlinear_diis(HR_function, update_function, B0[:, j],
+                #                                                                                              self.R[istate], dR, self.vertical_excitation_energy[istate],
+                #                                                                                              self.T, self.hamiltonian, self.cc3_intermediates, self.fock,
+                #                                                                                              self.system, self.options)
+                self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_nonlinear_diis(HR_function, update_function,
+                                                                                                             self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
                                                                                                              self.R[istate], dR, self.vertical_excitation_energy[istate],
                                                                                                              self.T, self.hamiltonian, self.cc3_intermediates, self.fock,
                                                                                                              self.system, self.options)
@@ -500,7 +505,11 @@ class Driver:
                 print("   EOMCC calculation for root %d started on" % istate, get_timestamp())
                 print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
                 print_ee_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
-                self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function, update_function, B0[:, j],
+                # self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function, update_function, B0[:, j],
+                #                                                                                        self.R[istate], dR, self.vertical_excitation_energy[istate],
+                #                                                                                        self.T, self.hamiltonian, self.system, self.options)
+                self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function, update_function,
+                                                                                                       self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
                                                                                                        self.R[istate], dR, self.vertical_excitation_energy[istate],
                                                                                                        self.T, self.hamiltonian, self.system, self.options)
                 # Compute r0 a posteriori
@@ -538,7 +547,7 @@ class Driver:
                 self.vertical_excitation_energy[i] = self.guess_energy[i]
 
         # Form the initial subspace vectors
-        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+        # B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
 
         # Print the options as a header
         self.print_options()
@@ -554,7 +563,8 @@ class Driver:
             print_sf_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
             self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
                                                                                          update_function,
-                                                                                         B0[:, j],
+                                                                                         #B0[:, j],
+                                                                                         self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
                                                                                          self.R[istate], dR,
                                                                                          self.vertical_excitation_energy[istate],
                                                                                          self.T,
@@ -592,7 +602,7 @@ class Driver:
                 self.vertical_excitation_energy[i] = self.guess_energy[i]
 
         # Form the initial subspace vectors
-        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+        # B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
 
         # Print the options as a header
         self.print_options()
@@ -608,7 +618,8 @@ class Driver:
             print_dea_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
             self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
                                                                                                    update_function,
-                                                                                                   B0[:, j],
+                                                                                                   #B0[:, j],
+                                                                                                   self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
                                                                                                    self.R[istate],
                                                                                                    dR,
                                                                                                    self.vertical_excitation_energy[istate],
@@ -647,7 +658,7 @@ class Driver:
                 self.vertical_excitation_energy[i] = self.guess_energy[i]
 
         # Form the initial subspace vectors
-        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+        # B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
 
         # Print the options as a header
         self.print_options()
@@ -663,7 +674,8 @@ class Driver:
             print_ip_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
             self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
                                                                                                    update_function,
-                                                                                                   B0[:, j],
+                                                                                                   #B0[:, j],
+                                                                                                   self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
                                                                                                    self.R[istate],
                                                                                                    dR,
                                                                                                    self.vertical_excitation_energy[istate],
@@ -704,7 +716,7 @@ class Driver:
                 self.vertical_excitation_energy[i] = self.guess_energy[i]
 
         # Form the initial subspace vectors
-        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+        # B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
 
         # Print the options as a header
         self.print_options()
@@ -720,7 +732,8 @@ class Driver:
             print_ea_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
             self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
                                                                                                    update_function,
-                                                                                                   B0[:, j],
+                                                                                                   #B0[:, j],
+                                                                                                   self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
                                                                                                    self.R[istate],
                                                                                                    dR,
                                                                                                    self.vertical_excitation_energy[istate],
@@ -828,7 +841,7 @@ class Driver:
 
 
         # Form the initial subspace vectors
-        B0, _ = np.linalg.qr(np.asarray([self.L[i].flatten() for i in state_index]).T)
+        # B0, _ = np.linalg.qr(np.asarray([self.L[i].flatten() for i in state_index]).T)
 
         # Print the options as a header
         self.print_options()
@@ -845,7 +858,8 @@ class Driver:
             print_ee_amplitudes(self.L[istate], self.system, self.L[istate].order, self.options["amp_print_threshold"])
             self.L[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(LH_function,
                                                                                                    update_function,
-                                                                                                   B0[:, j],
+                                                                                                   #B0[:, j],
+                                                                                                   self.L[istate].flatten() / np.linalg.norm(self.L[istate].flatten()),
                                                                                                    self.L[istate],
                                                                                                    LH,
                                                                                                    self.vertical_excitation_energy[istate],
@@ -994,7 +1008,7 @@ class Driver:
             self.L[state_index].unflatten(self.R[state_index].flatten())
 
         # Form the initial subspace vector
-        B0, _ = np.linalg.qr(self.L[state_index].flatten()[:, np.newaxis])
+        # B0, _ = np.linalg.qr(self.L[state_index].flatten()[:, np.newaxis])
 
         # Regardless of restart status, make LH anew. It could be of different length for different roots
         LH = ClusterOperator(self.system,
@@ -1007,7 +1021,8 @@ class Driver:
         print_ee_amplitudes(self.L[state_index], self.system, self.L[state_index].order, self.options["amp_print_threshold"])
         self.L[state_index], self.vertical_excitation_energy[state_index], is_converged = eomcc_davidson(LH_function,
                                                                                                          update_function,
-                                                                                                         B0[:, 0],
+                                                                                                         #B0[:, 0],
+                                                                                                         self.L[state_index].flatten() / np.linalg.norm(self.L[state_index].flatten()),
                                                                                                          self.L[state_index],
                                                                                                          LH,
                                                                                                          self.vertical_excitation_energy[state_index],
@@ -1177,7 +1192,6 @@ class Driver:
                 else: # Excited-states correction
                     pass
 
-
         elif method.lower() == "ccp3(t)":
             from ccpy.moments.ccp3 import calc_ccpert3
             # Ensure that pspace is set
@@ -1206,6 +1220,7 @@ class Driver:
         for istate in state_index:
             for jstate in state_index:
                 self.rdm1[istate][jstate] = calc_rdm1(self.T, self.L[istate], self.system)
+
 
 
 class AdaptDriver:

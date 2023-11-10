@@ -32,15 +32,15 @@ def test_cc3_ch2():
     expected_ref_energy = -38.88142579
     expected_corr_energy = -0.14344228
     expected_vee = [0.0,
-                    0.18837284,
-                    0.23924155,
-                    0.31138281,
-                    0.06571101,
-                    0.34831055,
-                    0.06571101,
-                    0.28371563,
-                    0.31357745,
-                    0.21528220]
+                    0.18837284, #
+                    0.23924155, #
+                    0.31138281, #
+                    0.06571101, #
+                    0.06571101, # 0.34831055, this was changed when orthonormalized B0 matrix was removed
+                    0.06571101, #
+                    0.28371563, #
+                    0.31357745, #
+                    0.21528220] #
 
     for i in range(10):
         computed_total_energy = driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[i]
