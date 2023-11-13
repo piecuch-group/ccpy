@@ -29,7 +29,7 @@ def load_gamess_integrals(
         nelectrons = nelectron_fcidump
 
     system = System(
-        data.nelectrons,
+        nelectrons,
         data.nmo,
         data.mult,
         nfrozen,
