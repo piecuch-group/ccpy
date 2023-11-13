@@ -1060,6 +1060,16 @@ module eomccsdt_p_loops
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -1154,9 +1164,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -1251,9 +1274,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -1348,9 +1384,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -1445,9 +1494,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -1542,9 +1604,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -1639,9 +1714,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -1736,9 +1824,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -1833,9 +1934,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -1930,6 +2044,9 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -1951,7 +2068,7 @@ module eomccsdt_p_loops
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aaa),&
+                  !$omp noa,nua,nob,nub,n3aaa_r),&
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
@@ -2513,6 +2630,16 @@ module eomccsdt_p_loops
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -2607,9 +2734,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -2704,9 +2844,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -2801,9 +2954,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -2898,9 +3064,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -2995,9 +3174,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -3092,9 +3284,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -3189,9 +3394,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -3286,9 +3504,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
@@ -3383,6 +3614,9 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate temporary amplitude arrays
                   deallocate(excits_buff,amps_buff)
                   ! deallocate sorting arrays
@@ -3697,7 +3931,7 @@ module eomccsdt_p_loops
                   !$omp r3b_amps,&
                   !$omp loc_arr,idx_table,&
                   !$omp h1a_oo,h2a_oooo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp noa,nua,nob,nub,n3aab_r),&
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
@@ -3741,7 +3975,7 @@ module eomccsdt_p_loops
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp x1a_oo,x2a_oooo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp noa,nua,nob,nub,n3aab_r),&
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
@@ -9887,6 +10121,16 @@ module eomccsdt_p_loops
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -9981,9 +10225,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -10078,9 +10335,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -10175,9 +10445,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -10272,9 +10555,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -10369,9 +10665,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -10466,9 +10775,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -10563,9 +10885,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -10660,9 +10995,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -10757,6 +11105,9 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   !!!! diagram 5b: A(i/jk)A(a/bc) x2c(amie) * t3a(ebcmjk)
@@ -10771,6 +11122,16 @@ module eomccsdt_p_loops
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -10865,9 +11226,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -10962,9 +11336,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -11059,9 +11446,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -11156,9 +11556,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -11253,9 +11666,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -11350,9 +11776,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -11447,9 +11886,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -11544,9 +11996,22 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
@@ -11641,6 +12106,9 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate temporary arrays

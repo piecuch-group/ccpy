@@ -266,11 +266,8 @@ def build_HR_3B(R, T, H, X):
     X3B += 0.25 * np.einsum("cmke,abeijm->abcijk", H.bb.voov, R.aab, optimize=True)
     X3B -= 0.5 * np.einsum("bmek,aecijm->abcijk", H.ab.vovo, R.aab, optimize=True)
     X3B -= 0.5 * np.einsum("mcje,abeimk->abcijk", H.ab.ovov, R.aab, optimize=True)
-    X3B -= (
-            np.transpose(X3B, (0, 1, 2, 4, 3, 5))
-            + np.transpose(X3B, (1, 0, 2, 3, 4, 5))
-            - np.transpose(X3B, (1, 0, 2, 4, 3, 5))
-    )
+    X3B -= np.transpose(X3B, (1, 0, 2, 3, 4, 5))
+    X3B -= np.transpose(X3B, (0, 1, 2, 4, 3, 5))
     return X3B
 
 def build_HR_3C(R, T, H, X):
@@ -323,11 +320,8 @@ def build_HR_3C(R, T, H, X):
     X3C += 0.25 * np.einsum("cmke,ebamji->cbakji", H.aa.voov, R.abb, optimize=True)
     X3C -= 0.5 * np.einsum("mbke,ceamji->cbakji", H.ab.ovov, R.abb, optimize=True)
     X3C -= 0.5 * np.einsum("cmej,ebakmi->cbakji", H.ab.vovo, R.abb, optimize=True)
-    X3C -= (
-            np.transpose(X3C, (0, 1, 2, 3, 5, 4))
-            + np.transpose(X3C, (0, 2, 1, 3, 4, 5))
-            - np.transpose(X3C, (0, 2, 1, 3, 5, 4))
-    )
+    X3C -= np.transpose(X3C, (0, 2, 1, 3, 4, 5))
+    X3C -= np.transpose(X3C, (0, 1, 2, 3, 5, 4))
     return X3C
 
 def build_HR_3D(R, T, H, X):

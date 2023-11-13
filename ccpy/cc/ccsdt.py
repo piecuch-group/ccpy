@@ -38,7 +38,7 @@ def update(T, dT, H, shift, flag_RHF, system):
     T, dT = update_t3b(T, dT, hbar, H, shift)
     if flag_RHF:
         T.abb = np.transpose(T.aab, (2, 1, 0, 5, 4, 3))
-        dT.abb = np.transpose(dT.abb, (2, 1, 0, 5, 4, 3))
+        dT.abb = np.transpose(dT.aab, (2, 1, 0, 5, 4, 3))
         T.bbb = T.aaa.copy()
         dT.bbb = dT.aaa.copy()
     else:
