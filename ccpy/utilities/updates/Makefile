@@ -28,7 +28,8 @@ SOURCES := $(addsuffix .f90, $(MODULES))
 TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 
 # If OpenMP is not available, remove the last two flags, -fopenmp, -lgomp
-FFLAGS := -std=f2018 -O3 -ffree-line-length-512 -fopenmp -lgomp
+# For GitHub CI pipeline, remove OpenMP
+FFLAGS := -std=f2018 -O3 -ffree-line-length-512# -fopenmp -lgomp
 
 ifeq ($(CONDA_PREFIX),)
 
