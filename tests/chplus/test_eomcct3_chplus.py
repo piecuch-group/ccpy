@@ -6,9 +6,6 @@ from ccpy.utilities.pspace import get_active_pspace
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
 def test_eomcct3_chplus():
-    nacto = 2
-    nactu = 2
-
     driver = Driver.from_gamess(
         logfile=TEST_DATA_DIR + "/chplus/chplus.log",
         fcidump=TEST_DATA_DIR + "/chplus/chplus.FCIDUMP",
@@ -16,52 +13,78 @@ def test_eomcct3_chplus():
     )
     driver.system.print_info()
     # Set the active space
-    driver.system.set_active_space(nact_occupied=nacto, nact_unoccupied=nactu)
+    driver.system.set_active_space(nact_occupied=1, nact_unoccupied=3)
     # Get the P space lists corresponding to this active space
-    t3_excitations, _ = get_active_pspace(driver.system)
-    r3_excitations, _ = get_active_pspace(driver.system)
+    t3_excitations, _ = get_active_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
     # Run CC(P)
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_leftccp(method="left_ccsdt_p", t3_excitations=t3_excitations)
     # Initial guess
-    driver.run_guess(method="cisd", roots_per_irrep={"B1": 3}, nact_occupied=4, nact_unoccupied=4, multiplicity=1)
+    driver.run_guess(method="cisd", multiplicity=1, roots_per_irrep={"A1": 4, "B1": 2, "B2": 0, "A2": 2},  nact_occupied=3, nact_unoccupied=7)
+    roots = [2, 3, 4, 5, 6, 7, 8]
+    irreps = ["A1", "A1", "A1", "B1", "B1", "A2", "A2"]
     # Run EOMCC(P)
-    for state_index in [1, 2]:
+    for state_index, irrep in zip(roots, irreps):
+        r3_excitations, _ = get_active_pspace(driver.system, target_irrep=irrep)
         driver.run_eomccp(method="eomccsdt_p", state_index=state_index, t3_excitations=t3_excitations, r3_excitations=r3_excitations)
         driver.run_lefteomccp(method="left_ccsdt_p", state_index=state_index, t3_excitations=t3_excitations, r3_excitations=r3_excitations)
     # Perform CC(t;3) corrections using T(P), R(P), and L(P) within 2-body approximation
-    driver.run_ccp3(method="cct3", state_index=[0, 1, 2])
+    driver.run_ccp3(method="cct3", state_index=[0] + roots)
 
     expected_vee = [
         0.0,
-        0.1188518907,
-        0.5228422119,
+        0.0,
+        0.3175374823,
+        0.4970422450,
+        0.6331592771,
+        0.1187944925,
+        0.5226118511,
+        0.2580090482,
+        0.6191689138,
     ]
     expected_total_energy = [
-        -38.0190286716,
-        -37.9001767809,
-        -37.4961864597,
+        -38.0190411381,
+         0.0,
+        -37.7015036557,
+        -37.5219988931,
+        -37.3858818610,
+        -37.9002466456,
+        -37.4964292870,
+        -37.7610320899,
+        -37.3998722243,
     ]
     expected_deltap3 = {
         "A": [
-            -0.0003749894,
-            -0.0004363457,
-            -0.0012636823,
+            -0.0003726630,
+             0.0,
+            -0.0004467009,
+            -0.0002827018,
+            -0.0004893458,
+            -0.0003857190,
+            -0.0010986489,
+            -0.0004979770,
+            -0.0012684255,
         ],
         "D": [
-            -0.0004506047,
-            -0.0005285731,
-            -0.0015876530,
+            -0.0004446416,
+             0.0,
+            -0.0005444013,
+            -0.0003458807,
+            -0.0006110677,
+            -0.0004700287,
+            -0.0013800456,
+            -0.0006185018,
+            -0.0014722531,
         ],
     }
 
     # Check reference energy
     assert np.allclose(driver.system.reference_energy, -37.9027681837, atol=1.0e-09)
-    for n in [0, 1, 2]:
+    for n in [0] + roots:
         if n == 0:
             # Check CCSDt energy
-            assert np.allclose(driver.correlation_energy, -0.11626049, atol=1.0e-09)
+            assert np.allclose(driver.correlation_energy, -0.11627295, atol=1.0e-09)
             assert np.allclose(driver.system.reference_energy + driver.correlation_energy, expected_total_energy[n], atol=1.0e-09)
             # Check CC(t;3)_A energy
             assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[n]["A"], 

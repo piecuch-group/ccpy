@@ -13,6 +13,11 @@
 
 import numpy as np
 
+def zero_small_values(x, threshold):
+    low_values_flags = np.abs(x) < threshold  # Where values are low
+    x[low_values_flags] = 0.0  # All low values set to 0
+    return x
+
 def gramschmidt(A):
     """Orthogonalize a set of vectors stored as the columns of matrix A."""
     # Get the number of vectors.
