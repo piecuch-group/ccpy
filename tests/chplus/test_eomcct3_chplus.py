@@ -30,7 +30,7 @@ def test_eomcct3_chplus():
         driver.run_eomccp(method="eomccsdt_p", state_index=state_index, t3_excitations=t3_excitations, r3_excitations=r3_excitations)
         driver.run_lefteomccp(method="left_ccsdt_p", state_index=state_index, t3_excitations=t3_excitations, r3_excitations=r3_excitations)
     # Perform CC(t;3) corrections using T(P), R(P), and L(P) within 2-body approximation
-    driver.run_ccp3(method="cct3", state_index=[0] + roots)
+    driver.run_ccp3(method="cct3", state_index=[0] + roots, t3_excitations=t3_excitations)
 
     expected_vee = [
         0.0,
@@ -56,26 +56,26 @@ def test_eomcct3_chplus():
     ]
     expected_deltap3 = {
         "A": [
-            -0.0003726630,
+            -0.0003735932,
              0.0,
-            -0.0004467009,
-            -0.0002827018,
-            -0.0004893458,
-            -0.0003857190,
-            -0.0010986489,
-            -0.0004979770,
-            -0.0012684255,
+            -0.0004470967,
+            -0.0002854260,
+            -0.0004937632,
+            -0.0003868002,
+            -0.0011116516,
+            -0.0005036481,
+            -0.0012962381,
         ],
         "D": [
-            -0.0004446416,
+            -0.0004458108,
              0.0,
-            -0.0005444013,
-            -0.0003458807,
-            -0.0006110677,
-            -0.0004700287,
-            -0.0013800456,
-            -0.0006185018,
-            -0.0014722531,
+            -0.0005448709,
+            -0.0003492252,
+            -0.0006162290,
+            -0.0004714467,
+            -0.0013967501,
+            -0.0006256142,
+            -0.0015070426,
         ],
     }
 
