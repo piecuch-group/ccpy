@@ -1162,6 +1162,7 @@ class Driver:
 
         elif method.lower() == "cct3":
             from ccpy.moments.cct3 import calc_cct3, calc_eomcct3
+            from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
             # Ensure that HBar is set
             assert self.flag_hbar
             for i in state_index:
@@ -1169,12 +1170,18 @@ class Driver:
                     # Perform ground-state correction
                     # WARNING: Set this value to [1] as a failsafe since CC(t;3) can also be run through CC(P) and left-CC(P) routines
                     if not self.operator_params["number_active_indices"]: self.operator_params["number_active_indices"] = [1]
+                    # In order to use two-body approximation consistently for excited states, remove the V*T3 terms in vooo and vvov elements of HBar
+                    if two_body_approx and t3_excitations:
+                        self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
                     _, self.deltap3[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
                                                    self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
                 else:
                     # Perform excited-state correction
                     # WARNING: Set this value to [1] as a failsafe since EOMCC(t;3) is going to be run through EOMCC(P) and left-EOMCC(P) routines
                     if not self.operator_params["number_active_indices"]: self.operator_params["number_active_indices"] = [1]
+                    # In order to use two-body approximation consistently for excited states, remove the V*T3 terms in vooo and vvov elements of HBar
+                    if two_body_approx:
+                        self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
                     _, self.deltap3[i], self.ddeltap3[i] = calc_eomcct3(self.T, self.R[i], self.L[i], self.r0[i],
                                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                         self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])

@@ -31,7 +31,7 @@ def test_eomcct3_chplus():
         driver.run_eomccp(method="eomccsdt_p", state_index=state_index, t3_excitations=t3_excitations, r3_excitations=r3_excitations)
         driver.run_lefteomccp(method="left_ccsdt_p", state_index=state_index, t3_excitations=t3_excitations, r3_excitations=r3_excitations)
     # Perform CC(t;3) corrections using T(P), R(P), and L(P) within 2-body approximation
-    driver.run_ccp3(method="cct3", state_index=[0, 1, 2])
+    driver.run_ccp3(method="cct3", state_index=[0, 1, 2], t3_excitations=t3_excitations)
 
     expected_vee = [
         0.0,
