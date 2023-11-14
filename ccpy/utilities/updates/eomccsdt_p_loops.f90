@@ -6,7 +6,7 @@ module eomccsdt_p_loops
    
       ! Checklist for converting (H*R3)_C update into (X*T3)_C
       ! [ ] - idet loop is over R3 quantities; idet = 1, n3_r
-      ! [ ] - jdet loop is over T3 quantities; jdet = loc_arr(idx,1), loc_arr(idx,2)
+      ! [ ] - jdet loop is over T3 quantities; jdet = loc_arr(1,idx), loc_arr(2,idx)
       ! [ ] - replace n3_r parameter in sort4 to n3_t
       ! [ ] - remove resid from sort4 function when sorting T3 excitations
 
@@ -623,7 +623,7 @@ module eomccsdt_p_loops
                   ! NOTE: WITHIN THESE LOOPS, H1A(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
                   ! allocate new sorting arrays
                   nloc = nua*(nua-1)*(nua-2)/6*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,nua,noa))
                   !!! ABCK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/3,noa/), nua, nua, nua, noa)
@@ -643,7 +643,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = r3a_excits(4,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(oooo) | lmkabc >
                         hmatel = h2a_oooo(l,m,i,j)
@@ -659,7 +659,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,c,i)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = r3a_excits(4,jdet); m = r3a_excits(5,jdet);
                            ! compute < ijkabc | h2a(oooo) | lmiabc >
                            hmatel = -h2a_oooo(l,m,k,j)
@@ -676,7 +676,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,c,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = r3a_excits(4,jdet); m = r3a_excits(5,jdet);
                            ! compute < ijkabc | h2a(oooo) | lmjabc >
                            hmatel = -h2a_oooo(l,m,i,k)
@@ -712,7 +712,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,i)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         m = r3a_excits(5,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(oooo) | imnabc >
                         hmatel = h2a_oooo(m,n,j,k)
@@ -728,7 +728,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            m = r3a_excits(5,jdet); n = r3a_excits(6,jdet);
                            ! compute < ijkabc | h2a(oooo) | jmnabc >
                            hmatel = -h2a_oooo(m,n,i,k)
@@ -745,7 +745,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,c,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            m = r3a_excits(5,jdet); n = r3a_excits(6,jdet);
                            ! compute < ijkabc | h2a(oooo) | kmnabc >
                            hmatel = -h2a_oooo(m,n,j,i)
@@ -781,7 +781,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = r3a_excits(4,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(oooo) | ljnabc >
                         hmatel = h2a_oooo(l,n,i,k)
@@ -797,7 +797,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,i)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = r3a_excits(4,jdet); n = r3a_excits(6,jdet);
                            ! compute < ijkabc | h2a(oooo) | linabc >
                            hmatel = -h2a_oooo(l,n,j,k)
@@ -814,7 +814,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,c,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = r3a_excits(4,jdet); n = r3a_excits(6,jdet);
                            ! compute < ijkabc | h2a(oooo) | lknabc >
                            hmatel = -h2a_oooo(l,n,i,j)
@@ -840,7 +840,7 @@ module eomccsdt_p_loops
                   ! NOTE: WITHIN THESE LOOPS, H1A(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
                   ! allocate new sorting arrays
                   nloc = noa*(noa-1)*(noa-2)/6*nua
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(noa,noa,noa,nua))
                   !!! IJKA LOOP !!!
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
@@ -860,7 +860,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,a)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkaef >
                         hmatel = h2a_vvvv(b,c,e,f)
@@ -876,7 +876,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,k,b)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkbef >
                         hmatel = -h2a_vvvv(a,c,e,f)
@@ -893,7 +893,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(i,j,k,c)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkcef >
                         hmatel = -h2a_vvvv(b,a,e,f)
@@ -929,7 +929,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,b)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdbf >
                         hmatel = h2a_vvvv(a,c,d,f)
@@ -945,7 +945,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,k,a)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdaf >
                         hmatel = -h2a_vvvv(b,c,d,f)
@@ -962,7 +962,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(i,j,k,c)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdcf >
                         hmatel = -h2a_vvvv(a,b,d,f)
@@ -998,7 +998,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,c)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); e = r3a_excits(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdec >
                         hmatel = h2a_vvvv(a,b,d,e)
@@ -1014,7 +1014,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(i,j,k,a)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); e = r3a_excits(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdea >
                         hmatel = -h2a_vvvv(c,b,d,e)
@@ -1031,7 +1031,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(i,j,k,b)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); e = r3a_excits(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdeb >
                         hmatel = -h2a_vvvv(a,c,d,e)
@@ -1055,18 +1055,28 @@ module eomccsdt_p_loops
                   !!!! diagram 5a: A(i/jk)A(a/bc) h2a(amie) * r3a(ebcmjk)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = (nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,noa,noa))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnabf >
                         hmatel = h2a_voov(c,n,k,f)
@@ -1076,7 +1086,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnbcf >
                         hmatel = h2a_voov(a,n,k,f)
@@ -1086,7 +1096,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnacf >
                         hmatel = -h2a_voov(b,n,k,f)
@@ -1096,7 +1106,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknabf >
                         hmatel = h2a_voov(c,n,i,f)
@@ -1106,7 +1116,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknbcf >
                         hmatel = h2a_voov(a,n,i,f)
@@ -1116,7 +1126,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknacf >
                         hmatel = -h2a_voov(b,n,i,f)
@@ -1126,7 +1136,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknabf >
                         hmatel = -h2a_voov(c,n,j,f)
@@ -1136,7 +1146,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknbcf >
                         hmatel = -h2a_voov(a,n,j,f)
@@ -1146,7 +1156,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknacf >
                         hmatel = h2a_voov(b,n,j,f)
@@ -1154,16 +1164,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnaec >
                         hmatel = h2a_voov(b,n,k,e)
@@ -1173,7 +1196,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnbec >
                         hmatel = -h2a_voov(a,n,k,e)
@@ -1183,7 +1206,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnaeb >
                         hmatel = -h2a_voov(c,n,k,e)
@@ -1193,7 +1216,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknaec >
                         hmatel = h2a_voov(b,n,i,e)
@@ -1203,7 +1226,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknbec >
                         hmatel = -h2a_voov(a,n,i,e)
@@ -1213,7 +1236,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknaeb >
                         hmatel = -h2a_voov(c,n,i,e)
@@ -1223,7 +1246,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknaec >
                         hmatel = -h2a_voov(b,n,j,e)
@@ -1233,7 +1256,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknbec >
                         hmatel = h2a_voov(a,n,j,e)
@@ -1243,7 +1266,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknaeb >
                         hmatel = h2a_voov(c,n,j,e)
@@ -1251,16 +1274,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijndbc >
                         hmatel = h2a_voov(a,n,k,d)
@@ -1270,7 +1306,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijndac >
                         hmatel = -h2a_voov(b,n,k,d)
@@ -1280,7 +1316,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijndab >
                         hmatel = h2a_voov(c,n,k,d)
@@ -1290,7 +1326,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jkndbc >
                         hmatel = h2a_voov(a,n,i,d)
@@ -1300,7 +1336,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jkndac >
                         hmatel = -h2a_voov(b,n,i,d)
@@ -1310,7 +1346,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jkndab >
                         hmatel = h2a_voov(c,n,i,d)
@@ -1320,7 +1356,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ikndbc >
                         hmatel = -h2a_voov(a,n,j,d)
@@ -1330,7 +1366,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ikndac >
                         hmatel = h2a_voov(b,n,j,d)
@@ -1340,7 +1376,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); n = r3a_excits(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ikndab >
                         hmatel = -h2a_voov(c,n,j,d)
@@ -1348,16 +1384,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkabf >
                         hmatel = h2a_voov(c,m,j,f)
@@ -1367,7 +1416,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkbcf >
                         hmatel = h2a_voov(a,m,j,f)
@@ -1377,7 +1426,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkacf >
                         hmatel = -h2a_voov(b,m,j,f)
@@ -1387,7 +1436,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkabf >
                         hmatel = -h2a_voov(c,m,i,f)
@@ -1397,7 +1446,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkbcf >
                         hmatel = -h2a_voov(a,m,i,f)
@@ -1407,7 +1456,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkacf >
                         hmatel = h2a_voov(b,m,i,f)
@@ -1417,7 +1466,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjabf >
                         hmatel = -h2a_voov(c,m,k,f)
@@ -1427,7 +1476,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjbcf >
                         hmatel = -h2a_voov(a,m,k,f)
@@ -1437,7 +1486,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjacf >
                         hmatel = h2a_voov(b,m,k,f)
@@ -1445,16 +1494,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkaec >
                         hmatel = h2a_voov(b,m,j,e)
@@ -1464,7 +1526,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkbec >
                         hmatel = -h2a_voov(a,m,j,e)
@@ -1474,7 +1536,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkaeb >
                         hmatel = -h2a_voov(c,m,j,e)
@@ -1484,7 +1546,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkaec >
                         hmatel = -h2a_voov(b,m,i,e)
@@ -1494,7 +1556,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkbec >
                         hmatel = h2a_voov(a,m,i,e)
@@ -1504,7 +1566,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkaeb >
                         hmatel = h2a_voov(c,m,i,e)
@@ -1514,7 +1576,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjaec >
                         hmatel = -h2a_voov(b,m,k,e)
@@ -1524,7 +1586,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjbec >
                         hmatel = h2a_voov(a,m,k,e)
@@ -1534,7 +1596,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjaeb >
                         hmatel = h2a_voov(c,m,k,e)
@@ -1542,16 +1604,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkdbc >
                         hmatel = h2a_voov(a,m,j,d)
@@ -1561,7 +1636,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkdac >
                         hmatel = -h2a_voov(b,m,j,d)
@@ -1571,7 +1646,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkdab >
                         hmatel = h2a_voov(c,m,j,d)
@@ -1581,7 +1656,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkdbc >
                         hmatel = -h2a_voov(a,m,i,d)
@@ -1591,7 +1666,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkdac >
                         hmatel = h2a_voov(b,m,i,d)
@@ -1601,7 +1676,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkdab >
                         hmatel = -h2a_voov(c,m,i,d)
@@ -1611,7 +1686,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjdbc >
                         hmatel = -h2a_voov(a,m,k,d)
@@ -1621,7 +1696,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjdac >
                         hmatel = h2a_voov(b,m,k,d)
@@ -1631,7 +1706,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); m = r3a_excits(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjdab >
                         hmatel = -h2a_voov(c,m,k,d)
@@ -1639,16 +1714,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkabf >
                         hmatel = h2a_voov(c,l,i,f)
@@ -1658,7 +1746,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkbcf >
                         hmatel = h2a_voov(a,l,i,f)
@@ -1668,7 +1756,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkacf >
                         hmatel = -h2a_voov(b,l,i,f)
@@ -1678,7 +1766,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likabf >
                         hmatel = -h2a_voov(c,l,j,f)
@@ -1688,7 +1776,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likbcf >
                         hmatel = -h2a_voov(a,l,j,f)
@@ -1698,7 +1786,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likacf >
                         hmatel = h2a_voov(b,l,j,f)
@@ -1708,7 +1796,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijabf >
                         hmatel = h2a_voov(c,l,k,f)
@@ -1718,7 +1806,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijbcf >
                         hmatel = h2a_voov(a,l,k,f)
@@ -1728,7 +1816,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3a_excits(3,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijacf >
                         hmatel = -h2a_voov(b,l,k,f)
@@ -1736,16 +1824,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkaec >
                         hmatel = h2a_voov(b,l,i,e)
@@ -1755,7 +1856,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkbec >
                         hmatel = -h2a_voov(a,l,i,e)
@@ -1765,7 +1866,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkaeb >
                         hmatel = -h2a_voov(c,l,i,e)
@@ -1775,7 +1876,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likaec >
                         hmatel = -h2a_voov(b,l,j,e)
@@ -1785,7 +1886,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likbec >
                         hmatel = h2a_voov(a,l,j,e)
@@ -1795,7 +1896,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likaeb >
                         hmatel = h2a_voov(c,l,j,e)
@@ -1805,7 +1906,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijaec >
                         hmatel = h2a_voov(b,l,k,e)
@@ -1815,7 +1916,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijbec >
                         hmatel = -h2a_voov(a,l,k,e)
@@ -1825,7 +1926,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijaeb >
                         hmatel = -h2a_voov(c,l,k,e)
@@ -1833,16 +1934,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(r3a_excits, r3a_amps, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,&
+                  !$omp r3a_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkdbc >
                         hmatel = h2a_voov(a,l,i,d)
@@ -1852,7 +1966,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkdac >
                         hmatel = -h2a_voov(b,l,i,d)
@@ -1862,7 +1976,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkdab >
                         hmatel = h2a_voov(c,l,i,d)
@@ -1872,7 +1986,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likdbc >
                         hmatel = -h2a_voov(a,l,j,d)
@@ -1882,7 +1996,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likdac >
                         hmatel = h2a_voov(b,l,j,d)
@@ -1892,7 +2006,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likdab >
                         hmatel = -h2a_voov(c,l,j,d)
@@ -1902,7 +2016,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijdbc >
                         hmatel = h2a_voov(a,l,k,d)
@@ -1912,7 +2026,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijdac >
                         hmatel = -h2a_voov(b,l,k,d)
@@ -1922,7 +2036,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); l = r3a_excits(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijdab >
                         hmatel = h2a_voov(c,l,k,d)
@@ -1930,6 +2044,9 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -1940,7 +2057,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = r3b_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = nua*(nua-1)/2*noa*(noa-1)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,noa,noa))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
@@ -1951,7 +2068,7 @@ module eomccsdt_p_loops
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aaa),&
+                  !$omp noa,nua,nob,nub,n3aaa_r),&
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
@@ -1961,7 +2078,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ijn~abf~ >
                         hmatel = h2b_voov(c,n,k,f)
@@ -1971,7 +2088,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | jkn~abf~ >
                         hmatel = h2b_voov(c,n,i,f)
@@ -1981,7 +2098,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ikn~abf~ >
                         hmatel = -h2b_voov(c,n,j,f)
@@ -1991,7 +2108,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ijn~bcf~ >
                         hmatel = h2b_voov(a,n,k,f)
@@ -2001,7 +2118,7 @@ module eomccsdt_p_loops
                      ! (ik)(ac)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | jkn~bcf~ >
                         hmatel = h2b_voov(a,n,i,f)
@@ -2011,7 +2128,7 @@ module eomccsdt_p_loops
                      ! (jk)(ac)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ikn~bcf~ >
                         hmatel = -h2b_voov(a,n,j,f)
@@ -2021,7 +2138,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ijn~acf~ >
                         hmatel = -h2b_voov(b,n,k,f)
@@ -2031,7 +2148,7 @@ module eomccsdt_p_loops
                      ! (ik)(bc)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | jkn~acf~ >
                         hmatel = -h2b_voov(b,n,i,f)
@@ -2041,7 +2158,7 @@ module eomccsdt_p_loops
                      ! (jk)(bc)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ikn~acf~ >
                         hmatel = h2b_voov(b,n,j,f)
@@ -2067,7 +2184,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = t3a_excits(:,:)
                   ! allocate new sorting arrays
                   nloc = nua*(nua-1)*(nua-2)/6*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,nua,noa))
                   !!! ABCK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/3,noa/), nua, nua, nua, noa)
@@ -2087,7 +2204,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = excits_buff(4,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(oooo) | lmkabc >
                         hmatel = x2a_oooo(l,m,i,j)
@@ -2103,7 +2220,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,c,i)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = excits_buff(4,jdet); m = excits_buff(5,jdet);
                            ! compute < ijkabc | h2a(oooo) | lmiabc >
                            hmatel = -x2a_oooo(l,m,k,j)
@@ -2120,7 +2237,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,c,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = excits_buff(4,jdet); m = excits_buff(5,jdet);
                            ! compute < ijkabc | h2a(oooo) | lmjabc >
                            hmatel = -x2a_oooo(l,m,i,k)
@@ -2156,7 +2273,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,i)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         m = excits_buff(5,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(oooo) | imnabc >
                         hmatel = x2a_oooo(m,n,j,k)
@@ -2172,7 +2289,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            m = excits_buff(5,jdet); n = excits_buff(6,jdet);
                            ! compute < ijkabc | h2a(oooo) | jmnabc >
                            hmatel = -x2a_oooo(m,n,i,k)
@@ -2189,7 +2306,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,c,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            m = excits_buff(5,jdet); n = excits_buff(6,jdet);
                            ! compute < ijkabc | h2a(oooo) | kmnabc >
                            hmatel = -x2a_oooo(m,n,j,i)
@@ -2225,7 +2342,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = excits_buff(4,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(oooo) | ljnabc >
                         hmatel = x2a_oooo(l,n,i,k)
@@ -2241,7 +2358,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,i)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = excits_buff(4,jdet); n = excits_buff(6,jdet);
                            ! compute < ijkabc | h2a(oooo) | linabc >
                            hmatel = -x2a_oooo(l,n,j,k)
@@ -2258,7 +2375,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,c,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = excits_buff(4,jdet); n = excits_buff(6,jdet);
                            ! compute < ijkabc | h2a(oooo) | lknabc >
                            hmatel = -x2a_oooo(l,n,i,j)
@@ -2291,7 +2408,7 @@ module eomccsdt_p_loops
                   !excits_buff(:,:) = t3a_excits(:,:)
                   ! allocate new sorting arrays
                   nloc = noa*(noa-1)*(noa-2)/6*nua
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(noa,noa,noa,nua))
                   !!! IJKA LOOP !!!
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
@@ -2311,7 +2428,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,a)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkaef >
                         hmatel = x2a_vvvv(b,c,e,f)
@@ -2327,7 +2444,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,k,b)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkbef >
                         hmatel = -x2a_vvvv(a,c,e,f)
@@ -2344,7 +2461,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(i,j,k,c)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkcef >
                         hmatel = -x2a_vvvv(b,a,e,f)
@@ -2380,7 +2497,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,b)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdbf >
                         hmatel = x2a_vvvv(a,c,d,f)
@@ -2396,7 +2513,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,k,a)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdaf >
                         hmatel = -x2a_vvvv(b,c,d,f)
@@ -2413,7 +2530,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(i,j,k,c)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdcf >
                         hmatel = -x2a_vvvv(a,b,d,f)
@@ -2449,7 +2566,7 @@ module eomccsdt_p_loops
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,c)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdec >
                         hmatel = x2a_vvvv(a,b,d,e)
@@ -2465,7 +2582,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(i,j,k,a)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdea >
                         hmatel = -x2a_vvvv(c,b,d,e)
@@ -2482,7 +2599,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(i,j,k,b)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdeb >
                         hmatel = -x2a_vvvv(a,c,d,e)
@@ -2508,18 +2625,28 @@ module eomccsdt_p_loops
                   !!!! diagram 5b: A(i/jk)A(a/bc) x2a(amie) * t3a(ebcmjk)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = (nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,noa,noa))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnabf >
                         hmatel = x2a_voov(c,n,k,f)
@@ -2529,7 +2656,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnbcf >
                         hmatel = x2a_voov(a,n,k,f)
@@ -2539,7 +2666,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnacf >
                         hmatel = -x2a_voov(b,n,k,f)
@@ -2549,7 +2676,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknabf >
                         hmatel = x2a_voov(c,n,i,f)
@@ -2559,7 +2686,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknbcf >
                         hmatel = x2a_voov(a,n,i,f)
@@ -2569,7 +2696,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknacf >
                         hmatel = -x2a_voov(b,n,i,f)
@@ -2579,7 +2706,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknabf >
                         hmatel = -x2a_voov(c,n,j,f)
@@ -2589,7 +2716,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknbcf >
                         hmatel = -x2a_voov(a,n,j,f)
@@ -2599,7 +2726,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknacf >
                         hmatel = x2a_voov(b,n,j,f)
@@ -2607,16 +2734,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnaec >
                         hmatel = x2a_voov(b,n,k,e)
@@ -2626,7 +2766,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnbec >
                         hmatel = -x2a_voov(a,n,k,e)
@@ -2636,7 +2776,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnaeb >
                         hmatel = -x2a_voov(c,n,k,e)
@@ -2646,7 +2786,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknaec >
                         hmatel = x2a_voov(b,n,i,e)
@@ -2656,7 +2796,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknbec >
                         hmatel = -x2a_voov(a,n,i,e)
@@ -2666,7 +2806,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknaeb >
                         hmatel = -x2a_voov(c,n,i,e)
@@ -2676,7 +2816,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknaec >
                         hmatel = -x2a_voov(b,n,j,e)
@@ -2686,7 +2826,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknbec >
                         hmatel = x2a_voov(a,n,j,e)
@@ -2696,7 +2836,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknaeb >
                         hmatel = x2a_voov(c,n,j,e)
@@ -2704,16 +2844,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijndbc >
                         hmatel = x2a_voov(a,n,k,d)
@@ -2723,7 +2876,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijndac >
                         hmatel = -x2a_voov(b,n,k,d)
@@ -2733,7 +2886,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijndab >
                         hmatel = x2a_voov(c,n,k,d)
@@ -2743,7 +2896,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jkndbc >
                         hmatel = x2a_voov(a,n,i,d)
@@ -2753,7 +2906,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jkndac >
                         hmatel = -x2a_voov(b,n,i,d)
@@ -2763,7 +2916,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jkndab >
                         hmatel = x2a_voov(c,n,i,d)
@@ -2773,7 +2926,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ikndbc >
                         hmatel = -x2a_voov(a,n,j,d)
@@ -2783,7 +2936,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ikndac >
                         hmatel = x2a_voov(b,n,j,d)
@@ -2793,7 +2946,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ikndab >
                         hmatel = -x2a_voov(c,n,j,d)
@@ -2801,16 +2954,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkabf >
                         hmatel = x2a_voov(c,m,j,f)
@@ -2820,7 +2986,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkbcf >
                         hmatel = x2a_voov(a,m,j,f)
@@ -2830,7 +2996,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkacf >
                         hmatel = -x2a_voov(b,m,j,f)
@@ -2840,7 +3006,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkabf >
                         hmatel = -x2a_voov(c,m,i,f)
@@ -2850,7 +3016,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkbcf >
                         hmatel = -x2a_voov(a,m,i,f)
@@ -2860,7 +3026,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkacf >
                         hmatel = x2a_voov(b,m,i,f)
@@ -2870,7 +3036,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjabf >
                         hmatel = -x2a_voov(c,m,k,f)
@@ -2880,7 +3046,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjbcf >
                         hmatel = -x2a_voov(a,m,k,f)
@@ -2890,7 +3056,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjacf >
                         hmatel = x2a_voov(b,m,k,f)
@@ -2898,16 +3064,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkaec >
                         hmatel = x2a_voov(b,m,j,e)
@@ -2917,7 +3096,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkbec >
                         hmatel = -x2a_voov(a,m,j,e)
@@ -2927,7 +3106,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkaeb >
                         hmatel = -x2a_voov(c,m,j,e)
@@ -2937,7 +3116,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkaec >
                         hmatel = -x2a_voov(b,m,i,e)
@@ -2947,7 +3126,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkbec >
                         hmatel = x2a_voov(a,m,i,e)
@@ -2957,7 +3136,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkaeb >
                         hmatel = x2a_voov(c,m,i,e)
@@ -2967,7 +3146,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjaec >
                         hmatel = -x2a_voov(b,m,k,e)
@@ -2977,7 +3156,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjbec >
                         hmatel = x2a_voov(a,m,k,e)
@@ -2987,7 +3166,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjaeb >
                         hmatel = x2a_voov(c,m,k,e)
@@ -2995,16 +3174,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkdbc >
                         hmatel = x2a_voov(a,m,j,d)
@@ -3014,7 +3206,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkdac >
                         hmatel = -x2a_voov(b,m,j,d)
@@ -3024,7 +3216,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkdab >
                         hmatel = x2a_voov(c,m,j,d)
@@ -3034,7 +3226,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkdbc >
                         hmatel = -x2a_voov(a,m,i,d)
@@ -3044,7 +3236,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkdac >
                         hmatel = x2a_voov(b,m,i,d)
@@ -3054,7 +3246,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkdab >
                         hmatel = -x2a_voov(c,m,i,d)
@@ -3064,7 +3256,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjdbc >
                         hmatel = -x2a_voov(a,m,k,d)
@@ -3074,7 +3266,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjdac >
                         hmatel = x2a_voov(b,m,k,d)
@@ -3084,7 +3276,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjdab >
                         hmatel = -x2a_voov(c,m,k,d)
@@ -3092,16 +3284,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkabf >
                         hmatel = x2a_voov(c,l,i,f)
@@ -3111,7 +3316,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkbcf >
                         hmatel = x2a_voov(a,l,i,f)
@@ -3121,7 +3326,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkacf >
                         hmatel = -x2a_voov(b,l,i,f)
@@ -3131,7 +3336,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likabf >
                         hmatel = -x2a_voov(c,l,j,f)
@@ -3141,7 +3346,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likbcf >
                         hmatel = -x2a_voov(a,l,j,f)
@@ -3151,7 +3356,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likacf >
                         hmatel = x2a_voov(b,l,j,f)
@@ -3161,7 +3366,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijabf >
                         hmatel = x2a_voov(c,l,k,f)
@@ -3171,7 +3376,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijbcf >
                         hmatel = x2a_voov(a,l,k,f)
@@ -3181,7 +3386,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijacf >
                         hmatel = -x2a_voov(b,l,k,f)
@@ -3189,16 +3394,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkaec >
                         hmatel = x2a_voov(b,l,i,e)
@@ -3208,7 +3426,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkbec >
                         hmatel = -x2a_voov(a,l,i,e)
@@ -3218,7 +3436,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkaeb >
                         hmatel = -x2a_voov(c,l,i,e)
@@ -3228,7 +3446,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likaec >
                         hmatel = -x2a_voov(b,l,j,e)
@@ -3238,7 +3456,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likbec >
                         hmatel = x2a_voov(a,l,j,e)
@@ -3248,7 +3466,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likaeb >
                         hmatel = x2a_voov(c,l,j,e)
@@ -3258,7 +3476,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijaec >
                         hmatel = x2a_voov(b,l,k,e)
@@ -3268,7 +3486,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijbec >
                         hmatel = -x2a_voov(a,l,k,e)
@@ -3278,7 +3496,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijaeb >
                         hmatel = -x2a_voov(c,l,k,e)
@@ -3286,16 +3504,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3a_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2A_voov,&
+                  !$omp noa,nua,n3aaa_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa_r
                      a = r3a_excits(1,idet); b = r3a_excits(2,idet); c = r3a_excits(3,idet);
                      i = r3a_excits(4,idet); j = r3a_excits(5,idet); k = r3a_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkdbc >
                         hmatel = x2a_voov(a,l,i,d)
@@ -3305,7 +3536,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkdac >
                         hmatel = -x2a_voov(b,l,i,d)
@@ -3315,7 +3546,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkdab >
                         hmatel = x2a_voov(c,l,i,d)
@@ -3325,7 +3556,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likdbc >
                         hmatel = -x2a_voov(a,l,j,d)
@@ -3335,7 +3566,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likdac >
                         hmatel = x2a_voov(b,l,j,d)
@@ -3345,7 +3576,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likdab >
                         hmatel = -x2a_voov(c,l,j,d)
@@ -3355,7 +3586,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijdbc >
                         hmatel = x2a_voov(a,l,k,d)
@@ -3365,7 +3596,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijdac >
                         hmatel = -x2a_voov(b,l,k,d)
@@ -3375,7 +3606,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijdab >
                         hmatel = x2a_voov(c,l,k,d)
@@ -3383,6 +3614,9 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate temporary amplitude arrays
                   deallocate(excits_buff,amps_buff)
                   ! deallocate sorting arrays
@@ -3395,7 +3629,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = nua*(nua-1)/2*noa*(noa-1)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,noa,noa))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
@@ -3416,7 +3650,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ijn~abf~ >
                         hmatel = x2b_voov(c,n,k,f)
@@ -3426,7 +3660,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | jkn~abf~ >
                         hmatel = x2b_voov(c,n,i,f)
@@ -3436,7 +3670,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ikn~abf~ >
                         hmatel = -x2b_voov(c,n,j,f)
@@ -3446,7 +3680,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ijn~bcf~ >
                         hmatel = x2b_voov(a,n,k,f)
@@ -3456,7 +3690,7 @@ module eomccsdt_p_loops
                      ! (ik)(ac)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | jkn~bcf~ >
                         hmatel = x2b_voov(a,n,i,f)
@@ -3466,7 +3700,7 @@ module eomccsdt_p_loops
                      ! (jk)(ac)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ikn~bcf~ >
                         hmatel = -x2b_voov(a,n,j,f)
@@ -3476,7 +3710,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ijn~acf~ >
                         hmatel = -x2b_voov(b,n,k,f)
@@ -3486,7 +3720,7 @@ module eomccsdt_p_loops
                      ! (ik)(bc)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | jkn~acf~ >
                         hmatel = -x2b_voov(b,n,i,f)
@@ -3496,7 +3730,7 @@ module eomccsdt_p_loops
                      ! (jk)(bc)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2b(voov) | ikn~acf~ >
                         hmatel = x2b_voov(b,n,j,f)
@@ -3678,7 +3912,15 @@ module eomccsdt_p_loops
                   real(kind=8) :: t_amp, r_amp, hmatel, hmatel1, res_mm23
                   integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet, jdet
                   integer :: idx, nloc
+                  ! new strategy
+                  !real(kind=8), external :: ddot
+                  ! timings variables
+                  !real(kind=8) :: tic, toc, ttic, ttoc, stic, stoc, dtic, dtoc, dtime, stime, ttime
                   
+                  ! zero timings variables
+                  !dtime = 0.0
+                  !stime = 0.0
+                  !ttime = 0.0
                   ! Zero the container that holds H*R
                   resid = 0.0d0
 
@@ -3687,7 +3929,7 @@ module eomccsdt_p_loops
                   !!! ABCK LOOP !!! 
                   ! allocate new sorting arrays
                   nloc = nua*(nua-1)/2*nub*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,nub,noa))
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, noa)
                   call sort4(r3b_excits, r3b_amps, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, noa, nloc, n3aab_r, resid)
@@ -3697,7 +3939,7 @@ module eomccsdt_p_loops
                   !$omp r3b_amps,&
                   !$omp loc_arr,idx_table,&
                   !$omp h1a_oo,h2a_oooo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp noa,nua,nob,nub,n3aab_r),&
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
@@ -3705,7 +3947,7 @@ module eomccsdt_p_loops
                      a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,c,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = r3b_excits(4,jdet); m = r3b_excits(5,jdet);
                         ! compute < ijk~abc~ | h2a(oooo) | lmk~abc~ >
                         hmatel = h2a_oooo(l,m,i,j)
@@ -3731,7 +3973,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3b_amps(:) 
                   ! allocate new sorting arrays
                   nloc = nua*(nua-1)/2*nub*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,nub,noa))
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, noa, nloc, n3aab_t)
@@ -3741,7 +3983,7 @@ module eomccsdt_p_loops
                   !$omp amps_buff,&
                   !$omp loc_arr,idx_table,&
                   !$omp x1a_oo,x2a_oooo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
+                  !$omp noa,nua,nob,nub,n3aab_r),&
                   !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
                   !$omp idx)
                   !$omp do schedule(static)
@@ -3749,7 +3991,7 @@ module eomccsdt_p_loops
                      a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,c,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = excits_buff(4,jdet); m = excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2a(oooo) | lmk~abc~ >
                         hmatel = x2a_oooo(l,m,i,j)
@@ -3769,12 +4011,13 @@ module eomccsdt_p_loops
                   ! deallocate temporary arrays
                   deallocate(excits_buff,amps_buff)
 
+                  !call cpu_time(tic)
                   !!!! diagram 2a: A(ab) h1a(ae)*r3b(ebcmjk)
                   !!!! diagram 6a: A(ab) 1/2 h2a(abef)*r3b(ebcmjk)
                   !!! CIJK LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nub*noa*(noa-1)/2*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(noa,noa,nob,nub))
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nub/), noa, noa, nob, nub)
                   call sort4(r3b_excits, r3b_amps, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab_r, resid)
@@ -3792,7 +4035,7 @@ module eomccsdt_p_loops
                      a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(i,j,k,c)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3b_excits(1,jdet); e = r3b_excits(2,jdet);
                         ! compute < ijk~abc~ | h2a(vvvv) | ijk~dec~ >
                         hmatel = h2a_vvvv(a,b,d,e)
@@ -3818,7 +4061,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3b_amps(:) 
                   ! allocate new sorting arrays
                   nloc = nub*noa*(noa-1)/2*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(noa,noa,nob,nub))
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nub/), noa, noa, nob, nub)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab_t)
@@ -3836,7 +4079,7 @@ module eomccsdt_p_loops
                      a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(i,j,k,c)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijk~abc~ | x2a(vvvv) | ijk~dec~ >
                         hmatel = x2a_vvvv(a,b,d,e)
@@ -3855,13 +4098,15 @@ module eomccsdt_p_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate temporary arrays
                   deallocate(excits_buff,amps_buff)
+                  !call cpu_time(toc)
+                  !print*, "R3B - diagrams 2/6 = ", toc - tic
 
                   !!!! diagram 3a: -h1b(mk)*r3b(abcijm)
                   !!!! diagram 7a: A(ij) h2b(mnjk)*r3b(abcimn)
                   !!! ABCI LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nua*(nua-1)/2*nub*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,nub,noa))
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,noa-1/), nua, nua, nub, noa)
                   call sort4(r3b_excits, r3b_amps, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nub, noa, nloc, n3aab_r, resid)
@@ -3880,7 +4125,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,i)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         m = r3b_excits(5,jdet); n = r3b_excits(6,jdet);
                         ! compute < ijk~abc~ | h2b(oooo) | imn~abc~ >
                         hmatel = h2b_oooo(m,n,j,k)
@@ -3891,7 +4136,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            m = r3b_excits(5,jdet); n = r3b_excits(6,jdet);
                            ! compute < ijk~abc~ | h2b(oooo) | jmn~abc~ >
                            hmatel = -h2b_oooo(m,n,i,k)
@@ -3922,7 +4167,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = r3b_excits(4,jdet); n = r3b_excits(6,jdet);
                         ! compute < ijk~abc~ | h2b(oooo) | ljn~abc~ >
                         hmatel = h2b_oooo(l,n,i,k)
@@ -3931,7 +4176,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,i)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = r3b_excits(4,jdet); n = r3b_excits(6,jdet);
                            ! compute < ijk~abc~ | h2b(oooo) | lin~abc~ >
                            hmatel = -h2b_oooo(l,n,j,k)
@@ -3953,7 +4198,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3b_amps(:) 
                   ! allocate new sorting arrays
                   nloc = nua*(nua-1)/2*nub*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,nub,noa))
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,noa-1/), nua, nua, nub, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nub, noa, nloc, n3aab_t)
@@ -3972,7 +4217,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,i)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         m = excits_buff(5,jdet); n = excits_buff(6,jdet);
                         ! compute < ijk~abc~ | x2b(oooo) | imn~abc~ >
                         hmatel = x2b_oooo(m,n,j,k)
@@ -3983,7 +4228,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            m = excits_buff(5,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | x2b(oooo) | jmn~abc~ >
                            hmatel = -x2b_oooo(m,n,i,k)
@@ -4014,7 +4259,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = excits_buff(4,jdet); n = excits_buff(6,jdet);
                         ! compute < ijk~abc~ | x2b(oooo) | ljn~abc~ >
                         hmatel = x2b_oooo(l,n,i,k)
@@ -4023,7 +4268,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,i)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = excits_buff(4,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | x2b(oooo) | lin~abc~ >
                            hmatel = -x2b_oooo(l,n,j,k)
@@ -4039,16 +4284,18 @@ module eomccsdt_p_loops
                   ! deallocate temporary arrays
                   deallocate(excits_buff,amps_buff)
 
+                  !call cpu_time(tic)
+                  !! >> HOT SPOT << !
                   !!!! diagram 5a: h1b(ce)*r3b(abeijm)
                   !!!! diagram 8a: A(ab) h2b(bcef)*r3b(aefijk)
                   ! allocate new sorting arrays
                   nloc = nua*noa*(noa-1)/2*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(noa,noa,nob,nua))
                   !!! AIJK LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nua-1/), noa, noa, nob, nua)
                   call sort4(r3b_excits, r3b_amps, loc_arr, idx_table, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab_r, resid)
-                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp r3b_excits,&
                   !$omp r3b_amps,&
@@ -4063,7 +4310,7 @@ module eomccsdt_p_loops
                       i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                       ! (1)
                       idx = idx_table(i,j,k,a)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          e = r3b_excits(2,jdet); f = r3b_excits(3,jdet);
                          ! compute < ijk~abc~ | h2b(vvvv) | ijk~aef~ >
                          hmatel = h2b_vvvv(b,c,e,f)
@@ -4073,7 +4320,7 @@ module eomccsdt_p_loops
                       ! (ab)
                       idx = idx_table(i,j,k,b)
                       if (idx/=0) then ! protect against case where b = nua because a = 1, nua-1
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = r3b_excits(2,jdet); f = r3b_excits(3,jdet);
                             ! compute < ijk~abc~ | h2b(vvvv) | ijk~bef~ >
                             hmatel = -h2b_vvvv(a,c,e,f)
@@ -4084,7 +4331,7 @@ module eomccsdt_p_loops
                   end do
                   !$omp end do
                   !$omp end parallel
-                  !!!! END OMP PARALLEL SECTION !!!!
+                  !!! END OMP PARALLEL SECTION !!!!
                   !!! BIJK LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/2,nua/), noa, noa, nob, nua)
                   call sort4(r3b_excits, r3b_amps, loc_arr, idx_table, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab_r, resid)
@@ -4102,7 +4349,7 @@ module eomccsdt_p_loops
                       a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
                       i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                       idx = idx_table(i,j,k,b)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = r3b_excits(1,jdet); f = r3b_excits(3,jdet);
                          ! compute < ijk~abc~ | h2b(vvvv) | ijk~dbf~ >
                          hmatel = h2b_vvvv(a,c,d,f)
@@ -4110,7 +4357,7 @@ module eomccsdt_p_loops
                       end do
                       idx = idx_table(i,j,k,a)
                       if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = r3b_excits(1,jdet); f = r3b_excits(3,jdet);
                             ! compute < ijk~abc~ | h2b(vvvv) | ijk~daf~ >
                             hmatel = -h2b_vvvv(b,c,d,f)
@@ -4128,10 +4375,10 @@ module eomccsdt_p_loops
                   ! allocate temporary arrays
                   allocate(excits_buff(6,n3aab_t),amps_buff(n3aab_t))
                   excits_buff(:,:) = t3b_excits(:,:)
-                  amps_buff(:) = t3b_amps(:) 
+                  amps_buff(:) = t3b_amps(:)
                   ! allocate new sorting arrays
                   nloc = nua*noa*(noa-1)/2*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(noa,noa,nob,nua))
                   !!! AIJK LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nua-1/), noa, noa, nob, nua)
@@ -4151,7 +4398,7 @@ module eomccsdt_p_loops
                       i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                       ! (1)
                       idx = idx_table(i,j,k,a)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                          ! compute < ijk~abc~ | x2b(vvvv) | ijk~aef~ >
                          hmatel = x2b_vvvv(b,c,e,f)
@@ -4161,7 +4408,7 @@ module eomccsdt_p_loops
                       ! (ab)
                       idx = idx_table(i,j,k,b)
                       if (idx/=0) then ! protect against case where b = nua because a = 1, nua-1
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                             ! compute < ijk~abc~ | x2b(vvvv) | ijk~bef~ >
                             hmatel = -x2b_vvvv(a,c,e,f)
@@ -4190,7 +4437,7 @@ module eomccsdt_p_loops
                       a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
                       i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                       idx = idx_table(i,j,k,b)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                          ! compute < ijk~abc~ | x2b(vvvv) | ijk~dbf~ >
                          hmatel = x2b_vvvv(a,c,d,f)
@@ -4198,7 +4445,7 @@ module eomccsdt_p_loops
                       end do
                       idx = idx_table(i,j,k,a)
                       if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                             ! compute < ijk~abc~ | x2b(vvvv) | ijk~daf~ >
                             hmatel = -x2b_vvvv(b,c,d,f)
@@ -4213,11 +4460,220 @@ module eomccsdt_p_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate temporary arrays
                   deallocate(excits_buff,amps_buff)
+                  !call cpu_time(toc)
+                  !print*, "R3B - diagrams 5/8 = ", toc - tic
 
+!                  call cpu_time(ttic)
+!                  ! >> HOT SPOT << !
+!                  !!!! diagram 5a: h1b(ce)*r3b(abeijm)
+!                  !!!! diagram 8a: A(ab) h2b(bcef)*r3b(aefijk)
+!                  allocate(h_buff(nua*nub),x_buff(nua*nub))
+!                  ! allocate new sorting arrays
+!                  nloc = nua*noa*(noa-1)/2*nob
+!                  allocate(loc_arr(2,nloc))
+!                  allocate(idx_table(noa,noa,nob,nua))
+!                  !!! AIJK LOOP !!!
+!                  call cpu_time(stic)
+!                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nua-1/), noa, noa, nob, nua)
+!                  call sort4(r3b_excits, r3b_amps, loc_arr, idx_table, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab_r, resid)
+!                  call cpu_time(stoc)
+!                  stime = stime + (stoc - stic)
+!                  call cpu_time(dtic)
+!                  ! Can refactor this
+!                  ! do idx = 1, N_aijk
+!                  !    idet = loc_arr(1,idx)
+!                  !    a, b, c, i, j, k = r3b_excits(:,idet)
+!                  !    do jdet = loc_arr(1,idx), loc_arr(2,idx)
+!                  !       a, e, f, i, j, k = r3b_excits(:,jdet)
+!                  !       hmatel = <ijkabc|H|ijkaef>
+!                  !       sigma(idet) += hmatel * r3b_amps(jdet)
+!                  !    end do
+!                  ! end do
+!                  do idet = 1, n3aab_r ! loop over r3b ordered in (a,i,j,k) blocks -> (b,c) are changing fast
+!                      a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
+!                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
+!                      ! (1)
+!                      idx = idx_table(i,j,k,a) ! -> repeat fetching; diagonal-blocks,
+!                      ij = 1
+!                      do jdet = loc_arr(1,idx), loc_arr(2,idx) ! -> repeat fetching
+!                         e = r3b_excits(2,jdet); f = r3b_excits(3,jdet);
+!                         ! compute < ijk~abc~ | h2b(vvvv) | ijk~aef~ >
+!                         h_buff(ij) = h2b_vvvv(b,c,e,f)
+!                         if (b==e) h_buff(ij) = h_buff(ij) + h1b_vv(c,f)
+!                         x_buff(ij) = r3b_amps(jdet)
+!                         ij = ij + 1
+!                      end do
+!                      print*, ij
+!                      !h_buff(1:njdet) = h2b_vvvv(b,c,r3b_excits(2,loc_arr(1,idx):loc_arr(2,idx)),r3b_excits(3,loc_arr(1,idx):loc_arr(2,idx)))
+!                      !hx = ddot(ij-1, h_buff(1:ij-1), 1, x_buff(1:ij-1), 1)
+!                      !hx = 0.0d0
+!                      !resid(idet) = resid(idet) + hx
+!                      ! (ab)
+!                      idx = idx_table(i,j,k,b) ! off-diagonal blocks, e.g., Loop a2 <- a1 + 1, N_aijk
+!                      if (idx/=0) then ! protect against case where b = nua because a = 1, nua-1
+!                         ij = 1
+!                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
+!                            e = r3b_excits(2,jdet); f = r3b_excits(3,jdet);
+!                            ! compute < ijk~abc~ | h2b(vvvv) | ijk~bef~ >
+!                            h_buff(ij) = -h2b_vvvv(a,c,e,f)
+!                            if (a==e) h_buff(ij) = h_buff(ij) - h1b_vv(c,f)
+!                            x_buff(ij) = r3b_amps(jdet)
+!                            ij = ij + 1
+!                         end do
+!                         !print*, ij
+!                         !hx = ddot(ij-1, h_buff(1:ij-1), 1, x_buff(1:ij-1), 1)
+!                         !hx = 0.0d0
+!                         !resid(idet) = resid(idet) + hx
+!                      end if
+!                  end do
+!                  call cpu_time(dtoc)
+!                  dtime = dtime + (dtoc - dtic)
+!                  !!! BIJK LOOP !!!
+!                  call cpu_time(stic)
+!                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/2,nua/), noa, noa, nob, nua)
+!                  call sort4(r3b_excits, r3b_amps, loc_arr, idx_table, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab_r, resid)
+!                  call cpu_time(stoc)
+!                  stime = stime + (stoc - stic)
+!                  call cpu_time(dtic)
+!                  do idet = 1, n3aab_r
+!                      a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
+!                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
+!                      !idx = idx_table(i,j,k,b)
+!                      ij = 1
+!                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
+!                         d = r3b_excits(1,jdet); f = r3b_excits(3,jdet);
+!                         ! compute < ijk~abc~ | h2b(vvvv) | ijk~dbf~ >
+!                         !h_buff(ij) = h2b_vvvv(a,c,d,f)
+!                         x_buff(ij) = r3b_amps(jdet)
+!                         ij = ij + 1
+!                      end do
+!                      !hx = ddot(ij-1, h_buff(1:ij-1), 1, x_buff(1:ij-1), 1)
+!                      !hx = 0.0d0
+!                      !resid(idet) = resid(idet) + hx
+!                      !idx = idx_table(i,j,k,a)
+!                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
+!                         ij = 1
+!                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
+!                            d = r3b_excits(1,jdet); f = r3b_excits(3,jdet);
+!                            ! compute < ijk~abc~ | h2b(vvvv) | ijk~daf~ >
+!                            !h_buff(ij) = -h2b_vvvv(b,c,d,f)
+!                            x_buff(ij) = r3b_amps(jdet)
+!                            ij = ij + 1
+!                         end do
+!                         !hx = ddot(ij-1, h_buff(1:ij-1), 1, x_buff(1:ij-1), 1)
+!                         !hx = 0.0d0
+!                         !resid(idet) = resid(idet) + hx
+!                      end if
+!                  end do
+!                  call cpu_time(dtoc)
+!                  dtime = dtime + (dtoc - dtic)
+!                  ! deallocate sorting arrays
+!                  deallocate(loc_arr,idx_table)
+!                  !!!! diagram 5b: x1b(ce)*t3b(abeijm)
+!                  !!!! diagram 8b: A(ab) x2b(bcef)*t3b(aefijk)
+!                  ! allocate temporary arrays
+!                  allocate(excits_buff(6,n3aab_t),amps_buff(n3aab_t))
+!                  excits_buff(:,:) = t3b_excits(:,:)
+!                  amps_buff(:) = t3b_amps(:)
+!                  ! allocate new sorting arrays
+!                  nloc = nua*noa*(noa-1)/2*nob
+!                  allocate(loc_arr(2,nloc))
+!                  allocate(idx_table(noa,noa,nob,nua))
+!                  !!! AIJK LOOP !!!
+!                  call cpu_time(stic)
+!                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nua-1/), noa, noa, nob, nua)
+!                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab_t)
+!                  call cpu_time(stoc)
+!                  stime = stime + (stoc - stic)
+!                  call cpu_time(dtic)
+!                  do idet = 1, n3aab_r
+!                      a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
+!                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
+!                      ! (1)
+!                      !idx = idx_table(i,j,k,a)
+!                      ij = 1
+!                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
+!                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+!                         ! compute < ijk~abc~ | x2b(vvvv) | ijk~aef~ >
+!                         !h_buff(ij) = x2b_vvvv(b,c,e,f)
+!                         !if (b==e) h_buff(ij) = h_buff(ij) + x1b_vv(c,f)
+!                         x_buff(ij) = amps_buff(jdet)
+!                         ij = ij + 1
+!                      end do
+!                      !hx = ddot(ij-1, h_buff(1:ij-1), 1, x_buff(1:ij-1), 1)
+!                      !hx = 0.0d0
+!                      !resid(idet) = resid(idet) + hx
+!                      ! (ab)
+!                      !idx = idx_table(i,j,k,b)
+!                      if (idx/=0) then ! protect against case where b = nua because a = 1, nua-1
+!                         ij = 1
+!                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
+!                            e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+!                            ! compute < ijk~abc~ | x2b(vvvv) | ijk~bef~ >
+!                            !h_buff(ij) = -x2b_vvvv(a,c,e,f)
+!                            !if (a==e) h_buff(ij) = h_buff(ij) - x1b_vv(c,f)
+!                            x_buff(ij) = amps_buff(jdet)
+!                            ij = ij + 1
+!                         end do
+!                         !hx = ddot(ij-1, h_buff(1:ij-1), 1, x_buff(1:ij-1), 1)
+!                         !hx = 0.0d0
+!                         !resid(idet) = resid(idet) + hx
+!                      end if
+!                  end do
+!                  call cpu_time(dtoc)
+!                  dtime = dtime + (dtoc - dtic)
+!                  !!! BIJK LOOP !!!
+!                  call cpu_time(stic)
+!                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/2,nua/), noa, noa, nob, nua)
+!                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab_t)
+!                  call cpu_time(stoc)
+!                  stime = stime + (stoc - stic)
+!                  call cpu_time(dtic)
+!                  do idet = 1, n3aab_r
+!                      a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
+!                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
+!                      idx = idx_table(i,j,k,b)
+!                      ij = 1
+!                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
+!                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+!                         ! compute < ijk~abc~ | x2b(vvvv) | ijk~dbf~ >
+!                         h_buff(ij) = x2b_vvvv(a,c,d,f)
+!                         x_buff(ij) = amps_buff(jdet)
+!                         ij = ij + 1
+!                      end do
+!                      !hx = ddot(ij-1, h_buff(1:ij-1), 1, x_buff(1:ij-1), 1)
+!                      !hx = 0.0d0
+!                      !resid(idet) = resid(idet) + hx
+!                      idx = idx_table(i,j,k,a)
+!                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
+!                         ij = 1
+!                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
+!                            d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+!                            ! compute < ijk~abc~ | x2b(vvvv) | ijk~daf~ >
+!                            h_buff(ij) = -x2b_vvvv(b,c,d,f)
+!                            x_buff(ij) = amps_buff(jdet)
+!                            ij = ij + 1
+!                         end do
+!                         !hx = ddot(ij-1, h_buff(1:ij-1), 1, x_buff(1:ij-1), 1)
+!                         !hx = 0.0d0
+!                         !resid(idet) = resid(idet) + hx
+!                      end if
+!                  end do
+!                  call cpu_time(dtoc)
+!                  dtime = dtime + (dtoc - dtic)
+!                  ! deallocate sorting arrays
+!                  deallocate(loc_arr,idx_table)
+!                  ! deallocate temporary arrays
+!                  deallocate(excits_buff,amps_buff)
+!                  deallocate(h_buff,x_buff)
+!                  call cpu_time(ttoc)
+!                  print*, "R3B - diagrams 5/8 = ", ttoc - ttic, "Diagram time =", dtime, "Sort time = ", stime
+
+                  !call cpu_time(tic)
                   !!!! diagram 9a: A(ij)A(ab) h2a(amie)*r3b(ebcmjk)
                   ! allocate new sorting arrays
                   nloc = nua*nub*noa*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nub,noa,nob))
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
@@ -4237,7 +4693,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,j,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3b_excits(1,jdet); l = r3b_excits(4,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ljk~dbc~ >
                         hmatel = h2a_voov(a,l,i,d)
@@ -4246,7 +4702,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(1,jdet); l = r3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ljk~dac~ >
                            hmatel = -h2a_voov(b,l,i,d)
@@ -4256,7 +4712,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then ! protect against case where i = 1 because j = 2, noa
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(1,jdet); l = r3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~dbc~ >
                            hmatel = -h2a_voov(a,l,j,d)
@@ -4266,7 +4722,7 @@ module eomccsdt_p_loops
                      ! (ij)(ab)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua and i = 1 because j = 2, noa
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(1,jdet); l = r3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~dac~ >
                            hmatel = h2a_voov(b,l,j,d)
@@ -4295,7 +4751,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,i,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3b_excits(1,jdet); l = r3b_excits(5,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ilk~dbc~ >
                         hmatel = h2a_voov(a,l,j,d)
@@ -4304,7 +4760,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then ! protect against where j = noa because i = 1, noa-1 
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(1,jdet); l = r3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~dbc~ >
                            hmatel = -h2a_voov(a,l,i,d)
@@ -4314,7 +4770,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(1,jdet); l = r3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ilk~dac~ >
                            hmatel = -h2a_voov(b,l,j,d)
@@ -4324,7 +4780,7 @@ module eomccsdt_p_loops
                      ! (ij)(ab)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then ! protect against case where j = noa because i = 1, noa-1 and where a = 1 because b = 2, nua
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(1,jdet); l = r3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~dac~ >
                            hmatel = h2a_voov(b,l,i,d)
@@ -4353,7 +4809,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,i,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3b_excits(2,jdet); l = r3b_excits(5,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ilk~adc~  >
                         hmatel = h2a_voov(b,l,j,d)
@@ -4362,7 +4818,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(2,jdet); l = r3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~adc~  >
                            hmatel = -h2a_voov(b,l,i,d)
@@ -4372,7 +4828,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(2,jdet); l = r3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ilk~bdc~  >
                            hmatel = -h2a_voov(a,l,j,d)
@@ -4382,7 +4838,7 @@ module eomccsdt_p_loops
                      ! (ij)(ab)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(2,jdet); l = r3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~bdc~  >
                            hmatel = h2a_voov(a,l,i,d)
@@ -4411,7 +4867,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,j,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3b_excits(2,jdet); l = r3b_excits(4,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ljk~adc~  >
                         hmatel = h2a_voov(b,l,i,d)
@@ -4420,7 +4876,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(2,jdet); l = r3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~adc~  >
                            hmatel = -h2a_voov(b,l,j,d)
@@ -4430,7 +4886,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(2,jdet); l = r3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ljk~bdc~  >
                            hmatel = -h2a_voov(a,l,i,d)
@@ -4440,7 +4896,7 @@ module eomccsdt_p_loops
                      ! (ij)(ab)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(2,jdet); l = r3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~abc~  >
                            hmatel = h2a_voov(a,l,j,d)
@@ -4460,7 +4916,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3b_amps(:) 
                   ! allocate new sorting arrays
                   nloc = nua*nub*noa*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nub,noa,nob))
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
@@ -4480,7 +4936,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,j,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ljk~dbc~ >
                         hmatel = x2a_voov(a,l,i,d)
@@ -4489,7 +4945,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ljk~dac~ >
                            hmatel = -x2a_voov(b,l,i,d)
@@ -4499,7 +4955,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then ! protect against case where i = 1 because j = 2, noa
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~dbc~ >
                            hmatel = -x2a_voov(a,l,j,d)
@@ -4509,7 +4965,7 @@ module eomccsdt_p_loops
                      ! (ij)(ab)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua and i = 1 because j = 2, noa
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~dac~ >
                            hmatel = x2a_voov(b,l,j,d)
@@ -4538,7 +4994,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,i,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ilk~dbc~ >
                         hmatel = x2a_voov(a,l,j,d)
@@ -4547,7 +5003,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then ! protect against where j = noa because i = 1, noa-1 
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(1,jdet); l = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~dbc~ >
                            hmatel = -x2a_voov(a,l,i,d)
@@ -4557,7 +5013,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(1,jdet); l = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ilk~dac~ >
                            hmatel = -x2a_voov(b,l,j,d)
@@ -4567,7 +5023,7 @@ module eomccsdt_p_loops
                      ! (ij)(ab)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then ! protect against case where j = noa because i = 1, noa-1 and where a = 1 because b = 2, nua
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(1,jdet); l = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~dac~ >
                            hmatel = x2a_voov(b,l,i,d)
@@ -4596,7 +5052,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,i,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(2,jdet); l = excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ilk~adc~  >
                         hmatel = x2a_voov(b,l,j,d)
@@ -4605,7 +5061,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(2,jdet); l = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~adc~  >
                            hmatel = -x2a_voov(b,l,i,d)
@@ -4615,7 +5071,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(2,jdet); l = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ilk~bdc~  >
                            hmatel = -x2a_voov(a,l,j,d)
@@ -4625,7 +5081,7 @@ module eomccsdt_p_loops
                      ! (ij)(ab)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(2,jdet); l = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~bdc~  >
                            hmatel = x2a_voov(a,l,i,d)
@@ -4654,7 +5110,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,j,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2a(voov) | ljk~adc~  >
                         hmatel = x2a_voov(b,l,i,d)
@@ -4663,7 +5119,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(2,jdet); l = excits_buff(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~adc~  >
                            hmatel = -x2a_voov(b,l,j,d)
@@ -4673,7 +5129,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(2,jdet); l = excits_buff(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | ljk~bdc~  >
                            hmatel = -x2a_voov(a,l,i,d)
@@ -4683,7 +5139,7 @@ module eomccsdt_p_loops
                      ! (ij)(ab)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(2,jdet); l = excits_buff(4,jdet);
                            ! compute < ijk~abc~ | h2a(voov) | lik~abc~  >
                            hmatel = x2a_voov(a,l,j,d)
@@ -4698,11 +5154,14 @@ module eomccsdt_p_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate temporary arrays
                   deallocate(excits_buff,amps_buff)
+                  !call cpu_time(toc)
+                  !print*, "R3B - diagram 9 = ", toc - tic
 
+                  !call cpu_time(tic)
                   !!!! diagram 10a: h2c(cmke)*r3b(abeijm)
                   ! allocate sorting arrays
                   nloc = nua*(nua-1)/2*noa*(noa-1)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,noa,noa))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
@@ -4722,7 +5181,7 @@ module eomccsdt_p_loops
                       a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
                       i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                       idx = idx_table(a,b,i,j)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          f = r3b_excits(3,jdet); n = r3b_excits(6,jdet);
                          ! compute < ijk~abc~ | h2c(voov) | ijn~abf~ > = h2c_voov(c,n,k,f)
                          hmatel = h2c_voov(c,n,k,f)
@@ -4741,7 +5200,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3b_amps(:) 
                   ! allocate sorting arrays
                   nloc = nua*(nua-1)/2*noa*(noa-1)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,noa,noa))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
@@ -4761,7 +5220,7 @@ module eomccsdt_p_loops
                       a = r3b_excits(1,idet); b = r3b_excits(2,idet); c = r3b_excits(3,idet);
                       i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                       idx = idx_table(a,b,i,j)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                          ! compute < ijk~abc~ | h2c(voov) | ijn~abf~ > = h2c_voov(c,n,k,f)
                          hmatel = x2c_voov(c,n,k,f)
@@ -4775,11 +5234,14 @@ module eomccsdt_p_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate temporary arrays
                   deallocate(excits_buff,amps_buff)
+                  !call cpu_time(toc)
+                  !print*, "R3B - diagram 10 = ", toc - tic
 
+                  !call cpu_time(tic)
                   !!!! diagram 11a: -A(ij) h2b(mcie)*r3b(abemjk)
                   ! allocate sorting arrays
                   nloc = nua*(nua-1)/2*noa*nob
-                  allocate(loc_arr(nloc,2)) 
+                  allocate(loc_arr(2,nloc)) 
                   allocate(idx_table(nua,nua,noa,nob))
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/1,nob/), nua, nua, noa, nob)
@@ -4799,7 +5261,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3b_excits(3,jdet); m = r3b_excits(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovov) | imk~abf~ >
                         hmatel = -h2b_ovov(m,c,j,f)
@@ -4808,7 +5270,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = r3b_excits(3,jdet); m = r3b_excits(5,jdet);
                            ! compute < ijk~abc~ | h2b(ovov) | jmk~abf~ >
                            hmatel = h2b_ovov(m,c,i,f)
@@ -4837,7 +5299,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,j,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3b_excits(3,jdet); l = r3b_excits(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovov) | ljk~abf~ >
                         hmatel = -h2b_ovov(l,c,i,f)
@@ -4846,7 +5308,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = r3b_excits(3,jdet); l = r3b_excits(4,jdet);
                            ! compute < ijk~abc~ | h2b(ovov) | lik~abf~ >
                            hmatel = h2b_ovov(l,c,j,f)
@@ -4866,7 +5328,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3b_amps(:) 
                   ! allocate sorting arrays
                   nloc = nua*(nua-1)/2*noa*nob
-                  allocate(loc_arr(nloc,2)) 
+                  allocate(loc_arr(2,nloc)) 
                   allocate(idx_table(nua,nua,noa,nob))
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/1,nob/), nua, nua, noa, nob)
@@ -4886,7 +5348,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovov) | imk~abf~ >
                         hmatel = -x2b_ovov(m,c,j,f)
@@ -4895,7 +5357,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(ovov) | jmk~abf~ >
                            hmatel = x2b_ovov(m,c,i,f)
@@ -4924,7 +5386,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,j,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovov) | ljk~abf~ >
                         hmatel = -x2b_ovov(l,c,i,f)
@@ -4933,7 +5395,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                            ! compute < ijk~abc~ | h2b(ovov) | lik~abf~ >
                            hmatel = x2b_ovov(l,c,j,f)
@@ -4948,11 +5410,14 @@ module eomccsdt_p_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate temporary arrays
                   deallocate(excits_buff,amps_buff)
+                  !call cpu_time(toc)
+                  !print*, "R3B - diagram 11 = ", toc - tic
                   
+                  !call cpu_time(tic)
                   !!!! diagram 12a: -A(ab) h2b(amek)*r3b(ebcijm)
                   ! allocate sorting arrays
                   nloc = nua*nub*noa*(noa-1)/2
-                  allocate(loc_arr(nloc,2)) 
+                  allocate(loc_arr(2,nloc)) 
                   allocate(idx_table(noa,noa,nua,nub))
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/2,nua/), (/1,nub/), noa, noa, nua, nub)
@@ -4972,7 +5437,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,b,c)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3b_excits(1,jdet); n = r3b_excits(6,jdet);
                         ! compute < ijk~abc~ | h2b(vovo) | ijn~dbc~ >
                         hmatel = -h2b_vovo(a,n,d,k)
@@ -4981,7 +5446,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,a,c)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = r3b_excits(1,jdet); n = r3b_excits(6,jdet);
                            ! compute < ijk~abc~ | h2b(vovo) | ijn~dac~ >
                            hmatel = h2b_vovo(b,n,d,k)
@@ -5010,7 +5475,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,a,c)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3b_excits(2,jdet); n = r3b_excits(6,jdet);
                         ! compute < ijk~abc~ | h2b(vovo) | ijn~aec~ >
                         hmatel = -h2b_vovo(b,n,e,k)
@@ -5019,7 +5484,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,b,c)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = r3b_excits(2,jdet); n = r3b_excits(6,jdet);
                            ! compute < ijk~abc~ | h2b(vovo) | ijn~bec~ >
                            hmatel = h2b_vovo(a,n,e,k)
@@ -5039,7 +5504,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3b_amps(:) 
                   ! allocate sorting arrays
                   nloc = nua*nub*noa*(noa-1)/2
-                  allocate(loc_arr(nloc,2)) 
+                  allocate(loc_arr(2,nloc)) 
                   allocate(idx_table(noa,noa,nua,nub))
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/2,nua/), (/1,nub/), noa, noa, nua, nub)
@@ -5059,7 +5524,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,b,c)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijk~abc~ | h2b(vovo) | ijn~dbc~ >
                         hmatel = -x2b_vovo(a,n,d,k)
@@ -5068,7 +5533,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,a,c)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(vovo) | ijn~dac~ >
                            hmatel = x2b_vovo(b,n,d,k)
@@ -5097,7 +5562,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,a,c)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijk~abc~ | h2b(vovo) | ijn~aec~ >
                         hmatel = -x2b_vovo(b,n,e,k)
@@ -5106,7 +5571,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,b,c)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(vovo) | ijn~bec~ >
                            hmatel = x2b_vovo(a,n,e,k)
@@ -5121,7 +5586,10 @@ module eomccsdt_p_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate temporary arrays
                   deallocate(excits_buff,amps_buff)
+                  !call cpu_time(toc)
+                  !print*, "R3B - diagram 12 = ", toc - tic
 
+                  !call cpu_time(tic)
                   !!!! diagram 13a: h2b(mcek)*r3a(abeijm) !!!!
                   ! allocate and initialize the copy of r3a
                   allocate(amps_buff(n3aaa_r))
@@ -5130,7 +5598,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = r3a_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = (nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,noa,noa))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
@@ -5150,7 +5618,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j)
                      if (idx==0) cycle 
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | ijnabf >
                         hmatel = h2b_ovvo(n,c,f,k)
@@ -5178,7 +5646,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | ijnaeb >
                         hmatel = -h2b_ovvo(n,c,e,k)
@@ -5206,7 +5674,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | ijndab >
                         hmatel = h2b_ovvo(n,c,d,k)
@@ -5234,7 +5702,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | imjabf >
                         hmatel = -h2b_ovvo(m,c,f,k)
@@ -5262,7 +5730,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | imjaeb >
                         hmatel = h2b_ovvo(m,c,e,k)
@@ -5290,7 +5758,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | imjdab >
                         hmatel = -h2b_ovvo(m,c,d,k)
@@ -5318,7 +5786,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | lijabf >
                         hmatel = h2b_ovvo(l,c,f,k)
@@ -5346,7 +5814,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | lijaeb >
                         hmatel = -h2b_ovvo(l,c,e,k)
@@ -5374,7 +5842,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | lijdab >
                         hmatel = h2b_ovvo(l,c,d,k)
@@ -5396,7 +5864,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = t3a_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = (nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,noa,noa))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
@@ -5416,7 +5884,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j)
                      if (idx==0) cycle 
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | ijnabf >
                         hmatel = x2b_ovvo(n,c,f,k)
@@ -5444,7 +5912,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | ijnaeb >
                         hmatel = -x2b_ovvo(n,c,e,k)
@@ -5472,7 +5940,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | ijndab >
                         hmatel = x2b_ovvo(n,c,d,k)
@@ -5500,7 +5968,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | imjabf >
                         hmatel = -x2b_ovvo(m,c,f,k)
@@ -5528,7 +5996,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | imjaeb >
                         hmatel = x2b_ovvo(m,c,e,k)
@@ -5556,7 +6024,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | imjdab >
                         hmatel = -x2b_ovvo(m,c,d,k)
@@ -5584,7 +6052,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | lijabf >
                         hmatel = x2b_ovvo(l,c,f,k)
@@ -5612,7 +6080,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | lijaeb >
                         hmatel = -x2b_ovvo(l,c,e,k)
@@ -5640,7 +6108,7 @@ module eomccsdt_p_loops
                      i = r3b_excits(4,idet); j = r3b_excits(5,idet); k = r3b_excits(6,idet);
                      idx = idx_table(a,b,i,j) 
                      if (idx==0) cycle
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijk~abc~ | h2b(ovvo) | lijdab >
                         hmatel = x2b_ovvo(l,c,d,k)
@@ -5653,8 +6121,11 @@ module eomccsdt_p_loops
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate temporary arrays
-                  deallocate(amps_buff,excits_buff) 
+                  deallocate(amps_buff,excits_buff)
+                  !call cpu_time(toc)
+                  !print*, "R3B - diagram 13 = ", toc - tic
 
+                  !call cpu_time(tic)
                   !!!! diagram 14a: A(ab)A(ij) h2b(bmje)*r3c(aecimk)
                   ! allocate and initialize the copy of r3c
                   allocate(amps_buff(n3abb_r))
@@ -5663,7 +6134,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = r3c_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = nua*nub*noa*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nub,noa,nob))
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
@@ -5684,7 +6155,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~ae~c~ >
                            hmatel = h2b_voov(b,m,j,e)
@@ -5694,7 +6165,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~be~c~ >
                            hmatel = -h2b_voov(a,m,j,e)
@@ -5704,7 +6175,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~ae~c~ >
                            hmatel = -h2b_voov(b,m,i,e)
@@ -5714,7 +6185,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~be~c~ >
                            hmatel = h2b_voov(a,m,i,e)
@@ -5744,7 +6215,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~ac~f~ >
                            hmatel = -h2b_voov(b,m,j,f)
@@ -5754,7 +6225,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~bc~f~ >
                            hmatel = h2b_voov(a,m,j,f)
@@ -5764,7 +6235,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~ac~f~ >
                            hmatel = h2b_voov(b,m,i,f)
@@ -5774,7 +6245,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~bc~f~ >
                            hmatel = -h2b_voov(a,m,i,f)
@@ -5804,7 +6275,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~ae~c~ >
                            hmatel = -h2b_voov(b,n,j,e)
@@ -5814,7 +6285,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~be~c~ >
                            hmatel = h2b_voov(a,n,j,e)
@@ -5824,7 +6295,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~ae~c~ >
                            hmatel = h2b_voov(b,n,i,e)
@@ -5834,7 +6305,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~be~c~ >
                            hmatel = -h2b_voov(a,n,i,e)
@@ -5864,7 +6335,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~ac~f~ >
                            hmatel = h2b_voov(b,n,j,f)
@@ -5874,7 +6345,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~bc~f~ >
                            hmatel = -h2b_voov(a,n,j,f)
@@ -5884,7 +6355,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~ac~f~ >
                            hmatel = -h2b_voov(b,n,i,f)
@@ -5894,7 +6365,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~bc~f~ >
                            hmatel = h2b_voov(a,n,i,f)
@@ -5917,7 +6388,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = nua*nub*noa*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nub,noa,nob))
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
@@ -5938,7 +6409,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~ae~c~ >
                            hmatel = x2b_voov(b,m,j,e)
@@ -5948,7 +6419,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~be~c~ >
                            hmatel = -x2b_voov(a,m,j,e)
@@ -5958,7 +6429,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~ae~c~ >
                            hmatel = -x2b_voov(b,m,i,e)
@@ -5968,7 +6439,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~be~c~ >
                            hmatel = x2b_voov(a,m,i,e)
@@ -5998,7 +6469,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~ac~f~ >
                            hmatel = -x2b_voov(b,m,j,f)
@@ -6008,7 +6479,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | im~k~bc~f~ >
                            hmatel = x2b_voov(a,m,j,f)
@@ -6018,7 +6489,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~ac~f~ >
                            hmatel = x2b_voov(b,m,i,f)
@@ -6028,7 +6499,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jm~k~bc~f~ >
                            hmatel = -x2b_voov(a,m,i,f)
@@ -6058,7 +6529,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~ae~c~ >
                            hmatel = -x2b_voov(b,n,j,e)
@@ -6068,7 +6539,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~be~c~ >
                            hmatel = x2b_voov(a,n,j,e)
@@ -6078,7 +6549,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~ae~c~ >
                            hmatel = x2b_voov(b,n,i,e)
@@ -6088,7 +6559,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~be~c~ >
                            hmatel = -x2b_voov(a,n,i,e)
@@ -6118,7 +6589,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~ac~f~ >
                            hmatel = x2b_voov(b,n,j,f)
@@ -6128,7 +6599,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | ik~n~bc~f~ >
                            hmatel = -x2b_voov(a,n,j,f)
@@ -6138,7 +6609,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~ac~f~ >
                            hmatel = -x2b_voov(b,n,i,f)
@@ -6148,7 +6619,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k) 
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                            ! compute < ijk~abc~ | h2b(voov) | jk~n~bc~f~ >
                            hmatel = x2b_voov(a,n,i,f)
@@ -6163,7 +6634,10 @@ module eomccsdt_p_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate temporary arrays
                   deallocate(amps_buff,excits_buff) 
+                  !call cpu_time(toc)
+                  !print*, "R3B - diagram 14 = ", toc - tic
 
+                  !call cpu_time(tic)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp r3b_excits,&
@@ -6235,6 +6709,8 @@ module eomccsdt_p_loops
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
+                  !call cpu_time(toc)
+                  !print*, "R3B - moments = ", toc - tic
 
               end subroutine build_hr_3b
 
@@ -6347,7 +6823,7 @@ module eomccsdt_p_loops
                   !!! BCAI LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nub*(nub-1)/2*nua*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nua,noa))
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,noa/), nub, nub, nua, nob)
                   call sort4(r3c_excits, r3c_amps, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, nob, nloc, n3abb_r, resid)
@@ -6366,7 +6842,7 @@ module eomccsdt_p_loops
                      i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                      idx = idx_table(b,c,a,i)
                      ! (1)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         m = r3c_excits(5,jdet); n = r3c_excits(6,jdet);
                         ! compute < ij~k~ab~c~ | h2c(oooo) | im~n~ab~c~ >
                         hmatel = h2c_oooo(m,n,j,k)
@@ -6392,7 +6868,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3c_amps(:)
                   ! allocate new sorting arrays
                   nloc = nub*(nub-1)/2*nua*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nua,noa))
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,noa/), nub, nub, nua, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, nob, nloc, n3abb_t)
@@ -6411,7 +6887,7 @@ module eomccsdt_p_loops
                      i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                      idx = idx_table(b,c,a,i)
                      ! (1)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         m = excits_buff(5,jdet); n = excits_buff(6,jdet);
                         ! compute < ij~k~ab~c~ | h2c(oooo) | im~n~ab~c~ >
                         hmatel = x2c_oooo(m,n,j,k)
@@ -6436,7 +6912,7 @@ module eomccsdt_p_loops
                   !!! JKIA LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nua*nob*(nob-1)/2*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nob,nob,noa,nua))
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nua/), nob, nob, noa, nua)
                   call sort4(r3c_excits, r3c_amps, loc_arr, idx_table, (/5,6,4,1/), nob, nob, noa, nua, nloc, n3abb_r, resid)
@@ -6454,7 +6930,7 @@ module eomccsdt_p_loops
                      a = r3c_excits(1,idet); b = r3c_excits(2,idet); c = r3c_excits(3,idet);
                      i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                      idx = idx_table(j,k,i,a)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3c_excits(2,jdet); f = r3c_excits(3,jdet);
                         ! compute < ij~k~ab~c~ | h2c(vvvv) | ij~k~ae~f~ >
                         hmatel = h2c_vvvv(b,c,e,f)
@@ -6480,7 +6956,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3c_amps(:)
                   ! allocate new sorting arrays
                   nloc = nua*nob*(nob-1)/2*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nob,nob,noa,nua))
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nua/), nob, nob, noa, nua)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,4,1/), nob, nob, noa, nua, nloc, n3abb_t)
@@ -6498,7 +6974,7 @@ module eomccsdt_p_loops
                      a = r3c_excits(1,idet); b = r3c_excits(2,idet); c = r3c_excits(3,idet);
                      i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                      idx = idx_table(j,k,i,a)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ij~k~ab~c~ | x2c(vvvv) | ij~k~ae~f~ >
                         hmatel = x2c_vvvv(b,c,e,f)
@@ -6523,7 +6999,7 @@ module eomccsdt_p_loops
                   !!! BCAK LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nub*(nub-1)/2*nua*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nua,nob))
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/2,nob/), nub, nub, nua, nob)
                   call sort4(r3c_excits, r3c_amps, loc_arr, idx_table, (/2,3,1,6/), nub, nub, nua, nob, nloc, n3abb_r, resid)
@@ -6542,7 +7018,7 @@ module eomccsdt_p_loops
                      i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,a,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = r3c_excits(4,jdet); m = r3c_excits(5,jdet);
                         ! compute < ij~k~ab~c~ | h2b(oooo) | lm~k~ab~c~ >
                         hmatel = h2b_oooo(l,m,i,j)
@@ -6553,7 +7029,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,a,j)
                      if (idx/=0) then
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             l = r3c_excits(4,jdet); m = r3c_excits(5,jdet);
                             ! compute < ij~k~ab~c~ | h2b(oooo) | lm~j~ab~c~ >
                             hmatel = -h2b_oooo(l,m,i,k)
@@ -6584,7 +7060,7 @@ module eomccsdt_p_loops
                      i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,a,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = r3c_excits(4,jdet); n = r3c_excits(6,jdet);
                         ! compute < ij~k~ab~c~ | h2b(oooo) | lj~n~ab~c~ >
                         hmatel = h2b_oooo(l,n,i,k)
@@ -6593,7 +7069,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,a,k)
                      if (idx/=0) then
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             l = r3c_excits(4,jdet); n = r3c_excits(6,jdet);
                             ! compute < ij~k~ab~c~ | h2b(oooo) | lk~n~ab~c~ >
                             hmatel = -h2b_oooo(l,n,i,j)
@@ -6615,7 +7091,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3c_amps(:)
                   ! allocate new sorting arrays
                   nloc = nub*(nub-1)/2*nua*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nua,nob))
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/2,nob/), nub, nub, nua, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,1,6/), nub, nub, nua, nob, nloc, n3abb_t)
@@ -6634,7 +7110,7 @@ module eomccsdt_p_loops
                      i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,a,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = excits_buff(4,jdet); m = excits_buff(5,jdet);
                         ! compute < ij~k~ab~c~ | x2b(oooo) | lm~k~ab~c~ >
                         hmatel = x2b_oooo(l,m,i,j)
@@ -6645,7 +7121,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,a,j)
                      if (idx/=0) then
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             l = excits_buff(4,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | x2b(oooo) | lm~j~ab~c~ >
                             hmatel = -x2b_oooo(l,m,i,k)
@@ -6676,7 +7152,7 @@ module eomccsdt_p_loops
                      i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,a,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = excits_buff(4,jdet); n = excits_buff(6,jdet);
                         ! compute < ij~k~ab~c~ | x2b(oooo) | lj~n~ab~c~ >
                         hmatel = x2b_oooo(l,n,i,k)
@@ -6685,7 +7161,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,a,k)
                      if (idx/=0) then
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             l = excits_buff(4,jdet); n = excits_buff(6,jdet);
                             ! compute < ij~k~ab~c~ | x2b(oooo) | lk~n~ab~c~ >
                             hmatel = -x2b_oooo(l,n,i,j)
@@ -6705,7 +7181,7 @@ module eomccsdt_p_loops
                   !!!! diagram 8a: A(bc) h2b(abef)*r3c(efcijk)
                   ! allocate new sorting arrays
                   nloc = nub*nob*(nob-1)/2*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nob,nob,noa,nub))
                   !!! JKIB LOOP !!!
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nub-1/), nob, nob, noa, nub)
@@ -6725,7 +7201,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(j,k,i,b)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = r3c_excits(1,jdet); f = r3c_excits(3,jdet);
                          ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~db~f~ >
                          hmatel = h2b_vvvv(a,c,d,f)
@@ -6735,7 +7211,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(j,k,i,c)
                       if (idx/=0) then ! protect against case where b = nua because a = 1, nua-1
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = r3c_excits(1,jdet); f = r3c_excits(3,jdet);
                             ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~dc~f~ >
                             hmatel = -h2b_vvvv(a,b,d,f)
@@ -6764,7 +7240,7 @@ module eomccsdt_p_loops
                       a = r3c_excits(1,idet); b = r3c_excits(2,idet); c = r3c_excits(3,idet);
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       idx = idx_table(j,k,i,c)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = r3c_excits(1,jdet); e = r3c_excits(2,jdet);
                          ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~de~c~ >
                          hmatel = h2b_vvvv(a,b,d,e)
@@ -6773,7 +7249,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(j,k,i,b)
                       if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = r3c_excits(1,jdet); e = r3c_excits(2,jdet);
                             ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~de~b~ >
                             hmatel = -h2b_vvvv(a,c,d,e)
@@ -6794,7 +7270,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3c_amps(:)
                   ! allocate new sorting arrays
                   nloc = nub*nob*(nob-1)/2*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nob,nob,noa,nub))
                   !!! JKIB LOOP !!!
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nub-1/), nob, nob, noa, nub)
@@ -6814,7 +7290,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(j,k,i,b)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                          ! compute < ij~k~ab~c~ | x2b(vvvv) | ij~k~db~f~ >
                          hmatel = x2b_vvvv(a,c,d,f)
@@ -6824,7 +7300,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(j,k,i,c)
                       if (idx/=0) then ! protect against case where b = nua because a = 1, nua-1
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                             ! compute < ij~k~ab~c~ | x2b(vvvv) | ij~k~dc~f~ >
                             hmatel = -x2b_vvvv(a,b,d,f)
@@ -6853,7 +7329,7 @@ module eomccsdt_p_loops
                       a = r3c_excits(1,idet); b = r3c_excits(2,idet); c = r3c_excits(3,idet);
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       idx = idx_table(j,k,i,c)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                          ! compute < ij~k~ab~c~ | x2b(vvvv) | ij~k~de~c~ >
                          hmatel = x2b_vvvv(a,b,d,e)
@@ -6862,7 +7338,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(j,k,i,b)
                       if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                             ! compute < ij~k~ab~c~ | x2b(vvvv) | ij~k~de~b~ >
                             hmatel = -x2b_vvvv(a,c,d,e)
@@ -6881,7 +7357,7 @@ module eomccsdt_p_loops
                   !!!! diagram 9a: A(jk)A(bc) h2c(cmke)*r3c(abeijm)
                   ! allocate new sorting arrays
                   nloc = nub*nua*nob*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nub,noa,nob))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
@@ -6901,7 +7377,7 @@ module eomccsdt_p_loops
                      i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3c_excits(3,jdet); n = r3c_excits(6,jdet);
                         ! compute < ij~k~ab~c~ | h2a(voov) | ij~n~ab~f~ >
                         hmatel = h2c_voov(c,n,k,f)
@@ -6910,7 +7386,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             f = r3c_excits(3,jdet); n = r3c_excits(6,jdet);
                             ! compute < ij~k~ab~c~ | h2a(voov) | ik~n~ab~f~ >
                             hmatel = -h2c_voov(c,n,j,f)
@@ -6920,7 +7396,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             f = r3c_excits(3,jdet); n = r3c_excits(6,jdet);
                             ! compute < ij~k~ab~c~ | h2a(voov) | ij~n~ac~f~ >
                             hmatel = -h2c_voov(b,n,k,f)
@@ -6930,7 +7406,7 @@ module eomccsdt_p_loops
                      ! (jk)(bc)
                       idx = idx_table(a,c,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                              f = r3c_excits(3,jdet); n = r3c_excits(6,jdet);
                              ! compute < ij~k~ab~c~ | h2a(voov) | ik~n~ac~f~ >
                              hmatel = h2c_voov(b,n,j,f)
@@ -6959,7 +7435,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(a,c,i,j)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           e = r3c_excits(2,jdet); n = r3c_excits(6,jdet);
                           ! compute < ij~k~ab~c~ | h2c(voov) | ij~n~ae~c~ >
                           hmatel = h2c_voov(b,n,k,e)
@@ -6968,7 +7444,7 @@ module eomccsdt_p_loops
                       ! (jk)
                       idx = idx_table(a,c,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = r3c_excits(2,jdet); n = r3c_excits(6,jdet);
                               ! compute < ij~k~ab~c~ | h2c(voov) | ik~n~ae~c~ >
                               hmatel = -h2c_voov(b,n,j,e)
@@ -6978,7 +7454,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(a,b,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = r3c_excits(2,jdet); n = r3c_excits(6,jdet);
                               ! compute < ij~k~ab~c~ | h2c(voov) | ij~n~ae~b~ >
                               hmatel = -h2c_voov(c,n,k,e)
@@ -6988,7 +7464,7 @@ module eomccsdt_p_loops
                       ! (jk)(bc)
                       idx = idx_table(a,b,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = r3c_excits(2,jdet); n = r3c_excits(6,jdet);
                               ! compute < ij~k~ab~c~ | h2c(voov) | ik~n~ae~b~ >
                               hmatel = h2c_voov(c,n,j,e)
@@ -7017,7 +7493,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(a,b,i,k)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           f = r3c_excits(3,jdet); m = r3c_excits(5,jdet);
                           ! compute < ij~k~ab~c~ | h2c(voov) | im~k~ab~f~ >
                           hmatel = h2c_voov(c,m,j,f)
@@ -7026,7 +7502,7 @@ module eomccsdt_p_loops
                       ! (jk)
                       idx = idx_table(a,b,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = r3c_excits(3,jdet); m = r3c_excits(5,jdet);
                               ! compute < ij~k~ab~c~ | h2c(voov) | im~j~ab~f~ >
                               hmatel = -h2c_voov(c,m,k,f)
@@ -7036,7 +7512,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(a,c,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = r3c_excits(3,jdet); m = r3c_excits(5,jdet);
                               ! compute < ij~k~ab~c~ | h2c(voov) | im~k~ac~f~ >
                               hmatel = -h2c_voov(b,m,j,f)
@@ -7046,7 +7522,7 @@ module eomccsdt_p_loops
                       ! (jk)(bc)
                       idx = idx_table(a,c,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = r3c_excits(3,jdet); m = r3c_excits(5,jdet);
                               ! compute < ij~k~ab~c~ | h2c(voov) | im~j~ac~f~ >
                               hmatel = h2c_voov(b,m,k,f)
@@ -7075,7 +7551,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(a,c,i,k)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           e = r3c_excits(2,jdet); m = r3c_excits(5,jdet);
                           ! compute < ij~k~ab~c~ | h2c(voov) | im~k~ae~c~ >
                           hmatel = h2c_voov(b,m,j,e)
@@ -7084,7 +7560,7 @@ module eomccsdt_p_loops
                       ! (jk)
                       idx = idx_table(a,c,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = r3c_excits(2,jdet); m = r3c_excits(5,jdet);
                               ! compute < ij~k~ab~c~ | h2c(voov) | im~j~ae~c~ >
                               hmatel = -h2c_voov(b,m,k,e)
@@ -7094,7 +7570,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(a,b,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = r3c_excits(2,jdet); m = r3c_excits(5,jdet);
                               ! compute < ij~k~ab~c~ | h2c(voov) | im~k~ae~b~ >
                               hmatel = -h2c_voov(c,m,j,e)
@@ -7104,7 +7580,7 @@ module eomccsdt_p_loops
                       ! (jk)(bc)
                       idx = idx_table(a,b,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = r3c_excits(2,jdet); m = r3c_excits(5,jdet);
                               ! compute < ij~k~ab~c~ | h2c(voov) | im~j~ae~b~ >
                               hmatel = h2c_voov(c,m,k,e)
@@ -7124,7 +7600,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3c_amps(:)
                   ! allocate new sorting arrays
                   nloc = nub*nua*nob*noa
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nub,noa,nob))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
@@ -7144,7 +7620,7 @@ module eomccsdt_p_loops
                      i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ij~k~ab~c~ | x2a(voov) | ij~n~ab~f~ >
                         hmatel = x2c_voov(c,n,k,f)
@@ -7153,7 +7629,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                             ! compute < ij~k~ab~c~ | x2a(voov) | ik~n~ab~f~ >
                             hmatel = -x2c_voov(c,n,j,f)
@@ -7163,7 +7639,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                             ! compute < ij~k~ab~c~ | x2a(voov) | ij~n~ac~f~ >
                             hmatel = -x2c_voov(b,n,k,f)
@@ -7173,7 +7649,7 @@ module eomccsdt_p_loops
                      ! (jk)(bc)
                       idx = idx_table(a,c,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                              f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                              ! compute < ij~k~ab~c~ | x2a(voov) | ik~n~ac~f~ >
                              hmatel = x2c_voov(b,n,j,f)
@@ -7202,7 +7678,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(a,c,i,j)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                           ! compute < ij~k~ab~c~ | x2c(voov) | ij~n~ae~c~ >
                           hmatel = x2c_voov(b,n,k,e)
@@ -7211,7 +7687,7 @@ module eomccsdt_p_loops
                       ! (jk)
                       idx = idx_table(a,c,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                               ! compute < ij~k~ab~c~ | x2c(voov) | ik~n~ae~c~ >
                               hmatel = -x2c_voov(b,n,j,e)
@@ -7221,7 +7697,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(a,b,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                               ! compute < ij~k~ab~c~ | x2c(voov) | ij~n~ae~b~ >
                               hmatel = -x2c_voov(c,n,k,e)
@@ -7231,7 +7707,7 @@ module eomccsdt_p_loops
                       ! (jk)(bc)
                       idx = idx_table(a,b,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                               ! compute < ij~k~ab~c~ | x2c(voov) | ik~n~ae~b~ >
                               hmatel = x2c_voov(c,n,j,e)
@@ -7260,7 +7736,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(a,b,i,k)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                           ! compute < ij~k~ab~c~ | x2c(voov) | im~k~ab~f~ >
                           hmatel = x2c_voov(c,m,j,f)
@@ -7269,7 +7745,7 @@ module eomccsdt_p_loops
                       ! (jk)
                       idx = idx_table(a,b,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | x2c(voov) | im~j~ab~f~ >
                               hmatel = -x2c_voov(c,m,k,f)
@@ -7279,7 +7755,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(a,c,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | x2c(voov) | im~k~ac~f~ >
                               hmatel = -x2c_voov(b,m,j,f)
@@ -7289,7 +7765,7 @@ module eomccsdt_p_loops
                       ! (jk)(bc)
                       idx = idx_table(a,c,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | x2c(voov) | im~j~ac~f~ >
                               hmatel = x2c_voov(b,m,k,f)
@@ -7318,7 +7794,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(a,c,i,k)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                           ! compute < ij~k~ab~c~ | x2c(voov) | im~k~ae~c~ >
                           hmatel = x2c_voov(b,m,j,e)
@@ -7327,7 +7803,7 @@ module eomccsdt_p_loops
                       ! (jk)
                       idx = idx_table(a,c,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | x2c(voov) | im~j~ae~c~ >
                               hmatel = -x2c_voov(b,m,k,e)
@@ -7337,7 +7813,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(a,b,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | x2c(voov) | im~k~ae~b~ >
                               hmatel = -x2c_voov(c,m,j,e)
@@ -7347,7 +7823,7 @@ module eomccsdt_p_loops
                       ! (jk)(bc)
                       idx = idx_table(a,b,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | x2c(voov) | im~j~ae~b~ >
                               hmatel = x2c_voov(c,m,k,e)
@@ -7366,7 +7842,7 @@ module eomccsdt_p_loops
                   !!!! diagram 10a: h2a(amie)*r3c(ebcmjk)
                   ! allocate sorting arrays
                   nloc = nub*(nub-1)/2*nob*(nob-1)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nob,nob))
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
@@ -7386,7 +7862,7 @@ module eomccsdt_p_loops
                       a = r3c_excits(1,idet); b = r3c_excits(2,idet); c = r3c_excits(3,idet);
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       idx = idx_table(b,c,j,k)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = r3c_excits(1,jdet); l = r3c_excits(4,jdet);
                          ! compute < ij~k~ab~c~ | h2a(voov) | lj~k~db~c~ >
                          hmatel = h2a_voov(a,l,i,d)
@@ -7405,7 +7881,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3c_amps(:)
                   ! allocate sorting arrays
                   nloc = nub*(nub-1)/2*nob*(nob-1)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nob,nob))
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
@@ -7425,7 +7901,7 @@ module eomccsdt_p_loops
                       a = r3c_excits(1,idet); b = r3c_excits(2,idet); c = r3c_excits(3,idet);
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       idx = idx_table(b,c,j,k)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                          ! compute < ij~k~ab~c~ | h2a(voov) | lj~k~db~c~ >
                          hmatel = x2a_voov(a,l,i,d)
@@ -7443,7 +7919,7 @@ module eomccsdt_p_loops
                   !!!! diagram 11a: -A(bc) h2b(mbie)*r3c(aecmjk)
                   ! allocate sorting arrays
                   nloc = nob*(nob-1)/2*nub*nua
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nob,nob,nua,nub))
                   !!! JKAC LOOP !!!
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/2,nub/), nob, nob, nua, nub)
@@ -7463,7 +7939,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(j,k,a,c)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           e = r3c_excits(2,jdet); l = r3c_excits(4,jdet);
                           ! compute < ij~k~ab~c~ | h2b(ovov) | lj~k~ae~c~ >
                           hmatel = -h2b_ovov(l,b,i,e)
@@ -7472,7 +7948,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(j,k,a,b)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = r3c_excits(2,jdet); l = r3c_excits(4,jdet);
                               ! compute < ij~k~ab~c~ | h2b(ovov) | lj~k~ae~b~ >
                               hmatel = h2b_ovov(l,c,i,e)
@@ -7501,7 +7977,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(j,k,a,b)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           f = r3c_excits(3,jdet); l = r3c_excits(4,jdet);
                           ! compute < ij~k~ab~c~ | h2b(ovov) | lj~k~ab~f~ >
                           hmatel = -h2b_ovov(l,c,i,f)
@@ -7510,7 +7986,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(j,k,a,c)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = r3c_excits(3,jdet); l = r3c_excits(4,jdet);
                               ! compute < ij~k~ab~c~ | h2b(ovov) | lj~k~ac~f~ >
                               hmatel = h2b_ovov(l,b,i,f)
@@ -7530,7 +8006,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3c_amps(:)
                   ! allocate sorting arrays
                   nloc = nob*(nob-1)/2*nub*nua
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nob,nob,nua,nub))
                   !!! JKAC LOOP !!!
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/2,nub/), nob, nob, nua, nub)
@@ -7550,7 +8026,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(j,k,a,c)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                           ! compute < ij~k~ab~c~ | x2b(ovov) | lj~k~ae~c~ >
                           hmatel = -x2b_ovov(l,b,i,e)
@@ -7559,7 +8035,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(j,k,a,b)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                               ! compute < ij~k~ab~c~ | x2b(ovov) | lj~k~ae~b~ >
                               hmatel = x2b_ovov(l,c,i,e)
@@ -7588,7 +8064,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(j,k,a,b)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                           ! compute < ij~k~ab~c~ | x2b(ovov) | lj~k~ab~f~ >
                           hmatel = -x2b_ovov(l,c,i,f)
@@ -7597,7 +8073,7 @@ module eomccsdt_p_loops
                       ! (bc)
                       idx = idx_table(j,k,a,c)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                               ! compute < ij~k~ab~c~ | x2b(ovov) | lj~k~ac~f~ >
                               hmatel = x2b_ovov(l,b,i,f)
@@ -7616,7 +8092,7 @@ module eomccsdt_p_loops
                   !!!! diagram 12a: -A(bc) h2b(amej)*r3c(ebcimk)
                   ! allocate sorting arrays
                   nloc = nub*(nub-1)/2*noa*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,noa,nob))
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/2,nob/), nub, nub, noa, nob)
@@ -7636,7 +8112,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(b,c,i,k)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           d = r3c_excits(1,jdet); m = r3c_excits(5,jdet);
                           ! compute < ij~k~ab~c~ | h2b(vovo) | im~k~db~c~ >
                           hmatel = -h2b_vovo(a,m,d,j)
@@ -7645,7 +8121,7 @@ module eomccsdt_p_loops
                       ! (jk)
                       idx = idx_table(b,c,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               d = r3c_excits(1,jdet); m = r3c_excits(5,jdet);
                               ! compute < ij~k~ab~c~ | h2b(vovo) | im~j~db~c~ >
                               hmatel = h2b_vovo(a,m,d,k)
@@ -7674,7 +8150,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(b,c,i,j)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           d = r3c_excits(1,jdet); n = r3c_excits(6,jdet);
                           ! compute < ij~k~ab~c~ | h2b(vovo) | ij~n~db~c~ >
                           hmatel = -h2b_vovo(a,n,d,k)
@@ -7683,7 +8159,7 @@ module eomccsdt_p_loops
                       ! (jk)
                       idx = idx_table(b,c,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               d = r3c_excits(1,jdet); n = r3c_excits(6,jdet);
                               ! compute < ij~k~ab~c~ | h2b(vovo) | ik~n~db~c~ >
                               hmatel = h2b_vovo(a,n,d,j)
@@ -7703,7 +8179,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3c_amps(:)
                   ! allocate sorting arrays
                   nloc = nub*(nub-1)/2*noa*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,noa,nob))
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/2,nob/), nub, nub, noa, nob)
@@ -7723,7 +8199,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(b,c,i,k)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                           ! compute < ij~k~ab~c~ | x2b(vovo) | im~k~db~c~ >
                           hmatel = -x2b_vovo(a,m,d,j)
@@ -7732,7 +8208,7 @@ module eomccsdt_p_loops
                       ! (jk)
                       idx = idx_table(b,c,i,j)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | x2b(vovo) | im~j~db~c~ >
                               hmatel = x2b_vovo(a,m,d,k)
@@ -7761,7 +8237,7 @@ module eomccsdt_p_loops
                       i = r3c_excits(4,idet); j = r3c_excits(5,idet); k = r3c_excits(6,idet);
                       ! (1)
                       idx = idx_table(b,c,i,j)
-                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                           d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                           ! compute < ij~k~ab~c~ | x2b(vovo) | ij~n~db~c~ >
                           hmatel = -x2b_vovo(a,n,d,k)
@@ -7770,7 +8246,7 @@ module eomccsdt_p_loops
                       ! (jk)
                       idx = idx_table(b,c,i,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                               ! compute < ij~k~ab~c~ | x2b(vovo) | ik~n~db~c~ >
                               hmatel = x2b_vovo(a,n,d,j)
@@ -7794,7 +8270,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = r3d_excits(:,:)
                   ! allocate sorting arrays
                   nloc = (nub-1)*(nub-2)/2*(nob-1)*(nob-2)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nob,nob))
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
@@ -7815,7 +8291,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                               ! compute < ij~k~ab~c~ | h2b(voov) | l~j~k~d~b~c~ >
                               hmatel = h2b_voov(a,l,i,d)
@@ -7845,7 +8321,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | h2b(voov) | j~m~k~d~b~c~ >
                               hmatel = -h2b_voov(a,m,i,d)
@@ -7875,7 +8351,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                               ! compute < ij~k~ab~c~ | h2b(voov) | j~k~n~d~b~c~ >
                               hmatel = h2b_voov(a,n,i,d)
@@ -7905,7 +8381,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                               ! compute < ij~k~ab~c~ | h2b(voov) | l~j~k~b~e~c~ >
                               hmatel = -h2b_voov(a,l,i,e)
@@ -7935,7 +8411,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | h2b(voov) | j~m~k~b~e~c~ >
                               hmatel = h2b_voov(a,m,i,e)
@@ -7965,7 +8441,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                               ! compute < ij~k~ab~c~ | h2b(voov) | j~k~n~b~e~c~ >
                               hmatel = -h2b_voov(a,n,i,e)
@@ -7995,7 +8471,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                               ! compute < ij~k~ab~c~ | h2b(voov) | l~j~k~b~c~f~ >
                               hmatel = h2b_voov(a,l,i,f)
@@ -8025,7 +8501,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | h2b(voov) | j~m~k~b~c~f~ >
                               hmatel = -h2b_voov(a,m,i,f)
@@ -8055,7 +8531,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                               ! compute < ij~k~ab~c~ | h2b(voov) | j~k~n~b~c~f~ >
                               hmatel = h2b_voov(a,n,i,f)
@@ -8078,7 +8554,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = t3d_excits(:,:)
                   ! allocate sorting arrays
                   nloc = (nub-1)*(nub-2)/2*(nob-1)*(nob-2)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nob,nob))
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
@@ -8099,7 +8575,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                               ! compute < ij~k~ab~c~ | x2b(voov) | l~j~k~d~b~c~ >
                               hmatel = x2b_voov(a,l,i,d)
@@ -8129,7 +8605,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | x2b(voov) | j~m~k~d~b~c~ >
                               hmatel = -x2b_voov(a,m,i,d)
@@ -8159,7 +8635,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                               ! compute < ij~k~ab~c~ | x2b(voov) | j~k~n~d~b~c~ >
                               hmatel = x2b_voov(a,n,i,d)
@@ -8189,7 +8665,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                               ! compute < ij~k~ab~c~ | x2b(voov) | l~j~k~b~e~c~ >
                               hmatel = -x2b_voov(a,l,i,e)
@@ -8219,7 +8695,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | x2b(voov) | j~m~k~b~e~c~ >
                               hmatel = x2b_voov(a,m,i,e)
@@ -8249,7 +8725,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                               ! compute < ij~k~ab~c~ | x2b(voov) | j~k~n~b~e~c~ >
                               hmatel = -x2b_voov(a,n,i,e)
@@ -8279,7 +8755,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                               ! compute < ij~k~ab~c~ | x2b(voov) | l~j~k~b~c~f~ >
                               hmatel = x2b_voov(a,l,i,f)
@@ -8309,7 +8785,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                               ! compute < ij~k~ab~c~ | x2b(voov) | j~m~k~b~c~f~ >
                               hmatel = -x2b_voov(a,m,i,f)
@@ -8339,7 +8815,7 @@ module eomccsdt_p_loops
                       ! (1)
                       idx = idx_table(b,c,j,k)
                       if (idx/=0) then
-                          do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                               f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                               ! compute < ij~k~ab~c~ | x2b(voov) | j~k~n~b~c~f~ >
                               hmatel = x2b_voov(a,n,i,f)
@@ -8363,7 +8839,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = r3b_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = nua*nub*noa*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nub,noa,nob))
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
@@ -8384,7 +8860,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | imk~aec~ >
                             hmatel = h2b_ovvo(m,b,e,j)
@@ -8394,7 +8870,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | imk~aeb~ >
                             hmatel = -h2b_ovvo(m,c,e,j)
@@ -8404,7 +8880,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | imj~aec~ >
                             hmatel = -h2b_ovvo(m,b,e,k)
@@ -8414,7 +8890,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | imj~aeb~ >
                             hmatel = h2b_ovvo(m,c,e,k)
@@ -8444,7 +8920,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | imk~dac~ >
                             hmatel = -h2b_ovvo(m,b,d,j)
@@ -8454,7 +8930,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | imk~dab~ >
                             hmatel = h2b_ovvo(m,c,d,j)
@@ -8464,7 +8940,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | imj~dac~ >
                             hmatel = h2b_ovvo(m,b,d,k)
@@ -8474,7 +8950,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | imj~dab~ >
                             hmatel = -h2b_ovvo(m,c,d,k)
@@ -8504,7 +8980,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | lik~aec~ >
                             hmatel = -h2b_ovvo(l,b,e,j)
@@ -8514,7 +8990,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | lik~aeb~ >
                             hmatel = h2b_ovvo(l,c,e,j)
@@ -8524,7 +9000,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | lij~aec~ >
                             hmatel = h2b_ovvo(l,b,e,k)
@@ -8534,7 +9010,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | lij~aeb~ >
                             hmatel = -h2b_ovvo(l,c,e,k)
@@ -8564,7 +9040,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | lik~dac~ >
                             hmatel = h2b_ovvo(l,b,d,j)
@@ -8574,7 +9050,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | lik~dab~ >
                             hmatel = -h2b_ovvo(l,c,d,j)
@@ -8584,7 +9060,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | lij~dac~ >
                             hmatel = -h2b_ovvo(l,b,d,k)
@@ -8594,7 +9070,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | h2b(ovvo) | lij~dab~ >
                             hmatel = h2b_ovvo(l,c,d,k)
@@ -8617,7 +9093,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = nua*nub*noa*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nub,noa,nob))
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
@@ -8638,7 +9114,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | imk~aec~ >
                             hmatel = x2b_ovvo(m,b,e,j)
@@ -8648,7 +9124,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | imk~aeb~ >
                             hmatel = -x2b_ovvo(m,c,e,j)
@@ -8658,7 +9134,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | imj~aec~ >
                             hmatel = -x2b_ovvo(m,b,e,k)
@@ -8668,7 +9144,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | imj~aeb~ >
                             hmatel = x2b_ovvo(m,c,e,k)
@@ -8698,7 +9174,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | imk~dac~ >
                             hmatel = -x2b_ovvo(m,b,d,j)
@@ -8708,7 +9184,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | imk~dab~ >
                             hmatel = x2b_ovvo(m,c,d,j)
@@ -8718,7 +9194,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | imj~dac~ >
                             hmatel = x2b_ovvo(m,b,d,k)
@@ -8728,7 +9204,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | imj~dab~ >
                             hmatel = -x2b_ovvo(m,c,d,k)
@@ -8758,7 +9234,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | lik~aec~ >
                             hmatel = -x2b_ovvo(l,b,e,j)
@@ -8768,7 +9244,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | lik~aeb~ >
                             hmatel = x2b_ovvo(l,c,e,j)
@@ -8778,7 +9254,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | lij~aec~ >
                             hmatel = x2b_ovvo(l,b,e,k)
@@ -8788,7 +9264,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | lij~aeb~ >
                             hmatel = -x2b_ovvo(l,c,e,k)
@@ -8818,7 +9294,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | lik~dac~ >
                             hmatel = x2b_ovvo(l,b,d,j)
@@ -8828,7 +9304,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | lik~dab~ >
                             hmatel = -x2b_ovvo(l,c,d,j)
@@ -8838,7 +9314,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | lij~dac~ >
                             hmatel = -x2b_ovvo(l,b,d,k)
@@ -8848,7 +9324,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                             ! compute < ij~k~ab~c~ | x2b(ovvo) | lij~dab~ >
                             hmatel = x2b_ovvo(l,c,d,k)
@@ -9006,7 +9482,7 @@ module eomccsdt_p_loops
                   ! NOTE: WITHIN THESE LOOPS, H1B(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
                   ! allocate new sorting arrays
                   nloc = nub*(nub-1)*(nub-2)/6*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nub,nob))
                   !!! ABCK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/3,nob/), nub, nub, nub, nob)
@@ -9026,7 +9502,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = r3d_excits(4,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(oooo) | lmkabc >
                         hmatel = h2c_oooo(l,m,i,j)
@@ -9042,7 +9518,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,c,i)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = r3d_excits(4,jdet); m = r3d_excits(5,jdet);
                            ! compute < ijkabc | h2c(oooo) | lmiabc >
                            hmatel = -h2c_oooo(l,m,k,j)
@@ -9059,7 +9535,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,c,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = r3d_excits(4,jdet); m = r3d_excits(5,jdet);
                            ! compute < ijkabc | h2c(oooo) | lmjabc >
                            hmatel = -h2c_oooo(l,m,i,k)
@@ -9095,7 +9571,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,i)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         m = r3d_excits(5,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(oooo) | imnabc >
                         hmatel = h2c_oooo(m,n,j,k)
@@ -9111,7 +9587,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            m = r3d_excits(5,jdet); n = r3d_excits(6,jdet);
                            ! compute < ijkabc | h2c(oooo) | jmnabc >
                            hmatel = -h2c_oooo(m,n,i,k)
@@ -9128,7 +9604,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,c,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            m = r3d_excits(5,jdet); n = r3d_excits(6,jdet);
                            ! compute < ijkabc | h2c(oooo) | kmnabc >
                            hmatel = -h2c_oooo(m,n,j,i)
@@ -9164,7 +9640,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = r3d_excits(4,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(oooo) | ljnabc >
                         hmatel = h2c_oooo(l,n,i,k)
@@ -9180,7 +9656,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,i)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = r3d_excits(4,jdet); n = r3d_excits(6,jdet);
                            ! compute < ijkabc | h2c(oooo) | linabc >
                            hmatel = -h2c_oooo(l,n,j,k)
@@ -9197,7 +9673,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,c,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = r3d_excits(4,jdet); n = r3d_excits(6,jdet);
                            ! compute < ijkabc | h2c(oooo) | lknabc >
                            hmatel = -h2c_oooo(l,n,i,j)
@@ -9226,7 +9702,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3d_amps(:)
                   ! allocate new sorting arrays
                   nloc = nub*(nub-1)*(nub-2)/6*nob
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nub,nob))
                   !!! ABCK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/3,nob/), nub, nub, nub, nob)
@@ -9246,7 +9722,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,k)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = excits_buff(4,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | x2c(oooo) | lmkabc >
                         hmatel = x2c_oooo(l,m,i,j)
@@ -9262,7 +9738,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,c,i)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = excits_buff(4,jdet); m = excits_buff(5,jdet);
                            ! compute < ijkabc | x2c(oooo) | lmiabc >
                            hmatel = -x2c_oooo(l,m,k,j)
@@ -9279,7 +9755,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,c,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = excits_buff(4,jdet); m = excits_buff(5,jdet);
                            ! compute < ijkabc | x2c(oooo) | lmjabc >
                            hmatel = -x2c_oooo(l,m,i,k)
@@ -9315,7 +9791,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,i)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         m = excits_buff(5,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | x2c(oooo) | imnabc >
                         hmatel = x2c_oooo(m,n,j,k)
@@ -9331,7 +9807,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,j)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            m = excits_buff(5,jdet); n = excits_buff(6,jdet);
                            ! compute < ijkabc | x2c(oooo) | jmnabc >
                            hmatel = -x2c_oooo(m,n,i,k)
@@ -9348,7 +9824,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,c,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            m = excits_buff(5,jdet); n = excits_buff(6,jdet);
                            ! compute < ijkabc | x2c(oooo) | kmnabc >
                            hmatel = -x2c_oooo(m,n,j,i)
@@ -9384,7 +9860,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,c,j)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         l = excits_buff(4,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | x2c(oooo) | ljnabc >
                         hmatel = x2c_oooo(l,n,i,k)
@@ -9400,7 +9876,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,c,i)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = excits_buff(4,jdet); n = excits_buff(6,jdet);
                            ! compute < ijkabc | x2c(oooo) | linabc >
                            hmatel = -x2c_oooo(l,n,j,k)
@@ -9417,7 +9893,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,c,k)
                      if (idx/=0) then
-                        do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            l = excits_buff(4,jdet); n = excits_buff(6,jdet);
                            ! compute < ijkabc | x2c(oooo) | lknabc >
                            hmatel = -x2c_oooo(l,n,i,j)
@@ -9445,7 +9921,7 @@ module eomccsdt_p_loops
                   ! NOTE: WITHIN THESE LOOPS, H1B(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
                   ! allocate new sorting arrays
                   nloc = nob*(nob-1)*(nob-2)/6*nub
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nob,nob,nob,nub))
                   !!! IJKA LOOP !!!
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/1,nub-2/), nob, nob, nob, nub)
@@ -9465,7 +9941,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,a)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkaef >
                         hmatel = h2c_vvvv(b,c,e,f)
@@ -9481,7 +9957,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,k,b)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkbef >
                         hmatel = -h2c_vvvv(a,c,e,f)
@@ -9498,7 +9974,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(i,j,k,c)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkcef >
                         hmatel = -h2c_vvvv(b,a,e,f)
@@ -9534,7 +10010,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,b)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdbf >
                         hmatel = h2c_vvvv(a,c,d,f)
@@ -9550,7 +10026,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,k,a)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdaf >
                         hmatel = -h2c_vvvv(b,c,d,f)
@@ -9567,7 +10043,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(i,j,k,c)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdcf >
                         hmatel = -h2c_vvvv(a,b,d,f)
@@ -9603,7 +10079,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,c)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); e = r3d_excits(2,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdec >
                         hmatel = h2c_vvvv(a,b,d,e)
@@ -9619,7 +10095,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(i,j,k,a)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); e = r3d_excits(2,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdea >
                         hmatel = -h2c_vvvv(c,b,d,e)
@@ -9636,7 +10112,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(i,j,k,b)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); e = r3d_excits(2,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdeb >
                         hmatel = -h2c_vvvv(a,c,d,e)
@@ -9665,7 +10141,7 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3d_amps(:)
                   ! allocate new sorting arrays
                   nloc = nob*(nob-1)*(nob-2)/6*nub
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nob,nob,nob,nub))
                   !!! IJKA LOOP !!!
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/1,nub-2/), nob, nob, nob, nub)
@@ -9685,7 +10161,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,a)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkaef >
                         hmatel = x2c_vvvv(b,c,e,f)
@@ -9701,7 +10177,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,k,b)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkbef >
                         hmatel = -x2c_vvvv(a,c,e,f)
@@ -9718,7 +10194,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(i,j,k,c)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkcef >
                         hmatel = -x2c_vvvv(b,a,e,f)
@@ -9754,7 +10230,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,b)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdbf >
                         hmatel = x2c_vvvv(a,c,d,f)
@@ -9770,7 +10246,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(i,j,k,a)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdaf >
                         hmatel = -x2c_vvvv(b,c,d,f)
@@ -9787,7 +10263,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(i,j,k,c)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdcf >
                         hmatel = -x2c_vvvv(a,b,d,f)
@@ -9823,7 +10299,7 @@ module eomccsdt_p_loops
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(i,j,k,c)
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdec >
                         hmatel = x2c_vvvv(a,b,d,e)
@@ -9839,7 +10315,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(i,j,k,a)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdea >
                         hmatel = -x2c_vvvv(c,b,d,e)
@@ -9856,7 +10332,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(i,j,k,b)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdeb >
                         hmatel = -x2c_vvvv(a,c,d,e)
@@ -9882,18 +10358,28 @@ module eomccsdt_p_loops
                   !!!! diagram 5a: A(i/jk)A(a/bc) h2c(amie) * r3d(ebcmjk)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = (nub-1)*(nub-2)/2*(nob-1)*(nob-2)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nob,nob))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ijnabf >
                         hmatel = h2c_voov(c,n,k,f)
@@ -9903,7 +10389,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ijnbcf >
                         hmatel = h2c_voov(a,n,k,f)
@@ -9913,7 +10399,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ijnacf >
                         hmatel = -h2c_voov(b,n,k,f)
@@ -9923,7 +10409,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | jknabf >
                         hmatel = h2c_voov(c,n,i,f)
@@ -9933,7 +10419,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | jknbcf >
                         hmatel = h2c_voov(a,n,i,f)
@@ -9943,7 +10429,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | jknacf >
                         hmatel = -h2c_voov(b,n,i,f)
@@ -9953,7 +10439,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | iknabf >
                         hmatel = -h2c_voov(c,n,j,f)
@@ -9963,7 +10449,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | iknbcf >
                         hmatel = -h2c_voov(a,n,j,f)
@@ -9973,7 +10459,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | iknacf >
                         hmatel = h2c_voov(b,n,j,f)
@@ -9981,16 +10467,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ijnaec >
                         hmatel = h2c_voov(b,n,k,e)
@@ -10000,7 +10499,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ijnbec >
                         hmatel = -h2c_voov(a,n,k,e)
@@ -10010,7 +10509,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ijnaeb >
                         hmatel = -h2c_voov(c,n,k,e)
@@ -10020,7 +10519,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | jknaec >
                         hmatel = h2c_voov(b,n,i,e)
@@ -10030,7 +10529,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | jknbec >
                         hmatel = -h2c_voov(a,n,i,e)
@@ -10040,7 +10539,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | jknaeb >
                         hmatel = -h2c_voov(c,n,i,e)
@@ -10050,7 +10549,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | iknaec >
                         hmatel = -h2c_voov(b,n,j,e)
@@ -10060,7 +10559,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | iknbec >
                         hmatel = h2c_voov(a,n,j,e)
@@ -10070,7 +10569,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | iknaeb >
                         hmatel = h2c_voov(c,n,j,e)
@@ -10078,16 +10577,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ijndbc >
                         hmatel = h2c_voov(a,n,k,d)
@@ -10097,7 +10609,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ijndac >
                         hmatel = -h2c_voov(b,n,k,d)
@@ -10107,7 +10619,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ijndab >
                         hmatel = h2c_voov(c,n,k,d)
@@ -10117,7 +10629,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | jkndbc >
                         hmatel = h2c_voov(a,n,i,d)
@@ -10127,7 +10639,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | jkndac >
                         hmatel = -h2c_voov(b,n,i,d)
@@ -10137,7 +10649,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | jkndab >
                         hmatel = h2c_voov(c,n,i,d)
@@ -10147,7 +10659,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ikndbc >
                         hmatel = -h2c_voov(a,n,j,d)
@@ -10157,7 +10669,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ikndac >
                         hmatel = h2c_voov(b,n,j,d)
@@ -10167,7 +10679,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); n = r3d_excits(6,jdet);
                         ! compute < ijkabc | h2c(voov) | ikndab >
                         hmatel = -h2c_voov(c,n,j,d)
@@ -10175,16 +10687,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imkabf >
                         hmatel = h2c_voov(c,m,j,f)
@@ -10194,7 +10719,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imkbcf >
                         hmatel = h2c_voov(a,m,j,f)
@@ -10204,7 +10729,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imkacf >
                         hmatel = -h2c_voov(b,m,j,f)
@@ -10214,7 +10739,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | jmkabf >
                         hmatel = -h2c_voov(c,m,i,f)
@@ -10224,7 +10749,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | jmkbcf >
                         hmatel = -h2c_voov(a,m,i,f)
@@ -10234,7 +10759,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | jmkacf >
                         hmatel = h2c_voov(b,m,i,f)
@@ -10244,7 +10769,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imjabf >
                         hmatel = -h2c_voov(c,m,k,f)
@@ -10254,7 +10779,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imjbcf >
                         hmatel = -h2c_voov(a,m,k,f)
@@ -10264,7 +10789,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imjacf >
                         hmatel = h2c_voov(b,m,k,f)
@@ -10272,16 +10797,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imkaec >
                         hmatel = h2c_voov(b,m,j,e)
@@ -10291,7 +10829,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imkbec >
                         hmatel = -h2c_voov(a,m,j,e)
@@ -10301,7 +10839,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imkaeb >
                         hmatel = -h2c_voov(c,m,j,e)
@@ -10311,7 +10849,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | jmkaec >
                         hmatel = -h2c_voov(b,m,i,e)
@@ -10321,7 +10859,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | jmkbec >
                         hmatel = h2c_voov(a,m,i,e)
@@ -10331,7 +10869,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | jmkaeb >
                         hmatel = h2c_voov(c,m,i,e)
@@ -10341,7 +10879,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imjaec >
                         hmatel = -h2c_voov(b,m,k,e)
@@ -10351,7 +10889,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imjbec >
                         hmatel = h2c_voov(a,m,k,e)
@@ -10361,7 +10899,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imjaeb >
                         hmatel = h2c_voov(c,m,k,e)
@@ -10369,16 +10907,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imkdbc >
                         hmatel = h2c_voov(a,m,j,d)
@@ -10388,7 +10939,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imkdac >
                         hmatel = -h2c_voov(b,m,j,d)
@@ -10398,7 +10949,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imkdab >
                         hmatel = h2c_voov(c,m,j,d)
@@ -10408,7 +10959,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | jmkdbc >
                         hmatel = -h2c_voov(a,m,i,d)
@@ -10418,7 +10969,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | jmkdac >
                         hmatel = h2c_voov(b,m,i,d)
@@ -10428,7 +10979,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | jmkdab >
                         hmatel = -h2c_voov(c,m,i,d)
@@ -10438,7 +10989,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imjdbc >
                         hmatel = -h2c_voov(a,m,k,d)
@@ -10448,7 +10999,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imjdac >
                         hmatel = h2c_voov(b,m,k,d)
@@ -10458,7 +11009,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); m = r3d_excits(5,jdet);
                         ! compute < ijkabc | h2c(voov) | imjdab >
                         hmatel = -h2c_voov(c,m,k,d)
@@ -10466,16 +11017,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | ljkabf >
                         hmatel = h2c_voov(c,l,i,f)
@@ -10485,7 +11049,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | ljkbcf >
                         hmatel = h2c_voov(a,l,i,f)
@@ -10495,7 +11059,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | ljkacf >
                         hmatel = -h2c_voov(b,l,i,f)
@@ -10505,7 +11069,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | likabf >
                         hmatel = -h2c_voov(c,l,j,f)
@@ -10515,7 +11079,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | likbcf >
                         hmatel = -h2c_voov(a,l,j,f)
@@ -10525,7 +11089,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | likacf >
                         hmatel = h2c_voov(b,l,j,f)
@@ -10535,7 +11099,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | lijabf >
                         hmatel = h2c_voov(c,l,k,f)
@@ -10545,7 +11109,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | lijbcf >
                         hmatel = h2c_voov(a,l,k,f)
@@ -10555,7 +11119,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = r3d_excits(3,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | lijacf >
                         hmatel = -h2c_voov(b,l,k,f)
@@ -10563,16 +11127,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | ljkaec >
                         hmatel = h2c_voov(b,l,i,e)
@@ -10582,7 +11159,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | ljkbec >
                         hmatel = -h2c_voov(a,l,i,e)
@@ -10592,7 +11169,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | ljkaeb >
                         hmatel = -h2c_voov(c,l,i,e)
@@ -10602,7 +11179,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | likaec >
                         hmatel = -h2c_voov(b,l,j,e)
@@ -10612,7 +11189,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | likbec >
                         hmatel = h2c_voov(a,l,j,e)
@@ -10622,7 +11199,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | likaeb >
                         hmatel = h2c_voov(c,l,j,e)
@@ -10632,7 +11209,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | lijaec >
                         hmatel = h2c_voov(b,l,k,e)
@@ -10642,7 +11219,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | lijbec >
                         hmatel = -h2c_voov(a,l,k,e)
@@ -10652,7 +11229,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | lijaeb >
                         hmatel = -h2c_voov(c,l,k,e)
@@ -10660,16 +11237,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(r3d_excits, r3d_amps, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_r, resid)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,&
+                  !$omp r3d_amps,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp H2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | ljkdbc >
                         hmatel = h2c_voov(a,l,i,d)
@@ -10679,7 +11269,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | ljkdac >
                         hmatel = -h2c_voov(b,l,i,d)
@@ -10689,7 +11279,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | ljkdab >
                         hmatel = h2c_voov(c,l,i,d)
@@ -10699,7 +11289,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | likdbc >
                         hmatel = -h2c_voov(a,l,j,d)
@@ -10709,7 +11299,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | likdac >
                         hmatel = h2c_voov(b,l,j,d)
@@ -10719,7 +11309,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | likdab >
                         hmatel = -h2c_voov(c,l,j,d)
@@ -10729,7 +11319,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | lijdbc >
                         hmatel = h2c_voov(a,l,k,d)
@@ -10739,7 +11329,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | lijdac >
                         hmatel = -h2c_voov(b,l,k,d)
@@ -10749,7 +11339,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); l = r3d_excits(4,jdet);
                         ! compute < ijkabc | h2c(voov) | lijdab >
                         hmatel = h2c_voov(c,l,k,d)
@@ -10757,6 +11347,9 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   !!!! diagram 5b: A(i/jk)A(a/bc) x2c(amie) * t3a(ebcmjk)
@@ -10766,18 +11359,28 @@ module eomccsdt_p_loops
                   amps_buff(:) = t3d_amps(:)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = (nub-1)*(nub-2)/2*(nob-1)*(nob-2)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nob,nob))
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnabf >
                         hmatel = x2c_voov(c,n,k,f)
@@ -10787,7 +11390,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnbcf >
                         hmatel = x2c_voov(a,n,k,f)
@@ -10797,7 +11400,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnacf >
                         hmatel = -x2c_voov(b,n,k,f)
@@ -10807,7 +11410,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknabf >
                         hmatel = x2c_voov(c,n,i,f)
@@ -10817,7 +11420,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknbcf >
                         hmatel = x2c_voov(a,n,i,f)
@@ -10827,7 +11430,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknacf >
                         hmatel = -x2c_voov(b,n,i,f)
@@ -10837,7 +11440,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknabf >
                         hmatel = -x2c_voov(c,n,j,f)
@@ -10847,7 +11450,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknbcf >
                         hmatel = -x2c_voov(a,n,j,f)
@@ -10857,7 +11460,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknacf >
                         hmatel = x2c_voov(b,n,j,f)
@@ -10865,16 +11468,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnaec >
                         hmatel = x2c_voov(b,n,k,e)
@@ -10884,7 +11500,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnbec >
                         hmatel = -x2c_voov(a,n,k,e)
@@ -10894,7 +11510,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijnaeb >
                         hmatel = -x2c_voov(c,n,k,e)
@@ -10904,7 +11520,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknaec >
                         hmatel = x2c_voov(b,n,i,e)
@@ -10914,7 +11530,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknbec >
                         hmatel = -x2c_voov(a,n,i,e)
@@ -10924,7 +11540,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jknaeb >
                         hmatel = -x2c_voov(c,n,i,e)
@@ -10934,7 +11550,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknaec >
                         hmatel = -x2c_voov(b,n,j,e)
@@ -10944,7 +11560,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknbec >
                         hmatel = x2c_voov(a,n,j,e)
@@ -10954,7 +11570,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | iknaeb >
                         hmatel = x2c_voov(c,n,j,e)
@@ -10962,16 +11578,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijndbc >
                         hmatel = x2c_voov(a,n,k,d)
@@ -10981,7 +11610,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijndac >
                         hmatel = -x2c_voov(b,n,k,d)
@@ -10991,7 +11620,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ijndab >
                         hmatel = x2c_voov(c,n,k,d)
@@ -11001,7 +11630,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jkndbc >
                         hmatel = x2c_voov(a,n,i,d)
@@ -11011,7 +11640,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jkndac >
                         hmatel = -x2c_voov(b,n,i,d)
@@ -11021,7 +11650,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | jkndab >
                         hmatel = x2c_voov(c,n,i,d)
@@ -11031,7 +11660,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ikndbc >
                         hmatel = -x2c_voov(a,n,j,d)
@@ -11041,7 +11670,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ikndac >
                         hmatel = x2c_voov(b,n,j,d)
@@ -11051,7 +11680,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); n = excits_buff(6,jdet);
                         ! compute < ijkabc | h2a(voov) | ikndab >
                         hmatel = -x2c_voov(c,n,j,d)
@@ -11059,16 +11688,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkabf >
                         hmatel = x2c_voov(c,m,j,f)
@@ -11078,7 +11720,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkbcf >
                         hmatel = x2c_voov(a,m,j,f)
@@ -11088,7 +11730,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkacf >
                         hmatel = -x2c_voov(b,m,j,f)
@@ -11098,7 +11740,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkabf >
                         hmatel = -x2c_voov(c,m,i,f)
@@ -11108,7 +11750,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkbcf >
                         hmatel = -x2c_voov(a,m,i,f)
@@ -11118,7 +11760,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkacf >
                         hmatel = x2c_voov(b,m,i,f)
@@ -11128,7 +11770,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjabf >
                         hmatel = -x2c_voov(c,m,k,f)
@@ -11138,7 +11780,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjbcf >
                         hmatel = -x2c_voov(a,m,k,f)
@@ -11148,7 +11790,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjacf >
                         hmatel = x2c_voov(b,m,k,f)
@@ -11156,16 +11798,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkaec >
                         hmatel = x2c_voov(b,m,j,e)
@@ -11175,7 +11830,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkbec >
                         hmatel = -x2c_voov(a,m,j,e)
@@ -11185,7 +11840,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkaeb >
                         hmatel = -x2c_voov(c,m,j,e)
@@ -11195,7 +11850,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkaec >
                         hmatel = -x2c_voov(b,m,i,e)
@@ -11205,7 +11860,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkbec >
                         hmatel = x2c_voov(a,m,i,e)
@@ -11215,7 +11870,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkaeb >
                         hmatel = x2c_voov(c,m,i,e)
@@ -11225,7 +11880,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjaec >
                         hmatel = -x2c_voov(b,m,k,e)
@@ -11235,7 +11890,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjbec >
                         hmatel = x2c_voov(a,m,k,e)
@@ -11245,7 +11900,7 @@ module eomccsdt_p_loops
                      ! (bc)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjaeb >
                         hmatel = x2c_voov(c,m,k,e)
@@ -11253,16 +11908,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkdbc >
                         hmatel = x2c_voov(a,m,j,d)
@@ -11272,7 +11940,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkdac >
                         hmatel = -x2c_voov(b,m,j,d)
@@ -11282,7 +11950,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imkdab >
                         hmatel = x2c_voov(c,m,j,d)
@@ -11292,7 +11960,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkdbc >
                         hmatel = -x2c_voov(a,m,i,d)
@@ -11302,7 +11970,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkdac >
                         hmatel = x2c_voov(b,m,i,d)
@@ -11312,7 +11980,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | jmkdab >
                         hmatel = -x2c_voov(c,m,i,d)
@@ -11322,7 +11990,7 @@ module eomccsdt_p_loops
                      ! (jk)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjdbc >
                         hmatel = -x2c_voov(a,m,k,d)
@@ -11332,7 +12000,7 @@ module eomccsdt_p_loops
                      ! (ab)(jk)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjdac >
                         hmatel = x2c_voov(b,m,k,d)
@@ -11342,7 +12010,7 @@ module eomccsdt_p_loops
                      ! (ac)(jk)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); m = excits_buff(5,jdet);
                         ! compute < ijkabc | h2a(voov) | imjdab >
                         hmatel = -x2c_voov(c,m,k,d)
@@ -11350,16 +12018,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkabf >
                         hmatel = x2c_voov(c,l,i,f)
@@ -11369,7 +12050,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkbcf >
                         hmatel = x2c_voov(a,l,i,f)
@@ -11379,7 +12060,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkacf >
                         hmatel = -x2c_voov(b,l,i,f)
@@ -11389,7 +12070,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likabf >
                         hmatel = -x2c_voov(c,l,j,f)
@@ -11399,7 +12080,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likbcf >
                         hmatel = -x2c_voov(a,l,j,f)
@@ -11409,7 +12090,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likacf >
                         hmatel = x2c_voov(b,l,j,f)
@@ -11419,7 +12100,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijabf >
                         hmatel = x2c_voov(c,l,k,f)
@@ -11429,7 +12110,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijbcf >
                         hmatel = x2c_voov(a,l,k,f)
@@ -11439,7 +12120,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(3,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijacf >
                         hmatel = -x2c_voov(b,l,k,f)
@@ -11447,16 +12128,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkaec >
                         hmatel = x2c_voov(b,l,i,e)
@@ -11466,7 +12160,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkbec >
                         hmatel = -x2c_voov(a,l,i,e)
@@ -11476,7 +12170,7 @@ module eomccsdt_p_loops
                      ! (bc)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkaeb >
                         hmatel = -x2c_voov(c,l,i,e)
@@ -11486,7 +12180,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likaec >
                         hmatel = -x2c_voov(b,l,j,e)
@@ -11496,7 +12190,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likbec >
                         hmatel = x2c_voov(a,l,j,e)
@@ -11506,7 +12200,7 @@ module eomccsdt_p_loops
                      ! (bc)(ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likaeb >
                         hmatel = x2c_voov(c,l,j,e)
@@ -11516,7 +12210,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijaec >
                         hmatel = x2c_voov(b,l,k,e)
@@ -11526,7 +12220,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijbec >
                         hmatel = -x2c_voov(a,l,k,e)
@@ -11536,7 +12230,7 @@ module eomccsdt_p_loops
                      ! (bc)(ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijaeb >
                         hmatel = -x2c_voov(c,l,k,e)
@@ -11544,16 +12238,29 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
+                  !!!! BEGIN OMP PARALLEL SECTION !!!!
+                  !$omp parallel shared(resid,&
+                  !$omp r3d_excits,excits_buff,&
+                  !$omp amps_buff,&
+                  !$omp loc_arr,idx_table,&
+                  !$omp X2C_voov,&
+                  !$omp noa,nua,n3bbb_r),&
+                  !$omp private(hmatel,hmatel1,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
+                  !$omp idx)
+                  !$omp do schedule(static)
                   do idet = 1, n3bbb_r
                      a = r3d_excits(1,idet); b = r3d_excits(2,idet); c = r3d_excits(3,idet);
                      i = r3d_excits(4,idet); j = r3d_excits(5,idet); k = r3d_excits(6,idet);
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkdbc >
                         hmatel = x2c_voov(a,l,i,d)
@@ -11563,7 +12270,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkdac >
                         hmatel = -x2c_voov(b,l,i,d)
@@ -11573,7 +12280,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | ljkdab >
                         hmatel = x2c_voov(c,l,i,d)
@@ -11583,7 +12290,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likdbc >
                         hmatel = -x2c_voov(a,l,j,d)
@@ -11593,7 +12300,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likdac >
                         hmatel = x2c_voov(b,l,j,d)
@@ -11603,7 +12310,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | likdab >
                         hmatel = -x2c_voov(c,l,j,d)
@@ -11613,7 +12320,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijdbc >
                         hmatel = x2c_voov(a,l,k,d)
@@ -11623,7 +12330,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijdac >
                         hmatel = -x2c_voov(b,l,k,d)
@@ -11633,7 +12340,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < ijkabc | h2a(voov) | lijdab >
                         hmatel = x2c_voov(c,l,k,d)
@@ -11641,6 +12348,9 @@ module eomccsdt_p_loops
                      end do
                      end if
                   end do
+                  !$omp end do
+                  !$omp end parallel
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate temporary arrays
@@ -11653,7 +12363,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = r3c_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = nub*(nub-1)/2*nob*(nob-1)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nob,nob))
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
@@ -11674,7 +12384,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | h2b(ovvo) | lj~k~db~c~ >
                         hmatel = h2b_ovvo(l,a,d,i)
@@ -11684,7 +12394,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | h2b(ovvo) | lj~k~da~c~ >
                         hmatel = -h2b_ovvo(l,b,d,i)
@@ -11694,7 +12404,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | h2b(ovvo) | lj~k~da~b~ >
                         hmatel = h2b_ovvo(l,c,d,i)
@@ -11704,7 +12414,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | h2b(ovvo) | li~k~db~c~ >
                         hmatel = -h2b_ovvo(l,a,d,j)
@@ -11714,7 +12424,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | h2b(ovvo) | li~k~da~c~ >
                         hmatel = h2b_ovvo(l,b,d,j)
@@ -11724,7 +12434,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | h2b(ovvo) | li~k~da~b~ >
                         hmatel = -h2b_ovvo(l,c,d,j)
@@ -11734,7 +12444,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | h2b(ovvo) | li~j~db~c~ >
                         hmatel = h2b_ovvo(l,a,d,k)
@@ -11744,7 +12454,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | h2b(ovvo) | li~j~da~c~ >
                         hmatel = -h2b_ovvo(l,b,d,k)
@@ -11754,7 +12464,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | h2b(ovvo) | li~j~da~b~ >
                         hmatel = h2b_ovvo(l,c,d,k)
@@ -11776,7 +12486,7 @@ module eomccsdt_p_loops
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = nub*(nub-1)/2*nob*(nob-1)/2
-                  allocate(loc_arr(nloc,2))
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nub,nub,nob,nob))
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
@@ -11797,7 +12507,7 @@ module eomccsdt_p_loops
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | x2b(ovvo) | lj~k~db~c~ >
                         hmatel = x2b_ovvo(l,a,d,i)
@@ -11807,7 +12517,7 @@ module eomccsdt_p_loops
                      ! (ab)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | x2b(ovvo) | lj~k~da~c~ >
                         hmatel = -x2b_ovvo(l,b,d,i)
@@ -11817,7 +12527,7 @@ module eomccsdt_p_loops
                      ! (ac)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | x2b(ovvo) | lj~k~da~b~ >
                         hmatel = x2b_ovvo(l,c,d,i)
@@ -11827,7 +12537,7 @@ module eomccsdt_p_loops
                      ! (ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | x2b(ovvo) | li~k~db~c~ >
                         hmatel = -x2b_ovvo(l,a,d,j)
@@ -11837,7 +12547,7 @@ module eomccsdt_p_loops
                      ! (ab)(ij)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | x2b(ovvo) | li~k~da~c~ >
                         hmatel = x2b_ovvo(l,b,d,j)
@@ -11847,7 +12557,7 @@ module eomccsdt_p_loops
                      ! (ac)(ij)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | x2b(ovvo) | li~k~da~b~ >
                         hmatel = -x2b_ovvo(l,c,d,j)
@@ -11857,7 +12567,7 @@ module eomccsdt_p_loops
                      ! (ik)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | x2b(ovvo) | li~j~db~c~ >
                         hmatel = x2b_ovvo(l,a,d,k)
@@ -11867,7 +12577,7 @@ module eomccsdt_p_loops
                      ! (ab)(ik)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | x2b(ovvo) | li~j~da~c~ >
                         hmatel = -x2b_ovvo(l,b,d,k)
@@ -11877,7 +12587,7 @@ module eomccsdt_p_loops
                      ! (ac)(ik)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
-                     do jdet = loc_arr(idx,1), loc_arr(idx,2)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
                         ! compute < i~j~k~a~b~c~ | x2b(ovvo) | li~j~da~b~ >
                         hmatel = x2b_ovvo(l,c,d,k)
@@ -12172,7 +12882,7 @@ module eomccsdt_p_loops
                     integer, intent(in) :: idims(4)
                     integer, intent(in) :: idx_table(n1,n2,n3,n4)
       
-                    integer, intent(inout) :: loc_arr(nloc,2)
+                    integer, intent(inout) :: loc_arr(2,nloc)
                     integer, intent(inout) :: excits(6,n3p)
                     real(kind=8), intent(inout) :: amps(n3p)
                     real(kind=8), intent(inout), optional :: x1a(n3p)
@@ -12194,18 +12904,18 @@ module eomccsdt_p_loops
                     if (present(x1a)) x1a = x1a(idx)
                     deallocate(temp,idx)
       
-                    loc_arr(:,1) = 1; loc_arr(:,2) = 0;
+                    loc_arr(1,:) = 1; loc_arr(2,:) = 0;
                     do idet = 1, n3p-1
                        p1 = excits(idims(1),idet);   q1 = excits(idims(2),idet);   r1 = excits(idims(3),idet);   s1 = excits(idims(4),idet)
                        p2 = excits(idims(1),idet+1); q2 = excits(idims(2),idet+1); r2 = excits(idims(3),idet+1); s2 = excits(idims(4),idet+1)
                        pqrs1 = idx_table(p1,q1,r1,s1)
                        pqrs2 = idx_table(p2,q2,r2,s2)
                        if (pqrs1 /= pqrs2) then
-                          loc_arr(pqrs1,2) = idet
-                          loc_arr(pqrs2,1) = idet+1
+                          loc_arr(2,pqrs1) = idet
+                          loc_arr(1,pqrs2) = idet+1
                        end if
                     end do
-                    loc_arr(pqrs2,2) = n3p
+                    loc_arr(2,pqrs2) = n3p
 
               end subroutine sort4
 

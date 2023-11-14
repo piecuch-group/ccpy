@@ -5,6 +5,7 @@ from ccpy.utilities.printing import (
         print_cc_iteration, print_cc_iteration_header,
         print_eomcc_iteration, print_eomcc_iteration_header,
         print_block_eomcc_iteration,
+        print_ee_amplitudes
 )
 
 # [TODO]: (1) Add left-EOMCC single-root Davidson solver
@@ -121,6 +122,9 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
         # Get the eigenpair of interest
         omega = np.real(e[iselect])
         r = np.dot(B[:, :curr_size], alpha)
+        # Uncomment these lines to print R at each iteration
+        #R.unflatten(r)
+        #print_ee_amplitudes(R, system, R.order, 0.09)
         restart_block[:, niter % nrest + noffset] = r
 
         # calculate residual vector: r_i = S_{iK}*alpha_{K} - omega * r_i
@@ -135,17 +139,18 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
             print_eomcc_iteration(niter, omega, residual, delta_energy, elapsed_time)
             break
 
-        # update residual vector
+        # update residual vector using diagonal preconditioning
         if t3_excitations or r3_excitations:
             R = update_r(R, omega, H, options["RHF_symmetry"], system, r3_excitations)
         else:
             R = update_r(R, omega, H, options["RHF_symmetry"], system)
         # orthogonalize residual against subspace vectors (would be nice to vectorize this)
         q = R.flatten()
+        q /= np.linalg.norm(q)
         for p in range(curr_size):
             b = B[:, p] / np.linalg.norm(B[:, p])
             q -= np.dot(b.T, q) * b
-        q *= 1.0 / np.linalg.norm(q)
+        q /= np.linalg.norm(q)
         R.unflatten(q)
 
         # If below maximum subspace size, expand the subspace

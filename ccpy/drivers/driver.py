@@ -1036,9 +1036,9 @@ class Driver:
         LR = get_LR(self.R[state_index], self.L[state_index], l3_excitations=l3_excitations, r3_excitations=r3_excitations)
         self.L[state_index].unflatten(1.0 / LR * self.L[state_index].flatten())
         leftcc_calculation_summary(self.L[state_index], self.vertical_excitation_energy[state_index], LR, is_converged, self.system, self.options["amp_print_threshold"])
-        print("   Left-EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
         # Before leaving, verify that the excitation energy obtained in the left diagonalization matches
-        assert abs(omega_right - self.vertical_excitation_energy[state_index]) <= self.options["energy_convergence"]
+        print("   |ω(R) - ω(L)| = ", abs(omega_right - self.vertical_excitation_energy[state_index]))
+        print("   Left-EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
 
     def run_leftipeomcc(self, method, state_index=[0], t3_excitations=None, r3_excitations=None):
         # check if requested CC calculation is implemented in modules

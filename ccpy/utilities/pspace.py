@@ -656,7 +656,7 @@ def adaptive_triples_selection_from_moments(moments, pspace, t3_excitations, num
 
     return new_pspace, new_t3_excitations
 
-def get_active_pspace(system, num_active=1):
+def get_active_pspace(system, num_active=1, target_irrep=None):
     from ccpy.utilities.active_space import active_hole, active_particle
 
     assert system.num_act_occupied_alpha == system.num_act_occupied_beta
@@ -664,6 +664,11 @@ def get_active_pspace(system, num_active=1):
 
     nact_o = system.num_act_occupied_alpha
     nact_u = system.num_act_unoccupied_alpha
+
+    if target_irrep is None:
+        sym_target = -1
+    else:
+        sym_target = system.point_group_irrep_to_number[target_irrep]
 
     def count_active_occ_alpha(occ):
         return sum([active_hole(i, system.noccupied_alpha, nact_o) for i in occ])
@@ -677,6 +682,62 @@ def get_active_pspace(system, num_active=1):
     def count_active_unocc_beta(unocc):
         return sum([active_particle(a, nact_u) for a in unocc])
 
+    def checksym_aaa(i, j, k, a, b, c):
+        if sym_target == -1: return True
+        sym = system.point_group_irrep_to_number[system.reference_symmetry]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_alpha]]
+        if sym == sym_target:
+            return True
+        else:
+            return False
+
+    def checksym_aab(i, j, k, a, b, c):
+        if sym_target == -1: return True
+        sym = system.point_group_irrep_to_number[system.reference_symmetry]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
+        if sym == sym_target:
+            return True
+        else:
+            return False
+
+    def checksym_abb(i, j, k, a, b, c):
+        if sym_target == -1: return True
+        sym = system.point_group_irrep_to_number[system.reference_symmetry]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_beta]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
+        if sym == sym_target:
+            return True
+        else:
+            return False
+
+    def checksym_bbb(i, j, k, a, b, c):
+        if sym_target == -1: return True
+        sym = system.point_group_irrep_to_number[system.reference_symmetry]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_beta]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_beta]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
+        if sym == sym_target:
+            return True
+        else:
+            return False
+
     pspace = get_empty_pspace(system, 3)
     excitations = {"aaa": [], "aab": [], "abb": [], "bbb": []}
 
@@ -688,6 +749,7 @@ def get_active_pspace(system, num_active=1):
                     for b in range(a + 1, system.nunoccupied_alpha):
                         for c in range(b + 1, system.nunoccupied_alpha):
                             if count_active_occ_alpha([i, j, k]) >= num_active and count_active_unocc_alpha([a, b, c]) >= num_active:
+                                if not checksym_aaa(i, j, k, a, b, c): continue
                                 pspace["aaa"][a, b, c, i, j, k] = 1
                                 excitations["aaa"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # aab
@@ -698,6 +760,7 @@ def get_active_pspace(system, num_active=1):
                     for b in range(a + 1, system.nunoccupied_alpha):
                         for c in range(system.nunoccupied_beta):
                             if (count_active_occ_alpha([i, j]) + count_active_occ_beta([k])) >= num_active and (count_active_unocc_alpha([a, b]) + count_active_unocc_beta([c])) >= num_active:
+                                if not checksym_aab(i, j, k, a, b, c): continue
                                 pspace["aab"][a, b, c, i, j, k] = 1
                                 excitations["aab"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # abb
@@ -708,6 +771,7 @@ def get_active_pspace(system, num_active=1):
                     for b in range(system.nunoccupied_beta):
                         for c in range(b + 1, system.nunoccupied_beta):
                             if (count_active_occ_alpha([i]) + count_active_occ_beta([j, k])) >= num_active and (count_active_unocc_alpha([a]) + count_active_unocc_beta([b, c])) >= num_active:
+                                if not checksym_abb(i, j, k, a, b, c): continue
                                 pspace["abb"][a, b, c, i, j, k] = 1
                                 excitations["abb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # bbb
@@ -718,6 +782,7 @@ def get_active_pspace(system, num_active=1):
                     for b in range(a + 1, system.nunoccupied_beta):
                         for c in range(b + 1, system.nunoccupied_beta):
                             if count_active_occ_beta([i, j, k]) >= num_active and count_active_unocc_beta([a, b, c]) >= num_active:
+                                if not checksym_bbb(i, j, k, a, b, c): continue
                                 pspace["bbb"][a, b, c, i, j, k] = 1
                                 excitations["bbb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
 
