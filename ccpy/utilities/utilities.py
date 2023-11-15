@@ -1,18 +1,115 @@
-# gives a single float value
-# psutil.cpu_percent()
-# gives an object with many fields
-# psutil.virtual_memory()
-# you can convert that object to a dictionary
-# dict(psutil.virtual_memory()._asdict())
-# you can have the percentage of used RAM
-# psutil.virtual_memory().percent
-# 79.2
-# you can calculate percentage of available memory
-# psutil.virtual_memory().available * 100 / psutil.virtual_memory().total
-# 20.8
-
+import os
+import psutil
 import numpy as np
 from ccpy.utilities.updates import reorder
+
+def unravel_triples_amplitudes(T, t3_excitations):
+    """Replaces the triples parts of the T operator defined as P-space vectors
+    with the corresponding 6-dimensional arrays."""
+    n3aaa = t3_excitations["aaa"].shape[0]
+    n3aab = t3_excitations["aab"].shape[0]
+    n3abb = t3_excitations["abb"].shape[0]
+    n3bbb = t3_excitations["bbb"].shape[0]
+    # Unravel aaa
+    t3_aaa = np.zeros((nua, nua, nua, noa, noa, noa), order="F")
+    for idet in range(n3aaa):
+        a, b, c, i, j, k = [x - 1 for x in t3_excitations["aaa"][idet, :]]
+        t3_aaa[a, b, c, i, j, k] = T.aaa[idet]
+        t3_aaa[a, b, c, i, k, j] = -T.aaa[idet]
+        t3_aaa[a, b, c, j, i, k] = -T.aaa[idet]
+        t3_aaa[a, b, c, j, k, i] = T.aaa[idet]
+        t3_aaa[a, b, c, k, i, j] = T.aaa[idet]
+        t3_aaa[a, b, c, k, j, i] = -T.aaa[idet]
+        t3_aaa[a, c, b, i, j, k] = -T.aaa[idet]
+        t3_aaa[a, c, b, i, k, j] = T.aaa[idet]
+        t3_aaa[a, c, b, j, i, k] = T.aaa[idet]
+        t3_aaa[a, c, b, j, k, i] = -T.aaa[idet]
+        t3_aaa[a, c, b, k, i, j] = -T.aaa[idet]
+        t3_aaa[a, c, b, k, j, i] = T.aaa[idet]
+        t3_aaa[b, c, a, i, j, k] = T.aaa[idet]
+        t3_aaa[b, c, a, i, k, j] = -T.aaa[idet]
+        t3_aaa[b, c, a, j, i, k] = -T.aaa[idet]
+        t3_aaa[b, c, a, j, k, i] = T.aaa[idet]
+        t3_aaa[b, c, a, k, i, j] = T.aaa[idet]
+        t3_aaa[b, c, a, k, j, i] = -T.aaa[idet]
+        t3_aaa[b, a, c, i, j, k] = -T.aaa[idet]
+        t3_aaa[b, a, c, i, k, j] = T.aaa[idet]
+        t3_aaa[b, a, c, j, i, k] = T.aaa[idet]
+        t3_aaa[b, a, c, j, k, i] = -T.aaa[idet]
+        t3_aaa[b, a, c, k, i, j] = -T.aaa[idet]
+        t3_aaa[b, a, c, k, j, i] = T.aaa[idet]
+        t3_aaa[c, a, b, i, j, k] = T.aaa[idet]
+        t3_aaa[c, a, b, i, k, j] = -T.aaa[idet]
+        t3_aaa[c, a, b, j, i, k] = -T.aaa[idet]
+        t3_aaa[c, a, b, j, k, i] = T.aaa[idet]
+        t3_aaa[c, a, b, k, i, j] = T.aaa[idet]
+        t3_aaa[c, a, b, k, j, i] = -T.aaa[idet]
+        t3_aaa[c, b, a, i, j, k] = -T.aaa[idet]
+        t3_aaa[c, b, a, i, k, j] = T.aaa[idet]
+        t3_aaa[c, b, a, j, i, k] = T.aaa[idet]
+        t3_aaa[c, b, a, j, k, i] = -T.aaa[idet]
+        t3_aaa[c, b, a, k, i, j] = -T.aaa[idet]
+        t3_aaa[c, b, a, k, j, i] = T.aaa[idet]
+    setattr(T, "aaa", t3_aaa)
+    # Unravel aab
+    t3_aab = np.zeros((nua, nua, nub, noa, noa, nob), order="F")
+    for idet in range(n3aab):
+        a, b, c, i, j, k = [x - 1 for x in t3_excitations["aab"][idet, :]]
+        t3_aab[a, b, c, i, j, k] = T.aab[idet]
+        t3_aab[b, a, c, i, j, k] = -T.aab[idet]
+        t3_aab[a, b, c, j, i, k] = -T.aab[idet]
+        t3_aab[b, a, c, j, i, k] = T.aab[idet]
+    setattr(T, "aab", t3_aab)
+    # Unravel abb
+    t3_abb = np.zeros((nua, nub, nub, noa, nob, nob), order="F")
+    for idet in range(n3abb):
+        a, b, c, i, j, k = [x - 1 for x in t3_excitations["abb"][idet, :]]
+        t3_abb[a, b, c, i, j, k] = T.abb[idet]
+        t3_abb[a, c, b, i, j, k] = -T.abb[idet]
+        t3_abb[a, b, c, i, k, j] = -T.abb[idet]
+        t3_abb[a, c, b, i, k, j] = T.abb[idet]
+    setattr(T, "abb", t3_abb)
+    # Unravel bbb
+    t3_bbb = np.zeros((nub, nub, nub, nob, nob, nob), order="F")
+    for idet in range(n3bbb):
+        a, b, c, i, j, k = [x - 1 for x in t3_excitations["bbb"][idet, :]]
+        t3_bbb[a, b, c, i, j, k] = T.bbb[idet]
+        t3_bbb[a, b, c, i, k, j] = -T.bbb[idet]
+        t3_bbb[a, b, c, j, i, k] = -T.bbb[idet]
+        t3_bbb[a, b, c, j, k, i] = T.bbb[idet]
+        t3_bbb[a, b, c, k, i, j] = T.bbb[idet]
+        t3_bbb[a, b, c, k, j, i] = -T.bbb[idet]
+        t3_bbb[a, c, b, i, j, k] = -T.bbb[idet]
+        t3_bbb[a, c, b, i, k, j] = T.bbb[idet]
+        t3_bbb[a, c, b, j, i, k] = T.bbb[idet]
+        t3_bbb[a, c, b, j, k, i] = -T.bbb[idet]
+        t3_bbb[a, c, b, k, i, j] = -T.bbb[idet]
+        t3_bbb[a, c, b, k, j, i] = T.bbb[idet]
+        t3_bbb[b, c, a, i, j, k] = T.bbb[idet]
+        t3_bbb[b, c, a, i, k, j] = -T.bbb[idet]
+        t3_bbb[b, c, a, j, i, k] = -T.bbb[idet]
+        t3_bbb[b, c, a, j, k, i] = T.bbb[idet]
+        t3_bbb[b, c, a, k, i, j] = T.bbb[idet]
+        t3_bbb[b, c, a, k, j, i] = -T.bbb[idet]
+        t3_bbb[b, a, c, i, j, k] = -T.bbb[idet]
+        t3_bbb[b, a, c, i, k, j] = T.bbb[idet]
+        t3_bbb[b, a, c, j, i, k] = T.bbb[idet]
+        t3_bbb[b, a, c, j, k, i] = -T.bbb[idet]
+        t3_bbb[b, a, c, k, i, j] = -T.bbb[idet]
+        t3_bbb[b, a, c, k, j, i] = T.bbb[idet]
+        t3_bbb[c, a, b, i, j, k] = T.bbb[idet]
+        t3_bbb[c, a, b, i, k, j] = -T.bbb[idet]
+        t3_bbb[c, a, b, j, i, k] = -T.bbb[idet]
+        t3_bbb[c, a, b, j, k, i] = T.bbb[idet]
+        t3_bbb[c, a, b, k, i, j] = T.bbb[idet]
+        t3_bbb[c, a, b, k, j, i] = -T.bbb[idet]
+        t3_bbb[c, b, a, i, j, k] = -T.bbb[idet]
+        t3_bbb[c, b, a, i, k, j] = T.bbb[idet]
+        t3_bbb[c, b, a, j, i, k] = T.bbb[idet]
+        t3_bbb[c, b, a, j, k, i] = -T.bbb[idet]
+        t3_bbb[c, b, a, k, i, j] = -T.bbb[idet]
+        t3_bbb[c, b, a, k, j, i] = T.bbb[idet]
+    setattr(T, "bbb", t3_bbb)
 
 def reorder_triples_amplitudes(L, l3_excitations, t3_excitations):
     """Reorder the P-space triples amplitudes in L corresponding to
@@ -54,11 +151,21 @@ def convert_excitations_c_to_f(excitations):
 
 def print_memory_usage():
     """Displays the percentage of used RAM and available memory. Useful for
-    investigating the memory usages of various routines."""
-    import os
-
-    import psutil
-
+    investigating the memory usages of various routines.
+    Usage:
+    >> # gives a single float value
+    >> psutil.cpu_percent()
+    >> # gives an object with many fields
+    >> psutil.virtual_memory()
+    >> # you can convert that object to a dictionary
+    >> dict(psutil.virtual_memory()._asdict())
+    >> # you can have the percentage of used RAM
+    >> psutil.virtual_memory().percent
+    >> 79.2
+    >> # you can calculate percentage of available memory
+    >> psutil.virtual_memory().available * 100 / psutil.virtual_memory().total
+    >> 20.
+    """
     current_process = psutil.Process(os.getpid())
     memory = current_process.memory_info().rss
     print(int(memory / (1024 * 1024)), "MB")
