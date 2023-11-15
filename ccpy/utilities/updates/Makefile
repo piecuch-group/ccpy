@@ -21,7 +21,8 @@ MODULES := cc_loops \
 		   ccp3_loops \
 		   ccp3_adaptive_loops \
 		   clusteranalysis \
-		   ecccp3_loops
+		   ecccp3_loops \
+		   reorder
 
 EXT_SUFFIX := $(shell python -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
 SOURCES := $(addsuffix .f90, $(MODULES))
@@ -29,7 +30,7 @@ TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 
 # If OpenMP is not available, remove the last two flags, -fopenmp, -lgomp
 # For GitHub CI pipeline, remove OpenMP
-FFLAGS := -std=f2018 -O3 -ffree-line-length-512# -fopenmp -lgomp
+FFLAGS := -std=f2018 -O3 -ffree-line-length-512# -march=native -mtune=native -fopenmp -lgomp -mavx
 
 ifeq ($(CONDA_PREFIX),)
 

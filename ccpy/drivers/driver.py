@@ -28,7 +28,7 @@ from ccpy.utilities.printing import (
                 print_ip_amplitudes, ipeomcc_calculation_summary,
                 print_dea_amplitudes, deaeomcc_calculation_summary,
 )
-from ccpy.utilities.utilities import convert_excitations_c_to_f
+from ccpy.utilities.utilities import convert_excitations_c_to_f, reorder_triples_amplitudes
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
 
@@ -962,6 +962,11 @@ class Driver:
 
             if not ground_state:
                 self.L[i].unflatten(1.0 / LR_function(self.L[i], l3_excitations) * self.L[i].flatten())
+                # Reorder L to match the order of r3_excitations
+                self.L[i] = reorder_triples_amplitudes(self.L[i], l3_excitations, r3_excitations)
+            else:
+                # Reorder L to match the order of t3_excitations
+                self.L[i] = reorder_triples_amplitudes(self.L[i], l3_excitations, t3_excitations)
 
             leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
             print("   Left CC(P) calculation for root %d ended on" % i, get_timestamp(), "\n")
@@ -1035,6 +1040,8 @@ class Driver:
         # Compute L*R and normalize the computed left vector by LR
         LR = get_LR(self.R[state_index], self.L[state_index], l3_excitations=l3_excitations, r3_excitations=r3_excitations)
         self.L[state_index].unflatten(1.0 / LR * self.L[state_index].flatten())
+        # Reorder L to match the order of r3_excitations
+        self.L[state_index] = reorder_triples_amplitudes(self.L[state_index], l3_excitations, r3_excitations)
         leftcc_calculation_summary(self.L[state_index], self.vertical_excitation_energy[state_index], LR, is_converged, self.system, self.options["amp_print_threshold"])
         # Before leaving, verify that the excitation energy obtained in the left diagonalization matches
         print("   |ω(R) - ω(L)| = ", abs(omega_right - self.vertical_excitation_energy[state_index]))
