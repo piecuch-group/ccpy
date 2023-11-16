@@ -1,5 +1,4 @@
 import os
-import psutil
 import numpy as np
 from ccpy.utilities.updates import reorder
 
@@ -166,6 +165,7 @@ def print_memory_usage():
     >> psutil.virtual_memory().available * 100 / psutil.virtual_memory().total
     >> 20.
     """
+    import psutil
     current_process = psutil.Process(os.getpid())
     memory = current_process.memory_info().rss
     print(int(memory / (1024 * 1024)), "MB")
@@ -177,8 +177,6 @@ def clean_up(fid, n):
     return
 
 def remove_file(filePath):
-    import os
-
     try:
         os.remove(filePath)
     except OSError:
