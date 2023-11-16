@@ -863,7 +863,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkaef >
-                        hmatel = h2a_vvvv(b,c,e,f)
+                        !hmatel = h2a_vvvv(b,c,e,f)
+                        hmatel = h2a_vvvv(e,f,b,c)
                         ! compute < ijkabc | h1a(vv) | ijkaef > = A(bc)A(ef) h1a_vv(b,e) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 + h1a_vv(b,e) ! (1)
@@ -879,7 +880,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkbef >
-                        hmatel = -h2a_vvvv(a,c,e,f)
+                        !hmatel = -h2a_vvvv(a,c,e,f)
+                        hmatel = -h2a_vvvv(e,f,a,c)
                         ! compute < ijkabc | h1a(vv) | ijkbef > = -A(ac)A(ef) h1a_vv(a,e) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 - h1a_vv(a,e) ! (1)
@@ -896,7 +898,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3a_excits(2,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkcef >
-                        hmatel = -h2a_vvvv(b,a,e,f)
+                        !hmatel = -h2a_vvvv(b,a,e,f)
+                        hmatel = -h2a_vvvv(e,f,b,a)
                         ! compute < ijkabc | h1a(vv) | ijkcef > = -A(ab)A(ef) h1a_vv(b,e) * delta(a,f)
                         hmatel1 = 0.0d0
                         if (a==f) hmatel1 = hmatel1 - h1a_vv(b,e) ! (1)
@@ -932,7 +935,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdbf >
-                        hmatel = h2a_vvvv(a,c,d,f)
+                        !hmatel = h2a_vvvv(a,c,d,f)
+                        hmatel = h2a_vvvv(d,f,a,c)
                         ! compute < ijkabc | h1a(vv) | ijkdbf > = A(ac)A(df) h1a_vv(a,d) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 + h1a_vv(a,d) ! (1)
@@ -948,7 +952,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdaf >
-                        hmatel = -h2a_vvvv(b,c,d,f)
+                        !hmatel = -h2a_vvvv(b,c,d,f)
+                        hmatel = -h2a_vvvv(d,f,b,c)
                         ! compute < ijkabc | h1a(vv) | ijkdaf > = -A(bc)A(df) h1a_vv(b,d) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 - h1a_vv(b,d) ! (1)
@@ -965,7 +970,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); f = r3a_excits(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdcf >
-                        hmatel = -h2a_vvvv(a,b,d,f)
+                        !hmatel = -h2a_vvvv(a,b,d,f)
+                        hmatel = -h2a_vvvv(d,f,a,b)
                         ! compute < ijkabc | h1a(vv) | ijkdcf > = -A(ab)A(df) h1a_vv(a,d) * delta(b,f)
                         hmatel1 = 0.0d0
                         if (b==f) hmatel1 = hmatel1 - h1a_vv(a,d) ! (1)
@@ -1001,7 +1007,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); e = r3a_excits(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdec >
-                        hmatel = h2a_vvvv(a,b,d,e)
+                        !hmatel = h2a_vvvv(a,b,d,e)
+                        hmatel = h2a_vvvv(d,e,a,b)
                         ! compute < ijkabc | h1a(vv) | ijkdec > = A(ab)A(de) h1a_vv(a,d) * delta(b,e)
                         hmatel1 = 0.0d0
                         if (b==e) hmatel1 = hmatel1 + h1a_vv(a,d) ! (1)
@@ -1017,7 +1024,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); e = r3a_excits(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdea >
-                        hmatel = -h2a_vvvv(c,b,d,e)
+                        !hmatel = -h2a_vvvv(c,b,d,e)
+                        hmatel = -h2a_vvvv(d,e,c,b)
                         ! compute < ijkabc | h1a(vv) | ijkdea > = -A(bc)A(de) h1a_vv(c,d) * delta(b,e)
                         hmatel1 = 0.0d0
                         if (b==e) hmatel1 = hmatel1 - h1a_vv(c,d) ! (1)
@@ -1034,7 +1042,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3a_excits(1,jdet); e = r3a_excits(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdeb >
-                        hmatel = -h2a_vvvv(a,c,d,e)
+                        !hmatel = -h2a_vvvv(a,c,d,e)
+                        hmatel = -h2a_vvvv(d,e,a,c)
                         ! compute < ijkabc | h1a(vv) | ijkdeb > = -A(ac)A(de) h1a_vv(a,d) * delta(c,e)
                         hmatel1 = 0.0d0
                         if (c==e) hmatel1 = hmatel1 - h1a_vv(a,d) ! (1)
@@ -2431,7 +2440,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkaef >
-                        hmatel = x2a_vvvv(b,c,e,f)
+                        !hmatel = x2a_vvvv(b,c,e,f)
+                        hmatel = x2a_vvvv(e,f,b,c)
                         ! compute < ijkabc | h1a(vv) | ijkaef > = A(bc)A(ef) x1a_vv(b,e) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 + x1a_vv(b,e) ! (1)
@@ -2447,7 +2457,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkbef >
-                        hmatel = -x2a_vvvv(a,c,e,f)
+                        !hmatel = -x2a_vvvv(a,c,e,f)
+                        hmatel = -x2a_vvvv(e,f,a,c)
                         ! compute < ijkabc | h1a(vv) | ijkbef > = -A(ac)A(ef) x1a_vv(a,e) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 - x1a_vv(a,e) ! (1)
@@ -2464,7 +2475,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkcef >
-                        hmatel = -x2a_vvvv(b,a,e,f)
+                        !hmatel = -x2a_vvvv(b,a,e,f)
+                        hmatel = -x2a_vvvv(e,f,b,a)
                         ! compute < ijkabc | h1a(vv) | ijkcef > = -A(ab)A(ef) x1a_vv(b,e) * delta(a,f)
                         hmatel1 = 0.0d0
                         if (a==f) hmatel1 = hmatel1 - x1a_vv(b,e) ! (1)
@@ -2500,7 +2512,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdbf >
-                        hmatel = x2a_vvvv(a,c,d,f)
+                        !hmatel = x2a_vvvv(a,c,d,f)
+                        hmatel = x2a_vvvv(d,f,a,c)
                         ! compute < ijkabc | h1a(vv) | ijkdbf > = A(ac)A(df) x1a_vv(a,d) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 + x1a_vv(a,d) ! (1)
@@ -2516,7 +2529,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdaf >
-                        hmatel = -x2a_vvvv(b,c,d,f)
+                        !hmatel = -x2a_vvvv(b,c,d,f)
+                        hmatel = -x2a_vvvv(d,f,b,c)
                         ! compute < ijkabc | h1a(vv) | ijkdaf > = -A(bc)A(df) x1a_vv(b,d) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 - x1a_vv(b,d) ! (1)
@@ -2533,7 +2547,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdcf >
-                        hmatel = -x2a_vvvv(a,b,d,f)
+                        !hmatel = -x2a_vvvv(a,b,d,f)
+                        hmatel = -x2a_vvvv(d,f,a,b)
                         ! compute < ijkabc | h1a(vv) | ijkdcf > = -A(ab)A(df) x1a_vv(a,d) * delta(b,f)
                         hmatel1 = 0.0d0
                         if (b==f) hmatel1 = hmatel1 - x1a_vv(a,d) ! (1)
@@ -2569,7 +2584,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdec >
-                        hmatel = x2a_vvvv(a,b,d,e)
+                        !hmatel = x2a_vvvv(a,b,d,e)
+                        hmatel = x2a_vvvv(d,e,a,b)
                         ! compute < ijkabc | h1a(vv) | ijkdec > = A(ab)A(de) x1a_vv(a,d) * delta(b,e)
                         hmatel1 = 0.0d0
                         if (b==e) hmatel1 = hmatel1 + x1a_vv(a,d) ! (1)
@@ -2585,7 +2601,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdea >
-                        hmatel = -x2a_vvvv(c,b,d,e)
+                        !hmatel = -x2a_vvvv(c,b,d,e)
+                        hmatel = -x2a_vvvv(d,e,c,b)
                         ! compute < ijkabc | h1a(vv) | ijkdea > = -A(bc)A(de) x1a_vv(c,d) * delta(b,e)
                         hmatel1 = 0.0d0
                         if (b==e) hmatel1 = hmatel1 - x1a_vv(c,d) ! (1)
@@ -2602,7 +2619,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | h2a(vvvv) | ijkdeb >
-                        hmatel = -x2a_vvvv(a,c,d,e)
+                        !hmatel = -x2a_vvvv(a,c,d,e)
+                        hmatel = -x2a_vvvv(d,e,a,c)
                         ! compute < ijkabc | h1a(vv) | ijkdeb > = -A(ac)A(de) x1a_vv(a,d) * delta(c,e)
                         hmatel1 = 0.0d0
                         if (c==e) hmatel1 = hmatel1 - x1a_vv(a,d) ! (1)
@@ -4038,7 +4056,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3b_excits(1,jdet); e = r3b_excits(2,jdet);
                         ! compute < ijk~abc~ | h2a(vvvv) | ijk~dec~ >
-                        hmatel = h2a_vvvv(a,b,d,e)
+                        !hmatel = h2a_vvvv(a,b,d,e)
+                        hmatel = h2a_vvvv(d,e,a,b)
                         ! compute < ijk~abc~ | h1a(vv) | ijk~dec > = A(ab)A(de) h1a_vv(a,d)*delta(b,e)
                         if (b==e) hmatel = hmatel + h1a_vv(a,d)
                         if (a==e) hmatel = hmatel - h1a_vv(b,d)
@@ -4082,7 +4101,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijk~abc~ | x2a(vvvv) | ijk~dec~ >
-                        hmatel = x2a_vvvv(a,b,d,e)
+                        !hmatel = x2a_vvvv(a,b,d,e)
+                        hmatel = x2a_vvvv(d,e,a,b)
                         ! compute < ijk~abc~ | x1a(vv) | ijk~dec > = A(ab)A(de) x1a_vv(a,d)*delta(b,e)
                         if (b==e) hmatel = hmatel + x1a_vv(a,d)
                         if (a==e) hmatel = hmatel - x1a_vv(b,d)
@@ -4313,7 +4333,8 @@ module eomccsdt_p_loops
                       do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          e = r3b_excits(2,jdet); f = r3b_excits(3,jdet);
                          ! compute < ijk~abc~ | h2b(vvvv) | ijk~aef~ >
-                         hmatel = h2b_vvvv(b,c,e,f)
+                         !hmatel = h2b_vvvv(b,c,e,f)
+                         hmatel = h2b_vvvv(e,f,b,c)
                          if (b==e) hmatel = hmatel + h1b_vv(c,f)
                          resid(idet) = resid(idet) + hmatel * r3b_amps(jdet)
                       end do
@@ -4323,7 +4344,8 @@ module eomccsdt_p_loops
                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = r3b_excits(2,jdet); f = r3b_excits(3,jdet);
                             ! compute < ijk~abc~ | h2b(vvvv) | ijk~bef~ >
-                            hmatel = -h2b_vvvv(a,c,e,f)
+                            !hmatel = -h2b_vvvv(a,c,e,f)
+                            hmatel = -h2b_vvvv(e,f,a,c)
                             if (a==e) hmatel = hmatel - h1b_vv(c,f)
                             resid(idet) = resid(idet) + hmatel * r3b_amps(jdet)
                          end do
@@ -4352,7 +4374,8 @@ module eomccsdt_p_loops
                       do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = r3b_excits(1,jdet); f = r3b_excits(3,jdet);
                          ! compute < ijk~abc~ | h2b(vvvv) | ijk~dbf~ >
-                         hmatel = h2b_vvvv(a,c,d,f)
+                         !hmatel = h2b_vvvv(a,c,d,f)
+                         hmatel = h2b_vvvv(d,f,a,c)
                          resid(idet) = resid(idet) + hmatel * r3b_amps(jdet)
                       end do
                       idx = idx_table(i,j,k,a)
@@ -4360,7 +4383,8 @@ module eomccsdt_p_loops
                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = r3b_excits(1,jdet); f = r3b_excits(3,jdet);
                             ! compute < ijk~abc~ | h2b(vvvv) | ijk~daf~ >
-                            hmatel = -h2b_vvvv(b,c,d,f)
+                            !hmatel = -h2b_vvvv(b,c,d,f)
+                            hmatel = -h2b_vvvv(d,f,b,c)
                             resid(idet) = resid(idet) + hmatel * r3b_amps(jdet)
                          end do
                       end if
@@ -4401,7 +4425,8 @@ module eomccsdt_p_loops
                       do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                          ! compute < ijk~abc~ | x2b(vvvv) | ijk~aef~ >
-                         hmatel = x2b_vvvv(b,c,e,f)
+                         !hmatel = x2b_vvvv(b,c,e,f)
+                         hmatel = x2b_vvvv(e,f,b,c)
                          if (b==e) hmatel = hmatel + x1b_vv(c,f)
                          resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                       end do
@@ -4411,7 +4436,8 @@ module eomccsdt_p_loops
                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                             ! compute < ijk~abc~ | x2b(vvvv) | ijk~bef~ >
-                            hmatel = -x2b_vvvv(a,c,e,f)
+                            !hmatel = -x2b_vvvv(a,c,e,f)
+                            hmatel = -x2b_vvvv(e,f,a,c)
                             if (a==e) hmatel = hmatel - x1b_vv(c,f)
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                          end do
@@ -4440,7 +4466,8 @@ module eomccsdt_p_loops
                       do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                          ! compute < ijk~abc~ | x2b(vvvv) | ijk~dbf~ >
-                         hmatel = x2b_vvvv(a,c,d,f)
+                         !hmatel = x2b_vvvv(a,c,d,f)
+                         hmatel = x2b_vvvv(d,f,a,c)
                          resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                       end do
                       idx = idx_table(i,j,k,a)
@@ -4448,7 +4475,8 @@ module eomccsdt_p_loops
                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                             ! compute < ijk~abc~ | x2b(vvvv) | ijk~daf~ >
-                            hmatel = -x2b_vvvv(b,c,d,f)
+                            !hmatel = -x2b_vvvv(b,c,d,f)
+                            hmatel = -x2b_vvvv(d,f,b,c)
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                          end do
                       end if
@@ -6933,7 +6961,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3c_excits(2,jdet); f = r3c_excits(3,jdet);
                         ! compute < ij~k~ab~c~ | h2c(vvvv) | ij~k~ae~f~ >
-                        hmatel = h2c_vvvv(b,c,e,f)
+                        !hmatel = h2c_vvvv(b,c,e,f)
+                        hmatel = h2c_vvvv(e,f,b,c)
                         ! compute < ij~k~ab~c~ | h2c(vvvv) | ij~k~ae~f~ > = A(bc)A(ef) h1b_vv(b,e) * delta(c,f)
                         if (c==f) hmatel = hmatel + h1b_vv(b,e) ! (1)
                         if (b==f) hmatel = hmatel - h1b_vv(c,e) ! (bc)
@@ -6977,7 +7006,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ij~k~ab~c~ | x2c(vvvv) | ij~k~ae~f~ >
-                        hmatel = x2c_vvvv(b,c,e,f)
+                        !hmatel = x2c_vvvv(b,c,e,f)
+                        hmatel = x2c_vvvv(e,f,b,c)
                         ! compute < ij~k~ab~c~ | x2c(vvvv) | ij~k~ae~f~ > = A(bc)A(ef) x1b_vv(b,e) * delta(c,f)
                         if (c==f) hmatel = hmatel + x1b_vv(b,e) ! (1)
                         if (b==f) hmatel = hmatel - x1b_vv(c,e) ! (bc)
@@ -7204,7 +7234,8 @@ module eomccsdt_p_loops
                       do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = r3c_excits(1,jdet); f = r3c_excits(3,jdet);
                          ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~db~f~ >
-                         hmatel = h2b_vvvv(a,c,d,f)
+                         !hmatel = h2b_vvvv(a,c,d,f)
+                         hmatel = h2b_vvvv(d,f,a,c)
                          if (c==f) hmatel = hmatel + h1a_vv(a,d)
                          resid(idet) = resid(idet) + hmatel * r3c_amps(jdet)
                       end do
@@ -7214,7 +7245,8 @@ module eomccsdt_p_loops
                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = r3c_excits(1,jdet); f = r3c_excits(3,jdet);
                             ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~dc~f~ >
-                            hmatel = -h2b_vvvv(a,b,d,f)
+                            !hmatel = -h2b_vvvv(a,b,d,f)
+                            hmatel = -h2b_vvvv(d,f,a,b)
                             if (b==f) hmatel = hmatel - h1a_vv(a,d)
                             resid(idet) = resid(idet) + hmatel * r3c_amps(jdet)
                          end do
@@ -7243,7 +7275,8 @@ module eomccsdt_p_loops
                       do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = r3c_excits(1,jdet); e = r3c_excits(2,jdet);
                          ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~de~c~ >
-                         hmatel = h2b_vvvv(a,b,d,e)
+                         !hmatel = h2b_vvvv(a,b,d,e)
+                         hmatel = h2b_vvvv(d,e,a,b)
                          resid(idet) = resid(idet) + hmatel * r3c_amps(jdet)
                       end do
                       ! (bc)
@@ -7252,7 +7285,8 @@ module eomccsdt_p_loops
                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = r3c_excits(1,jdet); e = r3c_excits(2,jdet);
                             ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~de~b~ >
-                            hmatel = -h2b_vvvv(a,c,d,e)
+                            !hmatel = -h2b_vvvv(a,c,d,e)
+                            hmatel = -h2b_vvvv(d,e,a,c)
                             resid(idet) = resid(idet) + hmatel * r3c_amps(jdet)
                          end do
                       end if
@@ -7293,7 +7327,8 @@ module eomccsdt_p_loops
                       do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                          ! compute < ij~k~ab~c~ | x2b(vvvv) | ij~k~db~f~ >
-                         hmatel = x2b_vvvv(a,c,d,f)
+                         !hmatel = x2b_vvvv(a,c,d,f)
+                         hmatel = x2b_vvvv(d,f,a,c)
                          if (c==f) hmatel = hmatel + x1a_vv(a,d)
                          resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                       end do
@@ -7303,7 +7338,8 @@ module eomccsdt_p_loops
                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                             ! compute < ij~k~ab~c~ | x2b(vvvv) | ij~k~dc~f~ >
-                            hmatel = -x2b_vvvv(a,b,d,f)
+                            !hmatel = -x2b_vvvv(a,b,d,f)
+                            hmatel = -x2b_vvvv(d,f,a,b)
                             if (b==f) hmatel = hmatel - x1a_vv(a,d)
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                          end do
@@ -7332,7 +7368,8 @@ module eomccsdt_p_loops
                       do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                          ! compute < ij~k~ab~c~ | x2b(vvvv) | ij~k~de~c~ >
-                         hmatel = x2b_vvvv(a,b,d,e)
+                         !hmatel = x2b_vvvv(a,b,d,e)
+                         hmatel = x2b_vvvv(d,e,a,b)
                          resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                       end do
                       ! (bc)
@@ -7341,7 +7378,8 @@ module eomccsdt_p_loops
                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                             ! compute < ij~k~ab~c~ | x2b(vvvv) | ij~k~de~b~ >
-                            hmatel = -x2b_vvvv(a,c,d,e)
+                            !hmatel = -x2b_vvvv(a,c,d,e)
+                            hmatel = -x2b_vvvv(d,e,a,c)
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                          end do
                       end if
@@ -9944,7 +9982,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkaef >
-                        hmatel = h2c_vvvv(b,c,e,f)
+                        !hmatel = h2c_vvvv(b,c,e,f)
+                        hmatel = h2c_vvvv(e,f,b,c)
                         ! compute < ijkabc | h1b(vv) | ijkaef > = A(bc)A(ef) h1b_vv(b,e) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 + h1b_vv(b,e) ! (1)
@@ -9960,7 +9999,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkbef >
-                        hmatel = -h2c_vvvv(a,c,e,f)
+                        !hmatel = -h2c_vvvv(a,c,e,f)
+                        hmatel = -h2c_vvvv(e,f,a,c)
                         ! compute < ijkabc | h1b(vv) | ijkbef > = -A(ac)A(ef) h1b_vv(a,e) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 - h1b_vv(a,e) ! (1)
@@ -9977,7 +10017,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = r3d_excits(2,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkcef >
-                        hmatel = -h2c_vvvv(b,a,e,f)
+                        !hmatel = -h2c_vvvv(b,a,e,f)
+                        hmatel = -h2c_vvvv(e,f,b,a)
                         ! compute < ijkabc | h1b(vv) | ijkcef > = -A(ab)A(ef) h1b_vv(b,e) * delta(a,f)
                         hmatel1 = 0.0d0
                         if (a==f) hmatel1 = hmatel1 - h1b_vv(b,e) ! (1)
@@ -10013,7 +10054,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdbf >
-                        hmatel = h2c_vvvv(a,c,d,f)
+                        !hmatel = h2c_vvvv(a,c,d,f)
+                        hmatel = h2c_vvvv(d,f,a,c)
                         ! compute < ijkabc | h1b(vv) | ijkdbf > = A(ac)A(df) h1b_vv(a,d) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 + h1b_vv(a,d) ! (1)
@@ -10029,7 +10071,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdaf >
-                        hmatel = -h2c_vvvv(b,c,d,f)
+                        !hmatel = -h2c_vvvv(b,c,d,f)
+                        hmatel = -h2c_vvvv(d,f,b,c)
                         ! compute < ijkabc | h1b(vv) | ijkdaf > = -A(bc)A(df) h1b_vv(b,d) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 - h1b_vv(b,d) ! (1)
@@ -10046,7 +10089,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); f = r3d_excits(3,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdcf >
-                        hmatel = -h2c_vvvv(a,b,d,f)
+                        !hmatel = -h2c_vvvv(a,b,d,f)
+                        hmatel = -h2c_vvvv(d,f,a,b)
                         ! compute < ijkabc | h1b(vv) | ijkdcf > = -A(ab)A(df) h1b_vv(a,d) * delta(b,f)
                         hmatel1 = 0.0d0
                         if (b==f) hmatel1 = hmatel1 - h1b_vv(a,d) ! (1)
@@ -10082,7 +10126,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); e = r3d_excits(2,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdec >
-                        hmatel = h2c_vvvv(a,b,d,e)
+                        !hmatel = h2c_vvvv(a,b,d,e)
+                        hmatel = h2c_vvvv(d,e,a,b)
                         ! compute < ijkabc | h1b(vv) | ijkdec > = A(ab)A(de) h1b_vv(a,d) * delta(b,e)
                         hmatel1 = 0.0d0
                         if (b==e) hmatel1 = hmatel1 + h1b_vv(a,d) ! (1)
@@ -10098,7 +10143,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); e = r3d_excits(2,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdea >
-                        hmatel = -h2c_vvvv(c,b,d,e)
+                        !hmatel = -h2c_vvvv(c,b,d,e)
+                        hmatel = -h2c_vvvv(d,e,c,b)
                         ! compute < ijkabc | h1b(vv) | ijkdea > = -A(bc)A(de) h1b_vv(c,d) * delta(b,e)
                         hmatel1 = 0.0d0
                         if (b==e) hmatel1 = hmatel1 - h1b_vv(c,d) ! (1)
@@ -10115,7 +10161,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = r3d_excits(1,jdet); e = r3d_excits(2,jdet);
                         ! compute < ijkabc | h2c(vvvv) | ijkdeb >
-                        hmatel = -h2c_vvvv(a,c,d,e)
+                        !hmatel = -h2c_vvvv(a,c,d,e)
+                        hmatel = -h2c_vvvv(d,e,a,c)
                         ! compute < ijkabc | h1b(vv) | ijkdeb > = -A(ac)A(de) h1b_vv(a,d) * delta(c,e)
                         hmatel1 = 0.0d0
                         if (c==e) hmatel1 = hmatel1 - h1b_vv(a,d) ! (1)
@@ -10164,7 +10211,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkaef >
-                        hmatel = x2c_vvvv(b,c,e,f)
+                        !hmatel = x2c_vvvv(b,c,e,f)
+                        hmatel = x2c_vvvv(e,f,b,c)
                         ! compute < ijkabc | x1b(vv) | ijkaef > = A(bc)A(ef) x1b_vv(b,e) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 + x1b_vv(b,e) ! (1)
@@ -10180,7 +10228,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkbef >
-                        hmatel = -x2c_vvvv(a,c,e,f)
+                        !hmatel = -x2c_vvvv(a,c,e,f)
+                        hmatel = -x2c_vvvv(e,f,a,c)
                         ! compute < ijkabc | x1b(vv) | ijkbef > = -A(ac)A(ef) x1b_vv(a,e) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 - x1b_vv(a,e) ! (1)
@@ -10197,7 +10246,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(2,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkcef >
-                        hmatel = -x2c_vvvv(b,a,e,f)
+                        !hmatel = -x2c_vvvv(b,a,e,f)
+                        hmatel = -x2c_vvvv(e,f,b,a)
                         ! compute < ijkabc | x1b(vv) | ijkcef > = -A(ab)A(ef) x1b_vv(b,e) * delta(a,f)
                         hmatel1 = 0.0d0
                         if (a==f) hmatel1 = hmatel1 - x1b_vv(b,e) ! (1)
@@ -10233,7 +10283,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdbf >
-                        hmatel = x2c_vvvv(a,c,d,f)
+                        !hmatel = x2c_vvvv(a,c,d,f)
+                        hmatel = x2c_vvvv(d,f,a,c)
                         ! compute < ijkabc | x1b(vv) | ijkdbf > = A(ac)A(df) x1b_vv(a,d) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 + x1b_vv(a,d) ! (1)
@@ -10249,7 +10300,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdaf >
-                        hmatel = -x2c_vvvv(b,c,d,f)
+                        !hmatel = -x2c_vvvv(b,c,d,f)
+                        hmatel = -x2c_vvvv(d,f,b,c)
                         ! compute < ijkabc | x1b(vv) | ijkdaf > = -A(bc)A(df) x1b_vv(b,d) * delta(c,f)
                         hmatel1 = 0.0d0
                         if (c==f) hmatel1 = hmatel1 - x1b_vv(b,d) ! (1)
@@ -10266,7 +10318,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); f = excits_buff(3,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdcf >
-                        hmatel = -x2c_vvvv(a,b,d,f)
+                        !hmatel = -x2c_vvvv(a,b,d,f)
+                        hmatel = -x2c_vvvv(d,f,a,b)
                         ! compute < ijkabc | x1b(vv) | ijkdcf > = -A(ab)A(df) x1b_vv(a,d) * delta(b,f)
                         hmatel1 = 0.0d0
                         if (b==f) hmatel1 = hmatel1 - x1b_vv(a,d) ! (1)
@@ -10302,7 +10355,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdec >
-                        hmatel = x2c_vvvv(a,b,d,e)
+                        !hmatel = x2c_vvvv(a,b,d,e)
+                        hmatel = x2c_vvvv(d,e,a,b)
                         ! compute < ijkabc | x1b(vv) | ijkdec > = A(ab)A(de) x1b_vv(a,d) * delta(b,e)
                         hmatel1 = 0.0d0
                         if (b==e) hmatel1 = hmatel1 + x1b_vv(a,d) ! (1)
@@ -10318,7 +10372,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdea >
-                        hmatel = -x2c_vvvv(c,b,d,e)
+                        !hmatel = -x2c_vvvv(c,b,d,e)
+                        hmatel = -x2c_vvvv(d,e,c,b)
                         ! compute < ijkabc | x1b(vv) | ijkdea > = -A(bc)A(de) x1b_vv(c,d) * delta(b,e)
                         hmatel1 = 0.0d0
                         if (b==e) hmatel1 = hmatel1 - x1b_vv(c,d) ! (1)
@@ -10335,7 +10390,8 @@ module eomccsdt_p_loops
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(1,jdet); e = excits_buff(2,jdet);
                         ! compute < ijkabc | x2c(vvvv) | ijkdeb >
-                        hmatel = -x2c_vvvv(a,c,d,e)
+                        !hmatel = -x2c_vvvv(a,c,d,e)
+                        hmatel = -x2c_vvvv(d,e,a,c)
                         ! compute < ijkabc | x1b(vv) | ijkdeb > = -A(ac)A(de) x1b_vv(a,d) * delta(c,e)
                         hmatel1 = 0.0d0
                         if (c==e) hmatel1 = hmatel1 - x1b_vv(a,d) ! (1)

@@ -380,7 +380,7 @@ def update_t3a(T, dT, H, H0, shift, t3_excitations):
         T.aa,
         H.a.oo, H.a.vv,
         H0.aa.oovv, H.aa.vvov, I2A_vooo,
-        H.aa.oooo, H.aa.voov, H.aa.vvvv,
+        H.aa.oooo, H.aa.voov, H.aa.vvvv.transpose(2, 3, 0, 1),
         H0.ab.oovv, H.ab.voov,
         H0.a.oo, H0.a.vv,
         shift
@@ -405,9 +405,9 @@ def update_t3b(T, dT, H, H0, shift, t3_excitations):
         T.abb, t3_excitations["abb"].T,
         T.aa, T.ab,
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-        H0.aa.oovv, H.aa.vvov, I2A_vooo, H.aa.oooo, H.aa.voov, H.aa.vvvv,
+        H0.aa.oovv, H.aa.vvov, I2A_vooo, H.aa.oooo, H.aa.voov, H.aa.vvvv.transpose(2, 3, 0, 1),
         H0.ab.oovv, H.ab.vvov, H.ab.vvvo, I2B_vooo, I2B_ovoo, 
-        H.ab.oooo, H.ab.voov,H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
+        H.ab.oooo, H.ab.voov,H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv.transpose(2, 3, 0, 1),
         H0.bb.oovv, H.bb.voov,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
         shift
@@ -434,8 +434,8 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations):
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
         H0.aa.oovv, H.aa.voov,
         H0.ab.oovv, I2B_vooo, I2B_ovoo, H.ab.vvov, H.ab.vvvo, H.ab.oooo,
-        H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
-        H0.bb.oovv, I2C_vooo, H.bb.vvov, H.bb.oooo, H.bb.voov, H.bb.vvvv,
+        H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv.transpose(2, 3, 0, 1),
+        H0.bb.oovv, I2C_vooo, H.bb.vvov, H.bb.oooo, H.bb.voov, H.bb.vvvv.transpose(2, 3, 0, 1),
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
         shift
     )
@@ -457,7 +457,7 @@ def update_t3d(T, dT, H, H0, shift, t3_excitations):
         T.bb,
         H.b.oo, H.b.vv,
         H0.bb.oovv, H.bb.vvov, I2C_vooo,
-        H.bb.oooo, H.bb.voov, H.bb.vvvv,
+        H.bb.oooo, H.bb.voov, H.bb.vvvv.transpose(2, 3, 0, 1),
         H0.ab.oovv, H.ab.ovvo,
         H0.b.oo, H0.b.vv,
         shift
