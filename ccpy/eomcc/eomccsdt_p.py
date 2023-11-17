@@ -10,13 +10,13 @@ def update(R, omega, H, RHF_symmetry, system, r3_excitations):
         R.ab,
         R.bb,
         R.aaa,
-        r3_excitations["aaa"].T,
+        r3_excitations["aaa"],
         R.aab,
-        r3_excitations["aab"].T,
+        r3_excitations["aab"],
         R.abb,
-        r3_excitations["abb"].T,
+        r3_excitations["abb"],
         R.bbb,
-        r3_excitations["bbb"].T,
+        r3_excitations["bbb"],
         omega,
         H.a.oo,
         H.a.vv,
@@ -96,9 +96,9 @@ def build_HR_1A(dR, R, r3_excitations, H):
     # Parts contracted with R3
     dR.a = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_1a(
                                             dR.a,
-                                            R.aaa, r3_excitations["aaa"].T, 
-                                            R.aab, r3_excitations["aab"].T, 
-                                            R.abb, r3_excitations["abb"].T,
+                                            R.aaa, r3_excitations["aaa"], 
+                                            R.aab, r3_excitations["aab"], 
+                                            R.abb, r3_excitations["abb"],
                                             H.aa.oovv, H.ab.oovv, H.bb.oovv
     )
     return dR
@@ -118,9 +118,9 @@ def build_HR_1B(dR, R, r3_excitations, H):
     # Parts contracted with R3
     dR.b = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_1b(
                                             dR.b,
-                                            R.aab, r3_excitations["aab"].T, 
-                                            R.abb, r3_excitations["abb"].T, 
-                                            R.bbb, r3_excitations["bbb"].T,
+                                            R.aab, r3_excitations["aab"], 
+                                            R.abb, r3_excitations["abb"], 
+                                            R.bbb, r3_excitations["bbb"],
                                             H.aa.oovv, H.ab.oovv, H.bb.oovv
     )
     return dR
@@ -140,10 +140,10 @@ def build_HR_2A(dR, R, r3_excitations, T, t3_excitations, H, X):
     # Parts contracted with T3 and R3; antisymmetrization included
     dR.aa = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_2a(
                                             dR.aa,
-                                            R.aaa, r3_excitations["aaa"].T,
-                                            R.aab, r3_excitations["aab"].T,
-                                            T.aaa, t3_excitations["aaa"].T,
-                                            T.aab, t3_excitations["aab"].T,
+                                            R.aaa, r3_excitations["aaa"],
+                                            R.aab, r3_excitations["aab"],
+                                            T.aaa, t3_excitations["aaa"],
+                                            T.aab, t3_excitations["aab"],
                                             H.a.ov, H.b.ov,
                                             H.aa.ooov, H.aa.vovv,
                                             H.ab.ooov, H.ab.vovv,
@@ -176,10 +176,10 @@ def build_HR_2B(dR, R, r3_excitations, T, t3_excitations, H, X):
     # Parts contracted with T3 and R3
     dR.ab = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_2b(
                                             dR.ab,
-                                            R.aab, r3_excitations["aab"].T,
-                                            R.abb, r3_excitations["abb"].T,
-                                            T.aab, t3_excitations["aab"].T,
-                                            T.abb, t3_excitations["abb"].T,
+                                            R.aab, r3_excitations["aab"],
+                                            R.abb, r3_excitations["abb"],
+                                            T.aab, t3_excitations["aab"],
+                                            T.abb, t3_excitations["abb"],
                                             H.a.ov, H.b.ov,
                                             H.aa.ooov, H.aa.vovv, 
                                             H.ab.ooov, H.ab.vovv, H.ab.oovo, H.ab.ovvv,
@@ -203,10 +203,10 @@ def build_HR_2C(dR, R, r3_excitations, T, t3_excitations, H, X):
     # Parts contracted with T3 and R3; antisymmetrization included
     dR.bb = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_2c(
                                             dR.bb,
-                                            R.abb, r3_excitations["abb"].T,
-                                            R.bbb, r3_excitations["bbb"].T,
-                                            T.abb, t3_excitations["abb"].T,
-                                            T.bbb, t3_excitations["bbb"].T,
+                                            R.abb, r3_excitations["abb"],
+                                            R.bbb, r3_excitations["bbb"],
+                                            T.abb, t3_excitations["abb"],
+                                            T.bbb, t3_excitations["bbb"],
                                             H.a.ov, H.b.ov,
                                             H.ab.oovo, H.ab.ovvv,
                                             H.bb.ooov, H.bb.vovv,
@@ -218,67 +218,63 @@ def build_HR_3A(dR, R, r3_excitations, T, t3_excitations, H, X):
 
     dR.aaa, R.aaa, r3_excitations["aaa"] = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_3a(
                                             R.aa,
-                                            R.aaa, r3_excitations["aaa"].T,
-                                            R.aab, r3_excitations["aab"].T,
+                                            R.aaa, r3_excitations["aaa"],
+                                            R.aab, r3_excitations["aab"],
                                             T.aa,
-                                            T.aaa, t3_excitations["aaa"].T,
-                                            T.aab, t3_excitations["aab"].T,
+                                            T.aaa, t3_excitations["aaa"],
+                                            T.aab, t3_excitations["aab"],
                                             H.a.oo, H.a.vv,
                                             H.aa.oooo, H.aa.vooo, H.aa.oovv,
-                                            H.aa.voov, H.aa.vvov, H.aa.vvvv.transpose(2, 3, 0, 1),
+                                            H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvov, H.aa.vvvv.transpose(2, 3, 0, 1),
                                             H.ab.voov,
                                             X.a.oo, X.a.vv,
                                             X.aa.oooo, X.aa.vooo, X.aa.oovv,
                                             X.aa.voov, X.aa.vvov, X.aa.vvvv.transpose(2, 3, 0, 1),
                                             X.ab.voov,
     )
-    # re-transpose r3_excitations to maintain consistency with other parts of code
-    r3_excitations["aaa"] = r3_excitations["aaa"].T
     return dR, R, r3_excitations
 
 def build_HR_3B(dR, R, r3_excitations, T, t3_excitations, H, X):
 
     dR.aab, R.aab, r3_excitations["aab"] = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_3b(
                                             R.aa, R.ab,
-                                            R.aaa, r3_excitations["aaa"].T,
-                                            R.aab, r3_excitations["aab"].T,
-                                            R.abb, r3_excitations["abb"].T,
+                                            R.aaa, r3_excitations["aaa"],
+                                            R.aab, r3_excitations["aab"],
+                                            R.abb, r3_excitations["abb"],
                                             T.aa, T.ab,
-                                            T.aaa, t3_excitations["aaa"].T,
-                                            T.aab, t3_excitations["aab"].T,
-                                            T.abb, t3_excitations["abb"].T,
+                                            T.aaa, t3_excitations["aaa"],
+                                            T.aab, t3_excitations["aab"],
+                                            T.abb, t3_excitations["abb"],
                                             H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                             H.aa.oooo, H.aa.vooo, H.aa.oovv,
-                                            H.aa.voov, H.aa.vvov, H.aa.vvvv.transpose(2, 3, 0, 1),
+                                            H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvov.transpose(3, 0, 1, 2), H.aa.vvvv.transpose(2, 3, 0, 1),
                                             H.ab.oooo, H.ab.vooo, H.ab.ovoo,
-                                            H.ab.oovv, H.ab.voov, H.ab.vovo,
-                                            H.ab.ovov, H.ab.ovvo, H.ab.vvov,
-                                            H.ab.vvvo, H.ab.vvvv.transpose(2, 3, 0, 1),
-                                            H.bb.oovv, H.bb.voov,
+                                            H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3),
+                                            H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvov.transpose(3, 0, 1, 2),
+                                            H.ab.vvvo.transpose(2, 0, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
+                                            H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
                                             X.a.oo, X.a.vv, X.b.oo, X.b.vv,
                                             X.aa.oooo, X.aa.vooo, X.aa.oovv,
-                                            X.aa.voov, X.aa.vvov, X.aa.vvvv.transpose(2, 3, 0, 1),
+                                            X.aa.voov.transpose(1, 3, 0, 2), X.aa.vvov.transpose(3, 0, 1, 2), X.aa.vvvv.transpose(2, 3, 0, 1),
                                             X.ab.oooo, X.ab.vooo, X.ab.ovoo,
-                                            X.ab.oovv, X.ab.voov, X.ab.vovo,
-                                            X.ab.ovov, X.ab.ovvo, X.ab.vvov,
-                                            X.ab.vvvo, X.ab.vvvv.transpose(2, 3, 0, 1),
-                                            X.bb.oovv, X.bb.voov,
+                                            X.ab.oovv, X.ab.voov.transpose(1, 3, 0, 2), X.ab.vovo.transpose(1, 2, 0, 3),
+                                            X.ab.ovov.transpose(0, 3, 1, 2), X.ab.ovvo.transpose(0, 2, 1, 3), X.ab.vvov.transpose(3, 0, 1, 2),
+                                            X.ab.vvvo.transpose(2, 0, 1, 3), X.ab.vvvv.transpose(2, 3, 0, 1),
+                                            X.bb.oovv, X.bb.voov.transpose(1, 3, 0, 2),
     )
-    # re-transpose r3_excitations to maintain consistency with other parts of code
-    r3_excitations["aab"] = r3_excitations["aab"].T
     return dR, R, r3_excitations
 
 def build_HR_3C(dR, R, r3_excitations, T, t3_excitations, H, X):
 
     dR.abb, R.abb, r3_excitations["abb"] = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_3c(
                                             R.ab, R.bb,
-                                            R.aab, r3_excitations["aab"].T,
-                                            R.abb, r3_excitations["abb"].T,
-                                            R.bbb, r3_excitations["bbb"].T,
+                                            R.aab, r3_excitations["aab"],
+                                            R.abb, r3_excitations["abb"],
+                                            R.bbb, r3_excitations["bbb"],
                                             T.ab, T.bb,
-                                            T.aab, t3_excitations["aab"].T,
-                                            T.abb, t3_excitations["abb"].T,
-                                            T.bbb, t3_excitations["bbb"].T,
+                                            T.aab, t3_excitations["aab"],
+                                            T.abb, t3_excitations["abb"],
+                                            T.bbb, t3_excitations["bbb"],
                                             H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                             H.aa.oovv, H.aa.voov,
                                             H.ab.oooo, H.ab.vooo, H.ab.ovoo,
@@ -296,19 +292,17 @@ def build_HR_3C(dR, R, r3_excitations, T, t3_excitations, H, X):
                                             X.bb.oooo, X.bb.vooo, X.bb.oovv,
                                             X.bb.voov, X.bb.vvov, X.bb.vvvv.transpose(2, 3, 0, 1),
     )
-    # re-transpose r3_excitations to maintain consistency with other parts of code
-    r3_excitations["abb"] = r3_excitations["abb"].T
     return dR, R, r3_excitations
 
 def build_HR_3D(dR, R, r3_excitations, T, t3_excitations, H, X):
 
     dR.bbb, R.bbb, r3_excitations["bbb"] = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_3d(
                                             R.bb,
-                                            R.abb, r3_excitations["abb"].T,
-                                            R.bbb, r3_excitations["bbb"].T,
+                                            R.abb, r3_excitations["abb"],
+                                            R.bbb, r3_excitations["bbb"],
                                             T.bb,
-                                            T.abb, t3_excitations["abb"].T,
-                                            T.bbb, t3_excitations["bbb"].T,
+                                            T.abb, t3_excitations["abb"],
+                                            T.bbb, t3_excitations["bbb"],
                                             H.b.oo, H.b.vv,
                                             H.bb.oooo, H.bb.vooo, H.bb.oovv,
                                             H.bb.voov, H.bb.vvov, H.bb.vvvv.transpose(2, 3, 0, 1),
@@ -318,6 +312,4 @@ def build_HR_3D(dR, R, r3_excitations, T, t3_excitations, H, X):
                                             X.bb.voov, X.bb.vvov, X.bb.vvvv.transpose(2, 3, 0, 1),
                                             X.ab.ovvo,
     )
-    # re-transpose r3_excitations to maintain consistency with other parts of code
-    r3_excitations["bbb"] = r3_excitations["bbb"].T
     return dR, R, r3_excitations
