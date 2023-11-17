@@ -605,7 +605,7 @@ module eomccsdt_p_loops
                   ! Output and Inout variables
                   real(kind=8), intent(out) :: resid(n3aaa_r)
                   integer, intent(inout) :: r3a_excits(n3aaa_r,6)
-                  !f2py intent(in,out) :: r3a_excits(6,0:n3aaa_r-1)
+                  !f2py intent(in,out) :: r3a_excits(0:n3aaa_r-1,0:5)
                   real(kind=8), intent(inout) :: r3a_amps(n3aaa_r)
                   !f2py intent(in,out) :: r3a_amps(0:n3aaa_r-1)
                   ! Local variables
@@ -4019,7 +4019,7 @@ module eomccsdt_p_loops
                   ! Output and Inout variables
                   real(kind=8), intent(out) :: resid(n3aab_r)
                   integer, intent(inout) :: r3b_excits(n3aab_r,6)
-                  !f2py intent(in,out) :: r3b_excits(6,0:n3aab_r-1)
+                  !f2py intent(in,out) :: r3b_excits(0:n3aab_r-1,0:5)
                   real(kind=8), intent(inout) :: r3b_amps(n3aab_r)
                   !f2py intent(in,out) :: r3b_amps(0:n3aab_r-1)
                   ! Local variables
@@ -7047,7 +7047,7 @@ module eomccsdt_p_loops
                   ! Output and Inout variables
                   real(kind=8), intent(out) :: resid(n3abb_r)
                   integer, intent(inout) :: r3c_excits(n3abb_r,6)
-                  !f2py intent(in,out) :: r3c_excits(6,0:n3abb_r-1)
+                  !f2py intent(in,out) :: r3c_excits(0:n3abb_r-1,0:5)
                   real(kind=8), intent(inout) :: r3c_amps(n3abb_r)
                   !f2py intent(in,out) :: r3c_amps(0:n3abb_r-1)
                   ! Local variables
@@ -9716,7 +9716,7 @@ module eomccsdt_p_loops
                   ! Output and Inout variables
                   real(kind=8), intent(out) :: resid(n3bbb_r)
                   integer, intent(inout) :: r3d_excits(n3bbb_r,6)
-                  !f2py intent(in,out) :: r3d_excits(6,0:n3bbb_r-1)
+                  !f2py intent(in,out) :: r3d_excits(0:n3bbb_r-1,0:5)
                   real(kind=8), intent(inout) :: r3d_amps(n3bbb_r)
                   !f2py intent(in,out) :: r3d_amps(0:n3bbb_r-1)
                   ! Local variables

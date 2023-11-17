@@ -132,14 +132,14 @@ def get_LR(R, L, l3_excitations=None, r3_excitations=None):
                 LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
                 LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
             else:
-                LR_P = leftccsdt_p_loops.leftccsdt_p_loops.lr(L.aaa, l3_excitations["aaa"].T,
-                                                              L.aab, l3_excitations["aab"].T,
-                                                              L.abb, l3_excitations["abb"].T,
-                                                              L.bbb, l3_excitations["bbb"].T,
-                                                              R.aaa, r3_excitations["aaa"].T,
-                                                              R.aab, r3_excitations["aab"].T,
-                                                              R.abb, r3_excitations["abb"].T,
-                                                              R.bbb, r3_excitations["bbb"].T,
+                LR_P = leftccsdt_p_loops.leftccsdt_p_loops.lr(L.aaa, l3_excitations["aaa"],
+                                                              L.aab, l3_excitations["aab"],
+                                                              L.abb, l3_excitations["abb"],
+                                                              L.bbb, l3_excitations["bbb"],
+                                                              R.aaa, r3_excitations["aaa"],
+                                                              R.aab, r3_excitations["aab"],
+                                                              R.abb, r3_excitations["abb"],
+                                                              R.bbb, r3_excitations["bbb"],
                                                               noa, nua, nob, nub)
                 LR += LR_P
     elif isinstance(L, FockOperator):

@@ -15,11 +15,11 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa_t, n3aab_t, n3abb_t
 
-                  integer, intent(in) :: t3a_excits(6,n3aaa_t)
+                  integer, intent(in) :: t3a_excits(n3aaa_t,6)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
 
                   real(kind=8), intent(in) :: l2a(nua,nua,noa,noa),&
@@ -35,8 +35,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3aaa_t
                      t_amp = t3a_amps(idet)
                      ! x1a(ai) <- A(a/ef)A(i/mn) l2a(efmn) * t3a(aefimn)
-                     a = t3a_excits(1,idet); e = t3a_excits(2,idet); f = t3a_excits(3,idet);
-                     i = t3a_excits(4,idet); m = t3a_excits(5,idet); n = t3a_excits(6,idet);
+                     a = t3a_excits(idet,1); e = t3a_excits(idet,2); f = t3a_excits(idet,3);
+                     i = t3a_excits(idet,4); m = t3a_excits(idet,5); n = t3a_excits(idet,6);
                      x1a_vo(a,i) = x1a_vo(a,i) + l2a(e,f,m,n) * t_amp ! (1)
                      x1a_vo(e,i) = x1a_vo(e,i) - l2a(a,f,m,n) * t_amp ! (ae)
                      x1a_vo(f,i) = x1a_vo(f,i) - l2a(e,a,m,n) * t_amp ! (af)
@@ -50,8 +50,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3aab_t
                      t_amp = t3b_amps(idet)
                      ! x1a(ai) <- A(ae)A(im) l2b(efmn) * t3b(aefimn)
-                     a = t3b_excits(1,idet); e = t3b_excits(2,idet); f = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); m = t3b_excits(5,idet); n = t3b_excits(6,idet);
+                     a = t3b_excits(idet,1); e = t3b_excits(idet,2); f = t3b_excits(idet,3);
+                     i = t3b_excits(idet,4); m = t3b_excits(idet,5); n = t3b_excits(idet,6);
                      x1a_vo(a,i) = x1a_vo(a,i) + l2b(e,f,m,n) * t_amp ! (1)
                      x1a_vo(e,i) = x1a_vo(e,i) - l2b(a,f,m,n) * t_amp ! (ae)
                      x1a_vo(a,m) = x1a_vo(a,m) - l2b(e,f,i,n) * t_amp ! (im)
@@ -60,8 +60,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3abb_t
                      t_amp = t3c_amps(idet)
                      ! x1a(ai) <- l2c(efmn) * t3c(aefimn)
-                     a = t3c_excits(1,idet); e = t3c_excits(2,idet); f = t3c_excits(3,idet);
-                     i = t3c_excits(4,idet); m = t3c_excits(5,idet); n = t3c_excits(6,idet);
+                     a = t3c_excits(idet,1); e = t3c_excits(idet,2); f = t3c_excits(idet,3);
+                     i = t3c_excits(idet,4); m = t3c_excits(idet,5); n = t3c_excits(idet,6);
                      x1a_vo(a,i) = x1a_vo(a,i) + l2c(e,f,m,n) * t_amp ! (1)
                   end do
 
@@ -84,17 +84,17 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aaa_l, n3aab_l, n3abb_l
                   logical, intent(in) :: do_aaa_t, do_aab_t, do_abb_t
 
-                  integer, intent(in) :: t3a_excits(6,n3aaa_t)
+                  integer, intent(in) :: t3a_excits(n3aaa_t,6)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
-                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  integer, intent(in) :: l3a_excits(n3aaa_l,6)
                   real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x1a_oo(noa,noa)
@@ -112,7 +112,7 @@ module leftccsdt_p_intermediates
                   !!!! X1A(mi) = 1/6 l3a(efgmno) t3a(efgino) -> X1A(im) = 1/6 l3a(abcijk) * t3a(abcmjk)
                   if (do_aaa_t) then
                   ! copy t3a into buffer
-                  allocate(t3_amps_buff(n3aaa_t), t3_excits_buff(6,n3aaa_t))
+                  allocate(t3_amps_buff(n3aaa_t), t3_excits_buff(n3aaa_t,6))
                   t3_amps_buff(:) = t3a_amps(:)
                   t3_excits_buff(:,:) = t3a_excits(:,:)
                   ! allocate new sorting arrays
@@ -123,13 +123,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nua, noa, nua*(nua-1)*(nua-2)/6*noa, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        m = t3_excits_buff(4,jdet); n = t3_excits_buff(5,jdet);
+                        m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,5);
                         ! compute < ijkabc | mnkabc > ->
                         ! N[i+j+k+cba a+b+c+knm] = delta(j,n)N[i+m] + delta(i,m) N[j+n] - delta(i,n)N[j+m] - delta(j,m) N[i+n]
                         !                        = A(ij)A(nm) delta(i,m) N[j+n]
@@ -144,7 +144,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(4,jdet); n = t3_excits_buff(5,jdet);
+                          m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,5);
                           ! compute < ijkabc | mniabc > ->
                           ! N[i+j+k+cba a+b+c+inm] = -A(jk)A(nm) delta(k,m) N[j+n]
                           lt_amp = 0.5d0 * l_amp * t_amp
@@ -159,7 +159,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(4,jdet); n = t3_excits_buff(5,jdet);
+                          m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,5);
                           ! compute < ijkabc | mnjabc > ->
                           ! N[i+j+k+cba a+b+c+jnm] = -A(ik)A(nm) delta(i,m) N[k+n]
                           lt_amp = 0.5d0 * l_amp * t_amp
@@ -175,13 +175,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nua, noa, nua*(nua-1)*(nua-2)/6*noa, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,i)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        m = t3_excits_buff(5,jdet); n = t3_excits_buff(6,jdet);
+                        m = t3_excits_buff(jdet,5); n = t3_excits_buff(jdet,6);
                         ! compute < ijkabc | imnabc > -> A(jk)A(mn) delta(j,m) N[k+n]
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (j==m) x1a_oo(k,n) = x1a_oo(k,n) + lt_amp ! (1)
@@ -194,7 +194,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(5,jdet); n = t3_excits_buff(6,jdet);
+                          m = t3_excits_buff(jdet,5); n = t3_excits_buff(jdet,6);
                           ! compute < ijkabc | jmnabc > -> -A(ik)A(mn) delta(i,m) N[k+n]
                           lt_amp = 0.5d0 * l_amp * t_amp
                           if (i==m) x1a_oo(k,n) = x1a_oo(k,n) - lt_amp ! (1)
@@ -208,7 +208,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(5,jdet); n = t3_excits_buff(6,jdet);
+                          m = t3_excits_buff(jdet,5); n = t3_excits_buff(jdet,6);
                           ! compute < ijkabc | kmnabc > -> -A(ij)A(mn) delta(j,m) N[i+n]
                           lt_amp = 0.5d0 * l_amp * t_amp
                           if (j==m) x1a_oo(i,n) = x1a_oo(i,n) - lt_amp ! (1)
@@ -223,13 +223,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nua, noa, nua*(nua-1)*(nua-2)/6*noa, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                        t_amp = t3_amps_buff(jdet)
-                       m = t3_excits_buff(4,jdet); n = t3_excits_buff(6,jdet);
+                       m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,6);
                        ! compute < ijkabc | mjnabc > -> A(ik)A(mn) delta(k,n) N[i+ m]
                        lt_amp = 0.5d0 * l_amp * t_amp
                        if (k==n) x1a_oo(i,m) = x1a_oo(i,m) + lt_amp ! (1)
@@ -242,7 +242,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(4,jdet); n = t3_excits_buff(6,jdet);
+                          m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,6);
                           ! compute < ijkabc | minabc > -> -A(jk)A(mn) delta(k,n) N[j+ m]
                           lt_amp = 0.5d0 * l_amp * t_amp
                           if (k==n) x1a_oo(j,m) = x1a_oo(j,m) - lt_amp ! (1)
@@ -256,7 +256,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(4,jdet); n = t3_excits_buff(6,jdet);
+                          m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,6);
                           ! compute < ijkabc | mknabc > -> -A(ij)A(mn) delta(j,n) N[i+ m]
                           lt_amp = 0.50 * l_amp * t_amp
                           if (j==n) x1a_oo(i,m) = x1a_oo(i,m) - lt_amp ! (1)
@@ -271,7 +271,7 @@ module leftccsdt_p_intermediates
                   !!!! X1A(mi) = 1/6 l3b(efgmno) t3b(efgino) -> X1A(im) = 1/6 l3b(abcijk) * t3b(abcmjk)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(t3_amps_buff(n3aab_t), t3_excits_buff(6,n3aab_t))
+                  allocate(t3_amps_buff(n3aab_t), t3_excits_buff(n3aab_t,6))
                   t3_amps_buff(:) = t3b_amps(:)
                   t3_excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -282,13 +282,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, nob, nua*(nua-1)/2*nub*nob, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        m = t3_excits_buff(4,jdet); n = t3_excits_buff(5,jdet);
+                        m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,5);
                         ! compute < ijk~abc~ | mnk~abc~ > -> A(ij)A(mn) delta(j,n) N[i+ m]
                         lt_amp = l_amp * t_amp
                         ! NOTE: no factor of 1/2 here
@@ -303,7 +303,7 @@ module leftccsdt_p_intermediates
                   !!!! X1A(mi) = 1/6 l3c(efgmno) t3c(efgino) -> X1A(im) = 1/6 l3c(abcijk) * t3c(abcmjk)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(t3_amps_buff(n3abb_t), t3_excits_buff(6,n3abb_t))
+                  allocate(t3_amps_buff(n3abb_t), t3_excits_buff(n3abb_t,6))
                   t3_amps_buff(:) = t3c_amps(:)
                   t3_excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -314,13 +314,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,1,5/), nub, nub, nua, nob, nub*(nub-1)/2*nua*nob, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,a,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        m = t3_excits_buff(4,jdet); n = t3_excits_buff(6,jdet);
+                        m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,6);
                         ! compute < ij~k~ab~c~ | mj~n~ab~c~ > -> delta(k,n) N[i+ m]
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (k==n) x1a_oo(i,m) = x1a_oo(i,m) + lt_amp ! (1)
@@ -330,7 +330,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = t3_amps_buff(jdet)
-                           m = t3_excits_buff(4,jdet); n = t3_excits_buff(6,jdet);
+                           m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,6);
                            ! compute < ij~k~ab~c~ | mk~n~ab~c~ > -> -delta(j,n) N[i+ m]
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (j==n) x1a_oo(i,m) = x1a_oo(i,m) - lt_amp ! (1)
@@ -342,13 +342,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,1,6/), nub, nub, nua, nob, nub*(nub-1)/2*nua*nob, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,a,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        m = t3_excits_buff(4,jdet); n = t3_excits_buff(5,jdet);
+                        m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,5);
                         ! compute < ij~k~ab~c~ | mn~k~ab~c~ > -> delta(j,n) N[i+ m]
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (j==n) x1a_oo(i,m) = x1a_oo(i,m) + lt_amp ! (1)
@@ -358,7 +358,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = t3_amps_buff(jdet)
-                           m = t3_excits_buff(4,jdet); n = t3_excits_buff(5,jdet);
+                           m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,5);
                            ! compute < ij~k~ab~c~ | mn~j~ab~c~ > -> -delta(k,n) N[i+ m]
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (k==n) x1a_oo(i,m) = x1a_oo(i,m) - lt_amp ! (1)
@@ -387,17 +387,17 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aaa_l, n3aab_l, n3abb_l
                   logical, intent(in) :: do_aaa_t, do_aab_t, do_abb_t
 
-                  integer, intent(in) :: t3a_excits(6,n3aaa_t)
+                  integer, intent(in) :: t3a_excits(n3aaa_t,6)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
-                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  integer, intent(in) :: l3a_excits(n3aaa_l,6)
                   real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x1a_vv(nua,nua)
@@ -415,7 +415,7 @@ module leftccsdt_p_intermediates
                   !!!! x1a(ea) <- -1/6 l3a(abcijk) t3a(ebcijk)
                   if (do_aaa_t) then
                   ! copy t3a into buffer
-                  allocate(amps_buff(n3aaa_t), excits_buff(6,n3aaa_t))
+                  allocate(amps_buff(n3aaa_t), excits_buff(n3aaa_t,6))
                   amps_buff(:) = t3a_amps(:)
                   excits_buff(:,:) = t3a_excits(:,:)
                   ! allocate new sorting arrays
@@ -427,13 +427,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,c)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                         ! < ijkabc | ijkdec >
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (a==d) x1a_vv(e,b) = x1a_vv(e,b) - lt_amp ! (1)
@@ -446,7 +446,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (c==d) x1a_vv(e,b) = x1a_vv(e,b) + lt_amp ! (1)
                            if (b==d) x1a_vv(e,c) = x1a_vv(e,c) - lt_amp ! (ab)
@@ -459,7 +459,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (a==d) x1a_vv(e,c) = x1a_vv(e,c) + lt_amp ! (1)
                            if (c==d) x1a_vv(e,a) = x1a_vv(e,a) - lt_amp ! (ab)
@@ -473,13 +473,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,b)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                        d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (a==d) x1a_vv(f,c) = x1a_vv(f,c) - lt_amp ! (1)
                         if (c==d) x1a_vv(f,a) = x1a_vv(f,a) + lt_amp ! (ac)
@@ -491,7 +491,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (b==d) x1a_vv(f,c) = x1a_vv(f,c) + lt_amp ! (1)
                            if (c==d) x1a_vv(f,b) = x1a_vv(f,b) - lt_amp ! (ac)
@@ -504,7 +504,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (a==d) x1a_vv(f,b) = x1a_vv(f,b) + lt_amp ! (1)
                            if (b==d) x1a_vv(f,a) = x1a_vv(f,a) - lt_amp ! (ac)
@@ -518,13 +518,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,a)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                        e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (b==e) x1a_vv(f,c) = x1a_vv(f,c) - lt_amp ! (1)
                         if (c==e) x1a_vv(f,b) = x1a_vv(f,b) + lt_amp ! (bc)
@@ -536,7 +536,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                           e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (a==e) x1a_vv(f,c) = x1a_vv(f,c) + lt_amp ! (1)
                            if (c==e) x1a_vv(f,a) = x1a_vv(f,a) - lt_amp ! (bc)
@@ -549,7 +549,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                           e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (b==e) x1a_vv(f,a) = x1a_vv(f,a) + lt_amp ! (1)
                            if (a==e) x1a_vv(f,b) = x1a_vv(f,b) - lt_amp ! (bc)
@@ -563,7 +563,7 @@ module leftccsdt_p_intermediates
                   !!!! x1a(ea) <- -l3b(abcijk) t3b(ebcijk)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(amps_buff(n3aab_t), excits_buff(6,n3aab_t))
+                  allocate(amps_buff(n3aab_t), excits_buff(n3aab_t,6))
                   amps_buff(:) = t3b_amps(:)
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -575,13 +575,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,c)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                         ! < ijk~abc~ | ijk~dec~ >
                         lt_amp = l_amp * t_amp
                         if (a==d) x1a_vv(e,b) = x1a_vv(e,b) - lt_amp ! (1)
@@ -595,7 +595,7 @@ module leftccsdt_p_intermediates
                   !!!! x1a(ea) <- -1/4 l3c(abcijk) t3c(ebcijk)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3abb_t), excits_buff(6,n3abb_t))
+                  allocate(amps_buff(n3abb_t), excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -607,13 +607,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,4,2/), nob, nob, noa, nub, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,i,b)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                        d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                         ! < ij~k~ab~c~ | ij~k~db~f~ >
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (c==f) x1a_vv(d,a) = x1a_vv(d,a) - lt_amp 
@@ -623,7 +623,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (b==f) x1a_vv(d,a) = x1a_vv(d,a) + lt_amp 
                         end do
@@ -634,13 +634,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,4,3/), nob, nob, noa, nub, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,i,c)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (b==e) x1a_vv(d,a) = x1a_vv(d,a) - lt_amp
                      end do
@@ -649,7 +649,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (c==e) x1a_vv(d,a) = x1a_vv(d,a) + lt_amp 
                         end do
@@ -671,11 +671,11 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab_t, n3abb_t, n3bbb_t
 
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
-                  integer, intent(in) :: t3d_excits(6,n3bbb_t)
+                  integer, intent(in) :: t3d_excits(n3bbb_t,6)
                   real(kind=8), intent(in) :: t3d_amps(n3bbb_t)
 
                   real(kind=8), intent(in) :: l2a(nua,nua,noa,noa),&
@@ -691,8 +691,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3bbb_t
                      t_amp = t3d_amps(idet)
                      ! x1b(ai) <- A(a/ef)A(i/mn) l2c(efmn) * t3d(aefimn)
-                     a = t3d_excits(1,idet); e = t3d_excits(2,idet); f = t3d_excits(3,idet);
-                     i = t3d_excits(4,idet); m = t3d_excits(5,idet); n = t3d_excits(6,idet);
+                     a = t3d_excits(idet,1); e = t3d_excits(idet,2); f = t3d_excits(idet,3);
+                     i = t3d_excits(idet,4); m = t3d_excits(idet,5); n = t3d_excits(idet,6);
                      x1b_vo(a,i) = x1b_vo(a,i) + l2c(e,f,m,n) * t_amp ! (1)
                      x1b_vo(e,i) = x1b_vo(e,i) - l2c(a,f,m,n) * t_amp ! (ae)
                      x1b_vo(f,i) = x1b_vo(f,i) - l2c(e,a,m,n) * t_amp ! (af)
@@ -706,15 +706,15 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3aab_t
                      t_amp = t3b_amps(idet)
                      ! x1b(ai) <- l2a(efmn) * t3b(efamni)
-                     e = t3b_excits(1,idet); f = t3b_excits(2,idet); a = t3b_excits(3,idet);
-                     m = t3b_excits(4,idet); n = t3b_excits(5,idet); i = t3b_excits(6,idet);
+                     e = t3b_excits(idet,1); f = t3b_excits(idet,2); a = t3b_excits(idet,3);
+                     m = t3b_excits(idet,4); n = t3b_excits(idet,5); i = t3b_excits(idet,6);
                      x1b_vo(a,i) = x1b_vo(a,i) + l2a(e,f,m,n) * t_amp ! (1)
                   end do
                   do idet = 1, n3abb_t
                      t_amp = t3c_amps(idet)
                      ! x1b(ai) <- A(af)A(in) l2b(efmn) * t3c(efamni)
-                     e = t3c_excits(1,idet); f = t3c_excits(2,idet); a = t3c_excits(3,idet);
-                     m = t3c_excits(4,idet); n = t3c_excits(5,idet); i = t3c_excits(6,idet);
+                     e = t3c_excits(idet,1); f = t3c_excits(idet,2); a = t3c_excits(idet,3);
+                     m = t3c_excits(idet,4); n = t3c_excits(idet,5); i = t3c_excits(idet,6);
                      x1b_vo(a,i) = x1b_vo(a,i) + l2b(e,f,m,n) * t_amp ! (1)
                      x1b_vo(f,i) = x1b_vo(f,i) - l2b(e,a,m,n) * t_amp ! (af)
                      x1b_vo(a,n) = x1b_vo(a,n) - l2b(e,f,m,i) * t_amp ! (in)
@@ -740,17 +740,17 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l, n3bbb_l
                   logical, intent(in) :: do_aab_t, do_abb_t, do_bbb_t
 
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
-                  integer, intent(in) :: t3d_excits(6,n3bbb_t)
+                  integer, intent(in) :: t3d_excits(n3bbb_t,6)
                   real(kind=8), intent(in) :: t3d_amps(n3bbb_t)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-                  integer, intent(in) :: l3d_excits(6,n3bbb_l)
+                  integer, intent(in) :: l3d_excits(n3bbb_l,6)
                   real(kind=8), intent(in) :: l3d_amps(n3bbb_l)
 
                   real(kind=8), intent(out) :: x1b_oo(nob,nob)
@@ -768,7 +768,7 @@ module leftccsdt_p_intermediates
                   !!!! X1A(mi) = 1/6 l3a(efgmno) t3a(efgino) -> X1A(im) = 1/6 l3a(abcijk) * t3a(abcmjk)
                   if (do_bbb_t) then
                   ! copy t3d into buffer
-                  allocate(t3_amps_buff(n3bbb_t), t3_excits_buff(6,n3bbb_t))
+                  allocate(t3_amps_buff(n3bbb_t), t3_excits_buff(n3bbb_t,6))
                   t3_amps_buff(:) = t3d_amps(:)
                   t3_excits_buff(:,:) = t3d_excits(:,:)
                   ! allocate new sorting arrays
@@ -779,13 +779,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,3,6/), nub, nub, nub, nob, nub*(nub-1)*(nub-2)/6*nob, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        m = t3_excits_buff(4,jdet); n = t3_excits_buff(5,jdet);
+                        m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,5);
                         ! compute < ijkabc | mnkabc > ->
                         ! N[i+j+k+cba a+b+c+knm] = delta(j,n)N[i+m] + delta(i,m) N[j+n] - delta(i,n)N[j+m] - delta(j,m) N[i+n]
                         !                        = A(ij)A(nm) delta(i,m) N[j+n]
@@ -800,7 +800,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(4,jdet); n = t3_excits_buff(5,jdet);
+                          m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,5);
                           ! compute < ijkabc | mniabc > ->
                           ! N[i+j+k+cba a+b+c+inm] = -A(jk)A(nm) delta(k,m) N[j+n]
                           lt_amp = 0.5d0 * l_amp * t_amp
@@ -815,7 +815,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(4,jdet); n = t3_excits_buff(5,jdet);
+                          m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,5);
                           ! compute < ijkabc | mnjabc > ->
                           ! N[i+j+k+cba a+b+c+jnm] = -A(ik)A(nm) delta(i,m) N[k+n]
                           lt_amp = 0.5d0 * l_amp * t_amp
@@ -831,13 +831,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,3,4/), nub, nub, nub, nob, nub*(nub-1)*(nub-2)/6*nob, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,i)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        m = t3_excits_buff(5,jdet); n = t3_excits_buff(6,jdet);
+                        m = t3_excits_buff(jdet,5); n = t3_excits_buff(jdet,6);
                         ! compute < ijkabc | imnabc > -> A(jk)A(mn) delta(j,m) N[k+n]
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (j==m) x1b_oo(k,n) = x1b_oo(k,n) + lt_amp ! (1)
@@ -850,7 +850,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(5,jdet); n = t3_excits_buff(6,jdet);
+                          m = t3_excits_buff(jdet,5); n = t3_excits_buff(jdet,6);
                           ! compute < ijkabc | jmnabc > -> -A(ik)A(mn) delta(i,m) N[k+n]
                           lt_amp = 0.5d0 * l_amp * t_amp
                           if (i==m) x1b_oo(k,n) = x1b_oo(k,n) - lt_amp ! (1)
@@ -864,7 +864,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(5,jdet); n = t3_excits_buff(6,jdet);
+                          m = t3_excits_buff(jdet,5); n = t3_excits_buff(jdet,6);
                           ! compute < ijkabc | kmnabc > -> -A(ij)A(mn) delta(j,m) N[i+n]
                           lt_amp = 0.5d0 * l_amp * t_amp
                           if (j==m) x1b_oo(i,n) = x1b_oo(i,n) - lt_amp ! (1)
@@ -879,13 +879,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,3,5/), nub, nub, nub, nob, nub*(nub-1)*(nub-2)/6*nob, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                        t_amp = t3_amps_buff(jdet)
-                       m = t3_excits_buff(4,jdet); n = t3_excits_buff(6,jdet);
+                       m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,6);
                        ! compute < ijkabc | mjnabc > -> A(ik)A(mn) delta(k,n) N[i+ m]
                        lt_amp = 0.5d0 * l_amp * t_amp
                        if (k==n) x1b_oo(i,m) = x1b_oo(i,m) + lt_amp ! (1)
@@ -898,7 +898,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(4,jdet); n = t3_excits_buff(6,jdet);
+                          m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,6);
                           ! compute < ijkabc | minabc > -> -A(jk)A(mn) delta(k,n) N[j+ m]
                           lt_amp = 0.5d0 * l_amp * t_amp
                           if (k==n) x1b_oo(j,m) = x1b_oo(j,m) - lt_amp ! (1)
@@ -912,7 +912,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                           t_amp = t3_amps_buff(jdet)
-                          m = t3_excits_buff(4,jdet); n = t3_excits_buff(6,jdet);
+                          m = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,6);
                           ! compute < ijkabc | mknabc > -> -A(ij)A(mn) delta(j,n) N[i+ m]
                           lt_amp = 0.50 * l_amp * t_amp
                           if (j==n) x1b_oo(i,m) = x1b_oo(i,m) - lt_amp ! (1)
@@ -927,7 +927,7 @@ module leftccsdt_p_intermediates
                   !!!! x1b(mi) = l3c(abcijk) * t3c(abcijm)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(t3_amps_buff(n3abb_t), t3_excits_buff(6,n3abb_t))
+                  allocate(t3_amps_buff(n3abb_t), t3_excits_buff(n3abb_t,6))
                   t3_amps_buff(:) = t3c_amps(:)
                   t3_excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -939,13 +939,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, noa, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,a,i)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        m = t3_excits_buff(5,jdet); n = t3_excits_buff(6,jdet);
+                        m = t3_excits_buff(jdet,5); n = t3_excits_buff(jdet,6);
                         lt_amp = l_amp * t_amp
                         if (j==m) x1b_oo(k,n) = x1b_oo(k,n) + lt_amp ! (1)
                         if (j==n) x1b_oo(k,m) = x1b_oo(k,m) - lt_amp ! (mn)
@@ -958,7 +958,7 @@ module leftccsdt_p_intermediates
                   !!!! x1b(mi) = l3b(abcijk) * t3b(abcijm)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(t3_amps_buff(n3aab_t), t3_excits_buff(6,n3aab_t))
+                  allocate(t3_amps_buff(n3aab_t), t3_excits_buff(n3aab_t,6))
                   t3_amps_buff(:) = t3b_amps(:)
                   t3_excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -970,13 +970,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nub, noa, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,i)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        m = t3_excits_buff(5,jdet); n = t3_excits_buff(6,jdet);
+                        m = t3_excits_buff(jdet,5); n = t3_excits_buff(jdet,6);
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (j==m) x1b_oo(k,n) = x1b_oo(k,n) + lt_amp ! (1)
                      end do
@@ -985,7 +985,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = t3_amps_buff(jdet)
-                           m = t3_excits_buff(5,jdet); n = t3_excits_buff(6,jdet);
+                           m = t3_excits_buff(jdet,5); n = t3_excits_buff(jdet,6);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (i==m) x1b_oo(k,n) = x1b_oo(k,n) - lt_amp ! (1)
                         end do
@@ -996,13 +996,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nub, noa, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        l = t3_excits_buff(4,jdet); n = t3_excits_buff(6,jdet);
+                        l = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,6);
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (i==l) x1b_oo(k,n) = x1b_oo(k,n) + lt_amp ! (1)
                      end do
@@ -1011,7 +1011,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = t3_amps_buff(jdet)
-                           l = t3_excits_buff(4,jdet); n = t3_excits_buff(6,jdet);
+                           l = t3_excits_buff(jdet,4); n = t3_excits_buff(jdet,6);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (j==l) x1b_oo(k,n) = x1b_oo(k,n) - lt_amp ! (1)
                         end do
@@ -1039,17 +1039,17 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l, n3bbb_l
                   logical, intent(in) :: do_aab_t, do_abb_t, do_bbb_t
 
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
-                  integer, intent(in) :: t3d_excits(6,n3bbb_t)
+                  integer, intent(in) :: t3d_excits(n3bbb_t,6)
                   real(kind=8), intent(in) :: t3d_amps(n3bbb_t)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-                  integer, intent(in) :: l3d_excits(6,n3bbb_l)
+                  integer, intent(in) :: l3d_excits(n3bbb_l,6)
                   real(kind=8), intent(in) :: l3d_amps(n3bbb_l)
 
                   real(kind=8), intent(out) :: x1b_vv(nub,nub)
@@ -1067,7 +1067,7 @@ module leftccsdt_p_intermediates
                   !!!! x1a(ea) <- -1/6 l3a(abcijk) t3a(ebcijk)
                   if (do_bbb_t) then
                   ! copy t3d into buffer
-                  allocate(amps_buff(n3bbb_t), excits_buff(6,n3bbb_t))
+                  allocate(amps_buff(n3bbb_t), excits_buff(n3bbb_t,6))
                   amps_buff(:) = t3d_amps(:)
                   excits_buff(:,:) = t3d_excits(:,:)
                   ! allocate new sorting arrays
@@ -1079,13 +1079,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), nob, nob, nob, nub, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,c)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                         ! < ijkabc | ijkdec >
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (a==d) x1b_vv(e,b) = x1b_vv(e,b) - lt_amp ! (1)
@@ -1098,7 +1098,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (c==d) x1b_vv(e,b) = x1b_vv(e,b) + lt_amp ! (1)
                            if (b==d) x1b_vv(e,c) = x1b_vv(e,c) - lt_amp ! (ab)
@@ -1111,7 +1111,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (a==d) x1b_vv(e,c) = x1b_vv(e,c) + lt_amp ! (1)
                            if (c==d) x1b_vv(e,a) = x1b_vv(e,a) - lt_amp ! (ab)
@@ -1125,13 +1125,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), nob, nob, nob, nub, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,b)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                        d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (a==d) x1b_vv(f,c) = x1b_vv(f,c) - lt_amp ! (1)
                         if (c==d) x1b_vv(f,a) = x1b_vv(f,a) + lt_amp ! (ac)
@@ -1143,7 +1143,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (b==d) x1b_vv(f,c) = x1b_vv(f,c) + lt_amp ! (1)
                            if (c==d) x1b_vv(f,b) = x1b_vv(f,b) - lt_amp ! (ac)
@@ -1156,7 +1156,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (a==d) x1b_vv(f,b) = x1b_vv(f,b) + lt_amp ! (1)
                            if (b==d) x1b_vv(f,a) = x1b_vv(f,a) - lt_amp ! (ac)
@@ -1170,13 +1170,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), nob, nob, nob, nub, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,a)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                        e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (b==e) x1b_vv(f,c) = x1b_vv(f,c) - lt_amp ! (1)
                         if (c==e) x1b_vv(f,b) = x1b_vv(f,b) + lt_amp ! (bc)
@@ -1188,7 +1188,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                           e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (a==e) x1b_vv(f,c) = x1b_vv(f,c) + lt_amp ! (1)
                            if (c==e) x1b_vv(f,a) = x1b_vv(f,a) - lt_amp ! (bc)
@@ -1201,7 +1201,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                           e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (b==e) x1b_vv(f,a) = x1b_vv(f,a) + lt_amp ! (1)
                            if (a==e) x1b_vv(f,b) = x1b_vv(f,b) - lt_amp ! (bc)
@@ -1215,7 +1215,7 @@ module leftccsdt_p_intermediates
                   !!!! x1b(ea) <- -1/6 l3b(abcijk) t3b(abeijk)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(amps_buff(n3aab_t), excits_buff(6,n3aab_t))
+                  allocate(amps_buff(n3aab_t), excits_buff(n3aab_t,6))
                   amps_buff(:) = t3b_amps(:)
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -1227,13 +1227,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,a)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                        e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (e==b) x1b_vv(f,c) = x1b_vv(f,c) - lt_amp ! (1)
                      end do
@@ -1242,7 +1242,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                           e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (e==a) x1b_vv(f,c) = x1b_vv(f,c) + lt_amp ! (1)
                         end do
@@ -1253,13 +1253,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,b)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                        d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                         lt_amp = 0.5d0 * l_amp * t_amp
                         if (d==a) x1b_vv(f,c) = x1b_vv(f,c) - lt_amp ! (1)
                      end do
@@ -1268,7 +1268,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                            lt_amp = 0.5d0 * l_amp * t_amp
                            if (d==b) x1b_vv(f,c) = x1b_vv(f,c) + lt_amp ! (1)
                         end do
@@ -1279,7 +1279,7 @@ module leftccsdt_p_intermediates
                   !!!! x1b(ea) <- -l3c(abcijk) t3c(abeijk)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3abb_t), excits_buff(6,n3abb_t))
+                  allocate(amps_buff(n3abb_t), excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -1291,13 +1291,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,4,1/), nob, nob, noa, nua, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,i,a)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                        e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                         lt_amp = l_amp * t_amp
                         if (e==b) x1b_vv(f,c) = x1b_vv(f,c) - lt_amp ! (1)
                         if (f==b) x1b_vv(e,c) = x1b_vv(e,c) + lt_amp ! (ef)
@@ -1321,9 +1321,9 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aaa_l, n3aab_l
 
                   real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
-                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  integer, intent(in) :: l3a_excits(n3aaa_l,6)
                   real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
 
                   real(kind=8), intent(out) :: x2a_ooov(noa,noa,noa,nua)
@@ -1335,8 +1335,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
                      ! x2a(jima) <- A(ij) [A(n/ij)A(a/ef) l3a(aefijn) * t2a(efmn)]
-                     a = l3a_excits(1,idet); e = l3a_excits(2,idet); f = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); n = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); e = l3a_excits(idet,2); f = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); n = l3a_excits(idet,6);
                      ! only fill permutationally unique elements!
                      x2a_ooov(i,j,:,a) = x2a_ooov(i,j,:,a) - l_amp * t2a(e,f,:,n) ! (1)
                      x2a_ooov(i,j,:,e) = x2a_ooov(i,j,:,e) + l_amp * t2a(a,f,:,n) ! (ae)
@@ -1351,8 +1351,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
                      ! x2a(jima) <- A(ij) [A(ae) l3b(aefijn) * t2b(efmn)]
-                     a = l3b_excits(1,idet); e = l3b_excits(2,idet); f = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); n = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); e = l3b_excits(idet,2); f = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); n = l3b_excits(idet,6);
                      ! only fill permutationally unique elements!
                      x2a_ooov(i,j,:,a) = x2a_ooov(i,j,:,a) - l_amp * t2b(e,f,:,n) ! (1)
                      x2a_ooov(i,j,:,e) = x2a_ooov(i,j,:,e) + l_amp * t2b(a,f,:,n) ! (ae)
@@ -1388,9 +1388,9 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aaa_l, n3aab_l
 
                   real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
-                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  integer, intent(in) :: l3a_excits(n3aaa_l,6)
                   real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
 
                   real(kind=8), intent(out) :: x2a_vovv(nua,noa,nua,nua)
@@ -1402,8 +1402,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
                      ! x2a(eiba) <- A(ab) [A(i/mn)A(f/ab) l3a(abfimn) * t2a(efmn)]
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); f = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); m = l3a_excits(5,idet); n = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); f = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); m = l3a_excits(idet,5); n = l3a_excits(idet,6);
                      ! only fill permutationally unique elements!
                      x2a_vovv(:,i,a,b) = x2a_vovv(:,i,a,b) + l_amp * t2a(:,f,m,n) ! (1)
                      x2a_vovv(:,m,a,b) = x2a_vovv(:,m,a,b) - l_amp * t2a(:,f,i,n) ! (im)
@@ -1418,8 +1418,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
                      ! x2a(eiba) <- A(ab) [A(im) l3b(abfimn) * t2b(efmn)]
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); f = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); m = l3b_excits(5,idet); n = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); f = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); m = l3b_excits(idet,5); n = l3b_excits(idet,6);
                      ! only fill permutationally unique elements!
                      x2a_vovv(:,i,a,b) = x2a_vovv(:,i,a,b) + l_amp * t2b(:,f,m,n) ! (1)
                      x2a_vovv(:,m,a,b) = x2a_vovv(:,m,a,b) - l_amp * t2b(:,f,i,n) ! (im)
@@ -1455,9 +1455,9 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l
 
                   real(kind=8), intent(in) :: t2b(nua,nub,noa,nob), t2c(nub,nub,nob,nob)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x2b_oovo(noa,nob,nua,nob)
@@ -1469,8 +1469,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
                      ! x2b(jkbm) <- A(bf)A(jn) l3b(bfejnk) * t2b(fenm)
-                     b = l3b_excits(1,idet); f = l3b_excits(2,idet); e = l3b_excits(3,idet);
-                     j = l3b_excits(4,idet); n = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     b = l3b_excits(idet,1); f = l3b_excits(idet,2); e = l3b_excits(idet,3);
+                     j = l3b_excits(idet,4); n = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      x2b_oovo(j,k,b,:) = x2b_oovo(j,k,b,:) + l_amp * t2b(f,e,n,:) ! (1)
                      x2b_oovo(j,k,f,:) = x2b_oovo(j,k,f,:) - l_amp * t2b(b,e,n,:) ! (bf)
                      x2b_oovo(n,k,b,:) = x2b_oovo(n,k,b,:) - l_amp * t2b(f,e,j,:) ! (jn)
@@ -1479,8 +1479,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
                      ! x2b(jkbm) <- A(nk) l3c(bfejnk) * t2c(fenm)
-                     b = l3c_excits(1,idet); f = l3c_excits(2,idet); e = l3c_excits(3,idet);
-                     j = l3c_excits(4,idet); n = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     b = l3c_excits(idet,1); f = l3c_excits(idet,2); e = l3c_excits(idet,3);
+                     j = l3c_excits(idet,4); n = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      x2b_oovo(j,k,b,:) = x2b_oovo(j,k,b,:) + l_amp * t2c(f,e,n,:) ! (1)
                      x2b_oovo(j,n,b,:) = x2b_oovo(j,n,b,:) - l_amp * t2c(f,e,k,:) ! (kn)
                   end do
@@ -1498,9 +1498,9 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l
 
                   real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x2b_ooov(noa,nob,noa,nub)
@@ -1512,16 +1512,16 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
                      ! x2b(jkmc) <- A(jn) l3b(efcjnk) * t2a(efmn)
-                     e = l3b_excits(1,idet); f = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     j = l3b_excits(4,idet); n = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     e = l3b_excits(idet,1); f = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     j = l3b_excits(idet,4); n = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      x2b_ooov(j,k,:,c) = x2b_ooov(j,k,:,c) + l_amp * t2a(e,f,:,n) ! (1)
                      x2b_ooov(n,k,:,c) = x2b_ooov(n,k,:,c) - l_amp * t2a(e,f,:,j) ! (jn)
                   end do
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
                      ! x2b(jkmc) <-  A(fc)A(kn) l3c(efcjnk) * t2b(efmn)
-                     e = l3c_excits(1,idet); f = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     j = l3c_excits(4,idet); n = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     e = l3c_excits(idet,1); f = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     j = l3c_excits(idet,4); n = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      x2b_ooov(j,k,:,c) = x2b_ooov(j,k,:,c) + l_amp * t2b(e,f,:,n) ! (1)
                      x2b_ooov(j,n,:,c) = x2b_ooov(j,n,:,c) - l_amp * t2b(e,f,:,k) ! (kn)
                      x2b_ooov(j,k,:,f) = x2b_ooov(j,k,:,f) - l_amp * t2b(e,c,:,n) ! (fc)
@@ -1541,9 +1541,9 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l
 
                   real(kind=8), intent(in) :: t2b(nua,nub,noa,nob), t2c(nub,nub,nob,nob)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x2b_ovvv(noa,nub,nua,nub)
@@ -1555,8 +1555,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
                      ! x2b(ieab) <- A(af)A(in) -l3b(afbinm) * t2b(fenm)
-                     a = l3b_excits(1,idet); f = l3b_excits(2,idet); b = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); n = l3b_excits(5,idet); m = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); f = l3b_excits(idet,2); b = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); n = l3b_excits(idet,5); m = l3b_excits(idet,6);
                      x2b_ovvv(i,:,a,b) = x2b_ovvv(i,:,a,b) - l_amp * t2b(f,:,n,m) ! (1)
                      x2b_ovvv(i,:,f,b) = x2b_ovvv(i,:,f,b) + l_amp * t2b(a,:,n,m) ! (af)
                      x2b_ovvv(n,:,a,b) = x2b_ovvv(n,:,a,b) + l_amp * t2b(f,:,i,m) ! (in)
@@ -1565,8 +1565,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
                      ! x2b(ieab) <- A(fb) -l3c(afbinm) * t2c(fenm)
-                     a = l3c_excits(1,idet); f = l3c_excits(2,idet); b = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); n = l3c_excits(5,idet); m = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); f = l3c_excits(idet,2); b = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); n = l3c_excits(idet,5); m = l3c_excits(idet,6);
                      x2b_ovvv(i,:,a,b) = x2b_ovvv(i,:,a,b) - l_amp * t2c(f,:,n,m) ! (1)
                      x2b_ovvv(i,:,a,f) = x2b_ovvv(i,:,a,f) + l_amp * t2c(b,:,n,m) ! (fb)
                   end do
@@ -1584,9 +1584,9 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l
 
                   real(kind=8), intent(in) :: t2a(nua,nua,noa,noa), t2b(nua,nub,noa,nob)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x2b_vovv(nua,nob,nua,nub)
@@ -1598,16 +1598,16 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
                      ! x2b(ejab) <- A(af) -l3b(afbmnj) * t2a(efmn)
-                     a = l3b_excits(1,idet); f = l3b_excits(2,idet); b = l3b_excits(3,idet);
-                     m = l3b_excits(4,idet); n = l3b_excits(5,idet); j = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); f = l3b_excits(idet,2); b = l3b_excits(idet,3);
+                     m = l3b_excits(idet,4); n = l3b_excits(idet,5); j = l3b_excits(idet,6);
                      x2b_vovv(:,j,a,b) = x2b_vovv(:,j,a,b) - l_amp * t2a(:,f,m,n) ! (1)
                      x2b_vovv(:,j,f,b) = x2b_vovv(:,j,f,b) + l_amp * t2a(:,a,m,n) ! (af)
                   end do
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
                      ! x2b(ejab) <-  A(bf)A(nj) -l3c(afbmnj) * t2b(efmn)
-                     a = l3c_excits(1,idet); f = l3c_excits(2,idet); b = l3c_excits(3,idet);
-                     m = l3c_excits(4,idet); n = l3c_excits(5,idet); j = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); f = l3c_excits(idet,2); b = l3c_excits(idet,3);
+                     m = l3c_excits(idet,4); n = l3c_excits(idet,5); j = l3c_excits(idet,6);
                      x2b_vovv(:,j,a,b) = x2b_vovv(:,j,a,b) - l_amp * t2b(:,f,m,n) ! (1)
                      x2b_vovv(:,j,a,f) = x2b_vovv(:,j,a,f) + l_amp * t2b(:,b,m,n) ! (bf)
                      x2b_vovv(:,n,a,b) = x2b_vovv(:,n,a,b) + l_amp * t2b(:,f,m,j) ! (nj)
@@ -1627,9 +1627,9 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3abb_l, n3bbb_l
 
                   real(kind=8), intent(in) :: t2b(nua,nub,noa,nob), t2c(nub,nub,nob,nob)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-                  integer, intent(in) :: l3d_excits(6,n3bbb_l)
+                  integer, intent(in) :: l3d_excits(n3bbb_l,6)
                   real(kind=8), intent(in) :: l3d_amps(n3bbb_l)
 
                   real(kind=8), intent(out) :: x2c_ooov(nob,nob,nob,nub)
@@ -1641,8 +1641,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
                      ! x2c(jima) <- A(ij) [A(n/ij)A(a/ef) l3d(aefijn) * t2c(efmn)]
-                     a = l3d_excits(1,idet); e = l3d_excits(2,idet); f = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); n = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); e = l3d_excits(idet,2); f = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); n = l3d_excits(idet,6);
                      ! only fill permutationally unique elements!
                      x2c_ooov(i,j,:,a) = x2c_ooov(i,j,:,a) - l_amp * t2c(e,f,:,n) ! (1)
                      x2c_ooov(i,j,:,e) = x2c_ooov(i,j,:,e) + l_amp * t2c(a,f,:,n) ! (ae)
@@ -1657,8 +1657,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
                      ! x2c(jima) <- A(ij) [A(ae) l3c(feanji) * t2b(fenm)]
-                     f = l3c_excits(1,idet); e = l3c_excits(2,idet); a = l3c_excits(3,idet);
-                     n = l3c_excits(4,idet); j = l3c_excits(5,idet); i = l3c_excits(6,idet);
+                     f = l3c_excits(idet,1); e = l3c_excits(idet,2); a = l3c_excits(idet,3);
+                     n = l3c_excits(idet,4); j = l3c_excits(idet,5); i = l3c_excits(idet,6);
                      ! only fill permutationally unique elements!
                      x2c_ooov(i,j,:,a) = x2c_ooov(i,j,:,a) - l_amp * t2b(f,e,n,:) ! (1)
                      x2c_ooov(i,j,:,e) = x2c_ooov(i,j,:,e) + l_amp * t2b(f,a,n,:) ! (ae)
@@ -1694,9 +1694,9 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3abb_l, n3bbb_l
 
                   real(kind=8), intent(in) :: t2b(nua,nub,noa,nob), t2c(nub,nub,nob,nob)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-                  integer, intent(in) :: l3d_excits(6,n3bbb_l)
+                  integer, intent(in) :: l3d_excits(n3bbb_l,6)
                   real(kind=8), intent(in) :: l3d_amps(n3bbb_l)
 
                   real(kind=8), intent(out) :: x2c_vovv(nub,nob,nub,nub)
@@ -1708,8 +1708,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
                      ! x2c(eiba) <- A(ab) [A(i/mn)A(f/ab) l3d(abfimn) * t2c(efmn)]
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); f = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); m = l3d_excits(5,idet); n = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); f = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); m = l3d_excits(idet,5); n = l3d_excits(idet,6);
                      ! only fill permutationally unique elements!
                      x2c_vovv(:,i,a,b) = x2c_vovv(:,i,a,b) + l_amp * t2c(:,f,m,n) ! (1)
                      x2c_vovv(:,m,a,b) = x2c_vovv(:,m,a,b) - l_amp * t2c(:,f,i,n) ! (im)
@@ -1724,8 +1724,8 @@ module leftccsdt_p_intermediates
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
                      ! x2c(eiba) <- A(ab) [A(im) l3c(fbanmi) * t2b(fenm)]
-                     f = l3c_excits(1,idet); b = l3c_excits(2,idet); a = l3c_excits(3,idet);
-                     n = l3c_excits(4,idet); m = l3c_excits(5,idet); i = l3c_excits(6,idet);
+                     f = l3c_excits(idet,1); b = l3c_excits(idet,2); a = l3c_excits(idet,3);
+                     n = l3c_excits(idet,4); m = l3c_excits(idet,5); i = l3c_excits(idet,6);
                      ! only fill permutationally unique elements!
                      x2c_vovv(:,i,a,b) = x2c_vovv(:,i,a,b) + l_amp * t2b(f,:,n,m) ! (1)
                      x2c_vovv(:,m,a,b) = x2c_vovv(:,m,a,b) - l_amp * t2b(f,:,n,i) ! (im)
@@ -1765,14 +1765,14 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aaa_l, n3aab_l
                   logical, intent(in) :: do_aaa_t, do_aab_t
 
-                  integer, intent(in) :: t3a_excits(6,n3aaa_t)
+                  integer, intent(in) :: t3a_excits(n3aaa_t,6)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
                   
-                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  integer, intent(in) :: l3a_excits(n3aaa_l,6)
                   real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
 
                   real(kind=8), intent(out) :: x2a_oooo(noa,noa,noa,noa)
@@ -1790,7 +1790,7 @@ module leftccsdt_p_intermediates
                   !!!! x2a(ijmn) = 1/6 l3a(abcijk) t3a(abcmnk)
                   if (do_aaa_t) then
                   ! copy t3a into buffer
-                  allocate(amps_buff(n3aaa_t),excits_buff(6,n3aaa_t))
+                  allocate(amps_buff(n3aaa_t),excits_buff(n3aaa_t,6))
                   amps_buff(:) = t3a_amps(:)
                   excits_buff(:,:) = t3a_excits(:,:)
                   ! allocate new sorting arrays
@@ -1802,13 +1802,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nua, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        l = excits_buff(4,jdet); m = excits_buff(5,jdet);
+                        l = excits_buff(jdet,4); m = excits_buff(jdet,5);
                         ! < ijkabc | N[i1+ i2+ j2 j1] | lmkabc >
                         x2a_oooo(i,j,l,m) = x2a_oooo(i,j,l,m) + l_amp * t_amp
                      end do
@@ -1817,7 +1817,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           l = excits_buff(4,jdet); m = excits_buff(5,jdet);
+                           l = excits_buff(jdet,4); m = excits_buff(jdet,5);
                            x2a_oooo(j,k,l,m) = x2a_oooo(j,k,l,m) + l_amp * t_amp ! flip sign to compute permutationally unique term
                         end do
                      end if
@@ -1826,7 +1826,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           l = excits_buff(4,jdet); m = excits_buff(5,jdet);
+                           l = excits_buff(jdet,4); m = excits_buff(jdet,5);
                            x2a_oooo(i,k,l,m) = x2a_oooo(i,k,l,m) - l_amp * t_amp
                         end do
                      end if
@@ -1836,13 +1836,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nua, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,i)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        m = excits_buff(5,jdet); n = excits_buff(6,jdet);
+                        m = excits_buff(jdet,5); n = excits_buff(jdet,6);
                         x2a_oooo(j,k,m,n) = x2a_oooo(j,k,m,n) + l_amp * t_amp
                      end do
                      ! (ij)
@@ -1850,7 +1850,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           m = excits_buff(5,jdet); n = excits_buff(6,jdet);
+                           m = excits_buff(jdet,5); n = excits_buff(jdet,6);
                            x2a_oooo(i,k,m,n) = x2a_oooo(i,k,m,n) - l_amp * t_amp
                         end do
                      end if
@@ -1859,7 +1859,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           m = excits_buff(5,jdet); n = excits_buff(6,jdet);
+                           m = excits_buff(jdet,5); n = excits_buff(jdet,6);
                            x2a_oooo(i,j,m,n) = x2a_oooo(i,j,m,n) + l_amp * t_amp ! flip sign to compute permutationally unique term
                         end do
                      end if
@@ -1869,13 +1869,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nua, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        l = excits_buff(4,jdet); n = excits_buff(6,jdet);
+                        l = excits_buff(jdet,4); n = excits_buff(jdet,6);
                         x2a_oooo(i,k,l,n) = x2a_oooo(i,k,l,n) + l_amp * t_amp
                      end do
                      ! (ij)
@@ -1883,7 +1883,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           l = excits_buff(4,jdet); n = excits_buff(6,jdet);
+                           l = excits_buff(jdet,4); n = excits_buff(jdet,6);
                            x2a_oooo(j,k,l,n) = x2a_oooo(j,k,l,n) - l_amp * t_amp
                         end do
                      end if
@@ -1892,7 +1892,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           l = excits_buff(4,jdet); n = excits_buff(6,jdet);
+                           l = excits_buff(jdet,4); n = excits_buff(jdet,6);
                            x2a_oooo(i,j,l,n) = x2a_oooo(i,j,l,n) - l_amp * t_amp
                         end do
                      end if
@@ -1902,7 +1902,7 @@ module leftccsdt_p_intermediates
                   !!!! x2a(ijmn) = 1/6 l3b(abcijk) t3b(abcmnk)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
+                  allocate(amps_buff(n3aab_t),excits_buff(n3aab_t,6))
                   amps_buff(:) = t3b_amps(:)
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -1914,13 +1914,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, nob, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        l = excits_buff(4,jdet); m = excits_buff(5,jdet);
+                        l = excits_buff(jdet,4); m = excits_buff(jdet,5);
                         ! < ijk~abc~ | lmk~abc~ >
                         x2a_oooo(i,j,l,m) = x2a_oooo(i,j,l,m) + l_amp * t_amp
                      end do
@@ -1959,14 +1959,14 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aaa_l, n3aab_l
                   logical, intent(in) :: do_aaa_t, do_aab_t
 
-                  integer, intent(in) :: t3a_excits(6,n3aaa_t)
+                  integer, intent(in) :: t3a_excits(n3aaa_t,6)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
                   
-                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  integer, intent(in) :: l3a_excits(n3aaa_l,6)
                   real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
 
                   real(kind=8), intent(out) :: x2a_vvvv(nua,nua,nua,nua)
@@ -1984,7 +1984,7 @@ module leftccsdt_p_intermediates
                   !!!! x2a(deab) = 1/6 l3a(abcijk) t3a(decijk)
                   if (do_aaa_t) then
                   ! copy t3a into buffer
-                  allocate(amps_buff(n3aaa_t),excits_buff(6,n3aaa_t))
+                  allocate(amps_buff(n3aaa_t),excits_buff(n3aaa_t,6))
                   amps_buff(:) = t3a_amps(:)
                   excits_buff(:,:) = t3a_excits(:,:)
                   ! allocate new sorting arrays
@@ -1996,13 +1996,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,c)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                         x2a_vvvv(d,e,a,b) = x2a_vvvv(d,e,a,b) + l_amp * t_amp
                      end do
                      ! (ac)
@@ -2010,7 +2010,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                            x2a_vvvv(d,e,b,c) = x2a_vvvv(d,e,b,c) + l_amp * t_amp
                         end do
                      end if
@@ -2019,7 +2019,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                            x2a_vvvv(d,e,a,c) = x2a_vvvv(d,e,a,c) - l_amp * t_amp
                         end do
                      end if
@@ -2029,13 +2029,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,a)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                        e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                         x2a_vvvv(e,f,b,c) = x2a_vvvv(e,f,b,c) + l_amp * t_amp
                      end do
                      ! (ab)
@@ -2043,7 +2043,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                           e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                            x2a_vvvv(e,f,a,c) = x2a_vvvv(e,f,a,c) - l_amp * t_amp
                         end do
                      end if
@@ -2052,7 +2052,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                           e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                            x2a_vvvv(e,f,a,b) = x2a_vvvv(e,f,a,b) + l_amp * t_amp
                         end do
                      end if
@@ -2062,13 +2062,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,b)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                        d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                         x2a_vvvv(d,f,a,c) = x2a_vvvv(d,f,a,c) + l_amp * t_amp
                      end do
                      ! (ab)
@@ -2076,7 +2076,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                            x2a_vvvv(d,f,b,c) = x2a_vvvv(d,f,b,c) - l_amp * t_amp
                         end do
                      end if
@@ -2085,7 +2085,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                            x2a_vvvv(d,f,a,b) = x2a_vvvv(d,f,a,b) - l_amp * t_amp
                         end do
                      end if
@@ -2095,7 +2095,7 @@ module leftccsdt_p_intermediates
                   !!!! x2a(deab) = 1/6 l3b(abcijk) t3b(decijk)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
+                  allocate(amps_buff(n3aab_t),excits_buff(n3aab_t,6))
                   amps_buff(:) = t3b_amps(:)
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -2107,13 +2107,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,c)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                         x2a_vvvv(d,e,a,b) = x2a_vvvv(d,e,a,b) + l_amp * t_amp
                      end do
                   end do
@@ -2153,18 +2153,18 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aaa_l, n3aab_l, n3abb_l
                   logical, intent(in) :: do_aaa_t, do_aab_t, do_abb_t
 
-                  integer, intent(in) :: t3a_excits(6,n3aaa_t)
+                  integer, intent(in) :: t3a_excits(n3aaa_t,6)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
                   
-                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  integer, intent(in) :: l3a_excits(n3aaa_l,6)
                   real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x2a_voov(nua,noa,noa,nua)
@@ -2182,7 +2182,7 @@ module leftccsdt_p_intermediates
                   !!!! x2a(eima) <- 1/4 l3a(abcijk) t3a(ebcmjk)
                   if (do_aaa_t) then
                   ! copy t3a into buffer
-                  allocate(amps_buff(n3aaa_t),excits_buff(6,n3aaa_t))
+                  allocate(amps_buff(n3aaa_t),excits_buff(n3aaa_t,6))
                   amps_buff(:) = t3a_amps(:)
                   excits_buff(:,:) = t3a_excits(:,:)
                   ! allocate new sorting arrays
@@ -2194,14 +2194,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2a_voov(f,k,n,c) = x2a_voov(f,k,n,c) + l_amp * t_amp
                      end do
                      end if
@@ -2210,7 +2210,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2a_voov(f,k,n,a) = x2a_voov(f,k,n,a) + l_amp * t_amp
                      end do
                      end if
@@ -2219,7 +2219,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2a_voov(f,k,n,b) = x2a_voov(f,k,n,b) - l_amp * t_amp
                      end do
                      end if
@@ -2228,7 +2228,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2a_voov(f,i,n,c) = x2a_voov(f,i,n,c) + l_amp * t_amp
                      end do
                      end if
@@ -2237,7 +2237,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2a_voov(f,i,n,a) = x2a_voov(f,i,n,a) + l_amp * t_amp
                      end do
                      end if
@@ -2246,7 +2246,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2a_voov(f,i,n,b) = x2a_voov(f,i,n,b) - l_amp * t_amp
                      end do
                      end if
@@ -2255,7 +2255,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2a_voov(f,j,n,c) = x2a_voov(f,j,n,c) - l_amp * t_amp
                      end do
                      end if
@@ -2264,7 +2264,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2a_voov(f,j,n,a) = x2a_voov(f,j,n,a) - l_amp * t_amp
                      end do
                      end if
@@ -2273,7 +2273,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2a_voov(f,j,n,b) = x2a_voov(f,j,n,b) + l_amp * t_amp
                      end do
                      end if
@@ -2283,14 +2283,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2a_voov(e,k,n,b) = x2a_voov(e,k,n,b) + l_amp * t_amp
                      end do
                      end if
@@ -2299,7 +2299,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2a_voov(e,k,n,a) = x2a_voov(e,k,n,a) - l_amp * t_amp
                      end do
                      end if
@@ -2308,7 +2308,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2a_voov(e,k,n,c) = x2a_voov(e,k,n,c) - l_amp * t_amp
                      end do
                      end if
@@ -2317,7 +2317,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2a_voov(e,i,n,b) = x2a_voov(e,i,n,b) + l_amp * t_amp
                      end do
                      end if
@@ -2326,7 +2326,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2a_voov(e,i,n,a) = x2a_voov(e,i,n,a) - l_amp * t_amp
                      end do
                      end if
@@ -2335,7 +2335,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2a_voov(e,i,n,c) = x2a_voov(e,i,n,c) - l_amp * t_amp
                      end do
                      end if
@@ -2344,7 +2344,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2a_voov(e,j,n,b) = x2a_voov(e,j,n,b) - l_amp * t_amp
                      end do
                      end if
@@ -2353,7 +2353,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2a_voov(e,j,n,a) = x2a_voov(e,j,n,a) + l_amp * t_amp
                      end do
                      end if
@@ -2362,7 +2362,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2a_voov(e,j,n,c) = x2a_voov(e,j,n,c) + l_amp * t_amp
                      end do
                      end if
@@ -2372,14 +2372,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2a_voov(d,k,n,a) = x2a_voov(d,k,n,a) + l_amp * t_amp
                      end do
                      end if
@@ -2388,7 +2388,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2a_voov(d,k,n,b) = x2a_voov(d,k,n,b) - l_amp * t_amp
                      end do
                      end if
@@ -2397,7 +2397,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2a_voov(d,k,n,c) = x2a_voov(d,k,n,c) + l_amp * t_amp
                      end do
                      end if
@@ -2406,7 +2406,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2a_voov(d,i,n,a) = x2a_voov(d,i,n,a) + l_amp * t_amp
                      end do
                      end if
@@ -2415,7 +2415,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2a_voov(d,i,n,b) = x2a_voov(d,i,n,b) - l_amp * t_amp
                      end do
                      end if
@@ -2424,7 +2424,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2a_voov(d,i,n,c) = x2a_voov(d,i,n,c) + l_amp * t_amp
                      end do
                      end if
@@ -2433,7 +2433,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2a_voov(d,j,n,a) = x2a_voov(d,j,n,a) - l_amp * t_amp
                      end do
                      end if
@@ -2442,7 +2442,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2a_voov(d,j,n,b) = x2a_voov(d,j,n,b) + l_amp * t_amp
                      end do
                      end if
@@ -2451,7 +2451,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2a_voov(d,j,n,c) = x2a_voov(d,j,n,c) - l_amp * t_amp
                      end do
                      end if
@@ -2461,14 +2461,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2a_voov(f,j,m,c) = x2a_voov(f,j,m,c) + l_amp * t_amp
                      end do
                      end if
@@ -2477,7 +2477,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2a_voov(f,j,m,a) = x2a_voov(f,j,m,a) + l_amp * t_amp
                      end do
                      end if
@@ -2486,7 +2486,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2a_voov(f,j,m,b) = x2a_voov(f,j,m,b) - l_amp * t_amp
                      end do
                      end if
@@ -2495,7 +2495,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2a_voov(f,i,m,c) = x2a_voov(f,i,m,c) - l_amp * t_amp
                      end do
                      end if
@@ -2504,7 +2504,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2a_voov(f,i,m,a) = x2a_voov(f,i,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -2513,7 +2513,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2a_voov(f,i,m,b) = x2a_voov(f,i,m,b) + l_amp * t_amp
                      end do
                      end if
@@ -2522,7 +2522,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2a_voov(f,k,m,c) = x2a_voov(f,k,m,c) - l_amp * t_amp
                      end do
                      end if
@@ -2531,7 +2531,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2a_voov(f,k,m,a) = x2a_voov(f,k,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -2540,7 +2540,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2a_voov(f,k,m,b) = x2a_voov(f,k,m,b) + l_amp * t_amp
                      end do
                      end if
@@ -2550,14 +2550,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,j,m,b) = x2a_voov(e,j,m,b) + l_amp * t_amp
                      end do
                      end if
@@ -2566,7 +2566,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,j,m,a) = x2a_voov(e,j,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -2575,7 +2575,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,j,m,c) = x2a_voov(e,j,m,c) - l_amp * t_amp
                      end do
                      end if
@@ -2584,7 +2584,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,i,m,b) = x2a_voov(e,i,m,b) - l_amp * t_amp
                      end do
                      end if
@@ -2593,7 +2593,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,i,m,a) = x2a_voov(e,i,m,a) + l_amp * t_amp
                      end do
                      end if
@@ -2602,7 +2602,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,i,m,c) = x2a_voov(e,i,m,c) + l_amp * t_amp
                      end do
                      end if
@@ -2611,7 +2611,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,k,m,b) = x2a_voov(e,k,m,b) - l_amp * t_amp
                      end do
                      end if
@@ -2620,7 +2620,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,k,m,a) = x2a_voov(e,k,m,a) + l_amp * t_amp
                      end do
                      end if
@@ -2629,7 +2629,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,k,m,c) = x2a_voov(e,k,m,c) + l_amp * t_amp
                      end do
                      end if
@@ -2639,14 +2639,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,j,m,a) = x2a_voov(d,j,m,a) + l_amp * t_amp
                      end do
                      end if
@@ -2655,7 +2655,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,j,m,b) = x2a_voov(d,j,m,b) - l_amp * t_amp
                      end do
                      end if
@@ -2664,7 +2664,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,j,m,c) = x2a_voov(d,j,m,c) + l_amp * t_amp
                      end do
                      end if
@@ -2673,7 +2673,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,i,m,a) = x2a_voov(d,i,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -2682,7 +2682,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,i,m,b) = x2a_voov(d,i,m,b) + l_amp * t_amp
                      end do
                      end if
@@ -2691,7 +2691,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,i,m,c) = x2a_voov(d,i,m,c) - l_amp * t_amp
                      end do
                      end if
@@ -2700,7 +2700,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,k,m,a) = x2a_voov(d,k,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -2709,7 +2709,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,k,m,b) = x2a_voov(d,k,m,b) + l_amp * t_amp
                      end do
                      end if
@@ -2718,7 +2718,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,k,m,c) = x2a_voov(d,k,m,c) - l_amp * t_amp
                      end do
                      end if
@@ -2728,14 +2728,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2a_voov(f,i,l,c) = x2a_voov(f,i,l,c) + l_amp * t_amp
                      end do
                      end if
@@ -2744,7 +2744,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2a_voov(f,i,l,a) = x2a_voov(f,i,l,a) + l_amp * t_amp
                      end do
                      end if
@@ -2753,7 +2753,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2a_voov(f,i,l,b) = x2a_voov(f,i,l,b) - l_amp * t_amp
                      end do
                      end if
@@ -2762,7 +2762,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2a_voov(f,j,l,c) = x2a_voov(f,j,l,c) - l_amp * t_amp
                      end do
                      end if
@@ -2771,7 +2771,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2a_voov(f,j,l,a) = x2a_voov(f,j,l,a) - l_amp * t_amp
                      end do
                      end if
@@ -2780,7 +2780,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2a_voov(f,j,l,b) = x2a_voov(f,j,l,b) + l_amp * t_amp
                      end do
                      end if
@@ -2789,7 +2789,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2a_voov(f,k,l,c) = x2a_voov(f,k,l,c) + l_amp * t_amp
                      end do
                      end if
@@ -2798,7 +2798,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2a_voov(f,k,l,a) = x2a_voov(f,k,l,a) + l_amp * t_amp
                      end do
                      end if
@@ -2807,7 +2807,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2a_voov(f,k,l,b) = x2a_voov(f,k,l,b) - l_amp * t_amp
                      end do
                      end if
@@ -2817,14 +2817,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,i,l,b) = x2a_voov(e,i,l,b) + l_amp * t_amp
                      end do
                      end if
@@ -2833,7 +2833,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,i,l,a) = x2a_voov(e,i,l,a) - l_amp * t_amp
                      end do
                      end if
@@ -2842,7 +2842,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,i,l,c) = x2a_voov(e,i,l,c) - l_amp * t_amp
                      end do
                      end if
@@ -2851,7 +2851,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,j,l,b) = x2a_voov(e,j,l,b) - l_amp * t_amp
                      end do
                      end if
@@ -2860,7 +2860,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,j,l,a) = x2a_voov(e,j,l,a) + l_amp * t_amp
                      end do
                      end if
@@ -2869,7 +2869,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,j,l,c) = x2a_voov(e,j,l,c) + l_amp * t_amp
                      end do
                      end if
@@ -2878,7 +2878,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,k,l,b) = x2a_voov(e,k,l,b) + l_amp * t_amp
                      end do
                      end if
@@ -2887,7 +2887,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,k,l,a) = x2a_voov(e,k,l,a) - l_amp * t_amp
                      end do
                      end if
@@ -2896,7 +2896,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,k,l,c) = x2a_voov(e,k,l,c) - l_amp * t_amp
                      end do
                      end if
@@ -2906,14 +2906,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         ! < ijkabc | ljkdbc >
                         x2a_voov(d,i,l,a) = x2a_voov(d,i,l,a) + l_amp * t_amp
                      end do
@@ -2923,7 +2923,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         ! < ijkabc | ljkdac >
                         x2a_voov(d,i,l,b) = x2a_voov(d,i,l,b) - l_amp * t_amp
                      end do
@@ -2933,7 +2933,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2a_voov(d,i,l,c) = x2a_voov(d,i,l,c) + l_amp * t_amp
                      end do
                      end if
@@ -2942,7 +2942,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2a_voov(d,j,l,a) = x2a_voov(d,j,l,a) - l_amp * t_amp
                      end do
                      end if
@@ -2951,7 +2951,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2a_voov(d,j,l,b) = x2a_voov(d,j,l,b) + l_amp * t_amp
                      end do
                      end if
@@ -2960,7 +2960,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2a_voov(d,j,l,c) = x2a_voov(d,j,l,c) - l_amp * t_amp
                      end do
                      end if
@@ -2969,7 +2969,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2a_voov(d,k,l,a) = x2a_voov(d,k,l,a) + l_amp * t_amp
                      end do
                      end if
@@ -2978,7 +2978,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2a_voov(d,k,l,b) = x2a_voov(d,k,l,b) - l_amp * t_amp
                      end do
                      end if
@@ -2987,7 +2987,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2a_voov(d,k,l,c) = x2a_voov(d,k,l,c) + l_amp * t_amp
                      end do
                      end if
@@ -2998,7 +2998,7 @@ module leftccsdt_p_intermediates
                   !!!! x2a(eima) <- 1/4 l3b(abcijk) t3b(ebcmjk)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
+                  allocate(amps_buff(n3aab_t),excits_buff(n3aab_t,6))
                   amps_buff(:) = t3b_amps(:)
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -3010,13 +3010,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nub, noa, nob, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2a_voov(d,i,l,a) = x2a_voov(d,i,l,a) + l_amp * t_amp
                      end do
                      ! (ab)
@@ -3024,7 +3024,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2a_voov(d,i,l,b) = x2a_voov(d,i,l,b) - l_amp * t_amp
                      end do
                      end if
@@ -3033,7 +3033,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2a_voov(d,j,l,a) = x2a_voov(d,j,l,a) - l_amp * t_amp
                      end do
                      end if
@@ -3042,7 +3042,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2a_voov(d,j,l,b) = x2a_voov(d,j,l,b) + l_amp * t_amp
                      end do
                      end if
@@ -3052,13 +3052,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nub, noa, nob, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,c,j,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,i,l,b) = x2a_voov(e,i,l,b) + l_amp * t_amp
                      end do
                      ! (ab)
@@ -3066,7 +3066,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,i,l,a) = x2a_voov(e,i,l,a) - l_amp * t_amp
                      end do
                      end if
@@ -3075,7 +3075,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,j,l,b) = x2a_voov(e,j,l,b) - l_amp * t_amp
                      end do
                      end if
@@ -3084,7 +3084,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2a_voov(e,j,l,a) = x2a_voov(e,j,l,a) + l_amp * t_amp
                      end do
                      end if
@@ -3094,13 +3094,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nub, noa, nob, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,i,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,j,m,a) = x2a_voov(d,j,m,a) + l_amp * t_amp
                      end do
                      ! (ab)
@@ -3108,7 +3108,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,j,m,b) = x2a_voov(d,j,m,b) - l_amp * t_amp
                      end do
                      end if
@@ -3117,7 +3117,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,i,m,a) = x2a_voov(d,i,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -3126,7 +3126,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2a_voov(d,i,m,b) = x2a_voov(d,i,m,b) + l_amp * t_amp
                      end do
                      end if
@@ -3136,13 +3136,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,j,m,b) = x2a_voov(e,j,m,b) + l_amp * t_amp
                      end do
                      ! (ab)
@@ -3150,7 +3150,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,j,m,a) = x2a_voov(e,j,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -3159,7 +3159,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,i,m,b) = x2a_voov(e,i,m,b) - l_amp * t_amp
                      end do
                      end if
@@ -3168,7 +3168,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2a_voov(e,i,m,a) = x2a_voov(e,i,m,a) + l_amp * t_amp
                      end do
                      end if
@@ -3178,7 +3178,7 @@ module leftccsdt_p_intermediates
                   !!!! x2a(dila) <- 1/4 l3c(abcijk) t3c(dbcljk)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
+                  allocate(amps_buff(n3abb_t),excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate sorting arrays
@@ -3190,12 +3190,12 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                       l_amp = l3c_amps(idet)
-                      a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                      i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                      a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                      i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                       idx = idx_table(b,c,j,k)
                       do jdet = loc_arr(idx,1), loc_arr(idx,2)
                          t_amp = amps_buff(jdet)
-                         d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                         d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                          x2a_voov(d,i,l,a) = x2a_voov(d,i,l,a) + l_amp * t_amp
                       end do
                   end do 
@@ -3219,14 +3219,14 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l
                   logical, intent(in) :: do_aab_t, do_abb_t
 
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
                   
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x2b_oooo(noa,nob,noa,nob)
@@ -3244,7 +3244,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(jkmn) = 1/2 l3b(abcijk) t3b(abcimn)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
+                  allocate(amps_buff(n3aab_t),excits_buff(n3aab_t,6))
                   amps_buff(:) = t3b_amps(:)
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -3256,13 +3256,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nub, noa, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,i)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        m = excits_buff(5,jdet); n = excits_buff(6,jdet);
+                        m = excits_buff(jdet,5); n = excits_buff(jdet,6);
                         x2b_oooo(j,k,m,n) = x2b_oooo(j,k,m,n) + l_amp * t_amp
                      end do
                      ! (ij)
@@ -3270,7 +3270,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           m = excits_buff(5,jdet); n = excits_buff(6,jdet);
+                           m = excits_buff(jdet,5); n = excits_buff(jdet,6);
                            x2b_oooo(i,k,m,n) = x2b_oooo(i,k,m,n) - l_amp * t_amp
                         end do
                      end if
@@ -3280,13 +3280,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nub, noa, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        l = excits_buff(4,jdet); n = excits_buff(6,jdet);
+                        l = excits_buff(jdet,4); n = excits_buff(jdet,6);
                         x2b_oooo(i,k,l,n) = x2b_oooo(i,k,l,n) + l_amp * t_amp
                      end do
                      ! (ij)
@@ -3294,7 +3294,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           l = excits_buff(4,jdet); n = excits_buff(6,jdet);
+                           l = excits_buff(jdet,4); n = excits_buff(jdet,6);
                            x2b_oooo(j,k,l,n) = x2b_oooo(j,k,l,n) - l_amp * t_amp
                         end do
                      end if
@@ -3304,7 +3304,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(jkmn) = 1/2 l3c(abcijk) t3c(abclmk)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
+                  allocate(amps_buff(n3abb_t),excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -3316,13 +3316,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,1,6/), nub, nub, nua, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,a,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        l = excits_buff(4,jdet); m = excits_buff(5,jdet);
+                        l = excits_buff(jdet,4); m = excits_buff(jdet,5);
                         x2b_oooo(i,j,l,m) = x2b_oooo(i,j,l,m) + l_amp * t_amp
                      end do
                      ! (jk)
@@ -3330,7 +3330,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           l = excits_buff(4,jdet); m = excits_buff(5,jdet);
+                           l = excits_buff(jdet,4); m = excits_buff(jdet,5);
                            x2b_oooo(i,k,l,m) = x2b_oooo(i,k,l,m) - l_amp * t_amp
                         end do
                      end if
@@ -3340,13 +3340,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,1,5/), nub, nub, nua, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,a,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        l = excits_buff(4,jdet); n = excits_buff(6,jdet);
+                        l = excits_buff(jdet,4); n = excits_buff(jdet,6);
                         x2b_oooo(i,k,l,n) = x2b_oooo(i,k,l,n) + l_amp * t_amp
                      end do
                      ! (jk)
@@ -3354,7 +3354,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           l = excits_buff(4,jdet); n = excits_buff(6,jdet);
+                           l = excits_buff(jdet,4); n = excits_buff(jdet,6);
                            x2b_oooo(i,j,l,n) = x2b_oooo(i,j,l,n) - l_amp * t_amp
                         end do
                      end if
@@ -3379,14 +3379,14 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l
                   logical, intent(in) :: do_aab_t, do_abb_t
 
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
                   
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x2b_vvvv(nua,nub,nua,nub)
@@ -3404,7 +3404,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(abef) = 1/2 l3b(egfmon) t3b(agbmon) -> x2b(efbc) = 1/2 l3b(abcijk) t3b(aefijk)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(t3_amps_buff(n3aab_t),t3_excits_buff(6,n3aab_t))
+                  allocate(t3_amps_buff(n3aab_t),t3_excits_buff(n3aab_t,6))
                   t3_amps_buff(:) = t3b_amps(:)
                   t3_excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -3416,13 +3416,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,a)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        e = t3_excits_buff(2,jdet); f = t3_excits_buff(3,jdet);
+                        e = t3_excits_buff(jdet,2); f = t3_excits_buff(jdet,3);
                         ! compute < ijk~abc~ | ijk~aef~ >
                         x2b_vvvv(e,f,b,c) = x2b_vvvv(e,f,b,c) + l_amp * t_amp
                      end do
@@ -3431,7 +3431,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = t3_amps_buff(jdet)
-                           e = t3_excits_buff(2,jdet); f = t3_excits_buff(3,jdet);
+                           e = t3_excits_buff(jdet,2); f = t3_excits_buff(jdet,3);
                            ! compute < ijk~abc~ | ijk~bef~ >
                            x2b_vvvv(e,f,a,c) = x2b_vvvv(e,f,a,c) - l_amp * t_amp
                         end do
@@ -3442,13 +3442,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,b)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        e = t3_excits_buff(1,jdet); f = t3_excits_buff(3,jdet);
+                        e = t3_excits_buff(jdet,1); f = t3_excits_buff(jdet,3);
                         ! compute < ijk~abc~ | ijk~ebf~ >
                         x2b_vvvv(e,f,a,c) = x2b_vvvv(e,f,a,c) + l_amp * t_amp
                      end do
@@ -3457,7 +3457,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = t3_amps_buff(jdet)
-                           e = t3_excits_buff(1,jdet); f = t3_excits_buff(3,jdet);
+                           e = t3_excits_buff(jdet,1); f = t3_excits_buff(jdet,3);
                            ! compute < ijk~abc~ | ijk~eaf~ >
                            x2b_vvvv(e,f,b,c) = x2b_vvvv(e,f,b,c) - l_amp * t_amp
                         end do
@@ -3468,7 +3468,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(efab) <- 1/2 l3c(abcijk) t3c(efcijk)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(t3_amps_buff(n3abb_t),t3_excits_buff(6,n3abb_t))
+                  allocate(t3_amps_buff(n3abb_t),t3_excits_buff(n3abb_t,6))
                   t3_amps_buff(:) = t3c_amps(:)
                   t3_excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -3480,13 +3480,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/5,6,4,3/), nob, nob, noa, nub, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,i,c)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        e = t3_excits_buff(1,jdet); f = t3_excits_buff(2,jdet);
+                        e = t3_excits_buff(jdet,1); f = t3_excits_buff(jdet,2);
                         ! compute < ij~k~ab~c~ | ij~k~ef~c~ >
                         x2b_vvvv(e,f,a,b) = x2b_vvvv(e,f,a,b) + l_amp * t_amp
                      end do
@@ -3495,7 +3495,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = t3_amps_buff(jdet)
-                           e = t3_excits_buff(1,jdet); f = t3_excits_buff(2,jdet);
+                           e = t3_excits_buff(jdet,1); f = t3_excits_buff(jdet,2);
                            ! compute < ij~k~ab~c~ | ij~k~ef~b~ >
                            x2b_vvvv(e,f,a,c) = x2b_vvvv(e,f,a,c) - l_amp * t_amp
                         end do
@@ -3506,13 +3506,13 @@ module leftccsdt_p_intermediates
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/5,6,4,2/), nob, nob, noa, nub, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,i,b)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = t3_amps_buff(jdet)
-                        e = t3_excits_buff(1,jdet); f = t3_excits_buff(3,jdet);
+                        e = t3_excits_buff(jdet,1); f = t3_excits_buff(jdet,3);
                         ! compute < ij~k~ab~c~ | ij~k~eb~f~ >
                         x2b_vvvv(e,f,a,c) = x2b_vvvv(e,f,a,c) + l_amp * t_amp
                      end do
@@ -3521,7 +3521,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = t3_amps_buff(jdet)
-                           e = t3_excits_buff(1,jdet); f = t3_excits_buff(3,jdet);
+                           e = t3_excits_buff(jdet,1); f = t3_excits_buff(jdet,3);
                            ! compute < ij~k~ab~c~ | ij~k~ec~f~ >
                            x2b_vvvv(e,f,a,b) = x2b_vvvv(e,f,a,b) - l_amp * t_amp
                         end do
@@ -3549,18 +3549,18 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l, n3bbb_l
                   logical, intent(in) :: do_abb_t, do_aab_l, do_abb_l
 
-                  integer, intent(in) :: t3a_excits(6,n3aaa_t)
+                  integer, intent(in) :: t3a_excits(n3aaa_t,6)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
                   
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-                  integer, intent(in) :: l3d_excits(6,n3bbb_l)
+                  integer, intent(in) :: l3d_excits(n3bbb_l,6)
                   real(kind=8), intent(in) :: l3d_amps(n3bbb_l)
 
                   real(kind=8), intent(out) :: x2b_voov(nua,nob,noa,nub)
@@ -3578,7 +3578,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(cmke) <- 1/4 l3b(abeijm) t3a(abcijk)
                   if (do_aab_l) then
                   ! copy l3b into buffer
-                  allocate(amps_buff(n3aab_l),excits_buff(6,n3aab_l))
+                  allocate(amps_buff(n3aab_l),excits_buff(n3aab_l,6))
                   amps_buff(:) = l3b_amps(:)
                   excits_buff(:,:) = l3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -3590,13 +3590,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,1,2/), noa, noa, nua, nua, nloc, n3aab_l)
                   do idet = 1, n3aaa_t
                      t_amp = t3a_amps(idet)
-                     a = t3a_excits(1,idet); b = t3a_excits(2,idet); c = t3a_excits(3,idet);
-                     i = t3a_excits(4,idet); j = t3a_excits(5,idet); k = t3a_excits(6,idet);
+                     a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
+                     i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,a,b)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         l_amp = amps_buff(jdet)
-                        e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                        e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                         ! compute < ijm~abe~ | ijkabc >
                         x2b_voov(c,m,k,e) = x2b_voov(c,m,k,e) + l_amp * t_amp
                      end do
@@ -3605,7 +3605,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            ! compute < ijm~bce~ | ijkabc >
                            x2b_voov(a,m,k,e) = x2b_voov(a,m,k,e) + l_amp * t_amp
                         end do
@@ -3615,7 +3615,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            ! compute < ijm~ace~ | ijkabc >
                            x2b_voov(b,m,k,e) = x2b_voov(b,m,k,e) - l_amp * t_amp
                         end do
@@ -3625,7 +3625,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            ! compute < jkm~abe~ | ijkabc >
                            x2b_voov(c,m,i,e) = x2b_voov(c,m,i,e) + l_amp * t_amp
                         end do
@@ -3635,7 +3635,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            ! compute < jkm~bce~ | ijkabc >
                            x2b_voov(a,m,i,e) = x2b_voov(a,m,i,e) + l_amp * t_amp
                         end do
@@ -3645,7 +3645,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            ! compute < jkm~ace~ | ijkabc >
                            x2b_voov(b,m,i,e) = x2b_voov(b,m,i,e) - l_amp * t_amp
                         end do
@@ -3655,7 +3655,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            ! compute < ikm~abe~ | ijkabc >
                            x2b_voov(c,m,j,e) = x2b_voov(c,m,j,e) - l_amp * t_amp
                         end do
@@ -3665,7 +3665,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            ! compute < ikm~bce~ | ijkabc >
                            x2b_voov(a,m,j,e) = x2b_voov(a,m,j,e) - l_amp * t_amp
                         end do
@@ -3675,7 +3675,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            ! compute < ikm~ace~ | ijkabc >
                            x2b_voov(b,m,j,e) = x2b_voov(b,m,j,e) + l_amp * t_amp
                         end do
@@ -3686,7 +3686,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(amie) <- l3c(bcejkm) t3b(abcijk) : This one's tricky. See diagram 14 in update_t3b_p in ccsdt_p for help.
                   if (do_abb_l) then
                   ! copy l3c into buffer
-                  allocate(amps_buff(n3abb_l),excits_buff(6,n3abb_l))
+                  allocate(amps_buff(n3abb_l),excits_buff(n3abb_l,6))
                   amps_buff(:) = l3c_amps(:)
                   excits_buff(:,:) = l3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -3698,14 +3698,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,1,2/), noa, nob, nua, nub, nloc, n3abb_l)
                   do idet = 1, n3aab_t
                      t_amp = t3b_amps(idet)
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                     a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
+                     i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,b,c)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            x2b_voov(a,m,i,e) = x2b_voov(a,m,i,e) + l_amp * t_amp
                         end do
                      end if
@@ -3714,7 +3714,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            x2b_voov(a,m,j,e) = x2b_voov(a,m,j,e) - l_amp * t_amp
                         end do
                      end if
@@ -3723,7 +3723,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            x2b_voov(b,m,i,e) = x2b_voov(b,m,i,e) - l_amp * t_amp
                         end do
                      end if
@@ -3732,7 +3732,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            x2b_voov(b,m,j,e) = x2b_voov(b,m,j,e) + l_amp * t_amp
                         end do
                      end if
@@ -3742,14 +3742,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,6,1,2/), noa, nob, nua, nub, nloc, n3abb_l)
                   do idet = 1, n3aab_t
                      t_amp = t3b_amps(idet)
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                     a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
+                     i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,b,c)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,5);
                            x2b_voov(a,m,i,e) = x2b_voov(a,m,i,e) - l_amp * t_amp
                         end do
                      end if
@@ -3758,7 +3758,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,5);
                            x2b_voov(a,m,j,e) = x2b_voov(a,m,j,e) + l_amp * t_amp
                         end do
                      end if
@@ -3767,7 +3767,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,5);
                            x2b_voov(b,m,i,e) = x2b_voov(b,m,i,e) + l_amp * t_amp
                         end do
                      end if
@@ -3776,7 +3776,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,5);
                            x2b_voov(b,m,j,e) = x2b_voov(b,m,j,e) - l_amp * t_amp
                         end do
                      end if
@@ -3786,14 +3786,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,1,3/), noa, nob, nua, nub, nloc, n3abb_l)
                   do idet = 1, n3aab_t
                      t_amp = t3b_amps(idet)
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                     a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
+                     i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,b,c)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,6);
                            x2b_voov(a,m,i,e) = x2b_voov(a,m,i,e) - l_amp * t_amp
                         end do
                      end if
@@ -3802,7 +3802,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,6);
                            x2b_voov(a,m,j,e) = x2b_voov(a,m,j,e) + l_amp * t_amp
                         end do
                      end if
@@ -3811,7 +3811,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,6);
                            x2b_voov(b,m,i,e) = x2b_voov(b,m,i,e) + l_amp * t_amp
                         end do
                      end if
@@ -3820,7 +3820,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,6);
                            x2b_voov(b,m,j,e) = x2b_voov(b,m,j,e) - l_amp * t_amp
                         end do
                      end if
@@ -3830,14 +3830,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,6,1,3/), noa, nob, nua, nub, nloc, n3abb_l)
                   do idet = 1, n3aab_t
                      t_amp = t3b_amps(idet)
-                     a = t3b_excits(1,idet); b = t3b_excits(2,idet); c = t3b_excits(3,idet);
-                     i = t3b_excits(4,idet); j = t3b_excits(5,idet); k = t3b_excits(6,idet);
+                     a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
+                     i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,b,c)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                            x2b_voov(a,m,i,e) = x2b_voov(a,m,i,e) + l_amp * t_amp
                         end do
                      end if
@@ -3846,7 +3846,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                            x2b_voov(a,m,j,e) = x2b_voov(a,m,j,e) - l_amp * t_amp
                         end do
                      end if
@@ -3855,7 +3855,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                            x2b_voov(b,m,i,e) = x2b_voov(b,m,i,e) - l_amp * t_amp
                         end do
                      end if
@@ -3864,7 +3864,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                            x2b_voov(b,m,j,e) = x2b_voov(b,m,j,e) + l_amp * t_amp
                         end do
                      end if
@@ -3874,7 +3874,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(ekmc) <- 1/4 l3d(abcijk) t3c(eabmij) : a little tricky, see diagram 6 of update_t3d_p for help.
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
+                  allocate(amps_buff(n3abb_t),excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -3886,14 +3886,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,2,3/), nob, nob, nub, nub, nloc, n3abb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,a,b)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(1,jdet); m = excits_buff(4,jdet);
+                           e = excits_buff(jdet,1); m = excits_buff(jdet,4);
                            x2b_voov(e,k,m,c) = x2b_voov(e,k,m,c) + l_amp * t_amp
                         end do
                      end if
@@ -3902,7 +3902,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(1,jdet); m = excits_buff(4,jdet);
+                           e = excits_buff(jdet,1); m = excits_buff(jdet,4);
                            x2b_voov(e,i,m,c) = x2b_voov(e,i,m,c) + l_amp * t_amp
                         end do
                      end if
@@ -3911,7 +3911,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(1,jdet); m = excits_buff(4,jdet);
+                           e = excits_buff(jdet,1); m = excits_buff(jdet,4);
                            x2b_voov(e,j,m,c) = x2b_voov(e,j,m,c) - l_amp * t_amp
                         end do
                      end if
@@ -3920,7 +3920,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(1,jdet); m = excits_buff(4,jdet);
+                           e = excits_buff(jdet,1); m = excits_buff(jdet,4);
                            x2b_voov(e,k,m,a) = x2b_voov(e,k,m,a) + l_amp * t_amp
                         end do
                      end if
@@ -3929,7 +3929,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(1,jdet); m = excits_buff(4,jdet);
+                           e = excits_buff(jdet,1); m = excits_buff(jdet,4);
                            x2b_voov(e,i,m,a) = x2b_voov(e,i,m,a) + l_amp * t_amp
                         end do
                      end if
@@ -3938,7 +3938,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(1,jdet); m = excits_buff(4,jdet);
+                           e = excits_buff(jdet,1); m = excits_buff(jdet,4);
                            x2b_voov(e,j,m,a) = x2b_voov(e,j,m,a) - l_amp * t_amp
                         end do
                      end if
@@ -3947,7 +3947,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(1,jdet); m = excits_buff(4,jdet);
+                           e = excits_buff(jdet,1); m = excits_buff(jdet,4);
                            x2b_voov(e,k,m,b) = x2b_voov(e,k,m,b) - l_amp * t_amp
                         end do
                      end if
@@ -3956,7 +3956,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(1,jdet); m = excits_buff(4,jdet);
+                           e = excits_buff(jdet,1); m = excits_buff(jdet,4);
                            x2b_voov(e,i,m,b) = x2b_voov(e,i,m,b) - l_amp * t_amp
                         end do
                      end if
@@ -3965,7 +3965,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(1,jdet); m = excits_buff(4,jdet);
+                           e = excits_buff(jdet,1); m = excits_buff(jdet,4);
                            x2b_voov(e,j,m,b) = x2b_voov(e,j,m,b) + l_amp * t_amp
                         end do
                      end if
@@ -3992,18 +3992,18 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aaa_l, n3aab_l, n3abb_l
                   logical, intent(in) :: do_aab_t, do_abb_t, do_abb_l
 
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
-                  integer, intent(in) :: t3d_excits(6,n3bbb_t)
+                  integer, intent(in) :: t3d_excits(n3bbb_t,6)
                   real(kind=8), intent(in) :: t3d_amps(n3bbb_t)
                   
-                  integer, intent(in) :: l3a_excits(6,n3aaa_l)
+                  integer, intent(in) :: l3a_excits(n3aaa_l,6)
                   real(kind=8), intent(in) :: l3a_amps(n3aaa_l)
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x2b_ovvo(noa,nub,nua,nob)
@@ -4021,7 +4021,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(kecm) <- 1/4 l3a(abcijk) t3b(abeijm)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
+                  allocate(amps_buff(n3aab_t),excits_buff(n3aab_t,6))
                   amps_buff(:) = t3b_amps(:)
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -4033,14 +4033,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,1,2/), noa, noa, nua, nua, nloc, n3aab_t)
                   do idet = 1, n3aaa_l
                      l_amp = l3a_amps(idet)
-                     a = l3a_excits(1,idet); b = l3a_excits(2,idet); c = l3a_excits(3,idet);
-                     i = l3a_excits(4,idet); j = l3a_excits(5,idet); k = l3a_excits(6,idet);
+                     a = l3a_excits(idet,1); b = l3a_excits(idet,2); c = l3a_excits(idet,3);
+                     i = l3a_excits(idet,4); j = l3a_excits(idet,5); k = l3a_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,a,b)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2b_ovvo(k,f,c,n) = x2b_ovvo(k,f,c,n) + l_amp * t_amp
                         end do
                      end if
@@ -4049,7 +4049,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2b_ovvo(i,f,c,n) = x2b_ovvo(i,f,c,n) + l_amp * t_amp
                         end do
                      end if
@@ -4058,7 +4058,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2b_ovvo(j,f,c,n) = x2b_ovvo(j,f,c,n) - l_amp * t_amp
                         end do
                      end if
@@ -4067,7 +4067,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2b_ovvo(k,f,a,n) = x2b_ovvo(k,f,a,n) + l_amp * t_amp
                         end do
                      end if
@@ -4076,7 +4076,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2b_ovvo(i,f,a,n) = x2b_ovvo(i,f,a,n) + l_amp * t_amp
                         end do
                      end if
@@ -4085,7 +4085,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2b_ovvo(j,f,a,n) = x2b_ovvo(j,f,a,n) - l_amp * t_amp
                         end do
                      end if
@@ -4094,7 +4094,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2b_ovvo(k,f,b,n) = x2b_ovvo(k,f,b,n) - l_amp * t_amp
                         end do
                      end if
@@ -4103,7 +4103,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2b_ovvo(i,f,b,n) = x2b_ovvo(i,f,b,n) - l_amp * t_amp
                         end do
                      end if
@@ -4112,7 +4112,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2b_ovvo(j,f,b,n) = x2b_ovvo(j,f,b,n) + l_amp * t_amp
                         end do
                      end if
@@ -4122,7 +4122,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(ieam) <- l3b(abcijk) t3c(becjmk)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
+                  allocate(amps_buff(n3abb_t),excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -4134,15 +4134,15 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,6,1,3/), noa, nob, nua, nub, nloc, n3abb_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,b,c)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            ! < abc~ijk~ | be~c~jm~k~ > = < bac~jik~ | be~c~jm~k~ >
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                            x2b_ovvo(i,e,a,m) = x2b_ovvo(i,e,a,m) + l_amp * t_amp
                         end do
                      end if
@@ -4152,7 +4152,7 @@ module leftccsdt_p_intermediates
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            ! < abc~ijk~ | be~c~im~k~ > = -< bac~ijk~ | be~c~im~k~ >
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                            x2b_ovvo(j,e,a,m) = x2b_ovvo(j,e,a,m) - l_amp * t_amp
                         end do
                      end if
@@ -4162,7 +4162,7 @@ module leftccsdt_p_intermediates
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            ! < abc~ijk~ | ae~c~jm~k~ > = -< abc~jik~ | ae~c~jm~k~ >
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                            x2b_ovvo(i,e,b,m) = x2b_ovvo(i,e,b,m) - l_amp * t_amp
                         end do
                      end if
@@ -4172,7 +4172,7 @@ module leftccsdt_p_intermediates
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            ! < abc~ijk~ | ae~c~im~k~ >
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                            x2b_ovvo(j,e,b,m) = x2b_ovvo(j,e,b,m) + l_amp * t_amp
                         end do
                      end if
@@ -4182,15 +4182,15 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,1,3/), noa, nob, nua, nub, nloc, n3abb_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,b,c)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            ! < abc~ijk~ |  be~c~jk~m~ > = -< bac~jik~ | be~c~jm~k~ >
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,6);
                            x2b_ovvo(i,e,a,m) = x2b_ovvo(i,e,a,m) - l_amp * t_amp
                         end do
                      end if
@@ -4199,7 +4199,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,6);
                            x2b_ovvo(j,e,a,m) = x2b_ovvo(j,e,a,m) + l_amp * t_amp
                         end do
                      end if
@@ -4208,7 +4208,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,6);
                            x2b_ovvo(i,e,b,m) = x2b_ovvo(i,e,b,m) + l_amp * t_amp
                         end do
                      end if
@@ -4217,7 +4217,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,2); m = excits_buff(jdet,6);
                            x2b_ovvo(j,e,b,m) = x2b_ovvo(j,e,b,m) - l_amp * t_amp
                         end do
                      end if
@@ -4227,15 +4227,15 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,6,1,2/), noa, nob, nua, nub, nloc, n3abb_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,b,c)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            ! < abc~ijk~ |  bc~e~jm~k~ > = -< bac~jik~ | be~c~jm~k~ >
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,5);
                            x2b_ovvo(i,e,a,m) = x2b_ovvo(i,e,a,m) - l_amp * t_amp
                         end do
                      end if
@@ -4244,7 +4244,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,5);
                            x2b_ovvo(j,e,a,m) = x2b_ovvo(j,e,a,m) + l_amp * t_amp
                         end do
                      end if
@@ -4253,7 +4253,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,5);
                            x2b_ovvo(i,e,b,m) = x2b_ovvo(i,e,b,m) + l_amp * t_amp
                         end do
                      end if
@@ -4262,7 +4262,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,5);
                            x2b_ovvo(j,e,b,m) = x2b_ovvo(j,e,b,m) - l_amp * t_amp
                         end do
                      end if
@@ -4272,15 +4272,15 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,1,2/), noa, nob, nua, nub, nloc, n3abb_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,b,c)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            ! < abc~ijk~ |  bc~e~jk~m~ > = < bac~jik~ | be~c~jm~k~ >
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            x2b_ovvo(i,e,a,m) = x2b_ovvo(i,e,a,m) + l_amp * t_amp
                         end do
                      end if
@@ -4289,7 +4289,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            x2b_ovvo(j,e,a,m) = x2b_ovvo(j,e,a,m) - l_amp * t_amp
                         end do
                      end if
@@ -4298,7 +4298,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            x2b_ovvo(i,e,b,m) = x2b_ovvo(i,e,b,m) - l_amp * t_amp
                         end do
                      end if
@@ -4307,7 +4307,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(3,jdet); m = excits_buff(6,jdet);
+                           e = excits_buff(jdet,3); m = excits_buff(jdet,6);
                            x2b_ovvo(j,e,b,m) = x2b_ovvo(j,e,b,m) + l_amp * t_amp
                         end do
                      end if
@@ -4317,7 +4317,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(ladi) <- 1/4 l3c(dbcljk) t3d(abcijk)
                   if (do_abb_l) then
                   ! copy l3c into buffer
-                  allocate(amps_buff(n3abb_l),excits_buff(6,n3abb_l))
+                  allocate(amps_buff(n3abb_l),excits_buff(n3abb_l,6))
                   amps_buff(:) = l3c_amps(:)
                   excits_buff(:,:) = l3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -4329,15 +4329,15 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,2,3/), nob, nob, nub, nub, nloc, n3abb_l)
                   do idet = 1, n3bbb_t
                      t_amp = t3d_amps(idet)
-                     a = t3d_excits(1,idet); b = t3d_excits(2,idet); c = t3d_excits(3,idet);
-                     i = t3d_excits(4,idet); j = t3d_excits(5,idet); k = t3d_excits(6,idet);
+                     a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
+                     i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,b,c)
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
                            ! < db~c~j~lj~k~ | a~b~c~i~j~k~ >
-                           d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                           d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                            x2b_ovvo(l,a,d,i) = x2b_ovvo(l,a,d,i) + l_amp * t_amp
                         end do
                      end if
@@ -4346,7 +4346,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                           d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                            x2b_ovvo(l,a,d,j) = x2b_ovvo(l,a,d,j) - l_amp * t_amp
                         end do
                      end if
@@ -4355,7 +4355,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                           d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                            x2b_ovvo(l,a,d,k) = x2b_ovvo(l,a,d,k) + l_amp * t_amp
                         end do
                      end if
@@ -4364,7 +4364,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                           d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                            x2b_ovvo(l,b,d,i) = x2b_ovvo(l,b,d,i) - l_amp * t_amp
                         end do
                      end if
@@ -4373,7 +4373,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                           d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                            x2b_ovvo(l,b,d,j) = x2b_ovvo(l,b,d,j) + l_amp * t_amp
                         end do
                      end if
@@ -4382,7 +4382,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                           d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                            x2b_ovvo(l,b,d,k) = x2b_ovvo(l,b,d,k) - l_amp * t_amp
                         end do
                      end if
@@ -4391,7 +4391,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                           d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                            x2b_ovvo(l,c,d,i) = x2b_ovvo(l,c,d,i) + l_amp * t_amp
                         end do
                      end if
@@ -4400,7 +4400,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                           d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                            x2b_ovvo(l,c,d,j) = x2b_ovvo(l,c,d,j) - l_amp * t_amp
                         end do
                      end if
@@ -4409,7 +4409,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            l_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                           d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                            x2b_ovvo(l,c,d,k) = x2b_ovvo(l,c,d,k) + l_amp * t_amp
                         end do
                      end if
@@ -4434,14 +4434,14 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l
                   logical, intent(in) :: do_aab_t, do_abb_t
 
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
                   
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x2b_vovo(nua,nob,nua,nob)
@@ -4459,7 +4459,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(ekma) <- -1/2 l3b(abcijk) t3b(ebcijm)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
+                  allocate(amps_buff(n3aab_t),excits_buff(n3aab_t,6))
                   amps_buff(:) = t3b_amps(:)
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -4471,13 +4471,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,2,3/), noa, noa, nua, nub, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,b,c)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2b_vovo(d,k,a,n) = x2b_vovo(d,k,a,n) - l_amp * t_amp
                      end do
                      ! (ab)
@@ -4485,7 +4485,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                           d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                            x2b_vovo(d,k,b,n) = x2b_vovo(d,k,b,n) + l_amp * t_amp
                         end do
                      end if
@@ -4495,13 +4495,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,1,3/), noa, noa, nua, nub, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,a,c)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2b_vovo(e,k,b,n) = x2b_vovo(e,k,b,n) - l_amp * t_amp
                      end do
                      ! (ab)
@@ -4509,7 +4509,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                           e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                            x2b_vovo(e,k,a,n) = x2b_vovo(e,k,a,n) + l_amp * t_amp
                         end do
                      end if
@@ -4519,7 +4519,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(ekma) <- -1/2 l3c(abcijk) t3c(ebcijm)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
+                  allocate(amps_buff(n3abb_t),excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -4531,13 +4531,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, noa, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,i,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2b_vovo(d,k,a,n) = x2b_vovo(d,k,a,n) - l_amp * t_amp
                      end do
                      ! (jk)
@@ -4545,7 +4545,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                           d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                            x2b_vovo(d,j,a,n) = x2b_vovo(d,j,a,n) + l_amp * t_amp
                         end do
                      end if
@@ -4555,13 +4555,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nub, nub, noa, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,i,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2b_vovo(d,j,a,m) = x2b_vovo(d,j,a,m) - l_amp * t_amp
                      end do
                      ! (jk)
@@ -4569,7 +4569,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                           d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                            x2b_vovo(d,k,a,m) = x2b_vovo(d,k,a,m) + l_amp * t_amp
                         end do
                      end if
@@ -4594,14 +4594,14 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l
                   logical, intent(in) :: do_aab_t, do_abb_t
 
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
                   
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
 
                   real(kind=8), intent(out) :: x2b_ovov(noa,nub,noa,nub)
@@ -4619,7 +4619,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(iemc) <- -1/2 l3b(abcijk) t3b(abemjk)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
+                  allocate(amps_buff(n3aab_t),excits_buff(n3aab_t,6))
                   amps_buff(:) = t3b_amps(:)
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -4631,13 +4631,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, nob, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,j,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2b_ovov(i,f,l,c) = x2b_ovov(i,f,l,c) - l_amp * t_amp
                      end do
                      ! (ij)
@@ -4645,7 +4645,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                           f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                            x2b_ovov(j,f,l,c) = x2b_ovov(j,f,l,c) + l_amp * t_amp
                         end do
                      end if
@@ -4655,13 +4655,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, nob, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,i,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2b_ovov(j,f,m,c) = x2b_ovov(j,f,m,c) - l_amp * t_amp
                      end do
                      ! (ij)
@@ -4669,7 +4669,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                           f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                            x2b_ovov(i,f,m,c) = x2b_ovov(i,f,m,c) + l_amp * t_amp
                         end do
                      end if
@@ -4679,7 +4679,7 @@ module leftccsdt_p_intermediates
                   !!!! x2b(iemc) <- -1/2 l3c(abcijk) t3c(abemjk)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
+                  allocate(amps_buff(n3abb_t),excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -4691,13 +4691,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,1,2/), nob, nob, nua, nub, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,a,b)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);  
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);  
                         x2b_ovov(i,f,l,c) = x2b_ovov(i,f,l,c) - l_amp * t_amp
                      end do
                      ! (bc)
@@ -4705,7 +4705,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); l = excits_buff(4,jdet);  
+                           f = excits_buff(jdet,3); l = excits_buff(jdet,4);  
                            x2b_ovov(i,f,l,b) = x2b_ovov(i,f,l,b) + l_amp * t_amp
                         end do
                      end if
@@ -4715,13 +4715,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,1,3/), nob, nob, nua, nub, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,a,c)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);  
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);  
                         x2b_ovov(i,e,l,b) = x2b_ovov(i,e,l,b) - l_amp * t_amp
                      end do
                      ! (bc)
@@ -4729,7 +4729,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); l = excits_buff(4,jdet);  
+                           e = excits_buff(jdet,2); l = excits_buff(jdet,4);  
                            x2b_ovov(i,e,l,c) = x2b_ovov(i,e,l,c) + l_amp * t_amp
                         end do
                      end if
@@ -4754,14 +4754,14 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3abb_l, n3bbb_l
                   logical, intent(in) :: do_abb_t, do_bbb_t
 
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
-                  integer, intent(in) :: t3d_excits(6,n3bbb_t)
+                  integer, intent(in) :: t3d_excits(n3bbb_t,6)
                   real(kind=8), intent(in) :: t3d_amps(n3bbb_t)
                   
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-                  integer, intent(in) :: l3d_excits(6,n3bbb_l)
+                  integer, intent(in) :: l3d_excits(n3bbb_l,6)
                   real(kind=8), intent(in) :: l3d_amps(n3bbb_l)
 
                   real(kind=8), intent(out) :: x2c_oooo(nob,nob,nob,nob)
@@ -4779,7 +4779,7 @@ module leftccsdt_p_intermediates
                   !!!! x2a(ijmn) = 1/6 l3a(abcijk) t3a(abcmnk)
                   if (do_bbb_t) then
                   ! copy t3d into buffer
-                  allocate(amps_buff(n3bbb_t),excits_buff(6,n3bbb_t))
+                  allocate(amps_buff(n3bbb_t),excits_buff(n3bbb_t,6))
                   amps_buff(:) = t3d_amps(:)
                   excits_buff(:,:) = t3d_excits(:,:)
                   ! allocate new sorting arrays
@@ -4791,13 +4791,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,6/), nub, nub, nub, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        l = excits_buff(4,jdet); m = excits_buff(5,jdet);
+                        l = excits_buff(jdet,4); m = excits_buff(jdet,5);
                         ! < ijkabc | N[i1+ i2+ j2 j1] | lmkabc >
                         x2c_oooo(i,j,l,m) = x2c_oooo(i,j,l,m) + l_amp * t_amp
                      end do
@@ -4806,7 +4806,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           l = excits_buff(4,jdet); m = excits_buff(5,jdet);
+                           l = excits_buff(jdet,4); m = excits_buff(jdet,5);
                            x2c_oooo(j,k,l,m) = x2c_oooo(j,k,l,m) + l_amp * t_amp ! flip sign to compute permutationally unique term
                         end do
                      end if
@@ -4815,7 +4815,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           l = excits_buff(4,jdet); m = excits_buff(5,jdet);
+                           l = excits_buff(jdet,4); m = excits_buff(jdet,5);
                            x2c_oooo(i,k,l,m) = x2c_oooo(i,k,l,m) - l_amp * t_amp
                         end do
                      end if
@@ -4825,13 +4825,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,4/), nub, nub, nub, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,i)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        m = excits_buff(5,jdet); n = excits_buff(6,jdet);
+                        m = excits_buff(jdet,5); n = excits_buff(jdet,6);
                         x2c_oooo(j,k,m,n) = x2c_oooo(j,k,m,n) + l_amp * t_amp
                      end do
                      ! (ij)
@@ -4839,7 +4839,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           m = excits_buff(5,jdet); n = excits_buff(6,jdet);
+                           m = excits_buff(jdet,5); n = excits_buff(jdet,6);
                            x2c_oooo(i,k,m,n) = x2c_oooo(i,k,m,n) - l_amp * t_amp
                         end do
                      end if
@@ -4848,7 +4848,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           m = excits_buff(5,jdet); n = excits_buff(6,jdet);
+                           m = excits_buff(jdet,5); n = excits_buff(jdet,6);
                            x2c_oooo(i,j,m,n) = x2c_oooo(i,j,m,n) + l_amp * t_amp ! flip sign to compute permutationally unique term
                         end do
                      end if
@@ -4858,13 +4858,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,5/), nub, nub, nub, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,c,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        l = excits_buff(4,jdet); n = excits_buff(6,jdet);
+                        l = excits_buff(jdet,4); n = excits_buff(jdet,6);
                         x2c_oooo(i,k,l,n) = x2c_oooo(i,k,l,n) + l_amp * t_amp
                      end do
                      ! (ij)
@@ -4872,7 +4872,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           l = excits_buff(4,jdet); n = excits_buff(6,jdet);
+                           l = excits_buff(jdet,4); n = excits_buff(jdet,6);
                            x2c_oooo(j,k,l,n) = x2c_oooo(j,k,l,n) - l_amp * t_amp
                         end do
                      end if
@@ -4881,7 +4881,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           l = excits_buff(4,jdet); n = excits_buff(6,jdet);
+                           l = excits_buff(jdet,4); n = excits_buff(jdet,6);
                            x2c_oooo(i,j,l,n) = x2c_oooo(i,j,l,n) - l_amp * t_amp
                         end do
                      end if
@@ -4891,7 +4891,7 @@ module leftccsdt_p_intermediates
                   !!!! x2c(jkmn) = 1/6 l3c(abcijk) t3c(abcimn)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
+                  allocate(amps_buff(n3abb_t),excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -4903,13 +4903,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, noa, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,a,i)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        m = excits_buff(5,jdet); n = excits_buff(6,jdet);
+                        m = excits_buff(jdet,5); n = excits_buff(jdet,6);
                         ! < ij~k~ab~c~ | im~n~ab~c~ >
                         x2c_oooo(j,k,m,n) = x2c_oooo(j,k,m,n) + l_amp * t_amp
                      end do
@@ -4948,14 +4948,14 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3abb_l, n3bbb_l
                   logical, intent(in) :: do_abb_t, do_bbb_t
 
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
-                  integer, intent(in) :: t3d_excits(6,n3bbb_t)
+                  integer, intent(in) :: t3d_excits(n3bbb_t,6)
                   real(kind=8), intent(in) :: t3d_amps(n3bbb_t)
                   
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-                  integer, intent(in) :: l3d_excits(6,n3bbb_l)
+                  integer, intent(in) :: l3d_excits(n3bbb_l,6)
                   real(kind=8), intent(in) :: l3d_amps(n3bbb_l)
 
                   real(kind=8), intent(out) :: x2c_vvvv(nub,nub,nub,nub)
@@ -4973,7 +4973,7 @@ module leftccsdt_p_intermediates
                   !!!! x2a(deab) = 1/6 l3a(abcijk) t3a(decijk)
                   if (do_bbb_t) then
                   ! copy t3a into buffer
-                  allocate(amps_buff(n3bbb_t),excits_buff(6,n3bbb_t))
+                  allocate(amps_buff(n3bbb_t),excits_buff(n3bbb_t,6))
                   amps_buff(:) = t3d_amps(:)
                   excits_buff(:,:) = t3d_excits(:,:)
                   ! allocate new sorting arrays
@@ -4985,13 +4985,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), nob, nob, nob, nub, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,c)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                        d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                         x2c_vvvv(d,e,a,b) = x2c_vvvv(d,e,a,b) + l_amp * t_amp
                      end do
                      ! (ac)
@@ -4999,7 +4999,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                            x2c_vvvv(d,e,b,c) = x2c_vvvv(d,e,b,c) + l_amp * t_amp
                         end do
                      end if
@@ -5008,7 +5008,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); e = excits_buff(2,jdet);
+                           d = excits_buff(jdet,1); e = excits_buff(jdet,2);
                            x2c_vvvv(d,e,a,c) = x2c_vvvv(d,e,a,c) - l_amp * t_amp
                         end do
                      end if
@@ -5018,13 +5018,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), nob, nob, nob, nub, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,a)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                        e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                         x2c_vvvv(e,f,b,c) = x2c_vvvv(e,f,b,c) + l_amp * t_amp
                      end do
                      ! (ab)
@@ -5032,7 +5032,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                           e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                            x2c_vvvv(e,f,a,c) = x2c_vvvv(e,f,a,c) - l_amp * t_amp
                         end do
                      end if
@@ -5041,7 +5041,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                           e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                            x2c_vvvv(e,f,a,b) = x2c_vvvv(e,f,a,b) + l_amp * t_amp
                         end do
                      end if
@@ -5051,13 +5051,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), nob, nob, nob, nub, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,b)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                        d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                         x2c_vvvv(d,f,a,c) = x2c_vvvv(d,f,a,c) + l_amp * t_amp
                      end do
                      ! (ab)
@@ -5065,7 +5065,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                            x2c_vvvv(d,f,b,c) = x2c_vvvv(d,f,b,c) - l_amp * t_amp
                         end do
                      end if
@@ -5074,7 +5074,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           d = excits_buff(1,jdet); f = excits_buff(3,jdet);
+                           d = excits_buff(jdet,1); f = excits_buff(jdet,3);
                            x2c_vvvv(d,f,a,b) = x2c_vvvv(d,f,a,b) - l_amp * t_amp
                         end do
                      end if
@@ -5084,7 +5084,7 @@ module leftccsdt_p_intermediates
                   !!!! x2c(efbc) = 1/6 l3c(abcijk) t3c(aefijk)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3abb_t),excits_buff(6,n3abb_t))
+                  allocate(amps_buff(n3abb_t),excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -5096,13 +5096,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,4,1/), nob, nob, noa, nua, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(j,k,i,a)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); f = excits_buff(3,jdet);
+                        e = excits_buff(jdet,2); f = excits_buff(jdet,3);
                         x2c_vvvv(e,f,b,c) = x2c_vvvv(e,f,b,c) + l_amp * t_amp
                      end do
                   end do
@@ -5142,18 +5142,18 @@ module leftccsdt_p_intermediates
                   integer, intent(in) :: n3aab_l, n3abb_l, n3bbb_l
                   logical, intent(in) :: do_aab_t, do_abb_t, do_bbb_t
 
-                  integer, intent(in) :: t3b_excits(6,n3aab_t)
+                  integer, intent(in) :: t3b_excits(n3aab_t,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab_t)
-                  integer, intent(in) :: t3c_excits(6,n3abb_t)
+                  integer, intent(in) :: t3c_excits(n3abb_t,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb_t)
-                  integer, intent(in) :: t3d_excits(6,n3bbb_t)
+                  integer, intent(in) :: t3d_excits(n3bbb_t,6)
                   real(kind=8), intent(in) :: t3d_amps(n3bbb_t)
                   
-                  integer, intent(in) :: l3b_excits(6,n3aab_l)
+                  integer, intent(in) :: l3b_excits(n3aab_l,6)
                   real(kind=8), intent(in) :: l3b_amps(n3aab_l)
-                  integer, intent(in) :: l3c_excits(6,n3abb_l)
+                  integer, intent(in) :: l3c_excits(n3abb_l,6)
                   real(kind=8), intent(in) :: l3c_amps(n3abb_l)
-                  integer, intent(in) :: l3d_excits(6,n3bbb_l)
+                  integer, intent(in) :: l3d_excits(n3bbb_l,6)
                   real(kind=8), intent(in) :: l3d_amps(n3bbb_l)
 
                   real(kind=8), intent(out) :: x2c_voov(nub,nob,nob,nub)
@@ -5171,7 +5171,7 @@ module leftccsdt_p_intermediates
                   !!!! x2c(eima) <- 1/4 l3d(abcijk) t3d(ebcmjk)
                   if (do_bbb_t) then
                   ! copy t3d into buffer
-                  allocate(amps_buff(n3bbb_t),excits_buff(6,n3bbb_t))
+                  allocate(amps_buff(n3bbb_t),excits_buff(n3bbb_t,6))
                   amps_buff(:) = t3d_amps(:)
                   excits_buff(:,:) = t3d_excits(:,:)
                   ! allocate new sorting arrays
@@ -5183,14 +5183,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2c_voov(f,k,n,c) = x2c_voov(f,k,n,c) + l_amp * t_amp
                      end do
                      end if
@@ -5199,7 +5199,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2c_voov(f,k,n,a) = x2c_voov(f,k,n,a) + l_amp * t_amp
                      end do
                      end if
@@ -5208,7 +5208,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2c_voov(f,k,n,b) = x2c_voov(f,k,n,b) - l_amp * t_amp
                      end do
                      end if
@@ -5217,7 +5217,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2c_voov(f,i,n,c) = x2c_voov(f,i,n,c) + l_amp * t_amp
                      end do
                      end if
@@ -5226,7 +5226,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2c_voov(f,i,n,a) = x2c_voov(f,i,n,a) + l_amp * t_amp
                      end do
                      end if
@@ -5235,7 +5235,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2c_voov(f,i,n,b) = x2c_voov(f,i,n,b) - l_amp * t_amp
                      end do
                      end if
@@ -5244,7 +5244,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2c_voov(f,j,n,c) = x2c_voov(f,j,n,c) - l_amp * t_amp
                      end do
                      end if
@@ -5253,7 +5253,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2c_voov(f,j,n,a) = x2c_voov(f,j,n,a) - l_amp * t_amp
                      end do
                      end if
@@ -5262,7 +5262,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2c_voov(f,j,n,b) = x2c_voov(f,j,n,b) + l_amp * t_amp
                      end do
                      end if
@@ -5272,14 +5272,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2c_voov(e,k,n,b) = x2c_voov(e,k,n,b) + l_amp * t_amp
                      end do
                      end if
@@ -5288,7 +5288,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2c_voov(e,k,n,a) = x2c_voov(e,k,n,a) - l_amp * t_amp
                      end do
                      end if
@@ -5297,7 +5297,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2c_voov(e,k,n,c) = x2c_voov(e,k,n,c) - l_amp * t_amp
                      end do
                      end if
@@ -5306,7 +5306,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2c_voov(e,i,n,b) = x2c_voov(e,i,n,b) + l_amp * t_amp
                      end do
                      end if
@@ -5315,7 +5315,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2c_voov(e,i,n,a) = x2c_voov(e,i,n,a) - l_amp * t_amp
                      end do
                      end if
@@ -5324,7 +5324,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2c_voov(e,i,n,c) = x2c_voov(e,i,n,c) - l_amp * t_amp
                      end do
                      end if
@@ -5333,7 +5333,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2c_voov(e,j,n,b) = x2c_voov(e,j,n,b) - l_amp * t_amp
                      end do
                      end if
@@ -5342,7 +5342,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2c_voov(e,j,n,a) = x2c_voov(e,j,n,a) + l_amp * t_amp
                      end do
                      end if
@@ -5351,7 +5351,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        e = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2c_voov(e,j,n,c) = x2c_voov(e,j,n,c) + l_amp * t_amp
                      end do
                      end if
@@ -5361,14 +5361,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2c_voov(d,k,n,a) = x2c_voov(d,k,n,a) + l_amp * t_amp
                      end do
                      end if
@@ -5377,7 +5377,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2c_voov(d,k,n,b) = x2c_voov(d,k,n,b) - l_amp * t_amp
                      end do
                      end if
@@ -5386,7 +5386,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2c_voov(d,k,n,c) = x2c_voov(d,k,n,c) + l_amp * t_amp
                      end do
                      end if
@@ -5395,7 +5395,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2c_voov(d,i,n,a) = x2c_voov(d,i,n,a) + l_amp * t_amp
                      end do
                      end if
@@ -5404,7 +5404,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2c_voov(d,i,n,b) = x2c_voov(d,i,n,b) - l_amp * t_amp
                      end do
                      end if
@@ -5413,7 +5413,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2c_voov(d,i,n,c) = x2c_voov(d,i,n,c) + l_amp * t_amp
                      end do
                      end if
@@ -5422,7 +5422,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2c_voov(d,j,n,a) = x2c_voov(d,j,n,a) - l_amp * t_amp
                      end do
                      end if
@@ -5431,7 +5431,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2c_voov(d,j,n,b) = x2c_voov(d,j,n,b) + l_amp * t_amp
                      end do
                      end if
@@ -5440,7 +5440,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); n = excits_buff(6,jdet);
+                        d = excits_buff(jdet,1); n = excits_buff(jdet,6);
                         x2c_voov(d,j,n,c) = x2c_voov(d,j,n,c) - l_amp * t_amp
                      end do
                      end if
@@ -5450,14 +5450,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2c_voov(f,j,m,c) = x2c_voov(f,j,m,c) + l_amp * t_amp
                      end do
                      end if
@@ -5466,7 +5466,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2c_voov(f,j,m,a) = x2c_voov(f,j,m,a) + l_amp * t_amp
                      end do
                      end if
@@ -5475,7 +5475,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2c_voov(f,j,m,b) = x2c_voov(f,j,m,b) - l_amp * t_amp
                      end do
                      end if
@@ -5484,7 +5484,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2c_voov(f,i,m,c) = x2c_voov(f,i,m,c) - l_amp * t_amp
                      end do
                      end if
@@ -5493,7 +5493,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2c_voov(f,i,m,a) = x2c_voov(f,i,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -5502,7 +5502,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2c_voov(f,i,m,b) = x2c_voov(f,i,m,b) + l_amp * t_amp
                      end do
                      end if
@@ -5511,7 +5511,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2c_voov(f,k,m,c) = x2c_voov(f,k,m,c) - l_amp * t_amp
                      end do
                      end if
@@ -5520,7 +5520,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2c_voov(f,k,m,a) = x2c_voov(f,k,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -5529,7 +5529,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); m = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); m = excits_buff(jdet,5);
                         x2c_voov(f,k,m,b) = x2c_voov(f,k,m,b) + l_amp * t_amp
                      end do
                      end if
@@ -5539,14 +5539,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2c_voov(e,j,m,b) = x2c_voov(e,j,m,b) + l_amp * t_amp
                      end do
                      end if
@@ -5555,7 +5555,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2c_voov(e,j,m,a) = x2c_voov(e,j,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -5564,7 +5564,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2c_voov(e,j,m,c) = x2c_voov(e,j,m,c) - l_amp * t_amp
                      end do
                      end if
@@ -5573,7 +5573,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2c_voov(e,i,m,b) = x2c_voov(e,i,m,b) - l_amp * t_amp
                      end do
                      end if
@@ -5582,7 +5582,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2c_voov(e,i,m,a) = x2c_voov(e,i,m,a) + l_amp * t_amp
                      end do
                      end if
@@ -5591,7 +5591,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2c_voov(e,i,m,c) = x2c_voov(e,i,m,c) + l_amp * t_amp
                      end do
                      end if
@@ -5600,7 +5600,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2c_voov(e,k,m,b) = x2c_voov(e,k,m,b) - l_amp * t_amp
                      end do
                      end if
@@ -5609,7 +5609,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2c_voov(e,k,m,a) = x2c_voov(e,k,m,a) + l_amp * t_amp
                      end do
                      end if
@@ -5618,7 +5618,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); m = excits_buff(5,jdet);
+                        e = excits_buff(jdet,2); m = excits_buff(jdet,5);
                         x2c_voov(e,k,m,c) = x2c_voov(e,k,m,c) + l_amp * t_amp
                      end do
                      end if
@@ -5628,14 +5628,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2c_voov(d,j,m,a) = x2c_voov(d,j,m,a) + l_amp * t_amp
                      end do
                      end if
@@ -5644,7 +5644,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2c_voov(d,j,m,b) = x2c_voov(d,j,m,b) - l_amp * t_amp
                      end do
                      end if
@@ -5653,7 +5653,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2c_voov(d,j,m,c) = x2c_voov(d,j,m,c) + l_amp * t_amp
                      end do
                      end if
@@ -5662,7 +5662,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2c_voov(d,i,m,a) = x2c_voov(d,i,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -5671,7 +5671,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2c_voov(d,i,m,b) = x2c_voov(d,i,m,b) + l_amp * t_amp
                      end do
                      end if
@@ -5680,7 +5680,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2c_voov(d,i,m,c) = x2c_voov(d,i,m,c) - l_amp * t_amp
                      end do
                      end if
@@ -5689,7 +5689,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2c_voov(d,k,m,a) = x2c_voov(d,k,m,a) - l_amp * t_amp
                      end do
                      end if
@@ -5698,7 +5698,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2c_voov(d,k,m,b) = x2c_voov(d,k,m,b) + l_amp * t_amp
                      end do
                      end if
@@ -5707,7 +5707,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); m = excits_buff(5,jdet);
+                        d = excits_buff(jdet,1); m = excits_buff(jdet,5);
                         x2c_voov(d,k,m,c) = x2c_voov(d,k,m,c) - l_amp * t_amp
                      end do
                      end if
@@ -5717,14 +5717,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2c_voov(f,i,l,c) = x2c_voov(f,i,l,c) + l_amp * t_amp
                      end do
                      end if
@@ -5733,7 +5733,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2c_voov(f,i,l,a) = x2c_voov(f,i,l,a) + l_amp * t_amp
                      end do
                      end if
@@ -5742,7 +5742,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2c_voov(f,i,l,b) = x2c_voov(f,i,l,b) - l_amp * t_amp
                      end do
                      end if
@@ -5751,7 +5751,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2c_voov(f,j,l,c) = x2c_voov(f,j,l,c) - l_amp * t_amp
                      end do
                      end if
@@ -5760,7 +5760,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2c_voov(f,j,l,a) = x2c_voov(f,j,l,a) - l_amp * t_amp
                      end do
                      end if
@@ -5769,7 +5769,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2c_voov(f,j,l,b) = x2c_voov(f,j,l,b) + l_amp * t_amp
                      end do
                      end if
@@ -5778,7 +5778,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2c_voov(f,k,l,c) = x2c_voov(f,k,l,c) + l_amp * t_amp
                      end do
                      end if
@@ -5787,7 +5787,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2c_voov(f,k,l,a) = x2c_voov(f,k,l,a) + l_amp * t_amp
                      end do
                      end if
@@ -5796,7 +5796,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); l = excits_buff(4,jdet);
+                        f = excits_buff(jdet,3); l = excits_buff(jdet,4);
                         x2c_voov(f,k,l,b) = x2c_voov(f,k,l,b) - l_amp * t_amp
                      end do
                      end if
@@ -5806,14 +5806,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2c_voov(e,i,l,b) = x2c_voov(e,i,l,b) + l_amp * t_amp
                      end do
                      end if
@@ -5822,7 +5822,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2c_voov(e,i,l,a) = x2c_voov(e,i,l,a) - l_amp * t_amp
                      end do
                      end if
@@ -5831,7 +5831,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2c_voov(e,i,l,c) = x2c_voov(e,i,l,c) - l_amp * t_amp
                      end do
                      end if
@@ -5840,7 +5840,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2c_voov(e,j,l,b) = x2c_voov(e,j,l,b) - l_amp * t_amp
                      end do
                      end if
@@ -5849,7 +5849,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2c_voov(e,j,l,a) = x2c_voov(e,j,l,a) + l_amp * t_amp
                      end do
                      end if
@@ -5858,7 +5858,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2c_voov(e,j,l,c) = x2c_voov(e,j,l,c) + l_amp * t_amp
                      end do
                      end if
@@ -5867,7 +5867,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2c_voov(e,k,l,b) = x2c_voov(e,k,l,b) + l_amp * t_amp
                      end do
                      end if
@@ -5876,7 +5876,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2c_voov(e,k,l,a) = x2c_voov(e,k,l,a) - l_amp * t_amp
                      end do
                      end if
@@ -5885,7 +5885,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        e = excits_buff(2,jdet); l = excits_buff(4,jdet);
+                        e = excits_buff(jdet,2); l = excits_buff(jdet,4);
                         x2c_voov(e,k,l,c) = x2c_voov(e,k,l,c) - l_amp * t_amp
                      end do
                      end if
@@ -5895,14 +5895,14 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
                   do idet = 1, n3bbb_l
                      l_amp = l3d_amps(idet)
-                     a = l3d_excits(1,idet); b = l3d_excits(2,idet); c = l3d_excits(3,idet);
-                     i = l3d_excits(4,idet); j = l3d_excits(5,idet); k = l3d_excits(6,idet);
+                     a = l3d_excits(idet,1); b = l3d_excits(idet,2); c = l3d_excits(idet,3);
+                     i = l3d_excits(idet,4); j = l3d_excits(idet,5); k = l3d_excits(idet,6);
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         ! < ijkabc | ljkdbc >
                         x2c_voov(d,i,l,a) = x2c_voov(d,i,l,a) + l_amp * t_amp
                      end do
@@ -5912,7 +5912,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         ! < ijkabc | ljkdac >
                         x2c_voov(d,i,l,b) = x2c_voov(d,i,l,b) - l_amp * t_amp
                      end do
@@ -5922,7 +5922,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2c_voov(d,i,l,c) = x2c_voov(d,i,l,c) + l_amp * t_amp
                      end do
                      end if
@@ -5931,7 +5931,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2c_voov(d,j,l,a) = x2c_voov(d,j,l,a) - l_amp * t_amp
                      end do
                      end if
@@ -5940,7 +5940,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2c_voov(d,j,l,b) = x2c_voov(d,j,l,b) + l_amp * t_amp
                      end do
                      end if
@@ -5949,7 +5949,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2c_voov(d,j,l,c) = x2c_voov(d,j,l,c) - l_amp * t_amp
                      end do
                      end if
@@ -5958,7 +5958,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2c_voov(d,k,l,a) = x2c_voov(d,k,l,a) + l_amp * t_amp
                      end do
                      end if
@@ -5967,7 +5967,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2c_voov(d,k,l,b) = x2c_voov(d,k,l,b) - l_amp * t_amp
                      end do
                      end if
@@ -5976,7 +5976,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        d = excits_buff(1,jdet); l = excits_buff(4,jdet);
+                        d = excits_buff(jdet,1); l = excits_buff(jdet,4);
                         x2c_voov(d,k,l,c) = x2c_voov(d,k,l,c) + l_amp * t_amp
                      end do
                      end if
@@ -5987,7 +5987,7 @@ module leftccsdt_p_intermediates
                   !!!! x2c(eima) <- 1/4 l3b(abcijk) t3b(abeijm)
                   if (do_aab_t) then
                   ! copy t3b into buffer
-                  allocate(amps_buff(n3aab_t),excits_buff(6,n3aab_t))
+                  allocate(amps_buff(n3aab_t),excits_buff(n3aab_t,6))
                   amps_buff(:) = t3b_amps(:)
                   excits_buff(:,:) = t3b_excits(:,:)
                   ! allocate new sorting arrays
@@ -5999,13 +5999,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab_t)
                   do idet = 1, n3aab_l
                      l_amp = l3b_amps(idet)
-                     a = l3b_excits(1,idet); b = l3b_excits(2,idet); c = l3b_excits(3,idet);
-                     i = l3b_excits(4,idet); j = l3b_excits(5,idet); k = l3b_excits(6,idet);
+                     a = l3b_excits(idet,1); b = l3b_excits(idet,2); c = l3b_excits(idet,3);
+                     i = l3b_excits(idet,4); j = l3b_excits(idet,5); k = l3b_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,i,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2c_voov(f,k,n,c) = x2c_voov(f,k,n,c) + l_amp * t_amp
                      end do
                   end do 
@@ -6014,7 +6014,7 @@ module leftccsdt_p_intermediates
                   !!!! x2c(eima) <- l3c(abcijk) t3c(abeijm)
                   if (do_abb_t) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3aab_t),excits_buff(6,n3abb_t))
+                  allocate(amps_buff(n3aab_t),excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
@@ -6026,13 +6026,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,i,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         x2c_voov(f,k,n,c) = x2c_voov(f,k,n,c) + l_amp * t_amp
                      end do
                      ! (bc)
@@ -6040,7 +6040,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2c_voov(f,k,n,b) = x2c_voov(f,k,n,b) - l_amp * t_amp
                         end do
                      end if
@@ -6049,7 +6049,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2c_voov(f,j,n,c) = x2c_voov(f,j,n,c) - l_amp * t_amp
                         end do
                      end if
@@ -6058,7 +6058,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                            x2c_voov(f,j,n,b) = x2c_voov(f,j,n,b) + l_amp * t_amp
                         end do
                      end if
@@ -6068,13 +6068,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,c,i,j)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                        f = excits_buff(jdet,2); n = excits_buff(jdet,6);
                         x2c_voov(f,k,n,b) = x2c_voov(f,k,n,b) + l_amp * t_amp
                      end do
                      ! (bc)
@@ -6082,7 +6082,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,2); n = excits_buff(jdet,6);
                            x2c_voov(f,k,n,c) = x2c_voov(f,k,n,c) - l_amp * t_amp
                         end do
                      end if
@@ -6091,7 +6091,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,2); n = excits_buff(jdet,6);
                            x2c_voov(f,j,n,b) = x2c_voov(f,j,n,b) - l_amp * t_amp
                         end do
                      end if
@@ -6100,7 +6100,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(2,jdet); n = excits_buff(6,jdet);
+                           f = excits_buff(jdet,2); n = excits_buff(jdet,6);
                            x2c_voov(f,j,n,c) = x2c_voov(f,j,n,c) + l_amp * t_amp
                         end do
                      end if
@@ -6110,13 +6110,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,b,i,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(3,jdet); n = excits_buff(5,jdet);
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,5);
                         x2c_voov(f,j,n,c) = x2c_voov(f,j,n,c) + l_amp * t_amp
                      end do
                      ! (bc)
@@ -6124,7 +6124,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(5,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,5);
                            x2c_voov(f,j,n,b) = x2c_voov(f,j,n,b) - l_amp * t_amp
                         end do
                      end if
@@ -6133,7 +6133,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(5,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,5);
                            x2c_voov(f,k,n,c) = x2c_voov(f,k,n,c) - l_amp * t_amp
                         end do
                      end if
@@ -6142,7 +6142,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(3,jdet); n = excits_buff(5,jdet);
+                           f = excits_buff(jdet,3); n = excits_buff(jdet,5);
                            x2c_voov(f,k,n,b) = x2c_voov(f,k,n,b) + l_amp * t_amp
                         end do
                      end if
@@ -6152,13 +6152,13 @@ module leftccsdt_p_intermediates
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb_t)
                   do idet = 1, n3abb_l
                      l_amp = l3c_amps(idet)
-                     a = l3c_excits(1,idet); b = l3c_excits(2,idet); c = l3c_excits(3,idet);
-                     i = l3c_excits(4,idet); j = l3c_excits(5,idet); k = l3c_excits(6,idet);
+                     a = l3c_excits(idet,1); b = l3c_excits(idet,2); c = l3c_excits(idet,3);
+                     i = l3c_excits(idet,4); j = l3c_excits(idet,5); k = l3c_excits(idet,6);
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      do jdet = loc_arr(idx,1), loc_arr(idx,2)
                         t_amp = amps_buff(jdet)
-                        f = excits_buff(2,jdet); n = excits_buff(5,jdet);
+                        f = excits_buff(jdet,2); n = excits_buff(jdet,5);
                         x2c_voov(f,j,n,b) = x2c_voov(f,j,n,b) + l_amp * t_amp
                      end do
                      ! (bc)
@@ -6166,7 +6166,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(2,jdet); n = excits_buff(5,jdet);
+                           f = excits_buff(jdet,2); n = excits_buff(jdet,5);
                            x2c_voov(f,j,n,c) = x2c_voov(f,j,n,c) - l_amp * t_amp
                         end do
                      end if
@@ -6175,7 +6175,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(2,jdet); n = excits_buff(5,jdet);
+                           f = excits_buff(jdet,2); n = excits_buff(jdet,5);
                            x2c_voov(f,k,n,b) = x2c_voov(f,k,n,b) - l_amp * t_amp
                         end do
                      end if
@@ -6184,7 +6184,7 @@ module leftccsdt_p_intermediates
                      if (idx/=0) then
                         do jdet = loc_arr(idx,1), loc_arr(idx,2)
                            t_amp = amps_buff(jdet)
-                           f = excits_buff(2,jdet); n = excits_buff(5,jdet);
+                           f = excits_buff(jdet,2); n = excits_buff(jdet,5);
                            x2c_voov(f,k,n,c) = x2c_voov(f,k,n,c) + l_amp * t_amp
                         end do
                      end if
@@ -6295,7 +6295,7 @@ module leftccsdt_p_intermediates
               integer, intent(in) :: idx_table(n1,n2,n3,n4)
 
               integer, intent(inout) :: loc_arr(nloc,2)
-              integer, intent(inout) :: excits(6,n3p)
+              integer, intent(inout) :: excits(n3p,6)
               real(kind=8), intent(inout) :: amps(n3p)
               real(kind=8), intent(inout), optional :: resid(n3p)
 
@@ -6308,13 +6308,13 @@ module leftccsdt_p_intermediates
               ! obtain the lexcial index for each triple excitation in the P space along the sorting dimensions idims
               allocate(temp(n3p),idx(n3p))
               do idet = 1, n3p
-                 p = excits(idims(1),idet); q = excits(idims(2),idet); r = excits(idims(3),idet); s = excits(idims(4),idet)
+                 p = excits(idet,idims(1)); q = excits(idet,idims(2)); r = excits(idet,idims(3)); s = excits(idet,idims(4))
                  temp(idet) = idx_table(p,q,r,s)
               end do
               ! get the sorting array
               call argsort(temp, idx)
               ! apply sorting array to t3 excitations, amplitudes, and, optionally, residual arrays
-              excits = excits(:,idx)
+              excits = excits(idx,:)
               amps = amps(idx)
               if (present(resid)) resid = resid(idx)
               deallocate(temp,idx)
@@ -6322,8 +6322,8 @@ module leftccsdt_p_intermediates
               loc_arr(:,1) = 1; loc_arr(:,2) = 0; ! set default start > end so that empty sets do not trigger loops
               do idet = 1, n3p-1
                  ! get consecutive lexcial indices
-                 p1 = excits(idims(1),idet);   q1 = excits(idims(2),idet);   r1 = excits(idims(3),idet);   s1 = excits(idims(4),idet)
-                 p2 = excits(idims(1),idet+1); q2 = excits(idims(2),idet+1); r2 = excits(idims(3),idet+1); s2 = excits(idims(4),idet+1)
+                 p1 = excits(idet,idims(1));   q1 = excits(idet,idims(2));   r1 = excits(idet,idims(3));   s1 = excits(idet,idims(4))
+                 p2 = excits(idet+1,idims(1)); q2 = excits(idet+1,idims(2)); r2 = excits(idet+1,idims(3)); s2 = excits(idet+1,idims(4))
                  pqrs1 = idx_table(p1,q1,r1,s1)
                  pqrs2 = idx_table(p2,q2,r2,s2)
                  ! if change occurs between consecutive indices, record these locations in loc_arr as new start/end points

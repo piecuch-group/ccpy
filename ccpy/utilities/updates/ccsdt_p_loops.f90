@@ -591,7 +591,7 @@ module ccsdt_p_loops
                   real(kind=8), intent(in) :: t3b_amps(n3aab)
 
                   integer, intent(inout) :: t3a_excits(n3aaa,6)
-                  !f2py intent(in,out) :: t3a_excits(6,0:n3aaa-1)
+                  !f2py intent(in,out) :: t3a_excits(0:n3aaa-1,0:5)
                   real(kind=8), intent(inout) :: t3a_amps(n3aaa)
                   !f2py intent(in,out) :: t3a_amps(0:n3aaa-1)
 
@@ -2327,7 +2327,7 @@ module ccsdt_p_loops
                                               shift
 
                   integer, intent(inout) :: t3b_excits(n3aab,6)
-                  !f2py intent(in,out) :: t3b_excits(0:5,0:n3aab-1)
+                  !f2py intent(in,out) :: t3b_excits(0:n3aab-1,0:5)
                   real(kind=8), intent(inout) :: t3b_amps(n3aab)
                   !f2py intent(in,out) :: t3b_amps(0:n3aab-1)
 
@@ -3826,7 +3826,7 @@ module ccsdt_p_loops
                                               shift
 
                   integer, intent(inout) :: t3c_excits(n3abb,6)
-                  !f2py intent(in,out) :: t3c_excits(0:5,0:n3abb-1)
+                  !f2py intent(in,out) :: t3c_excits(0:n3abb-1,0:5)
                   real(kind=8), intent(inout) :: t3c_amps(n3abb)
                   !f2py intent(in,out) :: t3c_amps(0:n3abb-1)
 
@@ -5301,7 +5301,7 @@ module ccsdt_p_loops
                                               shift
 
                   integer, intent(inout) :: t3d_excits(n3bbb,6)
-                  !f2py intent(in,out) :: t3d_excits(6,0:n3bbb-1)
+                  !f2py intent(in,out) :: t3d_excits(0:n3bbb-1,0:5)
                   real(kind=8), intent(inout) :: t3d_amps(n3bbb)
                   !f2py intent(in,out) :: t3d_amps(0:n3bbb-1)
 

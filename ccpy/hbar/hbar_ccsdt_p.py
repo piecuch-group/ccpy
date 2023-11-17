@@ -276,43 +276,43 @@ def build_hbar_ccsdt_p(T, H0, RHF_symmetry, system, t3_excitations, *args):
 def add_VT3_intermediates(T, T3_excitations, H):
 
     H.aa.vooo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2a_vooo(H.aa.vooo,
-                                                             T.aaa, T3_excitations["aaa"].T,
-                                                             T.aab, T3_excitations["aab"].T,
+                                                             T.aaa, T3_excitations["aaa"],
+                                                             T.aab, T3_excitations["aab"],
                                                              H.aa.oovv, H.ab.oovv, phase=1.0,
     )
     H.aa.vvov = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2a_vvov(H.aa.vvov,
-                                                             T.aaa, T3_excitations["aaa"].T,
-                                                             T.aab, T3_excitations["aab"].T,
+                                                             T.aaa, T3_excitations["aaa"],
+                                                             T.aab, T3_excitations["aab"],
                                                              H.aa.oovv, H.ab.oovv, phase=1.0
     )
     H.ab.vooo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_vooo(H.ab.vooo,
-                                                             T.aab, T3_excitations["aab"].T,
-                                                             T.abb, T3_excitations["abb"].T,
+                                                             T.aab, T3_excitations["aab"],
+                                                             T.abb, T3_excitations["abb"],
                                                              H.ab.oovv, H.bb.oovv, phase=1.0
     )
     H.ab.ovoo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_ovoo(H.ab.ovoo,
-                                                             T.aab, T3_excitations["aab"].T,
-                                                             T.abb, T3_excitations["abb"].T,
+                                                             T.aab, T3_excitations["aab"],
+                                                             T.abb, T3_excitations["abb"],
                                                              H.aa.oovv, H.ab.oovv, phase=1.0
     )
     H.ab.vvov = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_vvov(H.ab.vvov,
-                                                             T.aab, T3_excitations["aab"].T,
-                                                             T.abb, T3_excitations["abb"].T,
+                                                             T.aab, T3_excitations["aab"],
+                                                             T.abb, T3_excitations["abb"],
                                                              H.ab.oovv, H.bb.oovv, phase=1.0
     )
     H.ab.vvvo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_vvvo(H.ab.vvvo,
-                                                             T.aab, T3_excitations["aab"].T,
-                                                             T.abb, T3_excitations["abb"].T,
+                                                             T.aab, T3_excitations["aab"],
+                                                             T.abb, T3_excitations["abb"],
                                                              H.aa.oovv, H.ab.oovv, phase=1.0
     )
     H.bb.vooo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2c_vooo(H.bb.vooo,
-                                                             T.abb, T3_excitations["abb"].T,
-                                                             T.bbb, T3_excitations["bbb"].T,
+                                                             T.abb, T3_excitations["abb"],
+                                                             T.bbb, T3_excitations["bbb"],
                                                              H.ab.oovv, H.bb.oovv, phase=1.0
     )
     H.bb.vvov = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2c_vvov(H.bb.vvov,
-                                                             T.abb, T3_excitations["abb"].T,
-                                                             T.bbb, T3_excitations["bbb"].T,
+                                                             T.abb, T3_excitations["abb"],
+                                                             T.bbb, T3_excitations["bbb"],
                                                              H.ab.oovv, H.bb.oovv, phase=1.0
     )
     return H
@@ -320,43 +320,43 @@ def add_VT3_intermediates(T, T3_excitations, H):
 def remove_VT3_intermediates(T, T3_excitations, H):
 
     H.aa.vooo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2a_vooo(H.aa.vooo,
-                                                             T.aaa, T3_excitations["aaa"].T,
-                                                             T.aab, T3_excitations["aab"].T,
+                                                             T.aaa, T3_excitations["aaa"],
+                                                             T.aab, T3_excitations["aab"],
                                                              H.aa.oovv, H.ab.oovv, phase=-1.0,
     )
     H.aa.vvov = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2a_vvov(H.aa.vvov,
-                                                             T.aaa, T3_excitations["aaa"].T,
-                                                             T.aab, T3_excitations["aab"].T,
+                                                             T.aaa, T3_excitations["aaa"],
+                                                             T.aab, T3_excitations["aab"],
                                                              H.aa.oovv, H.ab.oovv, phase=-1.0
     )
     H.ab.vooo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_vooo(H.ab.vooo,
-                                                             T.aab, T3_excitations["aab"].T,
-                                                             T.abb, T3_excitations["abb"].T,
+                                                             T.aab, T3_excitations["aab"],
+                                                             T.abb, T3_excitations["abb"],
                                                              H.ab.oovv, H.bb.oovv, phase=-1.0
     )
     H.ab.ovoo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_ovoo(H.ab.ovoo,
-                                                             T.aab, T3_excitations["aab"].T,
-                                                             T.abb, T3_excitations["abb"].T,
+                                                             T.aab, T3_excitations["aab"],
+                                                             T.abb, T3_excitations["abb"],
                                                              H.aa.oovv, H.ab.oovv, phase=-1.0
     )
     H.ab.vvov = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_vvov(H.ab.vvov,
-                                                             T.aab, T3_excitations["aab"].T,
-                                                             T.abb, T3_excitations["abb"].T,
+                                                             T.aab, T3_excitations["aab"],
+                                                             T.abb, T3_excitations["abb"],
                                                              H.ab.oovv, H.bb.oovv, phase=-1.0
     )
     H.ab.vvvo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_vvvo(H.ab.vvvo,
-                                                             T.aab, T3_excitations["aab"].T,
-                                                             T.abb, T3_excitations["abb"].T,
+                                                             T.aab, T3_excitations["aab"],
+                                                             T.abb, T3_excitations["abb"],
                                                              H.aa.oovv, H.ab.oovv, phase=-1.0
     )
     H.bb.vooo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2c_vooo(H.bb.vooo,
-                                                             T.abb, T3_excitations["abb"].T,
-                                                             T.bbb, T3_excitations["bbb"].T,
+                                                             T.abb, T3_excitations["abb"],
+                                                             T.bbb, T3_excitations["bbb"],
                                                              H.ab.oovv, H.bb.oovv, phase=-1.0
     )
     H.bb.vvov = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2c_vvov(H.bb.vvov,
-                                                             T.abb, T3_excitations["abb"].T,
-                                                             T.bbb, T3_excitations["bbb"].T,
+                                                             T.abb, T3_excitations["abb"],
+                                                             T.bbb, T3_excitations["bbb"],
                                                              H.ab.oovv, H.bb.oovv, phase=-1.0
     )
     return H

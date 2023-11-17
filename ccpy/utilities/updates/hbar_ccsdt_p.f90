@@ -15,9 +15,9 @@ module hbar_ccsdt_p
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa, n3aab
 
-                  integer, intent(in) :: t3a_excits(6,n3aaa)
+                  integer, intent(in) :: t3a_excits(n3aaa,6)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa)
-                  integer, intent(in) :: t3b_excits(6,n3aab)
+                  integer, intent(in) :: t3b_excits(n3aab,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab)
 
                   real(kind=8), intent(in) :: h2a_oovv(noa,noa,nua,nua)
@@ -36,8 +36,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3aaa
                       t_amp = phase*t3a_amps(idet)
                       ! I2A(amij) <- A(ij) [A(n/ij)A(a/ef) h2a(mnef) * t3a(aefijn)]
-                      a = t3a_excits(1,idet); e = t3a_excits(2,idet); f = t3a_excits(3,idet);
-                      i = t3a_excits(4,idet); j = t3a_excits(5,idet); n = t3a_excits(6,idet);
+                      a = t3a_excits(idet,1); e = t3a_excits(idet,2); f = t3a_excits(idet,3);
+                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); n = t3a_excits(idet,6);
                       h2a_vooo(a,:,i,j) = h2a_vooo(a,:,i,j) + h2a_oovv(:,n,e,f) * t_amp ! (1)
                       h2a_vooo(a,:,j,n) = h2a_vooo(a,:,j,n) + h2a_oovv(:,i,e,f) * t_amp ! (in)
                       h2a_vooo(a,:,i,n) = h2a_vooo(a,:,i,n) - h2a_oovv(:,j,e,f) * t_amp ! (jn)
@@ -52,8 +52,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3aab
                       t_amp = phase*t3b_amps(idet)
                       ! I2A(amij) <- A(ij) [A(ae) h2b(mnef) * t3b(aefijn)]
-                      a = t3b_excits(1,idet); e = t3b_excits(2,idet); f = t3b_excits(3,idet);
-                      i = t3b_excits(4,idet); j = t3b_excits(5,idet); n = t3b_excits(6,idet);
+                      a = t3b_excits(idet,1); e = t3b_excits(idet,2); f = t3b_excits(idet,3);
+                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); n = t3b_excits(idet,6);
                       h2a_vooo(a,:,i,j) = h2a_vooo(a,:,i,j) + h2b_oovv(:,n,e,f) * t_amp ! (1)
                       h2a_vooo(e,:,i,j) = h2a_vooo(e,:,i,j) - h2b_oovv(:,n,a,f) * t_amp ! (ae)
                   end do
@@ -88,9 +88,9 @@ module hbar_ccsdt_p
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa, n3aab
 
-                  integer, intent(in) :: t3a_excits(6,n3aaa)
+                  integer, intent(in) :: t3a_excits(n3aaa,6)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa)
-                  integer, intent(in) :: t3b_excits(6,n3aab)
+                  integer, intent(in) :: t3b_excits(n3aab,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab)
 
                   real(kind=8), intent(in) :: h2a_oovv(noa,noa,nua,nua)
@@ -109,8 +109,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3aaa
                       t_amp = phase*t3a_amps(idet)
                       ! I2A(abie) <- A(ab) [A(i/mn)A(f/ab) -h2a(mnef) * t3a(abfimn)]
-                      a = t3a_excits(1,idet); b = t3a_excits(2,idet); f = t3a_excits(3,idet);
-                      i = t3a_excits(4,idet); m = t3a_excits(5,idet); n = t3a_excits(6,idet);
+                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); f = t3a_excits(idet,3);
+                      i = t3a_excits(idet,4); m = t3a_excits(idet,5); n = t3a_excits(idet,6);
                       h2a_vvov(a,b,i,:) = h2a_vvov(a,b,i,:) - h2a_oovv(m,n,:,f) * t_amp ! (1)
                       h2a_vvov(a,b,m,:) = h2a_vvov(a,b,m,:) + h2a_oovv(i,n,:,f) * t_amp ! (im)
                       h2a_vvov(a,b,n,:) = h2a_vvov(a,b,n,:) + h2a_oovv(m,i,:,f) * t_amp ! (in)
@@ -125,8 +125,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3aab
                       t_amp = phase*t3b_amps(idet)
                       ! I2A(abie) <- A(ab) [A(im) -h2b(mnef) * t3b(abfimn)]
-                      a = t3b_excits(1,idet); b = t3b_excits(2,idet); f = t3b_excits(3,idet);
-                      i = t3b_excits(4,idet); m = t3b_excits(5,idet); n = t3b_excits(6,idet);
+                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); f = t3b_excits(idet,3);
+                      i = t3b_excits(idet,4); m = t3b_excits(idet,5); n = t3b_excits(idet,6);
                       h2a_vvov(a,b,i,:) = h2a_vvov(a,b,i,:) - h2b_oovv(m,n,:,f) * t_amp ! (1)
                       h2a_vvov(a,b,m,:) = h2a_vvov(a,b,m,:) + h2b_oovv(i,n,:,f) * t_amp ! (im)
                   end do
@@ -161,9 +161,9 @@ module hbar_ccsdt_p
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab, n3abb
 
-                  integer, intent(in) :: t3b_excits(6,n3aab)
+                  integer, intent(in) :: t3b_excits(n3aab,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab)
-                  integer, intent(in) :: t3c_excits(6,n3abb)
+                  integer, intent(in) :: t3c_excits(n3abb,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb)
 
                   real(kind=8), intent(in) :: h2b_oovv(noa,nob,nua,nub)
@@ -179,8 +179,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3aab
                       t_amp = phase*t3b_amps(idet)
                       ! I2B(amij) <- A(af)A(in) h2b(nmfe) * t3b(afeinj)
-                      a = t3b_excits(1,idet); f = t3b_excits(2,idet); e = t3b_excits(3,idet);
-                      i = t3b_excits(4,idet); n = t3b_excits(5,idet); j = t3b_excits(6,idet);
+                      a = t3b_excits(idet,1); f = t3b_excits(idet,2); e = t3b_excits(idet,3);
+                      i = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
                       h2b_vooo(a,:,i,j) = h2b_vooo(a,:,i,j) + h2b_oovv(n,:,f,e) * t_amp ! (1)
                       h2b_vooo(f,:,i,j) = h2b_vooo(f,:,i,j) - h2b_oovv(n,:,a,e) * t_amp ! (af)
                       h2b_vooo(a,:,n,j) = h2b_vooo(a,:,n,j) - h2b_oovv(i,:,f,e) * t_amp ! (in)
@@ -189,8 +189,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3abb
                       t_amp = phase*t3c_amps(idet)
                       ! I2B(amij) <- A(jn) h2c(nmfe) * t3c(afeinj)
-                      a = t3c_excits(1,idet); f = t3c_excits(2,idet); e = t3c_excits(3,idet);
-                      i = t3c_excits(4,idet); n = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      a = t3c_excits(idet,1); f = t3c_excits(idet,2); e = t3c_excits(idet,3);
+                      i = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
                       h2b_vooo(a,:,i,j) = h2b_vooo(a,:,i,j) + h2c_oovv(n,:,f,e) * t_amp ! (1)
                       h2b_vooo(a,:,i,n) = h2b_vooo(a,:,i,n) - h2c_oovv(j,:,f,e) * t_amp ! (jn)
                   end do
@@ -208,9 +208,9 @@ module hbar_ccsdt_p
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab, n3abb
 
-                  integer, intent(in) :: t3b_excits(6,n3aab)
+                  integer, intent(in) :: t3b_excits(n3aab,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab)
-                  integer, intent(in) :: t3c_excits(6,n3abb)
+                  integer, intent(in) :: t3c_excits(n3abb,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb)
 
                   real(kind=8), intent(in) :: h2a_oovv(noa,noa,nua,nua)
@@ -226,16 +226,16 @@ module hbar_ccsdt_p
                   do idet = 1, n3aab
                       t_amp = phase*t3b_amps(idet)
                       ! I2B(mbij) <- A(in) h2a(mnef) * t3b(efbinj)
-                      e = t3b_excits(1,idet); f = t3b_excits(2,idet); b = t3b_excits(3,idet);
-                      i = t3b_excits(4,idet); n = t3b_excits(5,idet); j = t3b_excits(6,idet);
+                      e = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
+                      i = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
                       h2b_ovoo(:,b,i,j) = h2b_ovoo(:,b,i,j) + h2a_oovv(:,n,e,f) * t_amp ! (1)
                       h2b_ovoo(:,b,n,j) = h2b_ovoo(:,b,n,j) - h2a_oovv(:,i,e,f) * t_amp ! (in)
                   end do
                   do idet = 1, n3abb
                       t_amp = phase*t3c_amps(idet)
                       ! I2B(mbij) <- A(bf)A(jn) h2B(mnef) * t3c(efbinj)
-                      e = t3c_excits(1,idet); f = t3c_excits(2,idet); b = t3c_excits(3,idet);
-                      i = t3c_excits(4,idet); n = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      e = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
+                      i = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
                       h2b_ovoo(:,b,i,j) = h2b_ovoo(:,b,i,j) + h2b_oovv(:,n,e,f) * t_amp ! (1)
                       h2b_ovoo(:,f,i,j) = h2b_ovoo(:,f,i,j) - h2b_oovv(:,n,e,b) * t_amp ! (bf)
                       h2b_ovoo(:,b,i,n) = h2b_ovoo(:,b,i,n) - h2b_oovv(:,j,e,f) * t_amp ! (jn)
@@ -255,9 +255,9 @@ module hbar_ccsdt_p
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab, n3abb
 
-                  integer, intent(in) :: t3b_excits(6,n3aab)
+                  integer, intent(in) :: t3b_excits(n3aab,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab)
-                  integer, intent(in) :: t3c_excits(6,n3abb)
+                  integer, intent(in) :: t3c_excits(n3abb,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb)
 
                   real(kind=8), intent(in) :: h2b_oovv(noa,nob,nua,nub)
@@ -273,8 +273,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3aab
                       t_amp = phase*t3b_amps(idet)
                       ! I2B(abie) <- A(af)A(in) -h2b(nmfe) * t3b(afbinm)
-                      a = t3b_excits(1,idet); f = t3b_excits(2,idet); b = t3b_excits(3,idet);
-                      i = t3b_excits(4,idet); n = t3b_excits(5,idet); m = t3b_excits(6,idet);
+                      a = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
+                      i = t3b_excits(idet,4); n = t3b_excits(idet,5); m = t3b_excits(idet,6);
                       h2b_vvov(a,b,i,:) = h2b_vvov(a,b,i,:) - h2b_oovv(n,m,f,:) * t_amp ! (1)
                       h2b_vvov(f,b,i,:) = h2b_vvov(f,b,i,:) + h2b_oovv(n,m,a,:) * t_amp ! (af)
                       h2b_vvov(a,b,n,:) = h2b_vvov(a,b,n,:) + h2b_oovv(i,m,f,:) * t_amp ! (in)
@@ -283,8 +283,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3abb
                       t_amp = phase*t3c_amps(idet)
                       ! I2B(abie) <- A(bf) -h2c(nmfe) * t3c(afbinm)
-                      a = t3c_excits(1,idet); f = t3c_excits(2,idet); b = t3c_excits(3,idet);
-                      i = t3c_excits(4,idet); n = t3c_excits(5,idet); m = t3c_excits(6,idet);
+                      a = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
+                      i = t3c_excits(idet,4); n = t3c_excits(idet,5); m = t3c_excits(idet,6);
                       h2b_vvov(a,b,i,:) = h2b_vvov(a,b,i,:) - h2c_oovv(n,m,f,:) * t_amp ! (1)
                       h2b_vvov(a,f,i,:) = h2b_vvov(a,f,i,:) + h2c_oovv(n,m,b,:) * t_amp ! (bf)
                   end do
@@ -302,9 +302,9 @@ module hbar_ccsdt_p
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab, n3abb
 
-                  integer, intent(in) :: t3b_excits(6,n3aab)
+                  integer, intent(in) :: t3b_excits(n3aab,6)
                   real(kind=8), intent(in) :: t3b_amps(n3aab)
-                  integer, intent(in) :: t3c_excits(6,n3abb)
+                  integer, intent(in) :: t3c_excits(n3abb,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb)
 
                   real(kind=8), intent(in) :: h2a_oovv(noa,noa,nua,nua)
@@ -320,16 +320,16 @@ module hbar_ccsdt_p
                   do idet = 1, n3aab
                       t_amp = phase*t3b_amps(idet)
                       ! I2B(abej) <- A(af) -h2a(mnef) * t3b(afbmnj)
-                      a = t3b_excits(1,idet); f = t3b_excits(2,idet); b = t3b_excits(3,idet);
-                      m = t3b_excits(4,idet); n = t3b_excits(5,idet); j = t3b_excits(6,idet);
+                      a = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
+                      m = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
                       h2b_vvvo(a,b,:,j) = h2b_vvvo(a,b,:,j) - h2a_oovv(m,n,:,f) * t_amp ! (1)
                       h2b_vvvo(f,b,:,j) = h2b_vvvo(f,b,:,j) + h2a_oovv(m,n,:,a) * t_amp ! (af)
                   end do
                   do idet = 1, n3abb
                       t_amp = phase*t3c_amps(idet)
                       ! I2B(abej) <- A(bf)A(jn) -h2b(mnef) * t3c(afbmnj)
-                      a = t3c_excits(1,idet); f = t3c_excits(2,idet); b = t3c_excits(3,idet);
-                      m = t3c_excits(4,idet); n = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      a = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
+                      m = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
                       h2b_vvvo(a,b,:,j) = h2b_vvvo(a,b,:,j) - h2b_oovv(m,n,:,f) * t_amp ! (1)
                       h2b_vvvo(a,f,:,j) = h2b_vvvo(a,f,:,j) + h2b_oovv(m,n,:,b) * t_amp ! (bf)
                       h2b_vvvo(a,b,:,n) = h2b_vvvo(a,b,:,n) + h2b_oovv(m,j,:,f) * t_amp ! (jn)
@@ -349,9 +349,9 @@ module hbar_ccsdt_p
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3abb, n3bbb
 
-                  integer, intent(in) :: t3c_excits(6,n3abb)
+                  integer, intent(in) :: t3c_excits(n3abb,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb)
-                  integer, intent(in) :: t3d_excits(6,n3bbb)
+                  integer, intent(in) :: t3d_excits(n3bbb,6)
                   real(kind=8), intent(in) :: t3d_amps(n3bbb)
 
                   real(kind=8), intent(in) :: h2b_oovv(noa,nob,nua,nub)
@@ -370,8 +370,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3bbb
                       t_amp = phase*t3d_amps(idet)
                       ! I2C(amij) <- A(ij) [A(n/ij)A(a/ef) h2c(mnef) * t3d(aefijn)]
-                      a = t3d_excits(1,idet); e = t3d_excits(2,idet); f = t3d_excits(3,idet);
-                      i = t3d_excits(4,idet); j = t3d_excits(5,idet); n = t3d_excits(6,idet);
+                      a = t3d_excits(idet,1); e = t3d_excits(idet,2); f = t3d_excits(idet,3);
+                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); n = t3d_excits(idet,6);
                       h2c_vooo(a,:,i,j) = h2c_vooo(a,:,i,j) + h2c_oovv(:,n,e,f) * t_amp ! (1)
                       h2c_vooo(a,:,j,n) = h2c_vooo(a,:,j,n) + h2c_oovv(:,i,e,f) * t_amp ! (in)
                       h2c_vooo(a,:,i,n) = h2c_vooo(a,:,i,n) - h2c_oovv(:,j,e,f) * t_amp ! (jn)
@@ -386,8 +386,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3abb
                       t_amp = phase*t3c_amps(idet)
                       ! I2C(amij) <- A(ij) [A(ae) h2b(nmfe) * t3c(faenij)]
-                      f = t3c_excits(1,idet); a = t3c_excits(2,idet); e = t3c_excits(3,idet);
-                      n = t3c_excits(4,idet); i = t3c_excits(5,idet); j = t3c_excits(6,idet);
+                      f = t3c_excits(idet,1); a = t3c_excits(idet,2); e = t3c_excits(idet,3);
+                      n = t3c_excits(idet,4); i = t3c_excits(idet,5); j = t3c_excits(idet,6);
                       h2c_vooo(a,:,i,j) = h2c_vooo(a,:,i,j) + h2b_oovv(n,:,f,e) * t_amp ! (1)
                       h2c_vooo(e,:,i,j) = h2c_vooo(e,:,i,j) - h2b_oovv(n,:,f,a) * t_amp ! (ae)
                   end do
@@ -422,9 +422,9 @@ module hbar_ccsdt_p
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3abb, n3bbb
 
-                  integer, intent(in) :: t3c_excits(6,n3abb)
+                  integer, intent(in) :: t3c_excits(n3abb,6)
                   real(kind=8), intent(in) :: t3c_amps(n3abb)
-                  integer, intent(in) :: t3d_excits(6,n3bbb)
+                  integer, intent(in) :: t3d_excits(n3bbb,6)
                   real(kind=8), intent(in) :: t3d_amps(n3bbb)
 
                   real(kind=8), intent(in) :: h2b_oovv(noa,nob,nua,nub)
@@ -443,8 +443,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3bbb
                       t_amp = phase*t3d_amps(idet)
                       ! I2A(abie) <- A(ab) [A(i/mn)A(f/ab) -h2a(mnef) * t3a(abfimn)]
-                      a = t3d_excits(1,idet); b = t3d_excits(2,idet); f = t3d_excits(3,idet);
-                      i = t3d_excits(4,idet); m = t3d_excits(5,idet); n = t3d_excits(6,idet);
+                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); f = t3d_excits(idet,3);
+                      i = t3d_excits(idet,4); m = t3d_excits(idet,5); n = t3d_excits(idet,6);
                       h2c_vvov(a,b,i,:) = h2c_vvov(a,b,i,:) - h2c_oovv(m,n,:,f) * t_amp ! (1)
                       h2c_vvov(a,b,m,:) = h2c_vvov(a,b,m,:) + h2c_oovv(i,n,:,f) * t_amp ! (im)
                       h2c_vvov(a,b,n,:) = h2c_vvov(a,b,n,:) + h2c_oovv(m,i,:,f) * t_amp ! (in)
@@ -459,8 +459,8 @@ module hbar_ccsdt_p
                   do idet = 1, n3abb
                       t_amp = phase*t3c_amps(idet)
                       ! I2C(abie) <- A(ab) [A(im) -h2b(nmfe) * t3c(fabnim)]
-                      f = t3c_excits(1,idet); a = t3c_excits(2,idet); b = t3c_excits(3,idet);
-                      n = t3c_excits(4,idet); i = t3c_excits(5,idet); m = t3c_excits(6,idet);
+                      f = t3c_excits(idet,1); a = t3c_excits(idet,2); b = t3c_excits(idet,3);
+                      n = t3c_excits(idet,4); i = t3c_excits(idet,5); m = t3c_excits(idet,6);
                       h2c_vvov(a,b,i,:) = h2c_vvov(a,b,i,:) - h2b_oovv(n,m,f,:) * t_amp ! (1)
                       h2c_vvov(a,b,m,:) = h2c_vvov(a,b,m,:) + h2b_oovv(n,i,f,:) * t_amp ! (im)
                   end do

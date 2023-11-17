@@ -80,10 +80,10 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system, t3_excitation
                                                                                           H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                                                           shift)
     L.aaa, L.aab, L.abb, L.bbb, LH.aaa, LH.aab, LH.abb, LH.bbb = leftccsdt_p_loops.leftccsdt_p_loops.update_l3(
-                                                         L.aaa, l3_excitations["aaa"].T,
-                                                         L.aab, l3_excitations["aab"].T,
-                                                         L.abb, l3_excitations["abb"].T,
-                                                         L.bbb, l3_excitations["bbb"].T,
+                                                         L.aaa, l3_excitations["aaa"],
+                                                         L.aab, l3_excitations["aab"],
+                                                         L.abb, l3_excitations["abb"],
+                                                         L.bbb, l3_excitations["bbb"],
                                                          LH.aaa, LH.aab, LH.abb, LH.bbb,
                                                          omega,
                                                          H.a.oo, H.a.vv, H.b.oo, H.b.vv,
@@ -182,7 +182,7 @@ def LH_fun(LH, L, T, H, flag_RHF, system, t3_excitations, l3_excitations, pspace
     if flag_RHF:
         L.abb = L.aab.copy()
         LH.abb = LH.aab.copy()
-        l3_excitations["abb"] = l3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
+        l3_excitations["abb"] = l3_excitations["aab"][np.array([2, 0, 1, 5, 3, 4]), :]
 
         L.bbb = L.aaa.copy()
         LH.bbb = LH.aaa.copy()
@@ -404,8 +404,8 @@ def build_LH_2A(L, LH, T, H, X, l3_excitations):
     # Moment-like terms
     LH.aa = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_2a(
                                             LH.aa,
-                                            L.aaa, l3_excitations["aaa"].T,
-                                            L.aab, l3_excitations["aab"].T,
+                                            L.aaa, l3_excitations["aaa"],
+                                            L.aab, l3_excitations["aab"],
                                             H.aa.vooo, H.aa.vvov, H.ab.ovoo, H.ab.vvvo,
     )
     return LH
@@ -488,8 +488,8 @@ def build_LH_2B(L, LH, T, H, X, l3_excitations):
     # Moment-like terms
     LH.ab = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_2b(
                                             LH.ab,
-                                            L.aab, l3_excitations["aab"].T,
-                                            L.abb, l3_excitations["abb"].T,
+                                            L.aab, l3_excitations["aab"],
+                                            L.abb, l3_excitations["abb"],
                                             H.aa.vooo, H.aa.vvov, 
                                             H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo,
                                             H.bb.vooo, H.bb.vvov,
@@ -535,8 +535,8 @@ def build_LH_2C(L, LH, T, H, X, l3_excitations):
     # Moment-like terms
     LH.bb = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_2c(
                                             LH.bb,
-                                            L.abb, l3_excitations["abb"].T,
-                                            L.bbb, l3_excitations["bbb"].T,
+                                            L.abb, l3_excitations["abb"],
+                                            L.bbb, l3_excitations["bbb"],
                                             H.bb.vooo, H.bb.vvov, H.ab.vooo, H.ab.vvov,
     )
     return LH
@@ -544,24 +544,22 @@ def build_LH_2C(L, LH, T, H, X, l3_excitations):
 def build_LH_3A(L, LH, H, X, l3_excitations):
     LH.aaa, L.aaa, l3_excitations["aaa"] = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_3a(
                                             L.a, L.aa,
-                                            L.aaa, l3_excitations["aaa"].T,
-                                            L.aab, l3_excitations["aab"].T,
+                                            L.aaa, l3_excitations["aaa"],
+                                            L.aab, l3_excitations["aab"],
                                             H.a.ov, H.a.oo, H.a.vv,
                                             H.aa.oooo, H.aa.ooov, H.aa.oovv,
                                             H.aa.voov, H.aa.vovv, H.aa.vvvv,
                                             H.ab.ovvo,
                                             X.aa.ooov, X.aa.vovv,
     )
-    # re-transpose l3_excitations to maintain consistency with rest of code
-    l3_excitations["aaa"] = l3_excitations["aaa"].T
     return LH, L, l3_excitations
 
 def build_LH_3B(L, LH, H, X, l3_excitations):
     LH.aab, L.aab, l3_excitations["aab"] = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_3b(
                                             L.a, L.b, L.aa, L.ab,
-                                            L.aaa, l3_excitations["aaa"].T,
-                                            L.aab, l3_excitations["aab"].T,
-                                            L.abb, l3_excitations["abb"].T,
+                                            L.aaa, l3_excitations["aaa"],
+                                            L.aab, l3_excitations["aab"],
+                                            L.abb, l3_excitations["abb"],
                                             H.a.ov, H.a.oo, H.a.vv,
                                             H.b.ov, H.b.oo, H.b.vv,
                                             H.aa.oooo, H.aa.ooov, H.aa.oovv,
@@ -574,16 +572,14 @@ def build_LH_3B(L, LH, H, X, l3_excitations):
                                             X.aa.ooov, X.aa.vovv,
                                             X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
     )
-    # re-transpose l3_excitations to maintain consistency with rest of code
-    l3_excitations["aab"] = l3_excitations["aab"].T
     return LH, L, l3_excitations
 
 def build_LH_3C(L, LH, H, X, l3_excitations):
     LH.abb, L.abb, l3_excitations["abb"] = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_3c(
                                             L.a, L.b, L.ab, L.bb,
-                                            L.aab, l3_excitations["aab"].T,
-                                            L.abb, l3_excitations["abb"].T,
-                                            L.bbb, l3_excitations["bbb"].T,
+                                            L.aab, l3_excitations["aab"],
+                                            L.abb, l3_excitations["abb"],
+                                            L.bbb, l3_excitations["bbb"],
                                             H.a.ov, H.a.oo, H.a.vv,
                                             H.b.ov, H.b.oo, H.b.vv,
                                             H.aa.voov,
@@ -596,21 +592,17 @@ def build_LH_3C(L, LH, H, X, l3_excitations):
                                             X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
                                             X.bb.ooov, X.bb.vovv,
     )
-    # re-transpose l3_excitations to maintain consistency with rest of code
-    l3_excitations["abb"] = l3_excitations["abb"].T
     return LH, L, l3_excitations
 
 def build_LH_3D(L, LH, H, X, l3_excitations):
     LH.bbb, L.bbb, l3_excitations["bbb"] = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_3d(
                                             L.b, L.bb,
-                                            L.abb, l3_excitations["abb"].T,
-                                            L.bbb, l3_excitations["bbb"].T,
+                                            L.abb, l3_excitations["abb"],
+                                            L.bbb, l3_excitations["bbb"],
                                             H.b.ov, H.b.oo, H.b.vv,
                                             H.ab.voov,
                                             H.bb.oooo, H.bb.ooov, H.bb.oovv,
                                             H.bb.voov, H.bb.vovv, H.bb.vvvv,
                                             X.bb.ooov, X.bb.vovv,
     )
-    # re-transpose l3_excitations to maintain consistency with rest of code
-    l3_excitations["bbb"] = l3_excitations["bbb"].T
     return LH, L, l3_excitations
