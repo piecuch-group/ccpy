@@ -13,6 +13,7 @@ def test_eomcct3_chplus():
     )
     driver.system.print_info()
     driver.options["RHF_symmetry"] = False
+    driver.options["maximum_iterations"] = 500
     # Set the active space
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=3)
     # Get the P space lists corresponding to this active space
