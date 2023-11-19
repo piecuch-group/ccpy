@@ -339,8 +339,6 @@ def get_ccs_intermediates_opt(T, H0):
     L_amie = np.einsum('mnie,am->anie', H0.bb.ooov, T.b, optimize=True)
     H.bb.vvov = H0.bb.vvov + + np.einsum("anie,bn->abie", L_amie, T.b, optimize=True)
     #H.bb.vvov -= np.transpose(H.bb.vvov, (1, 0, 2, 3))
-
-
     return H
 
 def get_ccs_intermediates_unsorted(T, H0, occ_a, unocc_a, occ_b, unocc_b):

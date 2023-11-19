@@ -281,6 +281,14 @@ def get_ccsd_intermediates(T, H0):
 
     # Copy the Bare Hamiltonian object for T1/T2-similarity transformed HBar
     H = deepcopy(H0)
+    # Make useful intermediates
+    tau_aa = 0.5 * T.aa + np.einsum("ai,bj->abij", T.a, T.a, optimize=True)
+    tau_aa -= np.transpose(tau_aa, (0, 1, 3, 2))
+
+    tau_ab = T.ab + np.einsum("ai,bj->abij", T.a, T.b, optimize=True)
+
+    tau_bb = 0.5 * T.bb + np.einsum("ai,bj->abij", T.b, T.b, optimize=True)
+    tau_bb -= np.transpose(tau_bb, (0, 1, 3, 2))
 
     H.a.ov += (
             np.einsum("imae,em->ia", H0.aa.oovv, T.a, optimize=True)
@@ -324,102 +332,101 @@ def get_ccsd_intermediates(T, H0):
             - np.einsum("nmfb,fanm->ab", H0.ab.oovv, T.ab, optimize=True)
     )
 
-    Q1 = -np.einsum("mnfe,an->amef", H0.aa.oovv, T.a, optimize=True)
-    I2A_vovv = H0.aa.vovv + 0.5 * Q1
-    H.aa.vovv = I2A_vovv + 0.5 * Q1
+    H.aa.vovv = H0.aa.vovv - np.einsum("mnfe,an->amef", H0.aa.oovv, T.a, optimize=True)
+    H.aa.ooov = H0.aa.ooov + np.einsum("mnfe,fi->mnie", H0.aa.oovv, T.a, optimize=True)
 
-    Q1 = np.einsum("mnfe,fi->mnie", H0.aa.oovv, T.a, optimize=True)
-    I2A_ooov = H0.aa.ooov + 0.5 * Q1
-    H.aa.ooov = I2A_ooov + 0.5 * Q1
+    H.ab.vovv = H0.ab.vovv - np.einsum("nmef,an->amef", H0.ab.oovv, T.a, optimize=True)
+    H.ab.ooov = H0.ab.ooov + np.einsum("mnfe,fi->mnie", H0.ab.oovv, T.a, optimize=True)
+    H.ab.ovvv = H0.ab.ovvv - np.einsum("mnef,an->maef", H0.ab.oovv, T.b, optimize=True)
+    H.ab.oovo = H0.ab.oovo + np.einsum("nmef,fi->nmei", H0.ab.oovv, T.b, optimize=True)
 
-    Q1 = -np.einsum("nmef,an->amef", H0.ab.oovv, T.a, optimize=True)
-    I2B_vovv = H0.ab.vovv + 0.5 * Q1
-    H.ab.vovv = I2B_vovv + 0.5 * Q1
+    H.bb.vovv = H0.bb.vovv - np.einsum("nmef,an->amef", H0.bb.oovv, T.b, optimize=True)
+    H.bb.ooov = H0.bb.ooov + np.einsum("mnfe,fi->mnie", H0.bb.oovv, T.b, optimize=True)
 
-    Q1 = np.einsum("mnfe,fi->mnie", H0.ab.oovv, T.a, optimize=True)
-    I2B_ooov = H0.ab.ooov + 0.5 * Q1
-    H.ab.ooov = I2B_ooov + 0.5 * Q1
+    H.aa.vvvv = (
+            0.5 * H0.aa.vvvv
+            + 0.25 * np.einsum("mnef,abmn->abef", H0.aa.oovv, tau_aa, optimize=True)
+            - np.einsum("amef,bm->abef", H0.aa.vovv, T.a, optimize=True)
+    )
+    H.aa.vvvv -= np.transpose(H.aa.vvvv, (1, 0, 2, 3))
 
-    Q1 = -np.einsum("mnef,an->maef", H0.ab.oovv, T.b, optimize=True)
-    I2B_ovvv = H0.ab.ovvv + 0.5 * Q1
-    H.ab.ovvv = I2B_ovvv + 0.5 * Q1
-
-    Q1 = np.einsum("nmef,fi->nmei", H0.ab.oovv, T.b, optimize=True)
-    I2B_oovo = H0.ab.oovo + 0.5 * Q1
-    H.ab.oovo = I2B_oovo + 0.5 * Q1
-
-    Q1 = -np.einsum("nmef,an->amef", H0.bb.oovv, T.b, optimize=True)
-    I2C_vovv = H0.bb.vovv + 0.5 * Q1
-    H.bb.vovv = I2C_vovv + 0.5 * Q1
-
-    Q1 = np.einsum("mnfe,fi->mnie", H0.bb.oovv, T.b, optimize=True)
-    I2C_ooov = H0.bb.ooov + 0.5 * Q1
-    H.bb.ooov = I2C_ooov + 0.5 * Q1
-
-    Q1 = -np.einsum("bmfe,am->abef", I2A_vovv, T.a, optimize=True)
-    Q1 -= np.transpose(Q1, (1, 0, 2, 3))
-    H.aa.vvvv += 0.5 * np.einsum("mnef,abmn->abef", H0.aa.oovv, T.aa, optimize=True) + Q1
-
-    H.ab.vvvv += (
-            - np.einsum("mbef,am->abef", I2B_ovvv, T.a, optimize=True)
-            - np.einsum("amef,bm->abef", I2B_vovv, T.b, optimize=True)
-            + np.einsum("mnef,abmn->abef", H0.ab.oovv, T.ab, optimize=True)
+    H.ab.vvvv = (
+            H0.ab.vvvv
+            - np.einsum("mbef,am->abef", H0.ab.ovvv, T.a, optimize=True)
+            - np.einsum("amef,bm->abef", H0.ab.vovv, T.b, optimize=True)
+            + np.einsum("mnef,abmn->abef", H0.ab.oovv, tau_ab, optimize=True)
     )
 
-    Q1 = -np.einsum("bmfe,am->abef", I2C_vovv, T.b, optimize=True)
-    Q1 -= np.transpose(Q1, (1, 0, 2, 3))
-    H.bb.vvvv += 0.5 * np.einsum("mnef,abmn->abef", H0.bb.oovv, T.bb, optimize=True) + Q1
+    H.bb.vvvv = (
+            0.5 * H0.bb.vvvv
+            + 0.25 * np.einsum("mnef,abmn->abef", H0.bb.oovv, tau_bb, optimize=True)
+            - np.einsum("amef,bm->abef", H0.bb.vovv, T.b, optimize=True)
+    )
+    H.bb.vvvv -= np.transpose(H.bb.vvvv, (1, 0, 2, 3))
 
-    Q1 = +np.einsum("nmje,ei->mnij", I2A_ooov, T.a, optimize=True)
-    Q1 -= np.transpose(Q1, (0, 1, 3, 2))
-    H.aa.oooo += 0.5 * np.einsum("mnef,efij->mnij", H0.aa.oovv, T.aa, optimize=True) + Q1
+    H.aa.oooo = (
+            0.5 * H0.aa.oooo
+            + np.einsum("nmje,ei->mnij", H0.aa.ooov, T.a, optimize=True)
+            + 0.25 * np.einsum("mnef,efij->mnij", H0.aa.oovv, tau_aa, optimize=True)
+    )
+    H.aa.oooo -= np.transpose(H.aa.oooo, (0, 1, 3, 2))
 
-    H.ab.oooo += (
-            np.einsum("mnej,ei->mnij", I2B_oovo, T.a, optimize=True)
-            + np.einsum("mnie,ej->mnij", I2B_ooov, T.b, optimize=True)
-            + np.einsum("mnef,efij->mnij", H0.ab.oovv, T.ab, optimize=True)
+    H.ab.oooo = (
+            H0.ab.oooo
+            + np.einsum("mnej,ei->mnij", H0.ab.oovo, T.a, optimize=True)
+            + np.einsum("mnie,ej->mnij", H0.ab.ooov, T.b, optimize=True)
+            + np.einsum("mnef,efij->mnij", H0.ab.oovv, tau_ab, optimize=True)
     )
 
-    Q1 = +np.einsum("nmje,ei->mnij", I2C_ooov, T.b, optimize=True)
-    Q1 -= np.transpose(Q1, (0, 1, 3, 2))
-    H.bb.oooo += 0.5 * np.einsum("mnef,efij->mnij", H0.bb.oovv, T.bb, optimize=True) + Q1
+    H.bb.oooo = (
+            0.5 * H0.bb.oooo
+            + np.einsum("nmje,ei->mnij", H0.bb.ooov, T.b, optimize=True)
+            + 0.25 * np.einsum("mnef,efij->mnij", H0.bb.oovv, tau_bb, optimize=True)
+    )
+    H.bb.oooo -= np.transpose(H.bb.oooo, (0, 1, 3, 2))
 
-    H.aa.voov += (
-            np.einsum("amfe,fi->amie", I2A_vovv, T.a, optimize=True)
-            - np.einsum("nmie,an->amie", I2A_ooov, T.a, optimize=True)
+    H.aa.voov = (
+            H0.aa.voov
+            + np.einsum("amfe,fi->amie", H0.aa.vovv, T.a, optimize=True)
+            - np.einsum("nmie,an->amie", H.aa.ooov, T.a, optimize=True)
             + np.einsum("nmfe,afin->amie", H0.aa.oovv, T.aa, optimize=True)
             + np.einsum("mnef,afin->amie", H0.ab.oovv, T.ab, optimize=True)
     )
 
-    H.ab.voov += (
-            np.einsum("amfe,fi->amie", I2B_vovv, T.a, optimize=True)
-            - np.einsum("nmie,an->amie", I2B_ooov, T.a, optimize=True)
+    H.ab.voov = (
+            H0.ab.voov
+            + np.einsum("amfe,fi->amie", H0.ab.vovv, T.a, optimize=True)
+            - np.einsum("nmie,an->amie", H.ab.ooov, T.a, optimize=True)
             + np.einsum("nmfe,afin->amie", H0.ab.oovv, T.aa, optimize=True)
             + np.einsum("nmfe,afin->amie", H0.bb.oovv, T.ab, optimize=True)
     )
 
-    H.ab.ovvo += (
-            np.einsum("maef,fi->maei", I2B_ovvv, T.b, optimize=True)
-            - np.einsum("mnei,an->maei", I2B_oovo, T.b, optimize=True)
+    H.ab.ovvo = (
+            H0.ab.ovvo
+            + np.einsum("maef,fi->maei", H0.ab.ovvv, T.b, optimize=True)
+            - np.einsum("mnei,an->maei", H.ab.oovo, T.b, optimize=True)
             + np.einsum("mnef,afin->maei", H0.ab.oovv, T.bb, optimize=True)
             + np.einsum("mnef,fani->maei", H0.aa.oovv, T.ab, optimize=True)
     )
 
-    H.ab.ovov += (
-            np.einsum("mafe,fi->maie", I2B_ovvv, T.a, optimize=True)
-            - np.einsum("mnie,an->maie", I2B_ooov, T.b, optimize=True)
+    H.ab.ovov = (
+            H0.ab.ovov
+            + np.einsum("mafe,fi->maie", H0.ab.ovvv, T.a, optimize=True)
+            - np.einsum("mnie,an->maie", H.ab.ooov, T.b, optimize=True)
             - np.einsum("mnfe,fain->maie", H0.ab.oovv, T.ab, optimize=True)
     )
 
-    H.ab.vovo += (
-            - np.einsum("nmei,an->amei", I2B_oovo, T.a, optimize=True)
-            + np.einsum("amef,fi->amei", I2B_vovv, T.b, optimize=True)
+    H.ab.vovo = (
+            H0.ab.vovo
+            - np.einsum("nmei,an->amei", H.ab.oovo, T.a, optimize=True)
+            + np.einsum("amef,fi->amei", H0.ab.vovv, T.b, optimize=True)
             - np.einsum("nmef,afni->amei", H0.ab.oovv, T.ab, optimize=True)
     )
 
-    H.bb.voov += (
-            np.einsum("amfe,fi->amie", I2C_vovv, T.b, optimize=True)
-            - np.einsum("nmie,an->amie", I2C_ooov, T.b, optimize=True)
+    H.bb.voov = (
+            H0.bb.voov
+            + np.einsum("amfe,fi->amie", H0.bb.vovv, T.b, optimize=True)
+            - np.einsum("nmie,an->amie", H.bb.ooov, T.b, optimize=True)
             + np.einsum("nmfe,afin->amie", H0.bb.oovv, T.bb, optimize=True)
             + np.einsum("nmfe,fani->amie", H0.ab.oovv, T.ab, optimize=True)
     )
@@ -490,11 +497,11 @@ def get_ccsd_intermediates(T, H0):
             + 0.5 * np.einsum("mnie,abmn->abie", H0.aa.ooov, T.aa, optimize=True)
     )
 
-    Q1 = H0.ab.ovov - np.einsum("mnie,bn->mbie", H0.ab.ooov, T.b, optimize=True)
-    Q1 = -np.einsum("mbie,am->abie", Q1, T.a, optimize=True)
+    Q1 = H0.ab.ovov - np.einsum("mnie,bn->mbie", H0.ab.ooov, T.b, optimize=True) # no3nu2
+    Q1 = -np.einsum("mbie,am->abie", Q1, T.a, optimize=True) # nu3no2
     H.ab.vvov += Q1 + (
             - np.einsum("me,abim->abie", H.b.ov, T.ab, optimize=True)
-            + np.einsum("abfe,fi->abie", H.ab.vvvv, T.a, optimize=True)
+            + np.einsum("abfe,fi->abie", H.ab.vvvv, T.a, optimize=True) # nu4no
             + np.einsum("nbfe,afin->abie", H.ab.ovvv, T.aa, optimize=True)
             + np.einsum("bnef,afin->abie", H.bb.vovv, T.ab, optimize=True)
             - np.einsum("amfe,fbim->abie", H.ab.vovv, T.ab, optimize=True)

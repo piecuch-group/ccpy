@@ -788,7 +788,7 @@ def get_active_pspace(system, num_active=1, target_irrep=None):
 
     # Convert the spin-integrated lists into Numpy arrays
     for spincase, array in excitations.items():
-        excitations[spincase] = np.asarray(array)
+        excitations[spincase] = np.asarray(array, order="F")
         if len(excitations[spincase].shape) < 2:
             excitations[spincase] = np.ones((1, 6))
 

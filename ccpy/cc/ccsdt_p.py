@@ -45,6 +45,24 @@ def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace=None):
     #[TODO]: Should accept CCS HBar as input and build only terms with T2 in it
     if build_hbar:
         hbar = get_ccsd_intermediates(T, H)
+        # Transpose integrals appropriately 
+        hbar.a.vv = hbar.a.vv.T
+        hbar.b.vv = hbar.b.vv.T
+        #
+        hbar.aa.vvov = hbar.aa.vvov.transpose(3, 0, 1, 2)
+        hbar.ab.vvov = hbar.ab.vvov.transpose(3, 0, 1, 2)
+        hbar.ab.vvvo = hbar.ab.vvvo.transpose(2, 0, 1, 3)
+        hbar.bb.vvov = hbar.bb.vvov.transpose(3, 0, 1, 2)
+        #
+        hbar.aa.voov = hbar.aa.voov.transpose(1, 3, 0, 2)
+        hbar.ab.voov = hbar.ab.voov.transpose(1, 3, 0, 2)
+        hbar.ab.ovvo = hbar.ab.ovvo.transpose(0, 2, 1, 3)
+        hbar.ab.vovo = hbar.ab.vovo.transpose(1, 2, 0, 3)
+        hbar.ab.ovov = hbar.ab.ovov.transpose(0, 3, 1, 2)
+        hbar.bb.voov = hbar.bb.voov.transpose(1, 3, 0, 2)
+        hbar.aa.vvvv = hbar.aa.vvvv.transpose(2, 3, 0, 1)
+        hbar.ab.vvvv = hbar.ab.vvvv.transpose(2, 3, 0, 1)
+        hbar.bb.vvvv = hbar.bb.vvvv.transpose(2, 3, 0, 1)
 
     # update T3
     if do_t3["aaa"]:
@@ -373,6 +391,7 @@ def update_t3a(T, dT, H, H0, shift, t3_excitations):
     Update t3a amplitudes by calculating the projection <ijkabc|(H_N e^(T1+T2+T3))_C|0>.
     """
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+    I2A_vooo = I2A_vooo.transpose(1, 0, 2, 3)
 
     dT.aaa, T.aaa, t3_excitations["aaa"] = ccsdt_p_loops.ccsdt_p_loops.update_t3a_p(
         T.aaa, t3_excitations["aaa"], 
@@ -380,7 +399,7 @@ def update_t3a(T, dT, H, H0, shift, t3_excitations):
         T.aa,
         H.a.oo, H.a.vv,
         H0.aa.oovv, H.aa.vvov, I2A_vooo,
-        H.aa.oooo, H.aa.voov, H.aa.vvvv.transpose(2, 3, 0, 1),
+        H.aa.oooo, H.aa.voov, H.aa.vvvv,
         H0.ab.oovv, H.ab.voov,
         H0.a.oo, H0.a.vv,
         shift
@@ -395,6 +414,8 @@ def update_t3b(T, dT, H, H0, shift, t3_excitations):
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
+    I2A_vooo = I2A_vooo.transpose(1, 0, 2, 3)
+    I2B_vooo = I2B_vooo.transpose(1, 0, 2, 3)
 
     dT.aab, T.aab, t3_excitations["aab"] = ccsdt_p_loops.ccsdt_p_loops.update_t3b_p(
         T.aaa, t3_excitations["aaa"],
@@ -402,9 +423,9 @@ def update_t3b(T, dT, H, H0, shift, t3_excitations):
         T.abb, t3_excitations["abb"],
         T.aa, T.ab,
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-        H0.aa.oovv, H.aa.vvov, I2A_vooo, H.aa.oooo, H.aa.voov, H.aa.vvvv.transpose(2, 3, 0, 1),
+        H0.aa.oovv, H.aa.vvov, I2A_vooo, H.aa.oooo, H.aa.voov, H.aa.vvvv,
         H0.ab.oovv, H.ab.vvov, H.ab.vvvo, I2B_vooo, I2B_ovoo, 
-        H.ab.oooo, H.ab.voov,H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv.transpose(2, 3, 0, 1),
+        H.ab.oooo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
         H0.bb.oovv, H.bb.voov,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
         shift
@@ -419,6 +440,8 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations):
     I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
+    I2B_vooo = I2B_vooo.transpose(1, 0, 2, 3)
+    I2C_vooo = I2C_vooo.transpose(1, 0, 2, 3)
 
     dT.abb, T.abb, t3_excitations["abb"] = ccsdt_p_loops.ccsdt_p_loops.update_t3c_p(
         T.aab, t3_excitations["aab"],
@@ -428,8 +451,8 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations):
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
         H0.aa.oovv, H.aa.voov,
         H0.ab.oovv, I2B_vooo, I2B_ovoo, H.ab.vvov, H.ab.vvvo, H.ab.oooo,
-        H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv.transpose(2, 3, 0, 1),
-        H0.bb.oovv, I2C_vooo, H.bb.vvov, H.bb.oooo, H.bb.voov, H.bb.vvvv.transpose(2, 3, 0, 1),
+        H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
+        H0.bb.oovv, I2C_vooo, H.bb.vvov, H.bb.oooo, H.bb.voov, H.bb.vvvv,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
         shift
     )
@@ -441,6 +464,7 @@ def update_t3d(T, dT, H, H0, shift, t3_excitations):
     Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N e^(T1+T2+T3))_C|0>.
     """
     I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
+    I2C_vooo = I2C_vooo.transpose(1, 0, 2, 3)
 
     dT.bbb, T.bbb, t3_excitations["bbb"] = ccsdt_p_loops.ccsdt_p_loops.update_t3d_p(
         T.abb, t3_excitations["abb"],
@@ -448,7 +472,7 @@ def update_t3d(T, dT, H, H0, shift, t3_excitations):
         T.bb,
         H.b.oo, H.b.vv,
         H0.bb.oovv, H.bb.vvov, I2C_vooo,
-        H.bb.oooo, H.bb.voov, H.bb.vvvv.transpose(2, 3, 0, 1),
+        H.bb.oooo, H.bb.voov, H.bb.vvvv,
         H0.ab.oovv, H.ab.ovvo,
         H0.b.oo, H0.b.vv,
         shift
