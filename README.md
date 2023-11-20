@@ -10,6 +10,10 @@ usage of computational routines that are transparent enough so that they can be 
 still maintaining reasonable efficiency. To this end, CCpy employs a hybrid Python-Fortran programming approach made possible
 with the f2py package, which allows one to compile Fortran code into shared object libraries containing subroutines
 that are callable from Python and interoperable with Numpy arrays. 
+
+*Important Note: The compliation of Fortran modules with ```f2py``` is not currently compatible with Python 3.12 due to
+the migration away from ```numpy.distutils```. In order to fix this, we are moving over to compilation using
+```meson```. In the meantime, please use Python 3.11 when building CCpy.*
 </p>
 
 ## Available Computational Options

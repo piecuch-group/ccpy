@@ -843,9 +843,6 @@ class Driver:
         # Form the initial subspace vectors
         # B0, _ = np.linalg.qr(np.asarray([self.L[i].flatten() for i in state_index]).T)
 
-        # Print the options as a header
-        self.print_options()
-
         # Create the residual L*H that is re-used for each root
         LH = ClusterOperator(self.system,
                              order=self.operator_params["order"],
@@ -1170,6 +1167,7 @@ class Driver:
         elif method.lower() == "cct3":
             from ccpy.moments.cct3 import calc_cct3, calc_eomcct3
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
+            from ccpy.utilities.utilities import unravel_triples_amplitudes
             # Ensure that HBar is set
             assert self.flag_hbar
             for i in state_index:
@@ -1180,8 +1178,11 @@ class Driver:
                     # In order to use two-body approximation consistently for excited states, remove the V*T3 terms in vooo and vvov elements of HBar
                     if two_body_approx and t3_excitations:
                         self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
-                    _, self.deltap3[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
-                                                   self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
+                    if two_body_approx:
+                        _, self.deltap3[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
+                                                       self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
+                    elif not two_body_approx and t3_excitations: # perform full CC(t;3) correction using CC(P) routine
+                        unravel_triples_amplitudes(self.T, t3_excitations)
                 else:
                     # Perform excited-state correction
                     # WARNING: Set this value to [1] as a failsafe since EOMCC(t;3) is going to be run through EOMCC(P) and left-EOMCC(P) routines
@@ -1193,17 +1194,21 @@ class Driver:
                                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                         self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
         elif method.lower() == "ccp3":
-            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full
-            # Ensure that both HBar and pspace are set
+            from ccpy.moments.ccp3 import calc_ccp3_2ba_opt, calc_ccp3_full
+            from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
+            from ccpy.utilities.utilities import unravel_triples_amplitudes
+            # Ensure that both HBar is set
             assert self.flag_hbar
-            assert pspace
+            # Reomve V*T3 from HBar if left-CC(P)/EOMCC(P) was performed
+            if two_body_approx and self.L[0].order > 2:
+                self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
             for i in state_index:
                 if i == 0: # Ground-state correction
                     if two_body_approx: # Use the 2BA (requires only L1, L2 and HBar of CCSD)
-                        _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
+                        _, self.deltap3[0] = calc_ccp3_2ba_opt(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
                     else: # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
-                        _, self.deltap3[0] = calc_ccp3_full(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
-                else: # Excited-states correction
+                        _, self.deltap3[0] = calc_ccp3_full(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
+                else: # Excited-state correction
                     pass
 
         elif method.lower() == "ccp3(t)":
@@ -1356,7 +1361,7 @@ class AdaptDriver:
                                                                                   use_RHF=self.driver.options["RHF_symmetry"])
             else:
                 triples_list = []
-                self.driver.run_ccp3(method="ccp3", state_index=[0], two_body_approx=True, pspace=self.pspace)
+                self.driver.run_ccp3(method="ccp3", state_index=[0], two_body_approx=True, pspace=self.pspace, t3_excitations=self.t3_excitations)
                 self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltap3[0]["D"]
         else: # CCSD(T) method
             if imacro < self.nmacro - 1:
@@ -1393,7 +1398,7 @@ class AdaptDriver:
                                                                            use_RHF=self.driver.options["RHF_symmetry"])
             else:
                 moments = []
-                self.driver.run_ccp3(method="ccp3", state_index=[0], two_body_approx=True, pspace=self.pspace)
+                self.driver.run_ccp3(method="ccp3", state_index=[0], two_body_approx=True, pspace=self.pspace, t3_excitations=self.t3_excitations)
                 self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltap3[0]["D"]
         else: # CCSD(T) method
             if imacro < self.nmacro - 1:
@@ -1560,8 +1565,8 @@ class AdaptEOMDriver:
                               roots_per_irrep=self.options["Roots per irrep"],
                               nact_occupied=self.options["nact_occupied"],
                               nact_unoccupied=self.options["nact_unoccupied"])
-        driver.run_eomccp(method="eomccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
-        driver.run_lefteomccp(method="left_ccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
+        self.driver.run_eomccp(method="eomccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
+        self.driver.run_lefteomccp(method="left_ccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
         self.ccp_energy[1][imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.vertical_excitation_energy[self.state_index]
 
     def run_ccp3(self, imacro):
