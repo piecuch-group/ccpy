@@ -281,6 +281,7 @@ def get_ccsd_intermediates(T, H0):
 
     # Copy the Bare Hamiltonian object for T1/T2-similarity transformed HBar
     H = deepcopy(H0)
+
     # Make useful intermediates
     tau_aa = 0.5 * T.aa + np.einsum("ai,bj->abij", T.a, T.a, optimize=True)
     tau_aa -= np.transpose(tau_aa, (0, 1, 3, 2))
@@ -483,58 +484,60 @@ def get_ccsd_intermediates(T, H0):
             + 0.5 * np.einsum("amef,efij->amij", H0.bb.vovv, T.bb, optimize=True)
     )
 
-    Q1 = (
-            np.einsum("bnef,afin->abie", H.aa.vovv, T.aa, optimize=True)
-            + np.einsum("bnef,afin->abie", H.ab.vovv, T.ab, optimize=True)
+    x2a_voov = H.aa.voov + 0.5 * np.einsum("nmie,an->amie", H.aa.ooov, T.a, optimize=True) # defined to avoid double-counting from A(ab) on [8] and [15]
+    H.aa.vvov = (
+            0.5 * H0.aa.vvov # [1]
+            - 0.5 * np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True) # [4]+[12]+[13]
+            - np.einsum("amie,bm->abie", x2a_voov, T.a, optimize=True) # [3]+[8']+[9]+[11]+[13]+[15']
+            + 0.25 * np.einsum("mnie,abmn->abie", H.aa.ooov, T.aa, optimize=True) # [6]+[10]
+            # Terms we have to deal with directly that are nu^4: [2], [5], and [7]
+            + 0.5 * np.einsum("abfe,fi->abie", H0.aa.vvvv, T.a, optimize=True) # [2]
+            + np.einsum("bnef,afin->abie", H0.aa.vovv, T.aa, optimize=True) # [5]
+            + np.einsum("bnef,afin->abie", H0.ab.vovv, T.ab, optimize=True) # [7]
     )
-    Q2 = H0.aa.ovov - 0.5 * np.einsum("mnie,bn->mbie", H0.aa.ooov, T.a, optimize=True)
-    Q2 = -np.einsum("mbie,am->abie", Q2, T.a, optimize=True)
-    Q1 += Q2
-    Q1 -= np.transpose(Q1, (1, 0, 2, 3))
-    H.aa.vvov += Q1 + (
-            - np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
-            + np.einsum("abfe,fi->abie", H.aa.vvvv, T.a, optimize=True)
-            + 0.5 * np.einsum("mnie,abmn->abie", H0.aa.ooov, T.aa, optimize=True)
+    H.aa.vvov -= np.transpose(H.aa.vvov, (1, 0, 2, 3))
+
+    # need to define x2b_voov and x2b_ovov such that [10] and [18] are not double counted
+    x2b_voov = H.ab.voov + 0.5 * np.einsum("nmie,an->amie", H.ab.ooov, T.a, optimize=True) # nu2no3
+    x2b_ovov = H.ab.ovov + 0.5 * np.einsum("nmie,bm->nbie", H.ab.ooov, T.b, optimize=True) # nu2no3
+    H.ab.vvov = (
+            H0.ab.vvov # [1]
+            - np.einsum("me,abim->abie", H.b.ov, T.ab, optimize=True) # [8] + [13] + [16]
+            - np.einsum("amie,bm->abie", x2b_voov, T.b, optimize=True) # [4] + 1/2*[10] + [11] + [12] + [17] + 1/2*[18]
+            - np.einsum("mbie,am->abie", x2b_ovov, T.a, optimize=True) # [2] + [9] + 1/2*[10] + [15] + 1/2*[18]
+            + np.einsum("nmie,abnm->abie", H.ab.ooov, T.ab, optimize=True) # [7] + [14]
+            # Terms we have to deal with directly that are nu^4: [2], [5], [6], and [19]
+            + np.einsum("abfe,fi->abie", H0.ab.vvvv, T.a, optimize=True) # [2]
+            + np.einsum("mbfe,afim->abie", H0.ab.ovvv, T.aa, optimize=True) # [5]
+            + np.einsum("bmef,afim->abie", H0.bb.vovv, T.ab, optimize=True) # [6]
+            - np.einsum("amfe,fbim->abie", H0.ab.vovv, T.ab, optimize=True) # [19]
     )
 
-    Q1 = H0.ab.ovov - np.einsum("mnie,bn->mbie", H0.ab.ooov, T.b, optimize=True) # no3nu2
-    Q1 = -np.einsum("mbie,am->abie", Q1, T.a, optimize=True) # nu3no2
-    H.ab.vvov += Q1 + (
-            - np.einsum("me,abim->abie", H.b.ov, T.ab, optimize=True)
-            + np.einsum("abfe,fi->abie", H.ab.vvvv, T.a, optimize=True) # nu4no
-            + np.einsum("nbfe,afin->abie", H.ab.ovvv, T.aa, optimize=True)
-            + np.einsum("bnef,afin->abie", H.bb.vovv, T.ab, optimize=True)
-            - np.einsum("amfe,fbim->abie", H.ab.vovv, T.ab, optimize=True)
-            - np.einsum("amie,bm->abie", H0.ab.voov, T.b, optimize=True)
-            + np.einsum("nmie,abnm->abie", H0.ab.ooov, T.ab, optimize=True)
+    x2b_ovvo = H.ab.ovvo + 0.5 * np.einsum("nmei,am->naei", H.ab.oovo, T.b, optimize=True)
+    x2b_vovo = H.ab.vovo + 0.5 * np.einsum("nmei,bn->bmei", H.ab.oovo, T.a, optimize=True)
+    H.ab.vvvo = (
+            H0.ab.vvvo # [1]
+            - np.einsum("me,bami->baei", H.a.ov, T.ab, optimize=True) # [8] + [13] + [16]
+            - np.einsum("maei,bm->baei", x2b_ovvo, T.a, optimize=True) # [4] + 1/2*[10] + [11] + [12] + [14] + 1/2*[17]
+            - np.einsum("bmei,am->baei", x2b_vovo, T.b, optimize=True) # [3] + [9] + 1/2*[10] + 1/2*[17] + [18]
+            + np.einsum("nmei,banm->baei", H.ab.oovo, T.ab, optimize=True) # [6] + [15]
+            # Terms we have to deal with directly that are nu^4: [2], [5], [7], and [19]
+            + np.einsum("baef,fi->baei", H0.ab.vvvv, T.b, optimize=True) # [2]
+            + np.einsum("bmef,afim->baei", H0.ab.vovv, T.bb, optimize=True) # [5]
+            + np.einsum("bmef,fami->baei", H0.aa.vovv, T.ab, optimize=True) # [7]
+            - np.einsum("maef,bfmi->baei", H0.ab.ovvv, T.ab, optimize=True) # [19]
     )
 
-    Q1 = H0.ab.vovo - np.einsum("nmei,bn->bmei", H0.ab.oovo, T.a, optimize=True)
-    Q1 = -np.einsum("bmei,am->baei", Q1, T.b, optimize=True)
-    H.ab.vvvo += Q1 + (
-            - np.einsum("me,bami->baei", H.a.ov, T.ab, optimize=True)
-            + np.einsum("baef,fi->baei", H.ab.vvvv, T.b, optimize=True)
-            + np.einsum("bnef,fani->baei", H.aa.vovv, T.ab, optimize=True)
-            + np.einsum("bnef,fani->baei", H.ab.vovv, T.bb, optimize=True)
-            - np.einsum("maef,bfmi->baei", H.ab.ovvv, T.ab, optimize=True)
-            - np.einsum("naei,bn->baei", H0.ab.ovvo, T.a, optimize=True)
-            + np.einsum("nmei,banm->baei", H0.ab.oovo, T.ab, optimize=True)
+    x2c_voov = H.bb.voov + 0.5 * np.einsum("nmie,an->amie", H.bb.ooov, T.b, optimize=True) # defined to avoid double-counting from A(ab) on [8] and [15]
+    H.bb.vvov = (
+            0.5 * H0.bb.vvov # [1]
+            - 0.5 * np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True) # [4]+[12]+[13]
+            - np.einsum("amie,bm->abie", x2c_voov, T.b, optimize=True) # [3]+[8']+[9]+[11]+[13]+[15']
+            + 0.25 * np.einsum("mnie,abmn->abie", H.bb.ooov, T.bb, optimize=True) # [6]+[10]
+            # Terms we have to deal with directly that are nu^4: [2], [5], and [7]
+            + 0.5 * np.einsum("abfe,fi->abie", H0.bb.vvvv, T.b, optimize=True) # [2]
+            + np.einsum("bnef,afin->abie", H0.bb.vovv, T.bb, optimize=True) # [5]
+            + np.einsum("nbfe,fani->abie", H0.ab.ovvv, T.ab, optimize=True) # [7]
     )
-
-    Q1 = (
-            np.einsum("bnef,afin->abie", H.bb.vovv, T.bb, optimize=True)
-            + np.einsum("nbfe,fani->abie", H.ab.ovvv, T.ab, optimize=True)
-    )
-    # [TODO]: THIS SHOULD BE H0.bb.ovov, right???
-    Q2 = H0.bb.ovov - 0.5 * np.einsum("mnie,bn->mbie", H0.bb.ooov, T.b, optimize=True)
-    Q2 = -np.einsum("mbie,am->abie", Q2, T.b, optimize=True)
-    Q1 += Q2
-    Q1 -= np.transpose(Q1, (1, 0, 2, 3))
-    H.bb.vvov += Q1 + (
-            - np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
-            + np.einsum("abfe,fi->abie", H.bb.vvvv, T.b, optimize=True)
-            + 0.5 * np.einsum("mnie,abmn->abie", H0.bb.ooov, T.bb, optimize=True)
-    )
-
-
+    H.bb.vvov -= np.transpose(H.bb.vvov, (1, 0, 2, 3))
     return H

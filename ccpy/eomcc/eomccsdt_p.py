@@ -70,7 +70,6 @@ def HR(dR, R, T, H, flag_RHF, system, t3_excitations, r3_excitations, pspace=Non
         R.abb = R.aab.copy()
         dR.abb = dR.aab.copy()
         r3_excitations["abb"] = r3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
-
         R.bbb = R.aaa.copy()
         dR.bbb = dR.aaa.copy()
         r3_excitations["bbb"] = r3_excitations["aaa"].copy()
@@ -251,7 +250,7 @@ def build_HR_3B(dR, R, r3_excitations, T, t3_excitations, H, X):
                                             H.ab.oooo, H.ab.vooo, H.ab.ovoo,
                                             H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3),
                                             H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvov.transpose(3, 0, 1, 2),
-                                            H.ab.vvvo.transpose(2, 0, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
+                                            H.ab.vvvo.transpose(2, 0, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
                                             H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
                                             X.a.oo, X.a.vv, X.b.oo, X.b.vv,
                                             X.aa.oooo, X.aa.vooo, X.aa.oovv,
@@ -259,7 +258,7 @@ def build_HR_3B(dR, R, r3_excitations, T, t3_excitations, H, X):
                                             X.ab.oooo, X.ab.vooo, X.ab.ovoo,
                                             X.ab.oovv, X.ab.voov.transpose(1, 3, 0, 2), X.ab.vovo.transpose(1, 2, 0, 3),
                                             X.ab.ovov.transpose(0, 3, 1, 2), X.ab.ovvo.transpose(0, 2, 1, 3), X.ab.vvov.transpose(3, 0, 1, 2),
-                                            X.ab.vvvo.transpose(2, 0, 1, 3), X.ab.vvvv.transpose(2, 3, 0, 1),
+                                            X.ab.vvvo.transpose(2, 0, 1, 3), X.ab.vvvv.transpose(3, 2, 1, 0),
                                             X.bb.oovv, X.bb.voov.transpose(1, 3, 0, 2),
     )
     return dR, R, r3_excitations

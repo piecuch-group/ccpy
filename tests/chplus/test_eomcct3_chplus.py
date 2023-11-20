@@ -12,7 +12,7 @@ def test_eomcct3_chplus():
         nfrozen=0,
     )
     driver.system.print_info()
-    driver.options["RHF_symmetry"] = True
+    driver.options["RHF_symmetry"] = True # left CC(P) for 4 Sigma^+ does not want to converge
     driver.options["maximum_iterations"] = 500
     # Set the active space
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=3)

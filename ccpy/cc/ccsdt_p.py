@@ -60,9 +60,9 @@ def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace=None):
         hbar.ab.vovo = hbar.ab.vovo.transpose(1, 2, 0, 3)
         hbar.ab.ovov = hbar.ab.ovov.transpose(0, 3, 1, 2)
         hbar.bb.voov = hbar.bb.voov.transpose(1, 3, 0, 2)
-        hbar.aa.vvvv = hbar.aa.vvvv.transpose(2, 3, 0, 1)
-        hbar.ab.vvvv = hbar.ab.vvvv.transpose(2, 3, 0, 1)
-        hbar.bb.vvvv = hbar.bb.vvvv.transpose(2, 3, 0, 1)
+        hbar.aa.vvvv = hbar.aa.vvvv.transpose(3, 2, 1, 0)
+        #hbar.ab.vvvv = hbar.ab.vvvv.transpose(3, 2, 1, 0)
+        hbar.bb.vvvv = hbar.bb.vvvv.transpose(3, 2, 1, 0)
 
     # update T3
     if do_t3["aaa"]:
@@ -71,8 +71,10 @@ def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace=None):
         T, dT, t3_excitations = update_t3b(T, dT, hbar, H, shift, t3_excitations)
     if flag_RHF:
        T.abb = T.aab.copy()
+       dT.abb = dT.aab.copy()
        t3_excitations["abb"] = t3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
        T.bbb = T.aaa.copy()
+       dT.bbb = dT.aaa.copy()
        t3_excitations["bbb"] = t3_excitations["aaa"].copy()
     else:
         if do_t3["abb"]:
@@ -425,7 +427,7 @@ def update_t3b(T, dT, H, H0, shift, t3_excitations):
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
         H0.aa.oovv, H.aa.vvov, I2A_vooo, H.aa.oooo, H.aa.voov, H.aa.vvvv,
         H0.ab.oovv, H.ab.vvov, H.ab.vvvo, I2B_vooo, I2B_ovoo, 
-        H.ab.oooo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
+        H.ab.oooo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv.transpose(3, 2, 1, 0),
         H0.bb.oovv, H.bb.voov,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
         shift
@@ -451,7 +453,7 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations):
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
         H0.aa.oovv, H.aa.voov,
         H0.ab.oovv, I2B_vooo, I2B_ovoo, H.ab.vvov, H.ab.vvvo, H.ab.oooo,
-        H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv,
+        H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.ab.vvvv.transpose(2, 3, 0, 1),
         H0.bb.oovv, I2C_vooo, H.bb.vvov, H.bb.oooo, H.bb.voov, H.bb.vvvv,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
         shift
