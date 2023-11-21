@@ -9,6 +9,8 @@ def unravel_triples_amplitudes(T, t3_excitations):
     n3aab = t3_excitations["aab"].shape[0]
     n3abb = t3_excitations["abb"].shape[0]
     n3bbb = t3_excitations["bbb"].shape[0]
+    nua, noa = T.a
+    nub, nob = T.b
     # Unravel aaa
     t3_aaa = np.zeros((nua, nua, nua, noa, noa, noa), order="F")
     for idet in range(n3aaa):

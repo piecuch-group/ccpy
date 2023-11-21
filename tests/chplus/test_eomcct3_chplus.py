@@ -12,7 +12,7 @@ def test_eomcct3_chplus():
         nfrozen=0,
     )
     driver.system.print_info()
-    driver.options["RHF_symmetry"] = True # left CC(P) for 4 Sigma^+ does not want to converge
+    driver.options["RHF_symmetry"] = True # left CC(P) for 4 Sigma^+ needs (4,4) guess space
     driver.options["maximum_iterations"] = 500
     # Set the active space
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=3)
@@ -23,7 +23,7 @@ def test_eomcct3_chplus():
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_leftccp(method="left_ccsdt_p", t3_excitations=t3_excitations)
     # Initial guess
-    driver.run_guess(method="cisd", multiplicity=1, roots_per_irrep={"A1": 4, "B1": 2, "B2": 0, "A2": 2},  nact_occupied=3, nact_unoccupied=7)
+    driver.run_guess(method="cisd", multiplicity=1, roots_per_irrep={"A1": 4, "B1": 2, "B2": 0, "A2": 2},  nact_occupied=4, nact_unoccupied=4)
     roots = [2, 3, 4, 5, 6, 7, 8]
     irreps = ["A1", "A1", "A1", "B1", "B1", "A2", "A2"]
     # Run EOMCC(P)

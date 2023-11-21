@@ -7,7 +7,6 @@ from ccpy.utilities.printing import (
         print_block_eomcc_iteration,
         print_ee_amplitudes
 )
-
 # [TODO]: (1) Add left-EOMCC single-root Davidson solver
 # [TODO]: (2) Add biorthogonal L and R single-root Davidson solver (non-Hermitian Hirao-Nakatsuji algorithm)
 
@@ -68,9 +67,16 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
     Diagonalize the similarity-transformed Hamiltonian HBar using the
     non-Hermitian Davidson algorithm.
     """
+    import h5py
+    from ccpy.utilities.utilities import remove_file
     t_root_start = time.perf_counter()
 
     print_eomcc_iteration_header()
+
+    # Create new HDF5 file by first checking if one exists and if so, remove it
+    remove_file("eomcc-vectors.hdf5")
+    if options["davidson_out_of_core"]:
+        f = h5py.File("eomcc-vectors.hdf5", "w")
 
     # Maximum subspace size
     nrest = 1   # number of previous vectors used to restart (>1 does not work, why?)
@@ -79,14 +85,18 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
     selection_method = options["davidson_selection_method"]
 
     # Allocate the B (correction/subspace), sigma (HR), and G (interaction) matrices
-    sigma = np.zeros((R.ndim, max_size))
-    B = np.zeros((R.ndim, max_size))
+    if options["davidson_out_of_core"]:
+        sigma = f.create_dataset("sigma", (R.ndim, max_size), dtype=np.float64)
+        B = f.create_dataset("bmatrix", (R.ndim, max_size), dtype=np.float64)
+    else:
+        sigma = np.zeros((R.ndim, max_size))
+        B = np.zeros((R.ndim, max_size))
     G = np.zeros((max_size, max_size))
     restart_block = np.zeros((R.ndim, nrest + noffset))
 
     # Initial values
     B[:, 0] = B0
-    R.unflatten(B[:, 0])
+    R.unflatten(B0)
     dR.unflatten(dR.flatten() * 0.0)
     if t3_excitations or r3_excitations:
         sigma[:, 0] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
@@ -181,10 +191,11 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
 
     # store the actual root you've solved for
     R.unflatten(r)
+    # remove HDF5 file
+    remove_file("eomcc-vectors.hdf5")
     # print the time taken for the root
     minutes, seconds = divmod(time.perf_counter() - t_root_start, 60)
     print(f"   Completed in {minutes:.1f}m {seconds:.1f}s")
-
     return R, omega, is_converged
 
 # Trying to get the version with restarts working...

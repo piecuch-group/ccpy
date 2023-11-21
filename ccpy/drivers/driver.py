@@ -59,6 +59,7 @@ class Driver:
                         "diis_size": 6,
                         "RHF_symmetry": (self.system.noccupied_alpha == self.system.noccupied_beta),
                         "diis_out_of_core": False,
+                        "davidson_out_of_core": False,
                         "amp_print_threshold": 0.025,
                         "davidson_max_subspace_size": 30,
                         "davidson_solver": "standard",

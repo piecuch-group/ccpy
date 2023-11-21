@@ -18,6 +18,7 @@ def test_eomccsd_chplus():
     )
     driver.system.print_info()
     driver.options["RHF_symmetry"] = False
+    driver.options["davidson_out_of_core"] = True
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="cis", multiplicity=1, roots_per_irrep={"A1": 3, "B1": 2, "B2": 2, "A2": 0})

@@ -1,6 +1,5 @@
 numpy
 scipy
-pydantic
 setuptools
-art
+h5py
 cclib
