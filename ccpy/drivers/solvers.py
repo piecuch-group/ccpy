@@ -17,7 +17,7 @@ def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, 
     # print header
     print_eomcc_iteration_header()
     # Instantiate DIIS accelerator
-    diis_engine = DIIS(R, options["diis_size"], options["diis_out_of_core"], vecfile="r.npy", residfile="dr.npy")
+    diis_engine = DIIS(R, options["diis_size"], options["diis_out_of_core"])
     # Initial values
     R.unflatten(B0)
     # begin iteration loop
@@ -616,7 +616,7 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
 
     # instantiate the DIIS accelerator object
     if do_diis:
-        diis_engine = DIIS(L, options["diis_size"], options["diis_out_of_core"], vecfile="l.npy", residfile="dl.npy")
+        diis_engine = DIIS(L, options["diis_size"], options["diis_out_of_core"])
 
     # Jacobi/DIIS iterations
     num_throw_away = 0 # keep this at 0 for now...
