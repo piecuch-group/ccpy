@@ -15,6 +15,7 @@ mf = scf.RHF(mol)
 mf.kernel()
 
 driver = Driver.from_pyscf(mf, nfrozen=0)
+driver.options["davidson_out_of_core"] = True
 driver.run_cc(method="ccsd")
 driver.run_hbar(method="ccsd")
 driver.run_guess(method="deacis", multiplicity=-1, nact_unoccupied=5, roots_per_irrep={"A1": 6})

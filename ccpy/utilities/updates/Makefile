@@ -23,7 +23,8 @@ MODULES := cc_loops \
 		   ccp3_adaptive_loops \
 		   clusteranalysis \
 		   ecccp3_loops \
-		   reorder
+		   reorder \
+		   vvvv_contraction
 
 EXT_SUFFIX := $(shell python -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
 SOURCES := $(addsuffix .f90, $(MODULES))

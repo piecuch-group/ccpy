@@ -16,7 +16,7 @@ def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, 
     t_root_start = time.perf_counter()
     # print header
     print_eomcc_iteration_header()
-    # Instantiate DIIS accelerator
+    # Instantiate DIIS accelerator (re-used for all roots)
     diis_engine = DIIS(R, options["diis_size"], options["diis_out_of_core"])
     # Initial values
     R.unflatten(B0)
@@ -55,6 +55,9 @@ def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, 
         # print the iteration of convergence
         elapsed_time = time.perf_counter() - t1
         print_eomcc_iteration(niter, omega, residual, delta_energy, elapsed_time)
+
+    # Clean up the HDF5 file used to store DIIS vectors
+    diis_engine.cleanup()
 
     # print the time taken for the root
     minutes, seconds = divmod(time.perf_counter() - t_root_start, 60)

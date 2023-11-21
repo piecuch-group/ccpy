@@ -19,6 +19,8 @@ def test_cc3_ch2():
     )
     driver.system.print_info()
 
+    driver.options["diis_out_of_core"] = True
+    driver.options["davidson_out_of_core"] = True
     driver.run_cc(method="cc3")
 
     # Check the CC3 total energy
