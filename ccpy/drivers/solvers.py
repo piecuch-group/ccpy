@@ -86,22 +86,22 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
 
     # Allocate the B (correction/subspace), sigma (HR), and G (interaction) matrices
     if options["davidson_out_of_core"]:
-        sigma = f.create_dataset("sigma", (R.ndim, max_size), dtype=np.float64)
-        B = f.create_dataset("bmatrix", (R.ndim, max_size), dtype=np.float64)
+        sigma = f.create_dataset("sigma", (max_size, R.ndim), dtype=np.float64)
+        B = f.create_dataset("bmatrix", (max_size, R.ndim), dtype=np.float64)
     else:
-        sigma = np.zeros((R.ndim, max_size))
-        B = np.zeros((R.ndim, max_size))
+        sigma = np.zeros((max_size, R.ndim))
+        B = np.zeros((max_size, R.ndim))
     G = np.zeros((max_size, max_size))
     restart_block = np.zeros((R.ndim, nrest + noffset))
 
     # Initial values
-    B[:, 0] = B0
+    B[0, :] = B0
     R.unflatten(B0)
     dR.unflatten(dR.flatten() * 0.0)
     if t3_excitations or r3_excitations:
-        sigma[:, 0] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
+        sigma[0, :] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
     else:
-        sigma[:, 0] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+        sigma[0, :] = HR(dR, R, T, H, options["RHF_symmetry"], system)
     if noffset == 1:
         restart_block[:, 0] = B0
 
@@ -113,8 +113,8 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
         omega_old = omega.copy()
 
         # solve projection subspace eigenproblem: G_{IJ} = sum_K B_{KI} S_{KJ} (vectorized)
-        G[curr_size - 1, :curr_size] = np.einsum("k,kp->p", B[:, curr_size - 1], sigma[:, :curr_size])
-        G[:curr_size, curr_size - 1] = np.einsum("k,kp->p", sigma[:, curr_size - 1], B[:, :curr_size])
+        G[curr_size - 1, :curr_size] = np.einsum("k,pk->p", B[curr_size - 1, :], sigma[:curr_size, :])
+        G[:curr_size, curr_size - 1] = np.einsum("k,pk->p", sigma[curr_size - 1, :], B[:curr_size, :])
         e, alpha_full = np.linalg.eig(G[:curr_size, :curr_size])
 
         # select root
@@ -131,14 +131,14 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
 
         # Get the eigenpair of interest
         omega = np.real(e[iselect])
-        r = np.dot(B[:, :curr_size], alpha)
+        r = np.dot(B[:curr_size, :].T, alpha)
         # Uncomment these lines to print R at each iteration
         #R.unflatten(r)
         #print_ee_amplitudes(R, system, R.order, 0.09)
         restart_block[:, niter % nrest + noffset] = r
 
         # calculate residual vector: r_i = S_{iK}*alpha_{K} - omega * r_i
-        R.unflatten(np.dot(sigma[:, :curr_size], alpha) - omega * r)
+        R.unflatten(np.dot(sigma[:curr_size, :].T, alpha) - omega * r)
         residual = np.linalg.norm(R.flatten())
         delta_energy = omega - omega_old
 
@@ -158,29 +158,29 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
         q = R.flatten()
         q /= np.linalg.norm(q)
         for p in range(curr_size):
-            b = B[:, p] / np.linalg.norm(B[:, p])
-            q -= np.dot(b.T, q) * b
+            b = B[p, :] / np.linalg.norm(B[p, :])
+            q -= np.dot(b, q) * b
         q /= np.linalg.norm(q)
         R.unflatten(q)
 
         # If below maximum subspace size, expand the subspace
         if curr_size < max_size:
-            B[:, curr_size] = q
+            B[curr_size, :] = q
             if t3_excitations or r3_excitations:
-                sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
+                sigma[curr_size, :] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
             else:
-                sigma[:, curr_size] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+                sigma[curr_size, :] = HR(dR, R, T, H, options["RHF_symmetry"], system)
         else:
             # Basic restart - use the last approximation to the eigenvector
             print("       **Deflating subspace**")
             restart_block, _ = np.linalg.qr(restart_block)
             for j in range(restart_block.shape[1]):
                 R.unflatten(restart_block[:, j])
-                B[:, j] = R.flatten()
+                B[j, :] = R.flatten()
                 if t3_excitations or r3_excitations:
-                    sigma[:, j] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
+                    sigma[j, :] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
                 else:
-                    sigma[:, j] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+                    sigma[j, :] = HR(dR, R, T, H, options["RHF_symmetry"], system)
             curr_size = restart_block.shape[1] - 1
 
         # print the iteration of convergence

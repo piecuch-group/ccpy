@@ -1,58 +1,38 @@
 import numpy as np
-
+import h5py
 from ccpy.utilities.utilities import remove_file
 
 
 class DIIS:
-    def __init__(self, T, diis_size, out_of_core, vecfile="t.npy", residfile="dt.npy"):
+    def __init__(self, T, diis_size, out_of_core):
 
         self.diis_size = diis_size
         self.out_of_core = out_of_core
         self.ndim = T.ndim
-        self.vecfile = vecfile
-        self.residfile = residfile
 
         if self.out_of_core:
-            self.T_list = np.memmap(
-                self.vecfile, mode="w+", dtype=T.a.dtype, shape=(self.ndim, self.diis_size)
-            )
-            self.T_residuum_list = np.memmap(
-                self.residfile, mode="w+", dtype=T.a.dtype, shape=(self.ndim, self.diis_size)
-            )
-            self.flush()
+            remove_file("cc-diis-vectors.hdf5")
+            f = h5py.File("cc-diis-vectors.hdf5", "w")
+            self.T_list = f.create_dataset("t-vectors", (self.diis_size, self.ndim), dtype=np.float64)
+            self.T_residuum_list = f.create_dataset("resid-vectors", (self.diis_size, self.ndim), dtype=np.float64)
         else:
-            self.T_list = np.zeros((self.ndim, diis_size))
-            self.T_residuum_list = np.zeros((self.ndim, diis_size))
+            self.T_list = np.zeros((self.diis_size, self.ndim), dtype=np.float64)
+            self.T_residuum_list = np.zeros((self.diis_size, self.ndim), dtype=np.float64)
 
     def cleanup(self):
         if self.out_of_core:
-            remove_file(self.vecfile)
-            remove_file(self.residfile)
+            remove_file("cc-diis-vectors.hdf5")
             
     def push(self, T, T_residuum, iteration):
-        self.T_list[:, iteration % self.diis_size] = T.flatten()
-        self.T_residuum_list[:, iteration % self.diis_size] = T_residuum.flatten()
-        if self.out_of_core:
-            self.flush()
-
-    def flush(self):
-        self.T_list.flush()
-        self.T_residuum_list.flush()
+            self.T_list[iteration % self.diis_size, :] = T.flatten()
+            self.T_residuum_list[iteration % self.diis_size, :] = T_residuum.flatten()
 
     def extrapolate(self):
-
         B_dim = self.diis_size + 1
         B = -1.0 * np.ones((B_dim, B_dim))
-
-        nhalf = int(self.ndim / 2)
         for i in range(self.diis_size):
             for j in range(i, self.diis_size):
-                B[i, j] = np.dot(
-                    self.T_residuum_list[:nhalf, i], self.T_residuum_list[:nhalf, j]
-                )
-                B[i, j] += np.dot(
-                    self.T_residuum_list[nhalf:, i], self.T_residuum_list[nhalf:, j]
-                )
+                B[i, j] = np.dot(self.T_residuum_list[i, :].T, self.T_residuum_list[j, :])
                 B[j, i] = B[i, j]
         B[-1, -1] = 0.0
 
@@ -64,7 +44,7 @@ class DIIS:
         coeff = solve_gauss(B, rhs)
         x_xtrap = np.zeros(self.ndim)
         for i in range(self.diis_size):
-            x_xtrap += coeff[i] * self.T_list[:, i]
+            x_xtrap += coeff[i] * self.T_list[i, :]
 
         return x_xtrap
 

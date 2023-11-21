@@ -114,9 +114,10 @@ def scatter(V_in, nacto, nactu, system):
                         V_bb_out[a, b, j, i] = -V_in[offset]
                         V_bb_out[b, a, j, i] = V_in[offset]
                         offset += 1
-    return np.hstack((V_a_out.flatten(), V_b_out.flatten(), V_aa_out.flatten(), V_ab_out.flatten(), V_bb_out.flatten()))
+    V_out = np.hstack((V_a_out.flatten(), V_b_out.flatten(), V_aa_out.flatten(), V_ab_out.flatten(), V_bb_out.flatten()))
+    return V_out
 
-def build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb, system):
+def build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb, system, with_ref=False):
 
     noa, nob, nua, nub = H.ab.oovv.shape
 
@@ -138,6 +139,16 @@ def build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb
     ####################################################################################
     # ALPHA SINGLES
     ####################################################################################
+    if with_ref:
+        ref_H_a = np.zeros((1, n1a))
+        for a in range(nua):
+            for i in range(noa):
+                idet = idx_a[a, i]
+                if idet == 0: continue
+                I = abs(idet) - 1
+                ref_H_a[0, I] = H.a.ov[i, a]
+        a_H_ref = ref_H_a.T
+
     a_H_a = np.zeros((n1a, n1a))
     a_H_b = np.zeros((n1a, n1b))
     a_H_aa = np.zeros((n1a, n2a))
@@ -225,6 +236,16 @@ def build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb
     ####################################################################################
     # BETA SINGLES
     ####################################################################################
+    if with_ref:
+        ref_H_b = np.zeros((1, n1b))
+        for a in range(nub):
+            for i in range(nob):
+                idet = idx_b[a, i]
+                if idet == 0: continue
+                I = abs(idet) - 1
+                ref_H_b[0, I] = H.b.ov[i, a]
+        b_H_ref = ref_H_b.T
+
     b_H_a = np.zeros((n1b, n1a))
     b_H_b = np.zeros((n1b, n1b))
     b_H_ab = np.zeros((n1b, n2b))
@@ -312,6 +333,18 @@ def build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb
     ####################################################################################
     # ALPHA-ALPHA DOUBLES
     ####################################################################################
+    if with_ref:
+        ref_H_aa = np.zeros((1, n2a))
+        for a in range(nactu_a):
+            for b in range(a + 1, nactu_a):
+                for i in range(noa - nacto_a, noa):
+                    for j in range(i + 1, noa):
+                        idet = idx_aa[a, b, i, j]
+                        if idet == 0: continue
+                        I = abs(idet) - 1
+                        ref_H_aa[0, I] = H.aa.oovv[i, j, a, b]
+        aa_H_ref = ref_H_aa.T
+
     aa_H_a = np.zeros((n2a, n1a))
     aa_H_aa = np.zeros((n2a, n2a))
     aa_H_ab = np.zeros((n2a, n2b))
@@ -443,6 +476,18 @@ def build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb
     ####################################################################################
     # ALPHA-BETA DOUBLES
     ####################################################################################
+    if with_ref:
+        ref_H_ab = np.zeros((1, n2b))
+        for a in range(nactu_a):
+            for b in range(nactu_b):
+                for i in range(noa - nacto_a, noa):
+                    for j in range(nob - nacto_b, nob):
+                        idet = idx_ab[a, b, i, j]
+                        if idet == 0: continue
+                        I = abs(idet) - 1
+                        ref_H_ab[0, I] = H.ab.oovv[i, j, a, b]
+        ab_H_ref = ref_H_ab.T
+
     ab_H_a = np.zeros((n2b, n1a))
     ab_H_b = np.zeros((n2b, n1b))
     ab_H_aa = np.zeros((n2b, n2a))
@@ -564,6 +609,18 @@ def build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb
     ####################################################################################
     # BETA-BETA DOUBLES
     ####################################################################################
+    if with_ref:
+        ref_H_bb = np.zeros((1, n2c))
+        for a in range(nactu_b):
+            for b in range(a + 1, nactu_b):
+                for i in range(nob - nacto_b, nob):
+                    for j in range(i + 1, nob):
+                        idet = idx_bb[a, b, i, j]
+                        if idet == 0: continue
+                        I = abs(idet) - 1
+                        ref_H_bb[0, I] = H.bb.oovv[i, j, a, b]
+        bb_H_ref = ref_H_bb.T
+
     bb_H_b = np.zeros((n2c, n1b))
     bb_H_ab = np.zeros((n2c, n2b))
     bb_H_bb = np.zeros((n2c, n2c))
@@ -694,18 +751,30 @@ def build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb
                                 bb_H_ab[I, J] += H.ab.ovvo[m, a, e, i]
 
     # Zero blocks
+    ref_H_ref = np.zeros((1, 1))
     a_H_bb = np.zeros((n1a, n2c))
     b_H_aa = np.zeros((n1b, n2a))
     aa_H_bb = np.zeros((n2a, n2c))
     # Assemble and return full matrix
-    return np.concatenate(
-        (np.concatenate((a_H_a, a_H_b, a_H_aa, a_H_ab, a_H_bb), axis=1),
-         np.concatenate((b_H_a, b_H_b, b_H_aa, b_H_ab, b_H_bb), axis=1),
-         np.concatenate((aa_H_a, b_H_aa.T, aa_H_aa, aa_H_ab, aa_H_bb), axis=1),
-         np.concatenate((ab_H_a, ab_H_b, ab_H_aa, ab_H_ab, ab_H_bb), axis=1),
-         np.concatenate((a_H_bb.T, bb_H_b, aa_H_bb.T, bb_H_ab, bb_H_bb), axis=1)
-         ), axis=0
-    )
+    if with_ref:
+        return np.concatenate(
+            (np.concatenate((ref_H_ref, ref_H_a, ref_H_b, ref_H_aa, ref_H_ab, ref_H_bb), axis=1),
+             np.concatenate((a_H_ref, a_H_a, a_H_b, a_H_aa, a_H_ab, a_H_bb), axis=1),
+             np.concatenate((b_H_ref, b_H_a, b_H_b, b_H_aa, b_H_ab, b_H_bb), axis=1),
+             np.concatenate((aa_H_ref, aa_H_a, b_H_aa.T, aa_H_aa, aa_H_ab, aa_H_bb), axis=1),
+             np.concatenate((ab_H_ref, ab_H_a, ab_H_b, ab_H_aa, ab_H_ab, ab_H_bb), axis=1),
+             np.concatenate((bb_H_ref, a_H_bb.T, bb_H_b, aa_H_bb.T, bb_H_ab, bb_H_bb), axis=1)
+             ), axis=0
+        )
+    else:
+        return np.concatenate(
+            (np.concatenate((a_H_a, a_H_b, a_H_aa, a_H_ab, a_H_bb), axis=1),
+             np.concatenate((b_H_a, b_H_b, b_H_aa, b_H_ab, b_H_bb), axis=1),
+             np.concatenate((aa_H_a, b_H_aa.T, aa_H_aa, aa_H_ab, aa_H_bb), axis=1),
+             np.concatenate((ab_H_a, ab_H_b, ab_H_aa, ab_H_ab, ab_H_bb), axis=1),
+             np.concatenate((a_H_bb.T, bb_H_b, aa_H_bb.T, bb_H_ab, bb_H_bb), axis=1)
+             ), axis=0
+        )
 
 def get_sz2(system, Ms):
     Ns = float((system.noccupied_alpha + Ms) - (system.noccupied_beta - Ms))
