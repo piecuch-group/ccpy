@@ -62,6 +62,7 @@ energetics for the missing many-electron correlations using the generalized mome
   - CR-EOMCC(2,3) and its size-intensive *δ*-CR-EOMCC(2,3) extension
   - EOM-CC3
   - EOMCCSDt
+  - Excited-state CC(t;3)
   - EOMCCSDT
   - IP-EOMCCSD(2h-1p)
   - IP-EOMCCSD(3h-2p)
