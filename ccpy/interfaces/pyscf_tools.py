@@ -5,6 +5,7 @@ from ccpy.models.integrals import getHamiltonian
 from ccpy.models.system import System
 from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 
+from ccpy.cholesky.cholesky import cholesky_eri_from_pyscf
 from ccpy.energy.hf_energy import calc_hf_frozen_core_energy
 
 
@@ -12,6 +13,7 @@ def load_pyscf_integrals(
         meanfield, nfrozen=0, ndelete=0,
         num_act_holes_alpha=0, num_act_particles_alpha=0,
         num_act_holes_beta=0, num_act_particles_beta=0,
+        use_cholesky=False, cholesky_tol=1.0e-09,
         normal_ordered=True, dump_integrals=False, sorted=True
 ):
     """Builds the System and Integral objects using the information contained within a PySCF
@@ -69,10 +71,19 @@ def load_pyscf_integrals(
     )
     # put integrals into Fortran order
     e1int = np.asfortranarray(e1int)
-    e2int = np.transpose(
-        np.reshape(ao2mo.kernel(molecule, mo_coeff, compact=False), 4 * (norbitals,)),
-        (0, 2, 1, 3)
-    )
+
+    if use_cholesky:
+        # Obtain AO Cholesky decomposition of ERIs
+        R_chol = cholesky_eri_from_pyscf(molecule, tol=cholesky_tol)
+        # Transform to MO frame
+        R_chol = np.einsum("xpq,pi,qj->xij", R_chol, mo_coeff, mo_coeff, optimize=True)
+        # Stupid, but for now, just make the integrals out of Cholesky to test approximation
+        e2int = np.einsum("xpr,xqs->pqrs", R_chol, R_chol, optimize=True)
+    else:
+        e2int = np.transpose(
+            np.reshape(ao2mo.kernel(molecule, mo_coeff, compact=False), 4 * (norbitals,)),
+            (0, 2, 1, 3)
+        )
     e2int = np.asfortranarray(e2int)
     #e2int = np.einsum(
     #     "pi,qj,rk,sl,pqrs->ijkl", mo_coeff, mo_coeff, mo_coeff, mo_coeff, eri_aoints, optimize=True

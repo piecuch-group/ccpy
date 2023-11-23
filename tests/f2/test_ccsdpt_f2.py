@@ -22,7 +22,7 @@ def test_ccsdpt_f2():
     mf = scf.RHF(mol)
     mf.kernel()
 
-    driver = Driver.from_pyscf(mf, nfrozen=2)
+    driver = Driver.from_pyscf(mf, nfrozen=2, use_cholesky=True, cholesky_tol=1.0e-05)
     driver.run_cc(method="ccsd")
     driver.run_ccp3(method="ccsd(t)")
 
