@@ -32,7 +32,7 @@ TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 
 # If OpenMP is not available, remove the last two flags, -fopenmp, -lgomp
 # For GitHub CI pipeline, remove OpenMP
-FFLAGS := -std=f2018 -O3 -ffree-line-length-512# -march=native -mtune=native -fopenmp -lgomp -mavx
+FFLAGS := -std=f2018 -O3 -ffree-line-length-512 -march=native -mtune=native -fopenmp -lgomp -mavx
 
 ifeq ($(CONDA_PREFIX),)
 

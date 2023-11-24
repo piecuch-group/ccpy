@@ -171,25 +171,27 @@ class AdaptDriver:
 
             # Step 4: Perform Goodson extrapolation
             x1 = time.perf_counter()
-            if imacro > 0:
-                print("   Goodson FCI Extrapolation")
-                print("   -------------------------")
-                self.ex_ccq[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
-                                                            self.ccp_energy[0],
-                                                            self.ccpq_energy[imacro],
-                                                            approximant="ccq")
-                self.ex_ccr[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
-                                                            self.ccp_energy[0],
-                                                            self.ccpq_energy[imacro],
-                                                            approximant="ccr")
-                self.ex_cccf[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
-                                                             self.ccp_energy[0],
-                                                             self.ccpq_energy[imacro],
-                                                             approximant="cccf")
-                print("   ex-CCq Total Energy =", self.ex_ccq[imacro])
-                print("   ex-CCr Total Energy =", self.ex_ccr[imacro])
-                print("   ex-CCcf Total Energy =", self.ex_cccf[imacro])
-                print("")
+            print("   Goodson FCI Extrapolation")
+            print("   -------------------------")
+            self.ex_ccq[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
+                                                        #self.ccp_energy[0],
+                                                        self.ccp_energy[imacro],
+                                                        self.ccpq_energy[imacro],
+                                                        approximant="ccq")
+            self.ex_ccr[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
+                                                        #self.ccp_energy[0],
+                                                        self.ccp_energy[imacro],
+                                                        self.ccpq_energy[imacro],
+                                                        approximant="ccr")
+            self.ex_cccf[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
+                                                         #self.ccp_energy[0],
+                                                         self.ccp_energy[imacro],
+                                                         self.ccpq_energy[imacro],
+                                                         approximant="cccf")
+            print("   ex-CCq Total Energy =", self.ex_ccq[imacro])
+            print("   ex-CCr Total Energy =", self.ex_ccr[imacro])
+            print("   ex-CCcf Total Energy =", self.ex_cccf[imacro])
+            print("")
             x2 = time.perf_counter()
             t_extrap = x2 - x1
 

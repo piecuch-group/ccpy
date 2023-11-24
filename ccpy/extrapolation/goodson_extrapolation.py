@@ -10,7 +10,7 @@ def goodson_extrapolation(e_ref, e_ccsd, e_ccsdt, approximant):
     elif approximant == "ccr":
         return rational_pade_approximant(delta1, delta2, delta3)
     elif approximant == "cccf":
-        return continuted_fraction_approximant(delta1, delta2, delta3)
+        return continued_fraction_approximant(delta1, delta2, delta3)
     else:
         return 0.0
 
@@ -29,7 +29,7 @@ def rational_pade_approximant(delta1, delta2, delta3):
     )
     return extrap_ccr
 
-def continuted_fraction_approximant(delta1, delta2, delta3):
+def continued_fraction_approximant(delta1, delta2, delta3):
 
     extrap_cccf = (
         delta1/(1.0 - delta2/delta1/(1.0 - delta3/delta2))
