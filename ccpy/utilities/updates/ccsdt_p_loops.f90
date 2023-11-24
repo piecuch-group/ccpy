@@ -2323,6 +2323,9 @@ module ccsdt_p_loops
                         end do
                      end do
                   end do
+                  !$omp parallel shared(resid,t3a_excits,xbuf,I2A_vooo,n3aaa),&
+                  !$omp private(idet,a,b,c,i,j,k,m)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa
                       a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                       i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -2339,8 +2342,13 @@ module ccsdt_p_loops
                           resid(idet) = resid(idet) - I2A_vooo(m,c,i,k) * xbuf(m,j,b,a)
                       end do
                   end do
+                  !$omp end do
+                  !$omp end parallel
                   deallocate(xbuf)
 
+                  !$omp parallel shared(resid,t3a_excits,t2a,I2A_vvov,n3aaa),&
+                  !$omp private(idet,a,b,c,i,j,k,e)
+                  !$omp do schedule(static)
                   do idet = 1, n3aaa
                       a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                       i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -2357,8 +2365,13 @@ module ccsdt_p_loops
                           resid(idet) = resid(idet) + I2A_vvov(e,a,c,k) * t2a(e,b,j,i)
                       end do
                   end do
+                  !$omp end do
+                  !$omp end parallel
 
                   ! Update t3 vector
+                  !$omp parallel shared(resid,t3a_excits,t3a_amps,fA_oo,fA_vv,n3aaa,shift),&
+                  !$omp private(idet,a,b,c,i,j,k,denom)
+                  !$omp do schedule(static)
                   do idet = 1,n3aaa
                       a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                       i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -2366,6 +2379,8 @@ module ccsdt_p_loops
                       resid(idet) = resid(idet)/(denom - shift)
                       t3a_amps(idet) = t3a_amps(idet) + resid(idet)
                   end do
+                  !$omp end do
+                  !$omp end parallel
 
               end subroutine update_t3a_p
 
@@ -3788,6 +3803,9 @@ module ccsdt_p_loops
                   !
                   ! Moment contributions
                   !
+                  !$omp parallel shared(resid,t3b_excits,t2a,I2B_vvvo,n3aab),&
+                  !$omp private(idet,a,b,c,i,j,k,e)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -3797,7 +3815,12 @@ module ccsdt_p_loops
                           resid(idet) = resid(idet) - I2B_vvvo(e,a,c,k) * t2a(e,b,j,i)
                       end do
                   end do
+                  !$omp end do
+                  !$omp end parallel
 
+                  !$omp parallel shared(resid,t3b_excits,t2b,I2A_vvov,n3aab),&
+                  !$omp private(idet,a,b,c,i,j,k,e)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -3807,6 +3830,8 @@ module ccsdt_p_loops
                           resid(idet) = resid(idet) - I2A_vvov(e,a,b,j) * t2b(e,c,i,k)
                       end do
                   end do
+                  !$omp end do
+                  !$omp end parallel
 
                   allocate(xbuf(nub,nua,nob,noa))
                   do i = 1,noa
@@ -3818,6 +3843,9 @@ module ccsdt_p_loops
                         end do
                      end do
                   end do
+                  !$omp parallel shared(resid,t3b_excits,xbuf,I2B_vvov,n3aab),&
+                  !$omp private(idet,a,b,c,i,j,k,e)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -3829,6 +3857,8 @@ module ccsdt_p_loops
                           resid(idet) = resid(idet) + I2B_vvov(e,b,c,j) * xbuf(e,a,k,i)
                       end do
                   end do
+                  !$omp end do
+                  !$omp end parallel
                   deallocate(xbuf)
 
                   allocate(xbuf(noa,noa,nua,nua))
@@ -3841,6 +3871,9 @@ module ccsdt_p_loops
                         end do
                      end do
                   end do
+                  !$omp parallel shared(resid,t3b_excits,xbuf,I2B_ovoo,n3aab),&
+                  !$omp private(idet,a,b,c,i,j,k,m)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -3850,6 +3883,8 @@ module ccsdt_p_loops
                           resid(idet) = resid(idet) + I2B_ovoo(m,c,i,k) * xbuf(m,j,b,a)
                       end do
                   end do
+                  !$omp end do
+                  !$omp end parallel
                   deallocate(xbuf)
 
                   allocate(xbuf(noa,nob,nua,nub))
@@ -3862,6 +3897,9 @@ module ccsdt_p_loops
                         end do
                      end do
                   end do
+                  !$omp parallel shared(resid,t3b_excits,xbuf,I2A_vooo,n3aab),&
+                  !$omp private(idet,a,b,c,i,j,k,m)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -3871,6 +3909,8 @@ module ccsdt_p_loops
                           resid(idet) = resid(idet) + I2A_vooo(m,b,i,j) * xbuf(m,k,a,c)
                       end do
                   end do
+                  !$omp end do
+                  !$omp end parallel
                   deallocate(xbuf)
 
                   allocate(xbuf(nob,noa,nub,nua))
@@ -3883,6 +3923,9 @@ module ccsdt_p_loops
                         end do
                      end do
                   end do
+                  !$omp parallel shared(resid,t3b_excits,xbuf,I2B_vooo,n3aab),&
+                  !$omp private(idet,a,b,c,i,j,k,m)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -3894,9 +3937,14 @@ module ccsdt_p_loops
                           resid(idet) = resid(idet) - I2B_vooo(m,b,j,k) * xbuf(m,i,c,a)
                       end do
                   end do
+                  !$omp end do
+                  !$omp end parallel
                   deallocate(xbuf)
 
                   ! Update t3 vector
+                  !$omp parallel shared(resid,t3b_excits,t3b_amps,fa_oo,fb_oo,fa_vv,fb_vv,n3aab,shift),&
+                  !$omp private(idet,a,b,c,i,j,k,denom)
+                  !$omp do schedule(static)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -3904,6 +3952,8 @@ module ccsdt_p_loops
                       resid(idet) = resid(idet)/(denom - shift)
                       t3b_amps(idet) = t3b_amps(idet) + resid(idet)
                   end do
+                  !$omp end do
+                  !$omp end parallel
 
               end subroutine update_t3b_p
 
@@ -5340,27 +5390,37 @@ module ccsdt_p_loops
                   !
                   ! Moment contributions
                   !
+                  !$omp parallel shared(resid,t3c_excits,t2b,I2B_vvvo,n3abb),&
+                  !$omp private(idet,a,b,c,i,j,k,e)
+                  !$omp do schedule(static)
                   do idet = 1, n3abb
-                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
-                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      do e = 1, nua
-                          ! A(jk)A(bc) h2B(abej) * t2b(ecik)
-                          resid(idet) = resid(idet) + I2B_vvvo(e,a,b,j) * t2b(e,c,i,k)
-                          resid(idet) = resid(idet) - I2B_vvvo(e,a,b,k) * t2b(e,c,i,j)
-                          resid(idet) = resid(idet) - I2B_vvvo(e,a,c,j) * t2b(e,b,i,k)
-                          resid(idet) = resid(idet) + I2B_vvvo(e,a,c,k) * t2b(e,b,i,j)
-                      end do
-                   end do
+                     a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
+                     i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
+                     do e = 1, nua
+                        ! A(jk)A(bc) h2B(abej) * t2b(ecik)
+                        resid(idet) = resid(idet) + I2B_vvvo(e,a,b,j) * t2b(e,c,i,k)
+                        resid(idet) = resid(idet) - I2B_vvvo(e,a,b,k) * t2b(e,c,i,j)
+                        resid(idet) = resid(idet) - I2B_vvvo(e,a,c,j) * t2b(e,b,i,k)
+                        resid(idet) = resid(idet) + I2B_vvvo(e,a,c,k) * t2b(e,b,i,j)
+                     end do
+                  end do
+                  !$omp end do
+                  !$omp end parallel
 
+                  !$omp parallel shared(resid,t3c_excits,t2c,I2B_vvov,n3abb),&
+                  !$omp private(idet,a,b,c,i,j,k,e)
+                  !$omp do schedule(static)
                    do idet = 1,n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
                       do e = 1, nub
-                          ! A(bc) h2B(abie) * t2c(ecjk)
-                          resid(idet) = resid(idet) + I2B_vvov(e,a,b,i) * t2c(e,c,j,k)
-                          resid(idet) = resid(idet) - I2B_vvov(e,a,c,i) * t2c(e,b,j,k)
+                         ! A(bc) h2B(abie) * t2c(ecjk)
+                         resid(idet) = resid(idet) + I2B_vvov(e,a,b,i) * t2c(e,c,j,k)
+                         resid(idet) = resid(idet) - I2B_vvov(e,a,c,i) * t2c(e,b,j,k)
                       end do
                    end do
+                   !$omp end do
+                   !$omp end parallel
 
                    allocate(xbuf(nub,nua,nob,noa))
                    do i = 1,noa
@@ -5372,15 +5432,20 @@ module ccsdt_p_loops
                          end do
                       end do
                    end do
+                  !$omp parallel shared(resid,t3c_excits,xbuf,I2C_vvov,n3abb),&
+                  !$omp private(idet,a,b,c,i,j,k,e)
+                  !$omp do schedule(static)
                    do idet = 1,n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
                       do e = 1, nub
-                          ! A(jk) h2C(cbke) * t2b(aeij)
-                          resid(idet) = resid(idet) + I2C_vvov(e,c,b,k) * xbuf(e,a,j,i)
-                          resid(idet) = resid(idet) - I2C_vvov(e,c,b,j) * xbuf(e,a,k,i)
+                         ! A(jk) h2C(cbke) * t2b(aeij)
+                         resid(idet) = resid(idet) + I2C_vvov(e,c,b,k) * xbuf(e,a,j,i)
+                         resid(idet) = resid(idet) - I2C_vvov(e,c,b,j) * xbuf(e,a,k,i)
                       end do
                    end do
+                   !$omp end do
+                   !$omp end parallel
                    deallocate(xbuf)
 
                    allocate(xbuf(noa,nob,nua,nub))
@@ -5393,17 +5458,22 @@ module ccsdt_p_loops
                          end do
                       end do
                    end do
+                   !$omp parallel shared(resid,t3c_excits,xbuf,I2B_ovoo,n3abb),&
+                   !$omp private(idet,a,b,c,i,j,k,m)
+                   !$omp do schedule(static)
                    do idet = 1,n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
                       do m = 1, noa
-                          ! -A(kj)A(bc) h2b(mbij) * t2b(acmk)
-                          resid(idet) = resid(idet) - I2B_ovoo(m,b,i,j) * xbuf(m,k,a,c)
-                          resid(idet) = resid(idet) + I2B_ovoo(m,c,i,j) * xbuf(m,k,a,b)
-                          resid(idet) = resid(idet) + I2B_ovoo(m,b,i,k) * xbuf(m,j,a,c)
-                          resid(idet) = resid(idet) - I2B_ovoo(m,c,i,k) * xbuf(m,j,a,b)
+                         ! -A(kj)A(bc) h2b(mbij) * t2b(acmk)
+                         resid(idet) = resid(idet) - I2B_ovoo(m,b,i,j) * xbuf(m,k,a,c)
+                         resid(idet) = resid(idet) + I2B_ovoo(m,c,i,j) * xbuf(m,k,a,b)
+                         resid(idet) = resid(idet) + I2B_ovoo(m,b,i,k) * xbuf(m,j,a,c)
+                         resid(idet) = resid(idet) - I2B_ovoo(m,c,i,k) * xbuf(m,j,a,b)
                       end do
                    end do
+                   !$omp end do
+                   !$omp end parallel
                    deallocate(xbuf)
 
                    allocate(xbuf(nob,nob,nub,nub))
@@ -5416,15 +5486,20 @@ module ccsdt_p_loops
                          end do
                       end do
                    end do
+                   !$omp parallel shared(resid,t3c_excits,xbuf,I2B_vooo,n3abb),&
+                   !$omp private(idet,a,b,c,i,j,k,m)
+                   !$omp do schedule(static)
                    do idet = 1,n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
                       do m = 1, nob
-                          ! -A(jk) h2b(amij) * t2c(bcmk)
-                          resid(idet) = resid(idet) - I2B_vooo(m,a,i,j) * xbuf(m,k,b,c)
-                          resid(idet) = resid(idet) + I2B_vooo(m,a,i,k) * xbuf(m,j,b,c)
+                         ! -A(jk) h2b(amij) * t2c(bcmk)
+                         resid(idet) = resid(idet) - I2B_vooo(m,a,i,j) * xbuf(m,k,b,c)
+                         resid(idet) = resid(idet) + I2B_vooo(m,a,i,k) * xbuf(m,j,b,c)
                       end do
                    end do
+                   !$omp end do
+                   !$omp end parallel
                    deallocate(xbuf)
 
                    allocate(xbuf(nob,noa,nub,nua))
@@ -5437,18 +5512,26 @@ module ccsdt_p_loops
                          end do
                       end do
                    end do
+                   !$omp parallel shared(resid,t3c_excits,xbuf,I2C_vooo,n3abb),&
+                   !$omp private(idet,a,b,c,i,j,k,m)
+                   !$omp do schedule(static)
                    do idet = 1,n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
                       do m = 1, nob
-                          ! -A(bc) h2c(cmkj) * t2b(abim)
-                          resid(idet) = resid(idet) - I2C_vooo(m,c,k,j) * xbuf(m,i,b,a)
-                          resid(idet) = resid(idet) + I2C_vooo(m,b,k,j) * xbuf(m,i,c,a)
+                         ! -A(bc) h2c(cmkj) * t2b(abim)
+                         resid(idet) = resid(idet) - I2C_vooo(m,c,k,j) * xbuf(m,i,b,a)
+                         resid(idet) = resid(idet) + I2C_vooo(m,b,k,j) * xbuf(m,i,c,a)
                       end do
                    end do
+                   !$omp end do
+                   !$omp end parallel
                    deallocate(xbuf)
 
                    ! Update t3
+                   !$omp parallel shared(resid,t3c_excits,t3c_amps,fa_oo,fb_oo,fa_vv,fb_vv,n3abb,shift),&
+                   !$omp private(idet,a,b,c,i,j,k,denom)
+                   !$omp do schedule(static)
                    do idet = 1, n3abb
                        a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                        i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -5456,6 +5539,8 @@ module ccsdt_p_loops
                        resid(idet) = resid(idet)/(denom - shift)
                        t3c_amps(idet) = t3c_amps(idet) + resid(idet)
                    end do
+                   !$omp end do
+                   !$omp end parallel
 
               end subroutine update_t3c_p
 
@@ -7209,62 +7294,77 @@ module ccsdt_p_loops
                  ! deallocate t3 buffer arrays
                  deallocate(t3_amps_buff,t3_excits_buff)
 
-                  !
-                  ! Moment contributions
-                  !
-                  allocate(xbuf(nob,nob,nub,nub))
-                  do a = 1,nub
-                     do b = 1,nub
-                        do i = 1,nob
-                           do j = 1,nob
-                              xbuf(j,i,b,a) = t2c(b,a,j,i)
-                           end do
-                        end do
-                     end do
-                  end do
-                  do idet = 1, n3bbb
-                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
-                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                      do m = 1, nob
-                          ! -A(k/ij)A(a/bc) h2a(amij) * t2c(bcmk)
-                          resid(idet) = resid(idet) - I2C_vooo(m,a,i,j) * xbuf(m,k,b,c)
-                          resid(idet) = resid(idet) + I2C_vooo(m,b,i,j) * xbuf(m,k,a,c)
-                          resid(idet) = resid(idet) + I2C_vooo(m,c,i,j) * xbuf(m,k,b,a)
-                          resid(idet) = resid(idet) + I2C_vooo(m,a,k,j) * xbuf(m,i,b,c)
-                          resid(idet) = resid(idet) - I2C_vooo(m,b,k,j) * xbuf(m,i,a,c)
-                          resid(idet) = resid(idet) - I2C_vooo(m,c,k,j) * xbuf(m,i,b,a)
-                          resid(idet) = resid(idet) + I2C_vooo(m,a,i,k) * xbuf(m,j,b,c)
-                          resid(idet) = resid(idet) - I2C_vooo(m,b,i,k) * xbuf(m,j,a,c)
-                          resid(idet) = resid(idet) - I2C_vooo(m,c,i,k) * xbuf(m,j,b,a)
-                      end do
-                  end do
-                  deallocate(xbuf)
+                 !
+                 ! Moment contributions
+                 !
+                 allocate(xbuf(nob,nob,nub,nub))
+                 do a = 1,nub
+                    do b = 1,nub
+                       do i = 1,nob
+                          do j = 1,nob
+                             xbuf(j,i,b,a) = t2c(b,a,j,i)
+                          end do
+                       end do
+                    end do
+                 end do
+                 !$omp parallel shared(resid,t3d_excits,xbuf,I2C_vooo,n3bbb),&
+                 !$omp private(idet,a,b,c,i,j,k,m)
+                 !$omp do schedule(static)
+                 do idet = 1, n3bbb
+                    a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
+                    i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
+                    do m = 1, nob
+                       ! -A(k/ij)A(a/bc) h2a(amij) * t2c(bcmk)
+                       resid(idet) = resid(idet) - I2C_vooo(m,a,i,j) * xbuf(m,k,b,c)
+                       resid(idet) = resid(idet) + I2C_vooo(m,b,i,j) * xbuf(m,k,a,c)
+                       resid(idet) = resid(idet) + I2C_vooo(m,c,i,j) * xbuf(m,k,b,a)
+                       resid(idet) = resid(idet) + I2C_vooo(m,a,k,j) * xbuf(m,i,b,c)
+                       resid(idet) = resid(idet) - I2C_vooo(m,b,k,j) * xbuf(m,i,a,c)
+                       resid(idet) = resid(idet) - I2C_vooo(m,c,k,j) * xbuf(m,i,b,a)
+                       resid(idet) = resid(idet) + I2C_vooo(m,a,i,k) * xbuf(m,j,b,c)
+                       resid(idet) = resid(idet) - I2C_vooo(m,b,i,k) * xbuf(m,j,a,c)
+                       resid(idet) = resid(idet) - I2C_vooo(m,c,i,k) * xbuf(m,j,b,a)
+                    end do
+                 end do
+                 !$omp end do
+                 !$omp end parallel
+                 deallocate(xbuf)
 
-                  do idet = 1, n3bbb
-                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
-                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                      do e = 1, nub
-                           ! A(i/jk)(c/ab) h2a(abie) * t2c(ecjk)
-                          resid(idet) = resid(idet) + I2C_vvov(e,a,b,i) * t2c(e,c,j,k)
-                          resid(idet) = resid(idet) - I2C_vvov(e,c,b,i) * t2c(e,a,j,k)
-                          resid(idet) = resid(idet) - I2C_vvov(e,a,c,i) * t2c(e,b,j,k)
-                          resid(idet) = resid(idet) - I2C_vvov(e,a,b,j) * t2c(e,c,i,k)
-                          resid(idet) = resid(idet) + I2C_vvov(e,c,b,j) * t2c(e,a,i,k)
-                          resid(idet) = resid(idet) + I2C_vvov(e,a,c,j) * t2c(e,b,i,k)
-                          resid(idet) = resid(idet) - I2C_vvov(e,a,b,k) * t2c(e,c,j,i)
-                          resid(idet) = resid(idet) + I2C_vvov(e,c,b,k) * t2c(e,a,j,i)
-                          resid(idet) = resid(idet) + I2C_vvov(e,a,c,k) * t2c(e,b,j,i)
-                      end do
-                  end do
+                 !$omp parallel shared(resid,t3d_excits,t2c,I2C_vvov,n3bbb),&
+                 !$omp private(idet,a,b,c,i,j,k,e)
+                 !$omp do schedule(static)
+                 do idet = 1, n3bbb
+                    a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
+                    i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
+                    do e = 1, nub
+                       ! A(i/jk)(c/ab) h2a(abie) * t2c(ecjk)
+                       resid(idet) = resid(idet) + I2C_vvov(e,a,b,i) * t2c(e,c,j,k)
+                       resid(idet) = resid(idet) - I2C_vvov(e,c,b,i) * t2c(e,a,j,k)
+                       resid(idet) = resid(idet) - I2C_vvov(e,a,c,i) * t2c(e,b,j,k)
+                       resid(idet) = resid(idet) - I2C_vvov(e,a,b,j) * t2c(e,c,i,k)
+                       resid(idet) = resid(idet) + I2C_vvov(e,c,b,j) * t2c(e,a,i,k)
+                       resid(idet) = resid(idet) + I2C_vvov(e,a,c,j) * t2c(e,b,i,k)
+                       resid(idet) = resid(idet) - I2C_vvov(e,a,b,k) * t2c(e,c,j,i)
+                       resid(idet) = resid(idet) + I2C_vvov(e,c,b,k) * t2c(e,a,j,i)
+                       resid(idet) = resid(idet) + I2C_vvov(e,a,c,k) * t2c(e,b,j,i)
+                    end do
+                 end do
+                 !$omp end do
+                 !$omp end parallel
 
-                  ! Update t3 vector
-                  do idet = 1,n3bbb
-                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
-                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                      denom = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
-                      resid(idet) = resid(idet)/(denom - shift)
-                      t3d_amps(idet) = t3d_amps(idet) + resid(idet)
-                  end do
+                 ! Update t3 vector
+                 !$omp parallel shared(resid,t3d_excits,t3d_amps,fb_oo,fb_vv,n3bbb,shift),&
+                 !$omp private(idet,a,b,c,i,j,k,denom)
+                 !$omp do schedule(static)
+                 do idet = 1,n3bbb
+                    a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
+                    i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
+                    denom = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
+                    resid(idet) = resid(idet)/(denom - shift)
+                    t3d_amps(idet) = t3d_amps(idet) + resid(idet)
+                 end do
+                 !$omp end do
+                 !$omp end parallel
 
               end subroutine update_t3d_p
 
