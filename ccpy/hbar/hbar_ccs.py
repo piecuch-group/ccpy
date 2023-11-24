@@ -259,6 +259,9 @@ def get_ccs_intermediates_opt(T, H0):
 
     L_amie = np.einsum('mnie,am->anie', H0.aa.ooov, T.a, optimize=True)
     H.aa.vvov = H0.aa.vvov + np.einsum("anie,bn->abie", L_amie, T.a, optimize=True) # no(1)nu(4)
+    # You would expect to need this antisymmetrizer A(ab), but in the CCSD term H2A(abie)*T1A(ej),
+    # the A(ab) term on the second term in this expression disappears because it's a V*1/2 T1^2
+    # situation.
     #H.aa.vvov -= np.transpose(H.aa.vvov, (1, 0, 2, 3)) # WHY IS THIS NOT NEEDED???
 
     # -------------------#
@@ -337,7 +340,10 @@ def get_ccs_intermediates_opt(T, H0):
     H.bb.vooo -= np.transpose(H.bb.vooo, (0, 1, 3, 2))
 
     L_amie = np.einsum('mnie,am->anie', H0.bb.ooov, T.b, optimize=True)
-    H.bb.vvov = H0.bb.vvov + + np.einsum("anie,bn->abie", L_amie, T.b, optimize=True)
+    H.bb.vvov = H0.bb.vvov + np.einsum("anie,bn->abie", L_amie, T.b, optimize=True)
+    # You would expect to need this antisymmetrizer A(ab), but in the CCSD term H2C(abie)*T1B(ej),
+    # the A(ab) term on the second term in this expression disappears because it's a V*1/2 T1^2
+    # situation.
     #H.bb.vvov -= np.transpose(H.bb.vvov, (1, 0, 2, 3))
     return H
 

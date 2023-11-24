@@ -438,7 +438,7 @@ module ccp3_opt_loops
                         excits_buff(:,:) = t3c_excits(:,:)
                         nloc = nob*(nob-1)/2*noa
                         allocate(loc_arr(2,nloc))
-                        allocate(idx_table(noa,nob,nob))
+                        allocate(idx_table(nob,nob,noa))
                         call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), nob, nob, noa)
                         call sort3(excits_buff, loc_arr, idx_table, (/5,6,4/), nob, nob, noa, nloc, n3abb)
                         ! reorder integrals and T
@@ -807,6 +807,9 @@ module ccp3_opt_loops
                     deallocate(temp,idx)
       
                     loc_arr(1,:) = 1; loc_arr(2,:) = 0;
+                    !!! WARNING: THERE IS A MEMORY LEAK HERE! pqr2 is used below but is not set if n3p <= 1
+                    !if (n3p <= 1) print*, "WARNING: potential memory leakage in sort3 function. pqr2 set to 0"
+                    pqr2 = 0
                     do idet = 1, n3p-1
                        p1 = excits(idims(1),idet);   q1 = excits(idims(2),idet);   r1 = excits(idims(3),idet);
                        p2 = excits(idims(1),idet+1); q2 = excits(idims(2),idet+1); r2 = excits(idims(3),idet+1);
@@ -817,8 +820,9 @@ module ccp3_opt_loops
                           loc_arr(1,pqr2) = idet+1
                        end if
                     end do
-                    loc_arr(2,pqr2) = n3p
-
+                    if (n3p > 1) then
+                       loc_arr(2,pqr2) = n3p
+                    end if
               end subroutine sort3
 
               subroutine argsort(r,d)

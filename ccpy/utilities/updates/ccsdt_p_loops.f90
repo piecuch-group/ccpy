@@ -2420,7 +2420,7 @@ module ccsdt_p_loops
                                               H2B_ovov(noa,nub,nub,noa),& ! reordered
                                               !H2B_ovvo(1:noa,1:nub,1:nua,1:nob),&
                                               H2B_ovvo(noa,nua,nub,nob),& ! reordered
-                                              H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                                              H2B_vvvv(1:nub,1:nua,1:nub,1:nua),&
                                               H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
                                               !H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                                               H2C_voov(nob,nub,nub,nob),& ! reordered
@@ -7879,6 +7879,9 @@ module ccsdt_p_loops
               deallocate(temp,idx)
               ! obtain the start- and end-point indices for each lexical index in the sorted t3 excitation and amplitude arrays
               loc_arr(1,:) = 1; loc_arr(2,:) = 0; ! set default start > end so that empty sets do not trigger loops
+              !!! WARNING: THERE IS A MEMORY LEAK HERE! pqrs2 is used below but is not set if n3p <= 1
+              !if (n3p <= 1) print*, "WARNING: potential memory leakage in sort4 function. pqrs2 set to 0"
+              pqrs2 = 0
               do idet = 1, n3p-1
                  ! get consecutive lexcial indices
                  p1 = excits(idet,idims(1));   q1 = excits(idet,idims(2));   r1 = excits(idet,idims(3));   s1 = excits(idet,idims(4))
@@ -7891,7 +7894,9 @@ module ccsdt_p_loops
                     loc_arr(1,pqrs2) = idet+1
                  end if
               end do
-              loc_arr(2,pqrs2) = n3p
+              if (n3p > 1) then
+                 loc_arr(2,pqrs2) = n3p
+              end if
 
       end subroutine sort4
 
