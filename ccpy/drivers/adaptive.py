@@ -1,6 +1,7 @@
 import numpy as np
 import time
 from copy import deepcopy
+from ccpy.extrapolation.goodson_extrapolation import goodson_extrapolation
 from ccpy.utilities.printing import get_timestamp
 
 class AdaptDriver:
@@ -12,8 +13,14 @@ class AdaptDriver:
                         "minimum_threshold": 0.0}
 
         self.nmacro = len(self.percentage)
+        # energy containers
         self.ccp_energy = np.zeros(self.nmacro)
         self.ccpq_energy = np.zeros(self.nmacro)
+        # extrapolated energy containers
+        self.ex_ccq = np.zeros(self.nmacro)
+        self.ex_ccr = np.zeros(self.nmacro)
+        self.ex_cccf = np.zeros(self.nmacro)
+        # t3 excitations
         self.t3_excitations = {"aaa": np.ones((1, 6), order="F"),
                                "aab": np.ones((1, 6), order="F"),
                                "abb": np.ones((1, 6), order="F"),
@@ -50,7 +57,7 @@ class AdaptDriver:
             for i in range(len(self.percentage) - 1):
                 self.num_dets_to_add[i] = int(self.num_dets_to_add[i] / 2)
 
-    def analyze_pspace(self):
+    def print_pspace(self):
         """Counts and analyzes the P space in terms of spatial and Sz-spin symmetry."""
         t_start = time.perf_counter()
         for isym, excitation_count_irrep in enumerate(self.excitation_count_by_symmetry):
@@ -146,9 +153,9 @@ class AdaptDriver:
 
             # Step 1: Analyze the P space (optional)
             x1 = time.perf_counter()
-            self.analyze_pspace()
+            self.print_pspace()
             x2 = time.perf_counter()
-            t_pspace_analysis = x2 - x1
+            t_pspace_printing = x2 - x1
 
             # Step 2: Run CC(P) on this P space
             x1 = time.perf_counter()
@@ -162,6 +169,30 @@ class AdaptDriver:
             x2 = time.perf_counter()
             t_selection_and_ccp3 = x2 - x1
 
+            # Step 4: Perform Goodson extrapolation
+            x1 = time.perf_counter()
+            if imacro > 0:
+                print("   Goodson FCI Extrapolation")
+                print("   -------------------------")
+                self.ex_ccq[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
+                                                            self.ccp_energy[0],
+                                                            self.ccpq_energy[imacro],
+                                                            approximant="ccq")
+                self.ex_ccr[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
+                                                            self.ccp_energy[0],
+                                                            self.ccpq_energy[imacro],
+                                                            approximant="ccr")
+                self.ex_cccf[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
+                                                             self.ccp_energy[0],
+                                                             self.ccpq_energy[imacro],
+                                                             approximant="cccf")
+                print("   ex-CCq Total Energy =", self.ex_ccq[imacro])
+                print("   ex-CCr Total Energy =", self.ex_ccr[imacro])
+                print("   ex-CCcf Total Energy =", self.ex_cccf[imacro])
+                print("")
+            x2 = time.perf_counter()
+            t_extrap = x2 - x1
+
             # Print the change in CC(P) and CC(P;Q) energies
             if imacro > 0:
                 print("   Change in CC(P) energy = ", self.ccp_energy[imacro] - self.ccp_energy[imacro - 1])
@@ -169,30 +200,37 @@ class AdaptDriver:
             if imacro == self.nmacro - 1:
                 break
 
-            # Step 4: Expand the P space
+            # Step 5: Expand the P space
             x1 = time.perf_counter()
             self.run_expand_pspace(selection_arr)
             x2 = time.perf_counter()
             t_pspace_expand = x2 - x1
 
-            # Step 5: Reset variables in driver (CAN WE AVOID DOING THIS, PLEASE?)
+            # Step 6: Reset variables in driver (CAN WE AVOID DOING THIS, PLEASE?)
             self.driver.T = None
             self.driver.L[0] = None
             setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
 
-            # Step 6: Report timings of each step
+            # Step 7: Report timings of each step
             print(f"   Timing breakdown for macrostep {imacro}")
             print("   ---------------------------------")
-            print(f"   - P space analysis took {t_pspace_analysis:.2f} seconds")
+            print(f"   - P space printing took {t_pspace_printing:.2f} seconds")
             print(f"   - CC(P) took {t_ccp:.2f} seconds")
             print(f"   - CC(P;Q) + selection took {t_selection_and_ccp3:.2f} seconds")
+            print(f"   - Goodson extrapolation took {t_extrap:.2f} seconds")
             print(f"   - Expanding P space took {t_pspace_expand:.2f} seconds")
-            print(f"   - Total time: {t_pspace_expand + t_ccp + t_selection_and_ccp3 + t_pspace_expand:.2f} seconds")
+            print(f"   - Total time: {t_extrap + t_pspace_printing + t_pspace_expand + t_ccp + t_selection_and_ccp3 + t_pspace_expand:.2f} seconds")
 
-        # Print results
+        # Final printout of the results including energy extrapolations
         print("   Adaptive CC(P;Q) calculation ended on", get_timestamp(), "\n")
         print("   Summary of results:")
-        print("    %T           E(P)              E(P;Q)")
-        print("   ------------------------------------------")
+        print("    %T           E(P)             E(P;Q)             ex-CCq             ex-CCr             ex-CCcf")
+        print("   -------------------------------------------------------------------------------------------------------")
         for i in range(self.nmacro):
-            print("   %3.2f    %.10f     %.10f" % (self.percentage[i], self.ccp_energy[i], self.ccpq_energy[i]))
+            print("   %3.2f    %.10f     %.10f     %.10f     %.10f     %.10f" % (self.percentage[i],
+                                                                                 self.ccp_energy[i],
+                                                                                 self.ccpq_energy[i],
+                                                                                 self.ex_ccq[i],
+                                                                                 self.ex_ccr[i],
+                                                                                 self.ex_cccf[i])
+            )
