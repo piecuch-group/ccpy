@@ -9,8 +9,8 @@ def unravel_triples_amplitudes(T, t3_excitations):
     n3aab = t3_excitations["aab"].shape[0]
     n3abb = t3_excitations["abb"].shape[0]
     n3bbb = t3_excitations["bbb"].shape[0]
-    nua, noa = T.a
-    nub, nob = T.b
+    nua, noa = T.a.shape
+    nub, nob = T.b.shape
     # Unravel aaa
     t3_aaa = np.zeros((nua, nua, nua, noa, noa, noa), order="F")
     for idet in range(n3aaa):
@@ -111,6 +111,7 @@ def unravel_triples_amplitudes(T, t3_excitations):
         t3_bbb[c, b, a, k, i, j] = -T.bbb[idet]
         t3_bbb[c, b, a, k, j, i] = T.bbb[idet]
     setattr(T, "bbb", t3_bbb)
+    return T
 
 def reorder_triples_amplitudes(L, l3_excitations, t3_excitations):
     """Reorder the P-space triples amplitudes in L corresponding to

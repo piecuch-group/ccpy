@@ -1196,34 +1196,43 @@ class Driver:
                                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                         self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
         elif method.lower() == "ccp3":
-            from ccpy.moments.ccp3 import calc_ccp3_2ba_opt, calc_ccp3_full
+            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
             from ccpy.utilities.utilities import unravel_triples_amplitudes
             # Ensure that both HBar is set
             assert self.flag_hbar
-            # Reomve V*T3 from HBar if left-CC(P)/EOMCC(P) was performed
+
+            # Reomve V*T3 from HBar if left-CC(P)/EOMCC(P) was performed and you want to use 2BA with CCSD HBar
             if two_body_approx and self.L[0].order > 2:
                 self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
+
             for i in state_index:
-                if i == 0: # Ground-state correction
-                    if two_body_approx: # Use the 2BA (requires only L1, L2 and HBar of CCSD)
-                        _, self.deltap3[0] = calc_ccp3_2ba_opt(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
-                    else: # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
-                        _, self.deltap3[0] = calc_ccp3_full(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, pspace, self.options["RHF_symmetry"])
-                else: # Excited-state correction
+                # Ground-state correction
+                if i == 0:
+                    # Use the 2BA (requires only L1, L2 and HBar of CCSD)
+                    if two_body_approx:
+                        _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+                    # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
+                    else:
+                        # unravel triples vector into t3(abcijk) and l3(abcijk)
+                        self.T = unravel_triples_amplitudes(self.T, t3_excitations)
+                        self.L[0] = unravel_triples_amplitudes(self.L[0], t3_excitations)
+                        _, self.deltap3[0] = calc_ccp3_full(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+                # Excited-state corrections
+                else:
                     pass
 
-        elif method.lower() == "ccp3(t)":
-            from ccpy.moments.ccp3 import calc_ccpert3
-            # Ensure that pspace is set
-            assert pspace
-            # Warn the user if they run using HBar instead of H; we will not disallow it, however
-            if self.flag_hbar:
-                print("WARNING: CC(P;3)_(T) is using similarity-transformed Hamiltonian! Results will not match conventional CCSD(T)!")
-            # Perform ground-state correction
-            _, self.deltap3[0] = calc_ccpert3(self.T, self.correlation_energy, self.hamiltonian, self.system, pspace, self.options["RHF_symmetry"])
-        else:
-            raise NotImplementedError("Triples correction {} not implemented".format(method.lower()))
+        # elif method.lower() == "ccp3(t)":
+        #     from ccpy.moments.ccp3 import calc_ccpert3
+        #     # Ensure that pspace is set
+        #     assert pspace
+        #     # Warn the user if they run using HBar instead of H; we will not disallow it, however
+        #     if self.flag_hbar:
+        #         print("WARNING: CC(P;3)_(T) is using similarity-transformed Hamiltonian! Results will not match conventional CCSD(T)!")
+        #     # Perform ground-state correction
+        #     _, self.deltap3[0] = calc_ccpert3(self.T, self.correlation_energy, self.hamiltonian, self.system, pspace, self.options["RHF_symmetry"])
+        # else:
+        #     raise NotImplementedError("Triples correction {} not implemented".format(method.lower()))
 
     def run_ccp4(self, method, state_index=[0], two_body_approx=True):
 

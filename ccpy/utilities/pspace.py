@@ -119,7 +119,6 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 print(idx_unocc)
                 break
 
-
             # Get the symmetry irrep of the triple excitation
             excitations[spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_occ[0], idx_occ[1], idx_occ[2]])
 
