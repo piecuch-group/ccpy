@@ -28,9 +28,7 @@ def test_adaptive_f2():
     adaptdriver = AdaptDriver(
         driver,
         percentages,
-        two_body_left=True,
     )
-    adaptdriver.options["minimum_threshold"] = 0.0
     adaptdriver.run()
 
     # expected results using left-CCSD 2BA and no RHF symmetry (i.e., aaa/bbb and aab/abb spaces unbalanced slightly)

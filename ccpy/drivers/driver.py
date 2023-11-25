@@ -273,12 +273,9 @@ class Driver:
                                      p_orders=self.operator_params["pspace_orders"],
                                      pspace_sizes=excitation_count)
         else:
-            T_new = ClusterOperator(self.system,
-                                     order=self.operator_params["order"],
-                                     p_orders=self.operator_params["pspace_orders"],
-                                     pspace_sizes=excitation_count)
-            T_new.unflatten(self.T.flatten(), order=2)
-            self.T = T_new
+            # extend self.T to hold a longer T vector. It is assumed that the new amplitudes and corresponding
+            # excitations are simply appended to the previous ones. This will break if this is not true.
+            self.T.extend_pspace_t3_operator([n3aaa, n3aab, n3abb, n3bbb])
 
         # regardless of restart status, initialize residual anew
         dT = ClusterOperator(self.system,
@@ -945,6 +942,8 @@ class Driver:
                     self.L[i].unflatten(self.T.flatten())
                 else:
                     self.L[i].unflatten(self.R[i].flatten())
+            else:
+                self.L[i].extend_pspace_t3_operator([n3aaa, n3aab, n3abb, n3bbb])
             # Regardless of restart status, make LH anew. It could be of different length for different roots
             LH = ClusterOperator(self.system,
                                  order=self.operator_params["order"],
@@ -1198,7 +1197,6 @@ class Driver:
         elif method.lower() == "ccp3":
             from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
-            from ccpy.utilities.utilities import unravel_triples_amplitudes
             # Ensure that both HBar is set
             assert self.flag_hbar
 
@@ -1214,9 +1212,6 @@ class Driver:
                         _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
                     # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
                     else:
-                        # unravel triples vector into t3(abcijk) and l3(abcijk)
-                        self.T = unravel_triples_amplitudes(self.T, t3_excitations)
-                        self.L[0] = unravel_triples_amplitudes(self.L[0], t3_excitations)
                         _, self.deltap3[0] = calc_ccp3_full(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
                 # Excited-state corrections
                 else:

@@ -4,14 +4,17 @@ from copy import deepcopy
 from ccpy.extrapolation.goodson_extrapolation import goodson_extrapolation
 from ccpy.utilities.printing import get_timestamp
 
+# [TODO]: Fixed-schedule tempered growth by addition of CCSD problem size each round
+
 class AdaptDriver:
 
-    def __init__(self, driver, percentage, two_body_left=True):
+    def __init__(self, driver, percentage):
         self.driver = driver
         self.percentage = percentage
-        self.options = {"two_body_left": two_body_left,
+        self.options = {"two_body_left": True,
+                        "reset_amplitudes": False,
+                        "buffer_factor": 2,
                         "minimum_threshold": 0.0}
-
         self.nmacro = len(self.percentage)
         # energy containers
         self.ccp_energy = np.zeros(self.nmacro)
@@ -102,7 +105,8 @@ class AdaptDriver:
                                                                               self.driver.system,
                                                                               self.num_dets_to_add[imacro],
                                                                               use_RHF=self.driver.options["RHF_symmetry"],
-                                                                              min_thresh=self.options["minimum_threshold"])
+                                                                              min_thresh=self.options["minimum_threshold"],
+                                                                              buffer_factor=self.options["buffer_factor"])
         else:
             triples_list = []
             self.driver.run_ccp3(method="ccp3", state_index=[0], two_body_approx=True, t3_excitations=self.t3_excitations)
@@ -208,9 +212,10 @@ class AdaptDriver:
             x2 = time.perf_counter()
             t_pspace_expand = x2 - x1
 
-            # Step 6: Reset variables in driver (CAN WE AVOID DOING THIS, PLEASE?)
-            self.driver.T = None
-            self.driver.L[0] = None
+            # Step 6: Reset variables in driver
+            if self.options["reset_amplitudes"]:
+                self.driver.T = None
+                self.driver.L[0] = None
             setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
 
             # Step 7: Report timings of each step
