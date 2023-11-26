@@ -25,10 +25,8 @@ def test_adaptive_f2():
     driver = Driver.from_pyscf(mf, nfrozen=2)
     driver.system.print_info()
     driver.options["RHF_symmetry"] = False
-    adaptdriver = AdaptDriver(
-        driver,
-        percentages,
-    )
+    adaptdriver = AdaptDriver(driver, percentage=percentages)
+    adaptdriver.options["energy_tolerance"] = 1.0e-08
     adaptdriver.run()
 
     # expected results using left-CCSD 2BA and no RHF symmetry (i.e., aaa/bbb and aab/abb spaces unbalanced slightly)

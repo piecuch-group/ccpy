@@ -4,18 +4,23 @@ from copy import deepcopy
 from ccpy.extrapolation.goodson_extrapolation import goodson_extrapolation
 from ccpy.utilities.printing import get_timestamp
 
-# [TODO]: Fixed-schedule tempered growth by addition of CCSD problem size each round
-
 class AdaptDriver:
 
-    def __init__(self, driver, percentage):
+    def __init__(self, driver, percentage=None):
         self.driver = driver
         self.percentage = percentage
         self.options = {"two_body_left": True,
                         "reset_amplitudes": False,
+                        "energy_tolerance": 1.0e-04,
+                        "maximum_iterations": 10,
+                        "n_det_max": 1000000,
+                        "selection_factor": 1.0,
+                        "base_growth": "ccsd",
                         "buffer_factor": 2,
                         "minimum_threshold": 0.0}
-        self.nmacro = len(self.percentage)
+        #self.nmacro = len(self.percentage)
+        self.nmacro = self.options["maximum_iterations"] + 1
+        self.energy_tolerance = self.options["energy_tolerance"]
         # energy containers
         self.ccp_energy = np.zeros(self.nmacro)
         self.ccpq_energy = np.zeros(self.nmacro)
@@ -29,6 +34,7 @@ class AdaptDriver:
                                "abb": np.ones((1, 6), order="F"),
                                "bbb": np.ones((1, 6), order="F")}
         self.excitation_count_by_symmetry = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0} for _ in range(len(self.driver.system.point_group_irrep_to_number))]
+        self.n_det = 0
         # Save the bare Hamiltonian for later iterations if using CR-CC(2,3)
         self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
 
@@ -39,22 +45,38 @@ class AdaptDriver:
         print("   ------------------------------------------\n")
 
     def excitation_count(self):
-        """Performs an initial symmetry-adapted count of the triples excitation
-           space to determine the total number of triples and the relevant incremental
-           additions used throughout the calculation."""
-        from ccpy.utilities.symmetry import count_triples
-        # Count the triples using symmetry
-        self.num_excitations_symmetry, _ = count_triples(self.driver.system)
-        self.num_total_excitations = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]]
-        self.one_increment = int(0.01 * self.num_total_excitations)
-        # Setting up the number of added determinants in each iteration
-        self.num_dets_to_add = np.zeros(len(self.percentage))
-        for i in range(len(self.percentage) - 1):
-            if self.percentage[i + 1] == 100.0:
-                self.num_dets_to_add[i] = self.num_total_excitations - self.one_increment * self.percentage[i]
-            else:
-                self.num_dets_to_add[i] = self.one_increment * (self.percentage[i + 1] - self.percentage[i])
-        self.num_dets_to_add[-1] = 1
+        """Performs an initial symmetry-adapted count of the relevant excitation
+           space to determine the growth increment for each iteration of the
+           calculation."""
+        from ccpy.utilities.symmetry import count_singles, count_doubles, count_triples
+        # Use fixed growth size equal to number of determinants in CCS or CCSD P space
+        if self.percentage is None:
+            num_singles_symmetry, _ = count_singles(self.driver.system)
+            self.one_increment = num_singles_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]]
+            if self.options["base_growth"].lower() == "ccsd":
+                num_doubles_symmetry, _ = count_doubles(self.driver.system)
+                self.num_excitations_symmetry = [x + y for x, y in zip(num_singles_symmetry, num_doubles_symmetry)]
+                self.one_increment = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]]
+            self.num_dets_to_add = [int(self.one_increment * i * self.options["selection_factor"]) for i in range(1, self.nmacro)]
+            # Store the base value of n_det as the number of singles + doubles plus the reference determinant
+            self.base_pspace_size = self.one_increment + 1
+            self.n_det = self.base_pspace_size
+        # Use the original %T scheme
+        else:
+            # Count the triples using symmetry
+            self.num_excitations_symmetry, _ = count_triples(self.driver.system)
+            self.num_total_excitations = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]]
+            self.one_increment = int(0.01 * self.num_total_excitations)
+            # Setting up the number of added determinants in each iteration
+            self.num_dets_to_add = np.zeros(len(self.percentage))
+            for i in range(len(self.percentage) - 1):
+                if self.percentage[i + 1] == 100.0:
+                    self.num_dets_to_add[i] = self.num_total_excitations - self.one_increment * self.percentage[i]
+                else:
+                    self.num_dets_to_add[i] = self.one_increment * (self.percentage[i + 1] - self.percentage[i])
+            self.num_dets_to_add[-1] = 1
+            # Set the base P space size to 0 (technically it should be all singles and doubles here too)
+            self.base_pspace_size = 0
         # Adjust for RHF symmetry
         if self.driver.options["RHF_symmetry"]:
             for i in range(len(self.percentage) - 1):
@@ -62,7 +84,6 @@ class AdaptDriver:
 
     def print_pspace(self):
         """Counts and analyzes the P space in terms of spatial and Sz-spin symmetry."""
-        t_start = time.perf_counter()
         for isym, excitation_count_irrep in enumerate(self.excitation_count_by_symmetry):
             tot_excitation_count_irrep = excitation_count_irrep['aaa'] + excitation_count_irrep['aab'] + \
                                          excitation_count_irrep['abb'] + excitation_count_irrep['bbb']
@@ -71,8 +92,9 @@ class AdaptDriver:
             print("      Number of aab = ", excitation_count_irrep['aab'])
             print("      Number of abb = ", excitation_count_irrep['abb'])
             print("      Number of bbb = ", excitation_count_irrep['bbb'])
-        minutes, seconds = divmod(time.perf_counter() - t_start, 60)
-        print(f"   P space analyzed in {minutes:.1f}m {seconds:.1f}s\n")
+        print("")
+        print("   Total number of determinants in P space =", self.n_det)
+        print("   (this number includes all singles, doubles, and the reference!)")
 
     def run_ccp(self, imacro):
         """Runs iterative CC(P), and if needed, HBar and iterative left-CC calculations."""
@@ -127,7 +149,6 @@ class AdaptDriver:
     def run(self):
         """This is the main driver for the entire adaptive CC(P;Q) calculation. It will call the above
            methods in the correct sequence and handle logic accordingly."""
-
         # Print the options as a header
         print("   Adaptive CC(P;Q) calculation started on", get_timestamp())
         self.print_options()
@@ -139,21 +160,26 @@ class AdaptDriver:
         print("completed in", time.perf_counter() - t1, "seconds")
         # Step 0b: Print the results of excitation count as well as determinant addition plan
         print("   Excitation Count Summary:")
-        spin_fact = 1.0
+        spin_fact = 1
         if self.driver.options["RHF_symmetry"]:
-            spin_fact = 2.0
+            spin_fact = 2
         for i, count in enumerate(self.num_excitations_symmetry):
             symmetry = self.driver.system.point_group_number_to_irrep[i]
             print("      Symmetry", symmetry, " = ", count)
-        print("      Using", self.num_total_excitations, "as total for ground state.")
-        print("      Determinant addition plan:", [int("{0:.0f}".format(v, i)) for i, v in enumerate(self.num_dets_to_add[:-1] * spin_fact)])
+        #print("      Using", self.num_total_excitations, "as total for ground state.")
+        #print("      Determinant addition plan:", [int("{0:.0f}".format(v, i)) for i, v in enumerate(self.num_dets_to_add[:-1] * spin_fact)])
         print("")
 
         # Begin adaptive loop iterations
         for imacro in range(self.nmacro):
             print("")
-            print("   Adaptive CC(P;Q) Macroiteration - ", imacro, "Fraction of triples = ", self.percentage[imacro], "%")
-            print("   ==================================================================")
+            print("   Adaptive CC(P;Q) Macroiteration - ", imacro)
+            print("   ===========================================")
+            # Offset needed to count number of determinants in P space correctly
+            if imacro == 0:
+                offset = 4
+            else:
+                offset = 0
 
             # Step 1: Analyze the P space (optional)
             x1 = time.perf_counter()
@@ -178,17 +204,14 @@ class AdaptDriver:
             print("   Goodson FCI Extrapolation")
             print("   -------------------------")
             self.ex_ccq[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
-                                                        #self.ccp_energy[0],
                                                         self.ccp_energy[imacro],
                                                         self.ccpq_energy[imacro],
                                                         approximant="ccq")
             self.ex_ccr[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
-                                                        #self.ccp_energy[0],
                                                         self.ccp_energy[imacro],
                                                         self.ccpq_energy[imacro],
                                                         approximant="ccr")
             self.ex_cccf[imacro] = goodson_extrapolation(self.driver.system.reference_energy,
-                                                         #self.ccp_energy[0],
                                                          self.ccp_energy[imacro],
                                                          self.ccpq_energy[imacro],
                                                          approximant="cccf")
@@ -199,10 +222,29 @@ class AdaptDriver:
             x2 = time.perf_counter()
             t_extrap = x2 - x1
 
-            # Print the change in CC(P) and CC(P;Q) energies
+            # Update n_det
+            self.n_det = self.base_pspace_size + (
+                            self.t3_excitations["aaa"].shape[0]
+                            + self.t3_excitations["aab"].shape[0]
+                            + self.t3_excitations["abb"].shape[0]
+                            + self.t3_excitations["bbb"].shape[0]
+                            - offset
+            )
+
+            # Check convergence conditions
             if imacro > 0:
-                print("   Change in CC(P) energy = ", self.ccp_energy[imacro] - self.ccp_energy[imacro - 1])
-                print("   Change in CC(P;Q) energy = ", self.ccpq_energy[imacro] - self.ccpq_energy[imacro - 1], "\n")
+                delta_e_ccp = self.ccp_energy[imacro] - self.ccp_energy[imacro - 1]
+                delta_e_ccpq = self.ccpq_energy[imacro] - self.ccpq_energy[imacro - 1]
+                print("   Change in CC(P) energy = ", delta_e_ccp)
+                print("   Change in CC(P;Q) energy = ", delta_e_ccpq, "\n")
+                # Energy condition
+                if abs(delta_e_ccpq) < self.options["energy_tolerance"]:
+                    print("   Adaptive CC(P;Q) calculation converged to within energy tolerance!")
+                    break
+                # N_det condition
+                if self.n_det >= self.options["n_det_max"]:
+                    print("   Adaptive CC(P;Q) calculation reached maximum dimension of P space")
+                    break
             if imacro == self.nmacro - 1:
                 break
 
@@ -231,13 +273,13 @@ class AdaptDriver:
         # Final printout of the results including energy extrapolations
         print("   Adaptive CC(P;Q) calculation ended on", get_timestamp(), "\n")
         print("   Summary of results:")
-        print("    %T           E(P)             E(P;Q)             ex-CCq             ex-CCr             ex-CCcf")
+        print("    Iteration           E(P)             E(P;Q)             ex-CCq             ex-CCr             ex-CCcf")
         print("   -------------------------------------------------------------------------------------------------------")
-        for i in range(self.nmacro):
-            print("   %3.2f    %.10f     %.10f     %.10f     %.10f     %.10f" % (self.percentage[i],
-                                                                                 self.ccp_energy[i],
-                                                                                 self.ccpq_energy[i],
-                                                                                 self.ex_ccq[i],
-                                                                                 self.ex_ccr[i],
-                                                                                 self.ex_cccf[i])
+        for i in range(imacro + 1):
+            print("   %8d    %.10f     %.10f     %.10f     %.10f     %.10f" % (i,
+                                                                              self.ccp_energy[i],
+                                                                              self.ccpq_energy[i],
+                                                                              self.ex_ccq[i],
+                                                                              self.ex_ccr[i],
+                                                                              self.ex_cccf[i])
             )
