@@ -51,15 +51,15 @@ class AdaptDriver:
         from ccpy.utilities.symmetry import count_singles, count_doubles, count_triples
         # Use fixed growth size equal to number of determinants in CCS or CCSD P space
         if self.percentage is None:
-            num_singles_symmetry, _ = count_singles(self.driver.system)
-            self.one_increment = num_singles_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]]
+            self.num_excitations_symmetry, _ = count_singles(self.driver.system)
             if self.options["base_growth"].lower() == "ccsd":
                 num_doubles_symmetry, _ = count_doubles(self.driver.system)
-                self.num_excitations_symmetry = [x + y for x, y in zip(num_singles_symmetry, num_doubles_symmetry)]
-                self.one_increment = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]]
-            self.num_dets_to_add = [int(self.one_increment * i * self.options["selection_factor"]) for i in range(1, self.nmacro)]
+                self.num_excitations_symmetry = [x + y for x, y in zip(self.num_excitations_symmetry, num_doubles_symmetry)]
+            # Get the increment of either CCS or CCSD adding 1 for reference determinant
+            self.one_increment = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]] + 1
+            self.num_dets_to_add = [int(self.one_increment * self.options["selection_factor"]) for i in range(1, self.nmacro)]
             # Store the base value of n_det as the number of singles + doubles plus the reference determinant
-            self.base_pspace_size = self.one_increment + 1
+            self.base_pspace_size = self.one_increment
             self.n_det = self.base_pspace_size
         # Use the original %T scheme
         else:
@@ -79,11 +79,12 @@ class AdaptDriver:
             self.base_pspace_size = 0
         # Adjust for RHF symmetry
         if self.driver.options["RHF_symmetry"]:
-            for i in range(len(self.percentage) - 1):
+            for i in range(len(self.num_dets_to_add)):
                 self.num_dets_to_add[i] = int(self.num_dets_to_add[i] / 2)
 
     def print_pspace(self):
         """Counts and analyzes the P space in terms of spatial and Sz-spin symmetry."""
+        print("   Total number of determinants in P space =", self.n_det)
         for isym, excitation_count_irrep in enumerate(self.excitation_count_by_symmetry):
             tot_excitation_count_irrep = excitation_count_irrep['aaa'] + excitation_count_irrep['aab'] + \
                                          excitation_count_irrep['abb'] + excitation_count_irrep['bbb']
@@ -93,8 +94,6 @@ class AdaptDriver:
             print("      Number of abb = ", excitation_count_irrep['abb'])
             print("      Number of bbb = ", excitation_count_irrep['bbb'])
         print("")
-        print("   Total number of determinants in P space =", self.n_det)
-        print("   (this number includes all singles, doubles, and the reference!)")
 
     def run_ccp(self, imacro):
         """Runs iterative CC(P), and if needed, HBar and iterative left-CC calculations."""
@@ -181,6 +180,15 @@ class AdaptDriver:
             else:
                 offset = 0
 
+            # Update n_det
+            self.n_det = self.base_pspace_size + (
+                            self.t3_excitations["aaa"].shape[0]
+                            + self.t3_excitations["aab"].shape[0]
+                            + self.t3_excitations["abb"].shape[0]
+                            + self.t3_excitations["bbb"].shape[0]
+                            - offset
+            )
+
             # Step 1: Analyze the P space (optional)
             x1 = time.perf_counter()
             self.print_pspace()
@@ -222,15 +230,6 @@ class AdaptDriver:
             x2 = time.perf_counter()
             t_extrap = x2 - x1
 
-            # Update n_det
-            self.n_det = self.base_pspace_size + (
-                            self.t3_excitations["aaa"].shape[0]
-                            + self.t3_excitations["aab"].shape[0]
-                            + self.t3_excitations["abb"].shape[0]
-                            + self.t3_excitations["bbb"].shape[0]
-                            - offset
-            )
-
             # Check convergence conditions
             if imacro > 0:
                 delta_e_ccp = self.ccp_energy[imacro] - self.ccp_energy[imacro - 1]
@@ -243,9 +242,10 @@ class AdaptDriver:
                     break
                 # N_det condition
                 if self.n_det >= self.options["n_det_max"]:
-                    print("   Adaptive CC(P;Q) calculation reached maximum dimension of P space")
+                    print(f"   Adaptive CC(P;Q) calculation reached maximum dimension of P space (n_det_max = {self.options['n_det_max']})")
                     break
             if imacro == self.nmacro - 1:
+                print(f"   Adaptive CC(P;Q) reached maximum number of iterations (maximum_iterations = {self.options['maximum_iterations']})")
                 break
 
             # Step 5: Expand the P space
