@@ -13,13 +13,15 @@ class AdaptDriver:
                         "reset_amplitudes": False,
                         "energy_tolerance": 1.0e-04,
                         "maximum_iterations": 10,
-                        "n_det_max": 1000000,
+                        "n_det_max": 100000000,
                         "selection_factor": 1.0,
                         "base_growth": "ccsd",
                         "buffer_factor": 2,
                         "minimum_threshold": 0.0}
-        #self.nmacro = len(self.percentage)
-        self.nmacro = self.options["maximum_iterations"] + 1
+        if percentage is None:
+            self.nmacro = self.options["maximum_iterations"] + 1
+        else:
+            self.nmacro = len(self.percentage)
         self.energy_tolerance = self.options["energy_tolerance"]
         # energy containers
         self.ccp_energy = np.zeros(self.nmacro)
@@ -56,10 +58,10 @@ class AdaptDriver:
                 num_doubles_symmetry, _ = count_doubles(self.driver.system)
                 self.num_excitations_symmetry = [x + y for x, y in zip(self.num_excitations_symmetry, num_doubles_symmetry)]
             # Get the increment of either CCS or CCSD adding 1 for reference determinant
-            self.one_increment = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]] + 1
+            self.one_increment = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]]
             self.num_dets_to_add = [int(self.one_increment * self.options["selection_factor"]) for i in range(1, self.nmacro)]
             # Store the base value of n_det as the number of singles + doubles plus the reference determinant
-            self.base_pspace_size = self.one_increment
+            self.base_pspace_size = self.one_increment + 1
             self.n_det = self.base_pspace_size
         # Use the original %T scheme
         else:
