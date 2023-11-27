@@ -149,20 +149,6 @@ class ClusterOperator:
             self.dimensions[i + 5] = (num_old + num_extend,)
             self.ndim += num_extend
 
-        # n3aaa_old = self.aaa.shape[0]
-        # n3aab_old = self.aab.shape[0]
-        # n3abb_old = self.abb.shape[0]
-        # n3bbb_old = self.bbb.shape[0]
-        # self.aaa = np.hstack((self.T.aaa, np.zeros(n3aaa - n3aaa_old, dtype=np.float64, order="F")))
-        # self.aab = np.hstack((self.T.aab, np.zeros(n3aab - n3aab_old, dtype=np.float64, order="F")))
-        # self.abb = np.hstack((self.T.abb, np.zeros(n3abb - n3abb_old, dtype=np.float64, order="F")))
-        # self.bbb = np.hstack((self.T.bbb, np.zeros(n3bbb - n3bbb_old, dtype=np.float64, order="F")))
-        # self.T.dimensions[5] = (len(self.T.aaa),)
-        # self.T.dimensions[6] = (len(self.T.aab),)
-        # self.T.dimensions[7] = (len(self.T.abb),)
-        # self.T.dimensions[8] = (len(self.T.bbb),)
-        # self.T.ndim += n3aaa - n3aaa_old + n3aab - n3aab_old + n3abb - n3abb_old + n3bbb - n3bbb_old
-
     def flatten(self):
         return np.hstack(
             [getattr(self, key).flatten() for key in self.spin_cases]

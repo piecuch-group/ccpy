@@ -44,7 +44,7 @@ def update(T, dT, H, shift, flag_RHF, system, t3_excitations, pspace=None):
     # CCSD intermediates
     #[TODO]: Should accept CCS HBar as input and build only terms with T2 in it
     if build_hbar:
-        hbar = get_ccsd_intermediates(T, H)
+        hbar = get_ccsd_intermediates(T, hbar, H, flag_RHF)
         # Transpose integrals appropriately 
         hbar.a.vv = hbar.a.vv.T
         hbar.b.vv = hbar.b.vv.T

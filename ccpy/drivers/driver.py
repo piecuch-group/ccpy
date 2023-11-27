@@ -1143,13 +1143,13 @@ class Driver:
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   ec-CC calculation ended on", get_timestamp())
 
-    def run_ccp3(self, method, state_index=[0], two_body_approx=True, t3_excitations=None, l3_excitations=None, r3_excitations=None, pspace=None):
+    def run_ccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, pspace=None):
 
         if method.lower() == "crcc23":
             from ccpy.moments.crcc23 import calc_crcc23
             from ccpy.moments.creomcc23 import calc_creomcc23
             # Ensure that HBar is set upon entry
-            assert(self.flag_hbar)
+            assert self.flag_hbar
             for i in state_index:
                 # Perform ground-state correction
                 if i == 0:
@@ -1162,34 +1162,34 @@ class Driver:
         elif method.lower() == "ccsd(t)":
             from ccpy.moments.crcc23 import calc_ccsdpt
             # Ensure that only the bare Hamiltonian is used
-            assert(not self.flag_hbar)
+            assert not self.flag_hbar
             _, self.deltap3[0] = calc_ccsdpt(self.T, self.correlation_energy, self.hamiltonian, self.system, self.options["RHF_symmetry"])
 
         elif method.lower() == "cct3":
             from ccpy.moments.cct3 import calc_cct3, calc_eomcct3
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
-            from ccpy.utilities.utilities import unravel_triples_amplitudes
             # Ensure that HBar is set
             assert self.flag_hbar
+            # Set this value as a failsafe since CC(t;3) can also be run through CC(P) and left-CC(P) routines
+            if num_active == 1:
+                self.operator_params["number_active_indices"] = [1]
+            elif num_active == 2:
+                self.operator_params["number_active_indices"] = [2]
+            elif num_active == 3:
+                self.operator_params["number_active_indices"] = [3]
             for i in state_index:
                 if i == 0:
                     # Perform ground-state correction
-                    # WARNING: Set this value to [1] as a failsafe since CC(t;3) can also be run through CC(P) and left-CC(P) routines
-                    if not self.operator_params["number_active_indices"]: self.operator_params["number_active_indices"] = [1]
                     # In order to use two-body approximation consistently for excited states, remove the V*T3 terms in vooo and vvov elements of HBar
-                    if two_body_approx and t3_excitations:
+                    if two_body_approx and self.L[0].order > 2:
                         self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
                     if two_body_approx:
                         _, self.deltap3[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
                                                        self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
-                    elif not two_body_approx and t3_excitations: # perform full CC(t;3) correction using CC(P) routine
-                        unravel_triples_amplitudes(self.T, t3_excitations)
                 else:
                     # Perform excited-state correction
-                    # WARNING: Set this value to [1] as a failsafe since EOMCC(t;3) is going to be run through EOMCC(P) and left-EOMCC(P) routines
-                    if not self.operator_params["number_active_indices"]: self.operator_params["number_active_indices"] = [1]
                     # In order to use two-body approximation consistently for excited states, remove the V*T3 terms in vooo and vvov elements of HBar
-                    if two_body_approx:
+                    if two_body_approx and self.L[0].order > 2:
                         self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
                     _, self.deltap3[i], self.ddeltap3[i] = calc_eomcct3(self.T, self.R[i], self.L[i], self.r0[i],
                                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
@@ -1199,7 +1199,6 @@ class Driver:
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
             # Ensure that both HBar is set
             assert self.flag_hbar
-
             # Reomve V*T3 from HBar if left-CC(P)/EOMCC(P) was performed and you want to use 2BA with CCSD HBar
             if two_body_approx and self.L[0].order > 2:
                 self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
@@ -1237,8 +1236,6 @@ class Driver:
             assert self.flag_hbar
             # Perform ground-state correction
             _, self.deltap4[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
-        else:
-            raise NotImplementedError("Quadruples correction {} not implemented".format(method.lower()))
 
     def run_rdm1(self, state_index=[0]):
         from ccpy.density.rdm1 import calc_rdm1

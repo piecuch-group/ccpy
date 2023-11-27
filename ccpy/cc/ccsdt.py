@@ -31,7 +31,7 @@ def update(T, dT, H, shift, flag_RHF, system):
 
     # CCSD intermediates
     #[TODO]: Should accept CCS HBar as input and build only terms with T2 in it
-    hbar = get_ccsd_intermediates(T, H)
+    hbar = get_ccsd_intermediates(T, hbar, H, flag_RHF)
 
     # update T3
     T, dT = update_t3a(T, dT, hbar, H, shift)

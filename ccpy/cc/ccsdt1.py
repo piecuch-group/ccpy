@@ -101,7 +101,7 @@ def update(T, dT, H, shift, flag_RHF, system):
         T, dT = update_t2c.update(T, dT, H, shift)
 
     # CCSD intermediates
-    hbar = get_ccsd_intermediates(T, H)
+    hbar = get_ccsd_intermediates(T, hbar, H, flag_RHF)
     # add on (V * T3)_C intermediates
     hbar = intermediates.build_VT3_intermediates(T, hbar, system)
 
