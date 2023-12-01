@@ -1,8 +1,6 @@
 """Main calculation driver module of CCpy."""
 import numpy as np
 from importlib import import_module
-from copy import deepcopy
-import time
 import ccpy.cc
 import ccpy.hbar
 import ccpy.left
@@ -221,11 +219,14 @@ class Driver:
                              order=self.operator_params["order"],
                              active_orders=self.operator_params["active_orders"],
                              num_active=self.operator_params["number_active_indices"])
+        # Create the container for 1- and 2-body intermediates
+        cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
         # Run the CC calculation
         self.T, self.correlation_energy, _ = cc_jacobi(update_function,
                                                 self.T,
                                                 dT,
                                                 self.hamiltonian,
+                                                cc_intermediates,
                                                 self.system,
                                                 self.options,
                                                )
@@ -282,12 +283,15 @@ class Driver:
                              order=self.operator_params["order"],
                              p_orders=self.operator_params["pspace_orders"],
                              pspace_sizes=excitation_count)
+        # Create the container for 1- and 2-body intermediates
+        cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
         # Run the CC(P) calculation
         # NOTE: It may not look like it, but t3_excitations is permuted and matches T at this point. It changes from its value at input!
         self.T, self.correlation_energy, _ = cc_jacobi(update_function,
                                                        self.T,
                                                        dT,
                                                        self.hamiltonian,
+                                                       cc_intermediates,
                                                        self.system,
                                                        self.options,
                                                        t3_excitations)

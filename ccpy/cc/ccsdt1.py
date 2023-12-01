@@ -1,15 +1,17 @@
 """Module with functions that perform the CC with singles, doubles,
 and active-space triples (CCSDt) calculation for a molecular system."""
 
-from ccpy.hbar.hbar_ccs import get_ccs_intermediates_opt
+from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.cc.ccsdt1_updates import *
 
-def update(T, dT, H, shift, flag_RHF, system):
+def update(T, dT, H, hbar, shift, flag_RHF, system):
+
+    hbar = get_pre_ccs_intermediates(hbar, T, H, system, flag_RHF)
 
     ####### T1 updates #######
     # t1a update
-    dT = update_t1a.build_ccsd(T, dT, H)   # base CCSD part
+    dT = update_t1a.build_ccsd(T, dT, H, hbar)   # base CCSD part
     # Add on T3 parts
     dT = update_t1a.build_11(T, dT, H, system)
     dT = update_t1a.build_10(T, dT, H, system)
@@ -21,7 +23,7 @@ def update(T, dT, H, shift, flag_RHF, system):
         T.b = T.a.copy()
         dT.b = dT.a.copy()
     else:
-        dT = update_t1b.build_ccsd(T, dT, H)
+        dT = update_t1b.build_ccsd(T, dT, H, hbar)
         # Add on T3 parts
         dT = update_t1b.build_11(T, dT, H, system)
         dT = update_t1b.build_10(T, dT, H, system)
@@ -31,7 +33,16 @@ def update(T, dT, H, shift, flag_RHF, system):
         T, dT = update_t1b.update(T, dT, H, shift)
 
     # CCS intermediates
-    hbar = get_ccs_intermediates_opt(T, H)
+    hbar = get_ccs_intermediates_opt(hbar, T, H, system, flag_RHF)
+
+    # CCSD base t2 updates
+    x2a = update_t2a.build_ccsd(T, hbar, H)   # base CCSD part (separately antisymmetrized)
+    x2b = update_t2b.build_ccsd(T, hbar, H)   # base CCSD part
+    if flag_RHF:
+        x2c = x2a.copy()
+    else:
+        x2c = update_t2c.build_ccsd(T, hbar, H)  # base CCSD part (separately antisymmetrized)
+
     # adjust intermediates to CCSDT case
     hbar.aa.ooov += H.aa.ooov
     hbar.aa.vovv += H.aa.vovv
@@ -39,12 +50,14 @@ def update(T, dT, H, shift, flag_RHF, system):
     hbar.ab.oovo += H.ab.oovo
     hbar.ab.vovv += H.ab.vovv
     hbar.ab.ovvv += H.ab.ovvv
-    hbar.bb.ooov += H.bb.ooov
-    hbar.bb.vovv += H.bb.vovv
+    if flag_RHF:
+        hbar.bb.ooov = hbar.aa.ooov
+        hbar.bb.vovv = hbar.aa.vovv
+    else:
+        hbar.bb.ooov += H.bb.ooov
+        hbar.bb.vovv += H.bb.vovv
 
     ####### T2 updates #######
-    # t2a update
-    x2 = update_t2a.build_ccsd(T, hbar, H)   # base CCSD part (separately antisymmetrized)
     # Add on T3 parts
     dT = update_t2a.build_1111(T, dT, hbar, system)
     dT = update_t2a.build_1101(T, dT, hbar, system)
@@ -55,11 +68,10 @@ def update(T, dT, H, shift, flag_RHF, system):
     dT = update_t2a.build_1000(T, dT, hbar, system)
     dT = update_t2a.build_0001(T, dT, hbar, system)
     dT = update_t2a.build_0000(T, dT, hbar, system)
-    dT.aa += x2
+    dT.aa += x2a
     # update loop
     T, dT = update_t2a.update(T, dT, H, shift)
 
-    x2 = update_t2b.build_ccsd(T, hbar, H)   # base CCSD part
     # Add on T3 parts
     dT = update_t2b.build_1111(T, dT, hbar, system)
     dT = update_t2b.build_1101(T, dT, hbar, system)
@@ -77,7 +89,7 @@ def update(T, dT, H, shift, flag_RHF, system):
     dT = update_t2b.build_0001(T, dT, hbar, system)
     dT = update_t2b.build_0010(T, dT, hbar, system)
     dT = update_t2b.build_0000(T, dT, hbar, system)
-    dT.ab += x2
+    dT.ab += x2b
     # update loop
     T, dT = update_t2b.update(T, dT, H, shift)
 
@@ -85,7 +97,6 @@ def update(T, dT, H, shift, flag_RHF, system):
         T.bb = T.aa.copy()
         dT.bb = dT.aa.copy()
     else:
-        x2 = update_t2c.build_ccsd(T, hbar, H)   # base CCSD part (separately antisymmetrized)
         # Add on T3 parts
         dT = update_t2c.build_1111(T, dT, hbar, system)
         dT = update_t2c.build_1101(T, dT, hbar, system)
@@ -96,13 +107,31 @@ def update(T, dT, H, shift, flag_RHF, system):
         dT = update_t2c.build_1000(T, dT, hbar, system)
         dT = update_t2c.build_0001(T, dT, hbar, system)
         dT = update_t2c.build_0000(T, dT, hbar, system)
-        dT.bb += x2
+        dT.bb += x2c
         # update loop
         T, dT = update_t2c.update(T, dT, H, shift)
 
+    # remove these parts intermediates before entering T3 updates
+    hbar.aa.ooov -= H.aa.ooov
+    hbar.aa.vovv -= H.aa.vovv
+    hbar.ab.ooov -= H.ab.ooov
+    hbar.ab.oovo -= H.ab.oovo
+    hbar.ab.vovv -= H.ab.vovv
+    hbar.ab.ovvv -= H.ab.ovvv
+    if flag_RHF:
+        hbar.bb.ooov = hbar.aa.ooov
+        hbar.bb.vovv = hbar.aa.vovv
+    else:
+        hbar.bb.ooov -= H.bb.ooov
+        hbar.bb.vovv -= H.bb.vovv
+
     # CCSD intermediates
+    #[TODO]: Should accept CCS HBar as input and build only terms with T2 in it
     hbar = get_ccsd_intermediates(T, hbar, H, flag_RHF)
     # add on (V * T3)_C intermediates
+    hbar.aa.oovv = H.aa.oovv.copy()
+    hbar.ab.oovv = H.ab.oovv.copy()
+    hbar.bb.oovv = H.bb.oovv.copy()
     hbar = intermediates.build_VT3_intermediates(T, hbar, system)
 
     # ####### T3 updates #######

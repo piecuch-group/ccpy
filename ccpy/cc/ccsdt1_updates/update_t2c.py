@@ -7,102 +7,32 @@ from ccpy.utilities.updates import cc_active_loops
 #@profile
 def build_ccsd(T, H, H0):
     """
-    Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2))_C|0>.
+    Calculate CCSD parts of the projection <i~j~a~b~|(H_N e^(T1+T2+T3))_C|0>.
     """
     # intermediates
-    I1B_oo = (
-        H.b.oo
-        + 0.5 * np.einsum("mnef,efin->mi", H.bb.oovv, T.bb, optimize=True)
-        + np.einsum("nmfe,feni->mi", H.ab.oovv, T.ab, optimize=True)
-    )
+    I2C_oooo = H.bb.oooo + 0.5 * np.einsum("mnef,efij->mnij", H0.bb.oovv, T.bb, optimize=True)
 
-    I1B_vv = (
-        H.b.vv
-        - 0.5 * np.einsum("mnef,afmn->ae", H.bb.oovv, T.bb, optimize=True)
-        - np.einsum("nmfe,fanm->ae", H.ab.oovv, T.ab, optimize=True)
+    I2B_ovvo = H.ab.ovvo + (
+        + np.einsum("mnef,afin->maei", H0.ab.oovv, T.bb, optimize=True)
+        + 0.5 * np.einsum("mnef,fani->maei", H0.aa.oovv, T.ab, optimize=True)
     )
-
-    I2C_oooo = H.bb.oooo + 0.5 * np.einsum(
-        "mnef,efij->mnij", H.bb.oovv, T.bb, optimize=True
-    )
-
-    I2B_ovvo = (
-        H.ab.ovvo
-        + np.einsum("mnef,afin->maei", H.ab.oovv, T.bb, optimize=True)
-        + 0.5 * np.einsum("mnef,fani->maei", H.aa.oovv, T.ab, optimize=True)
-    )
-
-    I2C_voov = H.bb.voov + 0.5 * np.einsum(
-        "mnef,afin->amie", H.bb.oovv, T.bb, optimize=True
-    )
-
-    I2C_vooo = H.bb.vooo + 0.25*np.einsum('anef,efij->anij', H0.bb.vovv + H.bb.vovv, T.bb, optimize=True)
+    I2C_voov = H.bb.voov + 0.5 * np.einsum("mnef,afin->amie", H0.bb.oovv, T.bb, optimize=True)
+    I2C_vooo = H.bb.vooo + 0.5 * np.einsum('anef,efij->anij', H0.bb.vovv + 0.5 * H.bb.vovv, T.bb, optimize=True)
 
     tau = 0.5 * T.bb + np.einsum('ai,bj->abij', T.b, T.b, optimize=True)
 
     x2c = -0.5 * np.einsum("amij,bm->abij", I2C_vooo, T.b, optimize=True)
     x2c += 0.5 * np.einsum("abie,ej->abij", H.bb.vvov, T.b, optimize=True)
-    x2c += 0.5 * np.einsum("ae,ebij->abij", I1B_vv, T.bb, optimize=True)
-    x2c -= 0.5 * np.einsum("mi,abmj->abij", I1B_oo, T.bb, optimize=True)
+    x2c += 0.5 * np.einsum("ae,ebij->abij", H.b.vv, T.bb, optimize=True)
+    x2c -= 0.5 * np.einsum("mi,abmj->abij", H.b.oo, T.bb, optimize=True)
     x2c += np.einsum("amie,ebmj->abij", I2C_voov, T.bb, optimize=True)
     x2c += np.einsum("maei,ebmj->abij", I2B_ovvo, T.ab, optimize=True)
-    x2c += 0.25 * np.einsum("abef,efij->abij", H.bb.vvvv, tau, optimize=True)
+    x2c += 0.25 * np.einsum("abef,efij->abij", H0.bb.vvvv, tau, optimize=True)
     x2c += 0.125 * np.einsum("mnij,abmn->abij", I2C_oooo, T.bb, optimize=True)
-
-    x2c += 0.25 * H.bb.vvoo
-
+    x2c += 0.25 * H0.bb.vvoo
     x2c -= np.transpose(x2c, (1, 0, 2, 3))
     x2c -= np.transpose(x2c, (0, 1, 3, 2))
-
     return x2c
-
-# def build_ccsd(T, H, H0):
-#     """
-#     Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2+T3))_C|0>.
-#     """
-#     # intermediates
-#     I1B_oo = (
-#             H.b.oo
-#             + 0.5 * np.einsum("mnef,efin->mi", H.bb.oovv, T.bb, optimize=True)
-#             + np.einsum("nmfe,feni->mi", H.ab.oovv, T.ab, optimize=True)
-#     )
-#
-#     I1B_vv = (
-#             H.b.vv
-#             - 0.5 * np.einsum("mnef,afmn->ae", H.bb.oovv, T.bb, optimize=True)
-#             - np.einsum("nmfe,fanm->ae", H.ab.oovv, T.ab, optimize=True)
-#     )
-#
-#     I2C_oooo = H.bb.oooo + 0.5 * np.einsum(
-#         "mnef,efij->mnij", H.bb.oovv, T.bb, optimize=True
-#     )
-#
-#     I2B_ovvo = (
-#             H.ab.ovvo
-#             + np.einsum("mnef,afin->maei", H.ab.oovv, T.bb, optimize=True)
-#             + 0.5 * np.einsum("mnef,fani->maei", H.aa.oovv, T.ab, optimize=True)
-#     )
-#
-#     I2C_voov = H.bb.voov + 0.5 * np.einsum(
-#         "mnef,afin->amie", H.bb.oovv, T.bb, optimize=True
-#     )
-#
-#     x2c = -0.5 * np.einsum("amij,bm->abij", H.bb.vooo, T.b, optimize=True)
-#     x2c += 0.5 * np.einsum("abie,ej->abij", H.bb.vvov, T.b, optimize=True)
-#     x2c += 0.5 * np.einsum("ae,ebij->abij", I1B_vv, T.bb, optimize=True)
-#     x2c -= 0.5 * np.einsum("mi,abmj->abij", I1B_oo, T.bb, optimize=True)
-#     x2c += np.einsum("amie,ebmj->abij", I2C_voov, T.bb, optimize=True)
-#     x2c += np.einsum("maei,ebmj->abij", I2B_ovvo, T.ab, optimize=True)
-#     x2c += 0.125 * np.einsum("abef,efij->abij", H.bb.vvvv, T.bb, optimize=True)
-#     x2c += 0.125 * np.einsum("mnij,abmn->abij", I2C_oooo, T.bb, optimize=True)
-#
-#     x2c += 0.25 * H.bb.vvoo
-#
-#     x2c -= np.transpose(x2c, (1, 0, 2, 3))
-#     x2c -= np.transpose(x2c, (0, 1, 3, 2))
-#
-#     return x2c
-
 
 def build_1111(T, dT, H, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)

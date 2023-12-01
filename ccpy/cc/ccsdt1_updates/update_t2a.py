@@ -7,101 +7,31 @@ from ccpy.utilities.updates import cc_active_loops
 #@profile
 def build_ccsd(T, H, H0):
     """
-    Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2+T3))_C|0>.
+    Calculate CCSD parts of the projection <ijab|(H_N e^(T1+T2+T3))_C|0>.
     """
     # intermediates
-    I1A_oo = (
-        H.a.oo
-        + 0.5 * np.einsum("mnef,efin->mi", H.aa.oovv, T.aa, optimize=True)
-        + np.einsum("mnef,efin->mi", H.ab.oovv, T.ab, optimize=True)
+    I2A_voov = H.aa.voov + (
+        + 0.5 * np.einsum("mnef,afin->amie", H0.aa.oovv, T.aa, optimize=True)
+        + np.einsum("mnef,afin->amie", H0.ab.oovv, T.ab, optimize=True)
     )
-
-    I1A_vv = (
-        H.a.vv
-        - 0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, T.aa, optimize=True)
-        - np.einsum("mnef,afmn->ae", H.ab.oovv, T.ab, optimize=True)
-    )
-
-    I2A_voov = (
-        H.aa.voov
-        + 0.5 * np.einsum("mnef,afin->amie", H.aa.oovv, T.aa, optimize=True)
-        + np.einsum("mnef,afin->amie", H.ab.oovv, T.ab, optimize=True)
-    )
-
-    I2A_oooo = H.aa.oooo + 0.5 * np.einsum(
-        "mnef,efij->mnij", H.aa.oovv, T.aa, optimize=True
-    )
-
-    I2B_voov = H.ab.voov + 0.5 * np.einsum(
-        "mnef,afin->amie", H.bb.oovv, T.ab, optimize=True
-    )
-
-    I2A_vooo = H.aa.vooo + 0.25*np.einsum('anef,efij->anij', H0.aa.vovv + H.aa.vovv, T.aa, optimize=True)
+    I2A_oooo = H.aa.oooo + 0.5 * np.einsum("mnef,efij->mnij", H0.aa.oovv, T.aa, optimize=True)
+    I2B_voov = H.ab.voov + 0.5 * np.einsum("mnef,afin->amie", H0.bb.oovv, T.ab, optimize=True)
+    I2A_vooo = H.aa.vooo + 0.5*np.einsum('anef,efij->anij', H0.aa.vovv + 0.5 * H.aa.vovv, T.aa, optimize=True)
 
     tau = 0.5 * T.aa + np.einsum('ai,bj->abij', T.a, T.a, optimize=True)
 
     x2a = -0.5 * np.einsum("amij,bm->abij", I2A_vooo, T.a, optimize=True)
     x2a += 0.5 * np.einsum("abie,ej->abij", H.aa.vvov, T.a, optimize=True)
-    x2a += 0.5 * np.einsum("ae,ebij->abij", I1A_vv, T.aa, optimize=True)
-    x2a -= 0.5 * np.einsum("mi,abmj->abij", I1A_oo, T.aa, optimize=True)
+    x2a += 0.5 * np.einsum("ae,ebij->abij", H.a.vv, T.aa, optimize=True)
+    x2a -= 0.5 * np.einsum("mi,abmj->abij", H.a.oo, T.aa, optimize=True)
     x2a += np.einsum("amie,ebmj->abij", I2A_voov, T.aa, optimize=True)
     x2a += np.einsum("amie,bejm->abij", I2B_voov, T.ab, optimize=True)
-    x2a += 0.25 * np.einsum("abef,efij->abij", H.aa.vvvv, tau, optimize=True)
+    x2a += 0.25 * np.einsum("abef,efij->abij", H0.aa.vvvv, tau, optimize=True)
     x2a += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
-
-    x2a += 0.25 * H.aa.vvoo
-
+    x2a += 0.25 * H0.aa.vvoo
     x2a -= np.transpose(x2a, (1, 0, 2, 3))
     x2a -= np.transpose(x2a, (0, 1, 3, 2))
-
     return x2a
-
-# def build_ccsd(T, H, H0):
-#     """
-#     Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2+T3))_C|0>.
-#     """
-#     # intermediates
-#     I1A_oo = (
-#             H.a.oo
-#             + 0.5 * np.einsum("mnef,efin->mi", H.aa.oovv, T.aa, optimize=True)
-#             + np.einsum("mnef,efin->mi", H.ab.oovv, T.ab, optimize=True)
-#     )
-#
-#     I1A_vv = (
-#             H.a.vv
-#             - 0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, T.aa, optimize=True)
-#             - np.einsum("mnef,afmn->ae", H.ab.oovv, T.ab, optimize=True)
-#     )
-#
-#     I2A_voov = (
-#             H.aa.voov
-#             + 0.5 * np.einsum("mnef,afin->amie", H.aa.oovv, T.aa, optimize=True)
-#             + np.einsum("mnef,afin->amie", H.ab.oovv, T.ab, optimize=True)
-#     )
-#
-#     I2A_oooo = H.aa.oooo + 0.5 * np.einsum(
-#         "mnef,efij->mnij", H.aa.oovv, T.aa, optimize=True
-#     )
-#
-#     I2B_voov = H.ab.voov + 0.5 * np.einsum(
-#         "mnef,afin->amie", H.bb.oovv, T.ab, optimize=True
-#     )
-#
-#     x2a = -0.5 * np.einsum("amij,bm->abij", H.aa.vooo, T.a, optimize=True)
-#     x2a += 0.5 * np.einsum("abie,ej->abij", H.aa.vvov, T.a, optimize=True)
-#     x2a += 0.5 * np.einsum("ae,ebij->abij", I1A_vv, T.aa, optimize=True)
-#     x2a -= 0.5 * np.einsum("mi,abmj->abij", I1A_oo, T.aa, optimize=True)
-#     x2a += np.einsum("amie,ebmj->abij", I2A_voov, T.aa, optimize=True)
-#     x2a += np.einsum("amie,bejm->abij", I2B_voov, T.ab, optimize=True)
-#     x2a += 0.125 * np.einsum("abef,efij->abij", H.aa.vvvv, T.aa, optimize=True)
-#     x2a += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
-#
-#     x2a += 0.25 * H.aa.vvoo
-#
-#     x2a -= np.transpose(x2a, (1, 0, 2, 3))
-#     x2a -= np.transpose(x2a, (0, 1, 3, 2))
-#
-#     return x2a
 
 def build_1111(T, dT, H, system):
 

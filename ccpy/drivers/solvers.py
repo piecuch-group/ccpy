@@ -14,6 +14,7 @@ def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, 
     from ccpy.drivers.diis import DIIS
     # start clock for the root
     t_root_start = time.perf_counter()
+    t_cpu_root_start = time.process_time()
     # print header
     print_eomcc_iteration_header()
     # Instantiate DIIS accelerator (re-used for all roots)
@@ -62,7 +63,7 @@ def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, 
     # print the time taken for the root
     minutes, seconds = divmod(time.perf_counter() - t_root_start, 60)
     print(f"   Completed in {minutes:.1f}m {seconds:.1f}s")
-
+    print(f"   Total CPU time is {time.process_time() - t_cpu_root_start} seconds")
     return R, omega, is_converged
 
 def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_excitations=None, r3_excitations=None):
@@ -73,6 +74,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
     import h5py
     from ccpy.utilities.utilities import remove_file
     t_root_start = time.perf_counter()
+    t_cpu_root_start = time.process_time()
 
     print_eomcc_iteration_header()
 
@@ -199,6 +201,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
     # print the time taken for the root
     minutes, seconds = divmod(time.perf_counter() - t_root_start, 60)
     print(f"   Completed in {minutes:.1f}m {seconds:.1f}s")
+    print(f"   Total CPU time is {time.process_time() - t_cpu_root_start} seconds")
     return R, omega, is_converged
 
 # Trying to get the version with restarts working...
@@ -466,6 +469,7 @@ def eccc_jacobi(update_t, T, dT, H, T_ext, VT_ext, system, options):
     print("   Energy of initial guess = {:>20.10f}".format(energy_old))
 
     t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
     print_cc_iteration_header()
     for niter in range(options["maximum_iterations"]):
         # get iteration start time
@@ -492,11 +496,8 @@ def eccc_jacobi(update_t, T, dT, H, T_ext, VT_ext, system, options):
 
             t_end = time.perf_counter()
             minutes, seconds = divmod(t_end - t_start, 60)
-            print(
-                "   ec-CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)".format(
-                    minutes, seconds
-                )
-            )
+            print("   ec-CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)".format(minutes, seconds))
+            print(f"   Total CPU time is {time.process_time() - t_cpu_start} seconds")
             is_converged = True
             break
 
@@ -523,7 +524,7 @@ def eccc_jacobi(update_t, T, dT, H, T_ext, VT_ext, system, options):
 
     return T, energy, is_converged
 
-def cc_jacobi(update_t, T, dT, H, system, options, t3_excitations=None):
+def cc_jacobi(update_t, T, dT, H, X, system, options, t3_excitations=None):
 
     from ccpy.energy.cc_energy import get_cc_energy
     from ccpy.drivers.diis import DIIS
@@ -547,6 +548,7 @@ def cc_jacobi(update_t, T, dT, H, system, options, t3_excitations=None):
     print("   Energy of initial guess = {:>20.10f}".format(energy_old))
 
     t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
     print_cc_iteration_header()
     for niter in range(options["maximum_iterations"]):
         # get iteration start time
@@ -554,9 +556,9 @@ def cc_jacobi(update_t, T, dT, H, system, options, t3_excitations=None):
 
         # Update the T vector
         if t3_excitations: # CC(P) update
-            T, dT = update_t(T, dT, H, options["energy_shift"], options["RHF_symmetry"], system, t3_excitations)
+            T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system, t3_excitations)
         else: # regular update
-            T, dT = update_t(T, dT, H, options["energy_shift"], options["RHF_symmetry"], system)
+            T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system)
 
         # CC correlation energy
         energy = get_cc_energy(T, H)
@@ -581,6 +583,7 @@ def cc_jacobi(update_t, T, dT, H, system, options, t3_excitations=None):
                     minutes, seconds
                 )
             )
+            print(f"   Total CPU time is {time.process_time() - t_cpu_start} seconds")
             is_converged = True
             break
 
@@ -632,6 +635,7 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
     print("   Energy of initial guess = {:>20.10f}".format(energy_old))
 
     t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
     print_eomcc_iteration_header()
     for niter in range(options["maximum_iterations"]):
         # get iteration start time
@@ -684,6 +688,7 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
                     minutes, seconds
                 )
             )
+            print(f"   Total CPU time is {time.process_time() - t_cpu_start} seconds")
             is_converged = True
             break
 
@@ -692,8 +697,8 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
             diis_engine.push(L, LH, niter)
 
         # Do DIIS extrapolation
-        if (niter + 1) % options["diis_size"] == 0 and do_diis: # this criterion works better I've found...
-        #if niter >= options["diis_size"] + num_throw_away and do_diis:
+        #if (niter + 1) % options["diis_size"] == 0 and do_diis: # this criterion works better I've found...
+        if niter >= options["diis_size"] + num_throw_away and do_diis:
             ndiis_cycle += 1
             L.unflatten(diis_engine.extrapolate())
 

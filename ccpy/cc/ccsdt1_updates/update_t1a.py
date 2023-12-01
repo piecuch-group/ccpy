@@ -4,47 +4,21 @@ from ccpy.utilities.active_space import get_active_slices
 
 from ccpy.utilities.updates import cc_active_loops
 
-def build_ccsd(T, dT, H):
+def build_ccsd(T, dT, H, X):
     """
-    Update t1a amplitudes by calculating the projection <ia|(H_N e^(T1+T2+T3))_C|0>.
+    Calcualte CCSD parts of the projection <ia|(H_N e^(T1+T2+T3))_C|0>.
     """
-    chi1A_vv = H.a.vv.copy()
-    chi1A_vv += np.einsum("anef,fn->ae", H.aa.vovv, T.a, optimize=True)
-    chi1A_vv += np.einsum("anef,fn->ae", H.ab.vovv, T.b, optimize=True)
-
-    chi1A_oo = H.a.oo.copy()
-    chi1A_oo += np.einsum("mnif,fn->mi", H.aa.ooov, T.a, optimize=True)
-    chi1A_oo += np.einsum("mnif,fn->mi", H.ab.ooov, T.b, optimize=True)
-
-    h1A_ov = H.a.ov.copy()
-    h1A_ov += np.einsum("mnef,fn->me", H.aa.oovv, T.a, optimize=True)
-    h1A_ov += np.einsum("mnef,fn->me", H.ab.oovv, T.b, optimize=True)
-
-    h1B_ov = H.b.ov.copy()
-    h1B_ov += np.einsum("nmfe,fn->me", H.ab.oovv, T.a, optimize=True)
-    h1B_ov += np.einsum("mnef,fn->me", H.bb.oovv, T.b, optimize=True)
-
-    h1A_oo = chi1A_oo.copy()
-    h1A_oo += np.einsum("me,ei->mi", h1A_ov, T.a, optimize=True)
-
-    h2A_ooov = H.aa.ooov + np.einsum("mnfe,fi->mnie", H.aa.oovv, T.a, optimize=True)
-    h2B_ooov = H.ab.ooov + np.einsum("mnfe,fi->mnie", H.ab.oovv, T.a, optimize=True)
-    h2A_vovv = H.aa.vovv - np.einsum("mnfe,an->amef", H.aa.oovv, T.a, optimize=True)
-    h2B_vovv = H.ab.vovv - np.einsum("nmef,an->amef", H.ab.oovv, T.a, optimize=True)
-
-    dT.a = -np.einsum("mi,am->ai", h1A_oo, T.a, optimize=True)
-    dT.a += np.einsum("ae,ei->ai", chi1A_vv, T.a, optimize=True)
+    dT.a = -np.einsum("mi,am->ai", X.a.oo, T.a, optimize=True)
+    dT.a += np.einsum("ae,ei->ai", X.a.vv, T.a, optimize=True)
+    dT.a += np.einsum("me,aeim->ai", X.a.ov, T.aa, optimize=True) # [+]
+    dT.a += np.einsum("me,aeim->ai", X.b.ov, T.ab, optimize=True) # [+]
     dT.a += np.einsum("anif,fn->ai", H.aa.voov, T.a, optimize=True)
     dT.a += np.einsum("anif,fn->ai", H.ab.voov, T.b, optimize=True)
-    dT.a += np.einsum("me,aeim->ai", h1A_ov, T.aa, optimize=True)
-    dT.a += np.einsum("me,aeim->ai", h1B_ov, T.ab, optimize=True)
-    dT.a -= 0.5 * np.einsum("mnif,afmn->ai", h2A_ooov, T.aa, optimize=True)
-    dT.a -= np.einsum("mnif,afmn->ai", h2B_ooov, T.ab, optimize=True)
-    dT.a += 0.5 * np.einsum("anef,efin->ai", h2A_vovv, T.aa, optimize=True)
-    dT.a += np.einsum("anef,efin->ai", h2B_vovv, T.ab, optimize=True)
-
+    dT.a -= 0.5 * np.einsum("mnif,afmn->ai", H.aa.ooov, T.aa, optimize=True)
+    dT.a -= np.einsum("mnif,afmn->ai", H.ab.ooov, T.ab, optimize=True)
+    dT.a += 0.5 * np.einsum("anef,efin->ai", H.aa.vovv, T.aa, optimize=True)
+    dT.a += np.einsum("anef,efin->ai", H.ab.vovv, T.ab, optimize=True)
     dT.a += H.a.vo
-
     return dT
 
 def build_11(T, dT, H, system):

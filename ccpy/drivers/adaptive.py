@@ -262,7 +262,7 @@ class AdaptDriver:
                 self.driver.L[0] = None
             setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
 
-            # Step 7: Report timings of each step
+            # Step 7: Report wall and CPU timings of each step
             print(f"   Timing breakdown for macrostep {imacro}")
             print("   ---------------------------------")
             print(f"   - P space printing took {t_pspace_printing:.2f} seconds")

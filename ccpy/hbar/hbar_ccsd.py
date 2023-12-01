@@ -289,77 +289,25 @@ def get_ccsd_intermediates(T, H, H0, RHF_symmetry):
         tau_bb -= np.transpose(tau_bb, (0, 1, 3, 2))
     tau_ab = T.ab + np.einsum("ai,bj->abij", T.a, T.b, optimize=True)
 
-    #H.a.ov = (
-    #        H0.a.ov
-    #        + np.einsum("imae,em->ia", H0.aa.oovv, T.a, optimize=True)
-    #        + np.einsum("imae,em->ia", H0.ab.oovv, T.b, optimize=True)
-    #)
-
-    H.a.oo += (
-            #H0.a.oo
-            #+ np.einsum("je,ei->ji", H.a.ov, T.a, optimize=True)
-            #+ np.einsum("jmie,em->ji", H0.aa.ooov, T.a, optimize=True)
-            #+ np.einsum("jmie,em->ji", H0.ab.ooov, T.b, optimize=True)
-            + 0.5 * np.einsum("jnef,efin->ji", H0.aa.oovv, T.aa, optimize=True)
-            + np.einsum("jnef,efin->ji", H0.ab.oovv, T.ab, optimize=True)
-    )
-
-    H.a.vv += (
-            #H0.a.vv
-            #- np.einsum("mb,am->ab", H.a.ov, T.a, optimize=True)
-            #+ np.einsum("ambe,em->ab", H0.aa.vovv, T.a, optimize=True)
-            #+ np.einsum("ambe,em->ab", H0.ab.vovv, T.b, optimize=True)
-            - 0.5 * np.einsum("mnbf,afmn->ab", H0.aa.oovv, T.aa, optimize=True)
-            - np.einsum("mnbf,afmn->ab", H0.ab.oovv, T.ab, optimize=True)
-    )
-    if RHF_symmetry:
-        H.b.ov = H.a.ov
-        H.b.oo = H.a.oo
-        H.b.vv = H.a.vv
-    else:
-        #H.b.ov = (
-        #        H0.b.ov
-        #        + np.einsum("imae,em->ia", H0.bb.oovv, T.b, optimize=True)
-        #        + np.einsum("miea,em->ia", H0.ab.oovv, T.a, optimize=True)
-        #)
-
-        H.b.oo += (
-                #H0.b.oo
-                #+ np.einsum("je,ei->ji", H.b.ov, T.b, optimize=True)
-                #+ np.einsum("jmie,em->ji", H0.bb.ooov, T.b, optimize=True)
-                #+ np.einsum("mjei,em->ji", H0.ab.oovo, T.a, optimize=True)
-                + 0.5 * np.einsum("jnef,efin->ji", H0.bb.oovv, T.bb, optimize=True)
-                + np.einsum("njfe,feni->ji", H0.ab.oovv, T.ab, optimize=True)
-        )
-
-        H.b.vv += (
-                #H0.b.vv
-                #- np.einsum("mb,am->ab", H.b.ov, T.b, optimize=True)
-                #+ np.einsum("ambe,em->ab", H0.bb.vovv, T.b, optimize=True)
-                #+ np.einsum("maeb,em->ab", H0.ab.ovvv, T.a, optimize=True)
-                - 0.5 * np.einsum("mnbf,afmn->ab", H0.bb.oovv, T.bb, optimize=True)
-                - np.einsum("nmfb,fanm->ab", H0.ab.oovv, T.ab, optimize=True)
-        )
-
     #x1 = time.perf_counter()
-    H.aa.vovv = H0.aa.vovv - np.einsum("mnfe,an->amef", H0.aa.oovv, T.a, optimize=True)
+    H.aa.vovv += H0.aa.vovv
     if RHF_symmetry:
         H.bb.vovv = H.aa.vovv
     else:
-        H.bb.vovv = H0.bb.vovv - np.einsum("nmef,an->amef", H0.bb.oovv, T.b, optimize=True)
-    H.ab.vovv = H0.ab.vovv - np.einsum("nmef,an->amef", H0.ab.oovv, T.a, optimize=True)
-    H.ab.ovvv = H0.ab.ovvv - np.einsum("mnef,an->maef", H0.ab.oovv, T.b, optimize=True)
+        H.bb.vovv += H0.bb.vovv
+    H.ab.vovv += H0.ab.vovv
+    H.ab.ovvv += H0.ab.ovvv
     #x2 = time.perf_counter()
     #print("vovv:", x2 - x1)
 
     #x1 = time.perf_counter()
-    H.aa.ooov = H0.aa.ooov + np.einsum("mnfe,fi->mnie", H0.aa.oovv, T.a, optimize=True)
+    H.aa.ooov += H0.aa.ooov
     if RHF_symmetry:
         H.bb.ooov = H.aa.ooov
     else:
-        H.bb.ooov = H0.bb.ooov + np.einsum("mnfe,fi->mnie", H0.bb.oovv, T.b, optimize=True)
-    H.ab.ooov = H0.ab.ooov + np.einsum("mnfe,fi->mnie", H0.ab.oovv, T.a, optimize=True)
-    H.ab.oovo = H0.ab.oovo + np.einsum("nmef,fi->nmei", H0.ab.oovv, T.b, optimize=True)
+        H.bb.ooov += H0.bb.ooov
+    H.ab.ooov += H0.ab.ooov
+    H.ab.oovo += H0.ab.oovo
     #x2 = time.perf_counter()
     #print("ooov:", x2 - x1)
 

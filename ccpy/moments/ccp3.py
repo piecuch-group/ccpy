@@ -13,6 +13,7 @@ def calc_ccp3_full(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fal
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
     t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -99,6 +100,7 @@ def calc_ccp3_full(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fal
         correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
 
     t_end = time.perf_counter()
+    t_cpu_end = time.process_time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     energy_A = corr_energy + correction_A
@@ -113,7 +115,8 @@ def calc_ccp3_full(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fal
 
     print('   CC(P;3) Calculation Summary')
     print('   -------------------------------------')
-    print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
     print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CC(P;3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
@@ -148,6 +151,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
     array. Input T and L are in the same order and match with t3_excitations.
     """
     t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -229,6 +233,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
         correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
 
     t_end = time.perf_counter()
+    t_cpu_end = time.process_time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     energy_A = corr_energy + correction_A
@@ -243,7 +248,8 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
 
     print('   CC(P;3) Calculation Summary')
     print('   -------------------------------------')
-    print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
     print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CC(P;3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
@@ -276,6 +282,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
     t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -385,6 +392,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
     triples_list = triples_list[:num_add, :]
 
     t_end = time.perf_counter()
+    t_cpu_end = time.process_time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results
@@ -400,7 +408,8 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
 
     print('   CC(P;3) Calculation Summary')
     print('   ---------------------------')
-    print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
+    print("   Total wall time: ({:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
     print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CC(P;3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
