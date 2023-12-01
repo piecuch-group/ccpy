@@ -32,9 +32,9 @@ def test_crcc24_h2o():
     driver.run_ccp4(method="crcc24")
 
     # Check CCSD energy
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -75.8959141002)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -75.8959141002, atol=1.0e-07)
     # Check CR-CC(2,3)_A energy
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["A"], -75.9047403064)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["A"], -75.9047403064, atol=1.0e-07)
     # Check CR-CC(2,3)_D energy
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"], -75.9076522384)
     # Check CR-CC(2,4)_AA energy

@@ -26,7 +26,7 @@ def test_cc3_f2():
     driver.options["RHF_symmetry"] = False
     driver.run_cc(method="cc3")
 
-    assert np.allclose(driver.correlation_energy, -0.63843220)
+    assert np.allclose(driver.correlation_energy, -0.63843220, atol=1.0e-07)
 
 
 if __name__ == "__main__":

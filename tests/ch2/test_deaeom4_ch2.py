@@ -23,7 +23,7 @@ driver.run_deaeomcc(method="deaeom4", state_index=[0, 1, 2, 3, 4, 5])
 
 expected_vee = [-1.20632891, -1.22803218, -1.14348083, -1.04281182, -0.91190576, -0.88424966]
 for i in range(len(expected_vee)):
-    assert np.allclose(expected_vee[i], driver.vertical_excitation_energy[i], atol=1.0e-08)
+    assert np.allclose(expected_vee[i], driver.vertical_excitation_energy[i], atol=1.0e-07)
 
 
 

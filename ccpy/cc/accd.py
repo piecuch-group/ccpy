@@ -1,12 +1,9 @@
 """Module with functions that perform the CC with doubles
 (CCD) calculation for a molecular system."""
 import numpy as np
-import time
-
 from ccpy.utilities.updates import cc_loops2
 
-
-def update(T, dT, H, shift, flag_RHF, system):
+def update(T, dT, H, X, shift, flag_RHF, system):
 
     # update T2
     T, dT = update_t2a(T, dT, H, shift)

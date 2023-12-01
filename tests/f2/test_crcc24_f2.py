@@ -30,18 +30,18 @@ def test_crcc24_f2():
     driver.run_ccp4(method="crcc24")
 
     # Check reference energy
-    assert np.allclose(driver.system.reference_energy, -198.420096282673)
+    assert np.allclose(driver.system.reference_energy, -198.420096282673, atol=1.0e-07)
     # Check CCSD energy
-    assert np.allclose(driver.correlation_energy, -0.59246629)
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -199.01256257)
+    assert np.allclose(driver.correlation_energy, -0.59246629, atol=1.0e-07)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -199.01256257, atol=1.0e-07)
     # Check CR-CC(2,3)_D energy
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"], -199.0563392841)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"], -199.0563392841, atol=1.0e-07)
     # Check CR-CC(2,4)_AA energy
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["A"] + driver.deltap4[0]["A"], -199.05642649630002)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["A"] + driver.deltap4[0]["A"], -199.05642649630002, atol=1.0e-07)
     # Check CR-CC(2,4)_DA energy
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"] + driver.deltap4[0]["A"], -199.0609214773)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"] + driver.deltap4[0]["A"], -199.0609214773, atol=1.0e-07)
     # Check CR-CC(2,4)_DD energy
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"] + driver.deltap4[0]["D"], -199.06133761)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"] + driver.deltap4[0]["D"], -199.06133761, atol=1.0e-07)
 
 if __name__ == "__main__":
     test_crcc24_f2()

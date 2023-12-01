@@ -11,6 +11,7 @@ def calc_cct3(T, L, corr_energy, H, H0, system, use_RHF=False, num_active=1):
     Calculate the ground-state CC(t;3) correction to the CCSDt energy.
     """
     t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -104,6 +105,7 @@ def calc_cct3(T, L, corr_energy, H, H0, system, use_RHF=False, num_active=1):
         correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
 
     t_end = time.perf_counter()
+    t_cpu_end = time.process_time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     energy_A = corr_energy + correction_A
@@ -118,7 +120,8 @@ def calc_cct3(T, L, corr_energy, H, H0, system, use_RHF=False, num_active=1):
 
     print('   CC(t;3) Calculation Summary')
     print('   ---------------------------')
-    print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
     print("   CCSDt = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CC(t;3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
@@ -152,17 +155,7 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
     Calculate the excited-state CC(t;3) correction to the EOMCCSDt energy.
     """
     t_start = time.perf_counter()
-
-    # Containers for the CR-EOMCC(2,3) correction
-    correction_A = 0.0
-    correction_B = 0.0
-    correction_C = 0.0
-    correction_D = 0.0
-    # Containers for the delta-CR-EOMCC(2,3) correction
-    dcorrection_A = 0.0
-    dcorrection_B = 0.0
-    dcorrection_C = 0.0
-    dcorrection_D = 0.0
+    t_cpu_start = time.process_time()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -311,6 +304,7 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
         dcorrection_D = ddD_aaa + ddD_aab + ddD_abb + ddD_bbb
 
     t_end = time.perf_counter()
+    t_cpu_end = time.process_time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     energy_A = corr_energy + omega + correction_A
@@ -335,7 +329,8 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
 
     print('   EOMCC(t;3) Calculation Summary')
     print('   ------------------------------')
-    print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
     print("   EOMCCSDt = {:>10.10f}    ω = {:>10.10f}     VEE = {:>10.5f} eV".format(
         system.reference_energy + corr_energy + omega, omega, hartreetoeV * omega))
     print(

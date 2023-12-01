@@ -11,6 +11,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     Calculate the ground-state CR-CC(2,4) correction to the CCSD energy.
     """
     t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
     
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -182,6 +183,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
         correction_D = dD_aaaa + dD_aaab + dD_aabb + dD_abbb + dD_bbbb
 
     t_end = time.perf_counter()
+    t_cpu_end = time.process_time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     energy_A = corr_energy + correction_A
@@ -196,7 +198,8 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
 
     print('   CR-CC(2,4) Calculation Summary')
     print('   -------------------------------------')
-    print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
     print("   CCSD = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CR-CC(2,4)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(

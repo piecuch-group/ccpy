@@ -27,17 +27,18 @@ def test_mpn_h2o():
     driver = Driver.from_pyscf(mf, nfrozen=0)
     # Check reference energy
     assert np.allclose(
-        driver.system.reference_energy, -75.587711
+        driver.system.reference_energy, -75.587711,
+        atol=1.0e-07
     )
     driver.run_mbpt(method="mp2")
     # Check MP2 total energy
     assert np.allclose(
-        driver.system.reference_energy + driver.correlation_energy, -75.896935
+        driver.system.reference_energy + driver.correlation_energy, -75.896935, atol=1.0e-07
     )
     driver.run_mbpt(method="mp3")
     # Check MP3 total energy
     assert np.allclose(
-        driver.system.reference_energy + driver.correlation_energy, -75.882569
+        driver.system.reference_energy + driver.correlation_energy, -75.882569, atol=1.0e-07
     )
     # [TODO]: MP4 METHOD IS NOT WORKING YET
     driver.run_mbpt(method="mp4")

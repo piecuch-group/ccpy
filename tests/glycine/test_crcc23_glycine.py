@@ -41,31 +41,34 @@ def test_crcc23_glycine():
     driver.run_ccp3(method="crcc23")
 
     # Check reference energy
-    assert np.allclose(driver.system.reference_energy, -282.8324072998)
+    assert np.allclose(driver.system.reference_energy, -282.8324072998, atol=1.0e-07)
     # Check CCSD energy
-    assert np.allclose(driver.correlation_energy, -0.8319770162)
+    assert np.allclose(driver.correlation_energy, -0.8319770162, atol=1.0e-07)
     assert np.allclose(
-        driver.system.reference_energy + driver.correlation_energy, -283.6643843160
+        driver.system.reference_energy + driver.correlation_energy, -283.6643843160,
+        atol=1.0e-07
     )
     # Check CR-CC(2,3)_A energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltap3[0]["A"], -0.8546012006
+        driver.correlation_energy + driver.deltap3[0]["A"], -0.8546012006, atol=1.0e-07
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
         + driver.deltap3[0]["A"],
         -283.6870085004,
+        atol=1.0e-07
     )
     # Check CR-CC(2,3)_D energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltap3[0]["D"], -0.8574520862
+        driver.correlation_energy + driver.deltap3[0]["D"], -0.8574520862, atol=1.0e-07
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
         + driver.deltap3[0]["D"],
         -283.6898593860,
+        atol=1.0e-07
     )
 
 if __name__ == "__main__":

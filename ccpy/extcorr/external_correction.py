@@ -14,6 +14,7 @@ def cluster_analysis(wavefunction_file, hamiltonian, system):
     print("   Performing cluster analysis")
     print("   ------------------------------")
     t1 = time.perf_counter()
+    t_cpu_start = time.process_time()
 
     # Create the VT4 storage object
     VT_ext = Integral.from_empty(system, 2, data_type=hamiltonian.a.oo.dtype, use_none=True)
@@ -47,10 +48,11 @@ def cluster_analysis(wavefunction_file, hamiltonian, system):
     VT_ext.aa.vvoo, VT_ext.ab.vvoo, VT_ext.bb.vvoo = contract_vt4_doubles(C4_excitations, hamiltonian, T4_amplitudes, system)
 
     elapsed_time = time.perf_counter() - t1
+    t_cpu_end = time.process_time()
     minutes, seconds = divmod(elapsed_time, 60)
-    time_str = f"({minutes:.1f}m {seconds:.1f}s)"
     print("   --------------------")
-    print("   Completed in", time_str)
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
     print("")
 
     return T_ext, VT_ext

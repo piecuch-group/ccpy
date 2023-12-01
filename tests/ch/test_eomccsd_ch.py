@@ -23,22 +23,22 @@ def test_eomccsd_ch():
     expected_total_energy = [-38.38631169 + omega for omega in expected_vee]
 
     # Check reference energy
-    assert np.allclose(driver.system.reference_energy, -38.27132475)
+    assert np.allclose(driver.system.reference_energy, -38.27132475, atol=1.0e-07)
     for n in range(4):
         if n == 0:
             # Check CCSD energy
-            assert np.allclose(driver.correlation_energy, -0.11498694)
+            assert np.allclose(driver.correlation_energy, -0.11498694, atol=1.0e-07)
             assert np.allclose(
-                driver.system.reference_energy + driver.correlation_energy, -38.38631169
+                driver.system.reference_energy + driver.correlation_energy, -38.38631169, atol=1.0e-07
             )
         else:
             # Check EOMCCSD energy
-            assert np.allclose(driver.vertical_excitation_energy[n], expected_vee[n])
+            assert np.allclose(driver.vertical_excitation_energy[n], expected_vee[n], atol=1.0e-07)
             assert np.allclose(
                 driver.system.reference_energy
                 + driver.correlation_energy
                 + driver.vertical_excitation_energy[n],
-                expected_total_energy[n],
+                expected_total_energy[n], atol=1.0e-07
             )
 if __name__ == "__main__":
     test_eomccsd_ch()

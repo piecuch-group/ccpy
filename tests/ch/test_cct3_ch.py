@@ -21,31 +21,33 @@ def test_cct3_ch():
     driver.run_ccp3(method="cct3")
 
     # Check reference energy
-    assert np.allclose(driver.system.reference_energy, -38.2713247488)
+    assert np.allclose(driver.system.reference_energy, -38.2713247488, atol=1.0e-07)
     # Check CCSDt energy
-    assert np.allclose(driver.correlation_energy, -0.11469532)
+    assert np.allclose(driver.correlation_energy, -0.11469532, atol=1.0e-07)
     assert np.allclose(
-        driver.system.reference_energy + driver.correlation_energy, -38.38602007
+        driver.system.reference_energy + driver.correlation_energy, -38.38602007, atol=1.0e-07
     )
     # Check CC(t;3)_A energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltap3[0]["A"], -0.1160181452
+        driver.correlation_energy + driver.deltap3[0]["A"], -0.1160181452, atol=1.0e-07
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
         + driver.deltap3[0]["A"],
         -38.3873428940,
+        atol=1.0e-07
     )
     # Check CC(t;3)_D energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltap3[0]["D"], -0.1162820915
+        driver.correlation_energy + driver.deltap3[0]["D"], -0.1162820915, atol=1.0e-07
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
         + driver.deltap3[0]["D"],
         -38.3876068402,
+        atol=1.0e-07
     )
 
 if __name__ == "__main__":

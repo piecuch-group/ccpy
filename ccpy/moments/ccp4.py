@@ -17,6 +17,7 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
 
     # Now, compute the correction for determinants in the P space (which should be a short list hopefully)
     t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -190,6 +191,7 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
     correction_D = delta24_full["D"] - correction_D
 
     t_end = time.perf_counter()
+    t_cpu_end = time.process_time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results
@@ -207,7 +209,8 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
 
     print('   CC(P;4) Calculation Summary')
     print('   -------------------------------------')
-    print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
     print("   CC(P) = {:>10.10f}".format(system.reference_energy + cc_energy))
     print(
         "   CC(P;4)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(

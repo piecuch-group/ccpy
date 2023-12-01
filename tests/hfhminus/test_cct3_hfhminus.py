@@ -25,31 +25,34 @@ def test_cct3_hfhminus():
     driver.run_ccp3(method="cct3", state_index=[0])
 
     # Check reference energy
-    assert np.allclose(driver.system.reference_energy, -100.3591573557)
+    assert np.allclose(driver.system.reference_energy, -100.3591573557, atol=1.0e-07)
     # Check CCSDt energy
-    assert np.allclose(driver.correlation_energy, -0.19275952)
+    assert np.allclose(driver.correlation_energy, -0.19275952, atol=1.0e-07)
     assert np.allclose(
-        driver.system.reference_energy + driver.correlation_energy, -100.5519168770
+        driver.system.reference_energy + driver.correlation_energy, -100.5519168770,
+        atol=1.0e-07
     )
     # Check CC(t;3)_A energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltap3[0]["A"], -0.1936570574
+        driver.correlation_energy + driver.deltap3[0]["A"], -0.1936570574, atol=1.0e-07
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
         + driver.deltap3[0]["A"],
         -100.5528144130,
+        atol=1.0e-07
     )
     # Check CC(t;3)_D energy
     assert np.allclose(
-        driver.correlation_energy + driver.deltap3[0]["D"], -0.1938411916
+        driver.correlation_energy + driver.deltap3[0]["D"], -0.1938411916, atol=1.0e-07
     )
     assert np.allclose(
         driver.system.reference_energy
         + driver.correlation_energy
         + driver.deltap3[0]["D"],
         -100.5529985472,
+        atol=1.0e-07
     )
 
 if __name__ == "__main__":

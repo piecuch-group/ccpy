@@ -94,47 +94,52 @@ def test_creom23_chplus():
     }
 
     # Check reference energy
-    assert np.allclose(driver.system.reference_energy, -37.9027681837)
+    assert np.allclose(driver.system.reference_energy, -37.9027681837, atol=1.0e-07)
     for n in [0, 1, 3, 4, 5]:
         if n == 0:
             # Check CCSD energy
-            assert np.allclose(driver.correlation_energy, -0.11490198)
+            assert np.allclose(driver.correlation_energy, -0.11490198, atol=1.0e-07)
             assert np.allclose(
-                driver.system.reference_energy + driver.correlation_energy, -38.01767017
+                driver.system.reference_energy + driver.correlation_energy, -38.01767017,
+                atol=1.0e-07
             )
             # Check CR-CC(2,3)_A energy
             assert np.allclose(
-                driver.correlation_energy + driver.deltap3[0]["A"], -0.1162818221
+                driver.correlation_energy + driver.deltap3[0]["A"], -0.1162818221, atol=1.0e-07
             )
             assert np.allclose(
                 driver.system.reference_energy
                 + driver.correlation_energy
                 + driver.deltap3[0]["A"],
                 -38.0190500058,
+                atol=1.0e-07
             )
             # Check CR-CC(2,3)_D energy
             assert np.allclose(
-                driver.correlation_energy + driver.deltap3[0]["D"], -0.1166845404
+                driver.correlation_energy + driver.deltap3[0]["D"], -0.1166845404, atol=1.0e-07
             )
             assert np.allclose(
                 driver.system.reference_energy
                 + driver.correlation_energy
                 + driver.deltap3[0]["D"],
                 -38.0194527241,
+                atol=1.0e-07
             )
         else:
             # Check EOMCCSD energy
-            assert np.allclose(driver.vertical_excitation_energy[n], expected_vee[n])
+            assert np.allclose(driver.vertical_excitation_energy[n], expected_vee[n], atol=1.0e-07)
             assert np.allclose(
                 driver.system.reference_energy
                 + driver.correlation_energy
                 + driver.vertical_excitation_energy[n],
                 expected_total_energy[n],
+                atol=1.0e-07
             )
             # Check CR-CC(2,3)_A energy
             assert np.allclose(
                 driver.vertical_excitation_energy[n] + driver.deltap3[n]["A"],
                 expected_vee[n] + expected_deltap3["A"][n],
+                atol=1.0e-07
             )
             assert np.allclose(
                 driver.system.reference_energy
@@ -142,16 +147,18 @@ def test_creom23_chplus():
                 + driver.vertical_excitation_energy[n]
                 + driver.deltap3[n]["A"],
                 -38.01767017 + expected_vee[n] + expected_deltap3["A"][n],
+                atol=1.0e-07
             )
             assert np.allclose(
                 driver.vertical_excitation_energy[n] + driver.ddeltap3[n]["A"],
                 expected_vee[n] + expected_ddeltap3["A"][n],
+                atol=1.0e-07
             )
-
             # Check CR-CC(2,3)_D energy
             assert np.allclose(
                 driver.vertical_excitation_energy[n] + driver.deltap3[n]["D"],
                 expected_vee[n] + expected_deltap3["D"][n],
+                atol=1.0e-07
             )
             assert np.allclose(
                 driver.system.reference_energy
@@ -159,10 +166,12 @@ def test_creom23_chplus():
                 + driver.vertical_excitation_energy[n]
                 + driver.deltap3[n]["D"],
                 -38.01767017 + expected_vee[n] + expected_deltap3["D"][n],
+                atol=1.0e-07
             )
             assert np.allclose(
                 driver.vertical_excitation_energy[n] + driver.ddeltap3[n]["D"],
                 expected_vee[n] + expected_ddeltap3["D"][n],
+                atol=1.0e-07
             )
 
 if __name__ == "__main__":

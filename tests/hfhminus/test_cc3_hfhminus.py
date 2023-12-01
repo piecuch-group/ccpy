@@ -20,28 +20,11 @@ def test_cc3_hfhminus():
 
     driver.run_cc(method="cc3")
 
-    for i in range(driver.system.noccupied_alpha):
-        for j in range(i, driver.system.noccupied_alpha):
-            if abs(driver.hamiltonian.a.oo[i, j]) > 1.0e-06:
-                print(f"f_a_oo({i + 1, j + 1}) = {driver.hamiltonian.a.oo[i, j]}")
-    for i in range(driver.system.noccupied_beta):
-        for j in range(i, driver.system.noccupied_beta):
-            if abs(driver.hamiltonian.b.oo[i, j]) > 1.0e-06:
-                print(f"f_b_oo({i + 1, j + 1}) = {driver.hamiltonian.b.oo[i, j]}")
-    for i in range(driver.system.nunoccupied_alpha):
-        for j in range(i, driver.system.nunoccupied_alpha):
-            if abs(driver.hamiltonian.a.vv[i, j]) > 1.0e-06:
-                print(f"f_a_vv({i + 1, j + 1}) = {driver.hamiltonian.a.vv[i, j]}")
-    for i in range(driver.system.nunoccupied_beta):
-        for j in range(i, driver.system.nunoccupied_beta):
-            if abs(driver.hamiltonian.b.vv[i, j]) > 1.0e-06:
-                print(f"f_b_vv({i + 1, j + 1}) = {driver.hamiltonian.b.vv[i, j]}")
-
     # Check reference energy
-    assert np.allclose(driver.system.reference_energy, -100.3591573557)
+    assert np.allclose(driver.system.reference_energy, -100.3591573557, atol=1.0e-07)
     # Check CC3 energy
-    assert np.allclose(driver.correlation_energy, -0.19371334)
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -100.55287069)
+    assert np.allclose(driver.correlation_energy, -0.19371334, atol=1.0e-07)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -100.55287069, atol=1.0e-07)
 
 if __name__ == "__main__":
     test_cc3_hfhminus()

@@ -19,8 +19,8 @@ def test_cc3_ch2():
     )
     driver.system.print_info()
 
-    driver.options["diis_out_of_core"] = True
-    driver.options["davidson_out_of_core"] = True
+    #driver.options["diis_out_of_core"] = True
+    #driver.options["davidson_out_of_core"] = True
     driver.run_cc(method="cc3")
 
     # Check the CC3 total energy
@@ -47,7 +47,7 @@ def test_cc3_ch2():
     for i in range(10):
         computed_total_energy = driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[i]
         expected_total_energy = expected_ref_energy + expected_corr_energy + expected_vee[i]
-        assert np.allclose(computed_total_energy, expected_total_energy, atol=1.0e-06)
+        assert np.allclose(computed_total_energy, expected_total_energy, atol=1.0e-07)
 
 if __name__ == "__main__":
     test_cc3_ch2()

@@ -17,7 +17,8 @@ def pivoted_chol(get_diag, get_row, rank_max, err_tol = 1e-6):
                 be at most M, but may be less if the termination condition was acceptably low error rather than max iters reached.
     """
 
-    t_start = time.time()
+    t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
     print("     Rank         Error")
     print("   ------------------------")
 
@@ -59,9 +60,10 @@ def pivoted_chol(get_diag, get_row, rank_max, err_tol = 1e-6):
     # Final cholesky vectors stored as R(s|pq), where s = 1,...,rank
     R = R[:m, :]
     print("   Final rank = ", m, "error = ", err)
-    t_end = time.time()
+    t_end = time.perf_counter()
     minutes, seconds = divmod(t_end - t_start, 60)
     print(f"   Completed Cholesky decomposition in {minutes} min {seconds} s")
+    print(f"   Total CPU time is {time.process_time() - t_cpu_start} seconds")
     return R
 
 def cholesky_eri_from_pyscf(mol, tol=1.0e-09):

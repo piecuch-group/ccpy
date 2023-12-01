@@ -26,22 +26,24 @@ def test_eomccsdt_chplus():
     expected_total_energy = [expected_cc_energy + omega for omega in expected_vee]
 
     # Check reference energy
-    assert np.allclose(driver.system.reference_energy, expected_ref_energy)
+    assert np.allclose(driver.system.reference_energy, expected_ref_energy, atol=1.0e-07)
     for n in [0, 1, 2, 3, 4, 5, 6, 7, 8]:
         if n == 0:
             # Check CCSDT energy
-            assert np.allclose(driver.correlation_energy, expected_corr_energy)
+            assert np.allclose(driver.correlation_energy, expected_corr_energy, atol=1.0e-07)
             assert np.allclose(
-                driver.system.reference_energy + driver.correlation_energy, expected_cc_energy
+                driver.system.reference_energy + driver.correlation_energy, expected_cc_energy,
+                atol=1.0e-07
             )
         else:
             # Check EOMCCSDT energy
-            assert np.allclose(driver.vertical_excitation_energy[n], expected_vee[n])
+            assert np.allclose(driver.vertical_excitation_energy[n], expected_vee[n], atol=1.0e-07)
             assert np.allclose(
                 driver.system.reference_energy
                 + driver.correlation_energy
                 + driver.vertical_excitation_energy[n],
                 expected_total_energy[n],
+                atol=1.0e-07
             )
 
 

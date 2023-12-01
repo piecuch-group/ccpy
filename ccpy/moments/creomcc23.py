@@ -11,6 +11,7 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
     Calculate the ground-state CR-EOMCC(2,3) correction to the EOMCCSD energy.
     """
     t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
 
     # Containers for the CR-EOMCC(2,3) correction
     correction_A = 0.0
@@ -131,6 +132,7 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
         dcorrection_D = ddD_aaa + ddD_aab + ddD_abb + ddD_bbb
 
     t_end = time.perf_counter()
+    t_cpu_end = time.process_time()
     minutes, seconds = divmod(t_end - t_start, 60)
 
     energy_A = corr_energy + omega + correction_A
@@ -155,7 +157,8 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
 
     print('   CR-EOMCC(2,3) / δ-CR-EOMCC(2,3) Calculation Summary')
     print('   -------------------------------------------------')
-    print("   Completed in  ({:0.2f}m  {:0.2f}s)\n".format(minutes, seconds))
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
     print("   EOMCCSD = {:>10.10f}    ω = {:>10.10f}     VEE = {:>10.5f} eV".format(system.reference_energy + corr_energy + omega, omega, hartreetoeV * omega))
     print(
         "   CR-EOMCC(2,3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
