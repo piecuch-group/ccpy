@@ -1094,11 +1094,11 @@ class Driver:
             leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
             print("   Left IP-EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
 
-    def run_eccc(self, method, external_wavefunction, t3_excitations=None):
+    def run_eccc(self, method, ci_vectors_file, t3_excitations=None):
         from ccpy.extcorr.external_correction import cluster_analysis
 
         # Get the external T vector corresponding to the cluster analysis
-        T_ext, VT_ext = cluster_analysis(external_wavefunction, self.hamiltonian, self.system)
+        T_ext, VT_ext = cluster_analysis(ci_vectors_file, self.hamiltonian, self.system)
 
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.cc.MODULES:
@@ -1134,11 +1134,15 @@ class Driver:
                              order=self.operator_params["order"],
                              active_orders=self.operator_params["active_orders"],
                              num_active=self.operator_params["number_active_indices"])
+        # Create the container for 1- and 2-body intermediates
+        cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
         # Run the CC calculation
-        self.T, self.correlation_energy, _ = eccc_jacobi(update_function,
+        self.T, self.correlation_energy, _ = eccc_jacobi(
+                                                  update_function,
                                                   self.T,
                                                   dT,
                                                   self.hamiltonian,
+                                                  cc_intermediates,
                                                   T_ext, VT_ext,
                                                   self.system,
                                                   self.options,
