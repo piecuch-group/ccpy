@@ -22,7 +22,7 @@ def test_eomcct3_full_chplus():
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_leftccp(method="left_ccsdt_p", t3_excitations=t3_excitations)
-    driver.run_ccp3(method="ccp3", state_index=[0], t3_excitations=t3_excitations, two_body_approx=False)
+    driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations, two_body_approx=False)
 
     # Initial guess
     driver.run_guess(method="cisd", multiplicity=1, roots_per_irrep={"A1": 4, "B1": 2, "B2": 0, "A2": 2},  nact_occupied=4, nact_unoccupied=4)
@@ -34,7 +34,7 @@ def test_eomcct3_full_chplus():
         driver.run_eomccp(method="eomccsdt_p", state_index=state_index, t3_excitations=t3_excitations, r3_excitations=r3_excitations)
         driver.run_lefteomccp(method="left_ccsdt_p", state_index=state_index, t3_excitations=t3_excitations, r3_excitations=r3_excitations)
         # Perform the full CC(t;3) corrections using T(P), R(P), and L(P) 
-        driver.run_ccp3(method="ccp3", state_index=[state_index], t3_excitations=t3_excitations, r3_excitations=r3_excitations, two_body_approx=False)
+        driver.run_ccp3(method="ccp3", state_index=state_index, t3_excitations=t3_excitations, r3_excitations=r3_excitations, two_body_approx=False)
 
     expected_vee = [
         0.0,
