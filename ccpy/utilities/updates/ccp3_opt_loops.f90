@@ -1154,6 +1154,473 @@ module ccp3_opt_loops
 
               end subroutine ccp3d_full
          
+              subroutine eomccp3a_full(deltaA,deltaB,deltaC,deltaD,&
+                                       ddeltaA,ddeltaB,ddeltaC,ddeltaD,&
+                                       EOM3A,M3A,L3A,r3a_excits,&
+                                       omega,r0,&
+                                       fA_oo,fA_vv,H1A_oo,H1A_vv,&
+                                       H2A_voov,H2A_oooo,H2A_vvvv,&
+                                       D3A_O,D3A_V,n3aaa,noa,nua)
+
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        real(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
+                        integer, intent(in) :: noa, nua, n3aaa
+                        integer, intent(in) :: r3a_excits(6,n3aaa)
+                        real(kind=8), intent(in) :: EOM3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
+                                                    M3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
+                                                    L3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
+                                                    fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
+                                                    H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
+                                                    H2A_voov(1:nua,1:noa,1:noa,1:nua),&
+                                                    H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
+                                                    H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                                                    D3A_O(1:nua,1:noa,1:noa),&
+                                                    D3A_V(1:nua,1:noa,1:nua)
+                        real(kind=8), intent(in) :: omega, r0
+                        
+                        ! Low-memory looping variables
+                        logical(kind=1) :: qspace(nua,nua,nua)
+                        integer :: nloc, idet, idx
+                        integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
+                        integer :: excits_buff(6,n3aaa)
+                        ! local variables
+                        integer :: i, j, k, a, b, c
+                        real(kind=8) :: D, LM, LM1
+
+                        ! reorder r3a into (i,j,k) order
+                        excits_buff(:,:) = r3a_excits(:,:)
+                        nloc = noa*(noa-1)*(noa-2)/6
+                        allocate(loc_arr(2,nloc))
+                        allocate(idx_table(noa,noa,noa))
+                        call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), noa, noa, noa)
+                        call sort3(excits_buff, loc_arr, idx_table, (/4,5,6/), noa, noa, noa, nloc, n3aaa)
+
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
+                        
+                        ddeltaA = 0.0d0
+                        ddeltaB = 0.0d0
+                        ddeltaC = 0.0d0
+                        ddeltaD = 0.0d0
+
+                        do i = 1 , noa
+                            do j = i+1, noa
+                                do k = j+1, noa
+                                    ! Construct Q space for block (i,j,k)
+                                    qspace = .true.
+                                    idx = idx_table(i,j,k)
+                                    if (idx/=0) then
+                                       do idet = loc_arr(1,idx), loc_arr(2,idx)
+                                          a = excits_buff(1,idet); b = excits_buff(2,idet); c = excits_buff(3,idet);
+                                          qspace(a,b,c) = .false.
+                                       end do
+                                    end if
+                                    do a = 1, nua
+                                        do b = a+1, nua
+                                            do c = b+1, nua
+
+                                                if (.not. qspace(a,b,c)) cycle
+                                               
+                                                LM = (r0*M3A(a,b,c,i,j,k) + EOM3A(a,b,c,i,j,k)) * L3A(a,b,c,i,j,k)
+
+                                                D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
+                                                - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
+
+                                                deltaA = deltaA + LM/(omega + D)
+
+                                                D = H1A_oo(i,i) + H1A_oo(j,j) + H1A_oo(k,k)&
+                                                - H1A_vv(a,a) - H1A_vv(b,b) - H1A_vv(c,c)
+
+                                                deltaB = deltaB + LM/(omega + D)
+
+                                                D = D &
+                                                -H2A_voov(a,i,i,a) - H2A_voov(b,i,i,b) - H2A_voov(c,i,i,c)&
+                                                -H2A_voov(a,j,j,a) - H2A_voov(b,j,j,b) - H2A_voov(c,j,j,c)&
+                                                -H2A_voov(a,k,k,a) - H2A_voov(b,k,k,b) - H2A_voov(c,k,k,c)&
+                                                -H2A_oooo(j,i,j,i) - H2A_oooo(k,i,k,i) - H2A_oooo(k,j,k,j)&
+                                                -H2A_vvvv(b,a,b,a) - H2A_vvvv(c,a,c,a) - H2A_vvvv(c,b,c,b)
+
+                                                deltaC = deltaC + LM/(omega + D)
+
+                                                D = D &
+                                                +D3A_O(a,i,j)+D3A_O(a,i,k)+D3A_O(a,j,k)&
+                                                +D3A_O(b,i,j)+D3A_O(b,i,k)+D3A_O(b,j,k)&
+                                                +D3A_O(c,i,j)+D3A_O(c,i,k)+D3A_O(c,j,k)&
+                                                -D3A_V(a,i,b)-D3A_V(a,i,c)-D3A_V(b,i,c)&
+                                                -D3A_V(a,j,b)-D3A_V(a,j,c)-D3A_V(b,j,c)&
+                                                -D3A_V(a,k,b)-D3A_V(a,k,c)-D3A_V(b,k,c)
+
+                                                deltaD = deltaD + LM/(omega + D)
+
+                                            end do
+                                        end do
+                                    end do
+                                end do
+                            end do
+                        end do
+
+              end subroutine eomccp3a_full
+
+              subroutine eomccp3b_full(deltaA,deltaB,deltaC,deltaD,&
+                                       ddeltaA,ddeltaB,ddeltaC,ddeltaD,&
+                                       EOM3B,M3B,L3B,r3b_excits,&
+                                       omega,r0,&
+                                       fA_oo,fA_vv,fB_oo,fB_vv,&
+                                       H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                                       H2A_voov,H2A_oooo,H2A_vvvv,&
+                                       H2B_ovov,H2B_vovo,&
+                                       H2B_oooo,H2B_vvvv,&
+                                       H2C_voov,&
+                                       D3A_O,D3A_V,D3B_O,D3B_V,D3C_O,D3C_V,&
+                                       n3aab,noa,nua,nob,nub)
+
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        real(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
+                        integer, intent(in) :: noa, nua, nob, nub, n3aab
+                        integer, intent(in) :: r3b_excits(6,n3aab)
+                        real(kind=8), intent(in) :: EOM3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                                    M3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                                    L3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                                                    fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
+                                                    fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
+                                                    H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
+                                                    H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
+                                                    H2A_voov(1:nua,1:noa,1:noa,1:nua),&
+                                                    H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
+                                                    H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                                                    H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
+                                                    H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
+                                                    H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
+                                                    H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                                                    H2C_voov(1:nub,1:nob,1:nob,1:nub),&
+                                                    D3A_O(1:nua,1:noa,1:noa),&
+                                                    D3A_V(1:nua,1:noa,1:nua),&
+                                                    D3B_O(1:nua,1:noa,1:nob),&
+                                                    D3B_V(1:nua,1:noa,1:nub),&
+                                                    D3C_O(1:nub,1:noa,1:nob),&
+                                                    D3C_V(1:nua,1:nob,1:nub)
+                        real(kind=8), intent(in) :: omega, r0
+
+                        ! Low-memory looping variables
+                        logical(kind=1) :: qspace(nua,nua,nub)
+                        integer :: nloc, idet, idx
+                        integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
+                        integer :: excits_buff(6,n3aab)
+                        ! local variables
+                        integer :: i, j, k, a, b, c
+                        real(kind=8) :: D, LM, LM1
+
+                        ! reorder r3b into (i,j,k) order
+                        excits_buff(:,:) = r3b_excits(:,:)
+                        nloc = noa*(noa-1)/2*nob
+                        allocate(loc_arr(2,nloc))
+                        allocate(idx_table(noa,noa,nob))
+                        call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), noa, noa, nob)
+                        call sort3(excits_buff, loc_arr, idx_table, (/4,5,6/), noa, noa, nob, nloc, n3aab)
+
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
+                        
+                        ddeltaA = 0.0d0
+                        ddeltaB = 0.0d0
+                        ddeltaC = 0.0d0
+                        ddeltaD = 0.0d0
+
+                        do i = 1, noa
+                            do j = i+1, noa
+                                do k = 1, nob
+                                    ! Construct Q space for block (i,j,k)
+                                    qspace = .true.
+                                    idx = idx_table(i,j,k)
+                                    if (idx/=0) then
+                                       do idet = loc_arr(1,idx), loc_arr(2,idx)
+                                          a = excits_buff(1,idet); b = excits_buff(2,idet); c = excits_buff(3,idet);
+                                          qspace(a,b,c) = .false.
+                                       end do
+                                    end if
+                                    do a = 1, nua
+                                        do b = a+1, nua
+                                            do c = 1, nub
+
+                                                if (.not. qspace(a,b,c)) cycle
+                                               
+                                                LM = (r0*M3B(a,b,c,i,j,k) + EOM3B(a,b,c,i,j,k)) * L3B(a,b,c,i,j,k)
+
+                                                D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
+                                                - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
+
+                                                deltaA = deltaA + LM/(omega + D)
+
+                                                D = H1A_oo(i,i) + H1A_oo(j,j) + H1B_oo(k,k)&
+                                                - H1A_vv(a,a) - H1A_vv(b,b) - H1B_vv(c,c)
+
+                                                deltaB = deltaB + LM/(omega + D)
+
+                                                D = D &
+                                                -H2A_voov(a,i,i,a)-H2A_voov(b,i,i,b)+H2B_ovov(i,c,i,c)&
+                                                -H2A_voov(a,j,j,a)-H2A_voov(b,j,j,b)+H2B_ovov(j,c,j,c)&
+                                                +H2B_vovo(a,k,a,k)+H2B_vovo(b,k,b,k)-H2C_voov(c,k,k,c)&
+                                                -H2A_oooo(j,i,j,i)-H2B_oooo(i,k,i,k)-H2B_oooo(j,k,j,k)&
+                                                -H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
+
+                                                deltaC = deltaC + LM/(omega + D)
+
+                                                D = D &
+                                                +D3A_O(a,i,j)+D3B_O(a,i,k)+D3B_O(a,j,k)&
+                                                +D3A_O(b,i,j)+D3B_O(b,i,k)+D3B_O(b,j,k)&
+                                                +D3C_O(c,i,k)+D3C_O(c,j,k)&
+                                                -D3A_V(a,i,b)-D3B_V(a,i,c)-D3B_V(b,i,c)&
+                                                -D3A_V(a,j,b)-D3B_V(a,j,c)-D3B_V(b,j,c)&
+                                                -D3C_V(a,k,c)-D3C_V(b,k,c)
+
+                                                deltaD = deltaD + LM/(omega + D)
+
+                                            end do
+                                        end do
+                                    end do
+                                end do
+                            end do
+                        end do
+
+              end subroutine eomccp3b_full
+
+              subroutine eomccp3c_full(deltaA,deltaB,deltaC,deltaD,&
+                                       ddeltaA,ddeltaB,ddeltaC,ddeltaD,&
+                                       EOM3C,M3C,L3C,r3c_excits,&
+                                       omega,r0,&
+                                       fA_oo,fA_vv,fB_oo,fB_vv,&
+                                       H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                                       H2A_voov,&
+                                       H2B_ovov,H2B_vovo,&
+                                       H2B_oooo,H2B_vvvv,&
+                                       H2C_voov,H2C_oooo,H2C_vvvv,&
+                                       D3B_O,D3B_V,D3C_O,D3C_V,D3D_O,D3D_V,&
+                                       n3abb,noa,nua,nob,nub)
+
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        real(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
+                        integer, intent(in) :: noa, nua, nob, nub, n3abb
+                        integer, intent(in) :: r3c_excits(6,n3abb)
+                        real(kind=8), intent(in) :: EOM3C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                                    M3C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                                    L3C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                                                    fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
+                                                    fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
+                                                    H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
+                                                    H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
+                                                    H2A_voov(1:nua,1:noa,1:noa,1:nua),&
+                                                    H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
+                                                    H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
+                                                    H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
+                                                    H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                                                    H2C_voov(1:nub,1:nob,1:nob,1:nub),&
+                                                    H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
+                                                    H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                                                    D3B_O(1:nua,1:noa,1:nob),&
+                                                    D3B_V(1:nua,1:noa,1:nub),&
+                                                    D3C_O(1:nub,1:noa,1:nob),&
+                                                    D3C_V(1:nua,1:nob,1:nub),&
+                                                    D3D_O(1:nub,1:nob,1:nob),&
+                                                    D3D_V(1:nub,1:nob,1:nub)
+                        real(kind=8), intent(in) :: omega, r0
+                        
+                        ! Low-memory looping variables
+                        logical(kind=1) :: qspace(nua,nub,nub)
+                        integer :: nloc, idet, idx
+                        integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
+                        integer :: excits_buff(6,n3abb)
+                        ! local variables
+                        integer :: i, j, k, a, b, c
+                        real(kind=8) :: D, temp
+
+                        ! reorder r3c into (j,k,i) order
+                        excits_buff(:,:) = r3c_excits(:,:)
+                        nloc = nob*(nob-1)/2*noa
+                        allocate(loc_arr(2,nloc))
+                        allocate(idx_table(nob,nob,noa))
+                        call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), nob, nob, noa)
+                        call sort3(excits_buff, loc_arr, idx_table, (/5,6,4/), nob, nob, noa, nloc, n3abb)
+
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
+                        
+                        ddeltaA = 0.0d0
+                        ddeltaB = 0.0d0
+                        ddeltaC = 0.0d0
+                        ddeltaD = 0.0d0
+
+                        do i = 1 , noa
+                            do j = 1, nob
+                                do k = j+1, nob
+                                    ! Construct Q space for block (i,j,k)
+                                    qspace = .true.
+                                    idx = idx_table(j,k,i)
+                                    if (idx/=0) then
+                                       do idet = loc_arr(1,idx), loc_arr(2,idx)
+                                          a = excits_buff(1,idet); b = excits_buff(2,idet); c = excits_buff(3,idet);
+                                          qspace(a,b,c) = .false.
+                                       end do
+                                    end if
+                                    do a = 1, nua
+                                        do b = 1, nub
+                                            do c = b+1, nub
+                                               
+                                                if (.not. qspace(a,b,c)) cycle
+
+                                                temp = (r0*M3C(a,b,c,i,j,k) + EOM3C(a,b,c,i,j,k)) * L3C(a,b,c,i,j,k)
+
+                                                D = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
+                                                - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
+
+                                                deltaA = deltaA + temp/(omega + D)
+
+                                                D = H1A_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)&
+                                                - H1A_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c)
+
+                                                deltaB = deltaB + temp/(omega + D)
+
+                                                D = D &
+                                                -H2A_voov(a,i,i,a)+H2B_ovov(i,b,i,b)+H2B_ovov(i,c,i,c)&
+                                                +H2B_vovo(a,j,a,j)-H2C_voov(b,j,j,b)-H2C_voov(c,j,j,c)&
+                                                +H2B_vovo(a,k,a,k)-H2C_voov(b,k,k,b)-H2C_voov(c,k,k,c)&
+                                                -H2B_oooo(i,j,i,j)-H2B_oooo(i,k,i,k)-H2C_oooo(k,j,k,j)&
+                                                -H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
+
+                                                deltaC = deltaC + temp/(omega + D)
+                                                D = D &
+                                                +D3B_O(a,i,j)+D3B_O(a,i,k)&
+                                                +D3C_O(b,i,j)+D3C_O(b,i,k)+D3D_O(b,j,k)&
+                                                +D3C_O(c,i,j)+D3C_O(c,i,k)+D3D_O(c,j,k)&
+                                                -D3B_V(a,i,b)-D3B_V(a,i,c)&
+                                                -D3C_V(a,j,b)-D3C_V(a,j,c)-D3D_V(b,j,c)&
+                                                -D3C_V(a,k,b)-D3C_V(a,k,c)-D3D_V(b,k,c)
+
+                                                deltaD = deltaD + temp/(omega + D)
+
+                                            end do
+                                        end do
+                                    end do
+                                end do
+                            end do
+                        end do
+
+              end subroutine eomccp3c_full
+
+              subroutine eomccp3d_full(deltaA,deltaB,deltaC,deltaD,&
+                                       ddeltaA,ddeltaB,ddeltaC,ddeltaD,&
+                                       EOM3D,M3D,L3D,r3d_excits,&
+                                       omega,r0,&
+                                       fB_oo,fB_vv,H1B_oo,H1B_vv,&
+                                       H2C_voov,H2C_oooo,H2C_vvvv,&
+                                       D3D_O,D3D_V,n3bbb,nob,nub)
+
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        real(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
+                        integer, intent(in) :: nob, nub, n3bbb
+                        integer, intent(in) :: r3d_excits(6,n3bbb)
+                        real(kind=8), intent(in) :: EOM3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob),&
+                                                    M3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob),&
+                                                    L3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob),&
+                                                    fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
+                                                    H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
+                                                    H2C_voov(1:nub,1:nob,1:nob,1:nub),&
+                                                    H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
+                                                    H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                                                    D3D_O(1:nub,1:nob,1:nob),&
+                                                    D3D_V(1:nub,1:nob,1:nub)
+                        real(kind=8), intent(in) :: omega, r0
+
+                        ! Low-memory looping variables
+                        logical(kind=1) :: qspace(nub,nub,nub)
+                        integer :: nloc, idet, idx
+                        integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
+                        integer :: excits_buff(6,n3bbb)
+                        ! local variables
+                        integer :: i, j, k, a, b, c
+                        real(kind=8) :: D, temp
+
+                        ! reorder r3d into (i,j,k) order
+                        excits_buff(:,:) = r3d_excits(:,:)
+                        nloc = nob*(nob-1)*(nob-2)/6
+                        allocate(loc_arr(2,nloc))
+                        allocate(idx_table(nob,nob,nob))
+                        call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), nob, nob, nob)
+                        call sort3(excits_buff, loc_arr, idx_table, (/4,5,6/), nob, nob, nob, nloc, n3bbb)
+
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
+                        
+                        ddeltaA = 0.0d0
+                        ddeltaB = 0.0d0
+                        ddeltaC = 0.0d0
+                        ddeltaD = 0.0d0
+
+                        do i = 1 , nob
+                            do j = i+1, nob
+                                do k = j+1, nob
+                                    ! Construct Q space for block (i,j,k)
+                                    qspace = .true.
+                                    idx = idx_table(i,j,k)
+                                    if (idx/=0) then
+                                       do idet = loc_arr(1,idx), loc_arr(2,idx)
+                                          a = excits_buff(1,idet); b = excits_buff(2,idet); c = excits_buff(3,idet);
+                                          qspace(a,b,c) = .false.
+                                       end do
+                                    end if
+                                    do a = 1, nub
+                                        do b = a+1, nub
+                                            do c = b+1, nub
+
+                                                if (.not. qspace(a,b,c)) cycle
+                                               
+                                                temp = (r0*M3D(a,b,c,i,j,k) + EOM3D(a,b,c,i,j,k)) * L3D(a,b,c,i,j,k)
+
+                                                D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
+                                                - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
+
+                                                deltaA = deltaA + temp/(omega + D)
+
+                                                D = H1B_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)&
+                                                - H1B_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c)
+
+                                                deltaB = deltaB + temp/(omega + D)
+
+                                                D = D &
+                                                -H2C_voov(a,i,i,a) - H2C_voov(b,i,i,b) - H2C_voov(c,i,i,c)&
+                                                -H2C_voov(a,j,j,a) - H2C_voov(b,j,j,b) - H2C_voov(c,j,j,c)&
+                                                -H2C_voov(a,k,k,a) - H2C_voov(b,k,k,b) - H2C_voov(c,k,k,c)&
+                                                -H2C_oooo(j,i,j,i) - H2C_oooo(k,i,k,i) - H2C_oooo(k,j,k,j)&
+                                                -H2C_vvvv(b,a,b,a) - H2C_vvvv(c,a,c,a) - H2C_vvvv(c,b,c,b)
+
+                                                deltaC = deltaC + temp/(omega + D)
+
+                                                D = D &
+                                                +D3D_O(a,i,j)+D3D_O(a,i,k)+D3D_O(a,j,k)&
+                                                +D3D_O(b,i,j)+D3D_O(b,i,k)+D3D_O(b,j,k)&
+                                                +D3D_O(c,i,j)+D3D_O(c,i,k)+D3D_O(c,j,k)&
+                                                -D3D_V(a,i,b)-D3D_V(a,i,c)-D3D_V(b,i,c)&
+                                                -D3D_V(a,j,b)-D3D_V(a,j,c)-D3D_V(b,j,c)&
+                                                -D3D_V(a,k,b)-D3D_V(a,k,c)-D3D_V(b,k,c)
+
+                                                deltaD = deltaD + temp/(omega + D)
+
+                                            end do
+                                        end do
+                                    end do
+                                end do
+                            end do
+                        end do
+
+              end subroutine eomccp3d_full
+         
               subroutine get_index_table(idx_table, rng1, rng2, rng3, n1, n2, n3)
 
                     integer, intent(in) :: n1, n2, n3

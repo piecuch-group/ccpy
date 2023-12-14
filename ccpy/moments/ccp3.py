@@ -1,12 +1,14 @@
 """Functions to calculate the ground-state CC(t;3) triples correction to CCSDt."""
 import time
-
 import numpy as np
+
+from ccpy.constants.constants import hartreetoeV
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
 from ccpy.utilities.updates import ccp3_opt_loops, ccp3_adaptive_loops
 from ccpy.left.left_cc_intermediates import build_left_ccsdt_p_intermediates
+from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eomccsdt_intermediates, add_R3_p_terms
+from ccpy.eomcc.eomccsdt import build_HR_3A, build_HR_3B, build_HR_3C, build_HR_3D
 from ccpy.utilities.utilities import unravel_triples_amplitudes
-
 
 def calc_ccp3_full(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
     """
@@ -442,6 +444,200 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
 
     return Eccp3["D"], triples_list
 
+def calc_eomccp3_full(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy, H, H0, system, use_RHF=False):
+    """
+    Calculate the excited-state CC(t;3) correction to the EOMCCSDt energy.
+    """
+    t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
+
+    # get the Hbar 3-body diagonal
+    d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
+    d3aab_v, d3aab_o = aab_H3_aab_diagonal(T, H, system)
+    d3abb_v, d3abb_o = abb_H3_abb_diagonal(T, H, system)
+    d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
+
+    # get L(P)*T(P) intermediates
+    # determine whether l3 updates and l3*t3 intermediates should be done. Stupid compatibility with
+    # empty sections of t3_excitations or l3_excitations. L3 ordering matches T3 at this point.
+    do_l3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
+    do_t3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
+    if np.array_equal(t3_excitations["aaa"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["aaa"] = False
+    if np.array_equal(t3_excitations["aab"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["aab"] = False
+    if np.array_equal(t3_excitations["abb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["abb"] = False
+    if np.array_equal(t3_excitations["bbb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["bbb"] = False
+    if np.array_equal(r3_excitations["aaa"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_l3["aaa"] = False
+    if np.array_equal(r3_excitations["aab"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_l3["aab"] = False
+    if np.array_equal(r3_excitations["abb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_l3["abb"] = False
+    if np.array_equal(r3_excitations["bbb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_l3["bbb"] = False
+    X1 = build_left_ccsdt_p_intermediates(L, r3_excitations, T, t3_excitations, system, do_t3, do_l3, RHF_symmetry=use_RHF)
+
+    # Form H(2)*(R1 + R2) intermediates
+    Xtemp = get_eomccsd_intermediates(H, R, system)
+    X2 = get_eomccsdt_intermediates(H, R, T, Xtemp, system)
+    X2 = add_R3_p_terms(X2, H, R, r3_excitations)
+
+    # unravel triples vector into t3(abcijk), r3(abcijk), and l3(abcijk)
+    T_unravel = unravel_triples_amplitudes(T, t3_excitations, system)
+    R_unravel = unravel_triples_amplitudes(R, r3_excitations, system)
+    L_unravel = unravel_triples_amplitudes(L, r3_excitations, system)
+
+    #### aaa correction ####
+    # Moments and left vector
+    M3A = build_M3A_full(T_unravel, H)
+    L3A = build_L3A_full(L_unravel, H, X1)
+    EOM3A = build_HR_3A(R_unravel, T_unravel, H, X2)
+    # perform correction in-loop
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa, ddA_aaa, ddB_aaa, ddC_aaa, ddD_aaa = ccp3_opt_loops.ccp3_opt_loops.eomccp3a_full(
+         EOM3A, M3A, L3A, r3_excitations["aaa"].T,
+         omega, r0,
+         H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
+         H.aa.voov, H.aa.oooo, H.aa.vvvv,
+         d3aaa_o, d3aaa_v,
+    )
+    #### aab correction ####
+    # moments and left vector
+    M3B = build_M3B_full(T_unravel, H)
+    L3B = build_L3B_full(L_unravel, H, X1)
+    EOM3B = build_HR_3B(R_unravel, T_unravel, H, X2)
+    # perform correction in-loop
+    dA_aab, dB_aab, dC_aab, dD_aab, ddA_aab, ddB_aab, ddC_aab, ddD_aab = ccp3_opt_loops.ccp3_opt_loops.eomccp3b_full(
+         EOM3B, M3B, L3B, r3_excitations["aab"].T,
+         omega, r0,
+         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv, H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+         H.aa.voov, H.aa.oooo, H.aa.vvvv, H.ab.ovov, H.ab.vovo, H.ab.oooo, H.ab.vvvv, H.bb.voov,
+         d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
+    )
+    if use_RHF:
+        correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
+        correction_B = 2.0 * dB_aaa + 2.0 * dB_aab
+        correction_C = 2.0 * dC_aaa + 2.0 * dC_aab
+        correction_D = 2.0 * dD_aaa + 2.0 * dD_aab
+
+        dcorrection_A = 2.0 * ddA_aaa + 2.0 * ddA_aab
+        dcorrection_B = 2.0 * ddB_aaa + 2.0 * ddB_aab
+        dcorrection_C = 2.0 * ddC_aaa + 2.0 * ddC_aab
+        dcorrection_D = 2.0 * ddD_aaa + 2.0 * ddD_aab
+    else:
+        #### abb correction ####
+        # moments and left vector
+        M3C = build_M3C_full(T_unravel, H)
+        L3C = build_L3C_full(L_unravel, H, X1)
+        EOM3C = build_HR_3C(R_unravel, T_unravel, H, X2)
+        dA_abb, dB_abb, dC_abb, dD_abb, ddA_abb, ddB_abb, ddC_abb, ddD_abb = ccp3_opt_loops.ccp3_opt_loops.eomccp3c_full(
+              EOM3C, M3C, L3C, r3_excitations["abb"].T,
+              omega, r0,
+              H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv, H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+              H.aa.voov, H.ab.ovov, H.ab.vovo, H.ab.oooo, H.ab.vvvv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
+              d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
+        )
+        #### bbb correction ####
+        # moments and left vector
+        M3D = build_M3D_full(T_unravel, H)
+        L3D = build_L3D_full(L_unravel, H, X1)
+        EOM3D = build_HR_3D(R_unravel, T_unravel, H, X2)
+        dA_bbb, dB_bbb, dC_bbb, dD_bbb, ddA_bbb, ddB_bbb, ddC_bbb, ddD_bbb = ccp3_opt_loops.ccp3_opt_loops.eomccp3d_full(
+              EOM3D, M3D, L3D, r3_excitations["bbb"].T,
+              omega, r0,
+              H0.b.oo, H0.b.vv, H.b.oo, H.b.vv,
+              H.bb.voov, H.bb.oooo, H.bb.vvvv,
+              d3bbb_o, d3bbb_v,
+        )
+
+        correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
+        correction_B = dB_aaa + dB_aab + dB_abb + dB_bbb
+        correction_C = dC_aaa + dC_aab + dC_abb + dC_bbb
+        correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
+
+        dcorrection_A = ddA_aaa + ddA_aab + ddA_abb + ddA_bbb
+        dcorrection_B = ddB_aaa + ddB_aab + ddB_abb + ddB_bbb
+        dcorrection_C = ddC_aaa + ddC_aab + ddC_abb + ddC_bbb
+        dcorrection_D = ddD_aaa + ddD_aab + ddD_abb + ddD_bbb
+
+    t_end = time.perf_counter()
+    t_cpu_end = time.process_time()
+    minutes, seconds = divmod(t_end - t_start, 60)
+
+    energy_A = corr_energy + omega + correction_A
+    energy_B = corr_energy + omega + correction_B
+    energy_C = corr_energy + omega + correction_C
+    energy_D = corr_energy + omega + correction_D
+
+    total_energy_A = system.reference_energy + energy_A
+    total_energy_B = system.reference_energy + energy_B
+    total_energy_C = system.reference_energy + energy_C
+    total_energy_D = system.reference_energy + energy_D
+
+    delta_vee_A = omega + dcorrection_A
+    delta_vee_B = omega + dcorrection_B
+    delta_vee_C = omega + dcorrection_C
+    delta_vee_D = omega + dcorrection_D
+
+    delta_vee_eV_A = hartreetoeV * delta_vee_A
+    delta_vee_eV_B = hartreetoeV * delta_vee_B
+    delta_vee_eV_C = hartreetoeV * delta_vee_C
+    delta_vee_eV_D = hartreetoeV * delta_vee_D
+
+    print('   EOMCC(t;3) Calculation Summary')
+    print('   ------------------------------')
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
+    print("   EOMCCSDt = {:>10.10f}    ω = {:>10.10f}     VEE = {:>10.5f} eV".format(
+        system.reference_energy + corr_energy + omega, omega, hartreetoeV * omega))
+    print(
+        "   EOMCC(t;3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
+            total_energy_A, energy_A, correction_A
+        )
+    )
+    print(
+        "   EOMCC(t;3)_B = {:>10.10f}     ΔE_B = {:>10.10f}     δ_B = {:>10.10f}".format(
+            total_energy_B, energy_B, correction_B
+        )
+    )
+    print(
+        "   EOMCC(t;3)_C = {:>10.10f}     ΔE_C = {:>10.10f}     δ_C = {:>10.10f}".format(
+            total_energy_C, energy_C, correction_C
+        )
+    )
+    print(
+        "   EOMCC(t;3)_D = {:>10.10f}     ΔE_D = {:>10.10f}     δ_D = {:>10.10f}\n".format(
+            total_energy_D, energy_D, correction_D
+        )
+    )
+    # print(
+    #     "   δ-EOMCC(t;3)_A = {:>10.10f}     δ_A = {:>10.10f}     VEE = {:>10.5f} eV".format(
+    #         delta_vee_A, dcorrection_A, delta_vee_eV_A
+    #     )
+    # )
+    # print(
+    #     "   δ-EOMCC(t;3)_B = {:>10.10f}     δ_B = {:>10.10f}     VEE = {:>10.5f} eV".format(
+    #         delta_vee_B, dcorrection_B, delta_vee_eV_B
+    #     )
+    # )
+    # print(
+    #     "   δ-EOMCC(t;3)_C = {:>10.10f}     δ_C = {:>10.10f}     VEE = {:>10.5f} eV".format(
+    #         delta_vee_C, dcorrection_C, delta_vee_eV_C
+    #     )
+    # )
+    # print(
+    #     "   δ-EOMCC(t;3)_D = {:>10.10f}     δ_D = {:>10.10f}     VEE = {:>10.5f} eV\n".format(
+    #         delta_vee_D, dcorrection_D, delta_vee_eV_D
+    #     )
+    # )
+
+    Ecrcc23 = {"A": total_energy_A, "B": total_energy_B, "C": total_energy_C, "D": total_energy_D}
+    delta23 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
+    ddelta23 = {"A": dcorrection_A, "B": dcorrection_B, "C": dcorrection_C, "D": dcorrection_D}
+
+    return Ecrcc23, delta23, ddelta23
 
 def build_M3A_full(T, H):
     """

@@ -149,7 +149,6 @@ def calc_cct3(T, L, corr_energy, H, H0, system, use_RHF=False, num_active=1):
 
     return Ecct3, delta23
 
-
 def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, num_active=1):
     """
     Calculate the excited-state CC(t;3) correction to the EOMCCSDt energy.
@@ -379,7 +378,6 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
     ddelta23 = {"A": dcorrection_A, "B": dcorrection_B, "C": dcorrection_C, "D": dcorrection_D}
 
     return Ecrcc23, delta23, ddelta23
-
 
 def calc_eomm23a_intermediates(T, R, H):
     Q1 = np.einsum("mnef,fn->me", H.aa.oovv, R.a, optimize=True)

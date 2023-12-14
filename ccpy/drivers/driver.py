@@ -1203,7 +1203,7 @@ class Driver:
                                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                         self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
         elif method.lower() == "ccp3":
-            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full
+            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full, calc_eomccp3_full
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
             # Ensure that both HBar is set
             assert self.flag_hbar
@@ -1222,8 +1222,11 @@ class Driver:
                         _, self.deltap3[0] = calc_ccp3_full(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
                 # Excited-state corrections
                 else:
-                    pass
-
+                    # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
+                    _, self.deltap3[i], self.ddeltap3[i] = calc_eomccp3_full(self.T, self.R[i], self.L[i], t3_excitations, r3_excitations,
+                                                                             self.r0[i], self.vertical_excitation_energy[i],
+                                                                             self.correlation_energy, self.hamiltonian, self.fock,
+                                                                             self.system, self.options["RHF_symmetry"])
         # elif method.lower() == "ccp3(t)":
         #     from ccpy.moments.ccp3 import calc_ccpert3
         #     # Ensure that pspace is set
