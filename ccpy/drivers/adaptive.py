@@ -9,7 +9,7 @@ class AdaptDriver:
     def __init__(self, driver, percentage=None):
         self.driver = driver
         self.percentage = percentage
-        self.options = {"two_body_left": True,
+        self.options = {"two_body_approx": True,
                         "reset_amplitudes": False,
                         "energy_tolerance": 1.0e-04,
                         "maximum_iterations": 10,
@@ -100,7 +100,7 @@ class AdaptDriver:
     def run_ccp(self, imacro):
         """Runs iterative CC(P), and if needed, HBar and iterative left-CC calculations."""
         self.driver.run_ccp(method="ccsdt_p", t3_excitations=self.t3_excitations)
-        if self.options["two_body_left"]:
+        if self.options["two_body_approx"]:
             self.driver.run_hbar(method="ccsd")
             self.driver.run_leftcc(method="left_ccsd")
         else:
@@ -113,26 +113,36 @@ class AdaptDriver:
            while simultaneously selecting the leading triply excited determinants and returning
            the result in an array. For the last calculation, this should not perform the
            selection steps."""
-        from ccpy.moments.ccp3 import calc_ccp3_with_selection
-        from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
+        from ccpy.moments.ccp3 import calc_ccp3_2ba_with_selection, calc_ccp3_full_with_selection
 
         if imacro < self.nmacro - 1:
-            if self.driver.L[0].order > 2: # remove V*T3 intermediates from HBar before proceeding if left-CC(P) is used
-                self.driver.hamiltonian = remove_VT3_intermediates(self.driver.T, self.t3_excitations, self.driver.hamiltonian)
-            self.ccpq_energy[imacro], triples_list = calc_ccp3_with_selection(self.driver.T,
-                                                                              self.driver.L[0],
-                                                                              self.t3_excitations,
-                                                                              self.driver.correlation_energy,
-                                                                              self.driver.hamiltonian,
-                                                                              self.bare_hamiltonian,
-                                                                              self.driver.system,
-                                                                              self.num_dets_to_add[imacro],
-                                                                              use_RHF=self.driver.options["RHF_symmetry"],
-                                                                              min_thresh=self.options["minimum_threshold"],
-                                                                              buffer_factor=self.options["buffer_factor"])
+            if self.options["two_body_approx"]:
+                self.ccpq_energy[imacro], triples_list = calc_ccp3_2ba_with_selection(self.driver.T,
+                                                                                      self.driver.L[0],
+                                                                                      self.t3_excitations,
+                                                                                      self.driver.correlation_energy,
+                                                                                      self.driver.hamiltonian,
+                                                                                      self.bare_hamiltonian,
+                                                                                      self.driver.system,
+                                                                                      self.num_dets_to_add[imacro],
+                                                                                      use_RHF=self.driver.options["RHF_symmetry"],
+                                                                                      min_thresh=self.options["minimum_threshold"],
+                                                                                      buffer_factor=self.options["buffer_factor"])
+            else:
+                self.ccpq_energy[imacro], triples_list = calc_ccp3_full_with_selection(self.driver.T,
+                                                                                      self.driver.L[0],
+                                                                                      self.t3_excitations,
+                                                                                      self.driver.correlation_energy,
+                                                                                      self.driver.hamiltonian,
+                                                                                      self.bare_hamiltonian,
+                                                                                      self.driver.system,
+                                                                                      self.num_dets_to_add[imacro],
+                                                                                      use_RHF=self.driver.options["RHF_symmetry"],
+                                                                                      min_thresh=self.options["minimum_threshold"],
+                                                                                      buffer_factor=self.options["buffer_factor"])
         else:
             triples_list = []
-            self.driver.run_ccp3(method="ccp3", state_index=[0], two_body_approx=True, t3_excitations=self.t3_excitations)
+            self.driver.run_ccp3(method="ccp3", state_index=0, two_body_approx=self.options["two_body_approx"], t3_excitations=self.t3_excitations)
             self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltap3[0]["D"]
 
         return triples_list
@@ -292,8 +302,7 @@ class AdaptEOMDriver:
         self.driver = driver
         self.state_index = state_index
         self.state_irrep = state_irrep
-        self.options = {"two_body_left": True,
-                        "reset_amplitudes": False,
+        self.options = {"reset_amplitudes": False,
                         "energy_tolerance": 1.0e-04,
                         "maximum_iterations": 10,
                         "n_det_max": 100000000,

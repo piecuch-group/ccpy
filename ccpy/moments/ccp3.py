@@ -43,8 +43,8 @@ def calc_ccp3_full(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fal
     X = build_left_ccsdt_p_intermediates(L, t3_excitations, T, t3_excitations, system, do_t3, do_l3, RHF_symmetry=use_RHF)
 
     # unravel triples vector into t3(abcijk) and l3(abcijk)
-    T_unravel = unravel_triples_amplitudes(T, t3_excitations, system)
-    L_unravel = unravel_triples_amplitudes(L, t3_excitations, system)
+    T_unravel = unravel_triples_amplitudes(T, t3_excitations, system, do_t3)
+    L_unravel = unravel_triples_amplitudes(L, t3_excitations, system, do_l3)
 
     #### aaa correction ####
     M3A = build_M3A_full(T_unravel, H)
@@ -279,7 +279,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
 
     return Eccp3, deltap3
 
-def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, num_add, use_RHF=False, min_thresh=0.0, buffer_factor=2):
+def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, num_add, use_RHF=False, min_thresh=0.0, buffer_factor=2):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
@@ -346,6 +346,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
         correction_C = 2.0 * dC_aaa + 2.0 * dC_aab
         correction_D = 2.0 * dD_aaa + 2.0 * dD_aab
     else:
+        #### abb correction ####
         I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
@@ -368,7 +369,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
             d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
             num_add,min_thresh, buffer_factor,
         )
-
+        #### bbb correction ####
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
         dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3d_2ba_with_selection_opt(
             moments,
@@ -410,7 +411,180 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
 
     print('   CC(P;3) Calculation Summary')
     print('   ---------------------------')
-    print("   Total wall time: ({:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
+    print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
+    print(
+        "   CC(P;3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
+            total_energy_A, energy_A, correction_A
+        )
+    )
+    print(
+        "   CC(P;3)_B = {:>10.10f}     ΔE_B = {:>10.10f}     δ_B = {:>10.10f}".format(
+            total_energy_B, energy_B, correction_B
+        )
+    )
+    print(
+        "   CC(P;3)_C = {:>10.10f}     ΔE_C = {:>10.10f}     δ_C = {:>10.10f}".format(
+            total_energy_C, energy_C, correction_C
+        )
+    )
+    print(
+        "   CC(P;3)_D = {:>10.10f}     ΔE_D = {:>10.10f}     δ_D = {:>10.10f}\n".format(
+            total_energy_D, energy_D, correction_D
+        )
+    )
+    print(
+        "   Selected moments account for {:>5.2f}% of the total CC(P;3)_D correction\n".format(
+            sum(moments) / correction_D * 100
+        )
+    )
+
+    Eccp3 = {"A": total_energy_A, "B": total_energy_B, "C": total_energy_C, "D": total_energy_D}
+    deltap3 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
+
+    return Eccp3["D"], triples_list
+
+def calc_ccp3_full_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, num_add, use_RHF=False, min_thresh=0.0, buffer_factor=2):
+    """
+    Calculate the ground-state CC(P;3) correction to the CC(P) energy.
+    """
+    t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
+
+    # get the Hbar 3-body diagonal
+    d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
+    d3aab_v, d3aab_o = aab_H3_aab_diagonal(T, H, system)
+    d3abb_v, d3abb_o = abb_H3_abb_diagonal(T, H, system)
+    d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
+
+    # initialize empty moments vector and triples list
+    num_add = int(num_add)
+    moments = np.zeros(buffer_factor * num_add)
+    triples_list = np.zeros((buffer_factor * num_add, 6), dtype=np.int32)
+
+    # get L(P)*T(P) intermediates
+    # determine whether l3 updates and l3*t3 intermediates should be done. Stupid compatibility with
+    # empty sections of t3_excitations or l3_excitations. L3 ordering matches T3 at this point.
+    do_l3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
+    do_t3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
+    if np.array_equal(t3_excitations["aaa"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["aaa"] = False
+        do_l3["aaa"] = False
+    if np.array_equal(t3_excitations["aab"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["aab"] = False
+        do_l3["aab"] = False
+    if np.array_equal(t3_excitations["abb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["abb"] = False
+        do_l3["abb"] = False
+    if np.array_equal(t3_excitations["bbb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["bbb"] = False
+        do_l3["bbb"] = False
+    X = build_left_ccsdt_p_intermediates(L, t3_excitations, T, t3_excitations, system, do_t3, do_l3, RHF_symmetry=use_RHF)
+
+    # unravel triples vector into t3(abcijk) and l3(abcijk)
+    T_unravel = unravel_triples_amplitudes(T, t3_excitations, system, do_t3)
+    L_unravel = unravel_triples_amplitudes(L, t3_excitations, system, do_l3)
+
+    nfill = 1
+    #### aaa correction ####
+    M3A = build_M3A_full(T_unravel, H)
+    L3A = build_L3A_full(L_unravel, H, X)
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3a_full_with_selection_opt(
+        moments,
+        triples_list,
+        nfill,
+        M3A, L3A,
+        t3_excitations['aaa'].T,
+        H0.a.oo, H0.a.vv,
+        H.a.oo, H.a.vv, H.aa.voov, H.aa.oooo,
+        H.aa.vvvv,
+        d3aaa_o, d3aaa_v,
+        num_add,min_thresh, buffer_factor,
+        )
+
+    #### aab correction ####
+    M3B = build_M3B_full(T_unravel, H)
+    L3B = build_L3B_full(L_unravel, H, X)
+    dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3b_full_with_selection_opt(
+        moments,
+        triples_list,
+        nfill,
+        M3B, L3B,
+        t3_excitations['aab'].T,
+        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+        H.aa.voov, H.aa.oooo, H.aa.vvvv, H.ab.ovov,
+        H.ab.vovo, H.ab.oooo, H.ab.vvvv, H.bb.voov,
+        d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
+        num_add,min_thresh, buffer_factor,
+    )
+
+    if use_RHF:
+        correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
+        correction_B = 2.0 * dB_aaa + 2.0 * dB_aab
+        correction_C = 2.0 * dC_aaa + 2.0 * dC_aab
+        correction_D = 2.0 * dD_aaa + 2.0 * dD_aab
+    else:
+        #### abb correction ####
+        M3C = build_M3C_full(T_unravel, H)
+        L3C = build_L3C_full(L_unravel, H, X)
+        dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3c_full_with_selection_opt(
+            moments,
+            triples_list,
+            nfill,
+            M3C, L3C,
+            t3_excitations['abb'].T,
+            H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+            H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+            H.aa.voov, H.ab.ovov, H.ab.vovo, H.ab.oooo,
+            H.ab.vvvv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
+            d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
+            num_add,min_thresh, buffer_factor,
+        )
+        #### bbb correction ####
+        M3D = build_M3D_full(T_unravel, H)
+        L3D = build_L3D_full(L_unravel, H, X)
+        dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3d_full_with_selection_opt(
+            moments,
+            triples_list,
+            nfill,
+            M3D, L3D,
+            t3_excitations['bbb'].T,
+            H0.b.oo, H0.b.vv,
+            H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
+            d3bbb_o, d3bbb_v,
+            num_add, min_thresh, buffer_factor,
+        )
+
+        correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
+        correction_B = dB_aaa + dB_aab + dB_abb + dB_bbb
+        correction_C = dC_aaa + dC_aab + dC_abb + dC_bbb
+        correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
+
+    # Important: perform a final sort of the excitations and moments, returning the first num_add elements only
+    idx = np.argsort(np.abs(moments))
+    triples_list = triples_list[idx[::-1], :]
+    triples_list = triples_list[:num_add, :]
+
+    t_end = time.perf_counter()
+    t_cpu_end = time.process_time()
+    minutes, seconds = divmod(t_end - t_start, 60)
+
+    # print the results
+    energy_A = corr_energy + correction_A
+    energy_B = corr_energy + correction_B
+    energy_C = corr_energy + correction_C
+    energy_D = corr_energy + correction_D
+
+    total_energy_A = system.reference_energy + energy_A
+    total_energy_B = system.reference_energy + energy_B
+    total_energy_C = system.reference_energy + energy_C
+    total_energy_D = system.reference_energy + energy_D
+
+    print('   CC(P;3) Calculation Summary')
+    print('   ---------------------------')
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
     print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
     print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
@@ -486,9 +660,9 @@ def calc_eomccp3_full(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_e
     X2 = add_R3_p_terms(X2, H, R, r3_excitations)
 
     # unravel triples vector into t3(abcijk), r3(abcijk), and l3(abcijk)
-    T_unravel = unravel_triples_amplitudes(T, t3_excitations, system)
-    R_unravel = unravel_triples_amplitudes(R, r3_excitations, system)
-    L_unravel = unravel_triples_amplitudes(L, r3_excitations, system)
+    T_unravel = unravel_triples_amplitudes(T, t3_excitations, system, do_t3)
+    R_unravel = unravel_triples_amplitudes(R, r3_excitations, system, do_l3)
+    L_unravel = unravel_triples_amplitudes(L, r3_excitations, system, do_l3)
 
     #### aaa correction ####
     # Moments and left vector
