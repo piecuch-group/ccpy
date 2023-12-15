@@ -180,20 +180,6 @@ def LH_fun(LH, L, T, H, flag_RHF, system, t3_excitations, l3_excitations, pspace
     if do_l3["aab"]:
         LH, L, l3_excitations = build_LH_3B(L, LH, H, X, l3_excitations)
     if flag_RHF:
-        L.abb = L.aab.copy()
-        LH.abb = LH.aab.copy()
-        l3_excitations["abb"] = l3_excitations["aab"][np.array([2, 0, 1, 5, 3, 4]), :]
-
-        L.bbb = L.aaa.copy()
-        LH.bbb = LH.aaa.copy()
-        l3_excitations["bbb"] = l3_excitations["aaa"].copy()
-    else:
-        if do_l3["abb"]:
-            LH, L, l3_excitations = build_LH_3C(L, LH, H, X, l3_excitations)
-        if do_l3["bbb"]:
-            LH, L, l3_excitations = build_LH_3D(L, LH, H, X, l3_excitations)
-
-    if flag_RHF:
         L.b = L.a.copy()
         LH.b = LH.a.copy()
 
@@ -207,6 +193,11 @@ def LH_fun(LH, L, T, H, flag_RHF, system, t3_excitations, l3_excitations, pspace
         L.bbb = L.aaa.copy()
         LH.bbb = LH.aaa.copy()
         l3_excitations["bbb"] = l3_excitations["aaa"].copy()
+    else:
+        if do_l3["abb"]:
+            LH, L, l3_excitations = build_LH_3C(L, LH, H, X, l3_excitations)
+        if do_l3["bbb"]:
+            LH, L, l3_excitations = build_LH_3D(L, LH, H, X, l3_excitations)
 
     return LH.flatten()
 

@@ -383,14 +383,14 @@ class Driver:
                                                   order=self.operator_params["order"],
                                                   p_orders=self.operator_params["pspace_orders"],
                                                   pspace_sizes=excitation_count)
-            # regardless of restart status, initialize residual anew
-            dR = ClusterOperator(self.system,
-                                 order=self.operator_params["order"],
-                                 p_orders=self.operator_params["pspace_orders"],
-                                 pspace_sizes=excitation_count)
             self.R[state_index].unflatten(self.guess_vectors[:, state_index - 1], order=self.guess_order)
             self.vertical_excitation_energy[state_index] = self.guess_energy[state_index - 1]
 
+        # regardless of restart status, initialize residual anew
+        dR = ClusterOperator(self.system,
+                             order=self.operator_params["order"],
+                             p_orders=self.operator_params["pspace_orders"],
+                             pspace_sizes=excitation_count)
         # Form the initial subspace vector
         # B0, _ = np.linalg.qr(self.R[state_index].flatten()[:, np.newaxis])
 
@@ -1046,8 +1046,10 @@ class Driver:
         # self.L[state_index] = reorder_triples_amplitudes(self.L[state_index], l3_excitations, r3_excitations)
         leftcc_calculation_summary(self.L[state_index], self.vertical_excitation_energy[state_index], LR, is_converged, self.system, self.options["amp_print_threshold"])
         # Before leaving, verify that the excitation energy obtained in the left diagonalization matches
-        print("   |ω(R) - ω(L)| = ", abs(omega_right - self.vertical_excitation_energy[state_index]))
+        omega_diff = abs(omega_right - self.vertical_excitation_energy[state_index])
+        print("   |ω(R) - ω(L)| = ", omega_diff)
         print("   Left-EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
+        assert omega_diff <= 1.0e-06
 
     def run_leftipeomcc(self, method, state_index=[0], t3_excitations=None, r3_excitations=None):
         # check if requested CC calculation is implemented in modules
