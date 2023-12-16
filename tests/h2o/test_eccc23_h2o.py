@@ -20,7 +20,7 @@ def test_eccc23_h2o():
     driver.run_eccc(method="eccc2", ci_vectors_file=civecs)
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")
-    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations)
+    driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
 
     # Check CCSD correlation energy
     assert np.allclose(driver.correlation_energy, -0.21593428, atol=1.0e-07)

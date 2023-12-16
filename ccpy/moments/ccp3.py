@@ -995,7 +995,7 @@ def calc_eomccp3_full_with_selection(T, R, L, t3_excitations, r3_excitations, r0
         )
     )
     print(
-        "   Selected moments account for {:>5.2f}% of the total CC(P;3)_D correction\n".format(
+        "   Selected moments account for {:>5.2f}% of the total EOMCC(P;3)_D correction\n".format(
             sum(moments) / correction_D * 100
         )
     )

@@ -111,14 +111,5 @@ ENV/
 .npy
 .npz
 
-# specific to this project - any onebody or twobody integral files
-onebody.inp
-twobody.inp
-cc.inp
-*.gjf
-pspace
-*.moe
-*.inf
-
 .vscode/
 .nfs*

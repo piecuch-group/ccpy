@@ -341,7 +341,7 @@ class Driver:
         # Run the initial guess function and save all eigenpairs
         self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, roots_per_irrep, nact_occupied, nact_unoccupied, debug=debug, use_symmetry=use_symmetry)
 
-    def run_eomccp(self, method, state_index, t3_excitations, r3_excitations):
+    def run_eomccp(self, method, state_index, t3_excitations, r3_excitations, R_guess=None):
         """Performs the EOMCC calculation specified by the user in the input."""
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.eomcc.MODULES:
@@ -383,8 +383,21 @@ class Driver:
                                                   order=self.operator_params["order"],
                                                   p_orders=self.operator_params["pspace_orders"],
                                                   pspace_sizes=excitation_count)
+            #if R_guess is None:
             self.R[state_index].unflatten(self.guess_vectors[:, state_index - 1], order=self.guess_order)
             self.vertical_excitation_energy[state_index] = self.guess_energy[state_index - 1]
+            #else:
+            #    self.R[state_index].unflatten(R_guess.flatten(), order=2)
+        else:
+            # extend self.R to hold a longer R vector. It is assumed that the new amplitudes and corresponding
+            # excitations are simply appended to the previous ones. This will break if this is not true.
+            self.R[state_index].extend_pspace_t3_operator([n3aaa_r, n3aab_r, n3abb_r, n3bbb_r])
+            # r3 is getting scrambled somehow... do this to avoid issues
+            self.R[state_index].aaa *= 0.0
+            self.R[state_index].aab *= 0.0
+            self.R[state_index].abb *= 0.0
+            self.R[state_index].bbb *= 0.0
+
 
         # regardless of restart status, initialize residual anew
         dR = ClusterOperator(self.system,
@@ -1004,6 +1017,10 @@ class Driver:
                           "aab": r3_excitations["aab"],
                           "abb": r3_excitations["abb"],
                           "bbb": r3_excitations["bbb"]}
+        n3aaa = l3_excitations["aaa"].shape[0]
+        n3aab = l3_excitations["aab"].shape[0]
+        n3abb = l3_excitations["abb"].shape[0]
+        n3bbb = l3_excitations["bbb"].shape[0]
         excitation_count = [[excits.shape[0] for _, excits in l3_excitations.items()]]
         # Create the left CC(P) operator
         if self.L[state_index] is None:
@@ -1013,6 +1030,14 @@ class Driver:
                                                   pspace_sizes=excitation_count)
             # set initial value based on excited-state
             self.L[state_index].unflatten(self.R[state_index].flatten())
+        else:
+           self.L[state_index].extend_pspace_t3_operator([n3aaa, n3aab, n3abb, n3bbb])
+           # Similar to EOMCC(P), using the previous L3 here screws things up. We still converge, but it's clear
+           # that the initial amplitudes are weird...
+           self.L[state_index].aaa *= 0.0
+           self.L[state_index].aab *= 0.0
+           self.L[state_index].abb *= 0.0
+           self.L[state_index].bbb *= 0.0
 
         # Form the initial subspace vector
         # B0, _ = np.linalg.qr(self.L[state_index].flatten()[:, np.newaxis])
@@ -1038,7 +1063,7 @@ class Driver:
                                                                                                          self.system,
                                                                                                          self.options,
                                                                                                          t3_excitations,
-                                                                                                         r3_excitations)
+                                                                                                         l3_excitations) # THIS USED TO BE r3!!!
         # Compute L*R and normalize the computed left vector by LR
         LR = get_LR(self.R[state_index], self.L[state_index], l3_excitations=l3_excitations, r3_excitations=r3_excitations)
         self.L[state_index].unflatten(1.0 / LR * self.L[state_index].flatten())

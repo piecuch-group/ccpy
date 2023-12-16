@@ -6858,8 +6858,8 @@ module leftccsdt_p_loops
               ! obtain the start- and end-point indices for each lexical index in the sorted t3 excitation and amplitude arrays
               loc_arr(:,1) = 1; loc_arr(:,2) = 0; ! set default start > end so that empty sets do not trigger loops
               !!! WARNING: THERE IS A MEMORY LEAK HERE! pqrs2 is used below but is not set if n3p <= 1
-              !if (n3p <= 1) print*, "WARNING: potential memory leakage in sort4 function. pqrs2 set to 0"
-              pqrs2 = 0
+              !if (n3p <= 1) print*, "WARNING: potential memory leakage in sort4 function. pqrs2 set to -1"
+              pqrs2 = -1
               do idet = 1, n3p-1
                  ! get consecutive lexcial indices
                  p1 = excits(idet,idims(1));   q1 = excits(idet,idims(2));   r1 = excits(idet,idims(3));   s1 = excits(idet,idims(4))

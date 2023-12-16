@@ -1,8 +1,10 @@
 import numpy as np
 import time
 from copy import deepcopy
+
 from ccpy.extrapolation.goodson_extrapolation import goodson_extrapolation
 from ccpy.utilities.printing import get_timestamp
+from ccpy.constants.constants import hartreetoeV
 
 class AdaptDriver:
 
@@ -187,10 +189,16 @@ class AdaptDriver:
             print("   Adaptive CC(P;Q) Macroiteration - ", imacro)
             print("   ===========================================")
             # Offset needed to count number of determinants in P space correctly
-            if imacro == 0:
-                offset = 4
-            else:
-                offset = 0
+            # Offset needed to count number of determinants in P space correctly
+            offset = 0
+            if np.array_equal(self.t3_excitations["aaa"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset += 1
+            if np.array_equal(self.t3_excitations["aab"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset += 1
+            if np.array_equal(self.t3_excitations["abb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset += 1
+            if np.array_equal(self.t3_excitations["bbb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset += 1
 
             # Update n_det
             self.n_det = self.base_pspace_size + (
@@ -288,20 +296,31 @@ class AdaptDriver:
         print("    Iteration           E(P)             E(P;Q)             ex-CCq             ex-CCr             ex-CCcf")
         print("   -------------------------------------------------------------------------------------------------------")
         for i in range(imacro + 1):
-            print("   %8d    %.10f     %.10f     %.10f     %.10f     %.10f" % (i,
-                                                                              self.ccp_energy[i],
-                                                                              self.ccpq_energy[i],
-                                                                              self.ex_ccq[i],
-                                                                              self.ex_ccr[i],
-                                                                              self.ex_cccf[i])
+            print("   %8d    %.10f     %.10f     %.10f     %.10f     %.10f" %
+                  (i,
+                   self.ccp_energy[i],
+                   self.ccpq_energy[i],
+                   self.ex_ccq[i],
+                   self.ex_ccr[i],
+                   self.ex_cccf[i]
+                   )
             )
+
 
 class AdaptEOMDriver:
 
-    def __init__(self, driver, state_index, state_irrep):
+    def __init__(self, driver, state_index, state_irrep, roots_per_irrep, multiplicity, nacto=0, nactu=0, percentage=None):
         self.driver = driver
+        # inputs used to form the one-time EOMCCSd initial guess
         self.state_index = state_index
         self.state_irrep = state_irrep
+        self.roots_per_irrep = roots_per_irrep
+        self.multiplicity = multiplicity
+        self.nacto = nacto
+        self.nactu = nactu
+        #
+        self.percentage = percentage
+        #
         self.options = {"reset_amplitudes": False,
                         "energy_tolerance": 1.0e-04,
                         "maximum_iterations": 10,
@@ -310,7 +329,8 @@ class AdaptEOMDriver:
                         "base_growth": "ccsd",
                         "buffer_factor": 2,
                         "minimum_threshold": 0.0}
-        self.nmacro = self.options["maximum_iterations"] + 1
+        #
+        self.nmacro = len(percentage)
         self.energy_tolerance = self.options["energy_tolerance"]
         # energy containers
         self.ccp_energy = np.zeros(self.nmacro)
@@ -326,9 +346,10 @@ class AdaptEOMDriver:
                                "aab": np.ones((1, 6), order="F"),
                                "abb": np.ones((1, 6), order="F"),
                                "bbb": np.ones((1, 6), order="F")}
-        self.excitation_count_by_symmetry = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0} for _ in range(len(self.driver.system.point_group_irrep_to_number))]
-        self.n_det = 0
-        self.n_exc_det = 0
+        self.excitation_count_by_symmetry_t = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0} for _ in range(len(self.driver.system.point_group_irrep_to_number))]
+        self.excitation_count_by_symmetry_r = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0} for _ in range(len(self.driver.system.point_group_irrep_to_number))]
+        self.n_det_t = 0
+        self.n_det_r = 0
         # Save the bare Hamiltonian for later iterations if using CR-CC(2,3)
         self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
 
@@ -343,64 +364,57 @@ class AdaptEOMDriver:
            space to determine the growth increment for each iteration of the
            calculation."""
         from ccpy.utilities.symmetry import count_singles, count_doubles, count_triples
-        # Use fixed growth size equal to number of determinants in CCS or CCSD P space
-        if self.percentage is None:
-            self.num_excitations_symmetry, _ = count_singles(self.driver.system)
-            if self.options["base_growth"].lower() == "ccsd":
-                num_doubles_symmetry, _ = count_doubles(self.driver.system)
-                self.num_excitations_symmetry = [x + y for x, y in zip(self.num_excitations_symmetry, num_doubles_symmetry)]
-            # Get the increment of either CCS or CCSD adding 1 for reference determinant
-            self.one_increment = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]]
-            self.num_dets_to_add = [int(self.one_increment * self.options["selection_factor"]) for _ in range(1, self.nmacro)]
-            # Store the base value of n_det as the number of singles + doubles plus the reference determinant
-            self.base_pspace_size = self.one_increment + 1
-            self.n_det = self.base_pspace_size
-        # Use the original %T scheme
-        else:
-            # Count the triples using symmetry
-            self.num_excitations_symmetry, _ = count_triples(self.driver.system)
-            self.num_total_excitations = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]]
-            self.one_increment = int(0.01 * self.num_total_excitations)
-            # Setting up the number of added determinants in each iteration
-            self.num_dets_to_add = np.zeros(len(self.percentage))
-            for i in range(len(self.percentage) - 1):
-                if self.percentage[i + 1] == 100.0:
-                    self.num_dets_to_add[i] = self.num_total_excitations - self.one_increment * self.percentage[i]
-                else:
-                    self.num_dets_to_add[i] = self.one_increment * (self.percentage[i + 1] - self.percentage[i])
-            self.num_dets_to_add[-1] = 1
-            # Set the base P space size to 0 (technically it should be all singles and doubles here too)
-            self.base_pspace_size = 0
+        # Count the triples using symmetry
+        self.num_excitations_symmetry, _ = count_triples(self.driver.system)
+        self.num_total_excitations_t = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.driver.system.reference_symmetry]]
+        self.num_total_excitations_r = self.num_excitations_symmetry[self.driver.system.point_group_irrep_to_number[self.state_irrep]]
+        # 1% increment
+        self.one_increment_t = int(0.01 * self.num_total_excitations_t)
+        self.one_increment_r = int(0.01 * self.num_total_excitations_r)
+        # Setting up the number of added determinants in each iteration
+        self.num_dets_to_add_t = np.zeros(len(self.percentage))
+        self.num_dets_to_add_r = np.zeros(len(self.percentage))
+        for i in range(len(self.percentage) - 1):
+            if self.percentage[i + 1] == 100.0:
+                self.num_dets_to_add_t[i] = self.num_total_excitations_t - self.one_increment_t * self.percentage[i]
+                self.num_dets_to_add_r[i] = self.num_total_excitations_r - self.one_increment_r * self.percentage[i]
+            else:
+                self.num_dets_to_add_t[i] = self.one_increment_t * (self.percentage[i + 1] - self.percentage[i])
+                self.num_dets_to_add_r[i] = self.one_increment_r * (self.percentage[i + 1] - self.percentage[i])
+        self.num_dets_to_add_t[-1] = 1
+        self.num_dets_to_add_r[-1] = 1
+        # Set the base P space size to 0 (technically it should be all singles and doubles here too)
+        self.base_pspace_size_t = 0
+        self.base_pspace_size_r = 0
+
         # Adjust for RHF symmetry
         if self.driver.options["RHF_symmetry"]:
-            for i in range(len(self.num_dets_to_add)):
-                self.num_dets_to_add[i] = int(self.num_dets_to_add[i] / 2)
+            for i in range(len(self.num_dets_to_add_t)):
+                self.num_dets_to_add_t[i] = int(self.num_dets_to_add_t[i] / 2)
+                self.num_dets_to_add_r[i] = int(self.num_dets_to_add_r[i] / 2)
 
     def print_pspace(self):
         """Counts and analyzes the P space in terms of spatial and Sz-spin symmetry."""
-        for j in range(2):
-            print(f"   Total number of determinants in P space of state {j + 1} =", self.n_det[j])
-            for isym, excitation_count_irrep in enumerate(self.excitation_count_by_symmetry[j]):
-                tot_excitation_count_irrep = excitation_count_irrep['aaa'] + excitation_count_irrep['aab'] + \
-                                             excitation_count_irrep['abb'] + excitation_count_irrep['bbb']
-                print("   Symmetry", self.driver.system.point_group_number_to_irrep[isym], "-", "Total number of triples in P space = ", tot_excitation_count_irrep)
-                print("      Number of aaa = ", excitation_count_irrep['aaa'])
-                print("      Number of aab = ", excitation_count_irrep['aab'])
-                print("      Number of abb = ", excitation_count_irrep['abb'])
-                print("      Number of bbb = ", excitation_count_irrep['bbb'])
-            print("")
+        print("   Total number of determinants in P spaces:", self.n_det_t, self.n_det_r)
+        for isym, (counts_t, counts_r) in enumerate(zip(self.excitation_count_by_symmetry_t, self.excitation_count_by_symmetry_r)):
+            print("   Symmetry", self.driver.system.point_group_number_to_irrep[isym])
+            print("      Number of aaa = ", counts_t['aaa'], counts_r['aaa'])
+            print("      Number of aab = ", counts_t['aab'], counts_r['aab'])
+            print("      Number of abb = ", counts_t['abb'], counts_r['abb'])
+            print("      Number of bbb = ", counts_t['bbb'], counts_r['bbb'])
+        print("")
 
     def run_ccp(self, imacro):
         """Runs iterative CC(P), and if needed, HBar and iterative left-CC calculations."""
         self.driver.run_ccp(method="ccsdt_p", t3_excitations=self.t3_excitations)
         self.driver.run_hbar(method="ccsdt_p", t3_excitations=self.t3_excitations)
         self.driver.run_leftccp(method="left_ccsdt_p", t3_excitations=self.t3_excitations)
-        # Run initial guess only on first EOMCCSD iteration
+        # Run the initial guess once and save it in order to initiate all subsequent EOMCC iterations
         if imacro == 0:
-            self.driver.run_guess(method="cis", multiplicity=1, roots_per_irrep={self.state_irrep: self.state_index})
+            self.driver.run_guess(method="cisd", multiplicity=self.multiplicity, roots_per_irrep=self.roots_per_irrep, nact_occupied=self.nacto, nact_unoccupied=self.nactu)
         self.driver.run_eomccp(method="eomccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
-        self.driver.run_lefteomccp(method="left_ccsdt_p", t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
-        # reocrd energies
+        self.driver.run_lefteomccp(method="left_ccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
+        # record energies
         self.ccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy
         self.eomccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.vertical_excitation_energy[self.state_index]
 
@@ -412,38 +426,58 @@ class AdaptEOMDriver:
         from ccpy.moments.ccp3 import calc_ccp3_full_with_selection, calc_eomccp3_full_with_selection
 
         if imacro < self.nmacro - 1:
-            self.ccpq_energy[imacro], triples_list = calc_ccp3_full_with_selection(self.driver.T,
+            self.ccpq_energy[imacro], triples_list_t = calc_ccp3_full_with_selection(self.driver.T,
                                                                                   self.driver.L[0],
                                                                                   self.t3_excitations,
                                                                                   self.driver.correlation_energy,
                                                                                   self.driver.hamiltonian,
                                                                                   self.bare_hamiltonian,
                                                                                   self.driver.system,
-                                                                                  self.num_dets_to_add[imacro],
+                                                                                  self.num_dets_to_add_t[imacro],
                                                                                   use_RHF=self.driver.options["RHF_symmetry"],
                                                                                   min_thresh=self.options["minimum_threshold"],
                                                                                   buffer_factor=self.options["buffer_factor"])
+
+            self.eomccpq_energy[imacro], triples_list_r = calc_eomccp3_full_with_selection(self.driver.T,
+                                                                                           self.driver.R[self.state_index],
+                                                                                           self.driver.L[self.state_index],
+                                                                                           self.t3_excitations,
+                                                                                           self.r3_excitations,
+                                                                                           self.driver.r0[self.state_index],
+                                                                                           self.driver.vertical_excitation_energy[self.state_index],
+                                                                                           self.driver.correlation_energy,
+                                                                                           self.driver.hamiltonian,
+                                                                                           self.bare_hamiltonian,
+                                                                                           self.driver.system,
+                                                                                           self.num_dets_to_add_r[imacro],
+                                                                                           use_RHF=self.driver.options["RHF_symmetry"],
+                                                                                           min_thresh=self.options["minimum_threshold"],
+                                                                                           buffer_factor=self.options["buffer_factor"])
         else:
-            triples_list = []
+            triples_list_t = []
+            triples_list_r = []
             self.driver.run_ccp3(method="ccp3", state_index=0, two_body_approx=False, t3_excitations=self.t3_excitations)
             self.driver.run_ccp3(method="ccp3", state_index=self.state_index, two_body_approx=False, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
             self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltap3[0]["D"]
-            self.eomccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltap3[self.state_index]["D"]
+            self.eomccpq_energy[imacro] = (self.driver.system.reference_energy
+                                           + self.driver.correlation_energy
+                                           + self.driver.vertical_excitation_energy[self.state_index]
+                                           + self.driver.deltap3[self.state_index]["D"])
 
-        return triples_list
+        return triples_list_t, triples_list_r
 
-    def run_expand_pspace(self, triples_list, j):
+    def run_expand_pspace(self, triples_list_t, triples_list_r):
         """This will expand the P space using the list of triply excited determinants identified
            using the CC(P;Q) moment expansions, above."""
         from ccpy.utilities.selection import add_spinorbital_triples_to_pspace
-        self.t3_excitations, self.excitation_count_by_symmetry[j] = add_spinorbital_triples_to_pspace(triples_list,
+        self.t3_excitations, self.excitation_count_by_symmetry_t = add_spinorbital_triples_to_pspace(triples_list_t,
                                                                                                       self.t3_excitations,
-                                                                                                      self.excitation_count_by_symmetry[j],
+                                                                                                      self.excitation_count_by_symmetry_t,
                                                                                                       self.driver.system,
                                                                                                       self.driver.options["RHF_symmetry"])
-        self.r3_excitations, self.excitation_count_by_symmetry[j] = add_spinorbital_triples_to_pspace(triples_list,
+        self.r3_excitations, self.excitation_count_by_symmetry_r = add_spinorbital_triples_to_pspace(triples_list_r,
                                                                                                       self.r3_excitations,
-                                                                                                      self.excitation_count_by_symmetry[j],
+                                                                                                      self.excitation_count_by_symmetry_r,
                                                                                                       self.driver.system,
                                                                                                       self.driver.options["RHF_symmetry"])
 
@@ -466,24 +500,45 @@ class AdaptEOMDriver:
             print("      Symmetry", symmetry, " = ", count)
         print("")
 
-        # Begin adaptive loop iterations
+        # Begin adaptive loop iterations over P-space steps
         for imacro in range(self.nmacro):
             print("")
             print("   Adaptive CC(P;Q) Macroiteration - ", imacro)
             print("   ===========================================")
             # Offset needed to count number of determinants in P space correctly
-            if imacro == 0:
-                offset = 4
-            else:
-                offset = 0
+            offset_t = 0
+            offset_r = 0
+            if np.array_equal(self.t3_excitations["aaa"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset_t += 1
+            if np.array_equal(self.t3_excitations["aab"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset_t += 1
+            if np.array_equal(self.t3_excitations["abb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset_t += 1
+            if np.array_equal(self.t3_excitations["bbb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset_t += 1
+            if np.array_equal(self.r3_excitations["aaa"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset_r += 1
+            if np.array_equal(self.r3_excitations["aab"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset_r += 1
+            if np.array_equal(self.r3_excitations["abb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset_r += 1
+            if np.array_equal(self.r3_excitations["bbb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+                offset_r += 1
 
             # Update n_det
-            self.n_det = self.base_pspace_size + (
+            self.n_det_t = self.base_pspace_size_t + (
                             self.t3_excitations["aaa"].shape[0]
                             + self.t3_excitations["aab"].shape[0]
                             + self.t3_excitations["abb"].shape[0]
                             + self.t3_excitations["bbb"].shape[0]
-                            - offset
+                            - offset_t
+            )
+            self.n_det_r = self.base_pspace_size_r + (
+                            self.r3_excitations["aaa"].shape[0]
+                            + self.r3_excitations["aab"].shape[0]
+                            + self.r3_excitations["abb"].shape[0]
+                            + self.r3_excitations["bbb"].shape[0]
+                            - offset_r
             )
 
             # Step 1: Analyze the P space (optional)
@@ -500,7 +555,7 @@ class AdaptEOMDriver:
 
             # Step 3: Moment correction + adaptive selection
             x1 = time.perf_counter()
-            selection_arr = self.run_ccp3(imacro)
+            selection_arr_t, selection_arr_r = self.run_ccp3(imacro)
             x2 = time.perf_counter()
             t_selection_and_ccp3 = x2 - x1
 
@@ -508,14 +563,18 @@ class AdaptEOMDriver:
             if imacro > 0:
                 delta_e_ccp = self.ccp_energy[imacro] - self.ccp_energy[imacro - 1]
                 delta_e_ccpq = self.ccpq_energy[imacro] - self.ccpq_energy[imacro - 1]
+                delta_e_ccp_mu = self.eomccp_energy[imacro] - self.eomccp_energy[imacro - 1]
+                delta_e_ccpq_mu = self.eomccpq_energy[imacro] - self.eomccpq_energy[imacro - 1]
                 print("   Change in CC(P) energy = ", delta_e_ccp)
-                print("   Change in CC(P;Q) energy = ", delta_e_ccpq, "\n")
+                print("   Change in CC(P;Q) energy = ", delta_e_ccpq)
+                print("   Change in EOMCC(P) energy = ", delta_e_ccp_mu)
+                print("   Change in EOMCC(P;Q) energy = ", delta_e_ccpq_mu, "\n")
                 # Energy condition
-                if abs(delta_e_ccpq) < self.options["energy_tolerance"]:
+                if abs(delta_e_ccpq) < self.options["energy_tolerance"] and abs(delta_e_ccpq_mu) < self.options["energy_tolerance"]:
                     print("   Adaptive CC(P;Q) calculation converged to within energy tolerance!")
                     break
                 # N_det condition
-                if self.n_det >= self.options["n_det_max"]:
+                if self.n_det_t >= self.options["n_det_max"] or self.n_det_r > self.options["n_det_max"]:
                     print(f"   Adaptive CC(P;Q) calculation reached maximum dimension of P space (n_det_max = {self.options['n_det_max']})")
                     break
             if imacro == self.nmacro - 1:
@@ -524,14 +583,17 @@ class AdaptEOMDriver:
 
             # Step 5: Expand the P space
             x1 = time.perf_counter()
-            self.run_expand_pspace(selection_arr)
+            self.run_expand_pspace(selection_arr_t, selection_arr_r)
             x2 = time.perf_counter()
             t_pspace_expand = x2 - x1
 
-            # Step 6: Reset variables in driver
+            # [TODO]: FIX P SPACE REORDERING BUG WHEN PREVIOUS R VECTOR IS USED
+            # Step 6: Reset variables in driver. Right now, R is messed up if it is extended.
             if self.options["reset_amplitudes"]:
                 self.driver.T = None
+                self.driver.R[self.state_index] = None
                 self.driver.L[0] = None
+                self.driver.L[self.state_index] = None
             setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
 
             # Step 7: Report timings of each step
@@ -546,10 +608,19 @@ class AdaptEOMDriver:
         # Final printout of the results including energy extrapolations
         print("   Adaptive CC(P;Q) calculation ended on", get_timestamp(), "\n")
         print("   Summary of results:")
-        print("    Iteration           E(P)             E(P;Q)")
-        print("   -------------------------------------------------------------------------------------------------------")
+        print(f"    Iteration       E0(P)             E0(P;Q)             E{self.state_index}(P)             E{self.state_index}(P;Q)         VEE(P)    VEE(P;Q) [eV]")
+        print("   ------------------------------------------------------------------------------------------------------------------")
         for i in range(imacro + 1):
-            print("   %8d    %.10f     %.10f" % (i, self.ccp_energy[i], self.ccpq_energy[i]))
+            print("   %8d    %.10f     %.10f     %.10f     %.10f     %.4f     %.4f" %
+                (i,
+                 self.ccp_energy[i],
+                 self.ccpq_energy[i],
+                 self.eomccp_energy[i],
+                 self.eomccpq_energy[i],
+                 (self.eomccp_energy[i] - self.ccp_energy[i]) * hartreetoeV,
+                 (self.eomccpq_energy[i] - self.ccpq_energy[i]) * hartreetoeV,
+                 )
+            )
 
 
 
