@@ -13186,8 +13186,14 @@ module eomccsdt_p_loops
       
                     loc_arr(1,:) = 1; loc_arr(2,:) = 0;
                     !!! WARNING: THERE IS A MEMORY LEAK HERE! pqrs2 is used below but is not set if n3p <= 1
-                    !if (n3p <= 1) print*, "WARNING: potential memory leakage in sort4 function. pqrs2 set to 0"
-                    pqrs2 = 0
+                    !if (n3p <= 1) print*, "eomccsdt_p_loops >> WARNING: potential memory leakage in sort4 function. pqrs2 set to -1"
+                    if (n3p == 1) then
+                       if (excits(1,1)==1 .and. excits(1,2)==1 .and. excits(1,3)==1 .and. excits(1,4)==1 .and. excits(1,5)==1 .and. excits(1,6)==1) return
+                       p2 = excits(n3p,idims(1)); q2 = excits(n3p,idims(2)); r2 = excits(n3p,idims(3)); s2 = excits(n3p,idims(4))
+                       pqrs2 = idx_table(p2,q2,r2,s2)
+                    else               
+                       pqrs2 = -1
+                    end if
                     do idet = 1, n3p-1
                        p1 = excits(idet,idims(1));   q1 = excits(idet,idims(2));   r1 = excits(idet,idims(3));   s1 = excits(idet,idims(4))
                        p2 = excits(idet+1,idims(1)); q2 = excits(idet+1,idims(2)); r2 = excits(idet+1,idims(3)); s2 = excits(idet+1,idims(4))
@@ -13198,9 +13204,9 @@ module eomccsdt_p_loops
                           loc_arr(1,pqrs2) = idet+1
                        end if
                     end do
-                    if (n3p > 1) then
-                       loc_arr(2,pqrs2) = n3p
-                    end if
+                    !if (n3p > 1) then
+                    loc_arr(2,pqrs2) = n3p
+                    !end if
               end subroutine sort4
 
               subroutine argsort(r,d)

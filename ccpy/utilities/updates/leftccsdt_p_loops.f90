@@ -6858,8 +6858,14 @@ module leftccsdt_p_loops
               ! obtain the start- and end-point indices for each lexical index in the sorted t3 excitation and amplitude arrays
               loc_arr(:,1) = 1; loc_arr(:,2) = 0; ! set default start > end so that empty sets do not trigger loops
               !!! WARNING: THERE IS A MEMORY LEAK HERE! pqrs2 is used below but is not set if n3p <= 1
-              !if (n3p <= 1) print*, "WARNING: potential memory leakage in sort4 function. pqrs2 set to -1"
-              pqrs2 = -1
+              !if (n3p <= 1) print*, "leftccsdt_p_loops >> WARNING: potential memory leakage in sort4 function. pqrs2 set to -1"
+              if (n3p == 1) then
+                 if (excits(1,1)==1 .and. excits(1,2)==1 .and. excits(1,3)==1 .and. excits(1,4)==1 .and. excits(1,5)==1 .and. excits(1,6)==1) return
+                 p2 = excits(n3p,idims(1)); q2 = excits(n3p,idims(2)); r2 = excits(n3p,idims(3)); s2 = excits(n3p,idims(4))
+                 pqrs2 = idx_table(p2,q2,r2,s2)
+              else               
+                 pqrs2 = -1
+              end if
               do idet = 1, n3p-1
                  ! get consecutive lexcial indices
                  p1 = excits(idet,idims(1));   q1 = excits(idet,idims(2));   r1 = excits(idet,idims(3));   s1 = excits(idet,idims(4))
@@ -6872,9 +6878,9 @@ module leftccsdt_p_loops
                     loc_arr(pqrs2,1) = idet+1
                  end if
               end do
-              if (n3p > 1) then
-                 loc_arr(pqrs2,2) = n3p
-              end if
+              !if (n3p > 1) then
+              loc_arr(pqrs2,2) = n3p
+              !end if
       end subroutine sort4
 
       subroutine argsort(r,d)

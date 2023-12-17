@@ -341,7 +341,7 @@ class Driver:
         # Run the initial guess function and save all eigenpairs
         self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, roots_per_irrep, nact_occupied, nact_unoccupied, debug=debug, use_symmetry=use_symmetry)
 
-    def run_eomccp(self, method, state_index, t3_excitations, r3_excitations, R_guess=None):
+    def run_eomccp(self, method, state_index, t3_excitations, r3_excitations):
         """Performs the EOMCC calculation specified by the user in the input."""
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.eomcc.MODULES:
@@ -383,11 +383,8 @@ class Driver:
                                                   order=self.operator_params["order"],
                                                   p_orders=self.operator_params["pspace_orders"],
                                                   pspace_sizes=excitation_count)
-            #if R_guess is None:
             self.R[state_index].unflatten(self.guess_vectors[:, state_index - 1], order=self.guess_order)
             self.vertical_excitation_energy[state_index] = self.guess_energy[state_index - 1]
-            #else:
-            #    self.R[state_index].unflatten(R_guess.flatten(), order=2)
         else:
             # extend self.R to hold a longer R vector. It is assumed that the new amplitudes and corresponding
             # excitations are simply appended to the previous ones. This will break if this is not true.
@@ -982,7 +979,6 @@ class Driver:
             # else:
             #     # Reorder L to match the order of t3_excitations (this is unecessary actually because L3 and T3 are aligned)
             #     # self.L[i] = reorder_triples_amplitudes(self.L[i], l3_excitations, t3_excitations)
-
             leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
             print("   Left CC(P) calculation for root %d ended on" % i, get_timestamp(), "\n")
 
