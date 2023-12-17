@@ -355,6 +355,9 @@ class AdaptEOMDriver:
         self.excitation_count_by_symmetry_r = [{'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0} for _ in range(len(self.driver.system.point_group_irrep_to_number))]
         self.n_det_t = 0
         self.n_det_r = 0
+        # RHF flags for ground and excited states
+        self.RHF_ground = self.driver.options["RHF_symmetry"]
+        self.RHF_excited = True if self.multiplicity == 1 else False
         # Save the bare Hamiltonian for later iterations if using CR-CC(2,3)
         self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
 
@@ -393,11 +396,11 @@ class AdaptEOMDriver:
         self.base_pspace_size_r = 0
 
         # Adjust for RHF symmetry
-        if self.driver.options["RHF_symmetry"]:
-            for i in range(len(self.num_dets_to_add_t)):
+        for i in range(len(self.num_dets_to_add_t)):
+            if self.RHF_ground:
                 self.num_dets_to_add_t[i] = int(self.num_dets_to_add_t[i] / 2)
-        if self.multiplicity == 1:
-            self.num_dets_to_add_r[i] = int(self.num_dets_to_add_r[i] / 2)
+            if self.RHF_excited:
+                self.num_dets_to_add_r[i] = int(self.num_dets_to_add_r[i] / 2)
 
     def print_pspace(self):
         """Counts and analyzes the P space in terms of spatial and Sz-spin symmetry."""
@@ -413,14 +416,24 @@ class AdaptEOMDriver:
 
     def run_ccp(self, imacro):
         """Runs iterative CC(P), and if needed, HBar and iterative left-CC calculations."""
+
+        ### Run the ground-state calculation
+        self.driver.options["RHF_symmetry"] = self.RHF_ground
         self.driver.run_ccp(method="ccsdt_p", t3_excitations=self.t3_excitations)
         self.driver.run_hbar(method="ccsdt_p", t3_excitations=self.t3_excitations)
         self.driver.run_leftccp(method="left_ccsdt_p", t3_excitations=self.t3_excitations)
-        # Run the initial guess once and save it in order to initiate all subsequent EOMCC iterations
+
+        ### Run the excited-state calculations
+        # Compute initial guess once and save it in order to initiate all subsequent EOMCC iterations
+        self.driver.options["RHF_symmetry"] = self.RHF_excited
         if imacro == 0:
             self.driver.run_guess(method="cisd", multiplicity=self.multiplicity, roots_per_irrep=self.roots_per_irrep, nact_occupied=self.nacto, nact_unoccupied=self.nactu)
         self.driver.run_eomccp(method="eomccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
         self.driver.run_lefteomccp(method="left_ccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
+
+        # reset the driver symmetry option
+        self.driver.options["RHF_symmetry"] = self.RHF_ground
+
         # record energies
         self.ccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy
         self.eomccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.vertical_excitation_energy[self.state_index]
@@ -441,7 +454,7 @@ class AdaptEOMDriver:
                                                                                   self.bare_hamiltonian,
                                                                                   self.driver.system,
                                                                                   self.num_dets_to_add_t[imacro],
-                                                                                  use_RHF=self.driver.options["RHF_symmetry"],
+                                                                                  use_RHF=self.RHF_ground,
                                                                                   min_thresh=self.options["minimum_threshold"],
                                                                                   buffer_factor=self.options["buffer_factor"])
 
@@ -457,7 +470,7 @@ class AdaptEOMDriver:
                                                                                            self.bare_hamiltonian,
                                                                                            self.driver.system,
                                                                                            self.num_dets_to_add_r[imacro],
-                                                                                           use_RHF=self.driver.options["RHF_symmetry"],
+                                                                                           use_RHF=self.RHF_excited,
                                                                                            min_thresh=self.options["minimum_threshold"],
                                                                                            buffer_factor=self.options["buffer_factor"])
         else:
@@ -481,12 +494,12 @@ class AdaptEOMDriver:
                                                                                                       self.t3_excitations,
                                                                                                       self.excitation_count_by_symmetry_t,
                                                                                                       self.driver.system,
-                                                                                                      self.driver.options["RHF_symmetry"])
+                                                                                                      self.RHF_ground)
         self.r3_excitations, self.excitation_count_by_symmetry_r = add_spinorbital_triples_to_pspace(triples_list_r,
                                                                                                       self.r3_excitations,
                                                                                                       self.excitation_count_by_symmetry_r,
                                                                                                       self.driver.system,
-                                                                                                      self.driver.options["RHF_symmetry"])
+                                                                                                      self.RHF_excited)
 
     def run(self):
         """This is the main driver for the entire adaptive CC(P;Q) calculation. It will call the above
@@ -616,7 +629,7 @@ class AdaptEOMDriver:
         print("   Adaptive CC(P;Q) calculation ended on", get_timestamp(), "\n")
         print("   Summary of results:")
         print(f"    Iteration       E0(P)             E0(P;Q)             E{self.state_index}(P)             E{self.state_index}(P;Q)         VEE(P)      VEE(P;Q)")
-        print("   -----------------------------------------------------------------------------------------------------------------")
+        print("   --------------------------------------------------------------------------------------------------------------")
         for i in range(imacro + 1):
             print("   %8d    %.10f     %.10f     %.10f     %.10f     %.4f eV    %.4f eV" %
                 (i,
