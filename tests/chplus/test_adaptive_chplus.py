@@ -14,13 +14,10 @@ def test_adaptive_chplus():
     driver.system.print_info()
 
     driver.options["maximum_iterations"] = 500
-    state_index=10
-    roots_per_irrep={"B1": 3, "A1": 5, "A2": 2}
-    multiplicity = 1
-    adaptdriver = AdaptEOMDriver(driver, state_index, roots_per_irrep, multiplicity, 
+    adaptdriver = AdaptEOMDriver(driver, state_index=2, roots_per_irrep={"A2": 2}, multiplicity=1, 
                                  nacto=3, nactu=3, 
                                  percentage=[0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
-
+    adaptdriver.options["energy_tolerance"] = 1.0e-09
     adaptdriver.run()
 
 if __name__ == "__main__":

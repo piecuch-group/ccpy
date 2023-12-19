@@ -107,7 +107,7 @@ class AdaptDriver:
             self.driver.run_leftcc(method="left_ccsd")
         else:
             self.driver.run_hbar(method="ccsdt_p", t3_excitations=self.t3_excitations)
-            self.driver.run_leftccp(method="left_ccsdt_p", t3_excitations=self.t3_excitations)
+            self.driver.run_leftccp(method="left_ccsdt_p", state_index=[0], t3_excitations=self.t3_excitations)
         self.ccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy
 
     def run_ccp3(self, imacro):
@@ -360,6 +360,12 @@ class AdaptEOMDriver:
         self.RHF_excited = True if self.multiplicity == 1 else False
         # Save the bare Hamiltonian for later iterations if using CR-CC(2,3)
         self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
+        # Containers for storing the R1 and R2 amplitudes for initiating later EOMCC(P) calculations
+        self.r1_a_eomccsd = None
+        self.r1_b_eomccsd = None
+        self.r2_aa_eomccsd = None
+        self.r2_ab_eomccsd = None
+        self.r2_bb_eomccsd = None
 
     def print_options(self):
         print("   ------------------------------------------")
@@ -421,7 +427,7 @@ class AdaptEOMDriver:
         self.driver.options["RHF_symmetry"] = self.RHF_ground
         self.driver.run_ccp(method="ccsdt_p", t3_excitations=self.t3_excitations)
         self.driver.run_hbar(method="ccsdt_p", t3_excitations=self.t3_excitations)
-        self.driver.run_leftccp(method="left_ccsdt_p", t3_excitations=self.t3_excitations)
+        self.driver.run_leftccp(method="left_ccsdt_p", state_index=[0], t3_excitations=self.t3_excitations)
 
         ### Run the excited-state calculations
         # Compute initial guess once and save it in order to initiate all subsequent EOMCC iterations
@@ -447,16 +453,16 @@ class AdaptEOMDriver:
 
         if imacro < self.nmacro - 1:
             self.ccpq_energy[imacro], triples_list_t = calc_ccp3_full_with_selection(self.driver.T,
-                                                                                  self.driver.L[0],
-                                                                                  self.t3_excitations,
-                                                                                  self.driver.correlation_energy,
-                                                                                  self.driver.hamiltonian,
-                                                                                  self.bare_hamiltonian,
-                                                                                  self.driver.system,
-                                                                                  self.num_dets_to_add_t[imacro],
-                                                                                  use_RHF=self.RHF_ground,
-                                                                                  min_thresh=self.options["minimum_threshold"],
-                                                                                  buffer_factor=self.options["buffer_factor"])
+                                                                                     self.driver.L[0],
+                                                                                     self.t3_excitations,
+                                                                                     self.driver.correlation_energy,
+                                                                                     self.driver.hamiltonian,
+                                                                                     self.bare_hamiltonian,
+                                                                                     self.driver.system,
+                                                                                     self.num_dets_to_add_t[imacro],
+                                                                                     use_RHF=self.RHF_ground,
+                                                                                     min_thresh=self.options["minimum_threshold"],
+                                                                                     buffer_factor=self.options["buffer_factor"])
 
             self.eomccpq_energy[imacro], triples_list_r = calc_eomccp3_full_with_selection(self.driver.T,
                                                                                            self.driver.R[self.state_index],
@@ -519,6 +525,9 @@ class AdaptEOMDriver:
             symmetry = self.driver.system.point_group_number_to_irrep[i]
             print("      Symmetry", symmetry, " = ", count)
         print("")
+        print("   Determinant Addition Plan:")
+        print("   Ground State:", self.num_dets_to_add_t)
+        print("   Excited State:", self.num_dets_to_add_r)
 
         # Begin adaptive loop iterations over P-space steps
         for imacro in range(self.nmacro):
@@ -610,10 +619,12 @@ class AdaptEOMDriver:
             # [TODO]: FIX P SPACE REORDERING BUG WHEN PREVIOUS R VECTOR IS USED
             # Step 6: Reset variables in driver. Right now, R is messed up if it is extended.
             if self.options["reset_amplitudes"]:
-                self.driver.T = None
                 self.driver.R[self.state_index] = None
+                self.driver.T = None
                 self.driver.L[0] = None
-                self.driver.L[self.state_index] = None
+            # ALWAYS reset the excited-state left amplitude. This forces L to begin with converged R as a guess,
+            # which generally ensures that R and L converge the same root.
+            self.driver.L[self.state_index] = None
             setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
 
             # Step 7: Report timings of each step

@@ -30,11 +30,11 @@ def update(R, omega, H, RHF_symmetry, system, r3_excitations):
         R.bbb = R.aaa.copy()
     return R
 
-def HR(dR, R, T, H, flag_RHF, system, t3_excitations, r3_excitations, pspace=None):
+def HR(dR, R, T, H, flag_RHF, system, t3_excitations, r3_excitations):
 
     # determine whether r3 updates should be done. Stupid compatibility with
     # empty sections of t3_excitations or r3_excitations
-    do_r3 = {"aaa" : True, "aab" : True, "abb" : True, "bbb" : True}
+    do_r3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
     if np.array_equal(r3_excitations["aaa"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
         do_r3["aaa"] = False
     if np.array_equal(r3_excitations["aab"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
@@ -70,7 +70,8 @@ def HR(dR, R, T, H, flag_RHF, system, t3_excitations, r3_excitations, pspace=Non
         R.abb = R.aab.copy()
         dR.abb = dR.aab.copy()
         r3_excitations["abb"] = r3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
-        R.bbb = R.aaa.copy()
+
+        R.bbb = R.bbb.copy()
         dR.bbb = dR.aaa.copy()
         r3_excitations["bbb"] = r3_excitations["aaa"].copy()
     else:

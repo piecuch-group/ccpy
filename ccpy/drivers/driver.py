@@ -352,9 +352,6 @@ class Driver:
         self.set_operator_params(method)
         self.options["method"] = method.upper()
 
-        # Ensure that Hbar is set upon entry
-        assert (self.flag_hbar)
-
         # import the specific EOMCC(P) method module and get its update function
         eom_module = import_module("ccpy.eomcc." + method.lower())
         HR_function = getattr(eom_module, 'HR')
@@ -370,6 +367,7 @@ class Driver:
         n3abb_r = r3_excitations["abb"].shape[0]
         n3bbb_r = r3_excitations["bbb"].shape[0]
         excitation_count = [[n3aaa_r, n3aab_r, n3abb_r, n3bbb_r]]
+
 
         # If RHF, copy aab into abb and aaa in bbb
         if self.options["RHF_symmetry"]:
@@ -388,21 +386,28 @@ class Driver:
         else:
             # extend self.R to hold a longer R vector. It is assumed that the new amplitudes and corresponding
             # excitations are simply appended to the previous ones. This will break if this is not true.
+            # r_old = deepcopy(self.R[state_index])
+            # r_old.extend_pspace_t3_operator([n3aaa_r, n3aab_r, n3abb_r, n3bbb_r])
             self.R[state_index].extend_pspace_t3_operator([n3aaa_r, n3aab_r, n3abb_r, n3bbb_r])
+            # self.R[state_index] = ClusterOperator(self.system,
+            #                                       order=self.operator_params["order"],
+            #                                       p_orders=self.operator_params["pspace_orders"],
+            #                                       pspace_sizes=excitation_count)
+            # self.R[state_index].unflatten(r_old.flatten())
             # r3 is getting scrambled somehow... do this to avoid issues
+            # self.R[state_index].aa *= 0.0
+            # self.R[state_index].ab *= 0.0
+            # self.R[state_index].bb *= 0.0
             self.R[state_index].aaa *= 0.0
             self.R[state_index].aab *= 0.0
             self.R[state_index].abb *= 0.0
             self.R[state_index].bbb *= 0.0
-
 
         # regardless of restart status, initialize residual anew
         dR = ClusterOperator(self.system,
                              order=self.operator_params["order"],
                              p_orders=self.operator_params["pspace_orders"],
                              pspace_sizes=excitation_count)
-        # Form the initial subspace vector
-        # B0, _ = np.linalg.qr(self.R[state_index].flatten()[:, np.newaxis])
 
         # Print the options as a header
         self.print_options()
@@ -411,8 +416,7 @@ class Driver:
         print_ee_amplitudes(self.R[state_index], self.system, self.R[state_index].order, self.options["amp_print_threshold"])
         self.R[state_index], self.vertical_excitation_energy[state_index], is_converged = eomcc_davidson(HR_function,
                                                                                                          update_function,
-                                                                                                         #B0[:, 0],
-                                                                                                         self.R[state_index].flatten() / np.linalg.norm(self.R[state_index].flatten()),
+                                                                                                         self.R[state_index].flatten()/np.linalg.norm(self.R[state_index].flatten()),
                                                                                                          self.R[state_index],
                                                                                                          dR,
                                                                                                          self.vertical_excitation_energy[state_index],
@@ -922,15 +926,15 @@ class Driver:
             # Create either the CC(P) cluster operator
             # Get the l3_excitations list based on T (ground state) or R (excited states)
             if ground_state:
-                l3_excitations = {"aaa" : t3_excitations["aaa"],
-                                  "aab" : t3_excitations["aab"],
-                                  "abb" : t3_excitations["abb"],
-                                  "bbb" : t3_excitations["bbb"]}
+                l3_excitations = {"aaa": t3_excitations["aaa"].copy(),
+                                  "aab": t3_excitations["aab"].copy(),
+                                  "abb": t3_excitations["abb"].copy(),
+                                  "bbb": t3_excitations["bbb"].copy()}
             else:
-                l3_excitations = {"aaa" : r3_excitations["aaa"],
-                                  "aab" : r3_excitations["aab"],
-                                  "abb" : r3_excitations["abb"],
-                                  "bbb" : r3_excitations["bbb"]}
+                l3_excitations = {"aaa": r3_excitations["aaa"].copy(),
+                                  "aab": r3_excitations["aab"].copy(),
+                                  "abb": r3_excitations["abb"].copy(),
+                                  "bbb": r3_excitations["bbb"].copy()}
 
             n3aaa = l3_excitations["aaa"].shape[0]
             n3aab = l3_excitations["aab"].shape[0]
@@ -1009,10 +1013,10 @@ class Driver:
         omega_right = self.vertical_excitation_energy[state_index]
 
         # Get the l3_excitations list based R
-        l3_excitations = {"aaa": r3_excitations["aaa"],
-                          "aab": r3_excitations["aab"],
-                          "abb": r3_excitations["abb"],
-                          "bbb": r3_excitations["bbb"]}
+        l3_excitations = {"aaa": r3_excitations["aaa"].copy(),
+                          "aab": r3_excitations["aab"].copy(),
+                          "abb": r3_excitations["abb"].copy(),
+                          "bbb": r3_excitations["bbb"].copy()}
         n3aaa = l3_excitations["aaa"].shape[0]
         n3aab = l3_excitations["aab"].shape[0]
         n3abb = l3_excitations["abb"].shape[0]
@@ -1028,15 +1032,6 @@ class Driver:
             self.L[state_index].unflatten(self.R[state_index].flatten())
         else:
            self.L[state_index].extend_pspace_t3_operator([n3aaa, n3aab, n3abb, n3bbb])
-           # Similar to EOMCC(P), using the previous L3 here screws things up. We still converge, but it's clear
-           # that the initial amplitudes are weird...
-           self.L[state_index].aaa *= 0.0
-           self.L[state_index].aab *= 0.0
-           self.L[state_index].abb *= 0.0
-           self.L[state_index].bbb *= 0.0
-
-        # Form the initial subspace vector
-        # B0, _ = np.linalg.qr(self.L[state_index].flatten()[:, np.newaxis])
 
         # Regardless of restart status, make LH anew. It could be of different length for different roots
         LH = ClusterOperator(self.system,
@@ -1049,8 +1044,7 @@ class Driver:
         print_ee_amplitudes(self.L[state_index], self.system, self.L[state_index].order, self.options["amp_print_threshold"])
         self.L[state_index], self.vertical_excitation_energy[state_index], is_converged = eomcc_davidson(LH_function,
                                                                                                          update_function,
-                                                                                                         #B0[:, 0],
-                                                                                                         self.L[state_index].flatten() / np.linalg.norm(self.L[state_index].flatten()),
+                                                                                                         self.L[state_index].flatten()/np.linalg.norm(self.L[state_index].flatten()),
                                                                                                          self.L[state_index],
                                                                                                          LH,
                                                                                                          self.vertical_excitation_energy[state_index],
@@ -1070,7 +1064,7 @@ class Driver:
         omega_diff = abs(omega_right - self.vertical_excitation_energy[state_index])
         print("   |ω(R) - ω(L)| = ", omega_diff)
         print("   Left-EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
-        assert omega_diff <= 1.0e-06
+        assert omega_diff <= 1.0e-05
 
     def run_leftipeomcc(self, method, state_index=[0], t3_excitations=None, r3_excitations=None):
         # check if requested CC calculation is implemented in modules

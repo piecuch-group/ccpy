@@ -14,10 +14,9 @@ def test_adaptive_ch2():
     driver.system.print_info()
 
     state_index=1
-    state_irrep="B1"
-    roots_per_irrep={"B1": 1}
+    roots_per_irrep = {"B1": 1}
     multiplicity = 1
-    adaptdriver = AdaptEOMDriver(driver, state_index, state_irrep, roots_per_irrep, multiplicity, 
+    adaptdriver = AdaptEOMDriver(driver, state_index, roots_per_irrep, multiplicity, 
                                  nacto=3, nactu=3, 
                                  percentage=[0.0, 1.0])
 

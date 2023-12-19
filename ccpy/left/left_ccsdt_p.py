@@ -134,10 +134,10 @@ def update_l(L, omega, H, RHF_symmetry, system, l3_excitations):
         L.bbb = L.aaa.copy()
     return L
 
-def LH_fun(LH, L, T, H, flag_RHF, system, t3_excitations, l3_excitations, pspace=None):
+def LH_fun(LH, L, T, H, flag_RHF, system, t3_excitations, l3_excitations):
     # determine whether l3 updates and l3*t3 intermediates should be done. Stupid compatibility with
     # empty sections of t3_excitations or l3_excitations
-    do_l3 = {"aaa" : True, "aab" : True, "abb" : True, "bbb" : True}
+    do_l3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
     do_t3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
     if np.array_equal(t3_excitations["aaa"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["aaa"] = False
@@ -180,12 +180,6 @@ def LH_fun(LH, L, T, H, flag_RHF, system, t3_excitations, l3_excitations, pspace
     if do_l3["aab"]:
         LH, L, l3_excitations = build_LH_3B(L, LH, H, X, l3_excitations)
     if flag_RHF:
-        L.b = L.a.copy()
-        LH.b = LH.a.copy()
-
-        L.bb = L.aa.copy()
-        LH.bb = LH.aa.copy()
-
         L.abb = L.aab.copy()
         LH.abb = LH.aab.copy()
         l3_excitations["abb"] = l3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]

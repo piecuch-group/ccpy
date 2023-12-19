@@ -145,9 +145,10 @@ class ClusterOperator:
         for i, spincase in enumerate(["aaa", "aab", "abb", "bbb"]):
             num_old = len(getattr(self, spincase))
             num_extend = excitation_count_spincase[i] - num_old
-            setattr(self, spincase, np.hstack((getattr(self, spincase), np.zeros(num_extend, dtype=np.float64, order="F"))))
-            self.dimensions[i + 5] = (num_old + num_extend,)
-            self.ndim += num_extend
+            if num_extend > 0:
+                setattr(self, spincase, np.hstack((getattr(self, spincase), np.zeros(num_extend, dtype=np.float64, order="F"))))
+                self.dimensions[i + 5] = (num_old + num_extend,)
+                self.ndim += num_extend
 
     def flatten(self):
         return np.hstack(
