@@ -870,6 +870,7 @@ class AdaptEOMDriver:
                                                                                                      self.excitation_count_by_symmetry_t,
                                                                                                      self.driver.system,
                                                                                                      self.RHF_ground)
+
         self.r3_excitations, self.excitation_count_by_symmetry_r = add_spinorbital_triples_to_pspace(triples_list_r,
                                                                                                      self.r3_excitations,
                                                                                                      self.excitation_count_by_symmetry_r,
@@ -1003,23 +1004,22 @@ class AdaptEOMDriver:
             print(f"   - Expanding P space took {t_pspace_expand:.2f} seconds")
             print(f"   - Total time: {t_pspace_printing + t_pspace_expand + t_ccp + t_selection_and_ccp3 + t_pspace_expand:.2f} seconds")
 
-        # # Final printout of the results including energy extrapolations
-        # print("   Adaptive CC(P;Q) calculation ended on", get_timestamp(), "\n")
-        # print("   Summary of results:")
-        # print(f"    Iteration       E0(P)             E0(P;Q)             E{self.state_index}(P)             E{self.state_index}(P;Q)         VEE(P)      VEE(P;Q)")
-        # print("   --------------------------------------------------------------------------------------------------------------")
-        # for i in range(imacro + 1):
-        #     print("   %8d    %.10f     %.10f     %.10f     %.10f     %.4f eV    %.4f eV" %
-        #         (i,
-        #          self.ccp_energy[i],
-        #          self.ccpq_energy[i],
-        #          self.eomccp_energy[i],
-        #          self.eomccpq_energy[i],
-        #          (self.eomccp_energy[i] - self.ccp_energy[i]) * hartreetoeV,
-        #          (self.eomccpq_energy[i] - self.ccpq_energy[i]) * hartreetoeV,
-        #          )
-        #     )
-
+        # Final printout of the results including energy extrapolations
+        print("   Adaptive CC(P;Q) calculation ended on", get_timestamp(), "\n")
+        print("   Summary of results:")
+        for j in range(self.nstates):
+            print("")
+            print(f"    Iteration       E{j}(P)             E{j}(P;Q)         VEE(P)      VEE(P;Q)")
+            print("   --------------------------------------------------------------------------------------------------------------")
+            for i in range(imacro + 1):
+                print("   %8d    %.10f     %.10f     %.4f eV    %.4f eV" %
+                      (i,
+                       self.ccp_energy[j, i],
+                       self.ccpq_energy[j, i],
+                       (self.ccp_energy[j, i] - self.ccp_energy[0, i]) * hartreetoeV,
+                       (self.ccpq_energy[j, i] - self.ccpq_energy[0, i]) * hartreetoeV,
+                       )
+                )
 
 # Legacy version of adaptive CC(P;Q) that includes CCSD(T) corrections and full moment selection options
 # class AdaptDriver:
