@@ -41,9 +41,9 @@ class Driver:
                   )
 
     @classmethod
-    def from_gamess(cls, logfile, nfrozen, ndelete=0, fcidump=None, onebody=None, twobody=None, normal_ordered=True, sorted=True, data_type=np.float64):
+    def from_gamess(cls, logfile, nfrozen, ndelete=0, multiplicity=None, fcidump=None, onebody=None, twobody=None, normal_ordered=True, sorted=True, data_type=np.float64):
         return cls(
-                    *load_gamess_integrals(logfile, fcidump, onebody, twobody, nfrozen, ndelete, normal_ordered=normal_ordered, sorted=sorted, data_type=data_type)
+                    *load_gamess_integrals(logfile, fcidump, onebody, twobody, nfrozen, ndelete, multiplicity, normal_ordered=normal_ordered, sorted=sorted, data_type=data_type)
                    )
 
     def __init__(self, system, hamiltonian, max_number_states=50):

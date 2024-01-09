@@ -8,6 +8,7 @@ def load_gamess_integrals(
     twobody_file=None,
     nfrozen=0,
     ndelete=0,
+    multiplicity=None,
     normal_ordered=True,
     sorted=True,
     data_type=np.float64,
@@ -22,6 +23,9 @@ def load_gamess_integrals(
     data = ccread(gamess_logfile)
     # unable to change nelectrons attribute
     nelectrons = data.nelectrons
+    # if multiplicity is provided, use that; otherwise, read from GAMESS logfile
+    if multiplicity is None:
+        multiplicity = data.mult
     # Read nelectrons & norbitals directly from fcidump in order to accomodate ECP GAMESS runs
     if fcidump_file:
         nmo_fcidump, nelectron_fcidump, ms2_fcidump = load_system_params_from_fcidump(fcidump_file)
@@ -36,7 +40,7 @@ def load_gamess_integrals(
     system = System(
         nelectrons,
         data.nmo,
-        data.mult,
+        multiplicity,
         nfrozen,
         ndelete=ndelete,
         point_group=get_point_group(gamess_logfile),
