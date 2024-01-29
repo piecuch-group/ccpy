@@ -67,6 +67,19 @@ def deaeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, pr
     print_dea_amplitudes(R, system, R.order, print_thresh)
     print("")
 
+def dipeomcc_calculation_summary(R, omega, corr_energy, is_converged, system, print_thresh):
+    DATA_FMT = "{:<30} {:>20.8f}"
+    if is_converged:
+        convergence_label = 'converged'
+    else:
+        convergence_label = 'not converged'
+    print("\n   DIP-EOMCC Calculation Summary (%s)" % convergence_label)
+    print("  --------------------------------------------------")
+    print(DATA_FMT.format("   Vertical excitation energy", omega))
+    print(DATA_FMT.format("   Total DIP-EOMCC energy", system.reference_energy + corr_energy + omega))
+    print_dip_amplitudes(R, system, R.order, print_thresh)
+    print("")
+
 def ipeomcc_calculation_summary(R, omega, corr_energy, rel, is_converged, system, print_thresh):
     DATA_FMT = "{:<30} {:>20.8f}"
     if is_converged:
@@ -449,6 +462,81 @@ def print_dea_amplitudes(R, system, order, thresh_print):
                 for c in range(b + 1, system.nunoccupied_beta):
                     for k in range(system.noccupied_beta):
                         R.abb[a, c, b, k] = -R.abb[a, b, c, k]
+    return
+
+def print_dip_amplitudes(R, system, order, thresh_print):
+
+    # Zero out the non-unique R amplitudes related by permutational symmetry
+    if R.order > 2:
+        for i in range(system.noccupied_alpha):
+            for j in range(system.noccupied_beta):
+                for c in range(system.nunoccupied_alpha):
+                    for k in range(i + 1, system.noccupied_alpha):
+                        R.aba[k, j, c, i] = 0.0
+        for i in range(system.noccupied_alpha):
+            for j in range(system.noccupied_beta):
+                for c in range(system.nunoccupied_beta):
+                    for k in range(j + 1, system.noccupied_beta):
+                        R.abb[i, k, c, j] = 0.0
+
+    print("\n   Largest 2h and 3h-1p Excited Amplitudes:")
+    n = 1
+    for i in range(system.noccupied_alpha):
+        for j in range(system.noccupied_beta):
+            if abs(R.ab[i, j]) <= thresh_print: continue
+            print(
+                "      [{}]     {}A  {}A  ->   =   {:.6f}".format(
+                    n,
+                    i + system.nfrozen + 1,
+                    j + system.nfrozen + 1,
+                    R.ab[i, j],
+                )
+            )
+            n += 1
+    if R.order > 2:
+        for i in range(system.noccupied_alpha):
+            for j in range(system.noccupied_beta):
+                for c in range(system.nunoccupied_alpha):
+                    for k in range(i + 1, system.noccupied_alpha):
+                        if abs(R.aba[i, j, c, k]) <= thresh_print: continue
+                        print(
+                            "      [{}]     {}A  {}B  {}A  ->  {}A  =   {:.6f}".format(
+                                n,
+                                i + system.nfrozen + 1,
+                                j + system.nfrozen + 1,
+                                k + system.nfrozen + 1,
+                                c + system.noccupied_alpha + system.nfrozen + 1,
+                                R.aba[i, j, c, k],
+                            )
+                        )
+                        n += 1
+        for i in range(system.noccupied_alpha):
+            for j in range(system.noccupied_beta):
+                for c in range(system.nunoccupied_beta):
+                    for k in range(j + 1, system.noccupied_beta):
+                        if abs(R.abb[i, j, c, k]) <= thresh_print: continue
+                        print(
+                            "      [{}]     {}A  {}B  {}B  ->  {}B  =   {:.6f}".format(
+                                n,
+                                i + system.nfrozen + 1,
+                                j + system.nfrozen + 1,
+                                k + system.nfrozen + 1,
+                                c + system.noccupied_beta + system.nfrozen + 1,
+                                R.abb[i, j, c, k],
+                            )
+                        )
+                        n += 1
+        # Restore permutationally redundant amplitudes
+        for i in range(system.noccupied_alpha):
+            for j in range(system.noccupied_beta):
+                for c in range(system.nunoccupied_alpha):
+                    for k in range(i + 1, system.noccupied_alpha):
+                        R.aba[k, j, c, i] = -R.aba[i, j, c, k]
+        for i in range(system.noccupied_alpha):
+            for j in range(system.noccupied_beta):
+                for c in range(system.nunoccupied_beta):
+                    for k in range(j + 1, system.noccupied_beta):
+                        R.abb[i, k, c, j] = -R.abb[i, j, c, k]
     return
 
 def print_sf_amplitudes(R, system, order, thresh_print):

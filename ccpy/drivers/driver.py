@@ -25,6 +25,7 @@ from ccpy.utilities.printing import (
                 print_ea_amplitudes, eaeomcc_calculation_summary,
                 print_ip_amplitudes, ipeomcc_calculation_summary,
                 print_dea_amplitudes, deaeomcc_calculation_summary,
+                print_dip_amplitudes, dipeomcc_calculation_summary,
 )
 from ccpy.utilities.utilities import convert_excitations_c_to_f, reorder_triples_amplitudes
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
@@ -59,7 +60,7 @@ class Driver:
                         "RHF_symmetry": (self.system.noccupied_alpha == self.system.noccupied_beta),
                         "diis_out_of_core": False,
                         "davidson_out_of_core": False,
-                        "amp_print_threshold": 0.025,
+                        "amp_print_threshold": 0.09,
                         "davidson_max_subspace_size": 30,
                         "davidson_solver": "standard",
                         "davidson_selection_method": "overlap"}
@@ -646,6 +647,61 @@ class Driver:
                                                                                                    self.options)
             deaeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, is_converged, self.system, self.options["amp_print_threshold"])
             print("   DEA-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
+
+    def run_dipeomcc(self, method, state_index):
+        """Performs the particle-nonconserving DIP-EOMCC calculation specified by the user in the input."""
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.eomcc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build R
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert (self.flag_hbar)
+
+        # import the specific EOMCC method module and get its update function
+        eom_module = import_module("ccpy.eomcc." + method.lower())
+        HR_function = getattr(eom_module, 'HR')
+        update_function = getattr(eom_module, 'update')
+
+        for i in state_index:
+            if self.R[i] is None:
+                self.R[i] = FockOperator(self.system,
+                                         self.num_particles,
+                                         self.num_holes)
+                self.R[i].unflatten(self.guess_vectors[:, i], order=self.guess_order)
+                self.vertical_excitation_energy[i] = self.guess_energy[i]
+
+        # Form the initial subspace vectors
+        # B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+
+        # Print the options as a header
+        self.print_options()
+
+        # Create the residual R that is re-used for each root
+        dR = FockOperator(self.system,
+                          self.num_particles,
+                          self.num_holes)
+        for j, istate in enumerate(state_index):
+            print("   DIP-EOMCC calculation for root %d started on" % istate, get_timestamp())
+            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
+            print_dip_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+            self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
+                                                                                                   update_function,
+                                                                                                   #B0[:, j],
+                                                                                                   self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
+                                                                                                   self.R[istate],
+                                                                                                   dR,
+                                                                                                   self.vertical_excitation_energy[istate],
+                                                                                                   self.T,
+                                                                                                   self.hamiltonian,
+                                                                                                   self.system,
+                                                                                                   self.options)
+            dipeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, is_converged, self.system, self.options["amp_print_threshold"])
+            print("   DIP-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
 
     def run_ipeomcc(self, method, state_index):
         """Performs the particle-nonconserving IP-EOMCC calculation specified by the user in the input."""

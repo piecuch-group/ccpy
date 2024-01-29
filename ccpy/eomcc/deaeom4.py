@@ -139,7 +139,7 @@ def build_HR_3C(R, T, H, X):
     return x3c
 
 def build_HR_4B(R, T, H, X):
-    ### Moment-like terms < klab~cd | (H(2)[R(2p) + R(3p-2h)])_C | 0 > ###
+    ### Moment-like terms < klab~cd | (H(2)[R(2p) + R(3p-1h)])_C | 0 > ###
     # diagram 1: A(a/cd)A(kl) h2a(dcek) r_aba(ab~el)
     x4b = (6.0 / 12.0) * np.einsum("cdke,abel->abcdkl", H.aa.vvov, R.aba, optimize=True)
     # diagram 2: A(c/ad)A(kl) h2b(cb~ke~) r_aba(ae~dl)
@@ -181,7 +181,7 @@ def build_HR_4B(R, T, H, X):
     return x4b
 
 def build_HR_4C(R, T, H, X):
-    ### Moment-like terms < kl~ab~cd~ | (H(2)[R(2p) + R(3p-2h)])_C | 0 > ###
+    ### Moment-like terms < kl~ab~cd~ | (H(2)[R(2p) + R(3p-1h)])_C | 0 > ###
     # diagram 1: A(ac)A(bd) h2b(cd~el~) r_aba(ab~ek)
     x4c = np.einsum("cdel,abek->abcdkl", H.ab.vvvo, R.aba, optimize=True)
     # diagram 2: A(bd)A(ac) h2b(cd~ke~) r_abb(ab~e~l~)
@@ -246,7 +246,7 @@ def build_HR_4C(R, T, H, X):
     return x4c
 
 def build_HR_4D(R, T, H, X):
-    ### Moment-like terms < klab~cd | (H(2)[R(2p) + R(3p-2h)])_C | 0 > ###
+    ### Moment-like terms < klab~cd | (H(2)[R(2p) + R(3p-1h)])_C | 0 > ###
     # diagram 1: A(b/cd)A(kl) h2c(c~d~k~e~) r_abb(ab~e~l~)
     x4d = (6.0 / 12.0) * np.einsum("cdke,abel->abcdkl", H.bb.vvov, R.abb, optimize=True)
     # diagram 2: A(c/bd)A(kl) h2b(ac~ek~) r_abb(eb~d~l~)

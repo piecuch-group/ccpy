@@ -1,3 +1,3 @@
-__all__ = ["cis", "cisd", "cisd_matrix", "sfcis", "deacis", "ipcis", "eacis", "eacisd"]
+__all__ = ["cis", "cisd", "cisd_matrix", "sfcis", "deacis", "dipcis", "ipcis", "eacis", "eacisd"]
 
 MODULES = [module for module in __all__]
