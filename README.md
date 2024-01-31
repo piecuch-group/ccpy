@@ -70,6 +70,8 @@ energetics for the missing many-electron correlations using the generalized mome
   - EA-EOMCCSD(3p-2h)
   - DEA-EOMCCSD(3p-1h)
   - DEA-EOMCCSD(4p-2h)
+  - DIP-EOMCCSD(3h-1p)
+  - DIP-EOMCCSD(4h-2p)
 
 <p align="justify">
 Because CCpy is primarily used for CC method development work, we use interfaces to GAMESS and PySCF to obtain the mean-field (typically Hartree-Fock)
