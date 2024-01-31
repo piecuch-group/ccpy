@@ -76,5 +76,31 @@ def build_HR_3B(R, T, H):
     return x3b
 
 def build_HR_3C(R, T, H):
-    pass
+    x3c = -np.einsum("mcik,mj->ijck", H.ab.ovoo, R.ab, optimize=True)
+    x3c -= 0.5 * np.einsum("cmkj,im->ijck", H.bb.vooo, R.ab, optimize=True)
+    x3c -= 0.5 * np.einsum("mi,mjck->ijck", H.a.oo, R.abb, optimize=True)
+    x3c -= np.einsum("mj,imck->ijck", H.b.oo, R.abb, optimize=True)
+    x3c += 0.5 * np.einsum("ce,ijek->ijck", H.b.vv, R.abb, optimize=True)
+    x3c += np.einsum("mnij,mnck->ijck", H.ab.oooo, R.abb, optimize=True)
+    x3c += 0.25 * np.einsum("mnjk,imcn->ijck", H.bb.oooo, R.abb, optimize=True)
+    x3c += np.einsum("mcek,ijem->ijck", H.ab.ovvo, R.aba, optimize=True)
+    x3c += np.einsum("cmke,ijem->ijck", H.bb.voov, R.abb, optimize=True)
+    x3c -= 0.5 * np.einsum("mcie,mjek->ijck", H.ab.ovov, R.abb, optimize=True)
 
+    x_ov = (
+            np.einsum("mnie,mn->ie", H.ab.ooov, R.ab, optimize=True)
+            - np.einsum("nmfe,imfn->ie", H.ab.oovv, R.aba, optimize=True)
+            - 0.5 * np.einsum("nmfe,imfn->ie", H.bb.oovv, R.abb, optimize=True)
+    )
+    x_vo = (
+            np.einsum("mnej,mn->ej", H.ab.oovo, R.ab, optimize=True)
+            - 0.5 * np.einsum("mnef,mjfn->ej", H.aa.oovv, R.aba, optimize=True)
+            - np.einsum("mnef,mjfn->ej", H.ab.oovv, R.abb, optimize=True)
+    )
+
+    x3c += np.einsum("ej,ecik->ijck", x_vo, T.ab, optimize=True)
+    x3c += 0.5 * np.einsum("ie,ecjk->ijck", x_ov, T.bb, optimize=True)
+
+    # antisymmetrize A(j~k~)
+    x3c -= np.einsum("ijck->ikcj", x3c, optimize=True)
+    return x3c

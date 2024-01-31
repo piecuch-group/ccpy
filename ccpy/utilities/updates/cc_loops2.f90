@@ -1798,7 +1798,7 @@ module cc_loops2
               do c = 1,nub; do d=1,nub;
                  if (c==d) cycle
                  do i = 1,noa; do j = 1,nob; do k = 1,nob; do l = 1,nob;
-                     if (i==k .or. i==l .or. k==l) cycle
+                     if (j==k .or. j==l .or. k==l) cycle
                      denom = -H1A_oo(i,i) - H1B_oo(j,j) - H1B_oo(k,k) - H1B_oo(l,l) + H1B_vv(c,c) + H1B_vv(d,d)
                      r4d(i,j,c,d,k,l) = r4d(i,j,c,d,k,l)/(omega - denom)
                  end do; end do; end do; end do;

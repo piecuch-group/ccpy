@@ -20,11 +20,6 @@ def get_dipeom4_intermediates(H, R):
             - 0.5 * np.einsum("mnef,mjfn->ej", H.aa.oovv, R.aba, optimize=True)
             - np.einsum("mnef,mjfn->ej", H.ab.oovv, R.abb, optimize=True)
     )
-    # DEA convert: X["ab"]["vo"] = (
-    #         np.einsum("mnej,mn->ej", H.ab.oovo, R.ab, optimize=True)
-    #         - 0.5 * np.einsum("mnef,mjfn->ej", H.aa.oovv, R.aba, optimize=True)
-    #         - np.einsum("mnef,mjfn->ej", H.ab.oovv, R.abb, optimize=True)
-    # )
     # x(ef~)
     X["ab"]["vv"] = np.einsum("mnef,mn->ef", H.ab.oovv, R.ab, optimize=True)
 
@@ -40,16 +35,6 @@ def get_dipeom4_intermediates(H, R):
             - 0.5 * np.einsum("mnef,ijcfmn->ijce", H.aa.oovv, R.abaa, optimize=True)
             - np.einsum("mnef,ijcfmn->ijce", H.ab.oovv, R.abab, optimize=True)
     )
-    # DEA convert: X["aba"]["oovv"] = (
-    #     np.einsum("cnef,ijfn->ijec", H.aa.vovv, R.aba, optimize=True)
-    #     + np.einsum("cnef,ijfn->ijec", H.ab.vovv, R.abb, optimize=True)
-    #     + 0.5 * np.einsum("mnie,mjcn->ijec", H.aa.ooov, R.aba, optimize=True)
-    #     + np.einsum("mnej,incm->ijec", H.ab.oovo, R.aba, optimize=True)
-    #     + np.einsum("cmie,mj->ijec", H.aa.voov, R.ab, optimize=True)
-    #     - np.einsum("cmej,im->ijec", H.ab.vovo, R.ab, optimize=True)
-    #     - 0.5 * np.einsum("mnef,ijcfmn->ijce", H.aa.oovv, R.abaa, optimize=True)
-    #     - np.einsum("mnef,ijcfmn->ijce", H.ab.oovv, R.abab, optimize=True)
-    # )
 
     # x(ij~mk) [2]
     X["aba"]["oooo"] = (
@@ -57,22 +42,12 @@ def get_dipeom4_intermediates(H, R):
             + np.einsum("mnkf,ijfn->ijmk", H.ab.ooov, R.abb, optimize=True)
             - 0.5 * np.einsum("mnej,inek->ijmk", H.ab.oovo, R.aba, optimize=True)
             - 0.5 * np.einsum("nmik,nj->ijmk", H.aa.oooo, R.ab, optimize=True)
-            - np.einsum("mnij,kn->ijmk", H.ab.oooo, R.ab, optimize=True)
+            - np.einsum("mnkj,in->ijmk", H.ab.oooo, R.ab, optimize=True)
             + 0.25 * np.einsum("mnef,ijefkn->ijmk", H.aa.oovv, R.abaa, optimize=True)
             + 0.5 * np.einsum("mnef,ijefkn->ijmk", H.ab.oovv, R.abab, optimize=True)
     )
     # antisymmetrize A(ik)
     X["aba"]["oooo"] -= np.transpose(X["aba"]["oooo"], (3, 1, 2, 0))
-    # DEA convert: X["aba"]["oooo"] = (
-    #         np.einsum("mnkf,ijfn->ijmk", H.aa.ooov, R.aba, optimize=True)
-    #         + np.einsum("mnkf,ijfn->ijmk", H.ab.ooov, R.abb, optimize=True)
-    #         - 0.5 * np.einsum("mnej,inek->ijmk", H.ab.oovo, R.aba, optimize=True)
-    #         - np.einsum("mnkj,in->ijmk", H.ab.oooo, R.ab, optimize=True)
-    #         + 0.5 * np.einsum("acfe,fb->abce", H.aa.vvvv, R.ab, optimize=True)
-    #         - 0.25 * np.einsum("mnef,abcfmn->abce", H.aa.oovv, R.abaa, optimize=True)
-    #         - 0.5 * np.einsum("mnef,abcfmn->abce", H.ab.oovv, R.abab, optimize=True)
-    # )
-    # X["aba"]["oooo"] -= np.transpose(X["aba"]["oooo"], (3, 1, 2, 0)) # antisymmetrize A(ik)
 
     # x(ieck) [3]
     X["aba"]["ovvo"] = (
@@ -97,7 +72,7 @@ def get_dipeom4_intermediates(H, R):
             - 0.5 * np.einsum("mnef,ijfdnm->ijde", H.bb.oovv, R.abbb, optimize=True)
     )
 
-    # x(ijmk) [5]
+    # x(ij~m~k~) [5]
     X["abb"]["oooo"] = (
             np.einsum("nmfk,ijfn->ijmk", H.ab.oovo, R.aba, optimize=True)
             + np.einsum("mnkf,ijfn->ijmk", H.bb.ooov, R.abb, optimize=True)

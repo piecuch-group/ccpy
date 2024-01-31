@@ -21,8 +21,8 @@ def update(R, omega, H, RHF_symmetry, system):
         0.0,
     )
     if RHF_symmetry:
-        R.abb = np.transpose(R.aba, (1, 0, 2, 3))
-        R.abbb = np.transpose(R.abaa, (1, 0, 2, 3, 4, 5))
+       R.abb = np.transpose(R.aba, (1, 0, 2, 3))
+       R.abbb = np.transpose(R.abaa, (1, 0, 2, 3, 4, 5))
     return R
 
 def HR(dR, R, T, H, flag_RHF, system):
@@ -33,9 +33,9 @@ def HR(dR, R, T, H, flag_RHF, system):
     # update R3
     dR.aba = build_HR_3B(R, T, H, X)
     if flag_RHF:
-        dR.abb = np.transpose(dR.aba, (1, 0, 2, 3))
+       dR.abb = np.transpose(dR.aba, (1, 0, 2, 3))
     else:
-        dR.abb = build_HR_3C(R, T, H, X)
+       dR.abb = build_HR_3C(R, T, H, X)
     # update R4
     dR.abaa = build_HR_4B(R, T, H, X)
     dR.abab = build_HR_4C(R, T, H, X)
@@ -89,7 +89,30 @@ def build_HR_3B(R, T, H, X):
     return x3b
 
 def build_HR_3C(R, T, H, X):
-    pass
+    x3c = -np.einsum("mcik,mj->ijck", H.ab.ovoo, R.ab, optimize=True)
+    x3c -= 0.5 * np.einsum("cmkj,im->ijck", H.bb.vooo, R.ab, optimize=True)
+    x3c -= 0.5 * np.einsum("mi,mjck->ijck", H.a.oo, R.abb, optimize=True)
+    x3c -= np.einsum("mj,imck->ijck", H.b.oo, R.abb, optimize=True)
+    x3c += 0.5 * np.einsum("ce,ijek->ijck", H.b.vv, R.abb, optimize=True)
+    x3c += np.einsum("mnij,mnck->ijck", H.ab.oooo, R.abb, optimize=True)
+    x3c += 0.25 * np.einsum("mnjk,imcn->ijck", H.bb.oooo, R.abb, optimize=True)
+    x3c += np.einsum("mcek,ijem->ijck", H.ab.ovvo, R.aba, optimize=True)
+    x3c += np.einsum("cmke,ijem->ijck", H.bb.voov, R.abb, optimize=True)
+    x3c -= 0.5 * np.einsum("mcie,mjek->ijck", H.ab.ovov, R.abb, optimize=True)
+    x3c += np.einsum("ej,ecik->ijck", X["ab"]["vo"], T.ab, optimize=True)
+    x3c += 0.5 * np.einsum("ie,ecjk->ijck", X["ab"]["ov"], T.bb, optimize=True)
+    # additional R(4p-2h) terms
+    x3c += 0.5 * np.einsum("me,ijecmk->ijck", H.a.ov, R.abab, optimize=True)
+    x3c += 0.5 * np.einsum("me,ijecmk->ijck", H.b.ov, R.abbb, optimize=True)
+    x3c += 0.5 * np.einsum("ncfe,ijfenk->ijck", H.ab.ovvv, R.abab, optimize=True)
+    x3c += 0.25 * np.einsum("cnef,ijefkn->ijck", H.bb.vovv, R.abbb, optimize=True)
+    x3c -= np.einsum("nmfk,ijfcnm->ijck", H.ab.oovo, R.abab, optimize=True)
+    x3c -= 0.5 * np.einsum("mnkf,ijcfmn->ijck", H.bb.ooov, R.abbb, optimize=True)
+    x3c -= 0.25 * np.einsum("mnif,mjfcnk->ijck", H.aa.ooov, R.abab, optimize=True)
+    x3c -= 0.5 * np.einsum("mnif,mjfcnk->ijck", H.ab.ooov, R.abbb, optimize=True)
+    # antisymmetrize A(j~k~)
+    x3c -= np.einsum("ijck->ikcj", x3c, optimize=True)
+    return x3c
 
 def build_HR_4B(R, T, H, X):
     ### Moment-like terms < ij~klcd | (H(2)[R(2h) + R(3h-1p)])_C | 0 > ###
@@ -155,5 +178,28 @@ def build_HR_4C(R, T, H, X):
     return x4c
 
 def build_HR_4D(R, T, H, X):
-    pass
+    ### Moment-like terms < ij~k~l~c~d~ | (H(2)[R(2h) + R(3h-1p)])_C | 0 > ###
+    x4d = -(6.0 / 12.0) * np.einsum("cmkl,ijdm->ijcdkl", H.bb.vooo, R.abb, optimize=True)
+    x4d -= (6.0 / 12.0) * np.einsum("mcik,mjdl->ijcdkl", H.ab.ovoo, R.abb, optimize=True)
+    x4d += (3.0 / 12.0) * np.einsum("cdke,ijel->ijcdkl", H.bb.vvov, R.abb, optimize=True)
+    x4d -= (3.0 / 12.0) * np.einsum("ijml,cdkm->ijcdkl", X["abb"]["oooo"], T.bb, optimize=True)
+    x4d += (6.0 / 12.0) * np.einsum("ijde,cekl->ijcdkl", X["abb"]["oovv"], T.bb, optimize=True)
+    x4d += (6.0 / 12.0) * np.einsum("ejck,edil->ijcdkl", X["abb"]["vovo"], T.ab, optimize=True)
+    ### Terms < ij~k~l~c~d~  | (H(2)R(4h-2p)_C | 0 > ###
+    x4d -= (3.0 / 12.0) * np.einsum("ml,ijcdkm->ijcdkl", H.b.oo, R.abbb, optimize=True)
+    x4d -= (1.0 / 12.0) * np.einsum("mi,mjcdkl->ijcdkl", H.a.oo, R.abbb, optimize=True)
+    x4d += (2.0 / 12.0) * np.einsum("de,ijcekl->ijcdkl", H.b.vv, R.abbb, optimize=True)
+    x4d += (1.0 / 24.0) * np.einsum("cdef,ijefkl->ijcdkl", H.bb.vvvv, R.abbb, optimize=True)
+    x4d += (3.0 / 24.0) * np.einsum("mnkl,ijcdmn->ijcdkl", H.bb.oooo, R.abbb, optimize=True)
+    x4d += (3.0 / 12.0) * np.einsum("mnij,mncdkl->ijcdkl", H.ab.oooo, R.abbb, optimize=True)
+    x4d += (6.0 / 12.0) * np.einsum("mdel,ijecmk->ijcdkl", H.ab.ovvo, R.abab, optimize=True)
+    x4d += (6.0 / 12.0) * np.einsum("dmle,ijcekm->ijcdkl", H.bb.voov, R.abbb, optimize=True)
+    x4d -= (2.0 / 12.0) * np.einsum("mdie,mjcekl->ijcdkl", H.ab.ovov, R.abbb, optimize=True)
+    ### 4-body Hbar term ###
+    x4d += (6.0 / 12.0) * np.einsum("ef,edil,fcjk->ijcdkl", X["ab"]["vv"], T.ab, T.bb, optimize=True)
+    # antisymmetrize A(jkl)A(cd)
+    x4d -= np.transpose(x4d, (0, 1, 3, 2, 4, 5)) # A(cd)
+    x4d -= np.transpose(x4d, (0, 1, 2, 3, 5, 4)) # A(kl)
+    x4d -= np.transpose(x4d, (0, 4, 2, 3, 1, 5)) + np.transpose(x4d, (0, 5, 2, 3, 4, 1)) # A(j/kl)
+    return x4d
 
