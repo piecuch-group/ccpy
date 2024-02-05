@@ -168,7 +168,10 @@ class Driver:
             self.num_particles = 4
             self.num_holes = 2
         elif method.lower() in ["sfeomccsd"]:
-            self.order = 1
+            self.order = 2
+            self.Ms = -1
+        elif method.lower() in ["sfeomcc23"]:
+            self.order = 3
             self.Ms = -1
             
     def print_options(self):

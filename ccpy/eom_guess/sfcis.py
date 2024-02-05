@@ -9,7 +9,7 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
         nroot += nroot_irrep
 
     Hmat = build_sfcis_hamiltonian(H, system)
-    S2mat = build_s2matrix_sfcis(system, Ms=-1, debug=debug)
+    S2mat = build_s2matrix_sfcis(system, Ms=-1)
     omega, V = spin_adapt_guess(S2mat, Hmat, multiplicity)
     return omega[:nroot], V[:, :nroot]
 

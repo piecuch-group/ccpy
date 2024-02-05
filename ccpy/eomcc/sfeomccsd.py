@@ -59,7 +59,7 @@ def build_HR_1B(R, T, H):
     return x1b
 
 def build_HR_2B(R, T, H, x_oo, x_vv):
-
+    # < ab~ij | (H(2) * R1 + R2)_C | 0 >
     x2b = np.einsum("abie,ej->abij", H.ab.vvov, R.b, optimize=True)
     x2b -= 0.5 * np.einsum("amij,bm->abij", H.aa.vooo, R.b, optimize=True)
     x2b -= np.einsum("mi,abmj->abij", H.a.oo, R.ab, optimize=True)
@@ -72,12 +72,12 @@ def build_HR_2B(R, T, H, x_oo, x_vv):
     x2b -= np.einsum("mbie,aemj->abij", H.ab.ovov, R.ab, optimize=True)
     x2b -= np.einsum("mj,abim->abij", x_oo, T.ab, optimize=True)
     x2b += 0.5 * np.einsum("be,aeij->abij", x_vv, T.aa, optimize=True)
-
+    # antisymmetrize (ij)
     x2b -= np.transpose(x2b, (0, 1, 3, 2))
     return x2b
 
 def build_HR_2C(R, T, H, x_oo, x_vv):
-
+    # < a~b~i~j | (H(2) * R1 + R2)_C | 0 >
     x2c = 0.5 * np.einsum("abie,ej->abij", H.bb.vvov, R.b, optimize=True)
     x2c -= np.einsum("maji,bm->abij", H.ab.ovoo, R.b, optimize=True)
     x2c -= 0.5 * np.einsum("mj,abim->abij", H.a.oo, R.bb, optimize=True)
@@ -90,6 +90,6 @@ def build_HR_2C(R, T, H, x_oo, x_vv):
     x2c -= np.einsum("maje,ebim->abij", H.ab.ovov, R.bb, optimize=True)
     x2c -= 0.5 * np.einsum("mj,abim->abij", x_oo, T.bb, optimize=True)
     x2c += np.einsum("be,eaji->abij", x_vv, T.ab, optimize=True)
-
+    # antisymmetrize (ab)
     x2c -= np.transpose(x2c, (1, 0, 2, 3))
     return x2c

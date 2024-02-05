@@ -15,6 +15,8 @@ mf = scf.RHF(mol)
 mf.kernel()
 
 driver = Driver.from_pyscf(mf, nfrozen=0)
+driver.system.print_info()
+
 driver.options["davidson_out_of_core"] = True
 driver.run_cc(method="ccsd")
 driver.run_hbar(method="ccsd")

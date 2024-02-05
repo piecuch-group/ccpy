@@ -315,9 +315,9 @@ class SpinFlipOperator:
                 setattr(self, "bbb", np.zeros((nub, nub, nub, nob, nob, noa), order="F")) # r3(a~b~c~|i~j~k)
                 setattr(self, "spin_cases", ["b", "ab", "bb", "aab", "abb", "bbb"])
                 setattr(self, "dimensions", [(nub, noa), (nua, nub, noa, noa), (nub, nub, nob, noa),
-                                       (nua, nua, nub, noa, noa, noa),
-                                       (nua, nub, nub, noa, nob, noa),
-                                       (nub, nub, nub, nob, nob, noa)])
+                                             (nua, nua, nub, noa, noa, noa),
+                                             (nua, nub, nub, noa, nob, noa),
+                                             (nub, nub, nub, nob, nob, noa)])
             self.ndim = 0
             for dim in self.dimensions:
                 self.ndim += np.prod(dim)

@@ -1590,6 +1590,98 @@ module cc_loops2
                  end do
               end do
       end subroutine update_R_sfccsd
+     
+      subroutine update_R_sfccsdt(r1b,r2b,r2c,r3b,r3c,r3d,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
+
+              integer, intent(in) :: noa, nua, nob, nub
+              real(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+                                          H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
+                                          omega
+              real(kind=8), intent(inout) :: r1b(1:nub,1:noa)
+              !f2py intent(in,out) :: r1b(0:nub-1,0:noa-1)
+              real(kind=8), intent(inout) :: r2b(1:nua,1:nub,1:noa,1:noa)
+              !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1,0:noa-1,0:noa-1)
+              real(kind=8), intent(inout) :: r2c(1:nub,1:nub,1:nob,1:noa)
+              !f2py intent(in,out) :: r2c(0:nub-1,0:nub-1,0:nob-1,0:noa-1)
+              real(kind=8), intent(inout) :: r3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:noa)
+              !f2py intent(in,out) :: r3b(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:noa-1)
+              real(kind=8), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:noa)
+              !f2py intent(in,out) :: r3c(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:noa-1)
+              real(kind=8), intent(inout) :: r3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:noa)
+              !f2py intent(in,out) :: r3d(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:noa-1)
+              
+              integer :: i, j, k, a, b, c
+              real(kind=8) :: denom
+
+              do i = 1, noa
+                 do a = 1, nub
+                    denom = H1B_vv(a,a) - H1A_oo(i,i)
+                    r1b(a,i) = r1b(a,i)/(omega-denom+shift)
+                 end do
+              end do
+              do i = 1, noa
+                 do j = 1, noa
+                    do a = 1, nua
+                       do b = 1, nub
+                           denom = H1B_vv(b,b) + H1A_vv(a,a) - H1A_oo(i,i) - H1A_oo(j,j)
+                           r2b(a,b,i,j) = r2b(a,b,i,j)/(omega - denom + shift)
+                       end do
+                    end do
+                 end do
+              end do
+              do i = 1, nob
+                 do j = 1, noa
+                    do a = 1, nub
+                       do b = 1, nub
+                           denom = H1B_vv(b,b) + H1B_vv(a,a) - H1B_oo(i,i) - H1A_oo(j,j)
+                           r2c(a,b,i,j) = r2c(a,b,i,j)/(omega - denom + shift)
+                       end do
+                    end do
+                 end do
+              end do
+              do i = 1, noa
+                 do j = 1, noa
+                    do k = 1, noa
+                       do a = 1, nua
+                          do b = 1, nua
+                             do c = 1, nub
+                                 denom = H1B_vv(c,c) + H1A_vv(a,a) + H1A_vv(b,b) - H1A_oo(i,i) - H1A_oo(j,j) - H1A_oo(k,k)
+                                 r3b(a,b,c,i,j,k) = r3b(a,b,c,i,j,k)/(omega - denom + shift)
+                             end do
+                          end do
+                       end do
+                    end do
+                 end do
+              end do
+              do i = 1, noa
+                 do j = 1, nob
+                    do k = 1, noa
+                       do a = 1, nua
+                          do b = 1, nub
+                             do c = 1, nub
+                                 denom = H1B_vv(c,c) + H1A_vv(a,a) + H1B_vv(b,b) - H1A_oo(i,i) - H1B_oo(j,j) - H1A_oo(k,k)
+                                 r3c(a,b,c,i,j,k) = r3c(a,b,c,i,j,k)/(omega - denom + shift)
+                             end do
+                          end do
+                       end do
+                    end do
+                 end do
+              end do
+              do i = 1, nob
+                 do j = 1, nob
+                    do k = 1, noa
+                       do a = 1, nub
+                          do b = 1, nub
+                             do c = 1, nub
+                                 denom = H1B_vv(c,c) + H1B_vv(a,a) + H1B_vv(b,b) - H1B_oo(i,i) - H1B_oo(j,j) - H1A_oo(k,k)
+                                 r3d(a,b,c,i,j,k) = r3d(a,b,c,i,j,k)/(omega - denom + shift)
+                             end do
+                          end do
+                       end do
+                    end do
+                 end do
+              end do
+      end subroutine update_R_sfccsdt
 
       subroutine update_R_2p(r2b,omega,H1A_vv,H1B_vv,shift,nua,nub)
 
