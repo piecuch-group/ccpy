@@ -58,13 +58,14 @@ energetics for the missing many-electron correlations using the generalized mome
 
 ### EOMCC approaches for ground, excited, attached, and ionized states
   - EOMCCSD
-  - SF-EOMCCSD
-  - SF-EOMCC(2,3)
   - CR-EOMCC(2,3) and its size-intensive *δ*-CR-EOMCC(2,3) extension
   - EOM-CC3
   - EOMCCSDt
   - Excited-state CC(t;3)
+  - Adaptive CC(*P*;*Q*) aimed at converging EOMCCSDT
   - EOMCCSDT
+  - SF-EOMCCSD
+  - SF-EOMCC(2,3)
   - IP-EOMCCSD(2h-1p)
   - IP-EOMCCSD(3h-2p)
   - EA-EOMCCSD(2p-1h)
