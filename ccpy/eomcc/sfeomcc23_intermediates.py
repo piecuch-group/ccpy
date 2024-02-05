@@ -20,6 +20,8 @@ def get_sfeomcc23_intermediates(H, R, T, system):
         + np.einsum("mcje,ek->mcjk", H.ab.ovov, R.b, optimize=True)
         + np.einsum("mnjf,fcnk->mcjk", H.aa.ooov, R.ab, optimize=True)
         + np.einsum("mnjf,fcnk->mcjk", H.ab.ooov, R.bb, optimize=True)
+        + 0.25 * np.einsum("mnef,efcjnk->mcjk", H.aa.oovv, R.aab, optimize=True)
+        + 0.5 * np.einsum("mnef,efcjnk->mcjk", H.ab.oovv, R.abb, optimize=True)
     )
     # antisymmetrize (jk)
     X["ab"]["ovoo"] -= np.transpose(X["ab"]["ovoo"], (0, 1, 3, 2))
@@ -31,6 +33,8 @@ def get_sfeomcc23_intermediates(H, R, T, system):
         + np.einsum("amie,ek->amik", H.ab.voov, R.b, optimize=True)
         - np.einsum("nmie,aenk->amik", H.ab.ooov, R.ab, optimize=True)
         + 0.5 * np.einsum("amfe,feik->amik", H.ab.vovv, R.ab, optimize=True)
+        + 0.5 * np.einsum("nmfe,afeink->amik", H.ab.oovv, R.aab, optimize=True)
+        + 0.25 * np.einsum("nmfe,afeink->amik", H.bb.oovv, R.abb, optimize=True)
     )
     # antisymmetrize (ik)
     X["ab"]["vooo"] -= np.transpose(X["ab"]["vooo"], (0, 1, 3, 2))
@@ -42,8 +46,10 @@ def get_sfeomcc23_intermediates(H, R, T, system):
         + np.einsum("amke,cm->acek", H.aa.voov, R.b, optimize=True) # flip sign h2a(amek) -> h2a(amke)
         + np.einsum("anef,fcnk->acek", H.aa.vovv, R.ab, optimize=True)
         + np.einsum("anef,fcnk->acek", H.ab.vovv, R.bb, optimize=True)
+        - 0.5 * np.einsum("mnef,afcmnk->acek", H.aa.oovv, R.aab, optimize=True)
+        - np.einsum("mnef,afcmnk->acek", H.ab.oovv, R.abb, optimize=True)
         #
-        #+ np.einsum("me,ackm->acek", x_ov, T.ab, optimize=True) # (!) flip sign to rearrange path k -> c~, e -> a
+        #+ np.einsum("me,ackm->acek", x_ov, T.ab, optimize=True) # (!) flip sign to rearrange path k -> c~, e -> a ## block
         + 0.5 * np.einsum("mnke,acnm->acek", H.aa.ooov, R.ab, optimize=True)
     )
 
@@ -54,6 +60,8 @@ def get_sfeomcc23_intermediates(H, R, T, system):
         - np.einsum("nmkj,cn->mcjk", H.ab.oooo, R.b, optimize=True)
         + np.einsum("nmfj,fcnk->mcjk", H.ab.oovo, R.ab, optimize=True)
         + np.einsum("mnjf,fcnk->mcjk", H.bb.ooov, R.bb, optimize=True)
+        + np.einsum("nmfe,fecnjk->mcjk", H.ab.oovv, R.abb, optimize=True)
+        + 0.5 * np.einsum("nmfe,fecnjk->mcjk", H.bb.oovv, R.bbb, optimize=True)
         #
         - np.einsum("me,eckj->mcjk ", x_ov, T.ab, optimize=True) # (!) flip sign to rearrange path k -> c~, j~ -> m~
         + 0.5 * np.einsum("cmfe,efjk->mcjk", H.bb.vovv, R.bb, optimize=True)
@@ -66,6 +74,8 @@ def get_sfeomcc23_intermediates(H, R, T, system):
         + 0.5 * np.einsum("bcef,fk->bcek", H.bb.vvvv, R.b, optimize=True)
         + np.einsum("nbfe,fcnk->bcek", H.ab.ovvv, R.ab, optimize=True)
         + np.einsum("bnef,fcnk->bcek", H.bb.vovv, R.bb, optimize=True)
+        - 0.5 * np.einsum("nmfe,fbcnmk->bcek", H.ab.oovv, R.abb, optimize=True)
+        - 0.25 * np.einsum("nmfe,fbcnmk->bcek", H.bb.oovv, R.bbb, optimize=True)
     )
     # antisymmetrize (bc)
     X["bb"]["vvvo"] -= np.transpose(X["bb"]["vvvo"], (1, 0, 2, 3))
@@ -73,10 +83,12 @@ def get_sfeomcc23_intermediates(H, R, T, system):
     # [6] x(b~c~j~e)
     X["bb"]["vvov"] = (
         -0.5 * np.einsum("me,bcjm->bcje", H.a.ov, R.bb, optimize=True)
-        #- 0.5 * np.einsum("me,bcjm->bcje", x_ov, T.bb, optimize=True) # (!)
+        #- 0.5 * np.einsum("me,bcjm->bcje", x_ov, T.bb, optimize=True) # (!) ## block
         - np.einsum("mbej,cm->bcje", H.ab.ovvo, R.b, optimize=True)
         - np.einsum("mbef,fcjm->bcje", H.ab.ovvv, R.bb, optimize=True)
         + 0.5 * np.einsum("mnej,bcnm->bcje", H.ab.oovo, R.bb, optimize=True)
+        - 0.25 * np.einsum("mnef,fbcnjm->bcje", H.aa.oovv, R.abb, optimize=True)
+        - 0.5 * np.einsum("mnef,fbcnjm->bcje", H.ab.oovv, R.bbb, optimize=True)
     )
     # antisymmetrize (bc)
     X["bb"]["vvov"] -= np.transpose(X["bb"]["vvov"], (1, 0, 2, 3))
