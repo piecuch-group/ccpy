@@ -58,7 +58,8 @@ energetics for the missing many-electron correlations using the generalized mome
 
 ### EOMCC approaches for ground, excited, attached, and ionized states
   - EOMCCSD
-  - Spin-Flip (SF) EOMCCSD
+  - SF-EOMCCSD
+  - SF-EOMCC(2,3)
   - CR-EOMCC(2,3) and its size-intensive *δ*-CR-EOMCC(2,3) extension
   - EOM-CC3
   - EOMCCSDt
