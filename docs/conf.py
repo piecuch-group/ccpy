@@ -23,7 +23,7 @@ import ccpy
 # -- Project information -----------------------------------------------------
 
 project = 'CCpy'
-copyright = ("2023, Karthik Gururangan. Project structure based on the "
+copyright = ("2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the "
              "Computational Molecular Science Python Cookiecutter version 1.5")
 author = 'Karthik Gururangan'
 
