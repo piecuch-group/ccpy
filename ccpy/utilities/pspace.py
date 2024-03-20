@@ -548,3 +548,106 @@ def get_active_pspace(system, num_active=1, target_irrep=None):
             excitations[spincase] = np.ones((1, 6))
 
     return excitations, pspace
+
+def get_active_3p2h_pspace(system, num_active=1, target_irrep=None):
+    from ccpy.utilities.active_space import active_hole, active_particle
+
+    assert system.num_act_occupied_alpha == system.num_act_occupied_beta
+    assert system.num_act_unoccupied_alpha == system.num_act_unoccupied_beta
+
+    nact_o = system.num_act_occupied_alpha
+    nact_u = system.num_act_unoccupied_alpha
+
+    if target_irrep is None:
+        sym_target = -1
+    else:
+        sym_target = system.point_group_irrep_to_number[target_irrep]
+
+    def count_active_occ_alpha(occ):
+        return sum([active_hole(i, system.noccupied_alpha, nact_o) for i in occ])
+
+    def count_active_occ_beta(occ):
+        return sum([active_hole(i, system.noccupied_beta, nact_o) for i in occ])
+
+    def count_active_unocc_alpha(unocc):
+        return sum([active_particle(a, nact_u) for a in unocc])
+
+    def count_active_unocc_beta(unocc):
+        return sum([active_particle(a, nact_u) for a in unocc])
+
+    def checksym_aaa(j, k, a, b, c):
+        if sym_target == -1: return True
+        sym = system.point_group_irrep_to_number[system.reference_symmetry]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_alpha]]
+        if sym == sym_target:
+            return True
+        else:
+            return False
+
+    def checksym_aab(j, k, a, b, c):
+        if sym_target == -1: return True
+        sym = system.point_group_irrep_to_number[system.reference_symmetry]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
+        if sym == sym_target:
+            return True
+        else:
+            return False
+
+    def checksym_abb(j, k, a, b, c):
+        if sym_target == -1: return True
+        sym = system.point_group_irrep_to_number[system.reference_symmetry]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_beta]]
+        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
+        if sym == sym_target:
+            return True
+        else:
+            return False
+
+    excitations = {"aaa": [], "aab": [], "abb": []}
+
+    # aaa
+    for j in range(system.noccupied_alpha):
+        for k in range(j + 1, system.noccupied_alpha):
+            for a in range(system.nunoccupied_alpha):
+                for b in range(a + 1, system.nunoccupied_alpha):
+                    for c in range(b + 1, system.nunoccupied_alpha):
+                        if count_active_unocc_alpha([a, b, c]) >= num_active:
+                            if not checksym_aaa(j, k, a, b, c): continue
+                            excitations["aaa"].append([a + 1, b + 1, c + 1, j + 1, k + 1])
+    # aab
+    for j in range(system.noccupied_alpha):
+        for k in range(system.noccupied_beta):
+            for a in range(system.nunoccupied_alpha):
+                for b in range(a + 1, system.nunoccupied_alpha):
+                    for c in range(system.nunoccupied_beta):
+                        if (count_active_unocc_alpha([a, b]) + count_active_unocc_beta([c])) >= num_active:
+                            if not checksym_aab(j, k, a, b, c): continue
+                            excitations["aab"].append([a + 1, b + 1, c + 1, j + 1, k + 1])
+    # abb
+    for j in range(system.noccupied_beta):
+        for k in range(j + 1, system.noccupied_beta):
+            for a in range(system.nunoccupied_alpha):
+                for b in range(system.nunoccupied_beta):
+                    for c in range(b + 1, system.nunoccupied_beta):
+                        if (count_active_unocc_alpha([a]) + count_active_unocc_beta([b, c])) >= num_active:
+                            if not checksym_abb(j, k, a, b, c): continue
+                            excitations["abb"].append([a + 1, b + 1, c + 1, j + 1, k + 1])
+
+    # Convert the spin-integrated lists into Numpy arrays
+    for spincase, array in excitations.items():
+        excitations[spincase] = np.asarray(array, order="F")
+        if len(excitations[spincase].shape) < 2:
+            excitations[spincase] = np.ones((1, 5))
+
+    return excitations

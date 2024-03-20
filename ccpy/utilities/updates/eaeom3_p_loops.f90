@@ -3335,7 +3335,7 @@ module eaeom3_p_loops
                                   noa, nua, nob, nub)
 
                       integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb
-                      integer, intent(in) :: r3a_excits(n3aaa,6), r3b_excits(n3aab,6), r3c_excits(n3abb,6)
+                      integer, intent(in) :: r3a_excits(n3aaa,5), r3b_excits(n3aab,5), r3c_excits(n3abb,5)
                       real(kind=8), intent(in) :: h1a_oo(noa,noa), h1a_vv(nua,nua), h1b_oo(nob,nob), h1b_vv(nub,nub)
                       real(kind=8), intent(in) :: omega
                       

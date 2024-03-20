@@ -1,5 +1,5 @@
 import numpy as np
-import ccpy.utilities.updates.eaeom3_p_intermediates
+from ccpy.utilities.updates import eaeom3_p_intermediates
 
 def get_eaeom3_intermediates(H, R):
 

@@ -190,7 +190,7 @@ class FockOperator:
         block of dimension (nua, noa), and the last R.*ab part refers to the added holes,
         which are of alpha and beta character, respectively. Thus, the total dimension of
         R.aab in the DIP case is (nua, noa, noa, nob)."""
-    def __init__(self, system, num_particles, num_holes, data_type=np.float64):
+    def __init__(self, system, num_particles, num_holes, p_orders=[None], pspace_sizes=[None], data_type=np.float64):
         self.num_particles = num_particles
         self.num_holes = num_holes
         self.spin_cases = []
@@ -231,6 +231,7 @@ class FockOperator:
         #     add_dims.append([single_particle_dims[x] for x in comb])
 
         ndim = 0
+        p_cnt = 0
         # initial iteration for the purely ionizing/attaching operators (e.g., R_1p/1h or R_2p/2h)
         for spin, dim in zip(add_spin, add_dims):
             name = spin
@@ -243,6 +244,11 @@ class FockOperator:
 
         # now add ionizing/attaching operators to np-nh particle-conserving operators
         for i in range(1, self.num_excit + 1):
+
+            if i in p_orders:
+                excitation_count = pspace_sizes[p_cnt]
+                p_cnt += 1
+
             for j in range(i + 1):
                 name_base = get_operator_name(i, j)
                 dimension_base = get_operator_dimension(i, j, system)
@@ -251,11 +257,20 @@ class FockOperator:
                     name = spin + name_base
                     dimensions = dim + dimension_base
 
-                    setattr(self, name, np.zeros(dimensions, dtype=data_type, order="F"))
-                    self.spin_cases.append(name)
-                    self.dimensions.append(dimensions)
-                    ndim += np.prod(dimensions)
-
+                    if i in p_orders:
+                        # add a P space vector for this spin case
+                        setattr(self, name, np.zeros(excitation_count[j], dtype=data_type, order="F"))
+                        if excitation_count[j] == 0:
+                            setattr(self, name, np.zeros(shape=(1,), dtype=data_type, order="F"))
+                        self.spin_cases.append(name)
+                        self.dimensions.append((excitation_count[j],))
+                        ndim += excitation_count[j]
+                    else:
+                        # use the normal arrays
+                        setattr(self, name, np.zeros(dimensions, dtype=data_type, order="F"))
+                        self.spin_cases.append(name)
+                        self.dimensions.append(dimensions)
+                        ndim += np.prod(dimensions)
         self.ndim = ndim
 
     def flatten(self):
