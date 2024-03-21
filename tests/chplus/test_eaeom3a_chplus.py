@@ -31,12 +31,9 @@ def test_eaeom3a_chplus():
     for i in [0, 1, 2, 3, 4, 5, 6, 7]:
         driver.run_eaeomccp(method="eaeom3_p", state_index=i, r3_excitations=r3_excitations)
 
-    print("Root    EA Energy    Total Energy")
-    print("---------------------------------")
-    for i in [0, 1, 2, 3, 4, 5, 6, 7]:
-        ea_energy = driver.vertical_excitation_energy[i]
-        total_energy = driver.system.reference_energy + driver.correlation_energy + ea_energy
-        print(f"  {i}   {np.round(ea_energy, 8)}   {np.round(total_energy, 8)}")
+    expected_vee = [-0.26354074, -0.22337561, -0.37674145, -0.08128328, -0.37674145, -0.08128328, -0.35640329, -0.24898403]
+    for i, vee in enumerate(expected_vee):
+        assert np.allclose(driver.vertical_excitation_energy[i], vee)
 
 if __name__ == "__main__":
     test_eaeom3a_chplus()

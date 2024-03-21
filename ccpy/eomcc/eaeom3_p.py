@@ -128,7 +128,7 @@ def build_HR_3A(dR, R, r3_excitations, T, X, H):
             R.aab, r3_excitations["aab"],
             T.aa,
             H.a.oo, H.a.vv,
-            H.aa.vvvv, H.aa.oooo, H.aa.voov, H.aa.vooo, H.aa.vvov,
+            H.aa.vvvv.transpose(2, 3, 0, 1), H.aa.oooo, H.aa.voov, H.aa.vooo, H.aa.vvov,
             H.ab.voov,
             X["aa"]["voo"], X["aa"]["vvv"],
     )
@@ -143,8 +143,8 @@ def build_HR_3B(dR, R, r3_excitations, T, X, H):
             R.abb, r3_excitations["abb"],
             T.aa, T.ab,
             H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-            H.aa.vvvv, H.aa.voov, H.aa.vvov,
-            H.ab.vvvv, H.ab.oooo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
+            H.aa.vvvv.transpose(2, 3, 0, 1), H.aa.voov, H.aa.vvov,
+            H.ab.vvvv.transpose(2, 3, 0, 1), H.ab.oooo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
             H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo,
             H.bb.voov,
             X["aa"]["voo"], X["aa"]["vvv"],
@@ -160,8 +160,8 @@ def build_HR_3C(dR, R, r3_excitations, T, X, H):
             R.abb, r3_excitations["abb"],
             T.ab, T.bb,
             H.a.vv, H.b.oo, H.b.vv,
-            H.ab.vvvv, H.ab.vovo, H.ab.ovvo, H.ab.vvvo,
-            H.bb.vvvv, H.bb.oooo, H.bb.voov, H.bb.vooo, H.bb.vvov,
+            H.ab.vvvv.transpose(2, 3, 0, 1), H.ab.vovo, H.ab.ovvo, H.ab.vvvo,
+            H.bb.vvvv.transpose(2, 3, 0, 1), H.bb.oooo, H.bb.voov, H.bb.vooo, H.bb.vvov,
             X["ab"]["voo"], X["ab"]["ovo"], X["ab"]["vvv"],
     )
     return dR, R, r3_excitations

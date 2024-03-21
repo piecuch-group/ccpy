@@ -17,7 +17,7 @@ def test_eomcct3_chplus():
     # Set the active space
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=3)
     # Get the P space lists corresponding to this active space
-    t3_excitations, _ = get_active_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    t3_excitations = get_active_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
     # Run CC(P)
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
@@ -28,7 +28,7 @@ def test_eomcct3_chplus():
     irreps = ["A1", "A1", "A1", "B1", "B1", "A2", "A2"]
     # Run EOMCC(P)
     for state_index, irrep in zip(roots, irreps):
-        r3_excitations, _ = get_active_pspace(driver.system, target_irrep=irrep)
+        r3_excitations = get_active_pspace(driver.system, target_irrep=irrep)
         driver.run_eomccp(method="eomccsdt_p", state_index=state_index, t3_excitations=t3_excitations, r3_excitations=r3_excitations)
         driver.run_lefteomccp(method="left_ccsdt_p", state_index=state_index, t3_excitations=t3_excitations, r3_excitations=r3_excitations)
     # Perform CC(t;3) corrections using T(P), R(P), and L(P) within 2-body approximation

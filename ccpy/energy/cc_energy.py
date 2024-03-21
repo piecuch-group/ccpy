@@ -43,8 +43,7 @@ def get_cc_energy(T, H0):
     return Ecorr
 
 def get_cc_energy_unsorted(T, H0, occ_a, unocc_a, occ_b, unocc_b):
-    """Calculate the CC correlation energy <0|(H_N e^T)_C|0> using unsorted integral operator H.
-    """
+    """Calculate the CC correlation energy <0|(H_N e^T)_C|0> using unsorted integral operator H."""
     e1a = np.einsum("me,em->", H0.a[occ_a, unocc_a], T.a, optimize=True)
     e1b = np.einsum("me,em->", H0.b[occ_b, unocc_b], T.b, optimize=True)
     e2aa = 0.25 * np.einsum("mnef,efmn->", H0.aa[occ_a, occ_a, unocc_a, unocc_a], T.aa, optimize=True)
