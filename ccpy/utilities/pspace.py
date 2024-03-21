@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import math
 from itertools import permutations
@@ -493,9 +494,16 @@ def get_active_pspace(system, num_active=1, target_irrep=None):
         else:
             return False
 
-    pspace = get_empty_pspace(system, 3)
-    excitations = {"aaa": [], "aab": [], "abb": [], "bbb": []}
+    print(f"   Constructing triples list for CCSDt({'I'*num_active})-type P space")
+    print("   ---------------------------------------------------")
+    print(f"   Target irrep = {target_irrep} ({system.point_group})")
+    print("   Number of active occupied alpha orbitals = ", system.num_act_occupied_alpha)
+    print("   Number of active unoccupied alpha orbitals = ", system.num_act_unoccupied_alpha)
+    print("   Number of active occupied beta orbitals = ", system.num_act_occupied_beta)
+    print("   Number of active unoccupied beta orbitals = ", system.num_act_unoccupied_beta)
 
+    tic = time.perf_counter()
+    excitations = {"aaa": [], "aab": [], "abb": [], "bbb": []}
     # aaa
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
@@ -505,7 +513,6 @@ def get_active_pspace(system, num_active=1, target_irrep=None):
                         for c in range(b + 1, system.nunoccupied_alpha):
                             if count_active_occ_alpha([i, j, k]) >= num_active and count_active_unocc_alpha([a, b, c]) >= num_active:
                                 if not checksym_aaa(i, j, k, a, b, c): continue
-                                pspace["aaa"][a, b, c, i, j, k] = 1
                                 excitations["aaa"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # aab
     for i in range(system.noccupied_alpha):
@@ -516,7 +523,6 @@ def get_active_pspace(system, num_active=1, target_irrep=None):
                         for c in range(system.nunoccupied_beta):
                             if (count_active_occ_alpha([i, j]) + count_active_occ_beta([k])) >= num_active and (count_active_unocc_alpha([a, b]) + count_active_unocc_beta([c])) >= num_active:
                                 if not checksym_aab(i, j, k, a, b, c): continue
-                                pspace["aab"][a, b, c, i, j, k] = 1
                                 excitations["aab"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # abb
     for i in range(system.noccupied_alpha):
@@ -527,7 +533,6 @@ def get_active_pspace(system, num_active=1, target_irrep=None):
                         for c in range(b + 1, system.nunoccupied_beta):
                             if (count_active_occ_alpha([i]) + count_active_occ_beta([j, k])) >= num_active and (count_active_unocc_alpha([a]) + count_active_unocc_beta([b, c])) >= num_active:
                                 if not checksym_abb(i, j, k, a, b, c): continue
-                                pspace["abb"][a, b, c, i, j, k] = 1
                                 excitations["abb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # bbb
     for i in range(system.noccupied_beta):
@@ -538,16 +543,19 @@ def get_active_pspace(system, num_active=1, target_irrep=None):
                         for c in range(b + 1, system.nunoccupied_beta):
                             if count_active_occ_beta([i, j, k]) >= num_active and count_active_unocc_beta([a, b, c]) >= num_active:
                                 if not checksym_bbb(i, j, k, a, b, c): continue
-                                pspace["bbb"][a, b, c, i, j, k] = 1
                                 excitations["bbb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
-
     # Convert the spin-integrated lists into Numpy arrays
     for spincase, array in excitations.items():
         excitations[spincase] = np.asarray(array, order="F")
         if len(excitations[spincase].shape) < 2:
             excitations[spincase] = np.ones((1, 6))
+        # Print the number of triples of a given spincase 
+        print(f"   Spincase {spincase} contains {excitations[spincase].shape[0]} triples")
 
-    return excitations, pspace
+    toc = time.perf_counter()
+    minutes, seconds = divmod(toc - tic, 60)
+    print(f"   Completed in {minutes:.1f}m {seconds:.1f}s\n")
+    return excitations
 
 def get_active_3p2h_pspace(system, num_active=1, target_irrep=None):
     from ccpy.utilities.active_space import active_hole, active_particle
@@ -614,8 +622,16 @@ def get_active_3p2h_pspace(system, num_active=1, target_irrep=None):
         else:
             return False
 
-    excitations = {"aaa": [], "aab": [], "abb": []}
+    print(f"   Constructing 3p-2h list for EA-EOMCCSDt({'I'*num_active})-type P space")
+    print("   -------------------------------------------------------")
+    print(f"   Target irrep = {target_irrep} ({system.point_group})")
+    print("   Number of active occupied alpha orbitals = ", system.num_act_occupied_alpha)
+    print("   Number of active unoccupied alpha orbitals = ", system.num_act_unoccupied_alpha)
+    print("   Number of active occupied beta orbitals = ", system.num_act_occupied_beta)
+    print("   Number of active unoccupied beta orbitals = ", system.num_act_unoccupied_beta)
 
+    tic = time.perf_counter()
+    excitations = {"aaa": [], "aab": [], "abb": []}
     # aaa
     for j in range(system.noccupied_alpha):
         for k in range(j + 1, system.noccupied_alpha):
@@ -649,5 +665,10 @@ def get_active_3p2h_pspace(system, num_active=1, target_irrep=None):
         excitations[spincase] = np.asarray(array, order="F")
         if len(excitations[spincase].shape) < 2:
             excitations[spincase] = np.ones((1, 5))
+        # Print the number of triples of a given spincase
+        print(f"   Spincase {spincase} contains {excitations[spincase].shape[0]} triples")
 
+    toc = time.perf_counter()
+    minutes, seconds = divmod(toc - tic, 60)
+    print(f"   Completed in {minutes:.1f}m {seconds:.1f}s\n")
     return excitations
