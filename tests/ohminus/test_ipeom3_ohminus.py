@@ -16,7 +16,8 @@ def test_ipeom3_ohminus():
                 charge=-1,
                 spin=0,
                 cart=False,
-                symmetry="C2V")
+                symmetry="C2V",
+                unit="Angstrom")
     mf = scf.RHF(mol)
     mf.kernel()
     driver = Driver.from_pyscf(mf, nfrozen=1)
@@ -24,13 +25,15 @@ def test_ipeom3_ohminus():
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
-    driver.run_guess(method="ipcis", multiplicity=2, roots_per_irrep={"A1": 4, "B1": 0, "B2": 0, "A2": 0}, use_symmetry=False)
-    driver.run_ipeomcc(method="ipeom3", state_index=[0, 1, 2, 3])
+    # Perform guess vectors by diagonalizaing within the 1h + active 2h-1p space
+    driver.run_guess(method="ipcisd", multiplicity=-1, nact_occupied=3, nact_unoccupied=4,
+                     roots_per_irrep={"B1": 2, "B2": 0, "A1": 4, "A2": 2})
+    driver.run_ipeomcc(method="ipeom3", state_index=[0, 1, 2, 3, 4, 5, 6, 7])
 
     #
     # Check the results
     #
-    expected_vee = [-0.01598430, -0.01598430, 0.14381607, 0.66870089]
+    expected_vee = [-0.01598430, 0.40930363, 0.14381607, 0.38859076, 0.43203093, 0.66870088, 0.29502178, 0.33376960]
     for i, vee in enumerate(expected_vee):
         assert np.allclose(driver.vertical_excitation_energy[i], vee)
 

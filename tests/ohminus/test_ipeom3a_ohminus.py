@@ -19,7 +19,8 @@ def test_ipeom3a_ohminus():
                 charge=-1,
                 spin=0,
                 cart=False,
-                symmetry="C2V")
+                symmetry="C2V",
+                unit="Angstrom")
     mf = scf.RHF(mol)
     mf.kernel()
     driver = Driver.from_pyscf(mf, nfrozen=1)
@@ -36,19 +37,20 @@ def test_ipeom3a_ohminus():
     # Obtain the active-space 3h2p list
     r3_excitations = get_active_3h2p_pspace(driver.system, num_active=1)
 
-    # Perform guess vectors by diagonalizaing within the 1h space (no restriction on spatial symmetry is used)
-    driver.run_guess(method="ipcis", multiplicity=-1,
-                     roots_per_irrep={"A1": 4, "B1": 0, "B2": 0, "A2": 0}, use_symmetry=False)
+    # Perform guess vectors by diagonalizaing within the 1h + active 2h-1p space
+    driver.run_guess(method="ipcisd", multiplicity=-1, nact_occupied=3, nact_unoccupied=4,
+                     roots_per_irrep={"B1": 2, "B2": 0, "A1": 4, "A2": 2})
     # Loop over all guess vectors and perform the IP-EOMCSDt calculation
-    for istate in [0, 1, 2, 3]:
+    for istate in [0, 1, 2, 3, 4, 5, 6, 7]:
         driver.run_ipeomccp(method="ipeom3_p", state_index=istate, r3_excitations=r3_excitations)
 
     #
     # Check the results
     #
-    expected_vee = [-0.01583013, -0.01583013, 0.14362613, 0.67650622]
+    expected_vee = [-0.01583013, 0.41171370, 0.14362613, 0.38859946, 0.43476381, 0.67650621, 0.29502520, 0.33377185]
     for i, vee in enumerate(expected_vee):
         assert np.allclose(driver.vertical_excitation_energy[i], vee)
+
 
 if __name__ == "__main__":
     test_ipeom3a_ohminus()

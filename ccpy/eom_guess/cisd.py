@@ -55,7 +55,7 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
         print("   Elapsed time = ", np.round(elapsed_time, 2), "seconds")
         for i in range(n_found - kout, n_found):
             print("   Eigenvalue of root", i + 1, " = ", np.round(omega_guess[i], 8))
-
+    print("")
     return omega_guess, V
 
 def scatter(V_in, nacto, nactu, system):
