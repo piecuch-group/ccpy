@@ -67,8 +67,10 @@ energetics for the missing many-electron correlations using the generalized mome
   - SF-EOMCCSD
   - SF-EOMCC(2,3)
   - IP-EOMCCSD(2h-1p)
+  - Active-space IP-EOMCCSD(3h-2p){N<sub>o</sub>} (also known as IP-EOMCCSDt)
   - IP-EOMCCSD(3h-2p)
   - EA-EOMCCSD(2p-1h)
+  - Active-space EA-EOMCCSD(3p-2h){N<sub>u</sub>} (also known as EA-EOMCCSDt)
   - EA-EOMCCSD(3p-2h)
   - DEA-EOMCCSD(3p-1h)
   - DEA-EOMCCSD(4p-2h)
