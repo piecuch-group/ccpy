@@ -264,7 +264,7 @@ def build_eacisd_hamiltonian(H, nacto, nactu, idx_a, idx_aa, idx_ab, system):
                         if jdet != 0:
                             ind2 = abs(jdet) - 1
                             phase = np.sign(jdet)
-                            ab_H_ab[ind1, ind2] += H.ab.ovvo[m, b, e, j] * phase
+                            ab_H_aa[ind1, ind2] += H.ab.ovvo[m, b, e, j] * phase
                 # h2c(bmje) * r_ab(aem)
                 for e in range(nactu_b):
                     for m in range(nob - nacto_b, nob):
