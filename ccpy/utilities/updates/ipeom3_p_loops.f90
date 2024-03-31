@@ -706,7 +706,8 @@ module ipeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         e = r3a_excits(jdet,1); f = r3a_excits(jdet,2);
                         ! compute < bcijk | h2a(oooo) | efijk >
-                        hmatel = h2a_vvvv(b,c,e,f)
+                        !hmatel = h2a_vvvv(b,c,e,f)
+                        hmatel = h2a_vvvv(e,f,b,c)
                         resid(idet) = resid(idet) + hmatel * r3a_amps(jdet)
                      end do
                   end do
@@ -1735,7 +1736,8 @@ module ipeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         e = r3b_excits(jdet,1); f = r3b_excits(jdet,2);
                         ! compute < bc~ijk~ | h2a(oooo) | ef~ijk~ >
-                        hmatel = h2b_vvvv(b,c,e,f)
+                        !hmatel = h2b_vvvv(b,c,e,f)
+                        hmatel = h2b_vvvv(e,f,b,c)
                         resid(idet) = resid(idet) + hmatel * r3b_amps(jdet)
                      end do
                   end do
@@ -2807,7 +2809,8 @@ module ipeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         e = r3c_excits(jdet,1); f = r3c_excits(jdet,2);
                         ! compute < b~c~ij~k~ | h2c(vvvv) | e~f~ij~k~ >
-                        hmatel = h2c_vvvv(b,c,e,f)
+                        !hmatel = h2c_vvvv(b,c,e,f)
+                        hmatel = h2c_vvvv(e,f,b,c)
                         resid(idet) = resid(idet) + hmatel * r3c_amps(jdet)
                      end do
                   end do

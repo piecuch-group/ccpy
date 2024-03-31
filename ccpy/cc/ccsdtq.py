@@ -9,10 +9,6 @@ from ccpy.hbar.hbar_ccsdt import add_VT3_intermediates
 from ccpy.utilities.updates import cc_loops2
 from ccpy.utilities.updates import cc_loops_t4
 
-# Possible things that went wrong:
-#  (1) Diagrams..
-#  (2) Perhaps the t4 update loops themselves have wrong permutation signs
-
 def update(T, dT, H, X, shift, flag_RHF, system):
 
     # update T1

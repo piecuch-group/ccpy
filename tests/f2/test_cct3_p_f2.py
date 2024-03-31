@@ -30,7 +30,6 @@ def test_cct3_f2():
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")
-    #driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, state_index=0)
     driver.run_ccp3(method="cct3")
 
     # Check reference energy

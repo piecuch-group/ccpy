@@ -1,4 +1,4 @@
-"""CR-CC(2,4) calculation for the symmetrically stretched
+"""Closed-shell CCSDTQ calculation for the symmetrically stretched
 H2O molecule with R(OH) = 2Re, where Re = 1.84345 bohr, described
 using the Dunning DZ basis set.
 Reference: Mol. Phys, 115, 2860 (2017)."""
