@@ -2823,7 +2823,7 @@ module ipeom3_p_loops
                   excits_buff(:,:) = r3b_excits(:,:)
                   amps_buff(:) = r3b_amps(:)
                   ! allocate new sorting arrays
-                  nloc = (nob - 1)*noa*(nub - 1)
+                  nloc = nub*(noa - 1)*nob
                   allocate(loc_arr(2,nloc))
                   allocate(idx_table3(nub,noa,nob))
                   !!! SB: (2,3,5) !!!
