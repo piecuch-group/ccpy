@@ -94,8 +94,7 @@ in CCpy are based on the spin-integrated spinorbital formulation and are compati
 ## Installation
 <p align="justify">
   
-Installation instructions are provided in the CCpy documentation, which is created using `sphinx`.
-Please see the `docs` directory for instructions on how to compile and view the documentation.
+Installation instructions are provided in the CCpy documentation page (https://piecuch-group.github.io/ccpy/).
 
 </p>
 
