@@ -1,9 +1,18 @@
-Contact Information
-###################
-Karthik Gururangan - gururang@msu.edu
+CCpy Development Team
+#####################
 
-(Doctoral student in the `Piecuch Group <https://www2.chemistry.msu.edu/faculty/piecuch/>`_ at Michigan State University)
+| Karthik Gururangan (e-mail: gururang@msu.edu)
+| Doctoral student, Department of Chemistry, Michigan State University
 
-In addition to using GitHub's Issues feature, feel free to send me an e-mail if you have any questions about using
-CCpy or are seeking additional information about its functionality. CCpy is an open-source code and any contributions
-or suggestions that would improve it are welcomed and appreciated!
+| Dr. J. Emiliano Deustua
+| COO and Co-founder, Examol
+
+| Professor Piotr Piecuch
+| University Distinguished Professor and Michigan State University Foundation Professor, Department of Chemistry, Michigan State University
+| Adjunct Professor, Department of Physics and Astronomy, Michigan State University
+
+CCpy is an open-source code under the `GPLv3 <https://www.gnu.org/licenses/gpl-3.0.html>`_ license.
+It is developed and maintained by the `Piecuch Group <https://www2.chemistry.msu.edu/faculty/piecuch/>`_
+at Michigan State University. In addition to using GitHub's Issues feature, feel free to send an e-mail
+to gururang@msu.edu if you have any questions about using CCpy or are seeking additional information
+about its functionality.
