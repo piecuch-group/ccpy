@@ -17,14 +17,17 @@ def test_eaeom3a_chplus():
         nfrozen=0,
     )
     driver.system.print_info()
+
     # Perform CCSD for the closed-shell core
     driver.run_cc(method="ccsd")
     # Obtain the CCSD-level similarity-transformed Hamiltonian
     driver.run_hbar(method="ccsd")
+
     # Set the number of active unoccupied orbitals used to define the r_{Abc}^{jk} operator
     driver.system.set_active_space(nact_unoccupied=3, nact_occupied=0)
     # Obtain the active-space 3p2h list
     r3_excitations = get_active_3p2h_pspace(driver.system, num_active=1)
+
     # Perform guess vectors by diagonalizaing within the 1p + active 2p-1h space
     driver.run_guess(method="eacisd", multiplicity=-1, nact_occupied=3, nact_unoccupied=8,
                      roots_per_irrep={"A1": 2, "B1": 2, "B2": 2, "A2": 2})

@@ -23,5 +23,12 @@ def test_ipeom3_ohminus():
     driver.run_guess(method="ipcis", multiplicity=2, roots_per_irrep={"A1": 5, "B1": 0, "B2": 0, "A2": 0}, debug=False, use_symmetry=False)
     driver.run_ipeomcc(method="ipeom3", state_index=[0, 1, 2, 3, 4])
 
+    #
+    # Check the results
+    #
+    expected_vee = [-0.00814477, -0.00814477, 0.11305111, 0.62233209, 19.46600051]
+    for i, vee in enumerate(expected_vee):
+        assert np.allclose(driver.vertical_excitation_energy[i], vee)
+
 if __name__ == "__main__":
     test_ipeom3_ohminus()

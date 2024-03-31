@@ -749,7 +749,7 @@ def get_active_3h2p_pspace(system, num_active=1, target_irrep=None):
     tic = time.perf_counter()
     excitations = {"aaa": [], "aab": [], "abb": []}
     # aaa
-    for i in range(system.occupied_alpha):
+    for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
                 for b in range(system.nunoccupied_alpha):

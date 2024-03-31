@@ -6,6 +6,243 @@ module ipeom3_p_loops
 
       contains
 
+              subroutine build_hr_1a(sigma_1a,&
+                                     r3a_amps,r3a_excits,&
+                                     r3b_amps,r3b_excits,&
+                                     r3c_amps,r3c_excits,&
+                                     h2a_oovv,h2b_oovv,h2c_oovv,&
+                                     n3aaa,n3aab,n3abb,&
+                                     noa,nua,nob,nub)
+
+                  ! Input dimension variables
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aaa, n3aab, n3abb
+                  ! Input R and T arrays
+                  integer, intent(in) :: r3a_excits(n3aaa,5)
+                  integer, intent(in) :: r3b_excits(n3aab,5)
+                  integer, intent(in) :: r3c_excits(n3abb,5)
+                  real(kind=8), intent(in) :: r3a_amps(n3aaa)
+                  real(kind=8), intent(in) :: r3b_amps(n3aab)
+                  real(kind=8), intent(in) :: r3c_amps(n3abb)
+                  ! Input H  and X arrays
+                  real(kind=8), intent(in) :: h2a_oovv(noa,noa,nua,nua)
+                  real(kind=8), intent(in) :: h2b_oovv(noa,nob,nua,nub)
+                  real(kind=8), intent(in) :: h2c_oovv(nob,nob,nub,nub)
+                  ! Output and Inout variables
+                  real(kind=8), intent(inout) :: sigma_1a(noa)
+                  !f2py intent(in,out) :: sigma_1a(0:noa-1)
+                  ! Local variables
+                  real(kind=8) :: r_amp, val
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  do idet = 1,n3aaa
+                     r_amp = r3a_amps(idet)
+                     ! x1(i) <- A(i/mn) h2a(mnef)*r3a(efimn)
+                     e = r3a_excits(idet,1); f = r3a_excits(idet,2);
+                     i = r3a_excits(idet,3); m = r3a_excits(idet,4); n = r3a_excits(idet,5);
+                     sigma_1a(i) = sigma_1a(i) + h2a_oovv(m,n,e,f) * r_amp ! (1)
+                     sigma_1a(m) = sigma_1a(m) - h2a_oovv(i,n,e,f) * r_amp ! (im)
+                     sigma_1a(n) = sigma_1a(n) - h2a_oovv(m,i,e,f) * r_amp ! (in)
+                  end do
+
+                  do idet = 1,n3aab
+                     r_amp = r3b_amps(idet)
+                     ! x1(i) <- A(im) h2b(mnef)*r3b(efimn)
+                     e = r3b_excits(idet,1); f = r3b_excits(idet,2);
+                     i = r3b_excits(idet,3); m = r3b_excits(idet,4); n = r3b_excits(idet,5);
+                     sigma_1a(i) = sigma_1a(i) + h2b_oovv(m,n,e,f) * r_amp ! (1)
+                     sigma_1a(m) = sigma_1a(m) - h2b_oovv(i,n,e,f) * r_amp ! (im)
+                  end do
+
+                  do idet = 1,n3abb
+                     r_amp = r3c_amps(idet)
+                     ! x1(i) <- h2c(mnef)*r3c(efimn)
+                     e = r3c_excits(idet,1); f = r3c_excits(idet,2);
+                     i = r3c_excits(idet,3); m = r3c_excits(idet,4); n = r3c_excits(idet,5);
+                     sigma_1a(i) = sigma_1a(i) + h2c_oovv(m,n,e,f) * r_amp ! (1)
+                  end do
+
+              end subroutine build_hr_1a
+
+              subroutine build_hr_2a(sigma_2a,&
+                                     r3a_amps,r3a_excits,&
+                                     r3b_amps,r3b_excits,&
+                                     h1a_ov,h1b_ov,&
+                                     h2a_ooov,h2a_vovv,h2b_ooov,h2b_vovv,&
+                                     n3aaa,n3aab,&
+                                     noa,nua,nob,nub)
+
+                  ! Input dimension variables
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aaa, n3aab
+                  ! Input R and T arrays
+                  integer, intent(in) :: r3a_excits(n3aaa,5)
+                  integer, intent(in) :: r3b_excits(n3aab,5)
+                  real(kind=8), intent(in) :: r3a_amps(n3aaa)
+                  real(kind=8), intent(in) :: r3b_amps(n3aab)
+                  ! Input H  and X arrays
+                  real(kind=8), intent(in) :: h1a_ov(noa,nua)
+                  real(kind=8), intent(in) :: h1b_ov(nob,nub)
+                  real(kind=8), intent(in) :: h2a_ooov(noa,noa,noa,nua)
+                  real(kind=8), intent(in) :: h2b_ooov(noa,nob,noa,nub)
+                  real(kind=8), intent(in) :: h2a_vovv(nua,noa,nua,nua)
+                  real(kind=8), intent(in) :: h2b_vovv(nua,nob,nua,nub)
+                  ! Output and Inout variables
+                  real(kind=8), intent(inout) :: sigma_2a(noa,nua,nob)
+                  !f2py intent(in,out) :: sigma_2a(0:noa-1,0:nua-1,0:noa-1)
+                  ! Local variables
+                  real(kind=8) :: r_amp, val
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  do idet = 1,n3aaa
+                     r_amp = r3a_amps(idet)
+                     ! x2a(ibj) <- A(m/ij)A(be) h1a(me)*r3a(beijm)
+                     b = r3a_excits(idet,1); e = r3a_excits(idet,2);
+                     i = r3a_excits(idet,3); j = r3a_excits(idet,4); m = r3a_excits(idet,5);
+                     sigma_2a(i,b,j) = sigma_2a(i,b,j) + h1a_ov(m,e) * r_amp ! (1)
+                     sigma_2a(m,b,j) = sigma_2a(m,b,j) - h1a_ov(i,e) * r_amp ! (im)
+                     sigma_2a(i,b,m) = sigma_2a(i,b,m) - h1a_ov(j,e) * r_amp ! (jm)
+                     sigma_2a(i,e,j) = sigma_2a(i,e,j) - h1a_ov(m,b) * r_amp ! (be)
+                     sigma_2a(m,e,j) = sigma_2a(m,e,j) + h1a_ov(i,b) * r_amp ! (im)(be)
+                     sigma_2a(i,e,m) = sigma_2a(i,e,m) + h1a_ov(j,b) * r_amp ! (jm)(be)
+                     ! x2a(ibj) <- A(n/ij) h2a(bnef)*r3a(efijn)
+                     e = r3a_excits(idet,1); f = r3a_excits(idet,2);
+                     i = r3a_excits(idet,3); j = r3a_excits(idet,4); n = r3a_excits(idet,5);
+                     sigma_2a(i,:,j) = sigma_2a(i,:,j) + h2a_vovv(:,n,e,f) * r_amp ! (1)
+                     sigma_2a(j,:,n) = sigma_2a(j,:,n) + h2a_vovv(:,i,e,f) * r_amp ! (in)
+                     sigma_2a(i,:,n) = sigma_2a(i,:,n) - h2a_vovv(:,j,e,f) * r_amp ! (jn)
+                     ! x2a(ibj) <- A(bf)A(i/mn) -h2a(mnjf)*r3a(bfimn)
+                     b = r3a_excits(idet,1); f = r3a_excits(idet,2);
+                     i = r3a_excits(idet,3); m = r3a_excits(idet,4); n = r3a_excits(idet,5);
+                     sigma_2a(i,b,:) = sigma_2a(i,b,:) - h2a_ooov(m,n,:,f) * r_amp ! (1)
+                     sigma_2a(m,b,:) = sigma_2a(m,b,:) + h2a_ooov(i,n,:,f) * r_amp ! (im)
+                     sigma_2a(n,b,:) = sigma_2a(n,b,:) + h2a_ooov(m,i,:,f) * r_amp ! (in)
+                     sigma_2a(i,f,:) = sigma_2a(i,f,:) + h2a_ooov(m,n,:,b) * r_amp ! (bf)
+                     sigma_2a(m,f,:) = sigma_2a(m,f,:) - h2a_ooov(i,n,:,b) * r_amp ! (im)(bf)
+                     sigma_2a(n,f,:) = sigma_2a(n,f,:) - h2a_ooov(m,i,:,b) * r_amp ! (in)(bf)
+                  end do                 
+
+                  do idet = 1,n3aab
+                     r_amp = r3b_amps(idet)
+                     ! x2a(ibj) <- h1b(me)*r3b(beijm)
+                     b = r3b_excits(idet,1); e = r3b_excits(idet,2);
+                     i = r3b_excits(idet,3); j = r3b_excits(idet,4); m = r3b_excits(idet,5);
+                     sigma_2a(i,b,j) = sigma_2a(i,b,j) + h1b_ov(m,e) * r_amp ! (1)
+                     ! x2a(ibj) <- h2b(bnef)*r3b(efijn)
+                     e = r3b_excits(idet,1); f = r3b_excits(idet,2);
+                     i = r3b_excits(idet,3); j = r3b_excits(idet,4); n = r3b_excits(idet,5);
+                     sigma_2a(i,:,j) = sigma_2a(i,:,j) + h2b_vovv(:,n,e,f) * r_amp ! (1)
+                     ! x2a(ibj) <- A(bf)A(im) -h2b(mnjf)*r3b(bfimn)
+                     b = r3b_excits(idet,1); f = r3b_excits(idet,2);
+                     i = r3b_excits(idet,3); m = r3b_excits(idet,4); n = r3b_excits(idet,5);
+                     sigma_2a(i,b,:) = sigma_2a(i,b,:) - h2b_ooov(m,n,:,f) * r_amp ! (1)
+                     sigma_2a(m,b,:) = sigma_2a(m,b,:) + h2b_ooov(i,n,:,f) * r_amp ! (im)
+                  end do                  
+                  
+                  ! antisymmetrize (this replaces the x2a -= np.transpose(x2a, (...)) stuff in vector update
+                  do b = 1, nua
+                     do i = 1, noa
+                        do j = i+1, noa
+                           val = sigma_2a(i,b,j) - sigma_2a(j,b,i)
+                           sigma_2a(i,b,j) =  val
+                           sigma_2a(j,b,i) = -val
+                        end do
+                     end do
+                  end do
+                  ! (H(2) * T3)_C terms are vectorized and generally broadcast to diagonal elements, which should
+                  ! be 0. Set them to 0 manually (you need to do this).
+                  do i = 1,noa
+                     sigma_2a(i,:,i) = 0.0d0
+                  end do
+              end subroutine build_hr_2a
+
+              subroutine build_hr_2b(sigma_2b,&
+                                     r3b_amps,r3b_excits,&
+                                     r3c_amps,r3c_excits,&
+                                     h1a_ov,h1b_ov,&
+                                     h2a_ooov,&
+                                     h2b_ooov,h2b_oovo,h2b_ovvv,&
+                                     h2c_ooov,h2c_vovv,&
+                                     n3aab,n3abb,&
+                                     noa,nua,nob,nub)
+
+                  ! Input dimension variables
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n3aab, n3abb
+                  ! Input R and T arrays
+                  integer, intent(in) :: r3b_excits(n3aab,5)
+                  integer, intent(in) :: r3c_excits(n3abb,5)
+                  real(kind=8), intent(in) :: r3b_amps(n3aab)
+                  real(kind=8), intent(in) :: r3c_amps(n3abb)
+                  ! Input H  and X arrays
+                  real(kind=8), intent(in) :: h1a_ov(noa,nua)
+                  real(kind=8), intent(in) :: h1b_ov(nob,nub)
+                  real(kind=8), intent(in) :: h2a_ooov(noa,noa,noa,nua)
+                  real(kind=8), intent(in) :: h2b_ooov(noa,nob,noa,nub)
+                  real(kind=8), intent(in) :: h2b_oovo(noa,nob,nua,nob)
+                  real(kind=8), intent(in) :: h2b_ovvv(noa,nub,nua,nub)
+                  real(kind=8), intent(in) :: h2c_ooov(nob,nob,nob,nub)
+                  real(kind=8), intent(in) :: h2c_vovv(nub,nob,nub,nub)
+                  ! Output and Inout variables
+                  real(kind=8), intent(inout) :: sigma_2b(noa,nub,nob)
+                  !f2py intent(in,out) :: sigma_2b(0:noa-1,0:nub-1,0:nob-1)
+                  ! Local variables
+                  real(kind=8) :: r_amp, val
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  do idet = 1,n3aab
+                     r_amp = r3b_amps(idet)
+                     ! x2b(ibj) <- A(im) h1a(me)*r3b(ebimj)
+                     e = r3b_excits(idet,1); b = r3b_excits(idet,2);
+                     i = r3b_excits(idet,3); m = r3b_excits(idet,4); j = r3b_excits(idet,5);
+                     sigma_2b(i,b,j) = sigma_2b(i,b,j) + h1a_ov(m,e) * r_amp ! (1)
+                     sigma_2b(m,b,j) = sigma_2b(m,b,j) - h1a_ov(i,e) * r_amp ! (im)
+                     ! x2b(ibj) <- A(in) h2b(nbfe)*r3b(feinj)
+                     f = r3b_excits(idet,1); e = r3b_excits(idet,2);
+                     i = r3b_excits(idet,3); n = r3b_excits(idet,4); j = r3b_excits(idet,5);
+                     sigma_2b(i,:,j) = sigma_2b(i,:,j) + h2b_ovvv(n,:,f,e) * r_amp ! (1)
+                     sigma_2b(n,:,j) = sigma_2b(n,:,j) - h2b_ovvv(i,:,f,e) * r_amp ! (in)
+                     ! x2b(ibj) <- -h2a(mnif)*r3b(fbmnj)
+                     f = r3b_excits(idet,1); b = r3b_excits(idet,2);
+                     m = r3b_excits(idet,3); n = r3b_excits(idet,4); j = r3b_excits(idet,5);
+                     sigma_2b(:,b,j) = sigma_2b(:,b,j) - h2a_ooov(m,n,:,f) * r_amp ! (1)
+                     ! x2b(ibj) <- A(in) -h2b(nmfj)*r3b(fbinm)
+                     f = r3b_excits(idet,1); b = r3b_excits(idet,2);
+                     i = r3b_excits(idet,3); n = r3b_excits(idet,4); m = r3b_excits(idet,5);
+                     sigma_2b(i,b,:) = sigma_2b(i,b,:) - h2b_oovo(n,m,f,:) * r_amp ! (1)
+                     sigma_2b(n,b,:) = sigma_2b(n,b,:) + h2b_oovo(i,m,f,:) * r_amp ! (in)
+                  end do                 
+
+                  do idet = 1,n3abb
+                     r_amp = r3c_amps(idet)
+                     ! x2b(ibj) <- A(be)A(jm) h1b(me)*r3c(beijm)
+                     b = r3c_excits(idet,1); e = r3c_excits(idet,2);
+                     i = r3c_excits(idet,3); j = r3c_excits(idet,4); m = r3c_excits(idet,5);
+                     sigma_2b(i,b,j) = sigma_2b(i,b,j) + h1b_ov(m,e) * r_amp ! (1)
+                     sigma_2b(i,b,m) = sigma_2b(i,b,m) - h1b_ov(j,e) * r_amp ! (jm)
+                     sigma_2b(i,e,j) = sigma_2b(i,e,j) - h1b_ov(m,b) * r_amp ! (be)
+                     sigma_2b(i,e,m) = sigma_2b(i,e,m) + h1b_ov(j,b) * r_amp ! (jm)(be)
+                     ! x2b(ibj) <- A(jn) h2c(bnef)*r3c(efijn)
+                     e = r3c_excits(idet,1); f = r3c_excits(idet,2);
+                     i = r3c_excits(idet,3); j = r3c_excits(idet,4); n = r3c_excits(idet,5);
+                     sigma_2b(i,:,j) = sigma_2b(i,:,j) + h2c_vovv(:,n,e,f) * r_amp ! (1)
+                     sigma_2b(i,:,n) = sigma_2b(i,:,n) - h2c_vovv(:,j,e,f) * r_amp ! (jn)
+                     ! x2b(ibj) <- A(jn)A(fb) -h2b(mnif)*r3c(fbmnj)
+                     f = r3c_excits(idet,1); b = r3c_excits(idet,2);
+                     m = r3c_excits(idet,3); n = r3c_excits(idet,4); j = r3c_excits(idet,5);
+                     sigma_2b(:,b,j) = sigma_2b(:,b,j) - h2b_ooov(m,n,:,f) * r_amp ! (1)
+                     sigma_2b(:,b,n) = sigma_2b(:,b,n) + h2b_ooov(m,j,:,f) * r_amp ! (jn)
+                     sigma_2b(:,f,j) = sigma_2b(:,f,j) + h2b_ooov(m,n,:,b) * r_amp ! (bf)
+                     sigma_2b(:,f,n) = sigma_2b(:,f,n) - h2b_ooov(m,j,:,b) * r_amp ! (jn)(bf)
+                     ! x2b(ibj) <- A(fb) -h2c(mnjf)*r3c(fbinm)
+                     f = r3c_excits(idet,1); b = r3c_excits(idet,2);
+                     i = r3c_excits(idet,3); n = r3c_excits(idet,4); m = r3c_excits(idet,5);
+                     sigma_2b(i,b,:) = sigma_2b(i,b,:) - h2c_ooov(m,n,:,f) * r_amp ! (1)
+                     sigma_2b(i,f,:) = sigma_2b(i,f,:) + h2c_ooov(m,n,:,b) * r_amp ! (fb)
+                  end do                 
+
+              end subroutine build_hr_2b
+
               subroutine build_hr_3a(resid,&
                                      r2a,&
                                      r3a_amps,r3a_excits,&
@@ -3088,6 +3325,83 @@ module ipeom3_p_loops
                   !!!! END OMP PARALLEL SECTION !!!!
               end subroutine build_hr_3c
 
+              subroutine update_r(r1a,r2a,r2b,&
+                                  r3a_amps, r3a_excits,&
+                                  r3b_amps, r3b_excits,&
+                                  r3c_amps, r3c_excits,&
+                                  omega,&
+                                  h1a_oo, h1a_vv, h1b_oo, h1b_vv,&
+                                  n3aaa, n3aab, n3abb,&
+                                  noa, nua, nob, nub)
+
+                      integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb
+                      integer, intent(in) :: r3a_excits(n3aaa,5), r3b_excits(n3aab,5), r3c_excits(n3abb,5)
+                      real(kind=8), intent(in) :: h1a_oo(noa,noa), h1a_vv(nua,nua), h1b_oo(nob,nob), h1b_vv(nub,nub)
+                      real(kind=8), intent(in) :: omega
+                      
+                      real(kind=8), intent(inout) :: r1a(1:noa)
+                      !f2py intent(in,out) :: r1a(0:noa-1)
+                      real(kind=8), intent(inout) :: r2a(1:noa,1:nua,1:noa)
+                      !f2py intent(in,out) :: r2a(0:noa-1,0:nua-1,0:noa-1)
+                      real(kind=8), intent(inout) :: r2b(1:noa,1:nub,1:nob)
+                      !f2py intent(in,out) :: r2b(0:noa-1,0:nub-1,0:nob-1)
+                      real(kind=8), intent(inout) :: r3a_amps(n3aaa)
+                      !f2py intent(in,out) :: r3a_amps(0:n3aaa-1) 
+                      real(kind=8), intent(inout) :: r3b_amps(n3aab)
+                      !f2py intent(in,out) :: r3b_amps(0:n3aab-1) 
+                      real(kind=8), intent(inout) :: r3c_amps(n3abb)
+                      !f2py intent(in,out) :: r3c_amps(0:n3abb-1) 
+                      
+                      integer :: i, j, k, b, c, idet
+                      real(kind=8) :: denom
+
+                      do i = 1,noa
+                          denom = omega + H1A_oo(i,i)
+                          if (denom==0.0d0) cycle
+                          r1a(i) = r1a(i)/denom
+                      end do
+
+                      do j = 1,noa
+                        do b = 1,nua
+                           do i = 1,noa
+                              if (i==j) cycle
+                              denom = omega - H1A_vv(b,b) + H1A_oo(i,i) + H1A_oo(j,j)
+                              r2a(i,b,j) = r2a(i,b,j)/denom
+                          end do
+                        end do
+                      end do
+
+                      do j = 1,nob
+                        do b = 1,nub
+                           do i = 1,noa
+                              denom = omega - H1B_vv(b,b) + H1A_oo(i,i) + H1B_oo(j,j)
+                              r2b(i,b,j) = r2b(i,b,j)/denom
+                          end do
+                        end do
+                      end do
+
+                      do idet = 1,n3aaa
+                         b = r3a_excits(idet,1); c = r3a_excits(idet,2);
+                         i = r3a_excits(idet,3); j = r3a_excits(idet,4); k = r3a_excits(idet,5);
+                         denom = omega - H1A_vv(b,b) - H1A_vv(c,c) + H1A_oo(i,i) + H1A_oo(j,j) + H1A_oo(k,k)
+                         r3a_amps(idet) = r3a_amps(idet)/denom
+                      end do
+
+                      do idet = 1,n3aab
+                         b = r3b_excits(idet,1); c = r3b_excits(idet,2);
+                         i = r3b_excits(idet,3); j = r3b_excits(idet,4); k = r3b_excits(idet,5);
+                         denom = omega - H1A_vv(b,b) - H1B_vv(c,c) + H1A_oo(i,i) + H1A_oo(j,j) + H1B_oo(k,k)
+                         r3b_amps(idet) = r3b_amps(idet)/denom
+                      end do
+
+                      do idet = 1,n3abb
+                         b = r3c_excits(idet,1); c = r3c_excits(idet,2);
+                         i = r3c_excits(idet,3); j = r3c_excits(idet,4); k = r3c_excits(idet,5);
+                         denom = omega - H1B_vv(b,b) - H1B_vv(c,c) + H1A_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)
+                         r3c_amps(idet) = r3c_amps(idet)/denom
+                      end do
+
+              end subroutine update_r
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SORTING FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

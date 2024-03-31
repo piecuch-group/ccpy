@@ -2,13 +2,6 @@ import numpy as np
 from ccpy.utilities.updates import eaeom3_p_loops
 from ccpy.eomcc.eaeom3_intermediates import get_eaeom3_p_intermediates
 
-# R.a -> (nua) -> (a)
-# R.aa -> (nua,nua,noa) -> (abj)
-# R.ab -> (nua,nub,nob) -> (ab~j~)
-# R.aaa -> (nua,nua,nua,noa,noa) -> (abcjk)
-# R.aab -> (nua,nua,nub,noa,nob) -> (abc~jk~)
-# R.abb -> (nua,nub,nub,nob,nob) -> (ab~c~j~k~)
-
 def update(R, omega, H, RHF_symmetry, system, r3_excitations):
     R.a, R.aa, R.ab, R.aaa, R.aab, R.abb = eaeom3_p_loops.eaeom3_p_loops.update_r(
         R.a,
