@@ -31,7 +31,7 @@ def test_ipeom3a_ohminus():
     driver.run_hbar(method="ccsd")
 
     # Set the number of active occupied orbitals used to define the r_{bc}^{ijK} operator
-    # No = 2 includes the 1π_x and 1π_y orbitals in the active space
+    # No = 2 includes the 1 pi_x and 1 pi_y orbitals in the active space
     driver.system.set_active_space(nact_unoccupied=0, nact_occupied=2)
     # Obtain the active-space 3h2p list
     r3_excitations = get_active_3h2p_pspace(driver.system, num_active=1)
