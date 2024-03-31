@@ -10,7 +10,6 @@ import numpy as np
 from pyscf import scf, gto
 from ccpy.drivers.driver import Driver
 from ccpy.utilities.pspace import get_active_3h2p_pspace
-from ccpy.constants.constants import hartreetoeV
 
 def test_ipeom3a_ohminus():
     mol = gto.M(atom='''O  0.0  0.0  -0.96966/2
@@ -38,7 +37,7 @@ def test_ipeom3a_ohminus():
     r3_excitations = get_active_3h2p_pspace(driver.system, num_active=1)
 
     # Perform guess vectors by diagonalizaing within the 1h + active 2h-1p space
-    driver.run_guess(method="ipcisd", multiplicity=-1, nact_occupied=3, nact_unoccupied=4,
+    driver.run_guess(method="ipcisd", multiplicity=-1, nact_occupied=4, nact_unoccupied=6,
                      roots_per_irrep={"B1": 2, "B2": 0, "A1": 4, "A2": 2})
     # Loop over all guess vectors and perform the IP-EOMCSDt calculation
     for istate in [0, 1, 2, 3, 4, 5, 6, 7]:
@@ -50,7 +49,6 @@ def test_ipeom3a_ohminus():
     expected_vee = [-0.01583013, 0.41171370, 0.14362613, 0.38859946, 0.43476381, 0.67650621, 0.29502520, 0.33377185]
     for i, vee in enumerate(expected_vee):
         assert np.allclose(driver.vertical_excitation_energy[i], vee)
-
 
 if __name__ == "__main__":
     test_ipeom3a_ohminus()

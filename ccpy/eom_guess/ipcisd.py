@@ -131,7 +131,7 @@ def build_ipcisd_hamiltonian(H, nacto, nactu, idx_a, idx_aa, idx_ab, system):
                     if jdet != 0:
                         ind2 = abs(jdet) - 1
                         a_H_aa[ind1, ind2] -= H.aa.ooov[m, n, i, f]
-        # -h2b(mnif) * r_aa(mfn)
+        # -h2b(mnif) * r_ab(mfn)
         for m in range(noa - nacto_a, noa):
             for f in range(nactu_b):
                 for n in range(nob - nacto_b, nob):
@@ -177,14 +177,16 @@ def build_ipcisd_hamiltonian(H, nacto, nactu, idx_a, idx_aa, idx_ab, system):
                     jdet = idx_aa[i, e, j]
                     if jdet != 0:
                         ind2 = abs(jdet) - 1
-                        aa_H_aa[ind1, ind2] += H.a.vv[b, e]
+                        phase = np.sign(jdet)
+                        aa_H_aa[ind1, ind2] += H.a.vv[b, e] * phase
                 # 1/2 h2a(mnij) * r_aa(mbn)
                 for m in range(noa - nacto_a, noa):
                     for n in range(m + 1, noa):
                         jdet = idx_aa[m, b, n]
                         if jdet != 0:
                             ind2 = abs(jdet) - 1
-                            aa_H_aa[ind1, ind2] += H.aa.oooo[m, n, i, j]
+                            phase = np.sign(jdet)
+                            aa_H_aa[ind1, ind2] += H.aa.oooo[m, n, i, j] * phase
                 # -A(ij) h1a(mi) * r_aa(mbj)
                 for m in range(noa - nacto_a, noa):
                     jdet = idx_aa[m, b, j]
@@ -264,7 +266,7 @@ def build_ipcisd_hamiltonian(H, nacto, nactu, idx_a, idx_aa, idx_ab, system):
                         if jdet != 0:
                             ind2 = abs(jdet) - 1
                             phase = np.sign(jdet)
-                            ab_H_ab[ind1, ind2] += H.ab.ovvo[m, b, e, j] * phase
+                            ab_H_aa[ind1, ind2] += H.ab.ovvo[m, b, e, j] * phase
                 # h2c(bmje) * r_ab(iem)
                 for e in range(nactu_b):
                     for m in range(nob - nacto_b, nob):
