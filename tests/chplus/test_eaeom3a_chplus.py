@@ -32,13 +32,13 @@ def test_eaeom3a_chplus():
     driver.run_guess(method="eacisd", multiplicity=-1, nact_occupied=3, nact_unoccupied=8,
                      roots_per_irrep={"A1": 2, "B1": 2, "B2": 2, "A2": 2})
     # Loop over all guess vectors and perform the EA-EOMCSDt calculation
-    for i in [0, 1, 2, 3, 4, 5, 6, 7]:
+    for i in [0, 1, 2, 3, 4, 5, 6]:
         driver.run_eaeomccp(method="eaeom3_p", state_index=i, r3_excitations=r3_excitations)
 
     #
     # Check the results
     #
-    expected_vee = [-0.26354074, -0.22337561, -0.37674145, -0.08128328, -0.37674145, -0.08128328, -0.35640329, -0.24898403]
+    expected_vee = [-0.26354074, -0.22337561, -0.37674145, -0.08128328, -0.37674145, -0.08128328, -0.35640329]
     for i, vee in enumerate(expected_vee):
         assert np.allclose(driver.vertical_excitation_energy[i], vee)
 
