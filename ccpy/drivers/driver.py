@@ -14,7 +14,7 @@ from ccpy.drivers.solvers import (
                 eomcc_nonlinear_diis,
                 eccc_jacobi,
 )
-from ccpy.energy.cc_energy import get_LR, get_r0, get_rel, get_rel_ea, get_rel_ip
+from ccpy.energy.cc_energy import get_LR, get_LR_ipeom2, get_r0, get_rel, get_rel_ea, get_rel_ip
 from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator, SpinFlipOperator, FockOperator
 from ccpy.utilities.printing import (
@@ -23,7 +23,7 @@ from ccpy.utilities.printing import (
                 eomcc_calculation_summary, leftcc_calculation_summary, print_ee_amplitudes,
                 print_sf_amplitudes, sfeomcc_calculation_summary,
                 print_ea_amplitudes, eaeomcc_calculation_summary,
-                print_ip_amplitudes, ipeomcc_calculation_summary,
+                print_ip_amplitudes, ipeomcc_calculation_summary, leftipcc_calculation_summary,
                 print_dea_amplitudes, deaeomcc_calculation_summary,
                 print_dip_amplitudes, dipeomcc_calculation_summary,
 )
@@ -1269,50 +1269,66 @@ class Driver:
         print("   Left-EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
         assert omega_diff <= 1.0e-05
 
-    def run_leftipeomcc(self, method, state_index=[0], t3_excitations=None, r3_excitations=None):
+    def run_leftipeomcc(self, method, state_index):
+        """Performs the particle-nonconserving left-IP-EOMCC calculation specified by the user in the input."""
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.left.MODULES:
             raise NotImplementedError(
                 "{} not implemented".format(method.lower())
             )
-        # Set operator parameters needed to build L
+        # Set operator parameters needed to build R
         self.set_operator_params(method)
         self.options["method"] = method.upper()
+
         # Ensure that Hbar is set upon entry
-        assert(self.flag_hbar)
-        # import the specific CC method module and get its update function
-        lcc_mod = import_module("ccpy.left." + method.lower())
-        update_function = getattr(lcc_mod, 'update')
+        assert (self.flag_hbar)
+
+        # import the specific left-EOMCC method module and get its update function
+        lcc_module = import_module("ccpy.left." + method.lower())
+        LH_function = getattr(lcc_module, 'LH_fun')
+        update_function = getattr(lcc_module, 'update_l')
+
         # Print the options as a header
         self.print_options()
-        # regardless of restart status, initialize residual anew for non-CC(P) cases
-        LH = FockOperator(self.system,
-                          self.num_particles,
-                          self.num_holes)
+
         for i in state_index:
-            print("   Left IP-EOMCC calculation for root %d started on" % i, get_timestamp())
-            # decide whether this is a ground-state calculation
-            ground_state = False
-            LR_function = lambda L, l3_excitations: get_LR(self.R[i], L, l3_excitations=l3_excitations, r3_excitations=r3_excitations)
-            # Create either the standard CC or CC(P) cluster operator
             if self.L[i] is None:
                 self.L[i] = FockOperator(self.system,
                                          self.num_particles,
                                          self.num_holes)
-                # set initial value based on ground- or excited-state
                 self.L[i].unflatten(self.R[i].flatten())
-            l3_excitations = None
-            # Zero out the residual
-            LH.unflatten(0.0 * LH.flatten())
-            # Run the left CC calculation
-            self.L[i], _, LR, is_converged = left_cc_jacobi(update_function, self.L[i], LH, self.T, self.hamiltonian,
-                                                            LR_function, self.vertical_excitation_energy[i],
-                                                            ground_state, self.system, self.options,
-                                                            t3_excitations, l3_excitations)
-            # Perform final biorthgonalization to R
-            self.L[i].unflatten(1.0 / LR_function(self.L[i], l3_excitations) * self.L[i].flatten())
-            leftcc_calculation_summary(self.L[i], self.vertical_excitation_energy[i], LR, is_converged, self.system, self.options["amp_print_threshold"])
-            print("   Left IP-EOMCC calculation for root %d ended on" % i, get_timestamp(), "\n")
+
+        # Create the residual R that is re-used for each root
+        LH = FockOperator(self.system,
+                          self.num_particles,
+                          self.num_holes)
+
+        for j, istate in enumerate(state_index):
+            print("   Left-IP-EOMCC calculation for root %d started on" % istate, get_timestamp())
+            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
+            # Save the right eigenvalue
+            omega_right = self.vertical_excitation_energy[istate]
+            print_ip_amplitudes(self.L[istate], self.system, self.L[istate].order, self.options["amp_print_threshold"])
+            self.L[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(LH_function,
+                                                                                                   update_function,
+                                                                                                   self.L[istate].flatten() / np.linalg.norm(self.L[istate].flatten()),
+                                                                                                   self.L[istate],
+                                                                                                   LH,
+                                                                                                   self.vertical_excitation_energy[istate],
+                                                                                                   self.T,
+                                                                                                   self.hamiltonian,
+                                                                                                   self.system,
+                                                                                                   self.options)
+            # compute the relative excitation level (REL) metric
+            LR_function = lambda L: get_LR_ipeom2(self.R[istate], L)
+            LR = LR_function(self.L[istate])
+            self.L[istate].unflatten(1.0 / LR * self.L[istate].flatten())
+            leftipcc_calculation_summary(self.L[istate], self.vertical_excitation_energy[istate], LR, is_converged, self.system, self.options["amp_print_threshold"])
+            # Before leaving, verify that the excitation energy obtained in the left diagonalization matches
+            omega_diff = abs(omega_right - self.vertical_excitation_energy[istate])
+            print("   |ω(R) - ω(L)| = ", omega_diff)
+            print("   Left-IP-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
+            assert omega_diff <= 1.0e-05
 
     def run_eccc(self, method, ci_vectors_file, t3_excitations=None):
         from ccpy.extcorr.external_correction import cluster_analysis

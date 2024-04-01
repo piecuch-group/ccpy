@@ -117,39 +117,39 @@ def get_LR(R, L, l3_excitations=None, r3_excitations=None):
     nua, noa = L.a.shape
     nub, nob = L.b.shape
     # explicitly enforce biorthonormality
-    if isinstance(L, ClusterOperator):
-        LR =  np.einsum("em,em->", R.a, L.a, optimize=True)
-        LR += np.einsum("em,em->", R.b, L.b, optimize=True)
-        LR += 0.25 * np.einsum("efmn,efmn->", R.aa, L.aa, optimize=True)
-        LR += np.einsum("efmn,efmn->", R.ab, L.ab, optimize=True)
-        LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
+    LR =  np.einsum("em,em->", R.a, L.a, optimize=True)
+    LR += np.einsum("em,em->", R.b, L.b, optimize=True)
+    LR += 0.25 * np.einsum("efmn,efmn->", R.aa, L.aa, optimize=True)
+    LR += np.einsum("efmn,efmn->", R.ab, L.ab, optimize=True)
+    LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
 
-        if L.order == 3 and R.order == 3:
-            if l3_excitations is None and r3_excitations is None:
-                LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.aaa, L.aaa, optimize=True)
-                LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.aab, L.aab, optimize=True)
-                LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
-                LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
-            else:
-                # LR_P = leftccsdt_p_loops.leftccsdt_p_loops.lr(L.aaa, l3_excitations["aaa"],
-                #                                               L.aab, l3_excitations["aab"],
-                #                                               L.abb, l3_excitations["abb"],
-                #                                               L.bbb, l3_excitations["bbb"],
-                #                                               R.aaa, r3_excitations["aaa"],
-                #                                               R.aab, r3_excitations["aab"],
-                #                                               R.abb, r3_excitations["abb"],
-                #                                               R.bbb, r3_excitations["bbb"],
-                #                                               noa, nua, nob, nub)
-                # This is allowed because L and R are always aligned through the left-EOMCC(P) iterations
-                LR_aaa = np.dot(L.aaa.T, R.aaa)
-                LR_aab = np.dot(L.aab.T, R.aab)
-                LR_abb = np.dot(L.abb.T, R.abb)
-                LR_bbb = np.dot(L.bbb.T, R.bbb)
-                LR_P = LR_aaa + LR_aab + LR_abb + LR_bbb
-                LR += LR_P
-    elif isinstance(L, FockOperator):
-        LR = -np.einsum("m,m->", R.a, L.a, optimize=True)
-        LR -= 0.5 * np.einsum("mfn,mfn->", R.aa, L.aa, optimize=True)
-        LR -= np.einsum("mfn,mfn->", R.ab, L.ab, optimize=True)
+    if L.order == 3 and R.order == 3:
+        if l3_excitations is None and r3_excitations is None:
+            LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.aaa, L.aaa, optimize=True)
+            LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.aab, L.aab, optimize=True)
+            LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
+            LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
+        else:
+            # LR_P = leftccsdt_p_loops.leftccsdt_p_loops.lr(L.aaa, l3_excitations["aaa"],
+            #                                               L.aab, l3_excitations["aab"],
+            #                                               L.abb, l3_excitations["abb"],
+            #                                               L.bbb, l3_excitations["bbb"],
+            #                                               R.aaa, r3_excitations["aaa"],
+            #                                               R.aab, r3_excitations["aab"],
+            #                                               R.abb, r3_excitations["abb"],
+            #                                               R.bbb, r3_excitations["bbb"],
+            #                                               noa, nua, nob, nub)
+            # This is allowed because L and R are always aligned through the left-EOMCC(P) iterations
+            LR_aaa = np.dot(L.aaa.T, R.aaa)
+            LR_aab = np.dot(L.aab.T, R.aab)
+            LR_abb = np.dot(L.abb.T, R.abb)
+            LR_bbb = np.dot(L.bbb.T, R.bbb)
+            LR_P = LR_aaa + LR_aab + LR_abb + LR_bbb
+            LR += LR_P
+    return LR
 
+def get_LR_ipeom2(R, L):
+    LR = -np.einsum("m,m->", R.a, L.a, optimize=True)
+    LR -= 0.5 * np.einsum("mfn,mfn->", R.aa, L.aa, optimize=True)
+    LR -= np.einsum("mfn,mfn->", R.ab, L.ab, optimize=True)
     return LR

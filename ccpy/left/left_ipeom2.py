@@ -18,6 +18,28 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
                                                                             shift)
     return L, LH
 
+def update_l(L, omega, H, RHF_symmetry, system):
+    L.a, L.aa, L.ab = cc_loops2.cc_loops2.update_r_2h1p(
+            L.a,
+            L.aa,
+            L.ab,
+            omega,
+            H.a.oo,
+            H.a.vv,
+            H.b.oo,
+            H.b.vv,
+            0.0
+    )
+    return L
+
+def LH_fun(LH, L, T, H, flag_RHF, system):
+    # build L1
+    LH = build_LH_1A(L, LH, T, H)
+    # build L2
+    LH = build_LH_2A(L, LH, T, H)
+    LH = build_LH_2B(L, LH, T, H)
+    return LH.flatten()
+
 def build_LH_1A(L, LH, T, H):
 
     LH.a = -1.0 * np.einsum("m,im->i", L.a, H.a.oo, optimize=True)
@@ -45,6 +67,7 @@ def build_LH_2A(L, LH, T, H):
 def build_LH_2B(L, LH, T, H):
 
     LH.ab = np.einsum("i,jb->ibj", L.a, H.b.ov, optimize=True)
+    LH.ab -= np.einsum("m,ijmb->ibj", L.a, H.ab.ooov, optimize=True)
     LH.ab -= np.einsum("ibm,jm->ibj", L.ab, H.b.oo, optimize=True)
     LH.ab -= np.einsum("mbj,im->ibj", L.ab, H.a.oo, optimize=True)
     LH.ab += np.einsum("iej,eb->ibj", L.ab, H.b.vv, optimize=True)

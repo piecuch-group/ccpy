@@ -119,6 +119,17 @@ def leftcc_calculation_summary(L, omega, LR, is_converged, system, print_thresh)
     print_ee_amplitudes(L, system, L.order, print_thresh)
     print("")
 
+def leftipcc_calculation_summary(L, omega, LR, is_converged, system, print_thresh):
+    print("\n   Left IP-EOMCC Calculation Summary")
+    print("  --------------------------------------------------------")
+    if is_converged:
+        convergence_label = 'converged'
+    else:
+        convergence_label = 'not converged'
+    print("   Root", convergence_label, "   ω = %.8f" % omega, "  LR = %.8f" % LR)
+    print_ip_amplitudes(L, system, L.order, print_thresh)
+    print("")
+
 def print_cc_iteration_header():
     print("\n", CC_ITERATION_HEADER)
     print('    '+(len(CC_ITERATION_HEADER)) * "-")
