@@ -26,7 +26,7 @@ def test_ipeom3_ohminus():
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     # Perform guess vectors by diagonalizaing within the 1h + active 2h-1p space
-    driver.run_guess(method="ipcisd", multiplicity=-1, nact_occupied=3, nact_unoccupied=4,
+    driver.run_guess(method="ipcisd", multiplicity=-1, nact_occupied=4, nact_unoccupied=6,
                      roots_per_irrep={"B1": 2, "B2": 0, "A1": 4, "A2": 2})
     driver.run_ipeomcc(method="ipeom3", state_index=[0, 1, 2, 3, 4, 5, 6, 7])
 
@@ -36,6 +36,8 @@ def test_ipeom3_ohminus():
     expected_vee = [-0.01598430, 0.40930363, 0.14381607, 0.38859076, 0.43203093, 0.66870088, 0.29502178, 0.33376960]
     for i, vee in enumerate(expected_vee):
         assert np.allclose(driver.vertical_excitation_energy[i], vee)
+        en = driver.vertical_excitation_energy[i] - driver.vertical_excitation_energy[0]
+        print(f"Root {i} = {en*27.2114} eV")
 
 if __name__ == "__main__":
     test_ipeom3_ohminus()

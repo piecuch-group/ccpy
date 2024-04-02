@@ -35,6 +35,8 @@ def test_ipeom2_ohminus():
     expected_vee = [-0.02049758, 0.56909275, 0.14122875, 0.60699750, 0.61645987, 0.70904961, 0.51783683, 0.58412700]
     for i, vee in enumerate(expected_vee):
         assert np.allclose(driver.vertical_excitation_energy[i], vee)
+        en = driver.vertical_excitation_energy[i] - driver.vertical_excitation_energy[0]
+        print(f"root {i} = {en*27.2114} eV")
 
 if __name__ == "__main__":
     test_ipeom2_ohminus()

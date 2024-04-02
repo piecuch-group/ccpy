@@ -1474,6 +1474,18 @@ class Driver:
         # else:
         #     raise NotImplementedError("Triples correction {} not implemented".format(method.lower()))
 
+    def run_ipccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, pspace=None):
+
+        if method.lower() == "cripcc23":
+            from ccpy.moments.cripcc23 import calc_cripcc23
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            for i in state_index:
+                # Perform 3h-2p corrections
+                _, self.deltap3[i] = calc_cripcc23(self.T, self.R[i], self.L[i],
+                                                    self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                    self.system, self.options["RHF_symmetry"])
+
     def run_ccp4(self, method, state_index=[0], two_body_approx=True):
 
         if method.lower() == "crcc24":
