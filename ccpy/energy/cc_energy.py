@@ -153,3 +153,9 @@ def get_LR_ipeom2(R, L):
     LR -= 0.5 * np.einsum("mfn,mfn->", R.aa, L.aa, optimize=True)
     LR -= np.einsum("mfn,mfn->", R.ab, L.ab, optimize=True)
     return LR
+
+def get_LR_eaeom2(R, L):
+    LR = np.einsum("e,e->", R.a, L.a, optimize=True)
+    LR += 0.5 * np.einsum("efn,efn->", R.aa, L.aa, optimize=True)
+    LR += np.einsum("efn,efn->", R.ab, L.ab, optimize=True)
+    return LR

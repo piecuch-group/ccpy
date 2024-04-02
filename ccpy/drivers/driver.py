@@ -14,7 +14,7 @@ from ccpy.drivers.solvers import (
                 eomcc_nonlinear_diis,
                 eccc_jacobi,
 )
-from ccpy.energy.cc_energy import get_LR, get_LR_ipeom2, get_r0, get_rel, get_rel_ea, get_rel_ip
+from ccpy.energy.cc_energy import get_LR, get_LR_ipeom2, get_LR_eaeom2, get_r0, get_rel, get_rel_ea, get_rel_ip
 from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator, SpinFlipOperator, FockOperator
 from ccpy.utilities.printing import (
@@ -22,7 +22,7 @@ from ccpy.utilities.printing import (
                 cc_calculation_summary,
                 eomcc_calculation_summary, leftcc_calculation_summary, print_ee_amplitudes,
                 print_sf_amplitudes, sfeomcc_calculation_summary,
-                print_ea_amplitudes, eaeomcc_calculation_summary,
+                print_ea_amplitudes, eaeomcc_calculation_summary, lefteacc_calculation_summary,
                 print_ip_amplitudes, ipeomcc_calculation_summary, leftipcc_calculation_summary,
                 print_dea_amplitudes, deaeomcc_calculation_summary,
                 print_dip_amplitudes, dipeomcc_calculation_summary,
@@ -1319,7 +1319,7 @@ class Driver:
                                                                                                    self.hamiltonian,
                                                                                                    self.system,
                                                                                                    self.options)
-            # compute the relative excitation level (REL) metric
+            # Compute L*R and normalize the computed left vector by LR
             LR_function = lambda L: get_LR_ipeom2(self.R[istate], L)
             LR = LR_function(self.L[istate])
             self.L[istate].unflatten(1.0 / LR * self.L[istate].flatten())
@@ -1328,6 +1328,67 @@ class Driver:
             omega_diff = abs(omega_right - self.vertical_excitation_energy[istate])
             print("   |ω(R) - ω(L)| = ", omega_diff)
             print("   Left-IP-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
+            assert omega_diff <= 1.0e-05
+
+    def run_lefteaeomcc(self, method, state_index):
+        """Performs the particle-nonconserving left-EA-EOMCC calculation specified by the user in the input."""
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.left.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build R
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert (self.flag_hbar)
+
+        # import the specific left-EOMCC method module and get its update function
+        lcc_module = import_module("ccpy.left." + method.lower())
+        LH_function = getattr(lcc_module, 'LH_fun')
+        update_function = getattr(lcc_module, 'update_l')
+
+        # Print the options as a header
+        self.print_options()
+
+        for i in state_index:
+            if self.L[i] is None:
+                self.L[i] = FockOperator(self.system,
+                                         self.num_particles,
+                                         self.num_holes)
+                self.L[i].unflatten(self.R[i].flatten())
+
+        # Create the residual R that is re-used for each root
+        LH = FockOperator(self.system,
+                          self.num_particles,
+                          self.num_holes)
+
+        for j, istate in enumerate(state_index):
+            print("   Left-EA-EOMCC calculation for root %d started on" % istate, get_timestamp())
+            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
+            # Save the right eigenvalue
+            omega_right = self.vertical_excitation_energy[istate]
+            print_ea_amplitudes(self.L[istate], self.system, self.L[istate].order, self.options["amp_print_threshold"])
+            self.L[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(LH_function,
+                                                                                                   update_function,
+                                                                                                   self.L[istate].flatten() / np.linalg.norm(self.L[istate].flatten()),
+                                                                                                   self.L[istate],
+                                                                                                   LH,
+                                                                                                   self.vertical_excitation_energy[istate],
+                                                                                                   self.T,
+                                                                                                   self.hamiltonian,
+                                                                                                   self.system,
+                                                                                                   self.options)
+            # Compute L*R and normalize the computed left vector by LR
+            LR_function = lambda L: get_LR_eaeom2(self.R[istate], L)
+            LR = LR_function(self.L[istate])
+            self.L[istate].unflatten(1.0 / LR * self.L[istate].flatten())
+            lefteacc_calculation_summary(self.L[istate], self.vertical_excitation_energy[istate], LR, is_converged, self.system, self.options["amp_print_threshold"])
+            # Before leaving, verify that the excitation energy obtained in the left diagonalization matches
+            omega_diff = abs(omega_right - self.vertical_excitation_energy[istate])
+            print("   |ω(R) - ω(L)| = ", omega_diff)
+            print("   Left-EA-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
             assert omega_diff <= 1.0e-05
 
     def run_eccc(self, method, ci_vectors_file, t3_excitations=None):
