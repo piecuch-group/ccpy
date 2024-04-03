@@ -30,5 +30,7 @@ def test_eaeom2_chplus():
        assert np.allclose(driver.vertical_excitation_energy[i], vee)
 
     driver.run_lefteaeomcc(method="left_eaeom2", state_index=[0, 1, 2, 3, 4, 5, 6, 7])
+
+    driver.run_eaccp3(method="creacc23", state_index=[0, 1, 2, 3, 4, 5, 6, 7])
 if __name__ == "__main__":
     test_eaeom2_chplus()

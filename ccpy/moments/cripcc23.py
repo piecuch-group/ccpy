@@ -80,7 +80,7 @@ def calc_cripcc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     total_energy_C = system.reference_energy + energy_C
     total_energy_D = system.reference_energy + energy_D
 
-    print('   CR-IPEOMCCSD(2h-1p,3h-2p) Calculation Summary')
+    print('   CR-IP-EOMCCSD(2h-1p,3h-2p) Calculation Summary')
     print('   -------------------------------------------------')
     print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
     print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
@@ -204,9 +204,10 @@ def build_HR_3C(R, T, X, H):
 def build_LH_3A(L, T, H):
     """Calculate the projection <0| (L1h+L2h1p)(H_N e^(T1+T2))_C |ijkbc>."""
     # moment-like terms
-    X3A = (3.0 / 6.0) * np.einsum("i,jkbc->ibcjk", L.a, H.aa.oovv, optimize=True)
-    X3A += (3.0 / 6.0) * np.einsum("iej,ekbc->ibcjk", L.aa, H.aa.vovv, optimize=True)
-    X3A -= np.einsum("mck,ijmb->ibcjk", L.aa, H.aa.ooov, optimize=True)
+    X3A = (3.0 / 12.0) * np.einsum("i,jkbc->ibcjk", L.a, H.aa.oovv, optimize=True)
+    X3A += (6.0 / 12.0) * np.einsum("ibj,kc->ibcjk", L.aa, H.a.ov, optimize=True)
+    X3A += (3.0 / 12.0) * np.einsum("iej,ekbc->ibcjk", L.aa, H.aa.vovv, optimize=True)
+    X3A -= (6.0 / 12.0) * np.einsum("mck,ijmb->ibcjk", L.aa, H.aa.ooov, optimize=True)
     X3A -= np.transpose(X3A, (3, 1, 2, 0, 4)) + np.transpose(X3A, (4, 1, 2, 3, 0)) # antisymmetrize A(i/jk)
     X3A -= np.transpose(X3A, (0, 1, 2, 4, 3)) # antisymmetrize A(jk)
     X3A -= np.transpose(X3A, (0, 2, 1, 3, 4)) # antisymmetrize A(bc)
@@ -216,6 +217,8 @@ def build_LH_3B(L, T, H):
     """Calculate the projection <0| (L1h+L2h1p)(H_N e^(T1+T2))_C |ijk~bc~>."""
     # moment-like terms
     X3B = np.einsum("i,jkbc->ibcjk", L.a, H.ab.oovv, optimize=True)
+    X3B += (1.0 / 2.0) * np.einsum("ibj,kc->ibcjk", L.aa, H.b.ov, optimize=True)
+    X3B += np.einsum("ick,jb->ibcjk", L.ab, H.a.ov, optimize=True)
     X3B += (1.0 / 2.0) * np.einsum("iej,ekbc->ibcjk", L.aa, H.ab.vovv, optimize=True)
     X3B += np.einsum("iek,jebc->ibcjk", L.ab, H.ab.ovvv, optimize=True)
     X3B -= np.einsum("mbj,ikmc->ibcjk", L.aa, H.ab.ooov, optimize=True)
@@ -228,6 +231,7 @@ def build_LH_3C(L, T, H):
     """Calculate the projection <0| (L1h+L2h1p)(H_N e^(T1+T2))_C |ij~k~b~c~>."""
     # moment-like terms
     X3C = (1.0 / 4.0) * np.einsum("i,jkbc->ibcjk", L.a, H.bb.oovv, optimize=True)
+    X3C += np.einsum("ibj,kc->ibcjk", L.ab, H.b.ov, optimize=True)
     X3C += (2.0 / 4.0) * np.einsum("iej,ekbc->ibcjk", L.ab, H.bb.vovv, optimize=True)
     X3C -= np.einsum("mck,ijmb->ibcjk", L.ab, H.ab.ooov, optimize=True)
     X3C -= (2.0 / 4.0) * np.einsum("ibm,jkmc->ibcjk", L.ab, H.bb.ooov, optimize=True)

@@ -3,6 +3,7 @@ MODULES := cc_loops \
 		   cc_loops2 \
 		   crcc_loops \
 		   cripcc_loops \
+		   creacc_loops \
 		   ccsdpt_loops \
 		   crcc24_loops \
 		   crcc24_opt_loops \
