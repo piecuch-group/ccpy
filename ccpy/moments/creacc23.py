@@ -28,9 +28,9 @@ def calc_creacc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     L3A = build_LH_3A(L, T, H)
     # perform correction in-loop
     dA_aaa, dB_aaa, dC_aaa, dD_aaa = creacc_loops.creacc_loops.crcc23a(M3A, L3A, omega,
-                                                                       H0.a.oo, H0.a.vv, H.a.oo, H.a.vv)
-                                                                       #H.aa.vvvv, H.aa.oooo, H.aa.voov,
-                                                                       #d3aaa_o, d3aaa_v)
+                                                                       H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
+                                                                       H.aa.vvvv, H.aa.oooo, H.aa.voov,
+                                                                       d3aaa_o, d3aaa_v)
     #### aab correction ####
     # calculate intermediates
     M3B = build_HR_3B(R, T, X, H)
@@ -38,11 +38,11 @@ def calc_creacc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     # perform correction in-loop
     dA_aab, dB_aab, dC_aab, dD_aab = creacc_loops.creacc_loops.crcc23b(M3B, L3B, omega,
                                                                        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-                                                                       H.a.oo, H.a.vv, H.b.oo, H.b.vv)
-                                                                       #H.aa.oooo, H.aa.voov,
-                                                                       #H.ab.vvvv, H.ab.oooo, H.ab.ovov, H.ab.vovo,
-                                                                       #H.bb.voov,
-                                                                       #d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v)
+                                                                       H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                                       H.aa.vvvv, H.aa.voov,
+                                                                       H.ab.vvvv, H.ab.oooo, H.ab.ovov, H.ab.vovo,
+                                                                       H.bb.voov,
+                                                                       d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v)
     #### abb correction ####
     # calculate intermediates
     M3C = build_HR_3C(R, T, X, H) 
@@ -50,10 +50,10 @@ def calc_creacc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     # perform correction in-loop
     dA_abb, dB_abb, dC_abb, dD_abb = creacc_loops.creacc_loops.crcc23c(M3C, L3C, omega,
                                                                        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-                                                                       H.a.oo, H.a.vv, H.b.oo, H.b.vv)
-                                                                       #H.ab.oooo, H.ab.ovov, H.ab.vovo,
-                                                                       #H.bb.vvvv, H.bb.oooo, H.bb.voov,
-                                                                       #d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v)
+                                                                       H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                                       H.ab.vvvv, H.ab.ovov, H.ab.vovo,
+                                                                       H.bb.vvvv, H.bb.oooo, H.bb.voov,
+                                                                       d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v)
     # Add up individual contributions to form total 3h-2p correction
     correction_A = dA_aaa + dA_aab + dA_abb
     correction_B = dB_aaa + dB_aab + dB_abb

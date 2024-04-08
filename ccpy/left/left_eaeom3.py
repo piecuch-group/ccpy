@@ -69,9 +69,9 @@ def build_LH_2A(L, LH, H, T, X):
     #LH.aa -= 0.5 * np.einsum("jem,emab->abj", X["aa"]["ovo"], H.aa.vovv, optimize=True)
     #LH.aa -= np.einsum("aef,fjeb->abj", X["aa"]["vvv"], H.aa.vovv, optimize=True)
     ###
-    h3a_vvooov = (
-
-    )
+    #h3a_vvooov = (
+    #
+    #)
     ###
 
     LH.aa -= np.transpose(LH.aa, (1, 0, 2))
