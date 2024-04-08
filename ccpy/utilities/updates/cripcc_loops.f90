@@ -28,11 +28,14 @@ module cripcc_loops
                         ! Local variables
                         integer :: i, j, k, b, c
                         real(kind=8) :: D, temp
+                        real(kind=8) :: phase
 
                         deltaA = 0.0
                         deltaB = 0.0
                         deltaC = 0.0
                         deltaD = 0.0
+
+                        phase = 1.0d0
 
                         do i = 1,noa
                            do j = i+1,noa
@@ -49,19 +52,19 @@ module cripcc_loops
                                        deltaB = deltaB + temp/(omega+D)
                                        ! C correction
                                        D = D&
-                                       -h2a_oooo(i,j,i,j) - h2a_oooo(i,k,i,k) - h2a_oooo(j,k,j,k)&
+                                       + phase*(-h2a_oooo(i,j,i,j) - h2a_oooo(i,k,i,k) - h2a_oooo(j,k,j,k)&
                                        -h2a_vvvv(b,c,b,c)&
                                        -h2a_voov(b,i,i,b) - h2a_voov(c,i,i,c)&
                                        -h2a_voov(b,j,j,b) - h2a_voov(c,j,j,c)&
-                                       -h2a_voov(b,k,k,b) - h2a_voov(c,k,k,c)
+                                       -h2a_voov(b,k,k,b) - h2a_voov(c,k,k,c))
                                        deltaC = deltaC + temp/(omega+D)
                                        ! D correction
                                        D = D&
-                                       +D3A_O(b,i,j)+D3A_O(b,i,k)+D3A_O(b,j,k)&
+                                       + phase*(D3A_O(b,i,j)+D3A_O(b,i,k)+D3A_O(b,j,k)&
                                        +D3A_O(c,i,j)+D3A_O(c,i,k)+D3A_O(c,j,k)&
                                        -D3A_V(b,i,c)&
                                        -D3A_V(b,j,c)&
-                                       -D3A_V(b,k,c)
+                                       -D3A_V(b,k,c))
                                        deltaD = deltaD + temp/(omega+D)
                                     end do
                                  end do
@@ -108,11 +111,14 @@ module cripcc_loops
                         ! Local variables
                         integer :: i, j, k, b, c
                         real(kind=8) :: D, temp
+                        real(kind=8) :: phase
 
                         deltaA = 0.0
                         deltaB = 0.0
                         deltaC = 0.0
                         deltaD = 0.0
+
+                        phase = 1.0d0
 
                         do i = 1,noa
                            do j = i+1,noa
@@ -129,19 +135,19 @@ module cripcc_loops
                                        deltaB = deltaB + temp/(omega+D)
                                        ! C correction
                                        D = D&
-                                       -h2a_oooo(i,j,i,j) - h2b_oooo(i,k,i,k) - h2b_oooo(j,k,j,k)&
+                                       + phase*(-h2a_oooo(i,j,i,j) - h2b_oooo(i,k,i,k) - h2b_oooo(j,k,j,k)&
                                        -h2b_vvvv(b,c,b,c)&
                                        -h2a_voov(b,i,i,b) + h2b_ovov(i,c,i,c)&
                                        -h2a_voov(b,j,j,b) + h2b_ovov(j,c,j,c)&
-                                       +h2b_vovo(b,k,b,k) - h2c_voov(c,k,k,c)
+                                       +h2b_vovo(b,k,b,k) - h2c_voov(c,k,k,c))
                                        deltaC = deltaC + temp/(omega+D)
                                        ! D correction
                                        D = D &
-                                       +D3A_O(b,i,j)+D3B_O(b,i,k)+D3B_O(b,j,k)&
+                                       + phase*(D3A_O(b,i,j)+D3B_O(b,i,k)+D3B_O(b,j,k)&
                                        +D3C_O(c,i,k)+D3C_O(c,j,k)&
                                        -D3B_V(b,i,c)&
                                        -D3B_V(b,j,c)&
-                                       -D3C_V(b,k,c)
+                                       -D3C_V(b,k,c))
                                        deltaD = deltaD + temp/(omega+D)
                                     end do
                                  end do
@@ -186,11 +192,14 @@ module cripcc_loops
                         ! Local variables
                         integer :: i, j, k, b, c
                         real(kind=8) :: D, temp
+                        real(kind=8) :: phase
 
                         deltaA = 0.0
                         deltaB = 0.0
                         deltaC = 0.0
                         deltaD = 0.0
+
+                        phase = 1.0d0
 
                         do i = 1,noa
                            do j = 1,nob
@@ -207,18 +216,18 @@ module cripcc_loops
                                        deltaB = deltaB + temp/(omega+D)
                                        ! C correction
                                        D = D&
-                                       -h2b_oooo(i,j,i,j) - h2b_oooo(i,k,i,k) - h2c_oooo(j,k,j,k)&
+                                       + phase*(-h2b_oooo(i,j,i,j) - h2b_oooo(i,k,i,k) - h2c_oooo(j,k,j,k)&
                                        -h2c_vvvv(b,c,b,c)&
                                        +h2b_ovov(i,b,i,b) + h2b_ovov(i,c,i,c)&
                                        -h2c_voov(b,j,j,b) - h2c_voov(c,j,j,c)&
-                                       -h2c_voov(b,k,k,b) - h2c_voov(c,k,k,c)
+                                       -h2c_voov(b,k,k,b) - h2c_voov(c,k,k,c))
                                        deltaC = deltaC + temp/(omega+D)
                                        ! D correction
                                        D = D&
-                                       +D3C_O(b,i,j)+D3C_O(b,i,k)+D3D_O(b,j,k)&
+                                       + phase*(D3C_O(b,i,j)+D3C_O(b,i,k)+D3D_O(b,j,k)&
                                        +D3C_O(c,i,j)+D3C_O(c,i,k)+D3D_O(c,j,k)&
                                        -D3D_V(b,j,c)&
-                                       -D3D_V(b,k,c)
+                                       -D3D_V(b,k,c))
                                        deltaD = deltaD + temp/(omega+D)
                                     end do
                                  end do
