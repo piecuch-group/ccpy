@@ -3,23 +3,24 @@
 import numpy as np
 from ccpy.utilities.updates import cc_loops2
 
-def update(T, dT, H, X, shift, flag_RHF, system):
+def update(T, dT, H, X, shift, flag_RHF, system, acparray):
 
     # update T2
-    T, dT = update_t2a(T, dT, H, shift)
-    T, dT = update_t2b(T, dT, H, shift)
+    T, dT = update_t2a(T, dT, H, shift, acparray)
+    T, dT = update_t2b(T, dT, H, shift, acparray)
     if flag_RHF:
         T.bb = T.aa.copy()
         dT.bb = dT.aa.copy()
     else:
-        T, dT = update_t2c(T, dT, H, shift)
+        T, dT = update_t2c(T, dT, H, shift, acparray)
 
     return T, dT
 
-def update_t2a(T, dT, H, shift):
+def update_t2a(T, dT, H, shift, acparray):
     """
     Update t2a amplitudes by calculating the projection <ijab|(H_N e^T2)_C|0>.
     """
+    d1, d2, d3, d4, d5 = acparray
 
     # < ijab | (F T2)_C | 0 >
     dT.aa = -0.5 * np.einsum("mi,abmj->abij", H.a.oo, T.aa, optimize=True)  # A(ij)
@@ -32,31 +33,22 @@ def update_t2a(T, dT, H, shift):
     dT.aa += 0.125 * np.einsum("abef,efij->abij", H.aa.vvvv, T.aa, optimize=True)  # 1
 
     # < ijab | (V T2**2)_C | 0 >
-    dT.aa += 0.5 * np.einsum(
-        "mnef,aeim,bfjn->abij", H.aa.oovv, T.aa, T.aa, optimize=True
-    ) # A(ij)
-    dT.aa += np.einsum(
-        "mnef,aeim,bfjn->abij", H.ab.oovv, T.aa, T.ab, optimize=True
-    ) # A(ij)A(ab)
-    dT.aa += 0.5 * np.einsum(
-        "mnef,aeim,bfjn->abij", H.bb.oovv, T.ab, T.ab, optimize=True
-    ) # A(ij)
-    dT.aa += 0.25 * 0.25 * np.einsum(
-        "mnef,efij,abmn->abij", H.aa.oovv, T.aa, T.aa, optimize=True
-    ) # 1
-    dT.aa -= 0.25 * np.einsum(
-        "mnef,abim,efjn->abij", H.aa.oovv, T.aa, T.aa, optimize=True
-    ) # A(ij)
-    dT.aa -= 0.5 * np.einsum(
-        "mnef,abim,efjn->abij", H.ab.oovv, T.aa, T.ab, optimize=True
-    ) # A(ij)
-    dT.aa -= 0.25 * np.einsum(
-        "mnef,aeij,bfmn->abij", H.aa.oovv, T.aa, T.aa, optimize=True
-    ) # A(ab)
-    dT.aa -= 0.5 * np.einsum(
-        "mnef,aeij,bfmn->abij", H.ab.oovv, T.aa, T.ab, optimize=True
-    ) # A(ab)
-
+    #dT.aa += 0.5 * np.einsum(
+    #    "mnef,aeim,bfjn->abij", H.aa.oovv, T.aa, T.aa, optimize=True
+    #) # A(ij) [D1 + D2]
+    dT.aa += d1 * 0.5 * np.einsum("mnef,aeim,bfjn->abij", H.ab.oovv, T.aa, T.aa, optimize=True) # A(ij) [D1]
+    dT.aa -= d2 * 0.5 * np.einsum("mnfe,aeim,bfjn->abij", H.ab.oovv, T.aa, T.aa, optimize=True) # A(ij) [D2]
+    dT.aa += d5 * 0.25 * 0.25 * np.einsum("mnef,efij,abmn->abij", H.aa.oovv, T.aa, T.aa, optimize=True) # 1 [D5]
+    dT.aa -= d4 * 0.25 * np.einsum("mnef,abim,efjn->abij", H.aa.oovv, T.aa, T.aa, optimize=True) # A(ij) [D4]
+    dT.aa -= d3 * 0.25 * np.einsum("mnef,aeij,bfmn->abij", H.aa.oovv, T.aa, T.aa, optimize=True) # A(ab) [D3]
+    dT.aa += d1 * np.einsum("mnef,aeim,bfjn->abij", H.ab.oovv, T.aa, T.ab, optimize=True) # A(ij)A(ab) [D1]
+    dT.aa -= d4 * 0.5 * np.einsum("mnef,abim,efjn->abij", H.ab.oovv, T.aa, T.ab, optimize=True) # A(ij) [D4]
+    dT.aa -= d3 * 0.5 * np.einsum("mnef,aeij,bfmn->abij", H.ab.oovv, T.aa, T.ab, optimize=True) # A(ab) [D3]
+    #dT.aa += 0.5 * np.einsum(
+    #    "mnef,aeim,bfjn->abij", H.bb.oovv, T.ab, T.ab, optimize=True
+    #) # A(ij) [D1 + D2]
+    dT.aa += d1 * 0.5 * np.einsum("mnef,aeim,bfjn->abij", H.ab.oovv, T.ab, T.ab, optimize=True) # A(ij) [D1]
+    dT.aa -= d2 * 0.5 * np.einsum("mnfe,aeim,bfjn->abij", H.ab.oovv, T.ab, T.ab, optimize=True) # A(ij) [D2]
 
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
         T.aa, dT.aa + 0.25 * H.aa.vvoo, H.a.oo, H.a.vv, shift
@@ -64,10 +56,12 @@ def update_t2a(T, dT, H, shift):
     return T, dT
 
 
-def update_t2b(T, dT, H, shift):
+def update_t2b(T, dT, H, shift, acparray):
     """
     Update t2b amplitudes by calculating the projection <i~jab~|(H_N e^T2)_C|0>.
     """
+
+    d1, d2, d3, d4, d5 = acparray
 
     # < ijab | (F T2)_C | 0 >
     dT.ab = -np.einsum("mi,abmj->abij", H.a.oo, T.ab, optimize=True)
@@ -86,21 +80,27 @@ def update_t2b(T, dT, H, shift):
     dT.ab += np.einsum("abef,efij->abij", H.ab.vvvv, T.ab, optimize=True)
 
     # < ijab | (V T2**2)_C | 0 >
-    dT.ab += np.einsum("mnef,aeim,fbnj->abij", H.aa.oovv, T.aa, T.ab, optimize=True)
-    dT.ab += np.einsum("mnef,aeim,fbnj->abij", H.ab.oovv, T.aa, T.bb, optimize=True)
-    dT.ab += np.einsum("nmfe,aeim,fbnj->abij", H.ab.oovv, T.ab, T.ab, optimize=True)
-    dT.ab += np.einsum("mnef,aeim,fbnj->abij", H.bb.oovv, T.ab, T.bb, optimize=True)
-    dT.ab += np.einsum("mnef,ebin,afmj->abij", H.ab.oovv, T.ab, T.ab, optimize=True)
-    dT.ab += np.einsum("mnef,efij,abmn->abij", H.ab.oovv, T.ab, T.ab, optimize=True)
+    #dT.ab += np.einsum("mnef,aeim,fbnj->abij", H.aa.oovv, T.aa, T.ab, optimize=True) # [D1 + D2]
+    dT.ab += d1 * np.einsum("mnef,aeim,fbnj->abij", H.ab.oovv, T.aa, T.ab, optimize=True) # [D1]
+    dT.ab -= d2 * np.einsum("mnfe,aeim,fbnj->abij", H.ab.oovv, T.aa, T.ab, optimize=True) # [D2]
+    dT.ab -= d4 * 0.5 * np.einsum("mnef,efin,abmj->abij", H.aa.oovv, T.aa, T.ab, optimize=True) # [D4]
+    dT.ab -= d3 * 0.5 * np.einsum("mnef,afmn,ebij->abij", H.aa.oovv, T.aa, T.ab, optimize=True) # [D3]
 
-    dT.ab -= 0.5 * np.einsum("mnef,efin,abmj->abij", H.aa.oovv, T.aa, T.ab, optimize=True)
-    dT.ab -= np.einsum("mnef,efin,abmj->abij", H.ab.oovv, T.ab, T.ab, optimize=True)
-    dT.ab -= np.einsum("nmfe,fenj,abim->abij", H.ab.oovv, T.ab, T.ab, optimize=True)
-    dT.ab -= 0.5 * np.einsum("mnef,efjn,abim->abij", H.bb.oovv, T.bb, T.ab, optimize=True)
-    dT.ab -= 0.5 * np.einsum("mnef,afmn,ebij->abij", H.aa.oovv, T.aa, T.ab, optimize=True)
-    dT.ab -= np.einsum("mnef,afmn,ebij->abij", H.ab.oovv, T.ab, T.ab, optimize=True)
-    dT.ab -= np.einsum("nmfe,fbnm,aeij->abij", H.ab.oovv, T.ab, T.ab, optimize=True)
-    dT.ab -= 0.5 * np.einsum("mnef,bfmn,aeij->abij", H.bb.oovv, T.bb, T.ab, optimize=True)
+    dT.ab += d1 * np.einsum("nmfe,aeim,fbnj->abij", H.ab.oovv, T.ab, T.ab, optimize=True) # [D1]
+    dT.ab += d2 * np.einsum("mnef,ebin,afmj->abij", H.ab.oovv, T.ab, T.ab, optimize=True) # [D2]
+    dT.ab += d4 * np.einsum("mnef,efij,abmn->abij", H.ab.oovv, T.ab, T.ab, optimize=True) # [D4]
+    dT.ab -= d4 * np.einsum("mnef,efin,abmj->abij", H.ab.oovv, T.ab, T.ab, optimize=True) # [D4]
+    dT.ab -= d5 * np.einsum("nmfe,fenj,abim->abij", H.ab.oovv, T.ab, T.ab, optimize=True) # [D5]
+    dT.ab -= d3 * np.einsum("mnef,afmn,ebij->abij", H.ab.oovv, T.ab, T.ab, optimize=True) # [D3]
+    dT.ab -= d3 * np.einsum("nmfe,fbnm,aeij->abij", H.ab.oovv, T.ab, T.ab, optimize=True) # [D3]
+
+    dT.ab += d1 * np.einsum("mnef,aeim,fbnj->abij", H.ab.oovv, T.aa, T.bb, optimize=True) # [D1]
+
+    #dT.ab += np.einsum("mnef,aeim,fbnj->abij", H.bb.oovv, T.ab, T.bb, optimize=True) # [D1 + D2]
+    dT.ab += d1 * np.einsum("mnef,aeim,fbnj->abij", H.ab.oovv, T.ab, T.bb, optimize=True) # [D1]
+    dT.ab -= d2 * np.einsum("mnfe,aeim,fbnj->abij", H.ab.oovv, T.ab, T.bb, optimize=True) # [D2]
+    dT.ab -= d4 * 0.5 * np.einsum("mnef,efjn,abim->abij", H.bb.oovv, T.bb, T.ab, optimize=True) # [D4]
+    dT.ab -= d3 * 0.5 * np.einsum("mnef,bfmn,aeij->abij", H.bb.oovv, T.bb, T.ab, optimize=True) # [D3]
 
     T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
         T.ab, dT.ab + H.ab.vvoo, H.a.oo, H.a.vv, H.b.oo, H.b.vv, shift
@@ -108,7 +108,7 @@ def update_t2b(T, dT, H, shift):
     return T, dT
 
 
-def update_t2c(T, dT, H, shift):
+def update_t2c(T, dT, H, shift, acparray):
     """
     Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^T2)_C|0>.
     """

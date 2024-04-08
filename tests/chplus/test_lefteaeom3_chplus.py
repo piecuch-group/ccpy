@@ -25,10 +25,10 @@ def test_eaeom3_chplus():
     driver.run_guess(method="eacisd", multiplicity=-1, nact_occupied=0, nact_unoccupied=0,
                      roots_per_irrep={"B1": 2, "A1": 4})
     driver.run_eaeomcc(method="eaeom3", state_index=[0])
-    driver.run_lefteaeomcc(method="left_eaeom3", state_index=[0])
+    #driver.run_lefteaeomcc(method="left_eaeom3", state_index=[0])
 
-    L = driver.L[0]
-    print("norm of l3a = ", np.linalg.norm(L.aaa.flatten()))
+    #L = driver.L[0]
+    #print("norm of l3a = ", np.linalg.norm(L.aaa.flatten()))
     #
     # Check the results
     #

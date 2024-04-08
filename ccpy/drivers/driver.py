@@ -108,7 +108,7 @@ class Driver:
             self.operator_params["order"] = 1
             self.operator_params["number_particles"] = 1
             self.operator_params["number_holes"] = 1
-        elif method.lower() in ["cc2", "ccd", "ccsd", "eomcc2", "eomccsd", "left_ccsd", "eccc2", "cc3", "eomcc3"]:
+        elif method.lower() in ["cc2", "ccd", "ccsd", "accd", "accsd", "eomcc2", "eomccsd", "left_ccsd", "eccc2", "cc3", "eomcc3"]:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
@@ -126,7 +126,7 @@ class Driver:
             self.operator_params["number_holes"] = 3
             self.operator_params["active_orders"] = [3]
             self.operator_params["number_active_indices"] = [1]
-        elif method.lower() in ["ccsdt_p", "eomccsdt_p", "left_ccsdt_p"]:
+        elif method.lower() in ["ccsdt_p", "accsdt_p", "eomccsdt_p", "left_ccsdt_p"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
@@ -204,7 +204,7 @@ class Driver:
         else:
             raise NotImplementedError("MBPT method {} not implemented".format(method.lower()))
 
-    def run_cc(self, method):
+    def run_cc(self, method, acparray=None):
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.cc.MODULES:
             raise NotImplementedError(
@@ -220,6 +220,8 @@ class Driver:
 
         # Print the options as a header
         self.print_options()
+        if acparray:
+            print("   ACP array = ", acparray)
         print("   CC calculation started on", get_timestamp())
 
         # Create either the standard CC cluster operator
@@ -243,11 +245,12 @@ class Driver:
                                                 cc_intermediates,
                                                 self.system,
                                                 self.options,
+                                                acparray=acparray,
                                                )
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   CC calculation ended on", get_timestamp())
 
-    def run_ccp(self, method, t3_excitations):
+    def run_ccp(self, method, t3_excitations, acparray=None):
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.cc.MODULES:
             raise NotImplementedError(
@@ -266,6 +269,8 @@ class Driver:
 
         # Print the options as a header
         self.print_options()
+        if acparray:
+            print("   ACP array = ", acparray)
         print("   CC(P) calculation started on", get_timestamp())
 
         # Create the CC(P) cluster operator
@@ -308,7 +313,8 @@ class Driver:
                                                        cc_intermediates,
                                                        self.system,
                                                        self.options,
-                                                       t3_excitations)
+                                                       t3_excitations,
+                                                       acparray=acparray)
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   CC(P) calculation ended on", get_timestamp())
 
