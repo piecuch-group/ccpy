@@ -13,12 +13,6 @@ def calc_creacc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 
-    # Containers for the CR-EOMCC(2,3) correction
-    correction_A = 0.0
-    correction_B = 0.0
-    correction_C = 0.0
-    correction_D = 0.0
-
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
     d3aab_v, d3aab_o = aab_H3_aab_diagonal(T, H, system)
@@ -31,7 +25,7 @@ def calc_creacc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     #### aaa correction ####
     # calculate intermediates
     M3A = build_HR_3A(R, T, X, H)
-    L3A = build_LH_3A(L, T, H) 
+    L3A = build_LH_3A(L, T, H)
     # perform correction in-loop
     dA_aaa, dB_aaa, dC_aaa, dD_aaa = creacc_loops.creacc_loops.crcc23a(M3A, L3A, omega,
                                                                        H0.a.oo, H0.a.vv, H.a.oo, H.a.vv)
@@ -52,7 +46,7 @@ def calc_creacc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     #### abb correction ####
     # calculate intermediates
     M3C = build_HR_3C(R, T, X, H) 
-    L3C = build_LH_3B(L, T, H)
+    L3C = build_LH_3C(L, T, H)
     # perform correction in-loop
     dA_abb, dB_abb, dC_abb, dD_abb = creacc_loops.creacc_loops.crcc23c(M3C, L3C, omega,
                                                                        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
@@ -118,7 +112,7 @@ def get_eaeom23_intermediates(H, R):
     # set up in the models at the moment. We will just use a dictionary
     # as a workaround for now.
 
-    X = {"aa" : {}, "ab" : {}}
+    X = {"aa": {}, "ab": {}}
 
     # x2a(amj)
     X["aa"]["voo"] = (
