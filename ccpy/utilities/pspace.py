@@ -508,40 +508,44 @@ def get_active_pspace(system, num_active=1, target_irrep=None):
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
+                if count_active_occ_alpha([i, j, k]) < num_active: continue
                 for a in range(system.nunoccupied_alpha):
                     for b in range(a + 1, system.nunoccupied_alpha):
                         for c in range(b + 1, system.nunoccupied_alpha):
-                            if count_active_occ_alpha([i, j, k]) >= num_active and count_active_unocc_alpha([a, b, c]) >= num_active:
+                            if count_active_unocc_alpha([a, b, c]) >= num_active:
                                 if not checksym_aaa(i, j, k, a, b, c): continue
                                 excitations["aaa"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # aab
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
+                if (count_active_occ_alpha([i, j]) + count_active_occ_beta([k])) < num_active: continue 
                 for a in range(system.nunoccupied_alpha):
                     for b in range(a + 1, system.nunoccupied_alpha):
                         for c in range(system.nunoccupied_beta):
-                            if (count_active_occ_alpha([i, j]) + count_active_occ_beta([k])) >= num_active and (count_active_unocc_alpha([a, b]) + count_active_unocc_beta([c])) >= num_active:
+                            if (count_active_unocc_alpha([a, b]) + count_active_unocc_beta([c])) >= num_active:
                                 if not checksym_aab(i, j, k, a, b, c): continue
                                 excitations["aab"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # abb
     for i in range(system.noccupied_alpha):
         for j in range(system.noccupied_beta):
             for k in range(j + 1, system.noccupied_beta):
+                if (count_active_occ_alpha([i]) + count_active_occ_beta([j, k])) < num_active: continue 
                 for a in range(system.nunoccupied_alpha):
                     for b in range(system.nunoccupied_beta):
                         for c in range(b + 1, system.nunoccupied_beta):
-                            if (count_active_occ_alpha([i]) + count_active_occ_beta([j, k])) >= num_active and (count_active_unocc_alpha([a]) + count_active_unocc_beta([b, c])) >= num_active:
+                            if (count_active_unocc_alpha([a]) + count_active_unocc_beta([b, c])) >= num_active:
                                 if not checksym_abb(i, j, k, a, b, c): continue
                                 excitations["abb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # bbb
     for i in range(system.noccupied_beta):
         for j in range(i + 1, system.noccupied_beta):
             for k in range(j + 1, system.noccupied_beta):
+                if count_active_occ_beta([i, j, k]) < num_active: continue 
                 for a in range(system.nunoccupied_beta):
                     for b in range(a + 1, system.nunoccupied_beta):
                         for c in range(b + 1, system.nunoccupied_beta):
-                            if count_active_occ_beta([i, j, k]) >= num_active and count_active_unocc_beta([a, b, c]) >= num_active:
+                            if count_active_unocc_beta([a, b, c]) >= num_active:
                                 if not checksym_bbb(i, j, k, a, b, c): continue
                                 excitations["bbb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
     # Convert the spin-integrated lists into Numpy arrays
@@ -633,32 +637,32 @@ def get_active_3p2h_pspace(system, num_active=1, target_irrep=None):
     tic = time.perf_counter()
     excitations = {"aaa": [], "aab": [], "abb": []}
     # aaa
-    for j in range(system.noccupied_alpha):
-        for k in range(j + 1, system.noccupied_alpha):
-            for a in range(system.nunoccupied_alpha):
-                for b in range(a + 1, system.nunoccupied_alpha):
-                    for c in range(b + 1, system.nunoccupied_alpha):
-                        if count_active_unocc_alpha([a, b, c]) >= num_active:
-                            if not checksym_aaa(j, k, a, b, c): continue
-                            excitations["aaa"].append([a + 1, b + 1, c + 1, j + 1, k + 1])
+    for a in range(system.nunoccupied_alpha):
+        for b in range(a + 1, system.nunoccupied_alpha):
+            for c in range(b + 1, system.nunoccupied_alpha):
+                if count_active_unocc_alpha([a, b, c]) < num_active: continue
+                for j in range(system.noccupied_alpha):
+                    for k in range(j + 1, system.noccupied_alpha):
+                        if not checksym_aaa(j, k, a, b, c): continue
+                        excitations["aaa"].append([a + 1, b + 1, c + 1, j + 1, k + 1])
     # aab
-    for j in range(system.noccupied_alpha):
-        for k in range(system.noccupied_beta):
-            for a in range(system.nunoccupied_alpha):
-                for b in range(a + 1, system.nunoccupied_alpha):
-                    for c in range(system.nunoccupied_beta):
-                        if (count_active_unocc_alpha([a, b]) + count_active_unocc_beta([c])) >= num_active:
-                            if not checksym_aab(j, k, a, b, c): continue
-                            excitations["aab"].append([a + 1, b + 1, c + 1, j + 1, k + 1])
+    for a in range(system.nunoccupied_alpha):
+        for b in range(a + 1, system.nunoccupied_alpha):
+            for c in range(system.nunoccupied_beta):
+                if (count_active_unocc_alpha([a, b]) + count_active_unocc_beta([c])) < num_active: continue
+                for j in range(system.noccupied_alpha):
+                    for k in range(system.noccupied_beta):
+                        if not checksym_aab(j, k, a, b, c): continue
+                        excitations["aab"].append([a + 1, b + 1, c + 1, j + 1, k + 1])
     # abb
-    for j in range(system.noccupied_beta):
-        for k in range(j + 1, system.noccupied_beta):
-            for a in range(system.nunoccupied_alpha):
-                for b in range(system.nunoccupied_beta):
-                    for c in range(b + 1, system.nunoccupied_beta):
-                        if (count_active_unocc_alpha([a]) + count_active_unocc_beta([b, c])) >= num_active:
-                            if not checksym_abb(j, k, a, b, c): continue
-                            excitations["abb"].append([a + 1, b + 1, c + 1, j + 1, k + 1])
+    for a in range(system.nunoccupied_alpha):
+        for b in range(system.nunoccupied_beta):
+            for c in range(b + 1, system.nunoccupied_beta):
+                if (count_active_unocc_alpha([a]) + count_active_unocc_beta([b, c])) < num_active: continue
+                for j in range(system.noccupied_beta):
+                    for k in range(j + 1, system.noccupied_beta):
+                        if not checksym_abb(j, k, a, b, c): continue
+                        excitations["abb"].append([a + 1, b + 1, c + 1, j + 1, k + 1])
 
     # Convert the spin-integrated lists into Numpy arrays
     for spincase, array in excitations.items():
@@ -752,29 +756,29 @@ def get_active_3h2p_pspace(system, num_active=1, target_irrep=None):
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
+                if count_active_occ_alpha([i, j, k]) < num_active: continue
                 for b in range(system.nunoccupied_alpha):
                     for c in range(b + 1, system.nunoccupied_alpha):
-                        if count_active_occ_alpha([i, j, k]) >= num_active:
-                            if not checksym_aaa(i, j, k, b, c): continue
-                            excitations["aaa"].append([b + 1, c + 1, i + 1, j + 1, k + 1])
+                        if not checksym_aaa(i, j, k, b, c): continue
+                        excitations["aaa"].append([b + 1, c + 1, i + 1, j + 1, k + 1])
     # aab
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
+                if (count_active_occ_alpha([i, j]) + count_active_occ_beta([k])) < num_active: continue
                 for b in range(system.nunoccupied_alpha):
                     for c in range(system.nunoccupied_beta):
-                        if (count_active_occ_alpha([i, j]) + count_active_occ_beta([k])) >= num_active:
-                            if not checksym_aab(i, j, k, b, c): continue
-                            excitations["aab"].append([b + 1, c + 1, i + 1, j + 1, k + 1])
+                        if not checksym_aab(i, j, k, b, c): continue
+                        excitations["aab"].append([b + 1, c + 1, i + 1, j + 1, k + 1])
     # abb
     for i in range(system.noccupied_alpha):
         for j in range(system.noccupied_beta):
             for k in range(j + 1, system.noccupied_beta):
+                if (count_active_occ_alpha([i]) + count_active_occ_beta([j, k])) < num_active: continue
                 for b in range(system.nunoccupied_beta):
                     for c in range(b + 1, system.nunoccupied_beta):
-                        if (count_active_occ_alpha([i]) + count_active_occ_beta([j, k])) >= num_active:
-                            if not checksym_abb(i, j, k, b, c): continue
-                            excitations["abb"].append([b + 1, c + 1, i + 1, j + 1, k + 1])
+                        if not checksym_abb(i, j, k, b, c): continue
+                        excitations["abb"].append([b + 1, c + 1, i + 1, j + 1, k + 1])
 
     # Convert the spin-integrated lists into Numpy arrays
     for spincase, array in excitations.items():
