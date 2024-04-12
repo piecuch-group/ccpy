@@ -40,7 +40,7 @@ def build_LH_1A(L, LH, H, T, X):
     LH.a = np.einsum("e,ea->a", L.a, H.a.vv, optimize=True)
     LH.a += 0.5 * np.einsum("efn,fena->a", L.aa, H.aa.vvov, optimize=True)
     LH.a += np.einsum("efn,efan->a", L.ab, H.ab.vvvo, optimize=True)
-    # parts contracted with L3
+    # parts contracted with L3 (verified against explicit 3-body hbars)
     LH.a -= np.einsum("mfan,mfn->a", H.ab.ovvo, X["ab"]["ovo"], optimize=True)
     LH.a -= np.einsum("fmna,mfn->a", H.aa.voov, X["aa"]["ovo"], optimize=True)
     LH.a -= 0.5 * np.einsum("fge,feag->a", X["aa"]["vvv"], H.aa.vvvv, optimize=True)
@@ -63,17 +63,12 @@ def build_LH_2A(L, LH, H, T, X):
     LH.aa += np.einsum("efbn,aefjn->abj", H.ab.vvvo, L.aab, optimize=True)
     LH.aa -= 0.25 * np.einsum("fjnm,abfmn->abj", H.aa.vooo, L.aaa, optimize=True)
     LH.aa -= 0.5 * np.einsum("jfmn,abfmn->abj", H.ab.ovoo, L.aab, optimize=True)
-    #
-    #LH.aa -= np.einsum("mbn,jmna->abj", X["aa"]["ovo"], H.aa.ooov, optimize=True)
-    #LH.aa -= np.einsum("amn,jmbn->abj", X["ab"]["voo"], H.ab.oovo, optimize=True)
-    #LH.aa -= 0.5 * np.einsum("jem,emab->abj", X["aa"]["ovo"], H.aa.vovv, optimize=True)
-    #LH.aa -= np.einsum("aef,fjeb->abj", X["aa"]["vvv"], H.aa.vovv, optimize=True)
-    ###
-    #h3a_vvooov = (
-    #
-    #)
-    ###
-
+    # 3-body hbar terms
+    LH.aa += np.einsum("mbn,jmna->abj", X["aa"]["ovo"], H.aa.ooov, optimize=True)
+    LH.aa -= np.einsum("amn,jnbm->abj", X["ab"]["voo"], H.ab.oovo, optimize=True)
+    LH.aa -= np.einsum("aef,fjeb->abj", X["aa"]["vvv"], H.aa.vovv, optimize=True)
+    LH.aa -= np.einsum("aef,jfbe->abj", X["ab"]["vvv"], H.ab.ovvv, optimize=True)
+    LH.aa += 0.5 * np.einsum("mej,emba->abj", X["aa"]["ovo"], H.aa.vovv, optimize=True)
     LH.aa -= np.transpose(LH.aa, (1, 0, 2))
     return LH
 
@@ -94,6 +89,35 @@ def build_LH_2B(L, LH, H, T, X):
     LH.ab += 0.5 * np.einsum("fenb,afenj->abj", H.bb.vvov, L.abb, optimize=True)
     LH.ab -= np.einsum("fjnm,afbnm->abj", H.ab.vooo, L.aab, optimize=True)
     LH.ab -= 0.5 * np.einsum("fjnm,abfmn->abj", H.bb.vooo, L.abb, optimize=True)
+    # 3-body hbar terms
+
+    h3b_vvooov = (
+           -0.5 * np.einsum("nmje,abin->abmije", H.ab.ooov, T.aa, optimize=True)
+           + 0.5 * np.einsum("bmfe,afij->abmije", H.ab.vovv, T.aa, optimize=True)
+    )
+    h3b_vvooov -= np.transpose(h3b_vvooov, (1, 0, 2, 3, 4, 5)) # (ab)
+    h3b_vvooov -= np.transpose(h3b_vvooov, (0, 1, 2, 4, 3, 5)) # (ij)
+    LH.ab += 0.25 * np.einsum("efjmnb,aefmn->abj", h3b_vvooov, L.aaa, optimize=True)
+
+    h3c_vovovo = (
+           -np.einsum("nmje,abin->ambiej", H.bb.ooov, T.ab, optimize=True)
+           +np.einsum("bmfe,afij->ambiej", H.bb.vovv, T.ab, optimize=True)
+           -np.einsum("nmie,abnj->ambiej", H.ab.ooov, T.ab, optimize=True)
+           +np.einsum("amfe,fbij->ambiej", H.ab.vovv, T.ab, optimize=True)
+    )
+    LH.ab += np.einsum("ejfmbn,aefmn->abj", h3c_vovovo, L.aab, optimize=True)
+
+    h3d_ovvvoo = (
+          -0.5 * np.einsum("nmje,abin->mabeij", H.bb.ooov, T.bb, optimize=True)
+          +0.5 * np.einsum("bmfe,afij->mabeij", H.bb.vovv, T.bb, optimize=True)
+    )
+    h3d_ovvvoo -= np.transpose(h3d_ovvvoo, (0, 2, 1, 3, 4, 5)) # (ab)
+    h3d_ovvvoo -= np.transpose(h3d_ovvvoo, (0, 1, 2, 3, 5, 4)) # (ij)
+    LH.ab += 0.25 * np.einsum("jefbmn,aefmn->abj", h3d_ovvvoo, L.abb, optimize=True)
+
+    h3b_vvooov = (
+        -0.5 * np.einsum("nmej,abni->ab")
+    )
     return LH
 
 def build_LH_3A(L, LH, H, T, X):
@@ -178,6 +202,7 @@ def build_LH_3C(L, LH, H, T, X):
     LH.abb -= np.transpose(LH.abb, (0, 1, 2, 4, 3)) # antisymmetrize A(jk)
     return LH
 
+    ### L1A
     #h3a_vvvvoo = (
        #-(6.0 / 12.0) * np.einsum("bmje,acmk->abcejk", H.aa.voov, T.aa, optimize=True) # [I]
        #+(3.0 / 12.0) * np.einsum("abef,fcjk->abcejk", H.aa.vvvv, T.aa, optimize=True) # [II]
@@ -186,7 +211,7 @@ def build_LH_3C(L, LH, H, T, X):
     #h3a_vvvvoo -= np.transpose(h3a_vvvvoo, (0, 2, 1, 3, 4, 5)) # antisymmetrize A(bc)
     #h3a_vvvvoo -= np.transpose(h3a_vvvvoo, (0, 1, 2, 3, 5, 4)) # antisymmetrize A(jk)
     #LH.a += (1.0 / 12.0) * np.einsum("efgno,efgano->a", L.aaa, h3a_vvvvoo, optimize=True)
-
+    #
     #h3b_vvvvoo = (
         #+ 0.5 * np.einsum("abef,fcjk->abcejk", H.aa.vvvv, T.ab, optimize=True) # [II]
         #- np.einsum("amek,bcjm->abcejk", H.ab.vovo, T.ab, optimize=True) # [III]
@@ -196,7 +221,7 @@ def build_LH_3C(L, LH, H, T, X):
     #)
     #h3b_vvvvoo -= np.transpose(h3b_vvvvoo, (1, 0, 2, 3, 4, 5)) # antisymmetrize A(ab)
     #LH.a += 0.5 * np.einsum("efgno,efgano->a", L.aab, h3b_vvvvoo, optimize=True)
-
+    #
     #h3c_vvvvoo = (
         #- 0.5 * np.einsum("amej,bcmk->abcejk", H.ab.vovo, T.bb, optimize=True) # [III]
         #+ 0.5 * np.einsum("abef,fcjk->abcejk", H.ab.vvvv, T.bb, optimize=True) # [IV]
@@ -205,3 +230,39 @@ def build_LH_3C(L, LH, H, T, X):
     #h3c_vvvvoo -= np.transpose(h3c_vvvvoo, (0, 2, 1, 3, 4, 5)) # antisymmetrize A(bc)
     #h3c_vvvvoo -= np.transpose(h3c_vvvvoo, (0, 1, 2, 3, 5, 4)) # antisymmetrize A(jk)
     #LH.a += 0.25 * np.einsum("efgno,efgano->a", L.abb, h3c_vvvvoo, optimize=True)
+    ###
+
+    ### L2A
+    #h3a_vvooov = (
+    #        -0.5 * np.einsum("nmje,abin->abmije", H.aa.ooov, T.aa, optimize=True)
+    #        + 0.5 * np.einsum("bmfe,afij->abmije", H.aa.vovv, T.aa, optimize=True)
+    #)
+    #h3a_vvooov -= np.transpose(h3a_vvooov, (1, 0, 2, 3, 4, 5)) # (ab)
+    #h3a_vvooov -= np.transpose(h3a_vvooov, (0, 1, 2, 4, 3, 5)) # (ij)
+    #LH.aa += 0.25 * np.einsum("efjmnb,aefmn->abj", h3a_vvooov, L.aaa, optimize=True)
+    #h3b_ovvvoo = (
+    #        -np.einsum("mnej,abin->mabeij", H.ab.oovo, T.ab, optimize=True)
+    #        +np.einsum("mbef,afij->mabeij", H.ab.ovvv, T.ab, optimize=True)
+    #        -np.einsum("nmie,abnj->mabeij", H.aa.ooov, T.ab, optimize=True)
+    #        +np.einsum("amfe,fbij->mabeij", H.aa.vovv, T.ab, optimize=True)
+    #)
+    #LH.aa += np.einsum("jefbmn,aefmn->abj", h3b_ovvvoo, L.aab, optimize=True)
+    #h3c_ovvvoo = (
+    #       -0.5 * np.einsum("mnej,abin->mabeij", H.ab.oovo, T.bb, optimize=True)
+    #       +0.5 * np.einsum("mbef,afij->mabeij", H.ab.ovvv, T.bb, optimize=True)
+    #)
+    #h3c_ovvvoo -= np.transpose(h3c_ovvvoo, (0, 2, 1, 3, 4, 5)) # (ab)
+    #h3c_ovvvoo -= np.transpose(h3c_ovvvoo, (0, 1, 2, 3, 5, 4)) # (ij)
+    #LH.aa += 0.25 * np.einsum("jefbmn,aefmn->abj", h3c_ovvvoo, L.abb, optimize=True)
+    # h3a_vvvvvo = (
+    #     (3.0 / 6.0) * np.einsum("anef,bcnk->abcefk", H.aa.vovv, T.aa, optimize=True)
+    # )
+    # h3a_vvvvvo -= np.transpose(h3a_vvvvvo, (1, 0, 2, 3, 4, 5)) + np.transpose(h3a_vvvvvo, (2, 1, 0, 3, 4, 5)) # (a/bc)
+    # h3a_vvvvvo -= np.transpose(h3a_vvvvvo, (0, 2, 1, 3, 4, 5)) # (bc)
+    # LH.aa += (1.0 / 12.0) * np.einsum("efgabo,efgjo->abj", h3a_vvvvvo, L.aaa, optimize=True)
+    # h3b_vvvvvo = (
+    #     np.einsum("anef,bcnk->abcefk", H.aa.vovv, T.ab, optimize=True)
+    # )
+    # h3b_vvvvvo -= np.transpose(h3b_vvvvvo, (1, 0, 2, 3, 4, 5)) # (ab)
+    # LH.aa += 0.25 * np.einsum("efgabo,efgjo->abj", h3b_vvvvvo, L.aab, optimize=True)
+    ###
