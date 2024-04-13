@@ -225,7 +225,7 @@ def build_LH_3C(L, T, H):
     X3C += np.einsum("abj,kc->abcjk", L.ab, H.b.ov, optimize=True)
     X3C -= (2.0 / 4.0) * np.einsum("abm,jkmc->abcjk", L.ab, H.bb.ooov, optimize=True)
     X3C += (2.0 / 4.0) * np.einsum("aej,ekbc->abcjk", L.ab, H.bb.vovv, optimize=True)
-    X3C += (2.0 / 4.0) * np.einsum("eck,ejab->abcjk", L.ab, H.ab.vovv, optimize=True)
+    X3C += np.einsum("eck,ejab->abcjk", L.ab, H.ab.vovv, optimize=True)
     X3C -= np.transpose(X3C, (0, 2, 1, 3, 4)) # antisymmetrize A(bc)
     X3C -= np.transpose(X3C, (0, 1, 2, 4, 3)) # antisymmetrize A(jk)
     return X3C

@@ -51,7 +51,6 @@ def sym_table(pg):
 
     return sym_mult[pg]
 
-
 def count_singles(system):
 
     countsym = [0 for i in range(len(system.point_group_irrep_to_number))]
@@ -81,7 +80,6 @@ def count_singles(system):
     total = sum(countsym)
 
     return countsym, total
-
 
 def count_doubles(system):
 
@@ -238,6 +236,127 @@ def count_triples(system):
                             sym = n_refsym ^ na ^ nb ^ nc ^ nk ^ nj ^ ni
                             countsym[sym] += 1  
     
+    total = sum(countsym)
+
+    return countsym, total
+
+def count_1p(system):
+
+    countsym = [0 for i in range(len(system.point_group_irrep_to_number))]
+
+    n_refsym = system.point_group_irrep_to_number[system.reference_symmetry]
+
+    for a in range(system.noccupied_alpha, system.norbitals):
+        syma = system.orbital_symmetries[a]
+        na = system.point_group_irrep_to_number[syma]
+        sym = na
+        sym = sym ^ n_refsym
+        countsym[sym] += 1
+
+    total = sum(countsym)
+
+    return countsym, total
+
+def count_2p1h(system):
+
+    countsym = [0 for i in range(len(system.point_group_irrep_to_number))]
+
+    n_refsym = system.point_group_irrep_to_number[system.reference_symmetry]
+
+    for j in range(system.noccupied_alpha):
+        symj = system.orbital_symmetries[j]
+        nj = system.point_group_irrep_to_number[symj]
+        for a in range(system.noccupied_alpha, system.norbitals):
+            syma = system.orbital_symmetries[a]
+            na = system.point_group_irrep_to_number[syma]
+            for b in range(a + 1, system.norbitals):
+                symb = system.orbital_symmetries[b]
+                nb = system.point_group_irrep_to_number[symb]
+
+                sym = na ^ nb ^ nj
+                sym = sym ^ n_refsym
+                countsym[sym] += 1
+
+    for j in range(system.noccupied_beta):
+        symj = system.orbital_symmetries[j]
+        nj = system.point_group_irrep_to_number[symj]
+        for a in range(system.noccupied_alpha, system.norbitals):
+            syma = system.orbital_symmetries[a]
+            na = system.point_group_irrep_to_number[syma]
+            for b in range(system.noccupied_beta, system.norbitals):
+                symb = system.orbital_symmetries[b]
+                nb = system.point_group_irrep_to_number[symb]
+
+                sym = na ^ nb ^ nj
+                sym = sym ^ n_refsym
+                countsym[sym] += 1
+
+    total = sum(countsym)
+
+    return countsym, total
+
+def count_3p2h(system):
+    countsym = [0 for i in range(len(system.point_group_irrep_to_number))]
+
+    n_refsym = system.point_group_irrep_to_number[system.reference_symmetry]
+
+    for j in range(system.noccupied_alpha):
+        symj = system.orbital_symmetries[j]
+        nj = system.point_group_irrep_to_number[symj]
+        for k in range(j + 1, system.noccupied_alpha):
+            symk = system.orbital_symmetries[k]
+            nk = system.point_group_irrep_to_number[symk]
+            for a in range(system.noccupied_alpha, system.norbitals):
+                syma = system.orbital_symmetries[a]
+                na = system.point_group_irrep_to_number[syma]
+                for b in range(a + 1, system.norbitals):
+                    symb = system.orbital_symmetries[b]
+                    nb = system.point_group_irrep_to_number[symb]
+                    for c in range(b + 1, system.norbitals):
+                        symc = system.orbital_symmetries[c]
+                        nc = system.point_group_irrep_to_number[symc]
+
+                        sym = n_refsym ^ na ^ nb ^ nc ^ nk ^ nj
+                        countsym[sym] += 1
+
+    for j in range(system.noccupied_alpha):
+        symj = system.orbital_symmetries[j]
+        nj = system.point_group_irrep_to_number[symj]
+        for k in range(system.noccupied_beta):
+            symk = system.orbital_symmetries[k]
+            nk = system.point_group_irrep_to_number[symk]
+            for a in range(system.noccupied_alpha, system.norbitals):
+                syma = system.orbital_symmetries[a]
+                na = system.point_group_irrep_to_number[syma]
+                for b in range(a + 1, system.norbitals):
+                    symb = system.orbital_symmetries[b]
+                    nb = system.point_group_irrep_to_number[symb]
+                    for c in range(system.noccupied_beta, system.norbitals):
+                        symc = system.orbital_symmetries[c]
+                        nc = system.point_group_irrep_to_number[symc]
+
+                        sym = n_refsym ^ na ^ nb ^ nc ^ nk ^ nj
+                        countsym[sym] += 1
+
+    for j in range(system.noccupied_beta):
+        symj = system.orbital_symmetries[j]
+        nj = system.point_group_irrep_to_number[symj]
+        for k in range(j + 1, system.noccupied_beta):
+            symk = system.orbital_symmetries[k]
+            nk = system.point_group_irrep_to_number[symk]
+            for a in range(system.noccupied_alpha, system.norbitals):
+                syma = system.orbital_symmetries[a]
+                na = system.point_group_irrep_to_number[syma]
+                for b in range(system.noccupied_beta, system.norbitals):
+                    symb = system.orbital_symmetries[b]
+                    nb = system.point_group_irrep_to_number[symb]
+                    for c in range(b + 1, system.norbitals):
+                        symc = system.orbital_symmetries[c]
+                        nc = system.point_group_irrep_to_number[symc]
+
+                        sym = n_refsym ^ na ^ nb ^ nc ^ nk ^ nj
+                        countsym[sym] += 1
+
     total = sum(countsym)
 
     return countsym, total
