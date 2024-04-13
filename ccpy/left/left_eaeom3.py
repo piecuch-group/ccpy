@@ -25,17 +25,17 @@ def LH_fun(LH, L, T, H, flag_RHF, system):
     # get LT intermediates
     X = get_lefteaeom3_intermediates(L, T, system)
     # build L1
-    LH = build_LH_1A(L, LH, H, T, X)
+    LH = build_LH_1A(L, LH, H, X)
     # build L2
-    LH = build_LH_2A(L, LH, H, T, X)
-    LH = build_LH_2B(L, LH, H, T, X)
+    LH = build_LH_2A(L, LH, H, X)
+    LH = build_LH_2B(L, LH, H, X)
     # build L3
-    LH = build_LH_3A(L, LH, H, T, X)
-    LH = build_LH_3B(L, LH, H, T, X)
-    LH = build_LH_3C(L, LH, H, T, X)
+    LH = build_LH_3A(L, LH, H, X)
+    LH = build_LH_3B(L, LH, H, X)
+    LH = build_LH_3C(L, LH, H, X)
     return LH.flatten()
 
-def build_LH_1A(L, LH, H, T, X):
+def build_LH_1A(L, LH, H, X):
     """Calculate the projection < 0 | (L1p+L2p1h+L3p2h)*(H_N e^(T1+T2))_C | a >."""
     LH.a = np.einsum("e,ea->a", L.a, H.a.vv, optimize=True)
     LH.a += 0.5 * np.einsum("efn,fena->a", L.aa, H.aa.vvov, optimize=True)
@@ -48,7 +48,7 @@ def build_LH_1A(L, LH, H, T, X):
     LH.a -= np.einsum("efg,egaf->a", X["ab"]["vvv"], H.ab.vvvv, optimize=True)
     return LH
 
-def build_LH_2A(L, LH, H, T, X):
+def build_LH_2A(L, LH, H, X):
     """Calculate the projection < 0 | (L1p+L2p1h+L3p2h)*(H_N e^(T1+T2))_C | abj >."""
     LH.aa = np.einsum("a,jb->abj", L.a, H.a.ov, optimize=True)
     LH.aa += 0.5 * np.einsum("e,ejab->abj", L.a, H.aa.vovv, optimize=True)
@@ -72,7 +72,7 @@ def build_LH_2A(L, LH, H, T, X):
     LH.aa -= np.transpose(LH.aa, (1, 0, 2))
     return LH
 
-def build_LH_2B(L, LH, H, T, X):
+def build_LH_2B(L, LH, H, X):
     """Calculate the projection < 0 | (L1p+L2p1h+L3p2h)*(H_N e^(T1+T2))_C | ab~j~ >."""
     LH.ab = np.einsum("a,jb->abj", L.a, H.b.ov, optimize=True)
     LH.ab += np.einsum("e,ejab->abj", L.a, H.ab.vovv, optimize=True)
@@ -102,7 +102,7 @@ def build_LH_2B(L, LH, H, T, X):
     LH.ab -= np.einsum("nfj,nfab->abj", X["ab"]["ovo"], H.ab.ovvv, optimize=True) # [IV]
     return LH
 
-def build_LH_3A(L, LH, H, T, X):
+def build_LH_3A(L, LH, H, X):
     """Calculate the projection < 0 | (L1p+L2p1h+L3p2h)*(H_N e^(T1+T2))_C | jkabc >."""
     # moment-like terms < 0 | (L1p+L2p1h)*(H_N e^(T1+T2))_C | jkabc >
     LH.aaa = (3.0 / 12.0) * np.einsum("a,jkbc->abcjk", L.a, H.aa.oovv, optimize=True)
@@ -124,7 +124,7 @@ def build_LH_3A(L, LH, H, T, X):
     LH.aaa -= np.transpose(LH.aaa, (0, 1, 2, 4, 3)) # antisymmetrize A(jk)
     return LH
 
-def build_LH_3B(L, LH, H, T, X):
+def build_LH_3B(L, LH, H, X):
     """Calculate the projection < 0 | (L1p+L2p1h+L3p2h)(H_N e^(T1+T2))_C | jk~abc~ >."""
     # moment-like terms < 0 | (L1p+L2p1h)*(H_N e^(T1+T2))_C | jk~abc~ >
     LH.aab = np.einsum("a,jkbc->abcjk", L.a, H.ab.oovv, optimize=True)
@@ -158,7 +158,7 @@ def build_LH_3B(L, LH, H, T, X):
     LH.aab -= np.transpose(LH.aab, (1, 0, 2, 3, 4)) # antisymmetrize A(ab)
     return LH
 
-def build_LH_3C(L, LH, H, T, X):
+def build_LH_3C(L, LH, H, X):
     """Calculate the projection < 0 | (L1p+L2p1h+L3p2h)(H_N e^(T1+T2))_C | j~k~ab~c~ >."""
     # moment-like terms < 0 | (L1p+L2p1h)*(H_N e^(T1+T2))_C | j~k~ab~c~ >
     LH.abb = (1.0 / 4.0) * np.einsum("a,jkbc->abcjk", L.a, H.bb.oovv, optimize=True)
