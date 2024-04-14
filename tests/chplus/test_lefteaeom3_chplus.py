@@ -20,8 +20,8 @@ def test_eaeom3_chplus():
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="eacisd", multiplicity=-1, nact_occupied=3, nact_unoccupied=8,
                       roots_per_irrep={"A1": 2, "B1": 2, "B2": 2, "A2": 2})
-    driver.run_eaeomcc(method="eaeom3", state_index=[0, 1, 2, 3, 4, 5, 6])
-    driver.run_lefteaeomcc(method="left_eaeom3", state_index=[0, 1, 2, 3, 4, 5, 6])
+    driver.run_eaeomcc(method="eaeom3", state_index=[0, 1, 2, 3, 4, 5, 6, 7])
+    driver.run_lefteaeomcc(method="left_eaeom3", state_index=[0, 1, 2, 3, 4, 5, 6, 7])
 
     #
     # Check the results

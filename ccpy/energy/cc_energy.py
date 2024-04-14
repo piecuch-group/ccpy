@@ -148,14 +148,39 @@ def get_LR(R, L, l3_excitations=None, r3_excitations=None):
             LR += LR_P
     return LR
 
-def get_LR_ipeom2(R, L):
-    LR = -np.einsum("m,m->", R.a, L.a, optimize=True)
-    LR -= 0.5 * np.einsum("mfn,mfn->", R.aa, L.aa, optimize=True)
-    LR -= np.einsum("mfn,mfn->", R.ab, L.ab, optimize=True)
+def get_LR_ipeom(R, L, l3_excitations=None, r3_excitations=None):
+    # these should be + signs! Ghost loop rule.
+    LR = np.einsum("m,m->", R.a, L.a, optimize=True)
+    LR += 0.5 * np.einsum("mfn,mfn->", R.aa, L.aa, optimize=True)
+    LR += np.einsum("mfn,mfn->", R.ab, L.ab, optimize=True)
+    if L.order == 3 and R.order == 3:
+        if l3_excitations is None and r3_excitations is None:
+            LR += (1.0 / 12.0) * np.einsum("ifgno,ifgno->", R.aaa, L.aaa, optimize=True)
+            LR += (1.0 / 2.0) * np.einsum("ifgno,ifgno->", R.aab, L.aab, optimize=True)
+            LR += (1.0 / 4.0) * np.einsum("ifgno,ifgno->", R.abb, L.abb, optimize=True)
+        else:
+            # This is allowed because L and R are always aligned through the left-IPEOMCC(P) iterations
+            LR_aaa = np.dot(L.aaa.T, R.aaa)
+            LR_aab = np.dot(L.aab.T, R.aab)
+            LR_abb = np.dot(L.abb.T, R.abb)
+            LR_P = LR_aaa + LR_aab + LR_abb
+            LR += LR_P
     return LR
 
-def get_LR_eaeom2(R, L):
+def get_LR_eaeom(R, L, l3_excitations=None, r3_excitations=None):
     LR = np.einsum("e,e->", R.a, L.a, optimize=True)
     LR += 0.5 * np.einsum("efn,efn->", R.aa, L.aa, optimize=True)
     LR += np.einsum("efn,efn->", R.ab, L.ab, optimize=True)
+    if L.order == 3 and R.order == 3:
+        if l3_excitations is None and r3_excitations is None:
+            LR += (1.0 / 12.0) * np.einsum("efgno,efgno->", R.aaa, L.aaa, optimize=True)
+            LR += (1.0 / 2.0) * np.einsum("efgno,efgno->", R.aab, L.aab, optimize=True)
+            LR += (1.0 / 4.0) * np.einsum("efgno,efgno->", R.abb, L.abb, optimize=True)
+        else:
+            # This is allowed because L and R are always aligned through the left-EAEOMCC(P) iterations
+            LR_aaa = np.dot(L.aaa.T, R.aaa)
+            LR_aab = np.dot(L.aab.T, R.aab)
+            LR_abb = np.dot(L.abb.T, R.abb)
+            LR_P = LR_aaa + LR_aab + LR_abb
+            LR += LR_P
     return LR

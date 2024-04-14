@@ -14,7 +14,7 @@ from ccpy.drivers.solvers import (
                 eomcc_nonlinear_diis,
                 eccc_jacobi,
 )
-from ccpy.energy.cc_energy import get_LR, get_LR_ipeom2, get_LR_eaeom2, get_r0, get_rel, get_rel_ea, get_rel_ip
+from ccpy.energy.cc_energy import get_LR, get_LR_ipeom, get_LR_eaeom, get_r0, get_rel, get_rel_ea, get_rel_ip
 from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator, SpinFlipOperator, FockOperator
 from ccpy.utilities.printing import (
@@ -1326,7 +1326,7 @@ class Driver:
                                                                                                    self.system,
                                                                                                    self.options)
             # Compute L*R and normalize the computed left vector by LR
-            LR_function = lambda L: get_LR_ipeom2(self.R[istate], L)
+            LR_function = lambda L: get_LR_ipeom(self.R[istate], L)
             LR = LR_function(self.L[istate])
             self.L[istate].unflatten(1.0 / LR * self.L[istate].flatten())
             leftipcc_calculation_summary(self.L[istate], self.vertical_excitation_energy[istate], LR, is_converged, self.system, self.options["amp_print_threshold"])
@@ -1387,7 +1387,7 @@ class Driver:
                                                                                                    self.system,
                                                                                                    self.options)
             # Compute L*R and normalize the computed left vector by LR
-            LR_function = lambda L: get_LR_eaeom2(self.R[istate], L)
+            LR_function = lambda L: get_LR_eaeom(self.R[istate], L)
             LR = LR_function(self.L[istate])
             self.L[istate].unflatten(1.0 / LR * self.L[istate].flatten())
             lefteacc_calculation_summary(self.L[istate], self.vertical_excitation_energy[istate], LR, is_converged, self.system, self.options["amp_print_threshold"])
@@ -1396,6 +1396,81 @@ class Driver:
             print("   |ω(R) - ω(L)| = ", omega_diff)
             print("   Left-EA-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
             assert omega_diff <= 1.0e-05
+
+    def run_lefteaeomccp(self, method, state_index, r3_excitations, t3_excitations=None):
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.left.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build L
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+        # Ensure that Hbar is set upon entry
+        assert(self.flag_hbar)
+
+        # import the specific CC method module and get its update function
+        lcc_mod = import_module("ccpy.left." + method.lower())
+        update_function = getattr(lcc_mod, 'update_l')
+        LH_function = getattr(lcc_mod, "LH_fun")
+
+        # Convert excitations array to Fortran continuous
+        r3_excitations = convert_excitations_c_to_f(r3_excitations)
+
+        # Print the options as a header
+        self.print_options()
+        # Save the right eigenvalue
+        omega_right = self.vertical_excitation_energy[state_index]
+
+        # Get the l3_excitations list based R
+        l3_excitations = {"aaa": r3_excitations["aaa"].copy(),
+                          "aab": r3_excitations["aab"].copy(),
+                          "abb": r3_excitations["abb"].copy()}
+        n3aaa = l3_excitations["aaa"].shape[0]
+        n3aab = l3_excitations["aab"].shape[0]
+        n3abb = l3_excitations["abb"].shape[0]
+        excitation_count = [[excits.shape[0] for _, excits in l3_excitations.items()]]
+        # Create the left CC(P) operator
+        if self.L[state_index] is None:
+            self.L[state_index] = FockOperator(self.system,
+                                               self.operator_params["number_particles"],
+                                               self.operator_params["number_holes"],
+                                               p_orders=self.operator_params["pspace_orders"],
+                                               pspace_sizes=excitation_count)
+            # set initial value based on excited-state
+            self.L[state_index].unflatten(self.R[state_index].flatten())
+
+        # Regardless of restart status, make LH anew. It could be of different length for different roots
+        LH = FockOperator(self.system,
+                          self.operator_params["number_particles"],
+                          self.operator_params["number_holes"],
+                          p_orders=self.operator_params["pspace_orders"],
+                          pspace_sizes=excitation_count)
+
+        print("   Left-EAEOMCC(P) calculation for root %d started on" % state_index, get_timestamp())
+        print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[state_index]))
+        print_ea_amplitudes(self.L[state_index], self.system, self.L[state_index].order, self.options["amp_print_threshold"])
+        self.L[state_index], self.vertical_excitation_energy[state_index], is_converged = eomcc_davidson(LH_function,
+                                                                                                         update_function,
+                                                                                                         self.L[state_index].flatten()/np.linalg.norm(self.L[state_index].flatten()),
+                                                                                                         self.L[state_index],
+                                                                                                         LH,
+                                                                                                         self.vertical_excitation_energy[state_index],
+                                                                                                         self.T,
+                                                                                                         self.hamiltonian,
+                                                                                                         self.system,
+                                                                                                         self.options,
+                                                                                                         t3_excitations,
+                                                                                                         l3_excitations) # THIS USED TO BE r3!!!
+        # Compute L*R and normalize the computed left vector by LR
+        LR = get_LR_eaeom(self.R[state_index], self.L[state_index], l3_excitations=l3_excitations, r3_excitations=r3_excitations)
+        self.L[state_index].unflatten(1.0 / LR * self.L[state_index].flatten())
+        lefteacc_calculation_summary(self.L[state_index], self.vertical_excitation_energy[state_index], LR, is_converged, self.system, self.options["amp_print_threshold"])
+        # Before leaving, verify that the excitation energy obtained in the left diagonalization matches
+        omega_diff = abs(omega_right - self.vertical_excitation_energy[state_index])
+        print("   |ω(R) - ω(L)| = ", omega_diff)
+        print("   Left-EAEOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
+        assert omega_diff <= 1.0e-05
 
     def run_eccc(self, method, ci_vectors_file, t3_excitations=None):
         from ccpy.extcorr.external_correction import cluster_analysis
@@ -1560,7 +1635,7 @@ class Driver:
             # Ensure that HBar is set upon entry
             assert self.flag_hbar
             for i in state_index:
-                # Perform 3h-2p corrections
+                # Perform 3p-2h corrections
                 _, self.deltap3[i] = calc_creacc23(self.T, self.R[i], self.L[i],
                                                     self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                     self.system, self.options["RHF_symmetry"])
