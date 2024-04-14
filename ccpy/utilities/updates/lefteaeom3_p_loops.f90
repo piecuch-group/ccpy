@@ -1135,7 +1135,7 @@ module lefteaeom3_p_loops
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table3)
 
-                  !!! diagram 6: A(c/ab)A(jk) h2b(cmke)*r3b(abejm)
+                  !!! diagram 6: A(c/ab)A(jk) h2b(cmke)*l3b(abejm)
                   ! allocate and copy over l3b arrays
                   allocate(amps_buff(n3aab),excits_buff(n3aab,5))
                   amps_buff(:) = l3b_amps(:)
@@ -1285,16 +1285,16 @@ module lefteaeom3_p_loops
               end subroutine build_lh_3a
 
               subroutine build_lh_3b(resid,&
-                                     r2a,r2b,&
+                                     l1a,l2a,l2b,&
                                      l3a_amps,l3a_excits,&
                                      l3b_amps,l3b_excits,&
                                      l3c_amps,l3c_excits,&
-                                     h1a_oo,h1a_vv,h1b_oo,h1b_vv,&
-                                     h2a_vvvv,h2a_voov,h2a_vvov,&
-                                     h2b_vvvv,h2b_oooo,h2b_voov,h2b_vovo,h2b_ovov,h2b_ovvo,&
-                                     h2b_vooo,h2b_ovoo,h2b_vvov,h2b_vvvo,&
+                                     h1a_ov,h1b_ov,h1a_oo,h1a_vv,h1b_oo,h1b_vv,&
+                                     h2a_vvvv,h2a_voov,h2a_vovv,h2a_oovv,&
+                                     h2b_vvvv,h2b_oooo,h2b_voov,h2b_vovo,h2b_ovov,h2b_ovvo,h2b_oovv,&
+                                     h2b_ooov,h2b_oovo,h2b_vovv,h2b_ovvv,&
                                      h2c_voov,&
-                                     x2a_voo,x2a_vvv,&
+                                     x2a_ovo,x2a_vvv,&
                                      x2b_voo,x2b_ovo,x2b_vvv,&
                                      n3aaa,n3aab,n3abb,&
                                      noa,nua,nob,nub)
@@ -1303,30 +1303,35 @@ module lefteaeom3_p_loops
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa, n3aab, n3abb
                   ! Input R and T arrays
-                  real(kind=8), intent(in) :: r2a(nua,nua,noa)
-                  real(kind=8), intent(in) :: r2b(nua,nub,nob)
+                  real(kind=8), intent(in) :: l1a(nua)
+                  real(kind=8), intent(in) :: l2a(nua,nua,noa)
+                  real(kind=8), intent(in) :: l2b(nua,nub,nob)
                   integer, intent(in) :: l3a_excits(n3aaa,5), l3c_excits(n3abb,5)
                   real(kind=8), intent(in) :: l3a_amps(n3aaa), l3c_amps(n3abb)
                   ! Input H  and X arrays
+                  real(kind=8), intent(in) :: h1a_ov(noa,nua)
                   real(kind=8), intent(in) :: h1a_oo(noa,noa)
                   real(kind=8), intent(in) :: h1a_vv(nua,nua)
+                  real(kind=8), intent(in) :: h1b_ov(nob,nub)
                   real(kind=8), intent(in) :: h1b_oo(nob,nob)
                   real(kind=8), intent(in) :: h1b_vv(nub,nub)
                   real(kind=8), intent(in) :: h2a_vvvv(nua,nua,nua,nua)
                   real(kind=8), intent(in) :: h2a_voov(nua,noa,noa,nua)
-                  real(kind=8), intent(in) :: h2a_vvov(nua,nua,noa,nua)
+                  real(kind=8), intent(in) :: h2a_vovv(nua,noa,nua,nua)
+                  real(kind=8), intent(in) :: h2a_oovv(noa,noa,nua,nua)
                   real(kind=8), intent(in) :: h2b_vvvv(nua,nub,nua,nub)
                   real(kind=8), intent(in) :: h2b_oooo(noa,nob,noa,nob)
                   real(kind=8), intent(in) :: h2b_voov(nua,nob,noa,nub)
                   real(kind=8), intent(in) :: h2b_vovo(nua,nob,nua,nob)
                   real(kind=8), intent(in) :: h2b_ovov(noa,nub,noa,nub)
                   real(kind=8), intent(in) :: h2b_ovvo(noa,nub,nua,nob)
-                  real(kind=8), intent(in) :: h2b_vooo(nua,nob,noa,nob)
-                  real(kind=8), intent(in) :: h2b_ovoo(noa,nub,noa,nob)
-                  real(kind=8), intent(in) :: h2b_vvov(nua,nub,noa,nub)
-                  real(kind=8), intent(in) :: h2b_vvvo(nua,nub,nua,nob)
+                  real(kind=8), intent(in) :: h2b_oovv(noa,nob,nua,nub)
+                  real(kind=8), intent(in) :: h2b_ooov(noa,nob,noa,nub)
+                  real(kind=8), intent(in) :: h2b_oovo(noa,nob,nua,nob)
+                  real(kind=8), intent(in) :: h2b_vovv(nua,nob,nua,nub)
+                  real(kind=8), intent(in) :: h2b_ovvv(noa,nub,nua,nub)
                   real(kind=8), intent(in) :: h2c_voov(nub,nob,nob,nub)
-                  real(kind=8), intent(in) :: x2a_voo(nua,noa,noa)
+                  real(kind=8), intent(in) :: x2a_ovo(noa,nua,noa)
                   real(kind=8), intent(in) :: x2a_vvv(nua,nua,nua)
                   real(kind=8), intent(in) :: x2b_voo(nua,nob,nob)
                   real(kind=8), intent(in) :: x2b_ovo(noa,nub,nob)
@@ -1376,7 +1381,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         m = l3b_excits(jdet,4);
                         ! compute < abcjk | h1a(oo) | abcmk >
-                        hmatel = -h1a_oo(m,j)
+                        hmatel = -h1a_oo(j,m)
                         resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                      end do
                   end do
@@ -1412,7 +1417,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         n = l3b_excits(jdet,5);
                         ! compute < abcjk | h1b(oo) | abcjn >
-                        hmatel = -h1b_oo(n,k)
+                        hmatel = -h1b_oo(k,n)
                         resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                      end do
                   end do
@@ -1448,7 +1453,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         f = l3b_excits(jdet,3);
                         ! compute < abcjk | h1b(vv) | abfjk >
-                        hmatel = h1b_vv(c,f)
+                        hmatel = h1b_vv(f,c)
                         resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                      end do
                   end do
@@ -1484,7 +1489,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         e = l3b_excits(jdet,2);
                         ! compute < abcjk | h1a(vv) | aecjk >
-                        hmatel = h1a_vv(b,e)
+                        hmatel = h1a_vv(e,b)
                         resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                      end do
                      ! (ab)
@@ -1493,7 +1498,7 @@ module lefteaeom3_p_loops
                         do jdet = loc_arr(1,idx),loc_arr(2,idx)
                            e = l3b_excits(jdet,2);
                            ! compute < abcjk | h1a(vv) | becjk >
-                           hmatel = -h1a_vv(a,e)
+                           hmatel = -h1a_vv(e,a)
                            resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                         end do
                      end if
@@ -1522,7 +1527,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         d = l3b_excits(jdet,1);
                         ! compute < abcjk | h1a(vv) | dbcjk >
-                        hmatel = h1a_vv(a,d)
+                        hmatel = h1a_vv(d,a)
                         resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                      end do
                      ! (ab)
@@ -1531,7 +1536,7 @@ module lefteaeom3_p_loops
                         do jdet = loc_arr(1,idx),loc_arr(2,idx)
                            d = l3b_excits(jdet,1);
                            ! compute < abcjk | h1a(vv) | dacjk >
-                           hmatel = -h1a_vv(b,d)
+                           hmatel = -h1a_vv(d,b)
                            resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                         end do
                      end if
@@ -1568,7 +1573,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         m = l3b_excits(jdet,4); n = l3b_excits(jdet,5);
                         ! compute < abcjk | h2b(oooo) | abcmn >
-                        hmatel = h2b_oooo(m,n,j,k)
+                        hmatel = h2b_oooo(j,k,m,n)
                         resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                      end do
                   end do
@@ -1578,8 +1583,8 @@ module lefteaeom3_p_loops
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table3)
 
-                  !!! diagram 6: h2b(mcek)*l3a(abejm)
-                  ! allocate and copy over l3a arrays
+                  !!! diagram 6: h2b(mcek)*r3a(abejm)
+                  ! allocate and copy over r3a arrays
                   allocate(amps_buff(n3aaa),excits_buff(n3aaa,5))
                   amps_buff(:) = l3a_amps(:)
                   excits_buff(:,:) = l3a_excits(:,:)
@@ -1889,7 +1894,7 @@ module lefteaeom3_p_loops
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table3)
-
+                
                   !!! diagram 9: -A(ab) h2b(bmek)*l3b(aecjm)
                   ! allocate new sorting arrays
                   nloc = (nua - 1)*nub*noa
@@ -2208,7 +2213,6 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         d = l3b_excits(jdet,1); e = l3b_excits(jdet,2);
                         ! compute < abc~jk~ | h2a(vvvv) | dfc~jk~ >
-                        !hmatel = h2a_vvvv(a,b,d,e)
                         hmatel = h2a_vvvv(d,e,a,b)
                         resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                      end do
@@ -2245,7 +2249,6 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         e = l3b_excits(jdet,2); f = l3b_excits(jdet,3);
                         ! compute < abc~jk~ | h2b(vvvv) | aef~jk~ >
-                        !hmatel = h2b_vvvv(b,c,e,f)
                         hmatel = h2b_vvvv(e,f,b,c)
                         resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                      end do
@@ -2255,7 +2258,6 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         e = l3b_excits(jdet,2); f = l3b_excits(jdet,3);
                         ! compute < abc~jk~ | h2b(vvvv) | bef~jk~ >
-                        !hmatel = -h2b_vvvv(a,c,e,f)
                         hmatel = -h2b_vvvv(e,f,a,c)
                         resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                      end do
@@ -2285,7 +2287,6 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         d = l3b_excits(jdet,1); f = l3b_excits(jdet,3);
                         ! compute < abc~jk~ | h2b(vvvv) | dbf~jk~ >
-                        !hmatel = h2b_vvvv(a,c,d,f)
                         hmatel = h2b_vvvv(d,f,a,c)
                         resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                      end do
@@ -2295,7 +2296,6 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         d = l3b_excits(jdet,1); f = l3b_excits(jdet,3);
                         ! compute < abc~jk~ | h2b(vvvv) | daf~jk~ >
-                        !hmatel = -h2b_vvvv(b,c,d,f)
                         hmatel = -h2b_vvvv(d,f,b,c)
                         resid(idet) = resid(idet) + hmatel * l3b_amps(jdet)
                      end do
@@ -2310,9 +2310,10 @@ module lefteaeom3_p_loops
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp l3b_excits,&
-                  !$omp r2a,r2b,&
-                  !$omp h2a_vvov,h2b_vooo,h2b_ovoo,h2b_vvov,h2b_vvvo,&
-                  !$omp x2a_voo,x2a_vvv,x2b_voo,x2b_ovo,x2b_vvv,&
+                  !$omp l1a,l2a,l2b,&
+                  !$omp h2a_vovv,h2b_ooov,h2b_oovo,h2b_vovv,h2b_ovvv,&
+                  !$omp h1a_ov,h1b_ov,h2a_oovv,h2b_oovv,&
+                  !$omp x2a_ovo,x2a_vvv,x2b_voo,x2b_ovo,x2b_vvv,&
                   !$omp noa,nua,nob,nub,n3aab),&
                   !$omp private(idet,a,b,c,d,i,j,k,l,m,n,e,f,res_mm23)
                   !$omp do schedule(static)
@@ -2321,26 +2322,47 @@ module lefteaeom3_p_loops
                       j = l3b_excits(idet,4); k = l3b_excits(idet,5);
                       ! zero out value
                       res_mm23 = 0.0d0
+                      ! A(ab) l1a(a)*h2b_oovv(jkbc)
+                      res_mm23 = res_mm23 + l1a(a)*h2b_oovv(j,k,b,c) ! (1)
+                      res_mm23 = res_mm23 - l1a(b)*h2b_oovv(j,k,a,c) ! (ab)
+                      ! l2a(abj)*h1b_ov(kc)
+                      res_mm23 = res_mm23 + l2a(a,b,j)*h1b_ov(k,c) ! (1)
+                      ! A(ab) l2b(ack)*h1a_ov(jb)
+                      res_mm23 = res_mm23 + l2b(a,c,k)*h1a_ov(j,b) ! (1)
+                      res_mm23 = res_mm23 - l2b(b,c,k)*h1a_ov(j,a) ! (ab)
                       do m = 1,noa
-                         ! -h2b(mcjk)*r2a(abm)
-                         res_mm23 = res_mm23 - h2b_ovoo(m,c,j,k) * r2a(a,b,m) ! (1)
+                         ! -l2a(abm)*h2b_ooov(jkmc)
+                         res_mm23 = res_mm23 - l2a(a,b,m)*h2b_ooov(j,k,m,c)
+                         ! -x2b_ovo(mck)*h2a_oovv(mjab)
+                         res_mm23 = res_mm23 - x2b_ovo(m,c,k)*h2a_oovv(m,j,a,b)
+                         ! -A(ab) x2a_ovo(mbj)*h2b_oovv(mkac)
+                         res_mm23 = res_mm23 - x2a_ovo(m,b,j)*h2b_oovv(m,k,a,c) ! (1)
+                         res_mm23 = res_mm23 + x2a_ovo(m,a,j)*h2b_oovv(m,k,b,c) ! (ab)
                       end do
                       do m = 1,nob
-                         ! -A(ab) h2b(bmjk)*r2b(acm)
-                         res_mm23 = res_mm23 - h2b_vooo(b,m,j,k) * r2b(a,c,m) ! (1)
-                         res_mm23 = res_mm23 + h2b_vooo(a,m,j,k) * r2b(b,c,m) ! (ab)
+                         ! A(ab) -l2b(acm)*h2b_oovo(jkbm)
+                         res_mm23 = res_mm23 - l2b(a,c,m)*h2b_oovo(j,k,b,m) ! (1)
+                         res_mm23 = res_mm23 + l2b(b,c,m)*h2b_oovo(j,k,a,m) ! (ab)
+                         ! A(ab) -x2b_voo(akm)*h2b_oovv(jmbc)
+                         res_mm23 = res_mm23 - x2b_voo(a,k,m)*h2b_oovv(j,m,b,c) ! (1)
+                         res_mm23 = res_mm23 + x2b_voo(b,k,m)*h2b_oovv(j,m,a,c) ! (ab)
                       end do
                       do e = 1,nua
-                         ! A(ab) h2b(bcek)*r2a(aej)
-                         res_mm23 = res_mm23 + h2b_vvvo(b,c,e,k) * r2a(a,e,j) ! (1)
-                         res_mm23 = res_mm23 - h2b_vvvo(a,c,e,k) * r2a(b,e,j) ! (ab)
-                         ! h2a(baje)*r2b(eck)
-                         res_mm23 = res_mm23 + h2a_vvov(b,a,j,e) * r2b(e,c,k) ! (1)
+                         ! A(ab) l2a(aej)*h2b_vovv(ekbc)
+                         res_mm23 = res_mm23 + l2a(a,e,j)*h2b_vovv(e,k,b,c) ! (1)
+                         res_mm23 = res_mm23 - l2a(b,e,j)*h2b_vovv(e,k,a,c) ! (ab)
+                         ! l2b(eck)*h2a_vovv(ejab)
+                         res_mm23 = res_mm23 + l2b(e,c,k)*h2a_vovv(e,j,a,b) ! (1)
+                         ! x2a_vvv(aeb)*h2b_oovv(jkec)
+                         res_mm23 = res_mm23 + x2a_vvv(a,e,b)*h2b_oovv(j,k,e,c) ! (1)
                       end do
                       do e = 1,nub
-                         ! A(ab) h2b(bcje)*r2b(aek)
-                         res_mm23 = res_mm23 + h2b_vvov(b,c,j,e) * r2b(a,e,k) ! (1)
-                         res_mm23 = res_mm23 - h2b_vvov(a,c,j,e) * r2b(b,e,k) ! (ab)
+                         ! A(ab) l2b(aek)*h2b_ovvv(jebc)
+                         res_mm23 = res_mm23 + l2b(a,e,k)*h2b_ovvv(j,e,b,c) ! (1)
+                         res_mm23 = res_mm23 - l2b(b,e,k)*h2b_ovvv(j,e,a,c) ! (ab)
+                         ! A(ab) x2b_vvv(aec)*h2b_oovv(jkbe)
+                         res_mm23 = res_mm23 + x2b_vvv(a,e,c)*h2b_oovv(j,k,b,e) ! (1)
+                         res_mm23 = res_mm23 - x2b_vvv(b,e,c)*h2b_oovv(j,k,a,e) ! (ab)
                       end do
                       resid(idet) = resid(idet) + res_mm23
                   end do
@@ -2350,12 +2372,12 @@ module lefteaeom3_p_loops
               end subroutine build_lh_3b
 
               subroutine build_lh_3c(resid,&
-                                     r2b,&
+                                     l1a,l2b,&
                                      l3b_amps,l3b_excits,&
                                      l3c_amps,l3c_excits,&
-                                     h1a_vv,h1b_oo,h1b_vv,&
-                                     h2b_vvvv,h2b_vovo,h2b_ovvo,h2b_vvvo,&
-                                     h2c_vvvv,h2c_oooo,h2c_voov,h2c_vooo,h2c_vvov,&
+                                     h1b_ov,h1a_vv,h1b_oo,h1b_vv,&
+                                     h2b_vvvv,h2b_vovo,h2b_ovvo,h2b_vovv,h2b_oovv,&
+                                     h2c_vvvv,h2c_oooo,h2c_voov,h2c_ooov,h2c_vovv,h2c_oovv,&
                                      x2b_voo,x2b_ovo,x2b_vvv,&
                                      n3aab,n3abb,&
                                      noa,nua,nob,nub)
@@ -2364,22 +2386,26 @@ module lefteaeom3_p_loops
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab, n3abb
                   ! Input R and T arrays
-                  real(kind=8), intent(in) :: r2b(nua,nub,nob) 
+                  real(kind=8), intent(in) :: l1a(nua)
+                  real(kind=8), intent(in) :: l2b(nua,nub,nob) 
                   integer, intent(in) :: l3b_excits(n3aab,5)
                   real(kind=8), intent(in) :: l3b_amps(n3aab)
                   ! Input H  and X arrays
+                  real(kind=8), intent(in) :: h1b_ov(nob,nub)
                   real(kind=8), intent(in) :: h1a_vv(nua,nua)
                   real(kind=8), intent(in) :: h1b_oo(nob,nob)
                   real(kind=8), intent(in) :: h1b_vv(nub,nub)
                   real(kind=8), intent(in) :: h2b_vvvv(nua,nub,nua,nub)
                   real(kind=8), intent(in) :: h2b_vovo(nua,nob,nua,nob)
                   real(kind=8), intent(in) :: h2b_ovvo(noa,nub,nua,nob)
-                  real(kind=8), intent(in) :: h2b_vvvo(nua,nub,nua,nob)
+                  real(kind=8), intent(in) :: h2b_vovv(nua,nob,nua,nub)
+                  real(kind=8), intent(in) :: h2b_oovv(noa,nob,nua,nub)
                   real(kind=8), intent(in) :: h2c_vvvv(nub,nub,nub,nub)
                   real(kind=8), intent(in) :: h2c_oooo(nob,nob,nob,nob)
                   real(kind=8), intent(in) :: h2c_voov(nub,nob,nob,nub)
-                  real(kind=8), intent(in) :: h2c_vooo(nub,nob,nob,nob)
-                  real(kind=8), intent(in) :: h2c_vvov(nub,nub,nob,nub)
+                  real(kind=8), intent(in) :: h2c_ooov(nob,nob,nob,nub)
+                  real(kind=8), intent(in) :: h2c_vovv(nub,nob,nub,nub)
+                  real(kind=8), intent(in) :: h2c_oovv(nob,nob,nub,nub)
                   real(kind=8), intent(in) :: x2b_voo(nua,nob,nob)
                   real(kind=8), intent(in) :: x2b_ovo(noa,nub,nob)
                   real(kind=8), intent(in) :: x2b_vvv(nua,nub,nub)
@@ -2428,7 +2454,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         m = l3c_excits(jdet,4);
                         ! compute < ab~c~j~k~ | h1b(oo) | ab~c~m~k~ >
-                        hmatel = -h1b_oo(m,j)
+                        hmatel = -h1b_oo(j,m)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
                      ! (jk)
@@ -2437,7 +2463,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         m = l3c_excits(jdet,4);
                         ! compute < ab~c~j~k~ | h1b(oo) | ab~c~m~j~ >
-                        hmatel = h1b_oo(m,k)
+                        hmatel = h1b_oo(k,m)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
                      end if
@@ -2466,7 +2492,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         n = l3c_excits(jdet,5);
                         ! compute < ab~c~j~k~ | h1b(oo) | ab~c~j~n~ >
-                        hmatel = -h1b_oo(n,k)
+                        hmatel = -h1b_oo(k,n)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
                      ! (jk)
@@ -2475,7 +2501,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         n = l3c_excits(jdet,5);
                         ! compute < ab~c~j~k~ | h1b(oo) | ab~c~k~n~ >
-                        hmatel = h1b_oo(n,j)
+                        hmatel = h1b_oo(j,n)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
                      end if
@@ -2512,7 +2538,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         e = l3c_excits(jdet,2);
                         ! compute < ab~c~j~k~ | h1b(vv) | ae~c~j~k~ >
-                        hmatel = h1b_vv(b,e)
+                        hmatel = h1b_vv(e,b)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
                      ! (bc)
@@ -2521,7 +2547,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         e = l3c_excits(jdet,2);
                         ! compute < ab~c~j~k~ | h1b(vv) | ae~b~j~k~ >
-                        hmatel = -h1b_vv(c,e)
+                        hmatel = -h1b_vv(e,c)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
                      end if
@@ -2550,7 +2576,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         f = l3c_excits(jdet,3);
                         ! compute < ab~c~j~k~ | h1b(vv) | ab~f~j~k~ >
-                        hmatel = h1b_vv(c,f)
+                        hmatel = h1b_vv(f,c)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
                      ! (bc)
@@ -2559,7 +2585,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         f = l3c_excits(jdet,3);
                         ! compute < ab~c~j~k~ | h1b(vv) | ac~f~j~k~ >
-                        hmatel = -h1b_vv(b,f)
+                        hmatel = -h1b_vv(f,b)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
                      end if
@@ -2596,7 +2622,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         d = l3c_excits(jdet,1);
                         ! compute < ab~c~j~k~ | h1a(vv) | db~c~j~k~ >
-                        hmatel = h1a_vv(a,d)
+                        hmatel = h1a_vv(d,a)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
                   end do
@@ -2632,7 +2658,7 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         m = l3c_excits(jdet,4); n = l3c_excits(jdet,5);
                         ! compute < ab~c~j~k~ | h2c(oooo) | ab~c~m~n~ >
-                        hmatel = h2c_oooo(m,n,j,k)
+                        hmatel = h2c_oooo(j,k,m,n)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
                   end do
@@ -3124,7 +3150,6 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         d = l3c_excits(jdet,1); e = l3c_excits(jdet,2);
                         ! compute < ab~c~j~k~ | h2b(vvvv) | de~c~j~k~ >
-                        !hmatel = h2b_vvvv(a,b,d,e)
                         hmatel = h2b_vvvv(d,e,a,b)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
@@ -3134,7 +3159,6 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         d = l3c_excits(jdet,1); e = l3c_excits(jdet,2);
                         ! compute < ab~c~j~k~ | h2b(vvvv) | de~b~j~k~ >
-                        !hmatel = -h2b_vvvv(a,c,d,e)
                         hmatel = -h2b_vvvv(d,e,a,c)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
@@ -3164,7 +3188,6 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         d = l3c_excits(jdet,1); f = l3c_excits(jdet,3);
                         ! compute < ab~c~j~k~ | h2b(vvvv) | db~f~j~k~ >
-                        !hmatel = h2b_vvvv(a,c,d,f)
                         hmatel = h2b_vvvv(d,f,a,c)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
@@ -3174,7 +3197,6 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         d = l3c_excits(jdet,1); f = l3c_excits(jdet,3);
                         ! compute < ab~c~j~k~ | h2b(vvvv) | dc~f~j~k~ >
-                        !hmatel = -h2b_vvvv(a,b,d,f)
                         hmatel = -h2b_vvvv(d,f,a,b)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
@@ -3212,7 +3234,6 @@ module lefteaeom3_p_loops
                      do jdet = loc_arr(1,idx),loc_arr(2,idx)
                         e = l3c_excits(jdet,2); f = l3c_excits(jdet,3);
                         ! compute < ab~c~j~k~ | h2b(vvvv) | ae~f~j~k~ >
-                        !hmatel = h2c_vvvv(b,c,e,f)
                         hmatel = h2c_vvvv(e,f,b,c)
                         resid(idet) = resid(idet) + hmatel * l3c_amps(jdet)
                      end do
@@ -3226,9 +3247,9 @@ module lefteaeom3_p_loops
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp l3c_excits,&
-                  !$omp r2b,&
-                  !$omp h2b_vvvo,&
-                  !$omp h2c_vooo,h2c_vvov,&
+                  !$omp l1a,l2b,&
+                  !$omp h2b_vovv,h2b_oovv,&
+                  !$omp h2c_ooov,h2c_vovv,h2c_oovv,&
                   !$omp x2b_voo,x2b_ovo,x2b_vvv,&
                   !$omp noa,nua,nob,nub,n3abb),&
                   !$omp private(idet,a,b,c,d,i,j,k,l,m,n,e,f,res_mm23)
@@ -3238,22 +3259,42 @@ module lefteaeom3_p_loops
                       j = l3c_excits(idet,4); k = l3c_excits(idet,5);
                       ! zero out value
                       res_mm23 = 0.0d0
+                      ! l1a(a)*h2c_oovv(jkbc)
+                      res_mm23 = res_mm23 + l1a(a)*h2c_oovv(j,k,b,c) ! (1)
+                      ! A(bc)A(jk) l2b(abj)*h1b_ov(kc)
+                      res_mm23 = res_mm23 + l2b(a,b,j)*h1b_ov(k,c) ! (1)
+                      res_mm23 = res_mm23 - l2b(a,c,j)*h1b_ov(k,b) ! (bc)
+                      res_mm23 = res_mm23 - l2b(a,b,k)*h1b_ov(j,c) ! (jk)
+                      res_mm23 = res_mm23 + l2b(a,c,k)*h1b_ov(j,b) ! (bc)(jk)
+                      do m = 1,noa
+                         ! -A(bc)A(jk) x2b_ovo(mck)*h2b_oovv(mjab) 
+                         res_mm23 = res_mm23 - x2b_ovo(m,c,k)*h2b_oovv(m,j,a,b) ! (1)
+                         res_mm23 = res_mm23 + x2b_ovo(m,b,k)*h2b_oovv(m,j,a,c) ! (bc)
+                         res_mm23 = res_mm23 + x2b_ovo(m,c,j)*h2b_oovv(m,k,a,b) ! (jk)
+                         res_mm23 = res_mm23 - x2b_ovo(m,b,j)*h2b_oovv(m,k,a,c) ! (bc)(jk)
+                      end do
                       do m = 1,nob
-                         ! -A(bc) h2c(cmkj) * r2b(abm)
-                         res_mm23 = res_mm23 - h2c_vooo(c,m,k,j) * r2b(a,b,m) ! (1)
-                         res_mm23 = res_mm23 + h2c_vooo(b,m,k,j) * r2b(a,c,m) ! (bc)
+                         ! A(bc) -l2b(abm)*h2c_ooov(jkmc)
+                         res_mm23 = res_mm23 - l2b(a,b,m)*h2c_ooov(j,k,m,c) ! (1)
+                         res_mm23 = res_mm23 + l2b(a,c,m)*h2c_ooov(j,k,m,b) ! (bc)
+                         ! A(jk) -x2b_voo(ajm)*h2c_oovv(mkbc)
+                         res_mm23 = res_mm23 - x2b_voo(a,j,m)*h2c_oovv(m,k,b,c) ! (1)
+                         res_mm23 = res_mm23 + x2b_voo(a,k,m)*h2c_oovv(m,j,b,c) ! (jk)
                       end do
                       do e = 1,nua
-                         ! A(bc)A(jk) h2b(acek) * r2b(ebj)
-                         res_mm23 = res_mm23 + h2b_vvvo(a,c,e,k) * r2b(e,b,j) ! (1)
-                         res_mm23 = res_mm23 - h2b_vvvo(a,b,e,k) * r2b(e,c,j) ! (bc)
-                         res_mm23 = res_mm23 - h2b_vvvo(a,c,e,j) * r2b(e,b,k) ! (jk)
-                         res_mm23 = res_mm23 + h2b_vvvo(a,b,e,j) * r2b(e,c,k) ! (bc)(jk)
+                         ! A(jk)A(bc) l2b(eck)*h2b_vovv(ejab)
+                         res_mm23 = res_mm23 + l2b(e,c,k)*h2b_vovv(e,j,a,b) ! (1)
+                         res_mm23 = res_mm23 - l2b(e,b,k)*h2b_vovv(e,j,a,c) ! (bc)
+                         res_mm23 = res_mm23 - l2b(e,c,j)*h2b_vovv(e,k,a,b) ! (jk)
+                         res_mm23 = res_mm23 + l2b(e,b,j)*h2b_vovv(e,k,a,c) ! (bc)(jk)
                       end do
                       do e = 1,nub
-                         ! A(jk) h2c(cbke) * r2b(aej)
-                         res_mm23 = res_mm23 + h2c_vvov(c,b,k,e) * r2b(a,e,j) ! (1)
-                         res_mm23 = res_mm23 - h2c_vvov(c,b,j,e) * r2b(a,e,k) ! (jk)
+                         ! A(jk) l2b(aej)*h2c_vovv(ekbc)
+                         res_mm23 = res_mm23 + l2b(a,e,j)*h2c_vovv(e,k,b,c) ! (1)
+                         res_mm23 = res_mm23 - l2b(a,e,k)*h2c_vovv(e,j,b,c) ! (jk)
+                         ! A(bc) x2b_vvv(aeb)*h2c_oovv(jkec)
+                         res_mm23 = res_mm23 + x2b_vvv(a,e,b)*h2c_oovv(j,k,e,c) ! (1)
+                         res_mm23 = res_mm23 - x2b_vvv(a,e,c)*h2c_oovv(j,k,e,b) ! (bc)
                       end do
                       resid(idet) = resid(idet) + res_mm23
                   end do
