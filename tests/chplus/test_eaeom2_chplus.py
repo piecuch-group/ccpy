@@ -14,7 +14,6 @@ def test_eaeom2_chplus():
         nfrozen=0,
     )
     driver.system.print_info()
-    driver.system.print_info()
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")

@@ -8,11 +8,13 @@ module lefteaeom3_p_intermediates
                                      l3a_amps, l3a_excits,&
                                      l3b_amps, l3b_excits,&
                                      t2a, t2b,&
+                                     do_aaa, do_aab,&
                                      n3aaa, n3aab,&
                                      noa, nua, nob, nub)
 
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa, n3aab
+                  logical, intent(in) :: do_aaa, do_aab
 
                   integer, intent(in) :: l3a_excits(n3aaa,5)
                   real(kind=8), intent(in) :: l3a_amps(n3aaa)
@@ -27,7 +29,8 @@ module lefteaeom3_p_intermediates
                   real(kind=8) :: l_amp
                   integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
                        
-                  x2a_ovo = 0.0d0 
+                  x2a_ovo = 0.0d0
+                  if (do_aaa) then
                   do idet = 1,n3aaa
                      l_amp = l3a_amps(idet)
                      ! x2a(ibj) <- A(b/ef)A(jn) l3a(ebfjn)*t2a(efin)
@@ -40,7 +43,9 @@ module lefteaeom3_p_intermediates
                      x2a_ovo(:,e,n) = x2a_ovo(:,e,n) + t2a(b,f,:,j)*l_amp ! (be)(jn)
                      x2a_ovo(:,f,n) = x2a_ovo(:,f,n) + t2a(e,b,:,j)*l_amp ! (bf)(jn)
                   end do
-                      
+                  end if
+                  
+                  if (do_aab) then
                   do idet = 1,n3aab
                      l_amp = l3b_amps(idet)
                      ! x2a(ibj) <- A(be) l3b(ebfjn)*t2b(efin)
@@ -49,6 +54,7 @@ module lefteaeom3_p_intermediates
                      x2a_ovo(:,b,j) = x2a_ovo(:,b,j) + t2b(e,f,:,n)*l_amp ! (1)
                      x2a_ovo(:,e,j) = x2a_ovo(:,e,j) - t2b(b,f,:,n)*l_amp ! (be)
                   end do
+                  end if
 
               end subroutine get_x2a_ovo
 
@@ -56,11 +62,13 @@ module lefteaeom3_p_intermediates
                                      l3a_amps, l3a_excits,&
                                      l3b_amps, l3b_excits,&
                                      t2a, t2b,&
+                                     do_aaa, do_aab,&
                                      n3aaa, n3aab,&
                                      noa, nua, nob, nub)
 
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa, n3aab
+                  logical, intent(in) :: do_aaa, do_aab
 
                   integer, intent(in) :: l3a_excits(n3aaa,5)
                   real(kind=8), intent(in) :: l3a_amps(n3aaa)
@@ -75,7 +83,8 @@ module lefteaeom3_p_intermediates
                   real(kind=8) :: l_amp
                   integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
 
-                  x2a_vvv = 0.0d0    
+                  x2a_vvv = 0.0d0
+                  if (do_aaa) then
                   do idet = 1,n3aaa
                      l_amp = l3a_amps(idet)
                      ! x2a_vvv(aeb) <- A(f/ab) -l3a(abfmn)*t2a(efmn)
@@ -85,7 +94,9 @@ module lefteaeom3_p_intermediates
                      x2a_vvv(f,:,b) = x2a_vvv(f,:,b) + t2a(:,a,m,n)*l_amp ! (af)
                      x2a_vvv(a,:,f) = x2a_vvv(a,:,f) + t2a(:,b,m,n)*l_amp ! (bf)
                   end do
-                      
+                  end if
+                  
+                  if (do_aab) then
                   do idet = 1,n3aab
                      l_amp = l3b_amps(idet)
                      ! x2a_vvv(aeb) <- -l3b(abfmn)*t2b(efmn)
@@ -93,6 +104,7 @@ module lefteaeom3_p_intermediates
                      m = l3b_excits(idet,4); n = l3b_excits(idet,5);
                      x2a_vvv(a,:,b) = x2a_vvv(a,:,b) - t2b(:,f,m,n)*l_amp ! (1)
                   end do
+                  end if
 
                   ! apply the common A(ab) antisymmetrizer
                   do a = 1,nua
@@ -115,11 +127,13 @@ module lefteaeom3_p_intermediates
                                      l3b_amps, l3b_excits,&
                                      l3c_amps, l3c_excits,&
                                      t2a, t2b,&
+                                     do_aab, do_abb,&
                                      n3aab, n3abb,&
                                      noa, nua, nob, nub)
 
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab, n3abb
+                  logical, intent(in) :: do_aab, do_abb
 
                   integer, intent(in) :: l3b_excits(n3aab,5)
                   real(kind=8), intent(in) :: l3b_amps(n3aab)
@@ -135,6 +149,7 @@ module lefteaeom3_p_intermediates
                   integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
                       
                   x2b_ovo = 0.0d0
+                  if (do_aab) then
                   do idet = 1,n3aab
                      l_amp = l3b_amps(idet)
                      ! x2b_ovo(ibj) <- l3b(efbnj)*t2a(efin)
@@ -142,7 +157,9 @@ module lefteaeom3_p_intermediates
                      n = l3b_excits(idet,4); j = l3b_excits(idet,5);
                      x2b_ovo(:,b,j) = x2b_ovo(:,b,j) + t2a(e,f,:,n)*l_amp ! (1)
                   end do
-                      
+                  end if
+                  
+                  if (do_abb) then
                   do idet = 1,n3abb
                      l_amp = l3c_amps(idet)
                      ! x2b_ovo(ibj) <- A(bf)A(jn) l3c(ebfjn)*t2b(efin)
@@ -153,6 +170,7 @@ module lefteaeom3_p_intermediates
                      x2b_ovo(:,b,n) = x2b_ovo(:,b,n) - t2b(e,f,:,j)*l_amp ! (jn)
                      x2b_ovo(:,f,n) = x2b_ovo(:,f,n) + t2b(e,b,:,j)*l_amp ! (bf)(jn)
                   end do
+                  end if
 
               end subroutine get_x2b_ovo
 
@@ -160,11 +178,13 @@ module lefteaeom3_p_intermediates
                                      l3b_amps, l3b_excits,&
                                      l3c_amps, l3c_excits,&
                                      t2b, t2c,&
+                                     do_aab, do_abb,&
                                      n3aab, n3abb,&
                                      noa, nua, nob, nub)
 
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab, n3abb
+                  logical, intent(in) :: do_aab, do_abb
 
                   integer, intent(in) :: l3b_excits(n3aab,5)
                   real(kind=8), intent(in) :: l3b_amps(n3aab)
@@ -180,6 +200,7 @@ module lefteaeom3_p_intermediates
                   integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
                       
                   x2b_voo = 0.0d0
+                  if (do_aab) then
                   do idet = 1,n3aab
                      l_amp = l3b_amps(idet)
                      ! x2b_voo(ak~m~) <- A(af) l3b(afenk)*t2b(fenm) 
@@ -188,7 +209,9 @@ module lefteaeom3_p_intermediates
                      x2b_voo(a,k,:) = x2b_voo(a,k,:) + t2b(f,e,n,:)*l_amp ! (1)
                      x2b_voo(f,k,:) = x2b_voo(f,k,:) - t2b(a,e,n,:)*l_amp ! (af)
                   end do
-                      
+                  end if
+                  
+                  if (do_abb) then
                   do idet = 1,n3abb
                      l_amp = l3c_amps(idet)
                      ! x2b_voo(ak~m~) <- A(kn) l3c(afenk)*t2c(fenm)
@@ -197,6 +220,7 @@ module lefteaeom3_p_intermediates
                      x2b_voo(a,k,:) = x2b_voo(a,k,:) + t2c(f,e,n,:)*l_amp ! (1)
                      x2b_voo(a,n,:) = x2b_voo(a,n,:) - t2c(f,e,k,:)*l_amp ! (kn)
                   end do
+                  end if
 
               end subroutine get_x2b_voo
 
@@ -204,11 +228,13 @@ module lefteaeom3_p_intermediates
                                      l3b_amps, l3b_excits,&
                                      l3c_amps, l3c_excits,&
                                      t2b, t2c,&
+                                     do_aab, do_abb,&
                                      n3aab, n3abb,&
                                      noa, nua, nob, nub)
 
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab, n3abb
+                  logical, intent(in) :: do_aab, do_abb
 
                   integer, intent(in) :: l3b_excits(n3aab,5)
                   real(kind=8), intent(in) :: l3b_amps(n3aab)
@@ -223,7 +249,8 @@ module lefteaeom3_p_intermediates
                   real(kind=8) :: l_amp
                   integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
                   
-                  x2b_vvv = 0.0d0    
+                  x2b_vvv = 0.0d0
+                  if (do_aab) then
                   do idet = 1,n3aab
                      l_amp = l3b_amps(idet)
                      ! x2b_vvv(ae~b~) <- A(af) -l3b(afbnm)*t2b(fenm)
@@ -232,7 +259,9 @@ module lefteaeom3_p_intermediates
                      x2b_vvv(a,:,b) = x2b_vvv(a,:,b) - t2b(f,:,n,m)*l_amp ! (1)
                      x2b_vvv(f,:,b) = x2b_vvv(f,:,b) + t2b(a,:,n,m)*l_amp ! (af)
                   end do
-                      
+                  end if
+                  
+                  if (do_abb) then
                   do idet = 1,n3abb
                      l_amp = l3c_amps(idet)
                      ! x2b_vvv(ae~b~) <- A(bf) -l3c(afbnm)*t2c(efmn)
@@ -241,6 +270,7 @@ module lefteaeom3_p_intermediates
                      x2b_vvv(a,:,b) = x2b_vvv(a,:,b) - t2c(:,f,m,n)*l_amp ! (1)
                      x2b_vvv(a,:,f) = x2b_vvv(a,:,f) + t2c(:,b,m,n)*l_amp ! (bf)
                   end do
+                  end if
 
               end subroutine get_x2b_vvv
 

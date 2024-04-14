@@ -35,6 +35,7 @@ def test_eaeom3a_chplus():
     for i in [0, 1, 2, 3, 4, 5, 6]:
         driver.run_eaeomccp(method="eaeom3_p", state_index=i, r3_excitations=r3_excitations)
         driver.run_lefteaeomccp(method="left_eaeom3_p", state_index=i, r3_excitations=r3_excitations)
+        driver.run_eaccp3(method="eaccp3", state_index=i, r3_excitations=r3_excitations)
 
     #
     # Check the results

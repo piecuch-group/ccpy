@@ -30,6 +30,7 @@ MODULES := cc_loops \
 		   ccp3_loops \
 		   ccp3_opt_loops \
 		   ccp3_adaptive_loops \
+		   eaccp3_loops \
 		   clusteranalysis \
 		   ecccp3_loops \
 		   reorder \

@@ -1639,6 +1639,14 @@ class Driver:
                 _, self.deltap3[i] = calc_creacc23(self.T, self.R[i], self.L[i],
                                                     self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                     self.system, self.options["RHF_symmetry"])
+        if method.lower() == "eaccp3":
+            from ccpy.moments.eaccp3 import calc_eaccp3_full
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            # Perform 3p-2h correction for a specific state index
+            _, self.deltap3[state_index] = calc_eaccp3_full(self.T, self.R[state_index], self.L[state_index], r3_excitations,
+                                                            self.vertical_excitation_energy[state_index], self.correlation_energy,
+                                                            self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
 
     def run_ccp4(self, method, state_index=[0], two_body_approx=True):
 

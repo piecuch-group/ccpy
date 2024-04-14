@@ -115,6 +115,50 @@ def unravel_triples_amplitudes(T, t3_excitations, system, do_t3):
             T_new.bbb[c, b, a, k, j, i] = T.bbb[idet]
     return T_new
 
+def unravel_3p2h_amplitudes(R, r3_excitations, system, do_r3):
+    """Replaces the 3p2h parts of the R (or L) operator defined as P-space vectors
+    with the corresponding 5-dimensional arrays."""
+    from ccpy.models.operators import FockOperator
+    n3aaa = r3_excitations["aaa"].shape[0]
+    n3aab = r3_excitations["aab"].shape[0]
+    n3abb = r3_excitations["abb"].shape[0]
+    # Make a new cluster operator
+    R_new = FockOperator(system, 3, 2)
+    setattr(R_new, "a", R.a)
+    setattr(R_new, "aa", R.aa)
+    setattr(R_new, "ab", R.ab)
+    # Unravel aaa
+    if do_r3["aaa"]:
+        for idet in range(n3aaa):
+            a, b, c, j, k = [x - 1 for x in r3_excitations["aaa"][idet, :]]
+            R_new.aaa[a, b, c, j, k] = R.aaa[idet]
+            R_new.aaa[a, c, b, j, k] = -R.aaa[idet]
+            R_new.aaa[b, c, a, j, k] = R.aaa[idet]
+            R_new.aaa[b, a, c, j, k] = -R.aaa[idet]
+            R_new.aaa[c, a, b, j, k] = R.aaa[idet]
+            R_new.aaa[c, b, a, j, k] = -R.aaa[idet]
+            R_new.aaa[a, b, c, k, j] = -R.aaa[idet]
+            R_new.aaa[a, c, b, k, j] = R.aaa[idet]
+            R_new.aaa[b, c, a, k, j] = -R.aaa[idet]
+            R_new.aaa[b, a, c, k, j] = R.aaa[idet]
+            R_new.aaa[c, a, b, k, j] = -R.aaa[idet]
+            R_new.aaa[c, b, a, k, j] = R.aaa[idet]
+    # Unravel aab
+    if do_r3["aab"]:
+        for idet in range(n3aab):
+            a, b, c, j, k = [x - 1 for x in r3_excitations["aab"][idet, :]]
+            R_new.aab[a, b, c, j, k] = R.aab[idet]
+            R_new.aab[b, a, c, j, k] = -R.aab[idet]
+    # Unravel abb
+    if do_r3["abb"]:
+        for idet in range(n3abb):
+            a, b, c, j, k = [x - 1 for x in r3_excitations["abb"][idet, :]]
+            R_new.abb[a, b, c, j, k] = R.abb[idet]
+            R_new.abb[a, c, b, j, k] = -R.abb[idet]
+            R_new.abb[a, b, c, k, j] = -R.abb[idet]
+            R_new.abb[a, c, b, k, j] = R.abb[idet]
+    return R_new
+
 def reorder_triples_amplitudes(L, l3_excitations, t3_excitations):
     """Reorder the P-space triples amplitudes in L corresponding to
     the excitation array l3_excitations to the order provided by

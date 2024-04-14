@@ -35,7 +35,7 @@ def LH_fun(dL, L, T, H, flag_RHF, system, t3_excitations, l3_excitations):
         do_l3["abb"] = False
 
     # Get intermediates
-    X = get_lefteaeom3_p_intermediates(L, l3_excitations, T, system)
+    X = get_lefteaeom3_p_intermediates(L, l3_excitations, T, do_l3, system)
     # update R1
     dL = build_LH_1A(dL, L, l3_excitations, H, X)
     # update R2
