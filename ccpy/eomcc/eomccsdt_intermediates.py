@@ -348,5 +348,4 @@ def add_R3_p_terms(X, H, R, R3_excitations):
                                                           R.bbb, R3_excitations["bbb"],
                                                           H.ab.oovv, H.bb.oovv, phase=1.0,
     )
-
     return X

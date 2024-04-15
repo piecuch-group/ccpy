@@ -52,6 +52,15 @@ energetics for the missing many-electron correlations using the generalized mome
   - CCSDT
   - CR-CC(2,4)
   - CCSDTQ (available for closed shells only)
+
+#### Approximate Coupled-Pair (ACP) Approaches
+  - ACCD
+  - ACCSD
+  - ACCSDt
+  - ACC(2,3)
+  - ACC(t;3)
+
+#### Externally Corrected (ec) CC Approaches
   - ec-CC-II
   - ec-CC-II<sub>3</sub> (see Ref. [3])
   - ec-CC_II<sub>3,4</sub> (see Ref. [3])
