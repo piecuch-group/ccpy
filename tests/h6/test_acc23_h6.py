@@ -21,57 +21,10 @@ def h6_geometry(r):
         coords[i, 2] = 0.0
     return coords
 
-def test_acc23_13_h6(mf):
+def test_acc23_h6():
 
-    driver = Driver.from_pyscf(mf, nfrozen=0)
-    driver.system.print_info()
-    driver.run_cc(method="accsd", acparray=[1., 0., 1., 0., 0.])
-    driver.run_hbar(method="ccsd")
-    driver.run_leftcc(method="left_ccsd")
-    driver.run_ccp3(method="crcc23")
-
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.41073401)
-
-def test_acc23_134_h6(mf):
-
-    driver = Driver.from_pyscf(mf, nfrozen=0)
-    driver.system.print_info()
-    driver.run_cc(method="accsd", acparray=[1., 0., 0.5, 0.5, 0.])
-    driver.run_hbar(method="ccsd")
-    driver.run_leftcc(method="left_ccsd")
-    driver.run_ccp3(method="crcc23")
-
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.40816226)
-
-def test_acc23_134scaled_h6(mf):
-
-    driver = Driver.from_pyscf(mf, nfrozen=0)
-    driver.system.print_info()
-
-    d3 = driver.system.noccupied_alpha/driver.system.norbitals
-    d4 = driver.system.nunoccupied_alpha/driver.system.norbitals
-    driver.run_cc(method="accsd", acparray=[1., 0., d3, d4, 0.])
-    driver.run_hbar(method="ccsd")
-    driver.run_leftcc(method="left_ccsd")
-    driver.run_ccp3(method="crcc23")
-
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.40593689)
-
-def test_acc23_14_h6(mf):
-
-    driver = Driver.from_pyscf(mf, nfrozen=0)
-    driver.system.print_info()
-    driver.run_cc(method="accsd", acparray=[1., 0., 0., 1., 0.])
-    driver.run_hbar(method="ccsd")
-    driver.run_leftcc(method="left_ccsd")
-    driver.run_ccp3(method="crcc23")
-
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.40577161)
-
-if __name__ == "__main__":
-
-    r = 1.0
-    coords = h6_geometry(r)
+    r_HH = 1.0
+    coords = h6_geometry(r_HH)
     mol = gto.M(
             atom=f'''H {coords[0,0]} {coords[0,1]} {coords[0,2]}
                      H {coords[1,0]} {coords[1,1]} {coords[1,2]}
@@ -87,7 +40,49 @@ if __name__ == "__main__":
     mf = scf.RHF(mol)
     mf.kernel()
 
-    test_acc23_13_h6(mf)
-    test_acc23_134_h6(mf)
-    test_acc23_134scaled_h6(mf)
-    test_acc23_14_h6(mf)
+    #  ACCSD(1,3)
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    driver.system.print_info()
+    driver.run_cc(method="accsd", acparray=[1., 0., 1., 0., 0.])
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="crcc23")
+    # Check results
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.41073401)
+
+    # ACCSD(1,(3+4)/2) = DCSD
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    driver.system.print_info()
+    driver.run_cc(method="accsd", acparray=[1., 0., 0.5, 0.5, 0.])
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="crcc23")
+    # check results
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.40816226)
+
+    # ACCSD(1, 3 x no/norb + 4 x nu/norb)
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    driver.system.print_info()
+    d3 = driver.system.noccupied_alpha/driver.system.norbitals
+    d4 = driver.system.nunoccupied_alpha/driver.system.norbitals
+    driver.run_cc(method="accsd", acparray=[1., 0., d3, d4, 0.])
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="crcc23")
+    # check results
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.40593689)
+
+    # ACCSD(1,4)
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    driver.system.print_info()
+    driver.run_cc(method="accsd", acparray=[1., 0., 0., 1., 0.])
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="crcc23")
+    # check results
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.40577161)
+
+
+if __name__ == "__main__":
+
+    test_acc23_h6()
