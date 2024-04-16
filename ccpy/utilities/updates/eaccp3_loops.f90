@@ -6,6 +6,7 @@ module eaccp3_loops
 
               subroutine eaccp3A_full(deltaA,deltaB,deltaC,deltaD,&
                                       M3A,L3A,r3a_excits,omega,&
+                                      !orbsyms,target_sym,refsym,&
                                       fA_oo,fA_vv,H1A_oo,H1A_vv,&
                                       H2A_vvvv,H2A_oooo,H2A_voov,&
                                       d3A_o,d3A_v,&
@@ -13,6 +14,8 @@ module eaccp3_loops
 
                         ! input variables
                         integer, intent(in) :: noa, nua, n3aaa
+                        !integer, intent(in) :: norb, target_sym, refsym
+                        !integer, intent(in) :: orbsyms(norb)
                         integer, intent(in) :: r3a_excits(n3aaa,5)
                         real(kind=8), intent(in) :: M3A(nua,nua,nua,noa,noa)
                         real(kind=8), intent(in) :: L3A(nua,nua,nua,noa,noa)
@@ -34,11 +37,12 @@ module eaccp3_loops
                         ! Local variables
                         integer :: j, k, a, b, c
                         real(kind=8) :: D, temp
+                        !integer :: sym_a, sym_b, sym_c, sym_j, sym_k, sym
 
-                        deltaA = 0.0
-                        deltaB = 0.0
-                        deltaC = 0.0
-                        deltaD = 0.0
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
 
                         ! reorder r3a into (a,b,c) order
                         excits_buff(:,:) = r3a_excits(:,:)
@@ -49,8 +53,14 @@ module eaccp3_loops
                         call sort3(excits_buff, loc_arr, idx_table, (/1,2,3/), nua, nua, nua, nloc, n3aaa)
 
                         do a = 1,nua
+                           !sym_a = orbsyms(a+noa)
+                           !sym = ieor(sym_a, refsym)
                            do b = a+1,nua
+                              !sym_b = orbsyms(b+noa)
+                              !sym = ieor(sym_b, sym)
                               do c = b+1,nua
+                                 !sym_c = orbsyms(c+noa)
+                                 !sym = ieor(sym_c, sym)
                                  ! Construct Q space for block (a,b,c)
                                  qspace = .true.
                                  idx = idx_table(a,b,c)
@@ -61,7 +71,12 @@ module eaccp3_loops
                                     end do
                                  end if
                                  do j = 1,noa
+                                    !sym_j = orbsyms(j)
+                                    !sym = ieor(sym_j, sym)
                                     do k = j+1,noa
+                                       !sym_k = orbsyms(k)
+                                       !sym = ieor(sym_k, sym)
+                                       !if (sym /= target_sym) cycle
                                        if (.not. qspace(j,k)) cycle
                                        temp = M3A(a,b,c,j,k)*L3A(a,b,c,j,k)
                                        ! A correction
@@ -89,11 +104,13 @@ module eaccp3_loops
                               end do
                            end do
                         end do
+                        deallocate(idx_table,loc_arr)
 
               end subroutine eaccp3A_full
 
               subroutine eaccp3B_full(deltaA,deltaB,deltaC,deltaD,&
                                       M3B,L3B,r3b_excits,omega,&
+                                      !orbsyms,target_sym,refsym,&
                                       fA_oo,fA_vv,fB_oo,fB_vv,&
                                       H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
                                       H2A_vvvv,H2A_voov,&
@@ -104,6 +121,8 @@ module eaccp3_loops
 
                         ! input variables
                         integer, intent(in) :: noa, nua, nob, nub, n3aab
+                        !integer, intent(in) :: norb, target_sym, refsym
+                        !integer, intent(in) :: orbsyms(norb)
                         integer, intent(in) :: r3b_excits(n3aab,5)
                         real(kind=8), intent(in) :: M3B(nua,nua,nub,noa,nob)
                         real(kind=8), intent(in) :: L3B(nua,nua,nub,noa,nob)
@@ -135,11 +154,12 @@ module eaccp3_loops
                         ! Local variables
                         integer :: j, k, a, b, c
                         real(kind=8) :: D, temp
-
-                        deltaA = 0.0
-                        deltaB = 0.0
-                        deltaC = 0.0
-                        deltaD = 0.0
+                        !integer :: sym_a, sym_b, sym_c, sym_j, sym_k, sym
+                        
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
 
                         ! reorder r3b into (a,b,c) order
                         excits_buff(:,:) = r3b_excits(:,:)
@@ -150,8 +170,14 @@ module eaccp3_loops
                         call sort3(excits_buff, loc_arr, idx_table, (/1,2,3/), nua, nua, nub, nloc, n3aab)
 
                         do a = 1,nua
+                           !sym_a = orbsyms(a+noa)
+                           !sym = ieor(sym_a, refsym)
                            do b = a+1,nua
+                              !sym_b = orbsyms(b+noa)
+                              !sym = ieor(sym_b, sym)
                               do c = 1,nub
+                                 !sym_c = orbsyms(c+nob)
+                                 !sym = ieor(sym_c, sym)
                                  ! Construct Q space for block (a,b,c)
                                  qspace = .true.
                                  idx = idx_table(a,b,c)
@@ -162,7 +188,12 @@ module eaccp3_loops
                                     end do
                                  end if
                                  do j = 1,noa
+                                    !sym_j = orbsyms(j)
+                                    !sym = ieor(sym_j, sym)
                                     do k = 1,nob
+                                       !sym_k = orbsyms(k)
+                                       !sym = ieor(sym_k, sym)
+                                       !if (sym /= target_sym) cycle
                                        if (.not. qspace(j,k)) cycle
                                        temp = M3B(a,b,c,j,k)*L3B(a,b,c,j,k)
                                        ! A correction
@@ -194,11 +225,13 @@ module eaccp3_loops
                               end do
                            end do
                         end do
+                        deallocate(idx_table,loc_arr)
 
               end subroutine eaccp3B_full
 
               subroutine eaccp3C_full(deltaA,deltaB,deltaC,deltaD,&
                                  M3C,L3C,r3c_excits,omega,&
+                                 !orbsyms,target_sym,refsym,&
                                  fA_oo,fA_vv,fB_oo,fB_vv,&
                                  H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
                                  H2B_vvvv,H2B_ovov,H2B_vovo,&
@@ -208,6 +241,8 @@ module eaccp3_loops
 
                         ! input variables
                         integer, intent(in) :: noa, nua, nob, nub, n3abb
+                        !integer, intent(in) :: norb, target_sym, refsym
+                        !integer, intent(in) :: orbsyms(norb)
                         integer, intent(in) :: r3c_excits(n3abb,5)
                         real(kind=8), intent(in) :: M3C(nua,nub,nub,nob,nob)
                         real(kind=8), intent(in) :: L3C(nua,nub,nub,nob,nob)
@@ -238,11 +273,12 @@ module eaccp3_loops
                         ! Local variables
                         integer :: j, k, a, b, c
                         real(kind=8) :: D, temp
+                        !integer :: sym_a, sym_b, sym_c, sym_j, sym_k, sym
 
-                        deltaA = 0.0
-                        deltaB = 0.0
-                        deltaC = 0.0
-                        deltaD = 0.0
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
 
                         ! reorder r3c into (a,b,c) order
                         excits_buff(:,:) = r3c_excits(:,:)
@@ -253,11 +289,17 @@ module eaccp3_loops
                         call sort3(excits_buff, loc_arr, idx_table, (/2,3,1/), nub, nub, nua, nloc, n3abb)
 
                         do a = 1,nua
+                           !sym_a = orbsyms(a+noa)
+                           !sym = ieor(sym_a, refsym)
                            do b = 1,nub
+                              !sym_b = orbsyms(b+nob)
+                              !sym = ieor(sym_b, sym)
                               do c = b+1,nub
+                                 !sym_c = orbsyms(c+nob)
+                                 !sym = ieor(sym_c, sym)
                                  ! Construct Q space for block (a,b,c)
                                  qspace = .true.
-                                 idx = idx_table(a,b,c)
+                                 idx = idx_table(b,c,a)
                                  if (idx/=0) then
                                     do idet = loc_arr(1,idx), loc_arr(2,idx)
                                        j = excits_buff(idet,4); k = excits_buff(idet,5);
@@ -265,7 +307,12 @@ module eaccp3_loops
                                     end do
                                  end if
                                  do j = 1,nob
+                                    !sym_j = orbsyms(j)
+                                    !sym = ieor(sym_j, sym)
                                     do k = j+1,nob
+                                       !sym_k = orbsyms(k)
+                                       !sym = ieor(sym_k, sym)
+                                       !if (sym /= target_sym) cycle
                                        if (.not. qspace(j,k)) cycle
                                        temp = M3C(a,b,c,j,k)*L3C(a,b,c,j,k)
                                        ! A correction
@@ -293,6 +340,7 @@ module eaccp3_loops
                               end do
                            end do
                         end do
+                        deallocate(idx_table,loc_arr)
 
               end subroutine eaccp3C_full
 
