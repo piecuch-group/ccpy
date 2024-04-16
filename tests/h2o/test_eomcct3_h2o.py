@@ -1,6 +1,6 @@
 """ 
-CR-EOMCC(2,3) for the asymmetrically stretched water molecule along 
-the H2O -> OH + H bond-breaking PEC corresponding to R = 3.6, taken 
+Excited-state CC(t;3) for the asymmetrically stretched water molecule along
+the H2O -> OH + H bond-breaking PEC at the point R(OH) = 3.6 bohr, taken
 from X. Li and J. Paldus, J. Chem. Phys. 133, 024102 (2010). The 
 basis set used is the "TZ" basis set, corresponding to cc-pVTZ with
 all polarization functions removed, resulting in a small basis that
@@ -11,7 +11,7 @@ comprises of 3 s orbitals on H and 3 s and 3 p on O.
 from pathlib import Path
 import numpy as np
 from ccpy.drivers.driver import Driver
-from ccpy.utilities.pspace import get_active_pspace
+from ccpy.utilities.pspace import get_active_triples_pspace
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
@@ -23,8 +23,8 @@ def test_cct3_a1_singlets_h2o():
         nfrozen=1,
     )
     driver.system.set_active_space(nact_occupied=3, nact_unoccupied=2)
-    t3_excitations = get_active_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
-    r3_excitations = get_active_pspace(driver.system, target_irrep="A'")
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    r3_excitations = get_active_triples_pspace(driver.system, target_irrep="A'")
 
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
@@ -56,8 +56,8 @@ def test_cct3_a2_singlets_h2o():
         nfrozen=1,
     )
     driver.system.set_active_space(nact_occupied=3, nact_unoccupied=2)
-    t3_excitations = get_active_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
-    r3_excitations = get_active_pspace(driver.system, target_irrep="A\"")
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    r3_excitations = get_active_triples_pspace(driver.system, target_irrep="A\"")
 
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
@@ -89,8 +89,8 @@ def test_cct3_a1_triplets_h2o():
         nfrozen=1,
     )
     driver.system.set_active_space(nact_occupied=3, nact_unoccupied=2)
-    t3_excitations = get_active_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
-    r3_excitations = get_active_pspace(driver.system, target_irrep="A'")
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    r3_excitations = get_active_triples_pspace(driver.system, target_irrep="A'")
 
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
@@ -122,8 +122,8 @@ def test_cct3_a2_triplets_h2o():
         nfrozen=1,
     )
     driver.system.set_active_space(nact_occupied=3, nact_unoccupied=2)
-    t3_excitations = get_active_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
-    r3_excitations = get_active_pspace(driver.system, target_irrep="A\"")
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    r3_excitations = get_active_triples_pspace(driver.system, target_irrep="A\"")
 
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)

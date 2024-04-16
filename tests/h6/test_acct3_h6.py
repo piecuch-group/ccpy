@@ -11,7 +11,7 @@ Reference: Mol. Phys. 120, e2057365 (2022)."""
 import numpy as np
 from pyscf import gto, scf
 from ccpy.drivers.driver import Driver
-from ccpy.utilities.pspace import get_active_pspace
+from ccpy.utilities.pspace import get_active_triples_pspace
 
 def h6_geometry(r):
     theta = [2.0*np.pi/6 * n for n in range(6)]
@@ -45,7 +45,7 @@ def test_acct3_h6():
     driver = Driver.from_pyscf(mf, nfrozen=0)
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
-    t3_excitations = get_active_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
     driver.run_ccp(method="accsdt_p", acparray=[1., 0., 1., 0., 0.], t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")
@@ -57,7 +57,7 @@ def test_acct3_h6():
     driver = Driver.from_pyscf(mf, nfrozen=0)
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
-    t3_excitations = get_active_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
     driver.run_ccp(method="accsdt_p", acparray=[1., 0., 0.5, 0.5, 0.], t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")
@@ -69,7 +69,7 @@ def test_acct3_h6():
     driver = Driver.from_pyscf(mf, nfrozen=0)
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
-    t3_excitations = get_active_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
     d3 = driver.system.noccupied_alpha/driver.system.norbitals
     d4 = driver.system.nunoccupied_alpha/driver.system.norbitals
     driver.run_ccp(method="accsdt_p", acparray=[1., 0., d3, d4, 0.], t3_excitations=t3_excitations)
@@ -83,7 +83,7 @@ def test_acct3_h6():
     driver = Driver.from_pyscf(mf, nfrozen=0)
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
-    t3_excitations = get_active_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
     driver.run_ccp(method="accsdt_p", acparray=[1., 0., 0., 1., 0.], t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")

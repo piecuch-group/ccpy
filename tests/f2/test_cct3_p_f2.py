@@ -6,7 +6,7 @@ Reference: Chem. Phys. Lett. 344, 165 (2001)."""
 import numpy as np
 from pyscf import scf, gto
 from ccpy.drivers.driver import Driver
-from ccpy.utilities.pspace import get_active_pspace
+from ccpy.utilities.pspace import get_active_triples_pspace
 
 def test_cct3_f2():
     geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]
@@ -25,7 +25,7 @@ def test_cct3_f2():
     driver = Driver.from_pyscf(mf, nfrozen=2)
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=5, nact_unoccupied=1)
-    t3_excitations = get_active_pspace(driver.system, target_irrep="AG")
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep="AG")
 
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsd")

@@ -1,6 +1,6 @@
 """ 
 CR-EOMCC(2,3) for the asymmetrically stretched water molecule along 
-the H2O -> OH + H bond-breaking PEC corresponding to R = 3.6, taken 
+the H2O -> OH + H bond-breaking PEC at the point R(OH) = 3.6 bohr, taken
 from X. Li and J. Paldus, J. Chem. Phys. 133, 024102 (2010). The 
 basis set used is the "TZ" basis set, corresponding to cc-pVTZ with
 all polarization functions removed, resulting in a small basis that
