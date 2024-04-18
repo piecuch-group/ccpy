@@ -260,10 +260,10 @@ correlated unoccupied orbitals.
 ```
 
 ### References
-1. ccsdtq0
-2. ccsdtq1
-3. ccsdtq2
-4. ccsdtq3
+1. N. Oliphant and L. Adamowicz, *J. Chem. Phys.* **95**, 6645 (1991).
+2. S. A. Kucharski and R. J. Bartlett, *Theor. Chem. Acc.* **80**, 387 (1991).
+3. S. A. Kucharski and R. J. Bartlett, *J. Chem. Phys.* **97**, 4282 (1992).
+4. P. Piecuch and L. Adamowicz, *J. Chem. Phys.* **100**, 5792 (1994).
 
 </details>
 
@@ -319,7 +319,7 @@ correlated unoccupied orbitals.
     # perform CCSD(T) correction
     driver.run_ccp3(method="ccsd(t)")
 ```
-###References
+### References
 
 1. K. Raghavachari, G. W. Trucks, J. A. Pople, and M. Head-Gordon, *Chem. Phys. Lett.* **157**, 479 (1989).
 2. J. F. Stanton, *Chem. Phys. Lett.* **281**, 130 (1997).
@@ -398,7 +398,7 @@ reported as the CR-CC(2,3) energy (or by its former name, CR-CCSD(T)<sub>L</sub>
     # run CR-CC(2,3) triples correction
     driver.run_ccp3(method="crcc23")
 ```
-###References
+### References
 
 1. P. Piecuch and M. Włoch, *J. Chem. Phys.* **123**, 224105 (2005).
 2. P. Piecuch, M. Włoch, J. R. Gour, and A. Kinal, *Chem. Phys. Lett* **418**, 467 (2006).
@@ -455,7 +455,7 @@ reported as the CR-CC(2,3) energy (or by its former name, CR-CCSD(T)<sub>L</sub>
     # run CC3 calculation
     driver.run_cc(method="cc3")
 ```
-###References
+### References
 
 </details>
 
@@ -503,6 +503,7 @@ or
 ```python3
     from pyscf import gto, scf
     from ccpy.drivers.driver import Driver
+    from ccpy.utilities.pspace import get_active_triples_pspace
 
     # build molecule using PySCF and run SCF calculation
     mol = gto.M(
@@ -524,7 +525,7 @@ or
     # set the active space
     driver.set_active_space(nact_occupied=5, nact_unoccupied=8)
     # get triples entering P space corresponding to the CCSDt truncation scheme
-    t3_excitations = get_active_triples_space(driver.system,
+    t3_excitations = get_active_triples_pspace(driver.system,
                                               driver.system.reference_symmetry,
                                               num_active=1)
     # set calculation parameters
@@ -597,6 +598,7 @@ or
 ```python3
     from pyscf import gto, scf
     from ccpy.drivers.driver import Driver
+    from ccpy.utilities.pspace import get_active_triples_pspace
 
     # build molecule using PySCF and run SCF calculation
     mol = gto.M(
@@ -618,7 +620,7 @@ or
     # set the active space
     driver.set_active_space(nact_occupied=5, nact_unoccupied=8)
     # get triples entering P space corresponding to the CCSDt truncation scheme
-    t3_excitations = get_active_triples_space(driver.system,
+    t3_excitations = get_active_triples_pspace(driver.system,
                                               driver.system.reference_symmetry)
     # set calculation parameters
     driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
@@ -651,8 +653,35 @@ approaches, respectively.
 
 ### Sample Code
 
-### References
+```python3
+from pathlib import Path
+import numpy as np
+from ccpy.drivers.driver import Driver
+from ccpy.utilities.pspace import get_pspace_from_cipsi
 
+TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
+
+def test_cipsi_ccpq_h2o():
+
+    driver = Driver.from_gamess(
+        logfile=TEST_DATA_DIR + "/h2o/h2o-Re.log",
+        onebody=TEST_DATA_DIR + "/h2o/onebody.inp",
+        twobody=TEST_DATA_DIR + "/h2o/twobody.inp",
+        nfrozen=0,
+    )
+
+    civecs = TEST_DATA_DIR + "/h2o/civecs-10k.dat"
+    _, t3_excitations, _ = get_pspace_from_cipsi(civecs, driver.system, nexcit=3)
+
+    driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
+    driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
+    driver.run_leftccp(method="left_ccsdt_p", t3_excitations=t3_excitations)
+    driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
+```    
+    
+### References
+1. K. Gururangan, J. E. Deustua, J. Shen, and P. Piecuch, J. Chem. Phys. **155**, 174114 (2021) <br />
+(see https://doi.org/10.1063/5.0064400; cf. also https://doi.org/10.48550/arXiv.2107.10994) <br />
 </details>
 
 <details>
@@ -662,12 +691,81 @@ approaches, respectively.
 
 ### Sample Code
 
+```python3
+import numpy as np
+from pyscf import scf, gto
+from ccpy.drivers.driver import Driver
+from ccpy.drivers.adaptive import AdaptDriver
+
+def test_adaptive_f2():
+    geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]
+    mol = gto.M(
+        atom=geometry,
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="D2H",
+        cart=True,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    percentages = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+    driver = Driver.from_pyscf(mf, nfrozen=2)
+    driver.system.print_info()
+    driver.options["RHF_symmetry"] = False
+    adaptdriver = AdaptDriver(driver, percentage=percentages)
+    adaptdriver.options["energy_tolerance"] = 1.0e-08
+    adaptdriver.options["two_body_approx"] = True
+    adaptdriver.run()
+```
+
 ### References
 
+1. K. Gururangan and P. Piecuch, J. Chem. Phys. **159**, 084108 (2023) <br />
+(see https://doi.org/10.1063/5.0162873; cf. also https://doi.org/10.48550/arXiv.2306.09638) <br />
 </details>
 
+#### Externally Corrected (ec) CC Approaches
 
+<details>
+<summary>CIPSI-driven ec-CC-II and ec-CC-II<sub>3</sub> </summary>
 
+### Summary
+
+### Sample Code
+
+```python3
+from pathlib import Path
+import numpy as np
+from ccpy.drivers.driver import Driver
+from ccpy.utilities.pspace import get_pspace_from_cipsi
+
+TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
+
+def test_eccc23_h2o():
+
+    driver = Driver.from_gamess(
+        logfile=TEST_DATA_DIR + "/h2o/h2o-Re.log",
+        onebody=TEST_DATA_DIR + "/h2o/onebody.inp",
+        twobody=TEST_DATA_DIR + "/h2o/twobody.inp",
+        nfrozen=0,
+    )
+
+    civecs = TEST_DATA_DIR + "/h2o/civecs-10k.dat"
+    _, t3_excitations, _ = get_pspace_from_cipsi(civecs, driver.system, nexcit=3)
+
+    driver.run_eccc(method="eccc2", ci_vectors_file=civecs)
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
+```    
+    
+### References
+1. I. Magoulas, K. Gururangan, P. Piecuch, J. E. Deustua, and J. Shen, J. Chem. Theory Comput. **17**, 4006 (2021) <br />
+(see https://doi.org/10.1021/acs.jctc.1c00181; cf. also https://doi.org/10.48550/arXiv.2102.10143)
+</details>
 
 #### Approximate Coupled-Pair (ACP) Approaches
   - ACCD
@@ -675,12 +773,7 @@ approaches, respectively.
   - ACCSDt
   - ACC(2,3)
   - ACC(t;3)
-
-#### Externally Corrected (ec) CC Approaches
-  - ec-CC-II
-  - ec-CC-II<sub>3</sub> (see Ref. [3])
-  - ec-CC_II<sub>3,4</sub> (see Ref. [3])
-
+  
 ### EOMCC approaches for ground, excited, attached, and ionized states
   - EOMCCSD
   - CR-EOMCC(2,3) and its size-intensive *δ*-CR-EOMCC(2,3) extension
@@ -707,14 +800,6 @@ Because CCpy is primarily used for CC method development work, we use interfaces
 reference state and associated one- and two-electron integrals in the molecular orbital basis prior to performing the correlated CC calculations. All implementations
 in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references. 
 </p>
-
-#### References
-[1] K. Gururangan, J. E. Deustua, J. Shen, and P. Piecuch, J. Chem. Phys. **155**, 174114 (2021) <br />
-(see https://doi.org/10.1063/5.0064400; cf. also https://doi.org/10.48550/arXiv.2107.10994) <br />
-[2] K. Gururangan and P. Piecuch, J. Chem. Phys. **159**, 084108 (2023) <br />
-(see https://doi.org/10.1063/5.0162873; cf. also https://doi.org/10.48550/arXiv.2306.09638) <br />
-[3] I. Magoulas, K. Gururangan, P. Piecuch, J. E. Deustua, and J. Shen, J. Chem. Theory Comput. **17**, 4006 (2021) <br />
-(see https://doi.org/10.1021/acs.jctc.1c00181; cf. also https://doi.org/10.48550/arXiv.2102.10143)
 
 ## Installation
 <p align="justify">
