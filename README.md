@@ -40,18 +40,634 @@ energetics for the missing many-electron correlations using the generalized mome
   - MP3 
 
 ### Ground-state CC methodologies
-  - CCD
-  - CCSD
-  - CCSD(T)
-  - CR-CC(2,3)
-  - CC3
-  - CCSDt
-  - CC(t;3)
-  - CIPSI-driven CC(*P*;*Q*) aimed at converging CCSDT (see Ref. [1])
-  - Adaptive CC(*P*;*Q*) aimed at converging CCSDT (see Ref. [2])
-  - CCSDT
-  - CR-CC(2,4)
-  - CCSDTQ (available for closed shells only)
+<details>
+<summary>CCD</summary>
+
+### Summary
+
+<p align="justify">
+The CC with doubles (CCD) method truncates the cluster operator as T = T<sub>2</sub>.
+It has iterative computational costs that scale as 
+n<sub>o</sub><sup>2</sup>n<sub>u</sub><sup>4</sup>, where n<sub>o</sub> is 
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
+correlated unoccupied orbitals. 
+Due to the importance of pair correlations in the many-electron problem, the
+CCD approximation was first introduced in Prof. Čížek's landmark 1966 paper
+under the name coupled-pair many-electron theory, or CPMET. Although CCD is
+often superceeded by the more accurate CC with singles and doubles (CCSD) method,
+which has the same computational scaling, CCD is still relevant to modern CC
+calculations within the context of correlating orbital-optimized reference
+functions, as in Brückner CCD.
+</p>
+
+### Example Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["O", (0.0, 0.0, -0.0180)],
+              ["H", (0.0, 3.030526, -2.117796)],
+              ["H", (0.0, -3.030526, -2.117796)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # run CCD calculation
+    driver.run_cc(method="ccd")
+```
+### Reference
+1. J. Čížek, *J. Chem. Phys.* **45**, 4256 (1966).
+</details>
+
+<details>
+<summary>CCSD</summary>
+
+### Summary
+
+<p align="justify">
+The CC with singles and doubles (CCSD) method approximates the cluster
+operator as T = T<sub>1</sub> + T<sub>2</sub>. It is the most commonly used truncation level
+in the CC hierarchy and often forms the starting point for more sophisticated 
+treatments of many-electron correlation effects. CCSD has iterative computational costs that 
+scale as n<sub>o</sub><sup>2</sup>n<sub>u</sub><sup>4</sup>, where n<sub>o</sub> is 
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
+correlated unoccupied orbitals.
+</p>
+
+### Sample Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["O", (0.0, 0.0, -0.0180)],
+              ["H", (0.0, 3.030526, -2.117796)],
+              ["H", (0.0, -3.030526, -2.117796)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # run CCSD calculation
+    driver.run_cc(method="ccsd")
+```
+### References
+
+1. G. D. Purvis and R. J. Bartlett, *J. Chem. Phys.* **76**, 1910 (1982).
+2. J. M. Cullen and M. C. Zerner, *J. Chem. Phys.* **77**, 4088 (1982).
+3. G. E. Scuseria, A. C. Scheiner, T. J. Lee, J. E. Rice, and H. F. Schaefer, *J. Chem. Phys.* **86**, 2881 (1987).
+4. P. Piecuch and J. Paldus, *Int. J. Quantum Chem.* **36**, 429 (1989).
+</details>
+
+<details>
+<summary>CCSDT</summary>
+
+### Summary
+<p align="justify">
+The CC with singles, doubles, and triples (CCSDT) method approximates the cluster
+operator as T = T<sub>1</sub> + T<sub>2</sub> + T<sub>3</sub>. CCSDT is a high-level
+method capable of providing nearly exact results for closed-shell molecules
+as well as chemically accurate energetics for single bond breaking and a variety
+of open-shell systems. CCSDT has iterative computational costs that scale as 
+n<sub>o</sub><sup>3</sup>n<sub>u</sub><sup>5</sup>, where n<sub>o</sub> is 
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
+correlated unoccupied orbitals. 
+</p>
+
+### Sample Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["O", (0.0, 0.0, -0.0180)],
+              ["H", (0.0, 3.030526, -2.117796)],
+              ["H", (0.0, -3.030526, -2.117796)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # run CCSDT calculation
+    driver.run_cc(method="ccsdt")
+```
+
+### References
+1. M. R. Hoffmann and H. F. Schaefer, *Adv. Quantum Chem.* **18**, 207 (1986).
+2. J. Noga and R. J. Bartlett, *J. Chem. Phys.* **86**, 7041 (1987).
+3. G. E. Scuseria and H. F. Schaefer, *Chem. Phys. Lett.* **152**, 382 (1988).
+4. J. D. Watts and R. J. Bartlett, *J. Chem. Phys.* **93**, 6104 (1990).
+
+</details>
+
+<details>
+<summary>CCSDTQ</summary>
+
+### Summary
+<p align="justify">
+The CC with singles, doubles, triples, and quadruples (CCSDTQ) method 
+approximates the cluster operator as 
+T = T<sub>1</sub> + T<sub>2</sub> + T<sub>3</sub> + T<sub>4</sub>. 
+CCSDTQ is a very high-level method and is often capable of providing 
+near-exact energetics for most problems of chemical interest, as long
+as the number of strongly correlated electrons is not too large (for
+methods designed to treat genuine strong correlations, see the
+approximate coupled-pair, or ACP approaches).
+CCSDTQ has iterative computational costs that scale as 
+n<sub>o</sub><sup>4</sup>n<sub>u</sub><sup>6</sup>, where n<sub>o</sub> is 
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
+correlated unoccupied orbitals. 
+</p>
+
+### Sample Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["O", (0.0, 0.0, -0.0180)],
+              ["H", (0.0, 3.030526, -2.117796)],
+              ["H", (0.0, -3.030526, -2.117796)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # run CCSDTQ calculation
+    driver.run_cc(method="ccsdtq")
+```
+
+### References
+1. ccsdtq0
+2. ccsdtq1
+3. ccsdtq2
+4. ccsdtq3
+
+</details>
+
+<details>
+<summary>CCSD(T)</summary>
+
+### Summary
+
+<p align="justify">
+The CCSD(T) method corrects the CCSD energy for the correlation effects
+due to T<sub>3</sub> clusters using formulas derived using many-body perturbation
+theory (MBPT). In particular, the CCSD(T) correction includes the leading 
+4th-order energy correction for T<sub>3</sub> along with 5th-order contribution
+due to disconnected triples. The inclusion
+of the latter term distinguishes CCSD(T) from its CCSD[T] precedessor.
+CCSD(T) has noniterative computational costs that 
+scale as n<sub>o</sub><sup>3</sup>n<sub>4</sub><sup>4</sup>, where n<sub>o</sub> is 
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
+correlated unoccupied orbitals.
+</p>
+
+### Sample Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["O", (0.0, 0.0, -0.0180)],
+              ["H", (0.0, 3.030526, -2.117796)],
+              ["H", (0.0, -3.030526, -2.117796)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # run CCSD calculation
+    driver.run_cc(method="ccsd")
+    # perform CCSD(T) correction
+    driver.run_ccp3(method="ccsd(t)")
+```
+###References
+
+1. K. Raghavachari, G. W. Trucks, J. A. Pople, and M. Head-Gordon, *Chem. Phys. Lett.* **157**, 479 (1989).
+2. J. F. Stanton, *Chem. Phys. Lett.* **281**, 130 (1997).
+3. S. A. Kucharski and R. J. Bartlett, *J. Chem. Phys.* **108**, 5243 (1998).
+4. T. D. Crawford and J. F. Stanton, *Int. J. Quantum Chem.* **70**, 601 (1998).
+</details>
+
+<details>
+<summary>CR-CC(2,3)</summary>
+
+### Summary
+
+<p align="justify">
+The CR-CC(2,3) approach is a nonperturbative and noniterative correction to the
+CCSD energetics that accounts for the correlation effects due to T<sub>3</sub>
+clusters using formulas derived from the biorthogonal moment energy expansions of CC
+theory. In particular, CR-CC(2,3) represents the most robust scheme to noniteratively
+include the effects of connected triples on top of CCSD, and it is capable of providing an 
+accurate description of closed-shell molecules in addition to commonly encountered
+multireference problems, such as single bond breaking and open-shell radical 
+and diradical species, which are generally beyond the scope of perturbative 
+methods like CCSD(T). The CR-CC(2,3) triples correction uses noniterative steps
+that scale as n<sub>o</sub><sup>3</sup>n<sub>4</sub><sup>4</sup>, where n<sub>o</sub> is 
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
+correlated unoccupied orbitals, however, due to the precise form of the 
+expressions defining the CR-CC(2,3) triples correction, it is approximately
+twice as expensive as its CCSD(T) counterpart. One must also solve the companion 
+left-CCSD system of linear equations (roughly as expensive as CCSD) prior
+to computing the CR-CC(2,3) correction.
+
+The CR-CC(2,3) calculation returns four distinct energetics, labelled as 
+CR-CC(2,3)<sub>X</sub>, for X = A, B, C, and D, where each variant A-D corresponds to 
+a different treatment of the energy denominators entering the formula for 
+the CR-CC(2,3) triples correction. The variant CR-CC(2,3)<sub>A</sub> uses the simplest 
+Møller-Plesset form of the energy denominator and is equivalent to the method 
+called CCSD(2)<sub>T</sub>. Meanwhile, the CR-CC(2,3)<sub>D</sub> result, which employs 
+the full Epstein-Nesbet energy denominator, is generally most accurate and often 
+reported as the CR-CC(2,3) energy (or by its former name, CR-CCSD(T)<sub>L</sub>).
+</p>
+
+### Sample Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["O", (0.0, 0.0, -0.0180)],
+              ["H", (0.0, 3.030526, -2.117796)],
+              ["H", (0.0, -3.030526, -2.117796)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # run CCSD calculation
+    driver.run_cc(method="ccsd")
+    # build CCSD similarity-transformed Hamiltonian (this overwrites original MO integrals)
+    driver.run_hbar(method="ccsd")
+    # run companion left-CCSD calculation
+    driver.run_leftcc(method="left_ccsd")
+    # run CR-CC(2,3) triples correction
+    driver.run_ccp3(method="crcc23")
+```
+###References
+
+1. P. Piecuch and M. Włoch, *J. Chem. Phys.* **123**, 224105 (2005).
+2. P. Piecuch, M. Włoch, J. R. Gour, and A. Kinal, *Chem. Phys. Lett* **418**, 467 (2006).
+3. M. Włoch, M. D. Lodriguito, P. Piecuch, and J. R. Gour, *Mol. Phys.* **104**, 2149 (2006), **104**, 2991 (2006) [Erratum].
+4. M. Włoch, J. R. Gour, and P. Piecuch, *J. Phys. Chem. A.* **111**, 11359 (2007).
+5. P. Piecuch, J. R. Gour, and M. Włoch, *Int. J. Quantum Chem.* **108**, 2128 (2008).
+</details>
+
+<details>
+<summary>CR-CC(2,4)</summary>
+
+### Summary
+
+### Sample Code
+
+### References
+
+</details>
+
+<details>
+<summary>CC3</summary>
+
+### Summary
+
+### Sample Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["O", (0.0, 0.0, -0.0180)],
+              ["H", (0.0, 3.030526, -2.117796)],
+              ["H", (0.0, -3.030526, -2.117796)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # run CC3 calculation
+    driver.run_cc(method="cc3")
+```
+###References
+
+</details>
+
+<details>
+<summary>CCSDt</summary>
+
+### Summary 
+The active-orbital-based CCSDt calculation
+
+### Sample Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["F", (0.0, 0.0, -2.66816)],
+              ["F", (0.0, 0.0, 2.66816)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="D2H",
+        cart=True,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set the active space
+    driver.set_active_space(nact_occupied=5, nact_unoccupied=8)
+
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # run CCSDt calculation
+    driver.run_cc(method="ccsdt1")
+```
+or
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["F", (0.0, 0.0, -2.66816)],
+              ["F", (0.0, 0.0, 2.66816)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="D2H",
+        cart=True,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set the active space
+    driver.set_active_space(nact_occupied=5, nact_unoccupied=8)
+    # get triples entering P space corresponding to the CCSDt truncation scheme
+    t3_excitations = get_active_triples_space(driver.system,
+                                              driver.system.reference_symmetry,
+                                              num_active=1)
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # Run CC(P) calculation equivalent to CCSDt
+    driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
+```
+The latter CC(*P*)-based approach offers two advantages: (i) it can take advantage of
+the Abelian point group symmetry of a molecule by restricting the CC calculation to
+include only those triply excited cluster amplitudes belonging to a particular irrep,
+as specified by the keyword `target_irrep` and (ii) it can be used to perform other
+types of active-orbital-based CCSDt calculations based on restricting `num_active` 
+occupied/unoccupied indices to the active set. The standard choice of 
+`num_active=1` results in the usual CCSDt method, however `num_active=2` and 
+`num_active=3` result in the CCSDt(II) and CCSDt(III) approaches introduced in Ref. [X].
+
+### References
+
+</details>
+
+<details>
+<summary>CC(t;3)</summary>
+
+### Summary
+
+### Sample Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["F", (0.0, 0.0, -2.66816)],
+              ["F", (0.0, 0.0, 2.66816)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="D2H",
+        cart=True,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set the active space
+    driver.set_active_space(nact_occupied=5, nact_unoccupied=8)
+
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # run CCSDt calculation
+    driver.run_cc(method="ccsdt1")
+    # build CCSD-like similarity-transformed Hamiltonian (this overwrites original MO integrals)
+    driver.run_hbar(method="ccsd")
+    # run companion left-CCSD-like calculation
+    driver.run_leftcc(method="left_ccsd")
+    # run CC(t;3) triples correction
+    driver.run_ccp3(method="cct3")
+```
+or
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["F", (0.0, 0.0, -2.66816)],
+              ["F", (0.0, 0.0, 2.66816)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="D2H",
+        cart=True,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set the active space
+    driver.set_active_space(nact_occupied=5, nact_unoccupied=8)
+    # get triples entering P space corresponding to the CCSDt truncation scheme
+    t3_excitations = get_active_triples_space(driver.system,
+                                              driver.system.reference_symmetry)
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07    
+    driver.options["maximum_iterations"] = 80
+
+    # Run CC(P) calculation equivalent to CCSDt
+    driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
+    # build CCSD-like similarity-transformed Hamiltonian (this overwrites original MO integrals)
+    driver.run_hbar(method="ccsd")
+    # run companion left-CCSD-like calculation
+    driver.run_leftcc(method="left_ccsd")
+    # run CC(t;3) triples correction
+    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations)
+```
+As in the case of the CCSDt calculations, the general CC(*P*) approach allows one
+to perform alternative active-orbital-based truncation schemes of the CCSDt(II) 
+and CCSDt(III) types in addition to the standard CCSDt method. The corresponding
+CC(*P*;*Q*) corrections result in the CC(t;3)(II), CC(t;3)(III), and CC(t;3) 
+approaches, respectively.
+
+### References
+
+</details>
+
+<details>
+<summary>CIPSI-driven CC(P;Q) aimed at converging CCSDT</summary>
+
+### Summary
+
+### Sample Code
+
+### References
+
+</details>
+
+<details>
+<summary>Adaptive CC(P;Q) aimed at converging CCSDT</summary>
+
+### Summary
+
+### Sample Code
+
+### References
+
+</details>
+
+
+
 
 #### Approximate Coupled-Pair (ACP) Approaches
   - ACCD
@@ -114,7 +730,7 @@ Doctoral student, Department of Chemistry, Michigan State University
 e-mail: gururang@msu.edu  
 
 Dr. J. Emiliano Deustua  
-COO and Co-founder, Examol  
+COO and Co-founder, Examol
 
 Professor Piotr Piecuch  
 University Distinguished Professor and Michigan State University Foundation Professor, Department of Chemistry, Michigan State University  
