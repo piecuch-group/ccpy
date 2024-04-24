@@ -801,31 +801,41 @@ reference state and associated one- and two-electron integrals in the molecular 
 in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references. 
 </p>
 
-## Installation
+## Installation and Support
 <p align="justify">
   
-Installation instructions are provided in the CCpy documentation page (https://piecuch-group.github.io/ccpy/).
-
+Installation instructions are provided in the CCpy documentation page (https://piecuch-group.github.io/ccpy/). If you have any questions about CCpy or need additional information about its functionality,
+please e-mail gururang@msu.edu.
 </p>
 
 ## CCpy Development Team
 
-Karthik Gururangan  
+Karthik Gururangan\
 Doctoral student, Department of Chemistry, Michigan State University  
-e-mail: gururang@msu.edu  
+e-mail: gururang@msu.edu\
+(lead developer)
 
-Dr. J. Emiliano Deustua  
-COO and Co-founder, Examol
+Dr. J. Emiliano Deustua\
+COO and Co-founder, Examol\
+(co-developer)
 
-Professor Piotr Piecuch  
-University Distinguished Professor and Michigan State University Foundation Professor, Department of Chemistry, Michigan State University  
-Adjunct Professor, Department of Physics and Astronomy, Michigan State University
+Professor Piotr Piecuch\
+University Distinguished Professor and MSU Research Foundation Professor, Department of Chemistry, Michigan State University\
+Adjunct Professor, Department of Physics and Astronomy, Michigan State University\
+e-mail: piecuch@chemistry.msu.edu\
+(co-developer and principal investigator)
+
+Additional contributors: Tiange Deng (doctoral student, Department of Chemistry, Michigan State University; ACCD and ACCSD options).
+
+## Acknowledgements
+
+We acknowledge support from the Chemical Sciences, Geosciences and Biosciences Division, Office of Basic Energy Sciences, Office of Science, U.S. Department of Energy 
+(Grant No. DE-FG02-01ER15228 to Piotr Piecuch).
 
 <p align="justify">
   
 CCpy is an open-source code under the [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html) license
 developed and maintained by the [Piecuch Group](https://www2.chemistry.msu.edu/faculty/piecuch/) 
-at Michigan State University. In addition to using GitHub's Issues feature, feel free to send an e-mail to gururang@msu.edu if 
-you have any questions about using CCpy or are seeking additional information about its functionality.
+at Michigan State University. 
 
 </p>
