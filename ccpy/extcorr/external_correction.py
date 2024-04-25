@@ -107,15 +107,15 @@ def cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, order=3):
 def parse_ci_wavefunction(ci_file, system):
 
     # container to count excitations in the wave function
-    excitation_count = {'a' : 0, 'b' : 0,
-                        'aa' : 0, 'ab' : 0, 'bb' : 0,
-                        'aaa' : 0, 'aab' : 0, 'abb' : 0, 'bbb' : 0,
-                        'aaaa' : 0, 'aaab' : 0, 'aabb' : 0, 'abbb' : 0, 'bbbb' : 0}
+    excitation_count = {'a': 0, 'b': 0,
+                        'aa': 0, 'ab': 0, 'bb': 0,
+                        'aaa': 0, 'aab': 0, 'abb': 0, 'bbb': 0,
+                        'aaaa': 0, 'aaab': 0, 'aabb': 0, 'abbb': 0, 'bbbb': 0}
 
     # C is stored in full through triples; quadruples stored as a list of what's there
     C = ClusterOperator(system, 3)
-    C4_excits = {'aaaa' : [], 'aaab' : [], 'aabb' : [], 'abbb' : [], 'bbbb' : []}
-    C4_amps   = {'aaaa' : [], 'aaab' : [], 'aabb' : [], 'abbb' : [], 'bbbb' : []}
+    C4_excits = {'aaaa': [], 'aaab': [], 'aabb': [], 'abbb': [], 'bbbb': []}
+    C4_amps = {'aaaa': [], 'aaab': [], 'aabb': [], 'abbb': [], 'bbbb': []}
 
     HF = sorted(
         [2 * i - 1 for i in range(1, system.noccupied_alpha + 1)]

@@ -61,9 +61,7 @@ def get_full_pspace(system, nexcit, use_bool=False):
                                       system.noccupied_beta, system.noccupied_beta, system.noccupied_beta))}
     return pspace
 
-
-def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
-    pspace = get_empty_pspace(system, nexcit)
+def get_triples_pspace_from_cipsi(pspace_file, system):
 
     HF = sorted(
         [2 * i - 1 for i in range(1, system.noccupied_alpha + 1)]
@@ -89,7 +87,7 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
 
             excit_rank = get_excit_rank(det, HF)
 
-            if excit_rank < 3 or excit_rank > nexcit: continue
+            if excit_rank != 3: continue
 
             spinorb_occ = get_excits_from(det, HF)
             spinorb_unocc = get_excits_to(det, HF)
@@ -136,11 +134,11 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 sym = sym ^ system.point_group_irrep_to_number[
                     system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_alpha]]
                 excitation_count_by_symmetry[sym][spincase] += 1
-                for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
-                    for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
-                        a, b, c = perms_unocc
-                        i, j, k = perms_occ
-                        pspace[spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+                #for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
+                #    for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
+                #        a, b, c = perms_unocc
+                #        i, j, k = perms_occ
+                #        pspace[spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
 
             if spincase == 'aab':
                 sym = system.point_group_irrep_to_number[system.reference_symmetry]
@@ -154,11 +152,11 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 sym = sym ^ system.point_group_irrep_to_number[
                     system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
                 excitation_count_by_symmetry[sym][spincase] += 1
-                for perms_unocc in permutations((idx_unocc[0], idx_unocc[1])):
-                    for perms_occ in permutations((idx_occ[0], idx_occ[1])):
-                        a, b = perms_unocc
-                        i, j = perms_occ
-                        pspace[spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
+                #for perms_unocc in permutations((idx_unocc[0], idx_unocc[1])):
+                #    for perms_occ in permutations((idx_occ[0], idx_occ[1])):
+                #        a, b = perms_unocc
+                #        i, j = perms_occ
+                #        pspace[spincase][a - 1, b - 1, idx_unocc[2] - 1, i - 1, j - 1, idx_occ[2] - 1] = 1
 
             if spincase == 'abb':
                 sym = system.point_group_irrep_to_number[system.reference_symmetry]
@@ -172,11 +170,11 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 sym = sym ^ system.point_group_irrep_to_number[
                     system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
                 excitation_count_by_symmetry[sym][spincase] += 1
-                for perms_unocc in permutations((idx_unocc[1], idx_unocc[2])):
-                    for perms_occ in permutations((idx_occ[1], idx_occ[2])):
-                        b, c = perms_unocc
-                        j, k = perms_occ
-                        pspace[spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
+                #for perms_unocc in permutations((idx_unocc[1], idx_unocc[2])):
+                #    for perms_occ in permutations((idx_occ[1], idx_occ[2])):
+                #        b, c = perms_unocc
+                #        j, k = perms_occ
+                #        pspace[spincase][idx_unocc[0] - 1, b - 1, c - 1, idx_occ[0] - 1, j - 1, k - 1] = 1
 
             if spincase == 'bbb':
                 sym = system.point_group_irrep_to_number[system.reference_symmetry]
@@ -190,11 +188,11 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
                 sym = sym ^ system.point_group_irrep_to_number[
                     system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
                 excitation_count_by_symmetry[sym][spincase] += 1
-                for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
-                    for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
-                        a, b, c = perms_unocc
-                        i, j, k = perms_occ
-                        pspace[spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
+                #for perms_unocc in permutations((idx_unocc[0], idx_unocc[1], idx_unocc[2])):
+                #    for perms_occ in permutations((idx_occ[0], idx_occ[1], idx_occ[2])):
+                #        a, b, c = perms_unocc
+                #        i, j, k = perms_occ
+                #        pspace[spincase][a - 1, b - 1, c - 1, i - 1, j - 1, k - 1] = 1
 
     for isym, excitation_count_irrep in enumerate(excitation_count_by_symmetry):
         tot_excitation_count_irrep = excitation_count_irrep['aaa'] + excitation_count_irrep['aab'] + \
@@ -212,8 +210,169 @@ def get_pspace_from_cipsi(pspace_file, system, nexcit=3):
         if len(excitations[spincase].shape) < 2:
             excitations[spincase] = np.ones((1, 6))
 
-    return pspace, excitations, excitation_count_by_symmetry
+    return excitations, excitation_count_by_symmetry
 
+
+def get_quadruples_pspace_from_cipsi(pspace_file, system):
+    HF = sorted(
+        [2 * i - 1 for i in range(1, system.noccupied_alpha + 1)]
+        + [2 * i for i in range(1, system.noccupied_beta + 1)]
+    )
+
+    occupied_lower_bound = 1
+    occupied_upper_bound = system.noccupied_alpha
+    unoccupied_lower_bound = 1
+    unoccupied_upper_bound = system.nunoccupied_beta
+
+    orb_table = {'a': system.noccupied_alpha, 'b': system.noccupied_beta}
+    h_sym = len(system.point_group_irrep_to_number)
+
+    excitation_count_by_symmetry = [{'aaaa': 0, 'aaab': 0, 'aabb': 0, 'abbb': 0, 'bbbb': 0} for i in range(h_sym)]
+    excitations = {'aaaa': [], 'aaab': [], 'aabb': [], 'abbb': [], 'bbbb': []}
+
+    with open(pspace_file) as f:
+
+        for line in f.readlines():
+
+            det = list(map(int, line.split()[2:]))
+
+            excit_rank = get_excit_rank(det, HF)
+
+            if excit_rank != 4: continue
+
+            spinorb_occ = get_excits_from(det, HF)
+            spinorb_unocc = get_excits_to(det, HF)
+            spincase = get_spincase(spinorb_occ, spinorb_unocc)
+
+            unocc_shift = [orb_table[x] for x in spincase]
+
+            spinorb_occ_alpha = [i for i in spinorb_occ if i % 2 == 1]
+            spinorb_occ_alpha.sort()
+            spinorb_occ_beta = [i for i in spinorb_occ if i % 2 == 0]
+            spinorb_occ_beta.sort()
+            spinorb_unocc_alpha = [i for i in spinorb_unocc if i % 2 == 1]
+            spinorb_unocc_alpha.sort()
+            spinorb_unocc_beta = [i for i in spinorb_unocc if i % 2 == 0]
+            spinorb_unocc_beta.sort()
+
+            idx_occ = [spatial_orb_idx(x) for x in spinorb_occ_alpha] + [spatial_orb_idx(x) for x in spinorb_occ_beta]
+            idx_unocc = [spatial_orb_idx(x) for x in spinorb_unocc_alpha] + [spatial_orb_idx(x) for x in
+                                                                             spinorb_unocc_beta]
+            idx_unocc = [x - shift for x, shift in zip(idx_unocc, unocc_shift)]
+
+            if any([i > occupied_upper_bound for i in idx_occ]) or any([i < occupied_lower_bound for i in idx_occ]):
+                print("Occupied orbitals out of range!")
+                print(idx_occ)
+                break
+            if any([i > unoccupied_upper_bound for i in idx_unocc]) or any(
+                    [i < unoccupied_lower_bound for i in idx_unocc]):
+                print("Unoccupied orbitals out of range!")
+                print(idx_unocc)
+                break
+
+            # Get the symmetry irrep of the triple excitation
+            excitations[spincase].append([idx_unocc[0], idx_unocc[1], idx_unocc[2], idx_unocc[3],
+                                          idx_occ[0], idx_occ[1], idx_occ[2], idx_occ[3]])
+
+            if spincase == 'aaaa':
+                sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[3] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[3] - 1 + system.noccupied_alpha]]
+                excitation_count_by_symmetry[sym][spincase] += 1
+
+            if spincase == 'aaab':
+                sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[3] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[3] - 1 + system.noccupied_beta]]
+                excitation_count_by_symmetry[sym][spincase] += 1
+
+            if spincase == 'aabb':
+                sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[3] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[3] - 1 + system.noccupied_beta]]
+                excitation_count_by_symmetry[sym][spincase] += 1
+
+            if spincase == 'abbb':
+                sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[3] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_alpha]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_beta]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[3] - 1 + system.noccupied_beta]]
+                excitation_count_by_symmetry[sym][spincase] += 1
+
+            if spincase == 'bbbb':
+                sym = system.point_group_irrep_to_number[system.reference_symmetry]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[0] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[1] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[2] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[idx_occ[3] - 1]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[0] - 1 + system.noccupied_beta]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[1] - 1 + system.noccupied_beta]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[2] - 1 + system.noccupied_beta]]
+                sym = sym ^ system.point_group_irrep_to_number[
+                    system.orbital_symmetries[idx_unocc[3] - 1 + system.noccupied_beta]]
+                excitation_count_by_symmetry[sym][spincase] += 1
+
+    for isym, excitation_count_irrep in enumerate(excitation_count_by_symmetry):
+        tot_excitation_count_irrep = excitation_count_irrep['aaaa'] + excitation_count_irrep['aaab'] + \
+                                     excitation_count_irrep['aabb'] + excitation_count_irrep['abbb'] + \
+                                     excitation_count_irrep['bbbb']
+        print("   Symmetry", system.point_group_number_to_irrep[isym], "-", "Total number of quadruples in P space = ",
+              tot_excitation_count_irrep)
+        print("      Number of aaaa = ", excitation_count_irrep['aaaa'])
+        print("      Number of aaab = ", excitation_count_irrep['aaab'])
+        print("      Number of aabb = ", excitation_count_irrep['aabb'])
+        print("      Number of abbb = ", excitation_count_irrep['abbb'])
+        print("      Number of bbbb = ", excitation_count_irrep['bbbb'])
+
+    # convert excitation arrays to Numpy arrays
+    for spincase in ["aaaa", "aaab", "aabb", "abbb", "bbbb"]:
+        excitations[spincase] = np.asarray(excitations[spincase])
+        if len(excitations[spincase].shape) < 2:
+            excitations[spincase] = np.ones((1, 8))
+
+    return excitations, excitation_count_by_symmetry
 
 def get_pspace_from_qmc(ewalkers_file, system, sym_target=None, threshold_walkers=1, nexcit=3):
     def _check_sym_excit_(i, j, k, a, b, c, sym_target):

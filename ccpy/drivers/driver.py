@@ -1648,7 +1648,7 @@ class Driver:
                                                             self.vertical_excitation_energy[state_index], self.correlation_energy,
                                                             self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
 
-    def run_ccp4(self, method, state_index=[0], two_body_approx=True):
+    def run_ccp4(self, method, state_index=[0], two_body_approx=True, t4_excitations=None):
 
         if method.lower() == "crcc24":
             from ccpy.moments.crcc24 import calc_crcc24
@@ -1656,6 +1656,16 @@ class Driver:
             assert self.flag_hbar
             # Perform ground-state correction
             _, self.deltap4[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+
+        if method.lower() == "ccp4":
+            from ccpy.moments.ccp4 import calc_ccp4
+            # Ensure that HBar is set
+            assert self.flag_hbar
+            # Perform ground-state correction
+            _, self.deltap4[0] = calc_ccp4(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock,
+                                           self.system,
+                                           t4_excitations,
+                                           self.options["RHF_symmetry"])
 
     def run_rdm1(self, state_index=[0]):
         from ccpy.density.rdm1 import calc_rdm1

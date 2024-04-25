@@ -7,13 +7,13 @@ from ccpy.utilities.updates import crcc24_loops
 from ccpy.moments.crcc24 import calc_crcc24
 
 
-def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
+def calc_ccp4(T, L, corr_energy, H, H0, system, t4_excitations, use_RHF=False):
     """
     Calculate the ground-state CR-CC(2,4) correction to the CCSD energy.
     """
 
     # first compute the entire CR-CC(2,4) quadruples correction for all quadruples
-    _, delta24_full = calc_crcc24(T, L, H, H0, system, use_RHF=use_RHF)
+    _, delta24_full = calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=use_RHF)
 
     # Now, compute the correction for determinants in the P space (which should be a short list hopefully)
     t_start = time.perf_counter()
@@ -27,7 +27,7 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
 
     #### aaaa correction ####
     dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = crcc24_loops.crcc24_loops.crcc24a_p(
-        pspace_quadruples_list["aaaa"],
+        t4_excitations["aaaa"],
         T.aa,
         L.aa,
         H0.a.oo,
@@ -44,7 +44,7 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
 
     #### aaab correction ####
     dA_aaab, dB_aaab, dC_aaab, dD_aaab = crcc24_loops.crcc24_loops.crcc24b_p(
-        pspace_quadruples_list["aaab"],
+        t4_excitations["aaab"],
         T.aa,
         T.ab,
         L.aa,
@@ -79,7 +79,7 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
 
     #### aabb correction ####
     dA_aabb, dB_aabb, dC_aabb, dD_aabb = crcc24_loops.crcc24_loops.crcc24c_p(
-        pspace_quadruples_list["aabb"],
+        t4_excitations["aabb"],
         T.aa,
         T.ab,
         T.bb,
@@ -128,7 +128,7 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
     else:
         #### abbb correction ####
         dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_loops.crcc24_loops.crcc24d_p(
-                pspace_quadruples_list["abbb"],
+                t4_excitations["abbb"],
                 T.ab,
                 T.bb,
                 L.ab,
@@ -162,7 +162,7 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
         )
         #### bbbb correction ####
         dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_loops.crcc24_loops.crcc24e_p(
-                pspace_quadruples_list["bbbb"],
+                t4_excitations["bbbb"],
                 T.bb,
                 L.bb,
                 H0.b.oo,
@@ -195,12 +195,10 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
     minutes, seconds = divmod(t_end - t_start, 60)
 
     # print the results
-    cc_energy = get_cc_energy(T, H0)
-
-    energy_A = cc_energy + correction_A
-    energy_B = cc_energy + correction_B
-    energy_C = cc_energy + correction_C
-    energy_D = cc_energy + correction_D
+    energy_A = corr_energy + correction_A
+    energy_B = corr_energy + correction_B
+    energy_C = corr_energy + correction_C
+    energy_D = corr_energy + correction_D
 
     total_energy_A = system.reference_energy + energy_A
     total_energy_B = system.reference_energy + energy_B
@@ -211,7 +209,7 @@ def calc_ccp4(T, L, H, H0, system, pspace_quadruples_list, use_RHF=False):
     print('   -------------------------------------')
     print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
     print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
-    print("   CC(P) = {:>10.10f}".format(system.reference_energy + cc_energy))
+    print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
     print(
         "   CC(P;4)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
             total_energy_A, energy_A, correction_A
