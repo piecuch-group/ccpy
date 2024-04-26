@@ -507,7 +507,7 @@ def print_dip_amplitudes(R, system, order, thresh_print):
         for j in range(system.noccupied_beta):
             if abs(R.ab[i, j]) <= thresh_print: continue
             print(
-                "      [{}]     {}A  {}A  ->   =   {:.6f}".format(
+                "      [{}]     {}A  {}B  ->   =   {:.6f}".format(
                     n,
                     i + system.nfrozen + 1,
                     j + system.nfrozen + 1,

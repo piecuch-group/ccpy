@@ -1,7 +1,7 @@
 from pathlib import Path
 import numpy as np
 from ccpy.drivers.driver import Driver
-from ccpy.utilities.pspace import get_pspace_from_cipsi
+from ccpy.utilities.pspace import get_triples_pspace_from_cipsi
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
@@ -15,7 +15,7 @@ def test_cipsi_ccpq_h2o():
     )
 
     civecs = TEST_DATA_DIR + "/h2o/civecs-10k.dat"
-    _, t3_excitations, _ = get_pspace_from_cipsi(civecs, driver.system, nexcit=3)
+    t3_excitations, _ = get_triples_pspace_from_cipsi(civecs, driver.system)
 
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
