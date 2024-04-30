@@ -213,13 +213,13 @@ module eaccp3_loops
                                        -h2b_vvvv(a,c,a,c) - h2b_vvvv(b,c,b,c) 
                                        deltaC = deltaC + temp/(omega+D)
                                        ! D correction
-                                       deltaD = deltaD + temp/(omega+D)
                                        D = D&
                                        +D3B_O(a,j,k)&
                                        +D3B_O(b,j,k)&
                                        +D3C_O(c,j,k)&
                                        -D3A_V(a,j,b)-D3B_V(a,j,c)-D3B_V(b,j,c)&
                                        -D3C_V(a,k,c)-D3C_V(b,k,c)
+                                       deltaD = deltaD + temp/(omega+D)
                                     end do
                                  end do
                               end do

@@ -42,8 +42,7 @@ module cripcc_loops
                               do k = j+1,noa
                                  do b = 1,nua
                                     do c = b+1,nua
-                                       ! Be careful: Contraction of L3*M3 in IP produces a minus sign (l = 2, h = 3)!
-                                       temp = -M3A(i,b,c,j,k)*L3A(i,b,c,j,k)
+                                       temp = M3A(i,b,c,j,k)*L3A(i,b,c,j,k)
                                        ! A correction
                                        D = -fA_vv(b,b) - fA_vv(c,c) + fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)
                                        deltaA = deltaA + temp/(omega+D)
@@ -125,8 +124,7 @@ module cripcc_loops
                               do k = 1,nob
                                  do b = 1,nua
                                     do c = 1,nub
-                                       ! Be careful: Contraction of L3*M3 in IP produces a minus sign (l = 2, h = 3)!
-                                       temp = -M3B(i,b,c,j,k)*L3B(i,b,c,j,k)
+                                       temp = M3B(i,b,c,j,k)*L3B(i,b,c,j,k)
                                        ! A correction
                                        D = -fA_vv(b,b) - fB_vv(c,c) + fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)
                                        deltaA = deltaA + temp/(omega+D)
@@ -206,8 +204,7 @@ module cripcc_loops
                               do k = j+1,nob
                                  do b = 1,nub
                                     do c = b+1,nub
-                                       ! Be careful: Contraction of L3*M3 in IP produces a minus sign (l = 2, h = 3)!
-                                       temp = -M3C(i,b,c,j,k)*L3C(i,b,c,j,k)
+                                       temp = M3C(i,b,c,j,k)*L3C(i,b,c,j,k)
                                        ! A correction
                                        D = -fB_vv(b,b) - fB_vv(c,c) + fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)
                                        deltaA = deltaA + temp/(omega+D)
