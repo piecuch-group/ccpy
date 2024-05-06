@@ -25,14 +25,16 @@ def test_eaeom3a_chplus():
 
     # Set the number of active unoccupied orbitals used to define the r_{Abc}^{jk} operator
     driver.system.set_active_space(nact_unoccupied=3, nact_occupied=0)
-    # Obtain the active-space 3p2h list
-    r3_excitations = get_active_3p2h_pspace(driver.system, num_active=1)
 
     # Perform guess vectors by diagonalizaing within the 1p + active 2p-1h space
     driver.run_guess(method="eacisd", multiplicity=-1, nact_occupied=3, nact_unoccupied=8,
                      roots_per_irrep={"A1": 2, "B1": 2, "B2": 2, "A2": 2})
     # Loop over all guess vectors and perform the EA-EOMCSDt calculation
+    syms = ["A1", "A1", "B1", "B1", "B2", "B2", "A2", "A2"]
     for i in [0, 1, 2, 3, 4, 5, 6]:
+        # Obtain the active-space 3p2h list
+        r3_excitations = get_active_3p2h_pspace(driver.system, num_active=1, target_irrep=syms[i])
+
         driver.run_eaeomccp(method="eaeom3_p", state_index=i, r3_excitations=r3_excitations)
         driver.run_lefteaeomccp(method="left_eaeom3_p", state_index=i, r3_excitations=r3_excitations)
         driver.run_eaccp3(method="eaccp3", state_index=i, r3_excitations=r3_excitations)
