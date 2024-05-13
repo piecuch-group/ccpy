@@ -29,6 +29,7 @@ def test_ipeom3_ohminus():
     driver.run_guess(method="ipcisd", multiplicity=-1, nact_occupied=4, nact_unoccupied=6,
                      roots_per_irrep={"B1": 2, "B2": 0, "A1": 4, "A2": 2})
     driver.run_ipeomcc(method="ipeom3", state_index=[0, 1, 2, 3, 4, 5, 6, 7])
+    driver.run_leftipeomcc(method="left_ipeom3", state_index=[0, 1, 2, 3, 4, 5, 6, 7])
 
     #
     # Check the results

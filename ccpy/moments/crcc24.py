@@ -227,6 +227,213 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     
     return Ecrcc24, delta24
 
+def moments_aaaa_ijkl(i, j, k, l, H, T):
+
+    # Diagram 1: -A(jl/i/k)A(bc/a/d) h2a(amie) * t2a(bcmk) * t2a(edjl)
+    x4a = -0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, i, :], T.aa[:, :, :, k], T.aa[:, :, j, l], optimize=True) # (1)
+    x4a += 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, j, :], T.aa[:, :, :, k], T.aa[:, :, i, l], optimize=True) # (ij)
+    x4a += 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, i, :], T.aa[:, :, :, j], T.aa[:, :, k, l], optimize=True) # (jk)
+    x4a += 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, l, :], T.aa[:, :, :, k], T.aa[:, :, j, i], optimize=True) # (il)
+    x4a += 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, i, :], T.aa[:, :, :, l], T.aa[:, :, j, k], optimize=True) # (kl)
+    x4a -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, j, :], T.aa[:, :, :, l], T.aa[:, :, i, k], optimize=True) # (ij)(kl)
+    x4a += 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, k, :], T.aa[:, :, :, i], T.aa[:, :, j, l], optimize=True) # (ik)
+    x4a -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, j, :], T.aa[:, :, :, i], T.aa[:, :, k, l], optimize=True) # (ij)(ik)
+    x4a -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, k, :], T.aa[:, :, :, j], T.aa[:, :, i, l], optimize=True) # (jk)(ik)
+    x4a -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, l, :], T.aa[:, :, :, i], T.aa[:, :, j, k], optimize=True) # (il)(ik)
+    x4a -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, k, :], T.aa[:, :, :, l], T.aa[:, :, j, i], optimize=True) # (kl)(ik)
+    x4a += 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, j, :], T.aa[:, :, :, l], T.aa[:, :, k, i], optimize=True) # (ij)(kl)(ik)
+
+    # Diagram 2: A(ij/kl)A(bc/ad) h2a(mnij) * t2a(adml) * t2a(bcnk)
+    x4a += 0.25 * np.einsum("mn,adm,bcn->abcd", H.aa.oooo[:, :, i, j], T.aa[:, :, :, l], T.aa[:, :, :, k], optimize=True) # (1)
+    x4a -= 0.25 * np.einsum("mn,adm,bcn->abcd", H.aa.oooo[:, :, k, j], T.aa[:, :, :, l], T.aa[:, :, :, i], optimize=True) # (ik)
+    x4a -= 0.25 * np.einsum("mn,adm,bcn->abcd", H.aa.oooo[:, :, l, j], T.aa[:, :, :, i], T.aa[:, :, :, k], optimize=True) # (il)
+    x4a -= 0.25 * np.einsum("mn,adm,bcn->abcd", H.aa.oooo[:, :, i, k], T.aa[:, :, :, l], T.aa[:, :, :, j], optimize=True) # (jk)
+    x4a -= 0.25 * np.einsum("mn,adm,bcn->abcd", H.aa.oooo[:, :, i, l], T.aa[:, :, :, j], T.aa[:, :, :, k], optimize=True) # (jl)
+    x4a += 0.25 * np.einsum("mn,adm,bcn->abcd", H.aa.oooo[:, :, k, l], T.aa[:, :, :, j], T.aa[:, :, :, i], optimize=True) # (ik)(jl)
+
+    # Diagram 3: A(jk/il)A(ab/cd) h2a(abef) * t2a(fcjk) * t2a(edil)
+    x4a += 0.25 * np.einsum("abef,fc,ed->abcd", H.aa.vvvv, T.aa[:, :, j, k], T.aa[:, :, i, l], optimize=True) # (1)
+    x4a -= 0.25 * np.einsum("abef,fc,ed->abcd", H.aa.vvvv, T.aa[:, :, i, k], T.aa[:, :, j, l], optimize=True) # (ij)
+    x4a -= 0.25 * np.einsum("abef,fc,ed->abcd", H.aa.vvvv, T.aa[:, :, l, k], T.aa[:, :, i, j], optimize=True) # (jl)
+    x4a -= 0.25 * np.einsum("abef,fc,ed->abcd", H.aa.vvvv, T.aa[:, :, j, i], T.aa[:, :, k, l], optimize=True) # (ik)
+    x4a -= 0.25 * np.einsum("abef,fc,ed->abcd", H.aa.vvvv, T.aa[:, :, j, l], T.aa[:, :, i, k], optimize=True) # (kl)
+    x4a += 0.25 * np.einsum("abef,fc,ed->abcd", H.aa.vvvv, T.aa[:, :, i, l], T.aa[:, :, j, k], optimize=True) # (ij)(kl)
+
+    # antisymmetrize A(abcd)
+    x4a -= np.transpose(x4a, (1, 0, 2, 3)) + np.transpose(x4a, (2, 0, 1, 3)) + np.transpose(x4a, (3, 1, 2, 0)) # (a/bcd)
+    x4a -= np.transpose(x4a, (0, 2, 1, 3)) + np.transpose(x4a, (0, 3, 2, 1)) # (b/cd)
+    x4a -= np.transpose(x4a, (0, 1, 3, 2)) # (cd)
+    return x4a
+
+def moments_aaab_ijkl(i, j, k, l, H, T):
+
+    # Diagram 1:  -A(i/jk)A(c/ab) h2b(mdel) * t2a(abim) * t2a(ecjk)
+    x4b = -0.5 * np.einsum("mde,abm,ec->abcd", H.ab.ovvo[:, :, :, l], T.aa[:, :, i, :], T.aa[:, :, j, k], optimize=True) # (1)
+    x4b += 0.5 * np.einsum("mde,abm,ec->abcd", H.ab.ovvo[:, :, :, l], T.aa[:, :, j, :], T.aa[:, :, i, k], optimize=True) # (ij)
+    x4b += 0.5 * np.einsum("mde,abm,ec->abcd", H.ab.ovvo[:, :, :, l], T.aa[:, :, k, :], T.aa[:, :, j, i], optimize=True) # (ik)
+
+    # Diagram 2:   A(k/ij)A(a/bc) h2a(mnij) * t2a(bcnk) * t2b(adml)
+    x4b += 0.5 * np.einsum("mn,bcn,adm->abcd", H.aa.oooo[:, :, i, j], T.aa[:, :, :, k], T.ab[:, :, :, l], optimize=True) # (1)
+    x4b -= 0.5 * np.einsum("mn,bcn,adm->abcd", H.aa.oooo[:, :, k, j], T.aa[:, :, :, i], T.ab[:, :, :, l], optimize=True) # (ik)
+    x4b -= 0.5 * np.einsum("mn,bcn,adm->abcd", H.aa.oooo[:, :, i, k], T.aa[:, :, :, j], T.ab[:, :, :, l], optimize=True) # (jk)
+    
+    # Diagram 3:  -A(ijk)A(c/ab) h2b(mdjf) * t2a(abim) * t2b(cfkl)
+    x4b -= 0.5 * np.einsum("mdf,abm,cf->abcd", H.ab.ovov[:, :, j, :], T.aa[:, :, i, :], T.ab[:, :, k, l], optimize=True) # (1)
+    x4b += 0.5 * np.einsum("mdf,abm,cf->abcd", H.ab.ovov[:, :, i, :], T.aa[:, :, j, :], T.ab[:, :, k, l], optimize=True) # (ij)
+    x4b += 0.5 * np.einsum("mdf,abm,cf->abcd", H.ab.ovov[:, :, j, :], T.aa[:, :, k, :], T.ab[:, :, i, l], optimize=True) # (ik)
+    x4b += 0.5 * np.einsum("mdf,abm,cf->abcd", H.ab.ovov[:, :, k, :], T.aa[:, :, i, :], T.ab[:, :, j, l], optimize=True) # (jk)
+    x4b -= 0.5 * np.einsum("mdf,abm,cf->abcd", H.ab.ovov[:, :, i, :], T.aa[:, :, k, :], T.ab[:, :, j, l], optimize=True) # (ij)(jk)
+    x4b -= 0.5 * np.einsum("mdf,abm,cf->abcd", H.ab.ovov[:, :, k, :], T.aa[:, :, j, :], T.ab[:, :, i, l], optimize=True) # (ik)(jk)
+
+    # Diagram 4:  -A(ijk)A(abc) h2b(amie) * t2b(bejl) * t2b(cdkm)
+    x4b -= np.einsum("ame,be,cdm->abcd", H.ab.voov[:, :, i, :], T.ab[:, :, j, l], T.ab[:, :, k, :], optimize=True) # (1)
+    x4b += np.einsum("ame,be,cdm->abcd", H.ab.voov[:, :, j, :], T.ab[:, :, i, l], T.ab[:, :, k, :], optimize=True) # (ij)
+    x4b += np.einsum("ame,be,cdm->abcd", H.ab.voov[:, :, k, :], T.ab[:, :, j, l], T.ab[:, :, i, :], optimize=True) # (ik)
+    x4b += np.einsum("ame,be,cdm->abcd", H.ab.voov[:, :, i, :], T.ab[:, :, k, l], T.ab[:, :, j, :], optimize=True) # (jk)
+    x4b -= np.einsum("ame,be,cdm->abcd", H.ab.voov[:, :, k, :], T.ab[:, :, i, l], T.ab[:, :, j, :], optimize=True) # (ij)(jk)
+    x4b -= np.einsum("ame,be,cdm->abcd", H.ab.voov[:, :, j, :], T.ab[:, :, k, l], T.ab[:, :, i, :], optimize=True) # (ik)(jk)
+    
+    # Diagram 5:   A(ijk)A(a/bc) h2b(mnjl) * t2a(bcmk) * t2b(adin)
+    x4b += 0.5 * np.einsum("mn,bcm,adn->abcd", H.ab.oooo[:, :, j, l], T.aa[:, :, :, k], T.ab[:, :, i, :], optimize=True) # (1)
+    x4b -= 0.5 * np.einsum("mn,bcm,adn->abcd", H.ab.oooo[:, :, i, l], T.aa[:, :, :, k], T.ab[:, :, j, :], optimize=True) # (ij)
+    x4b -= 0.5 * np.einsum("mn,bcm,adn->abcd", H.ab.oooo[:, :, j, l], T.aa[:, :, :, i], T.ab[:, :, k, :], optimize=True) # (ik)
+    x4b -= 0.5 * np.einsum("mn,bcm,adn->abcd", H.ab.oooo[:, :, k, l], T.aa[:, :, :, j], T.ab[:, :, i, :], optimize=True) # (jk)
+    x4b += 0.5 * np.einsum("mn,bcm,adn->abcd", H.ab.oooo[:, :, i, l], T.aa[:, :, :, j], T.ab[:, :, k, :], optimize=True) # (ij)(jk)
+    x4b += 0.5 * np.einsum("mn,bcm,adn->abcd", H.ab.oooo[:, :, k, l], T.aa[:, :, :, i], T.ab[:, :, j, :], optimize=True) # (ik)(jk)
+    
+    # Diagram 6:  -A(i/jk)A(abc) h2b(bmel) * t2a(ecjk) * t2b(adim)
+    x4b -= np.einsum("bme,ec,adm->abcd", H.ab.vovo[:, :, :, l], T.aa[:, :, j, k], T.ab[:, :, i, :], optimize=True) # (1)
+    x4b += np.einsum("bme,ec,adm->abcd", H.ab.vovo[:, :, :, l], T.aa[:, :, i, k], T.ab[:, :, j, :], optimize=True) # (ij)
+    x4b += np.einsum("bme,ec,adm->abcd", H.ab.vovo[:, :, :, l], T.aa[:, :, j, i], T.ab[:, :, k, :], optimize=True) # (ik)
+    
+    # Diagram 7:  -A(i/jk)A(abc) h2a(amie) * t2a(ecjk) * t2b(bdml)
+    x4b -= np.einsum("ame,ec,bdm->abcd", H.aa.voov[:, :, i, :], T.aa[:, :, j, k], T.ab[:, :, :, l], optimize=True) # (1)
+    x4b += np.einsum("ame,ec,bdm->abcd", H.aa.voov[:, :, j, :], T.aa[:, :, i, k], T.ab[:, :, :, l], optimize=True) # (ij)
+    x4b += np.einsum("ame,ec,bdm->abcd", H.aa.voov[:, :, k, :], T.aa[:, :, j, i], T.ab[:, :, :, l], optimize=True) # (ik)
+    
+    # Diagram 8:   A(i/jk)A(c/ab) h2a(abef) * t2a(fcjk) * t2b(edil)
+    x4b += 0.5 * np.einsum("abef,fc,ed->abcd", H.aa.vvvv, T.aa[:, :, j, k], T.ab[:, :, i, l], optimize=True) # (1)
+    x4b -= 0.5 * np.einsum("abef,fc,ed->abcd", H.aa.vvvv, T.aa[:, :, i, k], T.ab[:, :, j, l], optimize=True) # (ij)
+    x4b -= 0.5 * np.einsum("abef,fc,ed->abcd", H.aa.vvvv, T.aa[:, :, j, i], T.ab[:, :, k, l], optimize=True) # (ik)
+    
+    # Diagram 9:  -A(ijk)A(a/bc) h2a(amie) * t2a(bcmk) * t2b(edjl)
+    x4b -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, i, :], T.aa[:, :, :, k], T.ab[:, :, j, l], optimize=True) # (1)
+    x4b += 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, j, :], T.aa[:, :, :, k], T.ab[:, :, i, l], optimize=True) # (ij)
+    x4b += 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, k, :], T.aa[:, :, :, i], T.ab[:, :, j, l], optimize=True) # (ik)
+    x4b += 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, i, :], T.aa[:, :, :, j], T.ab[:, :, k, l], optimize=True) # (jk)
+    x4b -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, k, :], T.aa[:, :, :, j], T.ab[:, :, i, l], optimize=True) # (ij)(jk)
+    x4b -= 0.5 * np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, j, :], T.aa[:, :, :, i], T.ab[:, :, k, l], optimize=True) # (ik)(jk)
+    
+    # Diagram 10:  A(k/ij)A(abc) h2b(adef) * t2a(ebij) * t2b(cfkl)
+    x4b += np.einsum("adef,eb,cf->abcd", H.ab.vvvv, T.aa[:, :, i, j], T.ab[:, :, k, l], optimize=True) # (1)
+    x4b -= np.einsum("adef,eb,cf->abcd", H.ab.vvvv, T.aa[:, :, k, j], T.ab[:, :, i, l], optimize=True) # (ik)
+    x4b -= np.einsum("adef,eb,cf->abcd", H.ab.vvvv, T.aa[:, :, i, k], T.ab[:, :, j, l], optimize=True) # (jk)
+
+    # antisymmetrize A(abc)
+    x4b -= np.transpose(x4b, (1, 0, 2, 3)) + np.transpose(x4b, (2, 1, 0, 3)) # (a/bc)
+    x4b -= np.transpose(x4b, (0, 2, 1, 3)) # (bc)
+    return x4b
+
+def moments_aabb_ijkl(i, j, k, l, H, T):
+
+    # Diagram 1:  -A(ij)A(kl)A(ab)A(cd) h2c(cmke) * t2b(adim) * t2b(bejl)
+    x4c = -np.einsum("cme,adm,be->abcd", H.bb.voov[:, :, k, :], T.ab[:, :, i, :], T.ab[:, :, j, l], optimize=True) # (1)
+    x4c += np.einsum("cme,adm,be->abcd", H.bb.voov[:, :, k, :], T.ab[:, :, j, :], T.ab[:, :, i, l], optimize=True) # (ij)
+    x4c += np.einsum("cme,adm,be->abcd", H.bb.voov[:, :, l, :], T.ab[:, :, i, :], T.ab[:, :, j, k], optimize=True) # (kl)
+    x4c -= np.einsum("cme,adm,be->abcd", H.bb.voov[:, :, l, :], T.ab[:, :, j, :], T.ab[:, :, i, k], optimize=True) # (ij)(kl)
+
+    # Diagram 2:  -A(ij)A(kl)A(ab)A(cd) h2a(amie) * t2b(bcmk) * t2b(edjl)
+    x4c -= np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, i, :], T.ab[:, :, :, k], T.ab[:, :, j, l], optimize=True) # (1)
+    x4c += np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, j, :], T.ab[:, :, :, k], T.ab[:, :, i, l], optimize=True) # (ij)
+    x4c += np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, i, :], T.ab[:, :, :, l], T.ab[:, :, j, k], optimize=True) # (kl)
+    x4c -= np.einsum("ame,bcm,ed->abcd", H.aa.voov[:, :, j, :], T.ab[:, :, :, l], T.ab[:, :, i, k], optimize=True) # (ij)(kl)
+
+    # Diagram 3:  -A(kl)A(ab)A(cd) h2b(mcek) * t2a(aeij) * t2b(bdml)
+    x4c -= np.einsum("mce,ae,bdm->abcd", H.ab.ovvo[:, :, :, k], T.aa[:, :, i, j], T.ab[:, :, :, l], optimize=True) # (1)
+    x4c += np.einsum("mce,ae,bdm->abcd", H.ab.ovvo[:, :, :, l], T.aa[:, :, i, j], T.ab[:, :, :, k], optimize=True) # (2)
+
+    # Diagram 4:  -A(ij)A(ab)A(cd) h2b(amie) * t2b(bdjm) * t2c(cekl)
+    x4c -= np.einsum("ame,bdm,ce->abcd", H.ab.voov[:, :, i, :], T.ab[:, :, j, :], T.bb[:, :, k, l], optimize=True) # (1)
+    x4c += np.einsum("ame,bdm,ce->abcd", H.ab.voov[:, :, j, :], T.ab[:, :, i, :], T.bb[:, :, k, l], optimize=True) # (ij)
+
+    # Diagram 5:  -A(ij)A(kl)A(cd) h2b(mcek) * t2a(abim) * t2b(edjl)
+    x4c -= 0.5 * np.einsum("mce,abm,ed->abcd", H.ab.ovvo[:, :, :, k], T.aa[:, :, i, :], T.ab[:, :, j, l], optimize=True) # (1)
+    x4c += 0.5 * np.einsum("mce,abm,ed->abcd", H.ab.ovvo[:, :, :, k], T.aa[:, :, j, :], T.ab[:, :, i, l], optimize=True) # (ij)
+    x4c += 0.5 * np.einsum("mce,abm,ed->abcd", H.ab.ovvo[:, :, :, l], T.aa[:, :, i, :], T.ab[:, :, j, k], optimize=True) # (kl)
+    x4c -= 0.5 * np.einsum("mce,abm,ed->abcd", H.ab.ovvo[:, :, :, l], T.aa[:, :, j, :], T.ab[:, :, i, k], optimize=True) # (ij)(kl)
+
+    # Diagram 6:  -A(ij)A(kl)A(ab) h2b(amie) * t2c(cdkm) * t2b(bejl)
+    x4c -= 0.5 * np.einsum("ame,cdm,be->abcd", H.ab.voov[:, :, i, :], T.bb[:, :, k, :], T.ab[:, :, j, l], optimize=True) # (1)
+    x4c += 0.5 * np.einsum("ame,cdm,be->abcd", H.ab.voov[:, :, j, :], T.bb[:, :, k, :], T.ab[:, :, i, l], optimize=True) # (ij)
+    x4c += 0.5 * np.einsum("ame,cdm,be->abcd", H.ab.voov[:, :, i, :], T.bb[:, :, l, :], T.ab[:, :, j, k], optimize=True) # (kl)
+    x4c -= 0.5 * np.einsum("ame,cdm,be->abcd", H.ab.voov[:, :, j, :], T.bb[:, :, l, :], T.ab[:, :, i, k], optimize=True) # (ij)(kl)
+
+    # Diagram 7:  -A(ij)A(kl)A(ab)A(cd) h2b(bmel) * t2b(adim) * t2b(ecjk)
+    x4c -= np.einsum("bme,adm,ec->abcd", H.ab.vovo[:, :, :, l], T.ab[:, :, i, :], T.ab[:, :, j, k], optimize=True) # (1)
+    x4c += np.einsum("bme,adm,ec->abcd", H.ab.vovo[:, :, :, l], T.ab[:, :, j, :], T.ab[:, :, i, k], optimize=True) # (ij)
+    x4c += np.einsum("bme,adm,ec->abcd", H.ab.vovo[:, :, :, k], T.ab[:, :, i, :], T.ab[:, :, j, l], optimize=True) # (kl)
+    x4c -= np.einsum("bme,adm,ec->abcd", H.ab.vovo[:, :, :, k], T.ab[:, :, j, :], T.ab[:, :, i, l], optimize=True) # (ij)(kl)
+
+    # Diagram 8:  -A(ij)A(kl)A(ab)A(cd) h2b(mdje) * t2b(bcmk) * t2b(aeil)
+    x4c -= np.einsum("mde,bcm,ae->abcd", H.ab.ovov[:, :, j, :], T.ab[:, :, :, k], T.ab[:, :, i, l], optimize=True) # (1)
+    x4c += np.einsum("mde,bcm,ae->abcd", H.ab.ovov[:, :, i, :], T.ab[:, :, :, k], T.ab[:, :, j, l], optimize=True) # (ij)
+    x4c += np.einsum("mde,bcm,ae->abcd", H.ab.ovov[:, :, j, :], T.ab[:, :, :, l], T.ab[:, :, i, k], optimize=True) # (kl)
+    x4c -= np.einsum("mde,bcm,ae->abcd", H.ab.ovov[:, :, i, :], T.ab[:, :, :, l], T.ab[:, :, j, k], optimize=True) # (ij)(kl)
+
+    # Diagram 9:  -A(ij)A(cd) h2b(mdje) * t2a(abim) * t2c(cekl)
+    x4c -= 0.5 * np.einsum("mde,abm,ce->abcd", H.ab.ovov[:, :, j, :], T.aa[:, :, i, :], T.bb[:, :, k, l], optimize=True) # (1)
+    x4c += 0.5 * np.einsum("mde,abm,ce->abcd", H.ab.ovov[:, :, i, :], T.aa[:, :, j, :], T.bb[:, :, k, l], optimize=True) # (ij)
+
+    # Diagram 10: -A(kl)A(ab) h2b(bmel) * t2a(aeij) * t2c(cdkm)
+    x4c -= 0.5 * np.einsum("bme,ae,cdm->abcd", H.ab.vovo[:, :, :, l], T.aa[:, :, i, j], T.bb[:, :, k, :], optimize=True) # (1)
+    x4c += 0.5 * np.einsum("bme,ae,cdm->abcd", H.ab.vovo[:, :, :, k], T.aa[:, :, i, j], T.bb[:, :, l, :], optimize=True) # (kl)
+
+    # Diagram 11:  A(kl)A(ab) h2a(mnij) * t2b(acmk) * t2b(bdnl)
+    x4c += 0.5 * np.einsum("mn,acm,bdn->abcd", H.aa.oooo[:, :, i, j], T.ab[:, :, :, k], T.ab[:, :, :, l], optimize=True) # (1)
+    x4c -= 0.5 * np.einsum("mn,acm,bdn->abcd", H.aa.oooo[:, :, i, j], T.ab[:, :, :, l], T.ab[:, :, :, k], optimize=True) # (kl)
+
+    # Diagram 12:  A(ij)A(kl) h2a(abef) * t2b(ecik) * t2b(fdjl)
+    x4c += 0.25 * np.einsum("abef,ec,fd->abcd", H.aa.vvvv, T.ab[:, :, i, k], T.ab[:, :, j, l], optimize=True) # (1)
+    x4c -= 0.25 * np.einsum("abef,ec,fd->abcd", H.aa.vvvv, T.ab[:, :, j, k], T.ab[:, :, i, l], optimize=True) # (ij)
+    x4c -= 0.25 * np.einsum("abef,ec,fd->abcd", H.aa.vvvv, T.ab[:, :, i, l], T.ab[:, :, j, k], optimize=True) # (kl)
+    x4c += 0.25 * np.einsum("abef,ec,fd->abcd", H.aa.vvvv, T.ab[:, :, j, l], T.ab[:, :, i, k], optimize=True) # (ij)(kl)
+
+    # Diagram 13:  A(ij)A(kl) h2b(mnik) * t2a(abmj) * t2c(cdnl)
+    x4c += 0.25 * np.einsum("mn,abm,cdn->abcd", H.ab.oooo[:, :, i, k], T.aa[:, :, :, j], T.bb[:, :, :, l], optimize=True) # (1)
+    x4c -= 0.25 * np.einsum("mn,abm,cdn->abcd", H.ab.oooo[:, :, j, k], T.aa[:, :, :, i], T.bb[:, :, :, l], optimize=True) # (ij)
+    x4c -= 0.25 * np.einsum("mn,abm,cdn->abcd", H.ab.oooo[:, :, i, l], T.aa[:, :, :, j], T.bb[:, :, :, k], optimize=True) # (kl)
+    x4c += 0.25 * np.einsum("mn,abm,cdn->abcd", H.ab.oooo[:, :, j, l], T.aa[:, :, :, i], T.bb[:, :, :, k], optimize=True) # (ij)(kl)
+
+    # Diagram 14:  A(ab)A(cd) h2b(acef) * t2a(ebij) * t2c(fdkl)
+    x4c += np.einsum("acef,eb,fd->abcd", H.ab.vvvv, T.aa[:, :, i, j], T.bb[:, :, k, l], optimize=True) # (1)
+
+    # Diagram 15:  A(ij)A(kl)A(ab)A(cd) h2b(mnik) * t2b(adml) * t2b(bcjn)
+    x4c += np.einsum("mn,adm,bcn->abcd", H.ab.oooo[:, :, i, k], T.ab[:, :, :, l], T.ab[:, :, j, :], optimize=True) # (1)
+    x4c -= np.einsum("mn,adm,bcn->abcd", H.ab.oooo[:, :, j, k], T.ab[:, :, :, l], T.ab[:, :, i, :], optimize=True) # (ij)
+    x4c -= np.einsum("mn,adm,bcn->abcd", H.ab.oooo[:, :, i, l], T.ab[:, :, :, k], T.ab[:, :, j, :], optimize=True) # (kl)
+    x4c += np.einsum("mn,adm,bcn->abcd", H.ab.oooo[:, :, j, l], T.ab[:, :, :, k], T.ab[:, :, i, :], optimize=True) # (ij)(kl)
+
+    # Diagram 16:  A(ij)A(kl)A(ab)A(cd) h2b(acef) * t2b(edil) * t2b(bfjk)
+    x4c += np.einsum("acef,ed,bf->abcd", H.ab.vvvv, T.ab[:, :, i, l], T.ab[:, :, j, k], optimize=True) # (1)
+    x4c -= np.einsum("acef,ed,bf->abcd", H.ab.vvvv, T.ab[:, :, j, l], T.ab[:, :, i, k], optimize=True) # (ij)
+    x4c -= np.einsum("acef,ed,bf->abcd", H.ab.vvvv, T.ab[:, :, i, k], T.ab[:, :, j, l], optimize=True) # (kl)
+    x4c += np.einsum("acef,ed,bf->abcd", H.ab.vvvv, T.ab[:, :, j, k], T.ab[:, :, i, l], optimize=True) # (ij)(kl)
+
+    # Diagram 17:  A(ij)A(cd) h2c(mnkl) * t2b(adin) * t2b(bcjm)
+    x4c += 0.5 * np.einsum("mn,adn,bcm->abcd", H.bb.oooo[:, :, k, l], T.ab[:, :, i, :], T.ab[:, :, j, :], optimize=True) # (1)
+    x4c -= 0.5 * np.einsum("mn,adn,bcm->abcd", H.bb.oooo[:, :, k, l], T.ab[:, :, j, :], T.ab[:, :, i, :], optimize=True) # (ij)
+
+    # Diagram 18:  A(ij)A(kl) h2c(cdef) * t2b(afil) * t2b(bejk)
+    x4c += 0.25 * np.einsum("cdef,af,be->abcd", H.bb.vvvv, T.ab[:, :, i, l], T.ab[:, :, j, k], optimize=True) # (1)
+    x4c -= 0.25 * np.einsum("cdef,af,be->abcd", H.bb.vvvv, T.ab[:, :, j, l], T.ab[:, :, i, k], optimize=True) # (ij)
+    x4c -= 0.25 * np.einsum("cdef,af,be->abcd", H.bb.vvvv, T.ab[:, :, i, k], T.ab[:, :, j, l], optimize=True) # (kl)
+    x4c += 0.25 * np.einsum("cdef,af,be->abcd", H.bb.vvvv, T.ab[:, :, j, k], T.ab[:, :, i, l], optimize=True) # (ij)(kl)
+
+    # antisymmetrize A(ab)A(cd)
+    x4c -= np.transpose(x4c, (1, 0, 2, 3)) # (ab)
+    x4c -= np.transpose(x4c, (0, 1, 3, 2)) # (cd)
+    return x4c
+
 def aaaa_correction(T, L, H, H0, d3aaa_o, d3aaa_v):
 
     nua, noa = T.a.shape
