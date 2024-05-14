@@ -1702,6 +1702,14 @@ class Driver:
                 _, self.deltap3[i] = calc_cripcc23(self.T, self.R[i], self.L[i],
                                                     self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                     self.system, self.options["RHF_symmetry"])
+        if method.lower() == "ipccp3":
+            from ccpy.moments.ipccp3 import calc_ipccp3_full
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            # Perform 3h-2p correction for a specific state index
+            _, self.deltap3[state_index] = calc_ipccp3_full(self.T, self.R[state_index], self.L[state_index], r3_excitations,
+                                                            self.vertical_excitation_energy[state_index], self.correlation_energy,
+                                                            self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
 
     def run_eaccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, pspace=None):
 

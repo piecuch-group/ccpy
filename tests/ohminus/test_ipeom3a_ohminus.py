@@ -43,6 +43,7 @@ def test_ipeom3a_ohminus():
     for istate in [0, 1, 2, 3, 4, 5, 6, 7]:
         driver.run_ipeomccp(method="ipeom3_p", state_index=istate, r3_excitations=r3_excitations)
         driver.run_leftipeomccp(method="left_ipeom3_p", state_index=istate, r3_excitations=r3_excitations)
+        driver.run_ipccp3(method="ipccp3", state_index=istate, r3_excitations=r3_excitations)
 
     #
     # Check the results
