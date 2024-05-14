@@ -3,3 +3,4 @@ scipy
 setuptools
 h5py
 cclib
+psutil
