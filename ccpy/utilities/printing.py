@@ -1,16 +1,16 @@
 import datetime
-import numpy as np
+from ccpy.utilities.utilities import get_memory_usage
 
 WHITESPACE = "  "
 
-ITERATION_HEADER_FMT = "{:>10} {:>12} {:>14} {:>17} {:>19}"
-ITERATION_FMT = "{:>8} {:>17.10f} {:>17.10f} {:>17.10f} {:>15}"
+ITERATION_HEADER_FMT = "{:>10} {:>12} {:>14} {:>17} {:>19} {:>12}"
+ITERATION_FMT = "{:>8} {:>17.10f} {:>17.10f} {:>17.10f} {:>15} {:>12}"
 
 CC_ITERATION_HEADER = ITERATION_HEADER_FMT.format(
-    "Iter.", "Residuum", "δE", "ΔE", "Wall time"
+    "Iter.", "Residuum", "δE", "ΔE", "Wall time", "Memory"
 )
 EOMCC_ITERATION_HEADER = ITERATION_HEADER_FMT.format(
-    "Iter.", "Residuum", "ω", "δω", "Wall time"
+    "Iter.", "Residuum", "ω", "δω", "Wall time", "Memory"
 )
 
 def get_timestamp():
@@ -154,9 +154,10 @@ def print_cc_iteration(
 ):
     minutes, seconds = divmod(elapsed_time, 60)
     time_str = f"({minutes:.1f}m {seconds:.1f}s)"
+    memory = f"{round(get_memory_usage(), 2)} MB"
     print(
         ITERATION_FMT.format(
-            iteration_idx, residuum, delta_energy, correlation_energy, time_str
+            iteration_idx, residuum, delta_energy, correlation_energy, time_str, memory,
         )
     )
 
@@ -165,9 +166,10 @@ def print_eomcc_iteration(
 ):
     minutes, seconds = divmod(elapsed_time, 60)
     time_str = f"({minutes:.1f}m {seconds:.1f}s)"
+    memory = f"{round(get_memory_usage(), 2)} MB"
     print(
         ITERATION_FMT.format(
-            iteration_idx, residuum, omega, delta_energy, time_str
+            iteration_idx, residuum, omega, delta_energy, time_str, memory
         )
     )
 
@@ -176,11 +178,12 @@ def print_block_eomcc_iteration(
 ):
     minutes, seconds = divmod(elapsed_time, 60)
     time_str = f"({minutes:.1f}m {seconds:.1f}s)"
+    memory = f"{round(get_memory_usage(), 2)} MB"
     for j, istate in enumerate(state_index):
         if j == 0:
             print(
                 ITERATION_FMT.format(
-                    iteration_idx, residuum[j], omega[istate], delta_energy[j], time_str
+                    iteration_idx, residuum[j], omega[istate], delta_energy[j], time_str, memory
                 )
             )
         else:
@@ -689,6 +692,7 @@ class SystemPrinter:
                 )
             )
         print("")
+        print(WHITESPACE, "Memory Usage =", get_memory_usage(), "MB")
         print(WHITESPACE, "Nuclear Repulsion Energy =", self.system.nuclear_repulsion)
         print(WHITESPACE, "Reference Energy =", self.system.reference_energy)
         print("")

@@ -5,8 +5,7 @@ import numpy as np
 from pyscf import gto, scf
 from ccpy.drivers.driver import Driver
 
-
-def test_deaeom2_f2():
+def test_deaeom3_f2():
 
     geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]
     mol = gto.M(
@@ -45,4 +44,4 @@ def test_deaeom2_f2():
                           +driver.system.reference_energy + driver.correlation_energy, expected_total_energy[i], atol=1.0e-07)
 
 if __name__ == "__main__":
-    test_deaeom2_f2()
+    test_deaeom3_f2()

@@ -4,6 +4,15 @@ import numpy as np
 
 def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, debug=False, use_symmetry=False):
 
+    # print results of initial guess procedure
+    print("   DIP-CIS initial guess routine")
+    print("   --------------------------")
+    print("   Multiplicity = ", multiplicity)
+    #print("   Active occupied alpha = ", min(nacto + (system.multiplicity - 1), noa))
+    #print("   Active occupied beta = ", min(nacto, nob))
+    #print("   Active unoccupied alpha = ", min(nactu, nua))
+    #print("   Active unoccupied beta = ", min(nactu + (system.multiplicity - 1), nub))
+
     nroot = 0
     for irrep, nroot_irrep in roots_per_irrep.items():
         nroot += nroot_irrep

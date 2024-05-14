@@ -1,14 +1,32 @@
 """Module containing the driving solvers"""
 import time
 import numpy as np
+import h5py
+import signal
+import os
+import sys
+
 from ccpy.utilities.printing import (
         print_cc_iteration, print_cc_iteration_header,
         print_eomcc_iteration, print_eomcc_iteration_header,
         print_block_eomcc_iteration,
         print_ee_amplitudes
 )
-# [TODO]: Add biorthogonal L and R single-root Davidson solver (non-Hermitian Hirao-Nakatsuji algorithm)
+from ccpy.drivers.diis import DIIS
+from ccpy.utilities.utilities import remove_file
 
+# Define a signal handler function to handle SIGINT
+def signal_handler(sig, frame):
+    print("\nCtrl+C detected. Cleaning up...", end=" ")
+    remove_file("eomcc-vectors.hdf5")
+    remove_file("cc-diis-vectors.hdf5")
+    print("Cleanup complete.")
+    sys.exit(0)
+
+# Register the signal handler for SIGINT
+signal.signal(signal.SIGINT, signal_handler)
+
+# [TODO]: Add biorthogonal L and R single-root Davidson solver (non-Hermitian Hirao-Nakatsuji algorithm)
 def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, options):
     """
     Diagonalize the nonlinear partitioned (or folded) non-Hermitian eigenvalue 
@@ -17,7 +35,6 @@ def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, 
     from the implicit evaluation of R3 (or R2) in terms of R1 and R2 (or R1).
     [for description of algorithm, see J. Chem. Phys. 113, 5154 (2000)].
     """
-    from ccpy.drivers.diis import DIIS
     # start clock for the root
     t_root_start = time.perf_counter()
     t_cpu_root_start = time.process_time()
@@ -78,8 +95,6 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
     EOMCC computations (e.g., of the EE, IP, EA, DEA, or DIP varieties)
     using the non-Hermitian version of the Davidson algorithm.
     """
-    import h5py
-    from ccpy.utilities.utilities import remove_file
     t_root_start = time.perf_counter()
     t_cpu_root_start = time.process_time()
 
@@ -453,9 +468,7 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
     return R, omega, is_converged
 
 def eccc_jacobi(update_t, T, dT, H, X, T_ext, VT_ext, system, options):
-
     from ccpy.energy.cc_energy import get_cc_energy
-    from ccpy.drivers.diis import DIIS
 
     # check whether DIIS is being used
     do_diis = True
@@ -532,9 +545,7 @@ def eccc_jacobi(update_t, T, dT, H, X, T_ext, VT_ext, system, options):
     return T, energy, is_converged
 
 def cc_jacobi(update_t, T, dT, H, X, system, options, t3_excitations=None, acparray=None):
-
     from ccpy.energy.cc_energy import get_cc_energy
-    from ccpy.drivers.diis import DIIS
 
     # check whether DIIS is being used
     do_diis = True
@@ -625,9 +636,7 @@ def cc_jacobi(update_t, T, dT, H, X, system, options, t3_excitations=None, acpar
 
 
 def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, system, options, t3_excitations=None, l3_excitations=None):
-
     from ccpy.energy.cc_energy import get_lcc_energy
-    from ccpy.drivers.diis import DIIS
 
     do_diis = True
     if options["diis_size"] == -1:

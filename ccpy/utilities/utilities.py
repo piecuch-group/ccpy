@@ -197,7 +197,7 @@ def convert_excitations_c_to_f(excitations):
             excitations[key] = np.asfortranarray(value)
     return excitations
 
-def print_memory_usage():
+def get_memory_usage():
     """Displays the percentage of used RAM and available memory. Useful for
     investigating the memory usages of various routines.
     Usage:
@@ -216,9 +216,8 @@ def print_memory_usage():
     """
     import psutil
     current_process = psutil.Process(os.getpid())
-    memory = current_process.memory_info().rss
-    print(int(memory / (1024 * 1024)), "MB")
-    return
+    memory = current_process.memory_info().rss # RSS (e.g., RAM usage) memory in bytes
+    return memory / (1024 * 1024)
 
 def clean_up(fid, n):
     for i in range(n):
