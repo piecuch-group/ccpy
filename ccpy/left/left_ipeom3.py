@@ -111,7 +111,7 @@ def build_LH_3A(L, LH, H, X):
     LH.aaa -= (6.0 / 12.0) * np.einsum("mck,ijmb->ibcjk", L.aa, H.aa.ooov, optimize=True)
     #
     LH.aaa -= (3.0 / 12.0) * np.einsum("im,mbcjk->ibcjk", H.a.oo, L.aaa, optimize=True)
-    LH.aaa += (2.0 / 12.0) * np.einsum("eb,iecjk->ibcjk", H.b.vv, L.aaa, optimize=True)
+    LH.aaa += (2.0 / 12.0) * np.einsum("eb,iecjk->ibcjk", H.a.vv, L.aaa, optimize=True)
     LH.aaa += (3.0 / 24.0) * np.einsum("jkmn,ibcmn->ibcjk", H.aa.oooo, L.aaa, optimize=True)
     LH.aaa += (1.0 / 24.0) * np.einsum("efbc,iefjk->ibcjk", H.aa.vvvv, L.aaa, optimize=True)
     LH.aaa += (6.0 / 12.0) * np.einsum("ekmc,ibejm->ibcjk", H.aa.voov, L.aaa, optimize=True)
