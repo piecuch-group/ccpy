@@ -232,7 +232,7 @@ module ipccp3_loops
                         ! output variables
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nob,nob)
+                        logical(kind=1) :: qspace(nub,nub)
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(n3abb,5)
