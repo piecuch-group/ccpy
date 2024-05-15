@@ -4,7 +4,7 @@ import numpy as np
 
 from ccpy.constants.constants import hartreetoeV
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
-from ccpy.utilities.updates import ccp3_opt_loops, ccp3_adaptive_loops
+from ccpy.utilities.updates import ccp3_opt_loops, ccp3_adaptive_loops, ccp3_full_correction
 from ccpy.left.left_cc_intermediates import build_left_ccsdt_p_intermediates
 from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eomccsdt_intermediates, add_R3_p_terms
 from ccpy.eomcc.eomccsdt import build_HR_3A, build_HR_3B, build_HR_3C, build_HR_3D
@@ -399,6 +399,187 @@ def calc_ccp3_full(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fal
         correction_B = dB_aaa + dB_aab + dB_abb + dB_bbb
         correction_C = dC_aaa + dC_aab + dC_abb + dC_bbb
         correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
+
+    t_end = time.perf_counter()
+    t_cpu_end = time.process_time()
+    minutes, seconds = divmod(t_end - t_start, 60)
+
+    energy_A = corr_energy + correction_A
+    energy_B = corr_energy + correction_B
+    energy_C = corr_energy + correction_C
+    energy_D = corr_energy + correction_D
+
+    total_energy_A = system.reference_energy + energy_A
+    total_energy_B = system.reference_energy + energy_B
+    total_energy_C = system.reference_energy + energy_C
+    total_energy_D = system.reference_energy + energy_D
+
+    print('   CC(P;3) Calculation Summary')
+    print('   -------------------------------------')
+    print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
+    print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
+    print(
+        "   CC(P;3)_A = {:>10.10f}     ΔE_A = {:>10.10f}     δ_A = {:>10.10f}".format(
+            total_energy_A, energy_A, correction_A
+        )
+    )
+    print(
+        "   CC(P;3)_B = {:>10.10f}     ΔE_B = {:>10.10f}     δ_B = {:>10.10f}".format(
+            total_energy_B, energy_B, correction_B
+        )
+    )
+    print(
+        "   CC(P;3)_C = {:>10.10f}     ΔE_C = {:>10.10f}     δ_C = {:>10.10f}".format(
+            total_energy_C, energy_C, correction_C
+        )
+    )
+    print(
+        "   CC(P;3)_D = {:>10.10f}     ΔE_D = {:>10.10f}     δ_D = {:>10.10f}\n".format(
+            total_energy_D, energy_D, correction_D
+        )
+    )
+
+    Eccp3 = {"A": total_energy_A, "B": total_energy_B, "C": total_energy_C, "D": total_energy_D}
+    deltap3 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
+
+    return Eccp3, deltap3
+
+def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
+    """
+    Calculate the ground-state CC(P;3) correction to the CC(P) energy.
+    """
+    t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
+
+    l3_excitations = {"aaa": t3_excitations["aaa"].copy(),
+                      "aab": t3_excitations["aab"].copy(),
+                      "abb": t3_excitations["abb"].copy(),
+                      "bbb": t3_excitations["bbb"].copy()}
+
+    # get the Hbar 3-body diagonal
+    d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
+    d3aab_v, d3aab_o = aab_H3_aab_diagonal(T, H, system)
+    d3abb_v, d3abb_o = abb_H3_abb_diagonal(T, H, system)
+    d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
+
+    # get L(P)*T(P) intermediates
+    # determine whether l3 updates and l3*t3 intermediates should be done. Stupid compatibility with
+    # empty sections of t3_excitations or l3_excitations. L3 ordering matches T3 at this point.
+    do_l3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
+    do_t3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
+    if np.array_equal(t3_excitations["aaa"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["aaa"] = False
+        do_l3["aaa"] = False
+    if np.array_equal(t3_excitations["aab"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["aab"] = False
+        do_l3["aab"] = False
+    if np.array_equal(t3_excitations["abb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["abb"] = False
+        do_l3["abb"] = False
+    if np.array_equal(t3_excitations["bbb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["bbb"] = False
+        do_l3["bbb"] = False
+    X = build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, system, do_t3, do_l3, RHF_symmetry=use_RHF)
+
+    # unravel triples vector into t3(abcijk) and l3(abcijk)
+    #T_unravel = unravel_triples_amplitudes(T, t3_excitations, system, do_t3)
+    #L_unravel = unravel_triples_amplitudes(L, t3_excitations, system, do_l3)
+
+    # orbital dimensions
+    nua, noa = T.a.shape
+    nub, nob = T.b.shape
+
+    #### aaa correction ####
+    I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
+    dA_aaa = 0.0; dB_aaa = 0.0; dC_aaa = 0.0; dD_aaa = 0.0;
+    for i in range(noa):
+        for j in range(i + 1, noa):
+            for k in range(j + 1, noa):
+                M3A = ccp3_full_correction.ccp3_full_correction.build_moments3a_ijk(
+                    i + 1, j + 1, k + 1,
+                    T.aaa, t3_excitations["aaa"],
+                    T.aab, t3_excitations["aab"],
+                    T.aa,
+                    H.a.oo, H.a.vv.T,
+                    H.aa.oovv, I2A_vvov.transpose(3, 0, 1, 2), H.aa.vooo.transpose(1, 0, 2, 3),
+                    H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
+                    H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
+                )
+                L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
+                    i + 1, j + 1, k + 1,
+                    L.a, L.aa,
+                    L.aaa, l3_excitations["aaa"],
+                    L.aab, l3_excitations["aab"],
+                    H.a.ov, H.a.oo, H.a.vv,
+                    H.aa.oooo, H.aa.ooov, H.aa.oovv,
+                    H.aa.voov, H.aa.vovv, H.aa.vvvv,
+                    H.ab.ovvo,
+                    X.aa.ooov, X.aa.vovv,
+                )
+                dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction.ccp3_full_correction.ccp3a_ijk(
+                    dA_aaa, dB_aaa, dC_aaa, dD_aaa,
+                    i + 1, j + 1, k + 1,
+                    M3A, L3A, t3_excitations["aaa"],
+                    H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
+                    H.aa.voov, H.aa.oooo, H.aa.vvvv,
+                    d3aaa_o, d3aaa_v,
+                )
+    #### aab correction ####
+    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
+    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
+    dA_aab = 0.0; dB_aab = 0.0; dC_aab = 0.0; dD_aab = 0.0;
+    for i in range(noa):
+        for j in range(i + 1, noa):
+            for k in range(nob):
+                M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
+                    i + 1, j + 1, k + 1,
+                    T.aaa, t3_excitations["aaa"],
+                    T.aab, t3_excitations["aab"],
+                    T.abb, t3_excitations["abb"],
+                    T.aa, T.ab,
+                    H.a.oo, H.a.vv.T, H.b.oo, H.b.vv.T,
+                    H.aa.oovv, H.aa.vvov.transpose(3, 0, 1, 2), I2A_vooo.transpose(1, 0, 2, 3), H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
+                    H.ab.oovv, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3), I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo,
+                    H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
+                    H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
+                )
+                L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
+                    i + 1, j + 1, k + 1,
+                    L.a, L.b, L.aa, L.ab,
+                    L.aaa, l3_excitations["aaa"],
+                    L.aab, l3_excitations["aab"],
+                    L.abb, l3_excitations["abb"],
+                    H.a.ov, H.a.oo, H.a.vv,
+                    H.b.ov, H.b.oo, H.b.vv,
+                    H.aa.oooo, H.aa.ooov, H.aa.oovv,
+                    H.aa.voov, H.aa.vovv, H.aa.vvvv,
+                    H.ab.oooo, H.ab.ooov, H.ab.oovo,
+                    H.ab.oovv,
+                    H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
+                    H.ab.vovv, H.ab.ovvv, H.ab.vvvv,
+                    H.bb.voov,
+                    X.aa.ooov, X.aa.vovv,
+                    X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
+                )
+                dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction.ccp3_full_correction.ccp3b_ijk(
+                    dA_aab, dB_aab, dC_aab, dD_aab,
+                    i + 1, j + 1, k + 1,
+                    M3B, L3B, t3_excitations["aab"],
+                    H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+                    H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                    H.aa.voov, H.aa.oooo, H.aa.vvvv,
+                    H.ab.ovov, H.ab.vovo,
+                    H.ab.oooo, H.ab.vvvv,
+                    H.bb.voov,
+                    d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
+                )
+    if use_RHF:
+        correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
+        correction_B = 2.0 * dB_aaa + 2.0 * dB_aab
+        correction_C = 2.0 * dC_aaa + 2.0 * dC_aab
+        correction_D = 2.0 * dD_aaa + 2.0 * dD_aab
 
     t_end = time.perf_counter()
     t_cpu_end = time.process_time()
