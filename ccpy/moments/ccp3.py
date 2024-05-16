@@ -544,26 +544,26 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
                     H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
                     H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
                 )
-                # L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
-                #     i + 1, j + 1, k + 1,
-                #     L.a, L.b, L.aa, L.ab,
-                #     L.aaa, t3_excitations["aaa"],
-                #     L.aab, t3_excitations["aab"],
-                #     L.abb, t3_excitations["abb"],
-                #     H.a.ov, H.a.oo, H.a.vv,
-                #     H.b.ov, H.b.oo, H.b.vv,
-                #     H.aa.oooo, H.aa.ooov, H.aa.oovv,
-                #     H.aa.voov, H.aa.vovv, H.aa.vvvv,
-                #     H.ab.oooo, H.ab.ooov, H.ab.oovo,
-                #     H.ab.oovv,
-                #     H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
-                #     H.ab.vovv, H.ab.ovvv, H.ab.vvvv,
-                #     H.bb.voov,
-                #     X.aa.ooov, X.aa.vovv,
-                #     X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
-                # )
+                L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
+                    i + 1, j + 1, k + 1,
+                    L.a, L.b, L.aa, L.ab,
+                    L.aaa, t3_excitations["aaa"],
+                    L.aab, t3_excitations["aab"],
+                    L.abb, t3_excitations["abb"],
+                    H.a.ov, H.a.oo, H.a.vv,
+                    H.b.ov, H.b.oo, H.b.vv,
+                    H.aa.oooo, H.aa.ooov, H.aa.oovv,
+                    H.aa.voov, H.aa.vovv, H.aa.vvvv,
+                    H.ab.oooo, H.ab.ooov, H.ab.oovo,
+                    H.ab.oovv,
+                    H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
+                    H.ab.vovv, H.ab.ovvv, H.ab.vvvv,
+                    H.bb.voov,
+                    X.aa.ooov, X.aa.vovv,
+                    X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
+                )
                 #M3B = np.zeros((nua, nua, nub))
-                L3B = np.zeros((nua, nua, nub))
+                #L3B = np.zeros((nua, nua, nub))
                 dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction.ccp3_full_correction.ccp3b_ijk(
                     dA_aab, dB_aab, dC_aab, dD_aab,
                     i + 1, j + 1, k + 1,
