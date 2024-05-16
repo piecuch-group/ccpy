@@ -496,27 +496,29 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
     for i in range(noa):
         for j in range(i + 1, noa):
             for k in range(j + 1, noa):
-                M3A = ccp3_full_correction.ccp3_full_correction.build_moments3a_ijk(
-                    i + 1, j + 1, k + 1,
-                    T.aaa, t3_excitations["aaa"],
-                    T.aab, t3_excitations["aab"],
-                    T.aa,
-                    H.a.oo, H.a.vv.T,
-                    H.aa.oovv, I2A_vvov.transpose(3, 0, 1, 2), H.aa.vooo.transpose(1, 0, 2, 3),
-                    H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
-                    H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
-                )
-                L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
-                    i + 1, j + 1, k + 1,
-                    L.a, L.aa,
-                    L.aaa, t3_excitations["aaa"],
-                    L.aab, t3_excitations["aab"],
-                    H.a.ov, H.a.oo, H.a.vv,
-                    H.aa.oooo, H.aa.ooov, H.aa.oovv,
-                    H.aa.voov, H.aa.vovv, H.aa.vvvv,
-                    H.ab.ovvo,
-                    X.aa.ooov, X.aa.vovv,
-                )
+                # M3A = ccp3_full_correction.ccp3_full_correction.build_moments3a_ijk(
+                #     i + 1, j + 1, k + 1,
+                #     T.aaa, t3_excitations["aaa"],
+                #     T.aab, t3_excitations["aab"],
+                #     T.aa,
+                #     H.a.oo, H.a.vv.T,
+                #     H.aa.oovv, I2A_vvov.transpose(3, 0, 1, 2), H.aa.vooo.transpose(1, 0, 2, 3),
+                #     H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
+                #     H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
+                # )
+                # L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
+                #     i + 1, j + 1, k + 1,
+                #     L.a, L.aa,
+                #     L.aaa, t3_excitations["aaa"],
+                #     L.aab, t3_excitations["aab"],
+                #     H.a.ov, H.a.oo, H.a.vv,
+                #     H.aa.oooo, H.aa.ooov, H.aa.oovv,
+                #     H.aa.voov, H.aa.vovv, H.aa.vvvv,
+                #     H.ab.ovvo,
+                #     X.aa.ooov, X.aa.vovv,
+                # )
+                M3A = np.zeros((nua, nua, nua))
+                L3A = np.zeros((nua, nua, nua))
                 dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction.ccp3_full_correction.ccp3a_ijk(
                     dA_aaa, dB_aaa, dC_aaa, dD_aaa,
                     i + 1, j + 1, k + 1,
@@ -530,36 +532,38 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
     for i in range(noa):
         for j in range(i + 1, noa):
             for k in range(nob):
-                M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
-                    i + 1, j + 1, k + 1,
-                    T.aaa, t3_excitations["aaa"],
-                    T.aab, t3_excitations["aab"],
-                    T.abb, t3_excitations["abb"],
-                    T.aa, T.ab,
-                    H.a.oo, H.a.vv.T, H.b.oo, H.b.vv.T,
-                    H.aa.oovv, H.aa.vvov.transpose(3, 0, 1, 2), I2A_vooo.transpose(1, 0, 2, 3), H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
-                    H.ab.oovv, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3), I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo,
-                    H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
-                    H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
-                )
-                L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
-                    i + 1, j + 1, k + 1,
-                    L.a, L.b, L.aa, L.ab,
-                    L.aaa, t3_excitations["aaa"],
-                    L.aab, t3_excitations["aab"],
-                    L.abb, t3_excitations["abb"],
-                    H.a.ov, H.a.oo, H.a.vv,
-                    H.b.ov, H.b.oo, H.b.vv,
-                    H.aa.oooo, H.aa.ooov, H.aa.oovv,
-                    H.aa.voov, H.aa.vovv, H.aa.vvvv,
-                    H.ab.oooo, H.ab.ooov, H.ab.oovo,
-                    H.ab.oovv,
-                    H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
-                    H.ab.vovv, H.ab.ovvv, H.ab.vvvv,
-                    H.bb.voov,
-                    X.aa.ooov, X.aa.vovv,
-                    X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
-                )
+                # M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
+                #     i + 1, j + 1, k + 1,
+                #     T.aaa, t3_excitations["aaa"],
+                #     T.aab, t3_excitations["aab"],
+                #     T.abb, t3_excitations["abb"],
+                #     T.aa, T.ab,
+                #     H.a.oo, H.a.vv.T, H.b.oo, H.b.vv.T,
+                #     H.aa.oovv, H.aa.vvov.transpose(3, 0, 1, 2), I2A_vooo.transpose(1, 0, 2, 3), H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
+                #     H.ab.oovv, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3), I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo,
+                #     H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
+                #     H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
+                # )
+                # L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
+                #     i + 1, j + 1, k + 1,
+                #     L.a, L.b, L.aa, L.ab,
+                #     L.aaa, t3_excitations["aaa"],
+                #     L.aab, t3_excitations["aab"],
+                #     L.abb, t3_excitations["abb"],
+                #     H.a.ov, H.a.oo, H.a.vv,
+                #     H.b.ov, H.b.oo, H.b.vv,
+                #     H.aa.oooo, H.aa.ooov, H.aa.oovv,
+                #     H.aa.voov, H.aa.vovv, H.aa.vvvv,
+                #     H.ab.oooo, H.ab.ooov, H.ab.oovo,
+                #     H.ab.oovv,
+                #     H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
+                #     H.ab.vovv, H.ab.ovvv, H.ab.vvvv,
+                #     H.bb.voov,
+                #     X.aa.ooov, X.aa.vovv,
+                #     X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
+                # )
+                M3B = np.zeros((nua, nua, nub))
+                L3B = np.zeros((nua, nua, nub))
                 dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction.ccp3_full_correction.ccp3b_ijk(
                     dA_aab, dB_aab, dC_aab, dD_aab,
                     i + 1, j + 1, k + 1,

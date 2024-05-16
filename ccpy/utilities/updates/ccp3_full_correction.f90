@@ -47,7 +47,7 @@ module ccp3_full_correction
 
                         ! reorder t3a into (i,j,k) order
                         excits_buff(:,:) = t3a_excits(:,:)
-                        amps_buff(:) = 0.0
+                        amps_buff = 0.0
                         nloc = noa*(noa-1)*(noa-2)/6
                         allocate(loc_arr(2,nloc))
                         allocate(idx_table(noa,noa,noa))
@@ -165,7 +165,7 @@ module ccp3_full_correction
 
                         ! reorder t3b into (i,j,k) order
                         excits_buff(:,:) = t3b_excits(:,:)
-                        amps_buff(:) = 0.0
+                        amps_buff = 0.0
                         nloc = noa*(noa-1)/2*nob
                         allocate(loc_arr(2,nloc))
                         allocate(idx_table(noa,noa,nob))
