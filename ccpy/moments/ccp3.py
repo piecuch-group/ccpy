@@ -506,19 +506,19 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
                     H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
                     H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
                 )
-                # L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
-                #     i + 1, j + 1, k + 1,
-                #     L.a, L.aa,
-                #     L.aaa, t3_excitations["aaa"],
-                #     L.aab, t3_excitations["aab"],
-                #     H.a.ov, H.a.oo, H.a.vv,
-                #     H.aa.oooo, H.aa.ooov, H.aa.oovv,
-                #     H.aa.voov, H.aa.vovv, H.aa.vvvv,
-                #     H.ab.ovvo,
-                #     X.aa.ooov, X.aa.vovv,
-                # )
+                L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
+                    i + 1, j + 1, k + 1,
+                    L.a, L.aa,
+                    L.aaa, t3_excitations["aaa"],
+                    L.aab, t3_excitations["aab"],
+                    H.a.ov, H.a.oo, H.a.vv,
+                    H.aa.oooo, H.aa.ooov, H.aa.oovv,
+                    H.aa.voov, H.aa.vovv, H.aa.vvvv,
+                    H.ab.ovvo,
+                    X.aa.ooov, X.aa.vovv,
+                )
                 #M3A = np.zeros((nua, nua, nua))
-                L3A = np.zeros((nua, nua, nua))
+                #L3A = np.zeros((nua, nua, nua))
                 dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction.ccp3_full_correction.ccp3a_ijk(
                     dA_aaa, dB_aaa, dC_aaa, dD_aaa,
                     i + 1, j + 1, k + 1,
