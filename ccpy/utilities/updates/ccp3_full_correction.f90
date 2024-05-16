@@ -257,19 +257,13 @@ module ccp3_full_correction
 
                   real(kind=8), allocatable :: amps_buff(:), t3a_amps_copy(:), xbuf(:,:,:,:)
                   integer, allocatable :: excits_buff(:,:), t3a_excits_copy(:,:)
-
-                  real(kind=8) :: I2A_vvov(nua,nua,nua,noa) ! reordered
-                  real(kind=8) :: I2A_vooo(noa,nua,noa,noa) ! reordered
+                  
                   real(kind=8) :: val, denom, t_amp, res_mm23, hmatel
                   real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4
                   integer :: ii, jj, kk, a, b, c, d, l, e, f, m, n, jdet
                   integer :: idx, nloc
                   !
                   logical(kind=1) :: qspace(nua,nua,nua)
-                  
-                  ! intermediates
-                  I2A_vooo = H2A_vooo
-                  I2A_vvov = H2A_vvov
 
                   ! Zero the residual container
                   resid = 0.0d0
@@ -1934,42 +1928,42 @@ module ccp3_full_correction
                         end do
                      end do
                   end do
-                  !$omp parallel shared(resid,t3a_excits_copy,xbuf,I2A_vooo),&
+                  !$omp parallel shared(resid,t3a_excits_copy,xbuf,H2A_vooo),&
                   !$omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                       if (.not. qspace(a,b,c)) cycle
                       do m = 1, noa
                           ! -A(k/ij)A(a/bc) h2a(amij) * t2a(bcmk)
-                          resid(a,b,c) = resid(a,b,c) - I2A_vooo(m,a,i,j) * xbuf(m,k,b,c)
-                          resid(a,b,c) = resid(a,b,c) + I2A_vooo(m,b,i,j) * xbuf(m,k,a,c)
-                          resid(a,b,c) = resid(a,b,c) + I2A_vooo(m,c,i,j) * xbuf(m,k,b,a)
-                          resid(a,b,c) = resid(a,b,c) + I2A_vooo(m,a,k,j) * xbuf(m,i,b,c)
-                          resid(a,b,c) = resid(a,b,c) - I2A_vooo(m,b,k,j) * xbuf(m,i,a,c)
-                          resid(a,b,c) = resid(a,b,c) - I2A_vooo(m,c,k,j) * xbuf(m,i,b,a)
-                          resid(a,b,c) = resid(a,b,c) + I2A_vooo(m,a,i,k) * xbuf(m,j,b,c)
-                          resid(a,b,c) = resid(a,b,c) - I2A_vooo(m,b,i,k) * xbuf(m,j,a,c)
-                          resid(a,b,c) = resid(a,b,c) - I2A_vooo(m,c,i,k) * xbuf(m,j,b,a)
+                          resid(a,b,c) = resid(a,b,c) - H2A_vooo(m,a,i,j) * xbuf(m,k,b,c)
+                          resid(a,b,c) = resid(a,b,c) + H2A_vooo(m,b,i,j) * xbuf(m,k,a,c)
+                          resid(a,b,c) = resid(a,b,c) + H2A_vooo(m,c,i,j) * xbuf(m,k,b,a)
+                          resid(a,b,c) = resid(a,b,c) + H2A_vooo(m,a,k,j) * xbuf(m,i,b,c)
+                          resid(a,b,c) = resid(a,b,c) - H2A_vooo(m,b,k,j) * xbuf(m,i,a,c)
+                          resid(a,b,c) = resid(a,b,c) - H2A_vooo(m,c,k,j) * xbuf(m,i,b,a)
+                          resid(a,b,c) = resid(a,b,c) + H2A_vooo(m,a,i,k) * xbuf(m,j,b,c)
+                          resid(a,b,c) = resid(a,b,c) - H2A_vooo(m,b,i,k) * xbuf(m,j,a,c)
+                          resid(a,b,c) = resid(a,b,c) - H2A_vooo(m,c,i,k) * xbuf(m,j,b,a)
                       end do
                   end do; end do; end do;
                   !$omp end do
                   !$omp end parallel
                   deallocate(xbuf)
 
-                  !$omp parallel shared(resid,t3a_excits_copy,t2a,I2A_vvov),&
+                  !$omp parallel shared(resid,t3a_excits_copy,t2a,H2A_vvov),&
                   !$omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                       if (.not. qspace(a,b,c)) cycle
                       do e = 1, nua
                            ! A(i/jk)(c/ab) h2a(abie) * t2a(ecjk)
-                          resid(a,b,c) = resid(a,b,c) + I2A_vvov(e,a,b,i) * t2a(e,c,j,k)
-                          resid(a,b,c) = resid(a,b,c) - I2A_vvov(e,c,b,i) * t2a(e,a,j,k)
-                          resid(a,b,c) = resid(a,b,c) - I2A_vvov(e,a,c,i) * t2a(e,b,j,k)
-                          resid(a,b,c) = resid(a,b,c) - I2A_vvov(e,a,b,j) * t2a(e,c,i,k)
-                          resid(a,b,c) = resid(a,b,c) + I2A_vvov(e,c,b,j) * t2a(e,a,i,k)
-                          resid(a,b,c) = resid(a,b,c) + I2A_vvov(e,a,c,j) * t2a(e,b,i,k)
-                          resid(a,b,c) = resid(a,b,c) - I2A_vvov(e,a,b,k) * t2a(e,c,j,i)
-                          resid(a,b,c) = resid(a,b,c) + I2A_vvov(e,c,b,k) * t2a(e,a,j,i)
-                          resid(a,b,c) = resid(a,b,c) + I2A_vvov(e,a,c,k) * t2a(e,b,j,i)
+                          resid(a,b,c) = resid(a,b,c) + H2A_vvov(e,a,b,i) * t2a(e,c,j,k)
+                          resid(a,b,c) = resid(a,b,c) - H2A_vvov(e,c,b,i) * t2a(e,a,j,k)
+                          resid(a,b,c) = resid(a,b,c) - H2A_vvov(e,a,c,i) * t2a(e,b,j,k)
+                          resid(a,b,c) = resid(a,b,c) - H2A_vvov(e,a,b,j) * t2a(e,c,i,k)
+                          resid(a,b,c) = resid(a,b,c) + H2A_vvov(e,c,b,j) * t2a(e,a,i,k)
+                          resid(a,b,c) = resid(a,b,c) + H2A_vvov(e,a,c,j) * t2a(e,b,i,k)
+                          resid(a,b,c) = resid(a,b,c) - H2A_vvov(e,a,b,k) * t2a(e,c,j,i)
+                          resid(a,b,c) = resid(a,b,c) + H2A_vvov(e,c,b,k) * t2a(e,a,j,i)
+                          resid(a,b,c) = resid(a,b,c) + H2A_vvov(e,a,c,k) * t2a(e,b,j,i)
                       end do
                   end do; end do; end do;
                   !$omp end do
@@ -2043,26 +2037,12 @@ module ccp3_full_correction
                   integer, allocatable :: loc_arr(:,:)
                   integer, allocatable :: idx_table(:,:,:,:), idx_table3(:,:,:)
 
-                  real(kind=8) :: I2A_vooo(noa,nua,noa,noa) ! reordered
-                  real(kind=8) :: I2A_vvov(nua,nua,nua,noa) ! reordered
-                  real(kind=8) :: I2B_vooo(nob,nua,noa,nob) ! reordered
-                  real(kind=8) :: I2B_ovoo(noa,nub,noa,nob)
-                  real(kind=8) :: I2B_vvov(nub,nua,nub,noa) ! reordered
-                  real(kind=8) :: I2B_vvvo(nua,nua,nub,nob) ! reordered
                   real(kind=8) :: denom, val, t_amp, res_mm23, hmatel
                   real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4
                   integer :: ii, jj, kk, l, a, b, c, d, m, n, e, f, idet, jdet
                   integer :: idx, nloc
                   !
                   logical(kind=1) :: qspace(nua,nua,nub)
-                  
-                  !
-                  I2A_vooo = H2A_vooo
-                  I2A_vvov = H2A_vvov
-                  I2B_vooo = H2B_vooo
-                  I2B_ovoo = H2B_ovoo
-                  I2B_vvov = H2B_vvov
-                  I2B_vvvo = H2B_vvvo
 
                   ! Zero the residual container
                   resid = 0.0d0
@@ -3299,27 +3279,27 @@ module ccp3_full_correction
                   !
                   ! Moment contributions
                   !
-                  !$omp parallel shared(resid,t3b_excits_copy,t2a,I2B_vvvo,n3aab),&
+                  !$omp parallel shared(resid,t3b_excits_copy,t2a,H2B_vvvo,n3aab),&
                   !$omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do e = 1, nua
                           ! A(ab) I2B(bcek) * t2a(aeij)
-                          resid(a,b,c) = resid(a,b,c) + I2B_vvvo(e,b,c,k) * t2a(e,a,j,i)
-                          resid(a,b,c) = resid(a,b,c) - I2B_vvvo(e,a,c,k) * t2a(e,b,j,i)
+                          resid(a,b,c) = resid(a,b,c) + H2B_vvvo(e,b,c,k) * t2a(e,a,j,i)
+                          resid(a,b,c) = resid(a,b,c) - H2B_vvvo(e,a,c,k) * t2a(e,b,j,i)
                       end do
                   end do; end do; end do;
                   !$omp end do
                   !$omp end parallel
 
-                  !$omp parallel shared(resid,t3b_excits_copy,t2b,I2A_vvov,n3aab),&
+                  !$omp parallel shared(resid,t3b_excits_copy,t2b,H2A_vvov,n3aab),&
                   !$omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do e = 1, nua
                           ! A(ij) I2A(abie) * t2b(ecjk)
-                          resid(a,b,c) = resid(a,b,c) + I2A_vvov(e,a,b,i) * t2b(e,c,j,k)
-                          resid(a,b,c) = resid(a,b,c) - I2A_vvov(e,a,b,j) * t2b(e,c,i,k)
+                          resid(a,b,c) = resid(a,b,c) + H2A_vvov(e,a,b,i) * t2b(e,c,j,k)
+                          resid(a,b,c) = resid(a,b,c) - H2A_vvov(e,a,b,j) * t2b(e,c,i,k)
                       end do
                   end do; end do; end do;
                   !$omp end do
@@ -3335,16 +3315,16 @@ module ccp3_full_correction
                         end do
                      end do
                   end do
-                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,I2B_vvov,n3aab),&
+                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,H2B_vvov,n3aab),&
                   !$omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do e = 1, nub
                           ! A(ij)A(ab) I2b(acie) * t2b(bejk)
-                          resid(a,b,c) = resid(a,b,c) + I2B_vvov(e,a,c,i) * xbuf(e,b,k,j)
-                          resid(a,b,c) = resid(a,b,c) - I2B_vvov(e,a,c,j) * xbuf(e,b,k,i)
-                          resid(a,b,c) = resid(a,b,c) - I2B_vvov(e,b,c,i) * xbuf(e,a,k,j)
-                          resid(a,b,c) = resid(a,b,c) + I2B_vvov(e,b,c,j) * xbuf(e,a,k,i)
+                          resid(a,b,c) = resid(a,b,c) + H2B_vvov(e,a,c,i) * xbuf(e,b,k,j)
+                          resid(a,b,c) = resid(a,b,c) - H2B_vvov(e,a,c,j) * xbuf(e,b,k,i)
+                          resid(a,b,c) = resid(a,b,c) - H2B_vvov(e,b,c,i) * xbuf(e,a,k,j)
+                          resid(a,b,c) = resid(a,b,c) + H2B_vvov(e,b,c,j) * xbuf(e,a,k,i)
                       end do
                   end do; end do; end do;
                   !$omp end do
@@ -3361,14 +3341,14 @@ module ccp3_full_correction
                         end do
                      end do
                   end do
-                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,I2B_ovoo,n3aab),&
+                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,H2B_ovoo,n3aab),&
                   !$omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do m = 1, noa
                           ! -A(ij) h2b(mcjk) * t2a(abim)
-                          resid(a,b,c) = resid(a,b,c) - I2B_ovoo(m,c,j,k) * xbuf(m,i,b,a)
-                          resid(a,b,c) = resid(a,b,c) + I2B_ovoo(m,c,i,k) * xbuf(m,j,b,a)
+                          resid(a,b,c) = resid(a,b,c) - H2B_ovoo(m,c,j,k) * xbuf(m,i,b,a)
+                          resid(a,b,c) = resid(a,b,c) + H2B_ovoo(m,c,i,k) * xbuf(m,j,b,a)
                       end do
                   end do; end do; end do;
                   !$omp end do
@@ -3385,14 +3365,14 @@ module ccp3_full_correction
                         end do
                      end do
                   end do
-                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,I2A_vooo,n3aab),&
+                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,H2A_vooo,n3aab),&
                   !$omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do m = 1, noa
                           ! -A(ab) h2a(amij) * t2b(bcmk)
-                          resid(a,b,c) = resid(a,b,c) - I2A_vooo(m,a,i,j) * xbuf(m,k,b,c)
-                          resid(a,b,c) = resid(a,b,c) + I2A_vooo(m,b,i,j) * xbuf(m,k,a,c)
+                          resid(a,b,c) = resid(a,b,c) - H2A_vooo(m,a,i,j) * xbuf(m,k,b,c)
+                          resid(a,b,c) = resid(a,b,c) + H2A_vooo(m,b,i,j) * xbuf(m,k,a,c)
                       end do
                   end do; end do; end do;
                   !$omp end do
@@ -3409,16 +3389,16 @@ module ccp3_full_correction
                         end do
                      end do
                   end do
-                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,I2B_vooo,n3aab),&
+                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,H2B_vooo,n3aab),&
                   !$omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do m = 1, nob
                           ! -A(ij)A(ab) h2b(amik) * t2b(bcjm)
-                          resid(a,b,c) = resid(a,b,c) - I2B_vooo(m,a,i,k) * xbuf(m,j,c,b)
-                          resid(a,b,c) = resid(a,b,c) + I2B_vooo(m,b,i,k) * xbuf(m,j,c,a)
-                          resid(a,b,c) = resid(a,b,c) + I2B_vooo(m,a,j,k) * xbuf(m,i,c,b)
-                          resid(a,b,c) = resid(a,b,c) - I2B_vooo(m,b,j,k) * xbuf(m,i,c,a)
+                          resid(a,b,c) = resid(a,b,c) - H2B_vooo(m,a,i,k) * xbuf(m,j,c,b)
+                          resid(a,b,c) = resid(a,b,c) + H2B_vooo(m,b,i,k) * xbuf(m,j,c,a)
+                          resid(a,b,c) = resid(a,b,c) + H2B_vooo(m,a,j,k) * xbuf(m,i,c,b)
+                          resid(a,b,c) = resid(a,b,c) - H2B_vooo(m,b,j,k) * xbuf(m,i,c,a)
                       end do
                   end do; end do; end do;
                   !$omp end do
