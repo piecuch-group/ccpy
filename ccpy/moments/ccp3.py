@@ -1129,10 +1129,6 @@ def calc_eomccp3_full_opt(T, R, L, t3_excitations, r3_excitations, r0, omega, co
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
 
-    # unravel triples vector into t3(abcijk), r3(abcijk), and l3(abcijk)
-    T_unravel = unravel_triples_amplitudes(T, t3_excitations, system, do_t3)
-    R_unravel = unravel_triples_amplitudes(R, r3_excitations, system, do_l3)
-
     #### aaa correction ####
     dA_aaa = 0.0
     dB_aaa = 0.0
@@ -1354,27 +1350,27 @@ def calc_eomccp3_full_opt(T, R, L, t3_excitations, r3_excitations, r0, omega, co
         dB_bbb = 0.0
         dC_bbb = 0.0
         dD_bbb = 0.0
-        EOMM3D = build_HR_3D(R_unravel, T_unravel, H, XR)
+        #EOMM3D = build_HR_3D(R_unravel, T_unravel, H, XR)
         for i in range(system.noccupied_beta):
             for j in range(i + 1, system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
-                    # EOMM3D = ccp3_full_correction.ccp3_full_correction.build_eom_moments3d_ijk(
-                    #     i + 1, j + 1, k + 1,
-                    #     R.bb,
-                    #     R.abb, r3_excitations["abb"],
-                    #     R.bbb, r3_excitations["bbb"],
-                    #     T.bb,
-                    #     T.abb, t3_excitations["abb"],
-                    #     T.bbb, t3_excitations["bbb"],
-                    #     H.b.oo, H.b.vv,
-                    #     H.bb.oooo, H.bb.vooo, H.bb.oovv,
-                    #     H.bb.voov, H.bb.vvov, H.bb.vvvv.transpose(2, 3, 0, 1),
-                    #     H.ab.ovvo,
-                    #     XR.b.oo, XR.b.vv,
-                    #     XR.bb.oooo, XR.bb.vooo, XR.bb.oovv,
-                    #     XR.bb.voov, XR.bb.vvov, XR.bb.vvvv.transpose(2, 3, 0, 1),
-                    #     XR.ab.ovvo,
-                    # )
+                    EOMM3D = ccp3_full_correction.ccp3_full_correction.build_eom_moments3d_ijk(
+                        i + 1, j + 1, k + 1,
+                        R.bb,
+                        R.abb, r3_excitations["abb"],
+                        R.bbb, r3_excitations["bbb"],
+                        T.bb,
+                        T.abb, t3_excitations["abb"],
+                        T.bbb, t3_excitations["bbb"],
+                        H.b.oo, H.b.vv,
+                        H.bb.oooo, H.bb.vooo, H.bb.oovv,
+                        H.bb.voov, H.bb.vvov, H.bb.vvvv.transpose(2, 3, 0, 1),
+                        H.ab.ovvo,
+                        XR.b.oo, XR.b.vv,
+                        XR.bb.oooo, XR.bb.vooo, XR.bb.oovv,
+                        XR.bb.voov, XR.bb.vvov, XR.bb.vvvv.transpose(2, 3, 0, 1),
+                        XR.ab.ovvo,
+                    )
                     M3D = ccp3_full_correction.ccp3_full_correction.build_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         T.abb, t3_excitations["abb"],
@@ -1399,7 +1395,7 @@ def calc_eomccp3_full_opt(T, R, L, t3_excitations, r3_excitations, r0, omega, co
                     dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction.ccp3_full_correction.ccp3d_ijk(
                         dA_bbb, dB_bbb, dC_bbb, dD_bbb,
                         i + 1, j + 1, k + 1, omega,
-                        r0 * M3D + EOMM3D[:, :, :, i, j, k], L3D, r3_excitations["bbb"],
+                        r0 * M3D + EOMM3D, L3D, r3_excitations["bbb"],
                         H0.b.oo, H0.b.vv, H.b.oo, H.b.vv,
                         H.bb.voov, H.bb.oooo, H.bb.vvvv,
                         d3bbb_o, d3bbb_v,

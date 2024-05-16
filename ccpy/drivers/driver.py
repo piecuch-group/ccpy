@@ -1656,7 +1656,7 @@ class Driver:
                                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                         self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
         elif method.lower() == "ccp3":
-            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full, calc_eomccp3_full, calc_ccp3_full_opt, calc_eomccp3_full_opt
+            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full_opt, calc_eomccp3_full_opt
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
             # Ensure that both HBar is set
             assert self.flag_hbar
