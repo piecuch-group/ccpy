@@ -22,8 +22,10 @@ def test_cc3_f2():
     mf.kernel()
 
     driver = Driver.from_pyscf(mf, nfrozen=2)
+    driver.system.print_info()
 
-    driver.options["RHF_symmetry"] = False
+    driver.options["RHF_symmetry"] = True
+    #driver.options["diis_out_of_core"] = True
     driver.run_cc(method="cc3")
 
     assert np.allclose(driver.correlation_energy, -0.63843220, atol=1.0e-07)

@@ -35,6 +35,7 @@ def test_crcc23_glycine():
     driver.system.print_info()
 
     driver.options["RHF_symmetry"] = True
+    driver.options["diis_out_of_core"] = True
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")

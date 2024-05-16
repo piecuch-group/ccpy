@@ -452,11 +452,6 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 
-    l3_excitations = {"aaa": t3_excitations["aaa"].copy(),
-                      "aab": t3_excitations["aab"].copy(),
-                      "abb": t3_excitations["abb"].copy(),
-                      "bbb": t3_excitations["bbb"].copy()}
-
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
     d3aab_v, d3aab_o = aab_H3_aab_diagonal(T, H, system)
@@ -480,7 +475,13 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
     if np.array_equal(t3_excitations["bbb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["bbb"] = False
         do_l3["bbb"] = False
-    X = build_left_ccsdt_p_intermediates(L, l3_excitations, T, t3_excitations, system, do_t3, do_l3, RHF_symmetry=use_RHF)
+
+    # Create intermediates
+    X = build_left_ccsdt_p_intermediates(L, t3_excitations, T, t3_excitations, system, do_t3, do_l3, RHF_symmetry=use_RHF)
+    I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
+    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
+    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
 
     # unravel triples vector into t3(abcijk) and l3(abcijk)
     #T_unravel = unravel_triples_amplitudes(T, t3_excitations, system, do_t3)
@@ -491,7 +492,6 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
     nub, nob = T.b.shape
 
     #### aaa correction ####
-    I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     dA_aaa = 0.0; dB_aaa = 0.0; dC_aaa = 0.0; dD_aaa = 0.0;
     for i in range(noa):
         for j in range(i + 1, noa):
@@ -509,8 +509,8 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
                 L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
                     i + 1, j + 1, k + 1,
                     L.a, L.aa,
-                    L.aaa, l3_excitations["aaa"],
-                    L.aab, l3_excitations["aab"],
+                    L.aaa, t3_excitations["aaa"],
+                    L.aab, t3_excitations["aab"],
                     H.a.ov, H.a.oo, H.a.vv,
                     H.aa.oooo, H.aa.ooov, H.aa.oovv,
                     H.aa.voov, H.aa.vovv, H.aa.vvvv,
@@ -526,9 +526,6 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
                     d3aaa_o, d3aaa_v,
                 )
     #### aab correction ####
-    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     dA_aab = 0.0; dB_aab = 0.0; dC_aab = 0.0; dD_aab = 0.0;
     for i in range(noa):
         for j in range(i + 1, noa):
@@ -548,9 +545,9 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
                 L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
                     i + 1, j + 1, k + 1,
                     L.a, L.b, L.aa, L.ab,
-                    L.aaa, l3_excitations["aaa"],
-                    L.aab, l3_excitations["aab"],
-                    L.abb, l3_excitations["abb"],
+                    L.aaa, t3_excitations["aaa"],
+                    L.aab, t3_excitations["aab"],
+                    L.abb, t3_excitations["abb"],
                     H.a.ov, H.a.oo, H.a.vv,
                     H.b.ov, H.b.oo, H.b.vv,
                     H.aa.oooo, H.aa.ooov, H.aa.oovv,

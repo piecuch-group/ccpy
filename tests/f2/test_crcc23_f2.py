@@ -33,5 +33,14 @@ def test_crcc23_f2():
     # Check that CR-CC(2,3)_D total energy is correct
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"], -199.0563392841, atol=1.0e-07)
 
+    driver.run_rdm1()
+    driver.transform_to_natorb(0)
+    driver.system.print_info()
+
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="crcc23")
+
 if __name__ == "__main__":
     test_crcc23_f2()
