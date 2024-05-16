@@ -5179,7 +5179,7 @@ module ccp3_full_correction
                   allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,nub,noa))
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, noa)
-                  call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, noa, nloc, n3aab, resid)
+                  call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, noa, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp l3b_excits_copy,&
@@ -6068,7 +6068,6 @@ module ccp3_full_correction
                   deallocate(loc_arr,idx_table)
                   ! deallocate l3 buffer arrays
                   deallocate(amps_buff,excits_buff)
-                  !end if
                  
                   !!!! diagram 14: A(ab)A(ij) h2b(jebm)*l3c(aecimk)
                   !if (n3abb/=0) then
@@ -6313,7 +6312,6 @@ module ccp3_full_correction
                   deallocate(loc_arr,idx_table)
                   ! deallocate l3 buffer arrays
                   deallocate(amps_buff,excits_buff)
-                  !end if
                   
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -6328,7 +6326,7 @@ module ccp3_full_correction
                   !$omp noa,nua,nob,nub,n3aab),&
                   !$omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                      if (.not. qspace(a,b,c)) cycle
                       ! A(ab)A(ij) [l1a(ai)*h2b(jkbc) + h1a(ia)*l2a(bcjk)
                       res =  l1a(a,i)*h2b_oovv(j,k,b,c) + h1a_ov(i,a)*l2b(b,c,j,k)& ! (1)
                             -l1a(a,j)*h2b_oovv(i,k,b,c) - h1a_ov(j,a)*l2b(b,c,i,k)& ! (ij)
