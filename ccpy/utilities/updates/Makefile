@@ -2,10 +2,13 @@
 MODULES := cc_loops \
 		   cc_loops2 \
 		   ccsdt_p_loops \
+		   eomccsdt_p_loops \
 		   leftccsdt_p_loops \
 		   leftccsdt_p_intermediates \
 		   hbar_ccsdt_p \
 		   reorder \
+		   ccp3_opt_loops \
+		   ccp3_adaptive_loops \
 		   ccp3_full_correction
 #MODULES := cc_loops \
 #		   cc_loops2 \
