@@ -482,20 +482,16 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
-
-    # unravel triples vector into t3(abcijk) and l3(abcijk)
-    #T_unravel = unravel_triples_amplitudes(T, t3_excitations, system, do_t3)
-    #L_unravel = unravel_triples_amplitudes(L, t3_excitations, system, do_l3)
-
-    # orbital dimensions
-    nua, noa = T.a.shape
-    nub, nob = T.b.shape
+    I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
 
     #### aaa correction ####
-    dA_aaa = 0.0; dB_aaa = 0.0; dC_aaa = 0.0; dD_aaa = 0.0;
-    for i in range(noa):
-        for j in range(i + 1, noa):
-            for k in range(j + 1, noa):
+    dA_aaa = 0.0
+    dB_aaa = 0.0
+    dC_aaa = 0.0
+    dD_aaa = 0.0
+    for i in range(system.noccupied_alpha):
+        for j in range(i + 1, system.noccupied_alpha):
+            for k in range(j + 1, system.noccupied_alpha):
                 M3A = ccp3_full_correction.ccp3_full_correction.build_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
@@ -526,10 +522,13 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
                     d3aaa_o, d3aaa_v,
                 )
     #### aab correction ####
-    dA_aab = 0.0; dB_aab = 0.0; dC_aab = 0.0; dD_aab = 0.0;
-    for i in range(noa):
-        for j in range(i + 1, noa):
-            for k in range(nob):
+    dA_aab = 0.0
+    dB_aab = 0.0
+    dC_aab = 0.0
+    dD_aab = 0.0
+    for i in range(system.noccupied_alpha):
+        for j in range(i + 1, system.noccupied_alpha):
+            for k in range(system.noccupied_beta):
                 M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
@@ -577,6 +576,98 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
         correction_B = 2.0 * dB_aaa + 2.0 * dB_aab
         correction_C = 2.0 * dC_aaa + 2.0 * dC_aab
         correction_D = 2.0 * dD_aaa + 2.0 * dD_aab
+    else:
+        #### abb correction ####
+        dA_abb = 0.0
+        dB_abb = 0.0
+        dC_abb = 0.0
+        dD_abb = 0.0
+        for i in range(system.noccupied_alpha):
+            for j in range(system.noccupied_beta):
+                for k in range(j + 1, system.noccupied_beta):
+                    M3C = ccp3_full_correction.ccp3_full_correction.build_moments3c_ijk(
+                        i + 1, j + 1, k + 1,
+                        T.aab, t3_excitations["aab"],
+                        T.abb, t3_excitations["abb"],
+                        T.bbb, t3_excitations["bbb"],
+                        T.ab, T.bb,
+                        H.a.oo, H.a.vv.T, H.b.oo, H.b.vv.T,
+                        H.aa.oovv, H.aa.voov.transpose(1, 3, 0, 2),
+                        H.ab.oovv, I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3), H.ab.oooo,
+                        H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
+                        H.bb.oovv, I2C_vooo.transpose(1, 0, 2, 3), H.bb.vvov.transpose(3, 0, 1, 2), H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
+                    )
+                    L3C = ccp3_full_correction.ccp3_full_correction.build_leftamps3c_ijk(
+                        i + 1, j + 1, k + 1,
+                        L.a, L.b, L.ab, L.bb,
+                        L.aab, t3_excitations["aab"],
+                        L.abb, t3_excitations["abb"],
+                        L.bbb, t3_excitations["bbb"],
+                        H.a.ov, H.a.oo, H.a.vv,
+                        H.b.ov, H.b.oo, H.b.vv,
+                        H.aa.voov,
+                        H.ab.oooo, H.ab.ooov, H.ab.oovo,
+                        H.ab.oovv,
+                        H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
+                        H.ab.vovv, H.ab.ovvv, H.ab.vvvv,
+                        H.bb.oooo, H.bb.ooov, H.bb.oovv,
+                        H.bb.voov, H.bb.vovv, H.bb.vvvv,
+                        X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
+                        X.bb.ooov, X.bb.vovv,
+                    )
+                    dA_abb, dB_abb, dC_abb, dD_abb = ccp3_full_correction.ccp3_full_correction.ccp3c_ijk(
+                        dA_abb, dB_abb, dC_abb, dD_abb,
+                        i + 1, j + 1, k + 1,
+                        M3C, L3C, t3_excitations["abb"],
+                        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+                        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                        H.aa.voov,
+                        H.ab.ovov, H.ab.vovo,
+                        H.ab.oooo, H.ab.vvvv,
+                        H.bb.voov, H.bb.oooo, H.bb.vvvv,
+                        d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
+                    )
+        #### bbb correction ####
+        dA_bbb = 0.0
+        dB_bbb = 0.0
+        dC_bbb = 0.0
+        dD_bbb = 0.0
+        for i in range(system.noccupied_beta):
+            for j in range(i + 1, system.noccupied_beta):
+                for k in range(j + 1, system.noccupied_beta):
+                    M3D = ccp3_full_correction.ccp3_full_correction.build_moments3d_ijk(
+                        i + 1, j + 1, k + 1,
+                        T.abb, t3_excitations["abb"],
+                        T.bbb, t3_excitations["bbb"],
+                        T.bb,
+                        H.b.oo, H.b.vv.T,
+                        H.bb.oovv, H.bb.vvov.transpose(3, 0, 1, 2), I2C_vooo.transpose(1, 0, 2, 3),
+                        H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
+                        H.ab.oovv, H.ab.ovvo.transpose(0, 2, 1, 3),
+                    )
+                    L3D = ccp3_full_correction.ccp3_full_correction.build_leftamps3d_ijk(
+                        i + 1, j + 1, k + 1,
+                        L.b, L.bb,
+                        L.abb, t3_excitations["abb"],
+                        L.bbb, t3_excitations["bbb"],
+                        H.b.ov, H.b.oo, H.b.vv,
+                        H.ab.voov,
+                        H.bb.oooo, H.bb.ooov, H.bb.oovv,
+                        H.bb.voov, H.bb.vovv, H.bb.vvvv,
+                        X.bb.ooov, X.bb.vovv,
+                    )
+                    dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction.ccp3_full_correction.ccp3d_ijk(
+                        dA_bbb, dB_bbb, dC_bbb, dD_bbb,
+                        i + 1, j + 1, k + 1,
+                        M3D, L3D, t3_excitations["bbb"],
+                        H0.b.oo, H0.b.vv, H.b.oo, H.b.vv,
+                        H.bb.voov, H.bb.oooo, H.bb.vvvv,
+                        d3bbb_o, d3bbb_v,
+                    )
+        correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
+        correction_B = dB_aaa + dB_aab + dB_abb + dB_bbb
+        correction_C = dC_aaa + dC_aab + dC_abb + dC_bbb
+        correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
 
     t_end = time.perf_counter()
     t_cpu_end = time.process_time()

@@ -30,6 +30,8 @@ def test_cct3_f2():
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_leftccp(method="left_ccsdt_p", t3_excitations=t3_excitations)
+
+    driver.options["RHF_symmetry"] = False
     driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, two_body_approx=False, state_index=0)
 
     # Check reference energy

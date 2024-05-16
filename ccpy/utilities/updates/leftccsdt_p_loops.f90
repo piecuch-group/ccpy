@@ -3397,8 +3397,8 @@ module leftccsdt_p_loops
                   nloc = nub*(nub-1)/2*nua*noa
                   allocate(loc_arr(nloc,2))
                   allocate(idx_table(nub,nub,nua,noa))
-                  call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,noa/), nub, nub, nua, nob)
-                  call sort4(l3c_excits, l3c_amps, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, nob, nloc, n3abb, resid)
+                  call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,noa/), nub, nub, nua, noa)
+                  call sort4(l3c_excits, l3c_amps, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, noa, nloc, n3abb, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp l3c_excits,&
