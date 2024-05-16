@@ -2,9 +2,9 @@ name: Run tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main bug-fix]
   pull_request:
-    branches: [ main ]
+    branches: [ main bug-fix]
 
 jobs:
   build-and-test:
