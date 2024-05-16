@@ -5,6 +5,7 @@ MODULES := cc_loops \
 		   leftccsdt_p_loops \
 		   leftccsdt_p_intermediates \
 		   hbar_ccsdt_p \
+		   reorder \
 		   ccp3_full_correction
 #MODULES := cc_loops \
 #		   cc_loops2 \
