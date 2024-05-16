@@ -1656,7 +1656,7 @@ class Driver:
                                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                         self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
         elif method.lower() == "ccp3":
-            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full, calc_eomccp3_full, calc_ccp3_full_opt
+            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full, calc_eomccp3_full, calc_ccp3_full_opt, calc_eomccp3_full_opt
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
             # Ensure that both HBar is set
             assert self.flag_hbar
@@ -1675,10 +1675,10 @@ class Driver:
             # Excited-state corrections
             else:
                 # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
-                _, self.deltap3[state_index], self.ddeltap3[state_index] = calc_eomccp3_full(self.T, self.R[state_index], self.L[state_index], t3_excitations, r3_excitations,
-                                                                                             self.r0[state_index], self.vertical_excitation_energy[state_index],
-                                                                                             self.correlation_energy, self.hamiltonian, self.fock,
-                                                                                             self.system, self.options["RHF_symmetry"])
+                _, self.deltap3[state_index] = calc_eomccp3_full_opt(self.T, self.R[state_index], self.L[state_index], t3_excitations, r3_excitations,
+                                                                     self.r0[state_index], self.vertical_excitation_energy[state_index],
+                                                                     self.correlation_energy, self.hamiltonian, self.fock,
+                                                                     self.system, self.options["RHF_symmetry"])
         # elif method.lower() == "ccp3(t)":
         #     from ccpy.moments.ccp3 import calc_ccpert3
         #     # Ensure that pspace is set
