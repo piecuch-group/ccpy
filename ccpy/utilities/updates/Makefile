@@ -1,55 +1,44 @@
 # Build the ccq_py python module
 MODULES := cc_loops \
 		   cc_loops2 \
+		   crcc_loops \
+		   cripcc_loops \
+		   creacc_loops \
+		   ccsdpt_loops \
+		   crcc24_loops \
+		   crcc24_opt_loops \
+		   cc3_loops \
+		   hbar_cc3 \
+		   mbgf_loops \
+		   mbpt_loops \
 		   ccsdt_p_loops \
 		   eomccsdt_p_loops \
 		   leftccsdt_p_loops \
 		   leftccsdt_p_intermediates \
+		   eaeom3_p_loops \
+		   eaeom3_p_intermediates \
+		   ipeom3_p_loops \
+		   ipeom3_p_intermediates \
+		   lefteaeom3_p_loops \
+		   lefteaeom3_p_intermediates \
+		   leftipeom3_p_loops \
+		   leftipeom3_p_intermediates \
+		   deaeom4_p_loops \
 		   hbar_ccsdt_p \
-		   reorder \
+		   eomcc_active_loops \
+		   cc_active_loops \
+		   cct3_loops \
+		   cc_loops_t4 \
+		   ccp3_loops \
 		   ccp3_opt_loops \
 		   ccp3_adaptive_loops \
+		   eaccp3_loops \
+		   ipccp3_loops \
+		   clusteranalysis \
+		   ecccp3_loops \
+		   reorder \
+		   vvvv_contraction \
 		   ccp3_full_correction
-#MODULES := cc_loops \
-#		   cc_loops2 \
-#		   crcc_loops \
-#		   cripcc_loops \
-#		   creacc_loops \
-#		   ccsdpt_loops \
-#		   crcc24_loops \
-#		   crcc24_opt_loops \
-#		   cc3_loops \
-#		   hbar_cc3 \
-#		   mbgf_loops \
-#		   mbpt_loops \
-#		   ccsdt_p_loops \
-#		   eomccsdt_p_loops \
-#		   leftccsdt_p_loops \
-#		   leftccsdt_p_intermediates \
-#		   eaeom3_p_loops \
-#		   eaeom3_p_intermediates \
-#		   ipeom3_p_loops \
-#		   ipeom3_p_intermediates \
-#		   lefteaeom3_p_loops \
-#		   lefteaeom3_p_intermediates \
-#		   leftipeom3_p_loops \
-#		   leftipeom3_p_intermediates \
-#		   deaeom4_p_loops \
-#		   hbar_ccsdt_p \
-#		   eomcc_active_loops \
-#		   cc_active_loops \
-#		   cct3_loops \
-#		   cc_loops_t4 \
-#		   ccp3_loops \
-#		   ccp3_opt_loops \
-#		   ccp3_adaptive_loops \
-#		   eaccp3_loops \
-#		   ipccp3_loops \
-#		   clusteranalysis \
-#		   ecccp3_loops \
-#		   reorder \
-#		   vvvv_contraction \
-#		   ccp3_full_correction
 
 EXT_SUFFIX := $(shell python -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
 SOURCES := $(addsuffix .f90, $(MODULES))

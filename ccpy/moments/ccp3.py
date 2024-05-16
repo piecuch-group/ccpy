@@ -517,8 +517,6 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
                     H.ab.ovvo,
                     X.aa.ooov, X.aa.vovv,
                 )
-                #M3A = np.zeros((nua, nua, nua))
-                #L3A = np.zeros((nua, nua, nua))
                 dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction.ccp3_full_correction.ccp3a_ijk(
                     dA_aaa, dB_aaa, dC_aaa, dD_aaa,
                     i + 1, j + 1, k + 1,
@@ -562,8 +560,6 @@ def calc_ccp3_full_opt(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF
                     X.aa.ooov, X.aa.vovv,
                     X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
                 )
-                #M3B = np.zeros((nua, nua, nub))
-                #L3B = np.zeros((nua, nua, nub))
                 dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction.ccp3_full_correction.ccp3b_ijk(
                     dA_aab, dB_aab, dC_aab, dD_aab,
                     i + 1, j + 1, k + 1,
