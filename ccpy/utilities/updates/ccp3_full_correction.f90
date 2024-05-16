@@ -59,7 +59,7 @@ module ccp3_full_correction
                         idx = idx_table(i,j,k)
                         if (idx/=0) then
                            do idet = loc_arr(1,idx), loc_arr(2,idx)
-                              a = excits_buff(idet,1); b = excits_buff(idet,1); c = excits_buff(idet,1);
+                              a = excits_buff(idet,1); b = excits_buff(idet,2); c = excits_buff(idet,3);
                               qspace(a,b,c) = .false.
                            end do
                         end if
@@ -177,7 +177,7 @@ module ccp3_full_correction
                         idx = idx_table(i,j,k)
                         if (idx/=0) then
                            do idet = loc_arr(1,idx), loc_arr(2,idx)
-                              a = excits_buff(idet,1); b = excits_buff(idet,1); c = excits_buff(idet,1);
+                              a = excits_buff(idet,1); b = excits_buff(idet,2); c = excits_buff(idet,3);
                               qspace(a,b,c) = .false.
                            end do
                         end if
