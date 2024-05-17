@@ -604,11 +604,10 @@ def count_excitations_in_pspace(pspace, system):
 def get_active_triples_pspace(system, num_active=1, target_irrep=None):
     from ccpy.utilities.active_space import active_hole, active_particle
 
-    assert system.num_act_occupied_alpha == system.num_act_occupied_beta
-    assert system.num_act_unoccupied_alpha == system.num_act_unoccupied_beta
-
-    nact_o = system.num_act_occupied_alpha
-    nact_u = system.num_act_unoccupied_alpha
+    nacto_alpha = system.num_act_occupied_alpha
+    nactu_alpha = system.num_act_unoccupied_alpha
+    nacto_beta = system.num_act_occupied_beta
+    nactu_beta = system.num_act_unoccupied_beta
 
     if target_irrep is None:
         sym_target = -1
@@ -616,16 +615,16 @@ def get_active_triples_pspace(system, num_active=1, target_irrep=None):
         sym_target = system.point_group_irrep_to_number[target_irrep]
 
     def count_active_occ_alpha(occ):
-        return sum([active_hole(i, system.noccupied_alpha, nact_o) for i in occ])
+        return sum([active_hole(i, system.noccupied_alpha, nacto_alpha) for i in occ])
 
     def count_active_occ_beta(occ):
-        return sum([active_hole(i, system.noccupied_beta, nact_o) for i in occ])
+        return sum([active_hole(i, system.noccupied_beta, nacto_beta) for i in occ])
 
     def count_active_unocc_alpha(unocc):
-        return sum([active_particle(a, nact_u) for a in unocc])
+        return sum([active_particle(a, nactu_alpha) for a in unocc])
 
     def count_active_unocc_beta(unocc):
-        return sum([active_particle(a, nact_u) for a in unocc])
+        return sum([active_particle(a, nactu_beta) for a in unocc])
 
     def checksym_aaa(i, j, k, a, b, c):
         if sym_target == -1: return True

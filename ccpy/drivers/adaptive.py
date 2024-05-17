@@ -115,7 +115,7 @@ class AdaptDriver:
            while simultaneously selecting the leading triply excited determinants and returning
            the result in an array. For the last calculation, this should not perform the
            selection steps."""
-        from ccpy.moments.ccp3 import calc_ccp3_2ba_with_selection, calc_ccp3_full_with_selection
+        from ccpy.moments.ccp3 import calc_ccp3_2ba_with_selection, calc_ccp3_with_selection
 
         if imacro < self.nmacro - 1:
             if self.options["two_body_approx"]:
@@ -131,7 +131,7 @@ class AdaptDriver:
                                                                                       min_thresh=self.options["minimum_threshold"],
                                                                                       buffer_factor=self.options["buffer_factor"])
             else:
-                self.ccpq_energy[imacro], triples_list = calc_ccp3_full_with_selection(self.driver.T,
+                self.ccpq_energy[imacro], triples_list = calc_ccp3_with_selection(self.driver.T,
                                                                                       self.driver.L[0],
                                                                                       self.t3_excitations,
                                                                                       self.driver.correlation_energy,
@@ -447,10 +447,10 @@ class AdaptEOMDriverSS:
            while simultaneously selecting the leading triply excited determinants and returning
            the result in an array. For the last calculation, this should not perform the
            selection steps."""
-        from ccpy.moments.ccp3 import calc_ccp3_full_with_selection, calc_eomccp3_full_with_selection
+        from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_eomccp3_with_selection
 
         if imacro < self.nmacro - 1:
-            self.ccpq_energy[imacro], triples_list_t = calc_ccp3_full_with_selection(self.driver.T,
+            self.ccpq_energy[imacro], triples_list_t = calc_ccp3_with_selection(self.driver.T,
                                                                                      self.driver.L[0],
                                                                                      self.t3_excitations,
                                                                                      self.driver.correlation_energy,
@@ -462,7 +462,7 @@ class AdaptEOMDriverSS:
                                                                                      min_thresh=self.options["minimum_threshold"],
                                                                                      buffer_factor=self.options["buffer_factor"])
 
-            self.eomccpq_energy[imacro], triples_list_r = calc_eomccp3_full_with_selection(self.driver.T,
+            self.eomccpq_energy[imacro], triples_list_r = calc_eomccp3_with_selection(self.driver.T,
                                                                                            self.driver.R[self.state_index],
                                                                                            self.driver.L[self.state_index],
                                                                                            self.t3_excitations,
@@ -796,11 +796,11 @@ class AdaptEOMDriver:
            while simultaneously selecting the leading triply excited determinants and returning
            the result in an array. For the last calculation, this should not perform the
            selection steps."""
-        from ccpy.moments.ccp3 import calc_ccp3_full_with_selection, calc_eomccp3_full_with_selection
+        from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_eomccp3_with_selection
 
         if imacro < self.nmacro - 1:
             # Perform ground-state correction + selection
-            self.ccpq_energy[0, imacro], triples_list_t = calc_ccp3_full_with_selection(self.driver.T,
+            self.ccpq_energy[0, imacro], triples_list_t = calc_ccp3_with_selection(self.driver.T,
                                                                                         self.driver.L[0],
                                                                                         self.t3_excitations,
                                                                                         self.driver.correlation_energy,
@@ -816,7 +816,7 @@ class AdaptEOMDriver:
                 # Perform excited-state corrections
                 if i == 0:
                     # Obtain list only for the lowest excited state
-                    self.ccpq_energy[i + 1, imacro], triples_list_r = calc_eomccp3_full_with_selection(self.driver.T,
+                    self.ccpq_energy[i + 1, imacro], triples_list_r = calc_eomccp3_with_selection(self.driver.T,
                                                                                                        self.driver.R[istate],
                                                                                                        self.driver.L[istate],
                                                                                                        self.t3_excitations,

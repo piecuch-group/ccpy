@@ -1656,7 +1656,7 @@ class Driver:
                                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                         self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
         elif method.lower() == "ccp3":
-            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3_full_opt, calc_eomccp3_full_opt
+            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3, calc_eomccp3
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
             # Ensure that both HBar is set
             assert self.flag_hbar
@@ -1671,11 +1671,11 @@ class Driver:
                     _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
                 # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
                 else:
-                    _, self.deltap3[0] = calc_ccp3_full_opt(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+                    _, self.deltap3[0] = calc_ccp3(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
             # Excited-state corrections
             else:
                 # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
-                _, self.deltap3[state_index] = calc_eomccp3_full_opt(self.T, self.R[state_index], self.L[state_index], t3_excitations, r3_excitations,
+                _, self.deltap3[state_index] = calc_eomccp3(self.T, self.R[state_index], self.L[state_index], t3_excitations, r3_excitations,
                                                                      self.r0[state_index], self.vertical_excitation_energy[state_index],
                                                                      self.correlation_energy, self.hamiltonian, self.fock,
                                                                      self.system, self.options["RHF_symmetry"])

@@ -6110,7 +6110,7 @@ module leftccsdt_p_intermediates
                   !!!! x2c(eima) <- l3c(abcijk) t3c(abeijm)
                   if (do_abb_t .and. do_abb_l) then
                   ! copy t3c into buffer
-                  allocate(amps_buff(n3aab_t),excits_buff(n3abb_t,6))
+                  allocate(amps_buff(n3abb_t),excits_buff(n3abb_t,6))
                   amps_buff(:) = t3c_amps(:)
                   excits_buff(:,:) = t3c_excits(:,:)
                   ! allocate new sorting arrays
