@@ -388,7 +388,6 @@ class Driver:
         n3bbb_r = r3_excitations["bbb"].shape[0]
         excitation_count = [[n3aaa_r, n3aab_r, n3abb_r, n3bbb_r]]
 
-
         # If RHF, copy aab into abb and aaa in bbb
         if self.options["RHF_symmetry"]:
             assert (n3aaa_r == n3bbb_r)
@@ -415,9 +414,6 @@ class Driver:
             #                                       pspace_sizes=excitation_count)
             # self.R[state_index].unflatten(r_old.flatten())
             # r3 is getting scrambled somehow... do this to avoid issues
-            # self.R[state_index].aa *= 0.0
-            # self.R[state_index].ab *= 0.0
-            # self.R[state_index].bb *= 0.0
             self.R[state_index].aaa *= 0.0
             self.R[state_index].aab *= 0.0
             self.R[state_index].abb *= 0.0
@@ -522,10 +518,6 @@ class Driver:
                 print("   EOMCC calculation for root %d started on" % istate, get_timestamp())
                 print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
                 print_ee_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
-                # self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_nonlinear_diis(HR_function, update_function, B0[:, j],
-                #                                                                                              self.R[istate], dR, self.vertical_excitation_energy[istate],
-                #                                                                                              self.T, self.hamiltonian, self.cc3_intermediates, self.fock,
-                #                                                                                              self.system, self.options)
                 self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_nonlinear_diis(HR_function, update_function,
                                                                                                              self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
                                                                                                              self.R[istate], dR, self.vertical_excitation_energy[istate],
@@ -542,9 +534,6 @@ class Driver:
                 print("   EOMCC calculation for root %d started on" % istate, get_timestamp())
                 print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
                 print_ee_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
-                # self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function, update_function, B0[:, j],
-                #                                                                                        self.R[istate], dR, self.vertical_excitation_energy[istate],
-                #                                                                                        self.T, self.hamiltonian, self.system, self.options)
                 self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function, update_function,
                                                                                                        self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
                                                                                                        self.R[istate], dR, self.vertical_excitation_energy[istate],

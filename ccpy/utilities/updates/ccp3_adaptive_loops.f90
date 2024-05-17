@@ -193,7 +193,6 @@ module ccp3_adaptive_loops
 
               end subroutine ccp3a_2ba_with_selection_opt
               
-              
               subroutine ccp3b_2ba_with_selection_opt(deltaA,deltaB,deltaC,deltaD,&
                               moments,&
                               triples_list,&
@@ -1238,7 +1237,7 @@ module ccp3_adaptive_loops
                            if (abs(LM/(omega+D)) <= min_thresh) cycle
 
                            if (nfill <= buf_fact*num_add) then
-                              if (abs(LM/D) >= minval) then
+                              if (abs(LM/(omega+D)) >= minval) then
                                  triples_list(nfill,:) = (/2*a-1, 2*b, 2*c, 2*i-1, 2*j, 2*k/)
                                  moments(nfill) = LM/(omega+D)
                                  nfill = nfill + 1
@@ -1359,6 +1358,7 @@ module ccp3_adaptive_loops
 
                            ! simply skip over triples that contribute below min_thresh
                            if (abs(LM/(omega+D)) <= min_thresh) cycle
+
                            if (nfill <= buf_fact*num_add) then
                               if (abs(LM/(omega+D)) >= minval) then
                                  triples_list(nfill,:) = (/2*a, 2*b, 2*c, 2*i, 2*j, 2*k/)

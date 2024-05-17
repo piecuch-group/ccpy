@@ -982,3 +982,12 @@ def get_active_3h2p_pspace(system, num_active=1, target_irrep=None):
     minutes, seconds = divmod(toc - tic, 60)
     print(f"   Completed in {minutes:.1f}m {seconds:.1f}s\n")
     return excitations
+
+def overlap_p_spaces(excits1, excits2):
+    # if excits1 is an empty list (initial step of recusive procedure), then return excits 2 as the overlapped
+    if isinstance(excits1, list):
+        if not excits1:
+            return excits2
+    # otherwise, concatenate the excitation arrays and return the unique rows
+    return np.unique(np.vstack((excits1, excits2)), axis=0)
+

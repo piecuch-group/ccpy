@@ -662,10 +662,12 @@ class AdaptEOMDriverSS:
 
 class AdaptEOMDriver:
 
-    def __init__(self, driver, state_index, roots_per_irrep, multiplicity, nacto=0, nactu=0, percentage=None):
+    def __init__(self, driver, state_index, roots_per_irrep, multiplicity, nacto=0, nactu=0, percentage=None, unify=True):
         self.driver = driver
         self.state_index = state_index # list of guess roots to solve for
         self.nstates = len(self.state_index) + 1
+        # option to unify the excited-state P spaces or not
+        self.unify = unify
         # inputs used to form the one-time EOMCCSd initial guess
         self.roots_per_irrep = roots_per_irrep
         self.multiplicity = multiplicity
@@ -782,8 +784,16 @@ class AdaptEOMDriver:
         self.driver.options["RHF_symmetry"] = self.RHF_excited
         if imacro == 0:
             self.driver.run_guess(method="cisd", multiplicity=self.multiplicity, roots_per_irrep=self.roots_per_irrep, nact_occupied=self.nacto, nact_unoccupied=self.nactu)
+
+        if self.driver.options["davidson_solver"] == "multiroot":
+            print(self.state_index)
+            self.driver.run_eomccp(method="eomccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
+        else:
+            for i, istate in enumerate(self.state_index):
+                self.driver.run_eomccp(method="eomccsdt_p", state_index=istate, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
+
         for i, istate in enumerate(self.state_index):
-            self.driver.run_eomccp(method="eomccsdt_p", state_index=istate, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
+            #self.driver.run_eomccp(method="eomccsdt_p", state_index=istate, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
             self.driver.run_lefteomccp(method="left_ccsdt_p", state_index=istate, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
             # record energies
             self.ccp_energy[i + 1, imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.vertical_excitation_energy[istate]
@@ -856,6 +866,67 @@ class AdaptEOMDriver:
 
         # if excited states shares ground-state symmetry, then copy over T list to R list
         if self.driver.system.reference_symmetry == self.state_irrep and self.driver.system.multiplicity == self.multiplicity:
+            triples_list_r = triples_list_t.copy()
+
+        return triples_list_t, triples_list_r
+
+    def run_ccp3_with_overlap(self, imacro):
+        """Runs the CC(P;3) correction using either the CR-CC(2,3)- or CCSD(T)-like approach,
+           while simultaneously selecting the leading triply excited determinants and returning
+           the result in an array. For the last calculation, this should not perform the
+           selection steps."""
+        from ccpy.moments.ccp3 import calc_ccp3_with_selection, calc_eomccp3_with_selection
+        from ccpy.utilities.pspace import overlap_p_spaces
+
+        if imacro < self.nmacro - 1:
+            # Perform ground-state correction + selection
+            self.ccpq_energy[0, imacro], triples_list_t = calc_ccp3_with_selection(self.driver.T,
+                                                                                        self.driver.L[0],
+                                                                                        self.t3_excitations,
+                                                                                        self.driver.correlation_energy,
+                                                                                        self.driver.hamiltonian,
+                                                                                        self.bare_hamiltonian,
+                                                                                        self.driver.system,
+                                                                                        self.num_dets_to_add_t[imacro],
+                                                                                        use_RHF=self.RHF_ground,
+                                                                                        min_thresh=self.options["minimum_threshold"],
+                                                                                        buffer_factor=self.options["buffer_factor"])
+            # Create global overlapped excited-state P space excitation list
+            triples_list_r = []
+            # Perform excited-state corrections and selection
+            for i, istate in enumerate(self.state_index):
+                self.ccpq_energy[i + 1, imacro], triples_list_r_istate = calc_eomccp3_with_selection(self.driver.T,
+                                                                                                     self.driver.R[istate],
+                                                                                                     self.driver.L[istate],
+                                                                                                     self.t3_excitations,
+                                                                                                     self.r3_excitations,
+                                                                                                     self.driver.r0[istate],
+                                                                                                     self.driver.vertical_excitation_energy[istate],
+                                                                                                     self.driver.correlation_energy,
+                                                                                                     self.driver.hamiltonian,
+                                                                                                     self.bare_hamiltonian,
+                                                                                                     self.driver.system,
+                                                                                                     self.num_dets_to_add_r[imacro],
+                                                                                                     use_RHF=self.RHF_excited,
+                                                                                                     min_thresh=self.options["minimum_threshold"],
+                                                                                                     buffer_factor=self.options["buffer_factor"])
+                triples_list_r = overlap_p_spaces(triples_list_r, triples_list_r_istate)
+
+        else:
+            triples_list_t = []
+            triples_list_r = []
+            self.driver.run_ccp3(method="ccp3", state_index=0, two_body_approx=False, t3_excitations=self.t3_excitations)
+            self.ccpq_energy[0, imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltap3[0]["D"]
+            for i, istate in enumerate(self.state_index):
+                self.driver.run_ccp3(method="ccp3", state_index=istate, two_body_approx=False, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
+                self.ccpq_energy[i + 1, imacro] = (self.driver.system.reference_energy
+                                                   +self.driver.correlation_energy
+                                                   +self.driver.vertical_excitation_energy[istate]
+                                                   +self.driver.deltap3[istate]["D"])
+
+        # if excited states shares ground-state symmetry, then overlap R with T
+        if self.driver.system.reference_symmetry == self.state_irrep and self.driver.system.multiplicity == self.multiplicity:
+            triples_list_t = overlap_p_spaces(triples_list_t, triples_list_r)
             triples_list_r = triples_list_t.copy()
 
         return triples_list_t, triples_list_r
@@ -953,7 +1024,10 @@ class AdaptEOMDriver:
 
             # Step 3: Moment correction + adaptive selection
             x1 = time.perf_counter()
-            selection_arr_t, selection_arr_r = self.run_ccp3(imacro)
+            if self.unify:
+                selection_arr_t, selection_arr_r = self.run_ccp3_with_overlap(imacro)
+            else:
+                selection_arr_t, selection_arr_r = self.run_ccp3(imacro)
             x2 = time.perf_counter()
             t_selection_and_ccp3 = x2 - x1
 
