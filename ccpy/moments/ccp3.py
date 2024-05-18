@@ -982,7 +982,6 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
     dB_aab = 0.0
     dC_aab = 0.0
     dD_aab = 0.0
-    #EOMM3B = build_HR_3B(R_unravel, T_unravel, H, XR)
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
@@ -1066,7 +1065,6 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
         dB_abb = 0.0
         dC_abb = 0.0
         dD_abb = 0.0
-        #EOMM3C = build_HR_3C(R_unravel, T_unravel, H, XR)
         for i in range(system.noccupied_alpha):
             for j in range(system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
@@ -1144,7 +1142,6 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
         dB_bbb = 0.0
         dC_bbb = 0.0
         dD_bbb = 0.0
-        #EOMM3D = build_HR_3D(R_unravel, T_unravel, H, XR)
         for i in range(system.noccupied_beta):
             for j in range(i + 1, system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):

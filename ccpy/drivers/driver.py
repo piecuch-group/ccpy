@@ -1,6 +1,8 @@
 """Main calculation driver module of CCpy."""
-import numpy as np
+from typing import List, Tuple, Dict
 from importlib import import_module
+
+import numpy as np
 import ccpy.cc
 import ccpy.hbar
 import ccpy.left
@@ -48,6 +50,14 @@ class Driver:
                    )
 
     def __init__(self, system, hamiltonian, max_number_states=50):
+        """
+
+        Parameters
+        ----------
+        system : System
+        hamiltonian : Integral
+        max_number_states : int
+        """
         self.system = system
         self.hamiltonian = hamiltonian
         self.flag_hbar = False
@@ -104,6 +114,12 @@ class Driver:
         self.cc3_intermediates = None
 
     def set_operator_params(self, method):
+        """
+
+        Parameters
+        ----------
+        method :
+        """
         if method.lower() in ["ccs"]:
             self.operator_params["order"] = 1
             self.operator_params["number_particles"] = 1
@@ -185,13 +201,21 @@ class Driver:
             self.Ms = -1
             
     def print_options(self):
+        """Prints the all (key, value) pairs contained in the options dictionary.
+        """
         print("   ------------------------------------------")
         for option_key, option_value in self.options.items():
             print("  ", option_key, "=", option_value)
         print("   ------------------------------------------\n")
 
-    def run_mbpt(self, method):
+    def run_mbpt(self, method: str):
+        """Compute the Moller-Plesset energy correction the Hartree-Fock energy.
 
+        Parameters
+        ----------
+        method : str
+            Name of the MPn method, such as "mp2" or "mp3" that will be run.
+        """
         if method.lower() == "mp2":
             from ccpy.mbpt.mbpt import calc_mp2
             self.correlation_energy = calc_mp2(self.system, self.hamiltonian)
@@ -204,7 +228,16 @@ class Driver:
         else:
             raise NotImplementedError("MBPT method {} not implemented".format(method.lower()))
 
-    def run_cc(self, method, acparray=None):
+    def run_cc(self, method: str, acparray=None):
+        """Run the ground-state coupled-cluster (CC) calculation for a many-body system.
+
+        Parameters
+        ----------
+        method : str
+            Name of the ground-state CC method that will be run.
+        acparray : List[float]
+            List containing the ACP scaling factors for the 5 T2**2 diagrams
+        """
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.cc.MODULES:
             raise NotImplementedError(
@@ -251,6 +284,18 @@ class Driver:
         print("   CC calculation ended on", get_timestamp())
 
     def run_ccp(self, method, t3_excitations, acparray=None):
+        """
+
+        Parameters
+        ----------
+        method : str
+        t3_excitations : Dict[np.ndarray]
+            Dictionary with the keys 'aaa', 'aab', 'abb', and 'bbb', corresponding to distinct T3 spincases, which are
+            asociated with values given by the 2D Numpy array containing the triple excitations [a, b, c, i, j, k] belonging
+            to the P space.
+        acparray : List[float]
+            List containing the ACP scaling factors for the 5 T2**2 diagrams
+        """
         # check if requested CC calculation is implemented in modules
         if method.lower() not in ccpy.cc.MODULES:
             raise NotImplementedError(
@@ -1712,15 +1757,13 @@ class Driver:
                                                     self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                     self.system, self.options["RHF_symmetry"])
         if method.lower() == "eaccp3":
-            from ccpy.moments.eaccp3 import calc_eaccp3_full
+            from ccpy.moments.eaccp3 import calc_eaccp3
             # Ensure that HBar is set upon entry
             assert self.flag_hbar
             # Perform 3p-2h correction for a specific state index
-            #if target_sym != -1:
-            #    target_sym = self.system.point_group_irrep_to_number[target_sym]
-            _, self.deltap3[state_index] = calc_eaccp3_full(self.T, self.R[state_index], self.L[state_index], r3_excitations,
-                                                            self.vertical_excitation_energy[state_index], self.correlation_energy,
-                                                            self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+            _, self.deltap3[state_index] = calc_eaccp3(self.T, self.R[state_index], self.L[state_index], r3_excitations,
+                                                       self.vertical_excitation_energy[state_index], self.correlation_energy,
+                                                       self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
 
     def run_ccp4(self, method, state_index=[0], two_body_approx=True, t4_excitations=None):
 

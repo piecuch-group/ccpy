@@ -786,14 +786,12 @@ class AdaptEOMDriver:
             self.driver.run_guess(method="cisd", multiplicity=self.multiplicity, roots_per_irrep=self.roots_per_irrep, nact_occupied=self.nacto, nact_unoccupied=self.nactu)
 
         if self.driver.options["davidson_solver"] == "multiroot":
-            print(self.state_index)
             self.driver.run_eomccp(method="eomccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
         else:
             for i, istate in enumerate(self.state_index):
                 self.driver.run_eomccp(method="eomccsdt_p", state_index=istate, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
 
         for i, istate in enumerate(self.state_index):
-            #self.driver.run_eomccp(method="eomccsdt_p", state_index=istate, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
             self.driver.run_lefteomccp(method="left_ccsdt_p", state_index=istate, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
             # record energies
             self.ccp_energy[i + 1, imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.vertical_excitation_energy[istate]

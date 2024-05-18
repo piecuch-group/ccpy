@@ -38,7 +38,8 @@ MODULES := cc_loops \
 		   ecccp3_loops \
 		   reorder \
 		   vvvv_contraction \
-		   ccp3_full_correction
+		   ccp3_full_correction \
+		   eaccp3_correction
 
 EXT_SUFFIX := $(shell python -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
 SOURCES := $(addsuffix .f90, $(MODULES))

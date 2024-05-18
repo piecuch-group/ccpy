@@ -51,7 +51,7 @@ def update(T, dT, H, X, shift, flag_RHF, system):
 
 def update_t1a(T, dT, H, X, shift):
     """
-    Update t1a amplitudes by calculating the projection <ia|(H_N e^(T1+T2+T3))_C|0>.
+    Update t1a amplitudes by calculating the projection <ia|(H_N exp(T1+T2+T3))_C|0>.
     """
     dT.a = -np.einsum("mi,am->ai", X.a.oo, T.a, optimize=True)
     dT.a += np.einsum("ae,ei->ai", X.a.vv, T.a, optimize=True)
@@ -78,7 +78,7 @@ def update_t1a(T, dT, H, X, shift):
 
 def update_t1b(T, dT, H, X, shift):
     """
-    Update t1b amplitudes by calculating the projection <i~a~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t1b amplitudes by calculating the projection <i~a~|(H_N exp(T1+T2+T3))_C|0>.
     """
     dT.b = -np.einsum("mi,am->ai", X.b.oo, T.b, optimize=True)
     dT.b += np.einsum("ae,ei->ai", X.b.vv, T.b, optimize=True)
@@ -105,7 +105,7 @@ def update_t1b(T, dT, H, X, shift):
 
 def update_t2a(T, dT, H, H0, shift):
     """
-    Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2+T3))_C|0>.
+    Update t2a amplitudes by calculating the projection <ijab|(H_N exp(T1+T2+T3))_C|0>.
     """
     # intermediates
     I2A_voov = H.aa.voov + (
@@ -140,7 +140,7 @@ def update_t2a(T, dT, H, H0, shift):
 
 def update_t2b(T, dT, H, H0, shift):
     """
-    Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t2b amplitudes by calculating the projection <ij~ab~|(H_N exp(T1+T2+T3))_C|0>.
     """
     # intermediates
     I2A_voov = H.aa.voov + (
@@ -192,7 +192,7 @@ def update_t2b(T, dT, H, H0, shift):
 
 def update_t2c(T, dT, H, H0, shift):
     """
-    Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N exp(T1+T2+T3))_C|0>.
     """
     # intermediates
     I2C_oooo = H.bb.oooo + 0.5 * np.einsum("mnef,efij->mnij", H0.bb.oovv, T.bb, optimize=True)
@@ -228,7 +228,7 @@ def update_t2c(T, dT, H, H0, shift):
 
 def update_t3a(T, dT, H, H0, shift):
     """
-    Update t3a amplitudes by calculating the projection <ijkabc|(H_N e^(T1+T2+T3))_C|0>.
+    Update t3a amplitudes by calculating the projection <ijkabc|(H_N exp(T1+T2+T3))_C|0>.
     """
     # <ijkabc | H(2) | 0 > + (VT3)_C intermediates
     I2A_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.aa.oovv, T.aaa, optimize=True)
@@ -260,7 +260,7 @@ def update_t3a(T, dT, H, H0, shift):
 
 def update_t3b(T, dT, H, H0, shift):
     """
-    Update t3b amplitudes by calculating the projection <ijk~abc~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t3b amplitudes by calculating the projection <ijk~abc~|(H_N exp(T1+T2+T3))_C|0>.
     """
     # <ijk~abc~ | H(2) | 0 > + (VT3)_C intermediates
     I2A_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.aa.oovv, T.aaa, optimize=True)
@@ -325,7 +325,7 @@ def update_t3b(T, dT, H, H0, shift):
 
 def update_t3c(T, dT, H, H0, shift):
     """
-    Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N exp(T1+T2+T3))_C|0>.
     """
     # <ij~k~ab~c~ | H(2) | 0 > + (VT3)_C intermediates
     I2B_vvvo = -0.5 * np.einsum("mnef,afbmnj->abej", H0.aa.oovv, T.aab, optimize=True)
@@ -390,7 +390,7 @@ def update_t3c(T, dT, H, H0, shift):
 
 def update_t3d(T, dT, H, H0, shift):
     """
-    Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N exp(T1+T2+T3))_C|0>.
     """
     #  <i~j~k~a~b~c~ | H(2) | 0 > + (VT3)_C intermediates
     I2C_vvov = -0.5 * np.einsum("mnef,abfimn->abie", H0.bb.oovv, T.bbb, optimize=True)
