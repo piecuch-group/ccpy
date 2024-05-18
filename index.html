@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CCpy: A coupled-cluster package written in Python &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="computational_options.html">Computational Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sample_calculations.html">Sample Calculations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">CCpy: A coupled-cluster package written in Python</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ccpy-a-coupled-cluster-package-written-in-python">
+<h1>CCpy: A coupled-cluster package written in Python<a class="headerlink" href="#ccpy-a-coupled-cluster-package-written-in-python" title="Link to this heading"></a></h1>
+<p>CCpy is a research-level Python package for performing non-relativistic electronic structure
+calculations for molecular systems using methods based on the ground-state coupled-cluster
+(CC) theory and its equation-of-motion (EOM) extension to electronic excited, attached,
+and ionized states. As a design philosophy, CCpy favors simplicity over efficiency, and this
+is reflected in the usage of computational routines that are transparent enough so that they
+can be easily used, modified, and extended, while still maintaining reasonable efficiency.
+To this end, CCpy employs a hybrid Python-Fortran programming approach made possible with the
+<code class="code docutils literal notranslate"><span class="pre">f2py</span></code> package, which allows one to compile Fortran code into shared object libraries
+containing subroutines that are callable from Python and interoperable with Numpy arrays.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#using-the-pyscf-interface">Using the PySCF Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#using-the-gamess-interface">Using the GAMESS Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="computational_options.html">Computational Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#coupled-cluster-options">Coupled-Cluster Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ground-state-calculations">Ground-State Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#excited-state-calculations">Excited-State Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#electron-ionizing-calculations">Electron-Ionizing Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#electron-attaching-calculations">Electron-Attaching Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#spin-flip-calculations">Spin-Flip Calculations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#cc-p-q-methodologies">CC(<em>P</em> ;<em>Q</em>) Methodologies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#id3">Ground-State Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#id4">Excited-State Calculations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#externally-corrected-coupled-cluster">Externally Corrected Coupled-Cluster</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#cipsi-based-externally-corrected-approaches">CIPSI-based Externally Corrected Approaches</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample_calculations.html">Sample Calculations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample_calculations.html#running-a-cr-cc-2-3-calculation">Running a CR-CC(2,3) Calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample_calculations.html#running-a-cc-t-3-calculation">Running a CC(t;3) Calculation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
