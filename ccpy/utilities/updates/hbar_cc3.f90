@@ -1,9 +1,9 @@
 module hbar_cc3
-	
-	implicit none
-	
-	contains
-			subroutine build_hbar(h2a_vooo,h2a_vvov,&
+
+  implicit none
+
+  contains
+  subroutine build_hbar(h2a_vooo,h2a_vvov,&
                                      h2b_vooo,h2b_ovoo,h2b_vvov,h2b_vvvo,&
                                      h2c_vooo,h2c_vvov,&
                                      t2a,t2b,t2c,&
