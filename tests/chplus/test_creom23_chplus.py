@@ -15,7 +15,7 @@ Reference: Chem. Phys. Lett. 154, 380 (1989) [original Olsen paper with basis se
 
 from pathlib import Path
 import numpy as np
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 

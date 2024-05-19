@@ -1,8 +1,6 @@
 import numpy as np
 from pyscf import gto, scf
-
-from ccpy.drivers.driver import Driver
-from ccpy.utilities.pspace import get_active_3p2h_pspace
+from ccpy import Driver, get_active_3p2h_pspace
 
 def test_eaeom3a_allyl():
 

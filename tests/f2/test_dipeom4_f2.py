@@ -1,6 +1,6 @@
 import numpy as np
 from pyscf import gto, scf
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 def test_dipeom4_f2():
 

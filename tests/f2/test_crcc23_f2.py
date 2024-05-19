@@ -5,7 +5,7 @@ Reference: Chem. Phys. Lett. 344, 165 (2001)."""
 
 import numpy as np
 from pyscf import scf, gto
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 def test_crcc23_f2():
     geometry = [["F", (0.0, 0.0, -2.66816)],

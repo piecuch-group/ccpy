@@ -3,8 +3,7 @@ open-shell CH molecule by attaching an electron to closed-shell CH+."""
 
 from pathlib import Path
 import numpy as np
-from ccpy.drivers.driver import Driver
-from ccpy.utilities.pspace import get_active_3p2h_pspace
+from ccpy import Driver, get_active_3p2h_pspace
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 

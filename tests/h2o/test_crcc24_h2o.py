@@ -5,7 +5,7 @@ Reference: Mol. Phys, 115, 2860 (2017)."""
 
 import numpy as np
 from pyscf import scf, gto
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 def test_crcc24_h2o():
     # 2 Re

@@ -5,7 +5,7 @@ Reference: J. Chem. Phys. 104, 8007 (1996)."""
 
 import numpy as np
 from pyscf import scf, gto
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 def test_mpn_h2o():
     # 2 Re

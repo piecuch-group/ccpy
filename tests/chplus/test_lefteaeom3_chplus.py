@@ -3,8 +3,7 @@ open-shell CH molecule by attaching an electron to closed-shell CH+."""
 
 from pathlib import Path
 import numpy as np
-from pyscf import gto, scf
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 

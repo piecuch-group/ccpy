@@ -1,7 +1,7 @@
 
 import numpy as np
 from pyscf import scf, gto
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 def test_deaeom3_h2o():
     geometry = [["O", (0.0, 0.0, -0.0180)],

@@ -2,7 +2,7 @@
 open-shell CH molecule by attaching an electron to closed-shell CH+."""
 
 import numpy as np
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 from pyscf import gto, scf
 
 def test_eaeom2_chplus():

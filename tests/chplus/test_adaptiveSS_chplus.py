@@ -1,7 +1,6 @@
 from pathlib import Path
 import numpy as np
-from ccpy.drivers.driver import Driver
-from ccpy.drivers.adaptive import AdaptEOMDriverSS
+from ccpy import Driver, AdaptEOMDriverSS
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 

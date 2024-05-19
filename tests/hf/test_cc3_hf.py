@@ -3,7 +3,7 @@ separation R = 1.6 angstrom."""
 
 import numpy as np
 from pyscf import scf, gto
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 def test_cc3_hf():
     geometry = [["H", (0.0, 0.0, -0.8)], ["F", (0.0, 0.0, 0.8)]]

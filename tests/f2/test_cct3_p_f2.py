@@ -5,8 +5,7 @@ Reference: Chem. Phys. Lett. 344, 165 (2001)."""
 
 import numpy as np
 from pyscf import scf, gto
-from ccpy.drivers.driver import Driver
-from ccpy.utilities.pspace import get_active_triples_pspace
+from ccpy import Driver, get_active_triples_pspace
 
 def test_cct3_f2():
     geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]

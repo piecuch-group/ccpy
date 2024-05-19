@@ -10,7 +10,7 @@ Reference: Mol. Phys. 120, e2057365 (2022)."""
 
 import numpy as np
 from pyscf import gto, scf
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 def h6_geometry(r):
     theta = [2.0*np.pi/6 * n for n in range(6)]

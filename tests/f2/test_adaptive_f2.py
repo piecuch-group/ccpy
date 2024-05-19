@@ -4,8 +4,7 @@ Cartesian orbitals are used for the d orbitals in the cc-pVTZ basis.
 Reference: Chem. Phys. Lett. 344, 165 (2001)."""
 import numpy as np
 from pyscf import scf, gto
-from ccpy.drivers.driver import Driver
-from ccpy.drivers.adaptive import AdaptDriver
+from ccpy import Driver, AdaptDriver
 
 def test_adaptive_f2():
     geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]

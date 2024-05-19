@@ -3,7 +3,7 @@ by attaching two electrons to the doubly ionized F2^(2+) cation."""
 
 import numpy as np
 from pyscf import gto, scf
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 def test_deaeom3_f2():
 

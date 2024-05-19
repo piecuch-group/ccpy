@@ -3,10 +3,11 @@ H2O molecule with R(OH) = 2Re, where Re = 1.84345 bohr, described
 using the Dunning DZ basis set.
 Reference: Mol. Phys, 115, 2860 (2017)."""
 
-import numpy as np
 from pyscf import scf, gto
-from ccpy.drivers.driver import Driver
-from ccpy.extrapolation.goodson_extrapolation import rational_pade_approximant, quadratic_pade_approximant, continued_fraction_approximant
+from ccpy import Driver
+from ccpy.extrapolation.goodson_extrapolation import (rational_pade_approximant,
+                                                      quadratic_pade_approximant,
+                                                      continued_fraction_approximant)
 
 def test_extrapolation_h2o():
     geometry = [["O", (0.0, 0.0, -0.0180)],

@@ -7,7 +7,7 @@ Reference: J. Chem. Phys. 115, 643 (2001)."""
 
 from pathlib import Path
 import numpy as np
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 

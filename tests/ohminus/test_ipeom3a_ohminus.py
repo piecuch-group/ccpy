@@ -8,8 +8,7 @@ Reference: J. Chem. Phys. 123, 134113 (2005)
 
 import numpy as np
 from pyscf import scf, gto
-from ccpy.drivers.driver import Driver
-from ccpy.utilities.pspace import get_active_3h2p_pspace
+from ccpy import Driver, get_active_3h2p_pspace
 
 def test_ipeom3a_ohminus():
     mol = gto.M(atom='''O  0.0  0.0  -0.96966/2

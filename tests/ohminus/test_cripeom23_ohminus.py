@@ -7,7 +7,7 @@ Reference: J. Chem. Phys. 123, 134113 (2005)
 
 import numpy as np
 from pyscf import scf, gto
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 def test_leftipeom2_ohminus():
     mol = gto.M(atom='''O  0.0  0.0  -0.96966/2

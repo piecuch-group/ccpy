@@ -1,6 +1,6 @@
 import numpy as np
 from pathlib import Path
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 

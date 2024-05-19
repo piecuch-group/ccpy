@@ -10,7 +10,7 @@ comprises of 3 s orbitals on H and 3 s and 3 p on O.
 
 from pathlib import Path
 import numpy as np
-from ccpy.drivers.driver import Driver
+from ccpy import Driver
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 

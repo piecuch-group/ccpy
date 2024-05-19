@@ -10,8 +10,7 @@ Reference: Mol. Phys. 120, e2057365 (2022)."""
 
 import numpy as np
 from pyscf import gto, scf
-from ccpy.drivers.driver import Driver
-from ccpy.utilities.pspace import get_active_triples_pspace
+from ccpy import Driver, get_active_triples_pspace
 
 def h6_geometry(r):
     theta = [2.0*np.pi/6 * n for n in range(6)]
