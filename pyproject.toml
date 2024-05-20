@@ -78,6 +78,10 @@ source = "https://github.com/piecuch-group/ccpy"
 download = "https://github.com/piecuch-group/ccpy/releases"
 tracker = "https://github.com/piecuch-group/ccpy/issues"
 
+[tool.pytest.ini_options]
+markers = [
+  "short: marks tests as short (deselect with '-m \"not short\"')",
+]
 
 [tool.cibuildwheel]
 skip = "cp37-* cp38-*"
