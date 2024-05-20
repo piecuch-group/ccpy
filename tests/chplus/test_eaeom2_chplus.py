@@ -1,12 +1,14 @@
 """EA-EOMCCSD(2h-1p) computation used to describe the spectrum of the
 open-shell CH molecule by attaching an electron to closed-shell CH+."""
 
+import pytest
 from pathlib import Path
 import numpy as np
 from ccpy import Driver
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
+@pytest.mark.short
 def test_eaeom2_chplus():
     driver = Driver.from_gamess(
         logfile=TEST_DATA_DIR + "/chplus/chplus.log",

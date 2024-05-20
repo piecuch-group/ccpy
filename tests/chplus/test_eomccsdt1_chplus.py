@@ -5,12 +5,14 @@ and the three lowest-energy unoccupied orbitals (1 pi_x = 1 pi,
 1 pi_y = 2 pi, and 4 sigma).
 Reference: J. Chem. Phys. 115, 643 (2001)."""
 
+import pytest
 from pathlib import Path
 import numpy as np
 from ccpy import Driver
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
+@pytest.mark.short
 def test_eomccsdt1_chplus():
     driver = Driver.from_gamess(
         logfile=TEST_DATA_DIR + "/chplus/chplus.log",

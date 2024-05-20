@@ -60,7 +60,7 @@ old-updates: ## Compile all fortran modules
 
 dev-install: ## Create venv, compile, and install ccpy
 	python3 -m venv ../ccpyvenv
-	source env.sh && ython -m pip install --no-build-isolation --editable .
+	source env.sh && python -m pip install --no-build-isolation --editable .
 .PHONY: dev-install
 
 check-dist: ## Check distribution
