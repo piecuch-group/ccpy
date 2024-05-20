@@ -1,6 +1,15 @@
-"""Module containing functions to calculate the vertical excitation
-energies and linear excitation amplitudes for excited states using
-the equation-of-motion (EOM) CC3 approach."""
+"""
+Module with functions to perform the excited-state CC3 calculation to obtain 
+right eigenvectors and corresponding eigenvalues, representing the vertical 
+excitation energies, by diagonalization of the CC3 Jacobian using the 
+equation-of-motion (EOM) formalism. This approach is equivalent to the 
+traditional linear response framework for excitation energies.
+
+References:
+    [1] J. Chem. Phys. 106, 1808 (1997); doi: 10.1063/1.473322 [CC3 method]
+    [2] J. Chem. Phys. 103, 7429–7441 (1995); doi: 10.1063/1.470315 [CC3 response & excited states]
+    [3] J. Chem. Phys. 122, 054110 (2005); doi: 10.1063/1.1835953 [CC3 for open shells]
+"""
 import numpy as np
 from ccpy.eomcc.eomcc3_intermediates import get_HR1_intermediates, get_eomccsd_intermediates
 from ccpy.utilities.updates import cc3_loops
@@ -143,7 +152,7 @@ def build_HR_2C(R, T, H, X):
     X2C -= 0.5 * np.einsum("mj,abim->abij", X.b.oo, T.bb, optimize=True)  # A(ij)
     return X2C
 
-def compute_r3a(R, T, H1, HR1, omega, fock):
+def _compute_r3a(R, T, H1, HR1, omega, fock):
     # <ijkabc| (H(1) * R2)_C | 0 >
     X3A = 0.25 * np.einsum("baje,ecik->abcijk", H1.aa.vvov, R.aa, optimize=True) #
     X3A -= 0.25 * np.einsum("bmji,acmk->abcijk", H1.aa.vooo, R.aa, optimize=True)
@@ -152,7 +161,7 @@ def compute_r3a(R, T, H1, HR1, omega, fock):
     X3A -= 0.25 * np.einsum("bmji,acmk->abcijk", HR1.aa.vooo, T.aa, optimize=True)
     return cc3_loops.cc3_loops.compute_r3a(X3A, omega, fock.a.oo, fock.a.vv)
 
-def compute_r3b(R, T, H1, HR1, omega, fock):
+def _compute_r3b(R, T, H1, HR1, omega, fock):
     # < ijk~abc~ | (H(1)*R2)_C | 0 >
     X3B = 0.5 * np.einsum("bcek,aeij->abcijk", H1.ab.vvvo, R.aa, optimize=True)
     X3B -= 0.5 * np.einsum("mcjk,abim->abcijk", H1.ab.ovoo, R.aa, optimize=True)
@@ -169,7 +178,7 @@ def compute_r3b(R, T, H1, HR1, omega, fock):
     X3B -= np.einsum("bnjk,acin->abcijk", HR1.ab.vooo, T.ab, optimize=True)
     return cc3_loops.cc3_loops.compute_r3b(X3B, omega, fock.a.oo, fock.a.vv, fock.b.oo, fock.b.vv)
 
-def compute_r3c(R, T, H1, HR1, omega, fock):
+def _compute_r3c(R, T, H1, HR1, omega, fock):
     # < ij~k~ab~c~ | (H(1)*R2)_C | 0 >
     X3C = 0.5 * np.einsum("cbke,aeij->cbakji", H1.ab.vvov, R.bb, optimize=True)
     X3C -= 0.5 * np.einsum("cmkj,abim->cbakji", H1.ab.vooo, R.bb, optimize=True)
@@ -186,7 +195,7 @@ def compute_r3c(R, T, H1, HR1, omega, fock):
     X3C -= np.einsum("nbkj,cani->cbakji", HR1.ab.ovoo, T.ab, optimize=True)
     return cc3_loops.cc3_loops.compute_r3c(X3C, omega, fock.a.oo, fock.a.vv, fock.b.oo, fock.b.vv)
 
-def compute_r3d(R, T, H1, HR1, omega, fock):
+def _compute_r3d(R, T, H1, HR1, omega, fock):
     # <i~j~k~a~b~c~| (H(1) * R2)_C | 0 >
     X3D = 0.25 * np.einsum("baje,ecik->abcijk", H1.bb.vvov, R.bb, optimize=True)
     X3D -= 0.25 * np.einsum("bmji,acmk->abcijk", H1.bb.vooo, R.bb, optimize=True)
@@ -195,12 +204,12 @@ def compute_r3d(R, T, H1, HR1, omega, fock):
     X3D -= 0.25 * np.einsum("bmji,acmk->abcijk", HR1.bb.vooo, T.bb, optimize=True)
     return cc3_loops.cc3_loops.compute_r3d(X3D, omega, fock.b.oo, fock.b.vv)
 
-def compute_t3a(T, X, fock):
+def _compute_t3a(T, X, fock):
     x3a = -0.25 * np.einsum("amij,bcmk->abcijk", X.aa.vooo, T.aa, optimize=True)
     x3a += 0.25 * np.einsum("abie,ecjk->abcijk", X.aa.vvov, T.aa, optimize=True)
     return cc3_loops.cc3_loops.compute_t3a(x3a, fock.a.oo, fock.a.vv)
 
-def compute_t3b(T, X, fock):
+def _compute_t3b(T, X, fock):
     x3b = 0.5 * np.einsum("bcek,aeij->abcijk", X.ab.vvvo, T.aa, optimize=True)
     x3b -= 0.5 * np.einsum("mcjk,abim->abcijk", X.ab.ovoo, T.aa, optimize=True)
     x3b += np.einsum("acie,bejk->abcijk", X.ab.vvov, T.ab, optimize=True)
@@ -209,7 +218,7 @@ def compute_t3b(T, X, fock):
     x3b -= 0.5 * np.einsum("amij,bcmk->abcijk", X.aa.vooo, T.ab, optimize=True)
     return cc3_loops.cc3_loops.compute_t3b(x3b, fock.a.oo, fock.a.vv, fock.b.oo, fock.b.vv)
 
-def compute_t3c(T, X, fock):
+def _compute_t3c(T, X, fock):
     x3c = 0.5 * np.einsum("abie,ecjk->abcijk", X.ab.vvov, T.bb, optimize=True)
     x3c -= 0.5 * np.einsum("amij,bcmk->abcijk", X.ab.vooo, T.bb, optimize=True)
     x3c += 0.5 * np.einsum("cbke,aeij->abcijk", X.bb.vvov, T.ab, optimize=True)
@@ -218,7 +227,7 @@ def compute_t3c(T, X, fock):
     x3c -= np.einsum("mbij,acmk->abcijk", X.ab.ovoo, T.ab, optimize=True)
     return cc3_loops.cc3_loops.compute_t3c(x3c, fock.a.oo, fock.a.vv, fock.b.oo, fock.b.vv)
 
-def compute_t3d(T, X, fock):
+def _compute_t3d(T, X, fock):
     x3d = -0.25 * np.einsum("amij,bcmk->abcijk", X.bb.vooo, T.bb, optimize=True)
     x3d += 0.25 * np.einsum("abie,ecjk->abcijk", X.bb.vvov, T.bb, optimize=True)
     return cc3_loops.cc3_loops.compute_t3d(x3d, fock.b.oo, fock.b.vv)

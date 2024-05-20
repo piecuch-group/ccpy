@@ -1,5 +1,13 @@
-"""Module with functions that perform the CC with singles and 
-doubles (CCSD) calculation for a molecular system."""
+"""
+Module with functions to perform the coupled-cluster (CC) approach with singles and 
+doubles, abbreviated as CCSD.
+
+References:
+    [1] G. D. Purvis and R. J. Bartlett, J. Chem. Phys. 76, 1910 (1982). 
+    [2] J. M. Cullen and M. C. Zerner, J. Chem. Phys. 77, 4088 (1982).
+    [3] G. E. Scuseria, A. C. Scheiner, T. J. Lee, J. E. Rice, and H. F. Schaefer, J. Chem. Phys. 86, 2881 (1987). 
+    [4] P. Piecuch and J. Paldus, Int. J. Quantum Chem. 36, 429 (1989).
+"""
 import numpy as np
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.utilities.updates import cc_loops2

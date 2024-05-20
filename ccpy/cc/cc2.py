@@ -1,6 +1,10 @@
-"""Module with functions that perform the approximate CC method 
-with singles and doubles (CC2) calculation for a molecular system."""
+"""
+Module with functions that help perform the approximate coupled-cluster (CC) method
+with singles and doubles, where the T2 operator is correct through 1st order of 
+perturbation theory, abbreviated as CC2.
+"""
 import numpy as np
+
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.utilities.updates import cc_loops2
 
