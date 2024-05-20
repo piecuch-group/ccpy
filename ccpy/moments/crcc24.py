@@ -22,7 +22,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     #### aaaa correction ####
     t1 = time.perf_counter()
     dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = aaaa_correction(T, L, H, H0, d3aaa_o, d3aaa_v)
-    # dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = crcc24_opt_loops.crcc24_opt_loops.crcc24a_opt(
+    # dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = crcc24_opt_loops.crcc24a_opt(
     #     T.aa,
     #     L.aa,
     #     H0.a.oo,
@@ -40,7 +40,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     #### aaab correction ####
     t1 = time.perf_counter()
     dA_aaab, dB_aaab, dC_aaab, dD_aaab = aaab_correction(T, L, H, H0, d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v)
-    # dA_aaab, dB_aaab, dC_aaab, dD_aaab = crcc24_loops.crcc24_loops.crcc24b(
+    # dA_aaab, dB_aaab, dC_aaab, dD_aaab = crcc24_loops.crcc24b(
     #     T.aa,
     #     T.ab,
     #     L.aa,
@@ -76,7 +76,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
     #### aabb correction ####
     t1 = time.perf_counter()
     dA_aabb, dB_aabb, dC_aabb, dD_aabb = aabb_correction(T, L, H, H0, d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v)
-    # dA_aabb, dB_aabb, dC_aabb, dD_aabb = crcc24_opt_loops.crcc24_opt_loops.crcc24c_opt(
+    # dA_aabb, dB_aabb, dC_aabb, dD_aabb = crcc24_opt_loops.crcc24c_opt(
     #     T.aa,
     #     T.ab,
     #     T.bb,
@@ -126,7 +126,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
         #### abbb correction ####
         t1 = time.perf_counter()
         dA_abbb, dB_abbb, dC_abbb, dD_abbb = abbb_correction(T, L, H, H0, d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v)
-        #dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_opt_loops.crcc24_opt_loops.crcc24d_opt(
+        #dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_opt_loops.crcc24d_opt(
         #    T.ab,
         #    T.bb,
         #    L.ab,
@@ -162,7 +162,7 @@ def calc_crcc24(T, L, corr_energy, H, H0, system, use_RHF=False):
         #### bbbb correction ####
         t1 = time.perf_counter()
         dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = bbbb_correction(T, L, H, H0, d3bbb_o, d3bbb_v)
-        # dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_opt_loops.crcc24_opt_loops.crcc24e_opt(
+        # dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_opt_loops.crcc24e_opt(
         #     T.bb,
         #     L.bb,
         #     H0.b.oo,
@@ -478,7 +478,7 @@ def aaaa_correction(T, L, H, H0, d3aaa_o, d3aaa_v):
                     x4a -= 0.25 * np.einsum("abef,fc,ed->abcd", H.aa.vvvv, T.aa[:, :, j, l], T.aa[:, :, i, k], optimize=True) # (kl)
                     x4a += 0.25 * np.einsum("abef,fc,ed->abcd", H.aa.vvvv, T.aa[:, :, i, l], T.aa[:, :, j, k], optimize=True) # (ij)(kl)
 
-                    dA, dB, dC, dD = crcc24_opt_loops.crcc24_opt_loops.crcc24a_ijkl(
+                    dA, dB, dC, dD = crcc24_opt_loops.crcc24a_ijkl(
                             i + 1, j + 1, k + 1, l + 1,
                             x4a, T.aa, L.aa,
                             H0.a.oo, H0.a.vv,
@@ -572,7 +572,7 @@ def aaab_correction(T, L, H, H0, d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3
                     x4b -= np.einsum("adef,eb,cf->abcd", H.ab.vvvv, T.aa[:, :, k, j], T.ab[:, :, i, l], optimize=True) # (ik)
                     x4b -= np.einsum("adef,eb,cf->abcd", H.ab.vvvv, T.aa[:, :, i, k], T.ab[:, :, j, l], optimize=True) # (jk)
                                     
-                    dA, dB, dC, dD = crcc24_opt_loops.crcc24_opt_loops.crcc24b_ijkl(
+                    dA, dB, dC, dD = crcc24_opt_loops.crcc24b_ijkl(
                         i + 1, j + 1, k + 1, l + 1,
                         x4b, T.aa, T.ab, L.aa, L.ab,
                         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
@@ -698,7 +698,7 @@ def aabb_correction(T, L, H, H0, d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3
                     x4c -= 0.25 * np.einsum("cdef,af,be->abcd", H.bb.vvvv, T.ab[:, :, i, k], T.ab[:, :, j, l], optimize=True) # (kl)
                     x4c += 0.25 * np.einsum("cdef,af,be->abcd", H.bb.vvvv, T.ab[:, :, j, k], T.ab[:, :, i, l], optimize=True) # (ij)(kl)
 
-                    dA, dB, dC, dD = crcc24_opt_loops.crcc24_opt_loops.crcc24c_ijkl(
+                    dA, dB, dC, dD = crcc24_opt_loops.crcc24c_ijkl(
                               i + 1, j + 1, k + 1, l + 1,
                               x4c, T.aa, T.ab, T.bb, L.aa, L.ab, L.bb,
                               H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
@@ -794,7 +794,7 @@ def abbb_correction(T, L, H, H0, d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3
                     x4d -= np.einsum("dafe,eb,fc->dabc", H.ab.vvvv, T.bb[:, :, k, j], T.ab[:, :, l, i], optimize=True)
                     x4d -= np.einsum("dafe,eb,fc->dabc", H.ab.vvvv, T.bb[:, :, i, k], T.ab[:, :, l, j], optimize=True)
 
-                    dA, dB, dC, dD = crcc24_opt_loops.crcc24_opt_loops.crcc24d_ijkl(
+                    dA, dB, dC, dD = crcc24_opt_loops.crcc24d_ijkl(
                               i + 1, j + 1, k + 1, l + 1,
                               x4d, T.ab, T.bb, L.ab, L.bb,
                               H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
@@ -879,7 +879,7 @@ def bbbb_correction(T, L, H, H0, d3bbb_o, d3bbb_v):
                     x4e += 0.25 * np.einsum("abef,fc,ed->abcd", H.bb.vvvv, T.bb[:, :, i, l], T.bb[:, :, j, k],
                                             optimize=True)  # (ij)(kl)
 
-                    dA, dB, dC, dD = crcc24_opt_loops.crcc24_opt_loops.crcc24e_ijkl(
+                    dA, dB, dC, dD = crcc24_opt_loops.crcc24e_ijkl(
                         i + 1, j + 1, k + 1, l + 1,
                         x4e, T.bb, L.bb,
                         H0.b.oo, H0.b.vv,

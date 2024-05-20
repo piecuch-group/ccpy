@@ -3,7 +3,7 @@ import numpy as np
 from ccpy.utilities.updates import cc_loops2
 
 def update_l(L, omega, H, RHF_symmetry, system):
-    L.a, L.aa, L.ab = cc_loops2.cc_loops2.update_r_2p1h(
+    L.a, L.aa, L.ab = cc_loops2.update_r_2p1h(
             L.a,
             L.aa,
             L.ab,

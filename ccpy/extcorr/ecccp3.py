@@ -23,7 +23,7 @@ def calc_ecccp3(T, L, C, H, H0, system, pspace, use_RHF=False):
     M3A = build_M3A_ccsdt(T, H, H0)
     L3A = build_L3A_2ba(L, H)
     dA_aaa_int, dB_aaa_int, dC_aaa_int, dD_aaa_int, dA_aaa_ext, dB_aaa_ext, dC_aaa_ext, dD_aaa_ext =\
-    ecccp3_loops.ecccp3_loops.ecccp3a(
+    ecccp3_loops.ecccp3a(
         pspace[0]["aaa"],
         M3A, L3A, C.aaa, 0.0,
         H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
@@ -36,7 +36,7 @@ def calc_ecccp3(T, L, C, H, H0, system, pspace, use_RHF=False):
     M3B = build_M3B_ccsdt(T, H, H0)
     L3B = build_L3B_2ba(L, H)
     dA_aab_int, dB_aab_int, dC_aab_int, dD_aab_int, dA_aab_ext, dB_aab_ext, dC_aab_ext, dD_aab_ext =\
-    ecccp3_loops.ecccp3_loops.ecccp3b(
+    ecccp3_loops.ecccp3b(
         pspace[0]["aab"],
         M3B, L3B, C.aab, 0.0,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
@@ -67,7 +67,7 @@ def calc_ecccp3(T, L, C, H, H0, system, pspace, use_RHF=False):
         M3C = build_M3C_ccsdt(T, H, H0)
         L3C = build_L3C_2ba(L, H)
         dA_abb_int, dB_abb_int, dC_abb_int, dD_abb_int, dA_abb_ext, dB_abb_ext, dC_abb_ext, dD_abb_ext =\
-        ecccp3_loops.ecccp3_loops.ecccp3c(
+        ecccp3_loops.ecccp3c(
             pspace[0]["abb"],
             M3C, L3C, C.abb, 0.0,
             H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
@@ -85,7 +85,7 @@ def calc_ecccp3(T, L, C, H, H0, system, pspace, use_RHF=False):
         M3D = build_M3D_ccsdt(T, H, H0)
         L3D = build_L3D_2ba(L, H)
         dA_bbb_int, dB_bbb_int, dC_bbb_int, dD_bbb_int, dA_bbb_ext, dB_bbb_ext, dC_bbb_ext, dD_bbb_ext =\
-        ecccp3_loops.ecccp3_loops.ecccp3d(
+        ecccp3_loops.ecccp3d(
             pspace[0]["bbb"],
             M3D, L3D, C.bbb, 0.0,
             H0.b.oo, H0.b.vv, H.b.oo, H.b.vv,

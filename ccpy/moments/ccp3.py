@@ -27,7 +27,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
     # calculate intermediates
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_opt_loops.ccp3_opt_loops.ccp3a_2ba(
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_opt_loops.ccp3a_2ba(
             t3_excitations["aaa"].T,
             T.aa, L.a, L.aa,
             H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
@@ -41,7 +41,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    dA_aab, dB_aab, dC_aab, dD_aab = ccp3_opt_loops.ccp3_opt_loops.ccp3b_2ba(
+    dA_aab, dB_aab, dC_aab, dD_aab = ccp3_opt_loops.ccp3b_2ba(
             t3_excitations["aab"].T,
             T.aa, T.ab, L.a, L.b, L.aa, L.ab,
             I2B_ovoo, I2B_vooo, I2A_vooo,
@@ -65,7 +65,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
 
-        dA_abb, dB_abb, dC_abb, dD_abb = ccp3_opt_loops.ccp3_opt_loops.ccp3c_2ba(
+        dA_abb, dB_abb, dC_abb, dD_abb = ccp3_opt_loops.ccp3c_2ba(
                 t3_excitations["abb"].T,
                 T.ab, T.bb, L.a, L.b, L.ab, L.bb,
                 I2B_vooo, I2C_vooo, I2B_ovoo,
@@ -82,7 +82,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
         )
 
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
-        dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_opt_loops.ccp3_opt_loops.ccp3d_2ba(
+        dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_opt_loops.ccp3d_2ba(
                 t3_excitations["bbb"].T,
                 T.bb, L.b, L.bb,
                 H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
@@ -164,7 +164,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
     nfill = 1
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3a_2ba_with_selection_opt(
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3a_2ba_with_selection_opt(
         moments,
         triples_list,
         nfill,
@@ -183,7 +183,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3b_2ba_with_selection_opt(
+    dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3b_2ba_with_selection_opt(
         moments,
         triples_list,
         nfill,
@@ -212,7 +212,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
         I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
-        dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3c_2ba_with_selection_opt(
+        dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3c_2ba_with_selection_opt(
             moments,
             triples_list,
             nfill,
@@ -233,7 +233,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
         )
         #### bbb correction ####
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
-        dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3d_2ba_with_selection_opt(
+        dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3d_2ba_with_selection_opt(
             moments,
             triples_list,
             nfill,
@@ -354,7 +354,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
-                M3A = ccp3_full_correction.ccp3_full_correction.build_moments3a_ijk(
+                M3A = ccp3_full_correction.build_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
                     T.aab, t3_excitations["aab"],
@@ -364,7 +364,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                     H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
                     H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
                 )
-                L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
+                L3A = ccp3_full_correction.build_leftamps3a_ijk(
                     i + 1, j + 1, k + 1,
                     L.a, L.aa,
                     L.aaa, t3_excitations["aaa"],
@@ -375,7 +375,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                     H.ab.ovvo,
                     X.aa.ooov, X.aa.vovv,
                 )
-                dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction.ccp3_full_correction.ccp3a_ijk(
+                dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction.ccp3a_ijk(
                     dA_aaa, dB_aaa, dC_aaa, dD_aaa,
                     i + 1, j + 1, k + 1, 0.0,
                     M3A, L3A, t3_excitations["aaa"],
@@ -391,7 +391,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
-                M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
+                M3B = ccp3_full_correction.build_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
                     T.aab, t3_excitations["aab"],
@@ -403,7 +403,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                     H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
                     H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
                 )
-                L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
+                L3B = ccp3_full_correction.build_leftamps3b_ijk(
                     i + 1, j + 1, k + 1,
                     L.a, L.b, L.aa, L.ab,
                     L.aaa, t3_excitations["aaa"],
@@ -421,7 +421,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                     X.aa.ooov, X.aa.vovv,
                     X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
                 )
-                dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction.ccp3_full_correction.ccp3b_ijk(
+                dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction.ccp3b_ijk(
                     dA_aab, dB_aab, dC_aab, dD_aab,
                     i + 1, j + 1, k + 1, 0.0,
                     M3B, L3B, t3_excitations["aab"],
@@ -447,7 +447,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
         for i in range(system.noccupied_alpha):
             for j in range(system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
-                    M3C = ccp3_full_correction.ccp3_full_correction.build_moments3c_ijk(
+                    M3C = ccp3_full_correction.build_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         T.aab, t3_excitations["aab"],
                         T.abb, t3_excitations["abb"],
@@ -459,7 +459,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                         H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
                         H.bb.oovv, I2C_vooo.transpose(1, 0, 2, 3), H.bb.vvov.transpose(3, 0, 1, 2), H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
                     )
-                    L3C = ccp3_full_correction.ccp3_full_correction.build_leftamps3c_ijk(
+                    L3C = ccp3_full_correction.build_leftamps3c_ijk(
                         i + 1, j + 1, k + 1,
                         L.a, L.b, L.ab, L.bb,
                         L.aab, t3_excitations["aab"],
@@ -477,7 +477,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                         X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
                         X.bb.ooov, X.bb.vovv,
                     )
-                    dA_abb, dB_abb, dC_abb, dD_abb = ccp3_full_correction.ccp3_full_correction.ccp3c_ijk(
+                    dA_abb, dB_abb, dC_abb, dD_abb = ccp3_full_correction.ccp3c_ijk(
                         dA_abb, dB_abb, dC_abb, dD_abb,
                         i + 1, j + 1, k + 1, 0.0,
                         M3C, L3C, t3_excitations["abb"],
@@ -497,7 +497,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
         for i in range(system.noccupied_beta):
             for j in range(i + 1, system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
-                    M3D = ccp3_full_correction.ccp3_full_correction.build_moments3d_ijk(
+                    M3D = ccp3_full_correction.build_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         T.abb, t3_excitations["abb"],
                         T.bbb, t3_excitations["bbb"],
@@ -507,7 +507,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                         H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
                         H.ab.oovv, H.ab.ovvo.transpose(0, 2, 1, 3),
                     )
-                    L3D = ccp3_full_correction.ccp3_full_correction.build_leftamps3d_ijk(
+                    L3D = ccp3_full_correction.build_leftamps3d_ijk(
                         i + 1, j + 1, k + 1,
                         L.b, L.bb,
                         L.abb, t3_excitations["abb"],
@@ -518,7 +518,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                         H.bb.voov, H.bb.vovv, H.bb.vvvv,
                         X.bb.ooov, X.bb.vovv,
                     )
-                    dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction.ccp3_full_correction.ccp3d_ijk(
+                    dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction.ccp3d_ijk(
                         dA_bbb, dB_bbb, dC_bbb, dD_bbb,
                         i + 1, j + 1, k + 1, 0.0,
                         M3D, L3D, t3_excitations["bbb"],
@@ -629,7 +629,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
-                M3A = ccp3_full_correction.ccp3_full_correction.build_moments3a_ijk(
+                M3A = ccp3_full_correction.build_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
                     T.aab, t3_excitations["aab"],
@@ -639,7 +639,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
                     H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
                     H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
                 )
-                L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
+                L3A = ccp3_full_correction.build_leftamps3a_ijk(
                     i + 1, j + 1, k + 1,
                     L.a, L.aa,
                     L.aaa, t3_excitations["aaa"],
@@ -650,7 +650,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
                     H.ab.ovvo,
                     X.aa.ooov, X.aa.vovv,
                 )
-                dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3a_ijk_with_selection_opt(
+                dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3a_ijk_with_selection_opt(
                     dA_aaa, dB_aaa, dC_aaa, dD_aaa,
                     moments,
                     triples_list,
@@ -672,7 +672,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
-                M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
+                M3B = ccp3_full_correction.build_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
                     T.aab, t3_excitations["aab"],
@@ -684,7 +684,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
                     H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
                     H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
                 )
-                L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
+                L3B = ccp3_full_correction.build_leftamps3b_ijk(
                     i + 1, j + 1, k + 1,
                     L.a, L.b, L.aa, L.ab,
                     L.aaa, t3_excitations["aaa"],
@@ -702,7 +702,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
                     X.aa.ooov, X.aa.vovv,
                     X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
                 )
-                dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3b_ijk_with_selection_opt(
+                dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3b_ijk_with_selection_opt(
                     dA_aab, dB_aab, dC_aab, dD_aab,
                     moments,
                     triples_list,
@@ -731,7 +731,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
         for i in range(system.noccupied_alpha):
             for j in range(system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
-                    M3C = ccp3_full_correction.ccp3_full_correction.build_moments3c_ijk(
+                    M3C = ccp3_full_correction.build_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         T.aab, t3_excitations["aab"],
                         T.abb, t3_excitations["abb"],
@@ -743,7 +743,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
                         H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
                         H.bb.oovv, I2C_vooo.transpose(1, 0, 2, 3), H.bb.vvov.transpose(3, 0, 1, 2), H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
                     )
-                    L3C = ccp3_full_correction.ccp3_full_correction.build_leftamps3c_ijk(
+                    L3C = ccp3_full_correction.build_leftamps3c_ijk(
                         i + 1, j + 1, k + 1,
                         L.a, L.b, L.ab, L.bb,
                         L.aab, t3_excitations["aab"],
@@ -761,7 +761,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
                         X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
                         X.bb.ooov, X.bb.vovv,
                     )
-                    dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3c_ijk_with_selection_opt(
+                    dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3c_ijk_with_selection_opt(
                         dA_abb, dB_abb, dC_abb, dD_abb,
                         moments,
                         triples_list,
@@ -784,7 +784,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
         for i in range(system.noccupied_beta):
             for j in range(i + 1, system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
-                    M3D = ccp3_full_correction.ccp3_full_correction.build_moments3d_ijk(
+                    M3D = ccp3_full_correction.build_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         T.abb, t3_excitations["abb"],
                         T.bbb, t3_excitations["bbb"],
@@ -794,7 +794,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
                         H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
                         H.ab.oovv, H.ab.ovvo.transpose(0, 2, 1, 3),
                     )
-                    L3D = ccp3_full_correction.ccp3_full_correction.build_leftamps3d_ijk(
+                    L3D = ccp3_full_correction.build_leftamps3d_ijk(
                         i + 1, j + 1, k + 1,
                         L.b, L.bb,
                         L.abb, t3_excitations["abb"],
@@ -805,7 +805,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
                         H.bb.voov, H.bb.vovv, H.bb.vvvv,
                         X.bb.ooov, X.bb.vovv,
                     )
-                    dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3d_ijk_with_selection_opt(
+                    dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3d_ijk_with_selection_opt(
                         dA_bbb, dB_bbb, dC_bbb, dD_bbb,
                         moments,
                         triples_list,
@@ -931,7 +931,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
-                EOMM3A = ccp3_full_correction.ccp3_full_correction.build_eom_moments3a_ijk(
+                EOMM3A = ccp3_full_correction.build_eom_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     R.aa,
                     R.aaa, r3_excitations["aaa"],
@@ -948,7 +948,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                     XR.aa.voov, XR.aa.vvov, XR.aa.vvvv.transpose(2, 3, 0, 1),
                     XR.ab.voov,
                 )
-                M3A = ccp3_full_correction.ccp3_full_correction.build_moments3a_ijk(
+                M3A = ccp3_full_correction.build_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
                     T.aab, t3_excitations["aab"],
@@ -958,7 +958,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                     H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
                     H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
                 )
-                L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
+                L3A = ccp3_full_correction.build_leftamps3a_ijk(
                     i + 1, j + 1, k + 1,
                     L.a, L.aa,
                     L.aaa, r3_excitations["aaa"],
@@ -969,7 +969,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                     H.ab.ovvo,
                     X.aa.ooov, X.aa.vovv,
                 )
-                dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction.ccp3_full_correction.ccp3a_ijk(
+                dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction.ccp3a_ijk(
                     dA_aaa, dB_aaa, dC_aaa, dD_aaa,
                     i + 1, j + 1, k + 1, omega,
                     r0 * M3A + EOMM3A, L3A, r3_excitations["aaa"],
@@ -985,7 +985,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
-                EOMM3B = ccp3_full_correction.ccp3_full_correction.build_eom_moments3b_ijk(
+                EOMM3B = ccp3_full_correction.build_eom_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     R.aa, R.ab,
                     R.aaa, r3_excitations["aaa"],
@@ -1012,7 +1012,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                     XR.ab.vvvo.transpose(2, 0, 1, 3), XR.ab.vvvv.transpose(3, 2, 1, 0),
                     XR.bb.oovv, XR.bb.voov.transpose(1, 3, 0, 2),
                 )
-                M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
+                M3B = ccp3_full_correction.build_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
                     T.aab, t3_excitations["aab"],
@@ -1024,7 +1024,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                     H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
                     H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
                 )
-                L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
+                L3B = ccp3_full_correction.build_leftamps3b_ijk(
                     i + 1, j + 1, k + 1,
                     L.a, L.b, L.aa, L.ab,
                     L.aaa, r3_excitations["aaa"],
@@ -1042,7 +1042,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                     X.aa.ooov, X.aa.vovv,
                     X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
                 )
-                dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction.ccp3_full_correction.ccp3b_ijk(
+                dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction.ccp3b_ijk(
                     dA_aab, dB_aab, dC_aab, dD_aab,
                     i + 1, j + 1, k + 1, omega,
                     r0 * M3B + EOMM3B, L3B, r3_excitations["aab"],
@@ -1068,7 +1068,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
         for i in range(system.noccupied_alpha):
             for j in range(system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
-                    EOMM3C = ccp3_full_correction.ccp3_full_correction.build_eom_moments3c_ijk(
+                    EOMM3C = ccp3_full_correction.build_eom_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         R.ab, R.bb,
                         R.aab, r3_excitations["aab"],
@@ -1095,7 +1095,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                         XR.bb.oooo, XR.bb.vooo, XR.bb.oovv,
                         XR.bb.voov, XR.bb.vvov, XR.bb.vvvv.transpose(2, 3, 0, 1),
                     )
-                    M3C = ccp3_full_correction.ccp3_full_correction.build_moments3c_ijk(
+                    M3C = ccp3_full_correction.build_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         T.aab, t3_excitations["aab"],
                         T.abb, t3_excitations["abb"],
@@ -1107,7 +1107,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                         H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
                         H.bb.oovv, I2C_vooo.transpose(1, 0, 2, 3), H.bb.vvov.transpose(3, 0, 1, 2), H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
                     )
-                    L3C = ccp3_full_correction.ccp3_full_correction.build_leftamps3c_ijk(
+                    L3C = ccp3_full_correction.build_leftamps3c_ijk(
                         i + 1, j + 1, k + 1,
                         L.a, L.b, L.ab, L.bb,
                         L.aab, r3_excitations["aab"],
@@ -1125,7 +1125,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                         X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
                         X.bb.ooov, X.bb.vovv,
                     )
-                    dA_abb, dB_abb, dC_abb, dD_abb = ccp3_full_correction.ccp3_full_correction.ccp3c_ijk(
+                    dA_abb, dB_abb, dC_abb, dD_abb = ccp3_full_correction.ccp3c_ijk(
                         dA_abb, dB_abb, dC_abb, dD_abb,
                         i + 1, j + 1, k + 1, omega,
                         r0 * M3C + EOMM3C, L3C, r3_excitations["abb"],
@@ -1145,7 +1145,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
         for i in range(system.noccupied_beta):
             for j in range(i + 1, system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
-                    EOMM3D = ccp3_full_correction.ccp3_full_correction.build_eom_moments3d_ijk(
+                    EOMM3D = ccp3_full_correction.build_eom_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         R.bb,
                         R.abb, r3_excitations["abb"],
@@ -1162,7 +1162,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                         XR.bb.voov, XR.bb.vvov, XR.bb.vvvv.transpose(2, 3, 0, 1),
                         XR.ab.ovvo,
                     )
-                    M3D = ccp3_full_correction.ccp3_full_correction.build_moments3d_ijk(
+                    M3D = ccp3_full_correction.build_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         T.abb, t3_excitations["abb"],
                         T.bbb, t3_excitations["bbb"],
@@ -1172,7 +1172,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                         H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
                         H.ab.oovv, H.ab.ovvo.transpose(0, 2, 1, 3),
                     )
-                    L3D = ccp3_full_correction.ccp3_full_correction.build_leftamps3d_ijk(
+                    L3D = ccp3_full_correction.build_leftamps3d_ijk(
                         i + 1, j + 1, k + 1,
                         L.b, L.bb,
                         L.abb, r3_excitations["abb"],
@@ -1183,7 +1183,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
                         H.bb.voov, H.bb.vovv, H.bb.vvvv,
                         X.bb.ooov, X.bb.vovv,
                     )
-                    dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction.ccp3_full_correction.ccp3d_ijk(
+                    dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction.ccp3d_ijk(
                         dA_bbb, dB_bbb, dC_bbb, dD_bbb,
                         i + 1, j + 1, k + 1, omega,
                         r0 * M3D + EOMM3D, L3D, r3_excitations["bbb"],
@@ -1301,7 +1301,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
-                EOMM3A = ccp3_full_correction.ccp3_full_correction.build_eom_moments3a_ijk(
+                EOMM3A = ccp3_full_correction.build_eom_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     R.aa,
                     R.aaa, r3_excitations["aaa"],
@@ -1318,7 +1318,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                     XR.aa.voov, XR.aa.vvov, XR.aa.vvvv.transpose(2, 3, 0, 1),
                     XR.ab.voov,
                 )
-                M3A = ccp3_full_correction.ccp3_full_correction.build_moments3a_ijk(
+                M3A = ccp3_full_correction.build_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
                     T.aab, t3_excitations["aab"],
@@ -1328,7 +1328,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                     H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
                     H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
                 )
-                L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
+                L3A = ccp3_full_correction.build_leftamps3a_ijk(
                     i + 1, j + 1, k + 1,
                     L.a, L.aa,
                     L.aaa, r3_excitations["aaa"],
@@ -1339,7 +1339,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                     H.ab.ovvo,
                     X.aa.ooov, X.aa.vovv,
                 )
-                dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3a_ijk_with_selection_opt(
+                dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3a_ijk_with_selection_opt(
                     dA_aaa, dB_aaa, dC_aaa, dD_aaa,
                     moments,
                     triples_list,
@@ -1361,7 +1361,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
-                EOMM3B = ccp3_full_correction.ccp3_full_correction.build_eom_moments3b_ijk(
+                EOMM3B = ccp3_full_correction.build_eom_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     R.aa, R.ab,
                     R.aaa, r3_excitations["aaa"],
@@ -1388,7 +1388,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                     XR.ab.vvvo.transpose(2, 0, 1, 3), XR.ab.vvvv.transpose(3, 2, 1, 0),
                     XR.bb.oovv, XR.bb.voov.transpose(1, 3, 0, 2),
                 )
-                M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
+                M3B = ccp3_full_correction.build_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
                     T.aab, t3_excitations["aab"],
@@ -1400,7 +1400,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                     H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
                     H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
                 )
-                L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
+                L3B = ccp3_full_correction.build_leftamps3b_ijk(
                     i + 1, j + 1, k + 1,
                     L.a, L.b, L.aa, L.ab,
                     L.aaa, r3_excitations["aaa"],
@@ -1418,7 +1418,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                     X.aa.ooov, X.aa.vovv,
                     X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
                 )
-                dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3b_ijk_with_selection_opt(
+                dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3b_ijk_with_selection_opt(
                     dA_aab, dB_aab, dC_aab, dD_aab,
                     moments,
                     triples_list,
@@ -1447,7 +1447,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
         for i in range(system.noccupied_alpha):
             for j in range(system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
-                    EOMM3C = ccp3_full_correction.ccp3_full_correction.build_eom_moments3c_ijk(
+                    EOMM3C = ccp3_full_correction.build_eom_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         R.ab, R.bb,
                         R.aab, r3_excitations["aab"],
@@ -1474,7 +1474,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                         XR.bb.oooo, XR.bb.vooo, XR.bb.oovv,
                         XR.bb.voov, XR.bb.vvov, XR.bb.vvvv.transpose(2, 3, 0, 1),
                     )
-                    M3C = ccp3_full_correction.ccp3_full_correction.build_moments3c_ijk(
+                    M3C = ccp3_full_correction.build_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         T.aab, t3_excitations["aab"],
                         T.abb, t3_excitations["abb"],
@@ -1486,7 +1486,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                         H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
                         H.bb.oovv, I2C_vooo.transpose(1, 0, 2, 3), H.bb.vvov.transpose(3, 0, 1, 2), H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
                     )
-                    L3C = ccp3_full_correction.ccp3_full_correction.build_leftamps3c_ijk(
+                    L3C = ccp3_full_correction.build_leftamps3c_ijk(
                         i + 1, j + 1, k + 1,
                         L.a, L.b, L.ab, L.bb,
                         L.aab, r3_excitations["aab"],
@@ -1504,7 +1504,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                         X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
                         X.bb.ooov, X.bb.vovv,
                     )
-                    dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3c_ijk_with_selection_opt(
+                    dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3c_ijk_with_selection_opt(
                         dA_abb, dB_abb, dC_abb, dD_abb,
                         moments,
                         triples_list,
@@ -1527,7 +1527,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
         for i in range(system.noccupied_beta):
             for j in range(i + 1, system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
-                    EOMM3D = ccp3_full_correction.ccp3_full_correction.build_eom_moments3d_ijk(
+                    EOMM3D = ccp3_full_correction.build_eom_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         R.bb,
                         R.abb, r3_excitations["abb"],
@@ -1544,7 +1544,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                         XR.bb.voov, XR.bb.vvov, XR.bb.vvvv.transpose(2, 3, 0, 1),
                         XR.ab.ovvo,
                     )
-                    M3D = ccp3_full_correction.ccp3_full_correction.build_moments3d_ijk(
+                    M3D = ccp3_full_correction.build_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         T.abb, t3_excitations["abb"],
                         T.bbb, t3_excitations["bbb"],
@@ -1554,7 +1554,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                         H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
                         H.ab.oovv, H.ab.ovvo.transpose(0, 2, 1, 3),
                     )
-                    L3D = ccp3_full_correction.ccp3_full_correction.build_leftamps3d_ijk(
+                    L3D = ccp3_full_correction.build_leftamps3d_ijk(
                         i + 1, j + 1, k + 1,
                         L.b, L.bb,
                         L.abb, r3_excitations["abb"],
@@ -1565,7 +1565,7 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
                         H.bb.voov, H.bb.vovv, H.bb.vvvv,
                         X.bb.ooov, X.bb.vovv,
                     )
-                    dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3d_ijk_with_selection_opt(
+                    dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3d_ijk_with_selection_opt(
                         dA_bbb, dB_bbb, dC_bbb, dD_bbb,
                         moments,
                         triples_list,

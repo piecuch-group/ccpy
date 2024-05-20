@@ -76,7 +76,7 @@ def update(T, dT, H, shift, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    T.bbb.VvvOOO, dT.bbb.VvvOOO = cc_active_loops.cc_active_loops.update_t3d_100111(
+    T.bbb.VvvOOO, dT.bbb.VvvOOO = cc_active_loops.update_t3d_100111(
         T.bbb.VvvOOO,
         dT.bbb.VvvOOO,
         H.b.oo[Ob, Ob],

@@ -29,7 +29,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
     # calculate intermediates
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_opt_loops.ccp3_opt_loops.ccp3a_2ba(
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_opt_loops.ccp3a_2ba(
             t3_excitations["aaa"].T,
             T.aa, L.a, L.aa,
             H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
@@ -43,7 +43,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    dA_aab, dB_aab, dC_aab, dD_aab = ccp3_opt_loops.ccp3_opt_loops.ccp3b_2ba(
+    dA_aab, dB_aab, dC_aab, dD_aab = ccp3_opt_loops.ccp3b_2ba(
             t3_excitations["aab"].T,
             T.aa, T.ab, L.a, L.b, L.aa, L.ab,
             I2B_ovoo, I2B_vooo, I2A_vooo,
@@ -67,7 +67,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
 
-        dA_abb, dB_abb, dC_abb, dD_abb = ccp3_opt_loops.ccp3_opt_loops.ccp3c_2ba(
+        dA_abb, dB_abb, dC_abb, dD_abb = ccp3_opt_loops.ccp3c_2ba(
                 t3_excitations["abb"].T,
                 T.ab, T.bb, L.a, L.b, L.ab, L.bb,
                 I2B_vooo, I2C_vooo, I2B_ovoo,
@@ -84,7 +84,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
         )
 
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
-        dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_opt_loops.ccp3_opt_loops.ccp3d_2ba(
+        dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_opt_loops.ccp3d_2ba(
                 t3_excitations["bbb"].T,
                 T.bb, L.b, L.bb,
                 H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
@@ -166,7 +166,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
     nfill = 1
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3a_2ba_with_selection_opt(
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3a_2ba_with_selection_opt(
         moments,
         triples_list,
         nfill,
@@ -185,7 +185,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3b_2ba_with_selection_opt(
+    dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3b_2ba_with_selection_opt(
         moments,
         triples_list,
         nfill,
@@ -214,7 +214,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
         I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
-        dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3c_2ba_with_selection_opt(
+        dA_abb, dB_abb, dC_abb, dD_abb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3c_2ba_with_selection_opt(
             moments,
             triples_list,
             nfill,
@@ -235,7 +235,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
         )
         #### bbb correction ####
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
-        dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3_adaptive_loops.ccp3d_2ba_with_selection_opt(
+        dA_bbb, dB_bbb, dC_bbb, dD_bbb, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3d_2ba_with_selection_opt(
             moments,
             triples_list,
             nfill,
@@ -2182,7 +2182,7 @@ def build_L3D_full(L, H, X):
 #     t_start = time.perf_counter()
 #
 #     #### aaa correction ####
-#     dA_aaa = ccsdpt_loops.ccsdpt_loops.ccsdpta_p(
+#     dA_aaa = ccsdpt_loops.ccsdpta_p(
 #         pspace["aaa"],
 #         T.a, T.aa,
 #         H.aa.vooo, H.aa.vvov, H.aa.oovv, H.a.ov,
@@ -2191,7 +2191,7 @@ def build_L3D_full(L, H, X):
 #         system.noccupied_alpha, system.nunoccupied_alpha,
 #     )
 #     #### aab correction ####
-#     dA_aab = ccsdpt_loops.ccsdpt_loops.ccsdptb_p(
+#     dA_aab = ccsdpt_loops.ccsdptb_p(
 #         pspace["aab"],
 #         T.a, T.b, T.aa, T.ab,
 #         H.ab.ovoo, H.ab.vooo, H.aa.vooo,
@@ -2209,7 +2209,7 @@ def build_L3D_full(L, H, X):
 #         correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
 #     else:
 #         ### abb correction ###
-#         dA_abb = ccsdpt_loops.ccsdpt_loops.ccsdptc_p(
+#         dA_abb = ccsdpt_loops.ccsdptc_p(
 #             pspace["abb"],
 #             T.a, T.b, T.ab, T.bb,
 #             H.ab.vooo, H.bb.vooo, H.ab.ovoo,
@@ -2223,7 +2223,7 @@ def build_L3D_full(L, H, X):
 #             system.noccupied_beta, system.nunoccupied_beta,
 #         )
 #         ### bbb correction ###
-#         dA_bbb = ccsdpt_loops.ccsdpt_loops.ccsdptd_p(
+#         dA_bbb = ccsdpt_loops.ccsdptd_p(
 #             pspace["bbb"],
 #             T.b, T.bb,
 #             H.bb.vooo, H.bb.vvov, H.bb.oovv, H.b.ov,
@@ -2271,7 +2271,7 @@ def build_L3D_full(L, H, X):
 #     # calculate intermediates
 #     #I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
 #     # perform correction in-loop
-#     dA_aaa, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdpta_p_with_selection(
+#     dA_aaa, moments, triples_list = ccsdpt_loops.ccsdpta_p_with_selection(
 #         moments,
 #         triples_list,
 #         pspace["aaa"],
@@ -2286,7 +2286,7 @@ def build_L3D_full(L, H, X):
 #     #I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
 #     #I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
 #     #I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-#     dA_aab, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdptb_p_with_selection(
+#     dA_aab, moments, triples_list = ccsdpt_loops.ccsdptb_p_with_selection(
 #         moments,
 #         triples_list,
 #         pspace["aab"],
@@ -2310,7 +2310,7 @@ def build_L3D_full(L, H, X):
 #         #I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
 #         #I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
 #         #I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
-#         dA_abb, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdptc_p_with_selection(
+#         dA_abb, moments, triples_list = ccsdpt_loops.ccsdptc_p_with_selection(
 #             moments,
 #             triples_list,
 #             pspace["abb"],
@@ -2330,7 +2330,7 @@ def build_L3D_full(L, H, X):
 #         #### bbb correction ####
 #         # calculate intermediates
 #         #I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
-#         dA_bbb, moments, triples_list = ccsdpt_loops.ccsdpt_loops.ccsdptd_p_with_selection(
+#         dA_bbb, moments, triples_list = ccsdpt_loops.ccsdptd_p_with_selection(
 #             moments,
 #             triples_list,
 #             pspace["bbb"],
@@ -2380,7 +2380,7 @@ def build_L3D_full(L, H, X):
 #     # calculate intermediates
 #     #I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
 #     # perform correction in-loop
-#     dA_aaa, moments["aaa"] = ccsdpt_loops.ccsdpt_loops.ccsdpta_p_full_moment(
+#     dA_aaa, moments["aaa"] = ccsdpt_loops.ccsdpta_p_full_moment(
 #         pspace["aaa"],
 #         T.a, T.aa,
 #         H.aa.vooo, H.aa.vvov, H.aa.oovv, H.a.ov,
@@ -2394,7 +2394,7 @@ def build_L3D_full(L, H, X):
 #     #I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
 #     #I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
 #     #I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-#     dA_aab, moments["aab"] = ccsdpt_loops.ccsdpt_loops.ccsdptb_p_full_moment(
+#     dA_aab, moments["aab"] = ccsdpt_loops.ccsdptb_p_full_moment(
 #         pspace["aab"],
 #         T.a, T.b, T.aa, T.ab,
 #         H.ab.ovoo, H.ab.vooo, H.aa.vooo,
@@ -2415,7 +2415,7 @@ def build_L3D_full(L, H, X):
 #         #I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
 #         #I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
 #         #I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
-#         dA_abb, moments["abb"] = ccsdpt_loops.ccsdpt_loops.ccsdptc_p_full_moment(
+#         dA_abb, moments["abb"] = ccsdpt_loops.ccsdptc_p_full_moment(
 #             pspace["abb"],
 #             T.a, T.b, T.ab, T.bb,
 #             H.ab.vooo, H.bb.vooo, H.ab.ovoo,
@@ -2432,7 +2432,7 @@ def build_L3D_full(L, H, X):
 #         #### bbb correction ####
 #         # calculate intermediates
 #         #I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
-#         dA_bbb, moments["bbb"] = ccsdpt_loops.ccsdpt_loops.ccsdptd_p_full_moment(
+#         dA_bbb, moments["bbb"] = ccsdpt_loops.ccsdptd_p_full_moment(
 #             pspace["bbb"],
 #             T.b, T.bb,
 #             H.bb.vooo, H.bb.vvov, H.bb.oovv, H.b.ov,

@@ -143,7 +143,7 @@ def update(R, omega, H, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    R.aaa.VVVoOO = eomcc_active_loops.eomcc_active_loops.update_r3a_111011(
+    R.aaa.VVVoOO = eomcc_active_loops.update_r3a_111011(
         R.aaa.VVVoOO,
         omega,
         H.a.oo[Oa, Oa],

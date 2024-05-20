@@ -99,7 +99,7 @@ def build(T, dT, H, system):
 def update(T, dT, H, shift, system):
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    T.abb.vVVOoo, dT.abb.vVVOoo = cc_active_loops.cc_active_loops.update_t3c_011100(
+    T.abb.vVVOoo, dT.abb.vVVOoo = cc_active_loops.update_t3c_011100(
         T.abb.vVVOoo,
         dT.abb.vVVOoo,
         H.a.oo[Oa, Oa],

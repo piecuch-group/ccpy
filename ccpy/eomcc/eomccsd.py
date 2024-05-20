@@ -7,7 +7,7 @@ from ccpy.utilities.updates import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
 
-    R.a, R.b, R.aa, R.ab, R.bb = cc_loops2.cc_loops2.update_r(
+    R.a, R.b, R.aa, R.ab, R.bb = cc_loops2.update_r(
         R.a,
         R.b,
         R.aa,

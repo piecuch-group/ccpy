@@ -64,14 +64,14 @@ def cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, order=3):
     T.a = C.a.copy()
     T.b = C.b.copy()
 
-    T.aa, T.ab, T.bb = clusteranalysis.clusteranalysis.cluster_analysis_t2(C.a, C.b,
+    T.aa, T.ab, T.bb = clusteranalysis.cluster_analysis_t2(C.a, C.b,
                                                                            C.aa, C.ab, C.bb)
 
-    T.aaa, T.aab, T.abb, T.bbb = clusteranalysis.clusteranalysis.cluster_analysis_t3(C.a, C.b,
+    T.aaa, T.aab, T.abb, T.bbb = clusteranalysis.cluster_analysis_t3(C.a, C.b,
                                                                                      C.aa, C.ab, C.bb,
                                                                                      C.aaa, C.aab, C.abb, C.bbb)
 
-    t4_aaaa_amps, t4_aaab_amps, t4_aabb_amps, t4_abbb_amps, t4_bbbb_amps = clusteranalysis.clusteranalysis.cluster_analysis_t4(C.a, C.b,
+    t4_aaaa_amps, t4_aaab_amps, t4_aabb_amps, t4_abbb_amps, t4_bbbb_amps = clusteranalysis.cluster_analysis_t4(C.a, C.b,
                                                                                                      C.aa, C.ab, C.bb,
                                                                                                      C.aaa, C.aab, C.abb, C.bbb,
                                                                                                      C4_excitations['aaaa'],
@@ -88,7 +88,7 @@ def cluster_analyze_ci(C, C4_excitations, C4_amplitudes, system, order=3):
     T4_amplitudes = {"aaaa" : t4_aaaa_amps, "aaab" : t4_aaab_amps, "aabb" : t4_aabb_amps, "abbb" : t4_abbb_amps, "bbbb" : t4_bbbb_amps}
 
     if T.order > 3:
-        T.aaaa, T.aaab, T.aabb, T.abbb, T.bbbb = clusteranalysis.clusteranalysis.cluster_analysis_t4_full(C.a, C.b,
+        T.aaaa, T.aaab, T.aabb, T.abbb, T.bbbb = clusteranalysis.cluster_analysis_t4_full(C.a, C.b,
                                                                                                      C.aa, C.ab, C.bb,
                                                                                                      C.aaa, C.aab, C.abb, C.bbb,
                                                                                                      C4_excitations['aaaa'],

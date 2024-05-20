@@ -130,7 +130,7 @@ def get_LR(R, L, l3_excitations=None, r3_excitations=None):
             LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
             LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
         else:
-            # LR_P = leftccsdt_p_loops.leftccsdt_p_loops.lr(L.aaa, l3_excitations["aaa"],
+            # LR_P = leftccsdt_p_loops.lr(L.aaa, l3_excitations["aaa"],
             #                                               L.aab, l3_excitations["aab"],
             #                                               L.abb, l3_excitations["abb"],
             #                                               L.bbb, l3_excitations["bbb"],
