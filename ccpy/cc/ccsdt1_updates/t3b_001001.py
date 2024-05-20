@@ -100,7 +100,7 @@ def update(T, dT, H, shift, system):
 
     oa, Oa, va, Va, ob, Ob, vb, Vb = get_active_slices(system)
 
-    T.aab.vvVooO, dT.aab.vvVooO = cc_active_loops.cc_active_loops.update_t3b_001001(
+    T.aab.vvVooO, dT.aab.vvVooO = cc_active_loops.update_t3b_001001(
         T.aab.vvVooO,
         dT.aab.vvVooO,
         H.a.oo[Oa, Oa],

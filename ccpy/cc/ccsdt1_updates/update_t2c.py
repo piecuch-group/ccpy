@@ -539,7 +539,7 @@ def build_0000(T, dT, H, system):
 
 def update(T, dT, H, shift):
 
-    T.bb, dT.bb = cc_active_loops.cc_active_loops.update_t2c(
+    T.bb, dT.bb = cc_active_loops.update_t2c(
         T.bb,
         dT.bb,
         H.b.oo,

@@ -7,7 +7,7 @@ def calc_mp2(system, H):
 
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
-    corr_energy = mbpt_loops.mbpt_loops.mp2(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+    corr_energy = mbpt_loops.mp2(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                             H.aa.oovv, H.aa.vvoo, H.ab.oovv, H.ab.vvoo, H.bb.oovv, H.bb.vvoo)
     t_end = time.perf_counter()
     t_cpu_end = time.process_time()
@@ -26,9 +26,9 @@ def calc_mp3(system, H):
 
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
-    corr_energy2 = mbpt_loops.mbpt_loops.mp2(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+    corr_energy2 = mbpt_loops.mp2(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                             H.aa.oovv, H.aa.vvoo, H.ab.oovv, H.ab.vvoo, H.bb.oovv, H.bb.vvoo)
-    corr_energy3 = mbpt_loops.mbpt_loops.mp3(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+    corr_energy3 = mbpt_loops.mp3(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                              H.aa.oovv, H.aa.vvoo, H.aa.voov, H.aa.oooo, H.aa.vvvv,
                                              H.ab.oovv, H.ab.vvoo, H.ab.voov, H.ab.ovvo, H.ab.vovo, H.ab.ovov, H.ab.oooo, H.ab.vvvv,
                                              H.bb.oovv, H.bb.vvoo, H.bb.voov, H.bb.oooo, H.bb.vvvv)
@@ -54,13 +54,13 @@ def calc_mp4(system, H):
 
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
-    corr_energy2 = mbpt_loops.mbpt_loops.mp2(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+    corr_energy2 = mbpt_loops.mp2(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                             H.aa.oovv, H.aa.vvoo, H.ab.oovv, H.ab.vvoo, H.bb.oovv, H.bb.vvoo)
-    corr_energy3 = mbpt_loops.mbpt_loops.mp3(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+    corr_energy3 = mbpt_loops.mp3(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                              H.aa.oovv, H.aa.vvoo, H.aa.voov, H.aa.oooo, H.aa.vvvv,
                                              H.ab.oovv, H.ab.vvoo, H.ab.voov, H.ab.ovvo, H.ab.vovo, H.ab.ovov, H.ab.oooo, H.ab.vvvv,
                                              H.bb.oovv, H.bb.vvoo, H.bb.voov, H.bb.oooo, H.bb.vvvv)
-    corr_energy4, corr_singles, corr_doubles, corr_triples, corr_quadruples = mbpt_loops.mbpt_loops.mp4(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+    corr_energy4, corr_singles, corr_doubles, corr_triples, corr_quadruples = mbpt_loops.mp4(H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                              H.aa.oovv, H.aa.vvoo, H.aa.voov, H.aa.oooo, H.aa.vvvv, H.aa.vooo, H.aa.vvov, H.aa.ooov, H.aa.vovv,
                                              H.ab.oovv, H.ab.vvoo, H.ab.voov, H.ab.ovvo, H.ab.vovo, H.ab.ovov, H.ab.oooo, H.ab.vvvv,
                                              H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.ab.ooov, H.ab.oovo, H.ab.vovv, H.ab.ovvv,

@@ -71,7 +71,7 @@ def get_r0(R, H, omega):
     return r0 / omega
 
 def get_rel(R, r0):
-    """Compute the reduced excitation level (REL) metric, given by
+    r"""Compute the reduced excitation level (REL) metric, given by
     \sum_{n=0}^{N} n*<0|(R_{\mu,n})^+ R_{\mu,n})|0>/\sum_{n=0}^{N} <0|(R_{\mu,n})^+ R_{\mu,n})|0>.
     [See J. Chem. Phys. 122, 214107 (2005)]."""
     rel_0 = r0**2
@@ -130,7 +130,7 @@ def get_LR(R, L, l3_excitations=None, r3_excitations=None):
             LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
             LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
         else:
-            # LR_P = leftccsdt_p_loops.leftccsdt_p_loops.lr(L.aaa, l3_excitations["aaa"],
+            # LR_P = leftccsdt_p_loops.lr(L.aaa, l3_excitations["aaa"],
             #                                               L.aab, l3_excitations["aab"],
             #                                               L.abb, l3_excitations["abb"],
             #                                               L.bbb, l3_excitations["bbb"],

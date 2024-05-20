@@ -50,7 +50,7 @@ def update_t2a(T, dT, H, shift, acparray):
     dT.aa += d1 * 0.5 * np.einsum("mnef,aeim,bfjn->abij", H.ab.oovv, T.ab, T.ab, optimize=True) # A(ij) [D1]
     dT.aa -= d2 * 0.5 * np.einsum("mnfe,aeim,bfjn->abij", H.ab.oovv, T.ab, T.ab, optimize=True) # A(ij) [D2]
 
-    T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
+    T.aa, dT.aa = cc_loops2.update_t2a(
         T.aa, dT.aa + 0.25 * H.aa.vvoo, H.a.oo, H.a.vv, shift
     )
     return T, dT
@@ -102,7 +102,7 @@ def update_t2b(T, dT, H, shift, acparray):
     dT.ab -= d4 * 0.5 * np.einsum("mnef,efjn,abim->abij", H.bb.oovv, T.bb, T.ab, optimize=True) # [D4]
     dT.ab -= d3 * 0.5 * np.einsum("mnef,bfmn,aeij->abij", H.bb.oovv, T.bb, T.ab, optimize=True) # [D3]
 
-    T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
+    T.ab, dT.ab = cc_loops2.update_t2b(
         T.ab, dT.ab + H.ab.vvoo, H.a.oo, H.a.vv, H.b.oo, H.b.vv, shift
     )
     return T, dT
@@ -149,7 +149,7 @@ def update_t2c(T, dT, H, shift, acparray):
     ) # A(ab)
 
 
-    T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
+    T.bb, dT.bb = cc_loops2.update_t2c(
         T.bb, dT.bb + 0.25 * H.bb.vvoo, H.b.oo, H.b.vv, shift
     )
     return T, dT

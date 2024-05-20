@@ -50,7 +50,7 @@ def update(T, dT, H, hbar, shift, flag_RHF, system):
     # Update all T1 and T2 clusters together by computing T3 on-the-fly once
     # it would be nice if the T1-transformed X intermediates here were simply the
     # elements of the CCS-transformed hbar computed before T2 builds.
-    T.a, T.b, T.aa, T.ab, T.bb, dT.a, dT.b, dT.aa, dT.ab, dT.bb = cc3_loops.cc3_loops.update_t(
+    T.a, T.b, T.aa, T.ab, T.bb, dT.a, dT.b, dT.aa, dT.ab, dT.bb = cc3_loops.update_t(
         T.a, T.b, T.aa, T.ab, T.bb,
         dT.a, dT.b, dT.aa, dT.ab, dT.bb,
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,

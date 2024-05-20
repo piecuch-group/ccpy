@@ -6,7 +6,7 @@ from ccpy.utilities.updates import eomcc_active_loops
 
 def update(R, omega, H):
 
-    R.ab = eomcc_active_loops.eomcc_active_loops.update_r2b(R.ab, omega, H.a.oo, H.a.vv, H.b.oo, H.b.vv, 0.0)
+    R.ab = eomcc_active_loops.update_r2b(R.ab, omega, H.a.oo, H.a.vv, H.b.oo, H.b.vv, 0.0)
 
     return R
 

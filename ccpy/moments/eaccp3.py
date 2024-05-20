@@ -44,7 +44,7 @@ def calc_eaccp3(T, R, L, r3_excitations, omega, corr_energy, H, H0, system, use_
     dD_aaa = 0.0
     for j in range(system.noccupied_alpha):
         for k in range(j + 1, system.noccupied_alpha):
-            M3A = eaccp3_correction.eaccp3_correction.build_moments3a_jk(
+            M3A = eaccp3_correction.build_moments3a_jk(
                 j + 1, k + 1,
                 R.aa,
                 R.aaa, r3_excitations["aaa"],
@@ -55,7 +55,7 @@ def calc_eaccp3(T, R, L, r3_excitations, omega, corr_energy, H, H0, system, use_
                 H.ab.voov,
                 X_right["aa"]["voo"], X_right["aa"]["vvv"],
             )
-            L3A = eaccp3_correction.eaccp3_correction.build_leftamps3a_jk(
+            L3A = eaccp3_correction.build_leftamps3a_jk(
                 j + 1, k + 1,
                 L.a, L.aa,
                 L.aaa, r3_excitations["aaa"],
@@ -65,7 +65,7 @@ def calc_eaccp3(T, R, L, r3_excitations, omega, corr_energy, H, H0, system, use_
                 H.ab.ovvo.transpose(2, 3, 0, 1),
                 X_left["aa"]["ovo"], X_left["aa"]["vvv"],
             )
-            dA_aaa, dB_aaa, dC_aaa, dD_aaa = eaccp3_correction.eaccp3_correction.ccp3a_jk(
+            dA_aaa, dB_aaa, dC_aaa, dD_aaa = eaccp3_correction.ccp3a_jk(
                 dA_aaa, dB_aaa, dC_aaa, dD_aaa,
                 j + 1, k + 1, omega,
                 M3A, L3A, r3_excitations["aaa"],
@@ -80,7 +80,7 @@ def calc_eaccp3(T, R, L, r3_excitations, omega, corr_energy, H, H0, system, use_
     dD_aab = 0.0
     for j in range(system.noccupied_alpha):
         for k in range(system.noccupied_beta):
-            M3B = eaccp3_correction.eaccp3_correction.build_moments3b_jk(
+            M3B = eaccp3_correction.build_moments3b_jk(
                 j + 1, k + 1,
                 R.aa, R.ab,
                 R.aaa, r3_excitations["aaa"],
@@ -95,7 +95,7 @@ def calc_eaccp3(T, R, L, r3_excitations, omega, corr_energy, H, H0, system, use_
                 X_right["aa"]["voo"], X_right["aa"]["vvv"],
                 X_right["ab"]["voo"], X_right["ab"]["ovo"], X_right["ab"]["vvv"],
             )
-            L3B = eaccp3_correction.eaccp3_correction.build_leftamps3b_jk(
+            L3B = eaccp3_correction.build_leftamps3b_jk(
                 j + 1, k + 1,
                 L.a, L.aa, L.ab,
                 L.aaa, r3_excitations["aaa"],
@@ -110,7 +110,7 @@ def calc_eaccp3(T, R, L, r3_excitations, omega, corr_energy, H, H0, system, use_
                 X_left["aa"]["ovo"], X_left["aa"]["vvv"],
                 X_left["ab"]["voo"], X_left["ab"]["ovo"], X_left["ab"]["vvv"],
             )
-            dA_aab, dB_aab, dC_aab, dD_aab = eaccp3_correction.eaccp3_correction.ccp3b_jk(
+            dA_aab, dB_aab, dC_aab, dD_aab = eaccp3_correction.ccp3b_jk(
                 dA_aab, dB_aab, dC_aab, dD_aab,
                 j + 1, k + 1, omega,
                 M3B, L3B, r3_excitations["aab"],
@@ -129,7 +129,7 @@ def calc_eaccp3(T, R, L, r3_excitations, omega, corr_energy, H, H0, system, use_
     dD_abb = 0.0
     for j in range(system.noccupied_beta):
         for k in range(j + 1, system.noccupied_beta):
-            M3C = eaccp3_correction.eaccp3_correction.build_moments3c_jk(
+            M3C = eaccp3_correction.build_moments3c_jk(
                 j + 1, k + 1,
                 R.ab,
                 R.aab, r3_excitations["aab"],
@@ -140,7 +140,7 @@ def calc_eaccp3(T, R, L, r3_excitations, omega, corr_energy, H, H0, system, use_
                 H.bb.vvvv.transpose(2, 3, 0, 1), H.bb.oooo, H.bb.voov, H.bb.vooo, H.bb.vvov,
                 X_right["ab"]["voo"], X_right["ab"]["ovo"], X_right["ab"]["vvv"],
             )
-            L3C = eaccp3_correction.eaccp3_correction.build_leftamps3c_jk(
+            L3C = eaccp3_correction.build_leftamps3c_jk(
                 j + 1, k + 1,
                 L.a, L.ab,
                 L.aab, r3_excitations["aab"],
@@ -150,7 +150,7 @@ def calc_eaccp3(T, R, L, r3_excitations, omega, corr_energy, H, H0, system, use_
                 H.bb.vvvv, H.bb.oooo, H.bb.voov.transpose(3, 2, 1, 0), H.bb.ooov, H.bb.vovv, H.bb.oovv,
                 X_left["ab"]["voo"], X_left["ab"]["ovo"], X_left["ab"]["vvv"],
             )
-            dA_abb, dB_abb, dC_abb, dD_abb = eaccp3_correction.eaccp3_correction.ccp3c_jk(
+            dA_abb, dB_abb, dC_abb, dD_abb = eaccp3_correction.ccp3c_jk(
                 dA_abb, dB_abb, dC_abb, dD_abb,
                 j + 1, k + 1, omega,
                 M3C, L3C, r3_excitations["abb"],

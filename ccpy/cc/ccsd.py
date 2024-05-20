@@ -45,7 +45,7 @@ def update_t1a(T, dT, X, H, shift):
     dT.a -= np.einsum("mnif,afmn->ai", H.ab.ooov, T.ab, optimize=True)
     dT.a += 0.5 * np.einsum("anef,efin->ai", H.aa.vovv, T.aa, optimize=True)
     dT.a += np.einsum("anef,efin->ai", H.ab.vovv, T.ab, optimize=True)
-    T.a, dT.a = cc_loops2.cc_loops2.update_t1a(
+    T.a, dT.a = cc_loops2.update_t1a(
         T.a, dT.a + H.a.vo, H.a.oo, H.a.vv, shift
     )
     return T, dT
@@ -66,7 +66,7 @@ def update_t1b(T, dT, X, H, shift):
     dT.b -= np.einsum("nmfi,fanm->ai", H.ab.oovo, T.ab, optimize=True)
     dT.b += 0.5 * np.einsum("anef,efin->ai", H.bb.vovv, T.bb, optimize=True)
     dT.b += np.einsum("nafe,feni->ai", H.ab.ovvv, T.ab, optimize=True)
-    T.b, dT.b = cc_loops2.cc_loops2.update_t1b(
+    T.b, dT.b = cc_loops2.update_t1b(
         T.b, dT.b + H.b.vo, H.b.oo, H.b.vv, shift
     )
     return T, dT
@@ -97,7 +97,7 @@ def update_t2a(T, dT, H, H0, shift):
     dT.aa += 0.25 * np.einsum("abef,efij->abij", H0.aa.vvvv, tau, optimize=True)
     dT.aa += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
 
-    T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
+    T.aa, dT.aa = cc_loops2.update_t2a(
         T.aa, dT.aa + 0.25 * H0.aa.vvoo, H0.a.oo, H0.a.vv, shift
     )
     return T, dT
@@ -141,7 +141,7 @@ def update_t2b(T, dT, H, H0, shift):
     dT.ab += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
     dT.ab += np.einsum("abef,efij->abij", H0.ab.vvvv, tau, optimize=True)
 
-    T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
+    T.ab, dT.ab = cc_loops2.update_t2b(
         T.ab, dT.ab + H0.ab.vvoo, H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv, shift
     )
     return T, dT
@@ -173,7 +173,7 @@ def update_t2c(T, dT, H, H0, shift):
     dT.bb += 0.25 * np.einsum("abef,efij->abij", H0.bb.vvvv, tau, optimize=True)
     dT.bb += 0.125 * np.einsum("mnij,abmn->abij", I2C_oooo, T.bb, optimize=True)
 
-    T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
+    T.bb, dT.bb = cc_loops2.update_t2c(
         T.bb, dT.bb + 0.25 * H0.bb.vvoo, H0.b.oo, H0.b.vv, shift
     )
     return T, dT

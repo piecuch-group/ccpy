@@ -4,7 +4,7 @@ MBGF(2), MBGF(3), and OVGF solvers."""
 import mbgf_loops
 import numpy as np
 
-# print(mbgf_loops.mbgf_loops.mbgf2_selfenergy.__doc__)
+# print(mbgf_loops.mbgf2_selfenergy.__doc__)
 
 
 def calc_mp2_selfenergy(omega, ints, sys):
@@ -157,7 +157,7 @@ def gf2_ip(nroot, ints, sys, maxit=50, tol=1.0e-08):
         # MBGF iterations for each root
         for it in range(maxit):
             # sigma_a, _ = calc_mp2_selfenergy(e0,ints,sys)
-            sigma_a, _ = mbgf_loops.mbgf_loops.mbgf2_selfenergy(
+            sigma_a, _ = mbgf_loops.mbgf2_selfenergy(
                 e0,
                 fA["oo"],
                 fA["vv"],

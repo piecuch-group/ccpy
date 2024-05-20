@@ -174,7 +174,7 @@ def build_00(T, dT, H, system):
 
 def update(T, dT, H, shift):
 
-    T.a, dT.a = cc_active_loops.cc_active_loops.update_t1a(
+    T.a, dT.a = cc_active_loops.update_t1a(
         T.a,
         dT.a,
         H.a.oo,

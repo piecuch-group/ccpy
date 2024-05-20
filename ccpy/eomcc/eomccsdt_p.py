@@ -3,7 +3,7 @@ from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eom
 from ccpy.utilities.updates import eomccsdt_p_loops
 
 def update(R, omega, H, RHF_symmetry, system, r3_excitations):
-    R.a, R.b, R.aa, R.ab, R.bb, R.aaa, R.aab, R.abb, R.bbb = eomccsdt_p_loops.eomccsdt_p_loops.update_r(
+    R.a, R.b, R.aa, R.ab, R.bb, R.aaa, R.aab, R.abb, R.bbb = eomccsdt_p_loops.update_r(
         R.a,
         R.b,
         R.aa,
@@ -94,7 +94,7 @@ def build_HR_1A(dR, R, r3_excitations, H):
     dR.a += np.einsum("me,aeim->ai", H.a.ov, R.aa, optimize=True)
     dR.a += np.einsum("me,aeim->ai", H.b.ov, R.ab, optimize=True)
     # Parts contracted with R3
-    dR.a = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_1a(
+    dR.a = eomccsdt_p_loops.build_hr_1a(
                                             dR.a,
                                             R.aaa, r3_excitations["aaa"], 
                                             R.aab, r3_excitations["aab"], 
@@ -116,7 +116,7 @@ def build_HR_1B(dR, R, r3_excitations, H):
     dR.b += np.einsum("me,eami->ai", H.a.ov, R.ab, optimize=True)
     dR.b += np.einsum("me,aeim->ai", H.b.ov, R.bb, optimize=True)
     # Parts contracted with R3
-    dR.b = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_1b(
+    dR.b = eomccsdt_p_loops.build_hr_1b(
                                             dR.b,
                                             R.aab, r3_excitations["aab"], 
                                             R.abb, r3_excitations["abb"], 
@@ -138,7 +138,7 @@ def build_HR_2A(dR, R, r3_excitations, T, t3_excitations, H, X):
     dR.aa += 0.5 * np.einsum("be,aeij->abij", X.a.vv, T.aa, optimize=True)  # A(ab)
     dR.aa -= 0.5 * np.einsum("mj,abim->abij", X.a.oo, T.aa, optimize=True)  # A(ij)
     # Parts contracted with T3 and R3; antisymmetrization included
-    dR.aa = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_2a(
+    dR.aa = eomccsdt_p_loops.build_hr_2a(
                                             dR.aa,
                                             R.aaa, r3_excitations["aaa"],
                                             R.aab, r3_excitations["aab"],
@@ -174,7 +174,7 @@ def build_HR_2B(dR, R, r3_excitations, T, t3_excitations, H, X):
     dR.ab += np.einsum("be,aeij->abij", X.b.vv, T.ab, optimize=True)
     dR.ab -= np.einsum("mj,abim->abij", X.b.oo, T.ab, optimize=True)
     # Parts contracted with T3 and R3
-    dR.ab = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_2b(
+    dR.ab = eomccsdt_p_loops.build_hr_2b(
                                             dR.ab,
                                             R.aab, r3_excitations["aab"],
                                             R.abb, r3_excitations["abb"],
@@ -201,7 +201,7 @@ def build_HR_2C(dR, R, r3_excitations, T, t3_excitations, H, X):
     dR.bb += 0.5 * np.einsum("be,aeij->abij", X.b.vv, T.bb, optimize=True)  # A(ab)
     dR.bb -= 0.5 * np.einsum("mj,abim->abij", X.b.oo, T.bb, optimize=True)  # A(ij)
     # Parts contracted with T3 and R3; antisymmetrization included
-    dR.bb = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_2c(
+    dR.bb = eomccsdt_p_loops.build_hr_2c(
                                             dR.bb,
                                             R.abb, r3_excitations["abb"],
                                             R.bbb, r3_excitations["bbb"],
@@ -216,7 +216,7 @@ def build_HR_2C(dR, R, r3_excitations, T, t3_excitations, H, X):
 
 def build_HR_3A(dR, R, r3_excitations, T, t3_excitations, H, X):
 
-    dR.aaa, R.aaa, r3_excitations["aaa"] = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_3a(
+    dR.aaa, R.aaa, r3_excitations["aaa"] = eomccsdt_p_loops.build_hr_3a(
                                             R.aa,
                                             R.aaa, r3_excitations["aaa"],
                                             R.aab, r3_excitations["aab"],
@@ -236,7 +236,7 @@ def build_HR_3A(dR, R, r3_excitations, T, t3_excitations, H, X):
 
 def build_HR_3B(dR, R, r3_excitations, T, t3_excitations, H, X):
 
-    dR.aab, R.aab, r3_excitations["aab"] = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_3b(
+    dR.aab, R.aab, r3_excitations["aab"] = eomccsdt_p_loops.build_hr_3b(
                                             R.aa, R.ab,
                                             R.aaa, r3_excitations["aaa"],
                                             R.aab, r3_excitations["aab"],
@@ -266,7 +266,7 @@ def build_HR_3B(dR, R, r3_excitations, T, t3_excitations, H, X):
 
 def build_HR_3C(dR, R, r3_excitations, T, t3_excitations, H, X):
 
-    dR.abb, R.abb, r3_excitations["abb"] = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_3c(
+    dR.abb, R.abb, r3_excitations["abb"] = eomccsdt_p_loops.build_hr_3c(
                                             R.ab, R.bb,
                                             R.aab, r3_excitations["aab"],
                                             R.abb, r3_excitations["abb"],
@@ -296,7 +296,7 @@ def build_HR_3C(dR, R, r3_excitations, T, t3_excitations, H, X):
 
 def build_HR_3D(dR, R, r3_excitations, T, t3_excitations, H, X):
 
-    dR.bbb, R.bbb, r3_excitations["bbb"] = eomccsdt_p_loops.eomccsdt_p_loops.build_hr_3d(
+    dR.bbb, R.bbb, r3_excitations["bbb"] = eomccsdt_p_loops.build_hr_3d(
                                             R.bb,
                                             R.abb, r3_excitations["abb"],
                                             R.bbb, r3_excitations["bbb"],

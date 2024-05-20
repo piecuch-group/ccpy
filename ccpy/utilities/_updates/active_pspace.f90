@@ -42,16 +42,4 @@ module active_pspace
 
               end subroutine get_active_triples_aaa
 
-              subroutine get_active_triples_aab()
-
-              end subroutine get_active_triples_aab
-
-              subroutine get_active_triples_abb()
-
-              end subroutine get_active_triples_abb
-
-              subroutine get_active_triples_bbb()
-
-              end subroutine get_active_triples_bbb
-
-end module active_space
+end module active_pspace

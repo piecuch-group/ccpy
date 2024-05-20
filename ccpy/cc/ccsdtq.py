@@ -109,7 +109,7 @@ def update_t1a(T, dT, H, shift):
     dT.a += np.einsum("mnef,aefimn->ai", H.ab.oovv, T.aab, optimize=True)
     dT.a += 0.25 * np.einsum("mnef,aefimn->ai", H.bb.oovv, T.abb, optimize=True)
 
-    T.a, dT.a = cc_loops2.cc_loops2.update_t1a(
+    T.a, dT.a = cc_loops2.update_t1a(
         T.a,
         dT.a + H.a.vo,
         H.a.oo,
@@ -162,7 +162,7 @@ def update_t1b(T, dT, H, shift):
     dT.b += 0.25 * np.einsum("mnef,efamni->ai", H.aa.oovv, T.aab, optimize=True)
     dT.b += np.einsum("mnef,efamni->ai", H.ab.oovv, T.abb, optimize=True)
 
-    T.b, dT.b = cc_loops2.cc_loops2.update_t1b(
+    T.b, dT.b = cc_loops2.update_t1b(
         T.b,
         dT.b + H.b.vo,
         H.b.oo,
@@ -228,7 +228,7 @@ def update_t2a(T, dT, H, H0, shift):
     dT.aa += (1.0 / 4.0) * np.einsum("mnef,abefijmn->abij", H0.ab.oovv, T.aaab, optimize=True)
     dT.aa += (1.0 / 4.0) * 0.25 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T.aabb, optimize=True)
 
-    T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
+    T.aa, dT.aa = cc_loops2.update_t2a(
         T.aa,
         dT.aa + 0.25 * H0.aa.vvoo,
         H0.a.oo,
@@ -321,7 +321,7 @@ def update_t2b(T, dT, H, H0, shift):
     dT.ab += np.einsum("mnef,aefbimnj->abij", H0.ab.oovv, T.aabb, optimize=True)
     dT.ab += 0.25 * np.einsum("mnef,abefijmn->abij", H0.bb.oovv, T.abbb, optimize=True)
 
-    T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
+    T.ab, dT.ab = cc_loops2.update_t2b(
         T.ab,
         dT.ab + H0.ab.vvoo,
         H0.a.oo,
@@ -389,7 +389,7 @@ def update_t2c(T, dT, H, H0, shift):
     dT.bb += 0.25 * np.einsum("nmfe,febanmji->abij", H0.ab.oovv, T.abbb, optimize=True)
     dT.bb += 0.0625 * np.einsum("mnef,febanmji->abij", H0.aa.oovv, T.aabb, optimize=True)
 
-    T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
+    T.bb, dT.bb = cc_loops2.update_t2c(
         T.bb,
         dT.bb + 0.25 * H0.bb.vvoo,
         H0.b.oo,
@@ -430,7 +430,7 @@ def update_t3a(T, dT, H, H0, shift):
     dT.aaa -= (1.0 / 24.0) * np.einsum("mnkf,abcfijmn->abcijk", H.aa.ooov, T.aaaa, optimize=True) # (k/ij) = 3
     dT.aaa -= (1.0 / 12.0) * np.einsum("mnkf,abcfijmn->abcijk", H.ab.ooov, T.aaab, optimize=True) # (k/ij) = 3
 
-    T.aaa, dT.aaa = cc_loops2.cc_loops2.update_t3a_v2(
+    T.aaa, dT.aaa = cc_loops2.update_t3a_v2(
         T.aaa,
         dT.aaa,
         H0.a.oo,
@@ -507,7 +507,7 @@ def update_t3b(T, dT, H, H0, shift):
     dT.aab += 0.25 * np.einsum("ncfe,abfeijnk->abcijk", H.ab.ovvv, T.aaab, optimize=True) # (1) = 1
     dT.aab += 0.125 * np.einsum("cnef,abfeijnk->abcijk", H.bb.vovv, T.aabb, optimize=True) # (1) = 1
 
-    T.aab, dT.aab = cc_loops2.cc_loops2.update_t3b_v2(
+    T.aab, dT.aab = cc_loops2.update_t3b_v2(
         T.aab,
         dT.aab,
         H0.a.oo,
@@ -586,7 +586,7 @@ def update_t3c(T, dT, H, H0, shift):
     dT.abb += 0.25 * np.einsum("cnef,efbaknji->cbakji", H.ab.vovv, T.abbb, optimize=True)
     dT.abb += 0.125 * np.einsum("cnef,efbaknji->cbakji", H.aa.vovv, T.aabb, optimize=True)
 
-    T.abb, dT.abb = cc_loops2.cc_loops2.update_t3c_v2(
+    T.abb, dT.abb = cc_loops2.update_t3c_v2(
         T.abb,
         dT.abb,
         H0.a.oo,
@@ -630,7 +630,7 @@ def update_t3d(T, dT, H, H0, shift):
     dT.bbb -= (1.0 / 24.0) * np.einsum("mnkf,abcfijmn->abcijk", H.bb.ooov, T.bbbb, optimize=True) # (k/ij) = 3
     dT.bbb -= (1.0 / 12.0) * np.einsum("nmfk,fcbanmji->abcijk", H.ab.oovo, T.abbb, optimize=True) # (k/ij) = 3
 
-    T.bbb, dT.bbb = cc_loops2.cc_loops2.update_t3d_v2(
+    T.bbb, dT.bbb = cc_loops2.update_t3d_v2(
         T.bbb,
         dT.bbb,
         H0.b.oo,
@@ -699,7 +699,7 @@ def update_t4a(T, dT, H, H0, shift):
     dT.aaaa -= (24.0 / 576.0) * np.einsum("bcmjkl,adim->abcdijkl", I3A_vvoooo, T.aa, optimize=True) # (bc/ad)(i/jkl) = 6 * 4 = 24
 
 
-    T.aaaa, dT.aaaa = cc_loops_t4.cc_loops_t4.update_t4a(
+    T.aaaa, dT.aaaa = cc_loops_t4.update_t4a(
         T.aaaa,
         dT.aaaa,
         H0.a.oo,
@@ -873,7 +873,7 @@ def update_t4b(T, dT, H, H0, shift):
     dT.aaab -= (9.0 / 36.0) * np.einsum("bcmjkl,adim->abcdijkl", I3B_vvoooo, T.ab, optimize=True)  # (a/bc)(i/jk) = 9
 
 
-    T.aaab, dT.aaab = cc_loops_t4.cc_loops_t4.update_t4b(
+    T.aaab, dT.aaab = cc_loops_t4.update_t4b(
         T.aaab,
         dT.aaab,
         H0.a.oo,
@@ -1120,7 +1120,7 @@ def update_t4c(T, dT, H, H0, shift):
     )
     dT.aabb -= (2.0 / 16.0) * np.einsum("abmijl,cdkm->abcdijkl", I3B_vvoooo, T.bb, optimize=True)  #  [24]  (kl) = 2
 
-    T.aabb, dT.aabb = cc_loops_t4.cc_loops_t4.update_t4c(
+    T.aabb, dT.aabb = cc_loops_t4.update_t4c(
         T.aabb,
         dT.aabb,
         H0.a.oo,

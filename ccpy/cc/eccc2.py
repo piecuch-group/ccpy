@@ -47,7 +47,7 @@ def update_t1a(T, dT, H, X, VT_ext, shift):
     dT.a -= np.einsum("mnif,afmn->ai", H.ab.ooov, T.ab, optimize=True)
     dT.a += 0.5 * np.einsum("anef,efin->ai", H.aa.vovv, T.aa, optimize=True)
     dT.a += np.einsum("anef,efin->ai", H.ab.vovv, T.ab, optimize=True)
-    T.a, dT.a = cc_loops2.cc_loops2.update_t1a(
+    T.a, dT.a = cc_loops2.update_t1a(
         T.a,
         dT.a + H.a.vo + VT_ext.a.vo,
         H.a.oo,
@@ -70,7 +70,7 @@ def update_t1b(T, dT, H, X, VT_ext, shift):
     dT.b -= np.einsum("nmfi,fanm->ai", H.ab.oovo, T.ab, optimize=True)
     dT.b += 0.5 * np.einsum("anef,efin->ai", H.bb.vovv, T.bb, optimize=True)
     dT.b += np.einsum("nafe,feni->ai", H.ab.ovvv, T.ab, optimize=True)
-    T.b, dT.b = cc_loops2.cc_loops2.update_t1b(
+    T.b, dT.b = cc_loops2.update_t1b(
         T.b,
         dT.b + H.b.vo + VT_ext.b.vo,
         H.b.oo,
@@ -110,7 +110,7 @@ def update_t2a(T, dT, H, H0, VT_ext, shift, T_ext):
     dT.aa += 0.25 * np.einsum("anef,ebfijn->abij", H0.aa.vovv + H.aa.vovv, T_ext.aaa, optimize=True)
     dT.aa += 0.5 * np.einsum("anef,ebfijn->abij", H0.ab.vovv + H.ab.vovv, T_ext.aab, optimize=True)
 
-    T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
+    T.aa, dT.aa = cc_loops2.update_t2a(
         T.aa,
         dT.aa + 0.25 * (H0.aa.vvoo + VT_ext.aa.vvoo),
         H0.a.oo,
@@ -166,7 +166,7 @@ def update_t2b(T, dT, H, H0, VT_ext, shift, T_ext):
     dT.ab += 0.5 * np.einsum("bnef,afeinj->abij", H0.bb.vovv + H.bb.vovv, T_ext.abb, optimize=True)
     dT.ab += np.einsum("me,aebimj->abij", H.a.ov, T_ext.aab, optimize=True)
     dT.ab += np.einsum("me,aebimj->abij", H.b.ov, T_ext.abb, optimize=True)
-    T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
+    T.ab, dT.ab = cc_loops2.update_t2b(
         T.ab,
         dT.ab + H0.ab.vvoo + VT_ext.ab.vvoo,
         H0.a.oo,
@@ -208,7 +208,7 @@ def update_t2c(T, dT, H, H0, VT_ext, shift, T_ext):
     dT.bb += 0.5 * np.einsum("nafe,febnij->abij", H0.ab.ovvv + H.ab.ovvv, T_ext.abb, optimize=True)
     dT.bb -= 0.25 * np.einsum("mnif,abfmjn->abij", H0.bb.ooov + H.bb.ooov, T_ext.bbb, optimize=True)
     dT.bb -= 0.5 * np.einsum("nmfi,fabnmj->abij", H0.ab.oovo + H.ab.oovo, T_ext.abb, optimize=True)
-    T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
+    T.bb, dT.bb = cc_loops2.update_t2c(
         T.bb,
         dT.bb + 0.25 * (H0.bb.vvoo + VT_ext.bb.vvoo),
         H0.b.oo,

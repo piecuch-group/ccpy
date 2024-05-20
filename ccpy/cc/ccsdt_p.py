@@ -100,7 +100,7 @@ def update_t1a(T, dT, H, X, shift, t3_excitations):
     dT.a -= np.einsum("mnif,afmn->ai", H.ab.ooov, T.ab, optimize=True)
     dT.a += 0.5 * np.einsum("anef,efin->ai", H.aa.vovv, T.aa, optimize=True)
     dT.a += np.einsum("anef,efin->ai", H.ab.vovv, T.ab, optimize=True)
-    T.a, dT.a = ccsdt_p_loops.ccsdt_p_loops.update_t1a(
+    T.a, dT.a = ccsdt_p_loops.update_t1a(
         T.a, 
         dT.a + H.a.vo,
         t3_excitations["aaa"], t3_excitations["aab"], t3_excitations["abb"],
@@ -125,7 +125,7 @@ def update_t1b(T, dT, H, X, shift, t3_excitations):
     dT.b -= np.einsum("nmfi,fanm->ai", H.ab.oovo, T.ab, optimize=True)
     dT.b += 0.5 * np.einsum("anef,efin->ai", H.bb.vovv, T.bb, optimize=True)
     dT.b += np.einsum("nafe,feni->ai", H.ab.ovvv, T.ab, optimize=True)
-    T.b, dT.b = ccsdt_p_loops.ccsdt_p_loops.update_t1b(
+    T.b, dT.b = ccsdt_p_loops.update_t1b(
         T.b,
         dT.b + H.b.vo,
         t3_excitations["aab"], t3_excitations["abb"], t3_excitations["bbb"],
@@ -161,7 +161,7 @@ def update_t2a(T, dT, H, H0, shift, t3_excitations):
     dT.aa += 0.25 * np.einsum("abef,efij->abij", H0.aa.vvvv, tau, optimize=True)
     dT.aa += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
 
-    T.aa, dT.aa = ccsdt_p_loops.ccsdt_p_loops.update_t2a(
+    T.aa, dT.aa = ccsdt_p_loops.update_t2a(
         T.aa,
         dT.aa + 0.25 * H0.aa.vvoo,
         t3_excitations["aaa"], t3_excitations["aab"],
@@ -212,7 +212,7 @@ def update_t2b(T, dT, H, H0, shift, t3_excitations):
     dT.ab += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
     dT.ab += np.einsum("abef,efij->abij", H0.ab.vvvv, tau, optimize=True)
 
-    T.ab, dT.ab = ccsdt_p_loops.ccsdt_p_loops.update_t2b(
+    T.ab, dT.ab = ccsdt_p_loops.update_t2b(
         T.ab,
         dT.ab + H0.ab.vvoo,
         t3_excitations["aab"], t3_excitations["abb"],
@@ -253,7 +253,7 @@ def update_t2c(T, dT, H, H0, shift, t3_excitations):
     dT.bb += 0.25 * np.einsum("abef,efij->abij", H0.bb.vvvv, tau, optimize=True)
     dT.bb += 0.125 * np.einsum("mnij,abmn->abij", I2C_oooo, T.bb, optimize=True)
 
-    T.bb, dT.bb = ccsdt_p_loops.ccsdt_p_loops.update_t2c(
+    T.bb, dT.bb = ccsdt_p_loops.update_t2c(
         T.bb,
         dT.bb + 0.25 * H0.bb.vvoo,
         t3_excitations["abb"], t3_excitations["bbb"],
@@ -273,7 +273,7 @@ def update_t3a(T, dT, H, H0, shift, t3_excitations):
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     I2A_vooo = I2A_vooo.transpose(1, 0, 2, 3)
 
-    dT.aaa, T.aaa, t3_excitations["aaa"] = ccsdt_p_loops.ccsdt_p_loops.update_t3a_p(
+    dT.aaa, T.aaa, t3_excitations["aaa"] = ccsdt_p_loops.update_t3a_p(
         T.aaa, t3_excitations["aaa"], 
         T.aab, t3_excitations["aab"],
         T.aa,
@@ -296,7 +296,7 @@ def update_t3b(T, dT, H, H0, shift, t3_excitations):
     I2A_vooo = I2A_vooo.transpose(1, 0, 2, 3)
     I2B_vooo = I2B_vooo.transpose(1, 0, 2, 3)
 
-    dT.aab, T.aab, t3_excitations["aab"] = ccsdt_p_loops.ccsdt_p_loops.update_t3b_p(
+    dT.aab, T.aab, t3_excitations["aab"] = ccsdt_p_loops.update_t3b_p(
         T.aaa, t3_excitations["aaa"],
         T.aab, t3_excitations["aab"],
         T.abb, t3_excitations["abb"],
@@ -321,7 +321,7 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations):
     I2B_vooo = I2B_vooo.transpose(1, 0, 2, 3)
     I2C_vooo = I2C_vooo.transpose(1, 0, 2, 3)
 
-    dT.abb, T.abb, t3_excitations["abb"] = ccsdt_p_loops.ccsdt_p_loops.update_t3c_p(
+    dT.abb, T.abb, t3_excitations["abb"] = ccsdt_p_loops.update_t3c_p(
         T.aab, t3_excitations["aab"],
         T.abb, t3_excitations["abb"],
         T.bbb, t3_excitations["bbb"],
@@ -343,7 +343,7 @@ def update_t3d(T, dT, H, H0, shift, t3_excitations):
     I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
     I2C_vooo = I2C_vooo.transpose(1, 0, 2, 3)
 
-    dT.bbb, T.bbb, t3_excitations["bbb"] = ccsdt_p_loops.ccsdt_p_loops.update_t3d_p(
+    dT.bbb, T.bbb, t3_excitations["bbb"] = ccsdt_p_loops.update_t3d_p(
         T.abb, t3_excitations["abb"],
         T.bbb, t3_excitations["bbb"],
         T.bb,

@@ -113,3 +113,9 @@ ENV/
 
 .vscode/
 .nfs*
+
+
+# Fortran
+*.mod
+*.o
+*.a

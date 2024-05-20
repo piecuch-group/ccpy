@@ -157,7 +157,7 @@ def build_v(e2int):
 
 
 def build_f(e1int, v, system):
-    """This function generates the Fock matrix using the formula
+    r"""This function generates the Fock matrix using the formula
     F = Z + G where G is \sum_{i} <pi|v|qi>_A split for different
     spin cases.
 

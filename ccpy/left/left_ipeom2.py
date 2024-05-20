@@ -11,7 +11,7 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
     LH = build_LH_2A(L, LH, T, H)
     LH = build_LH_2B(L, LH, T, H)
     # Update the L vector
-    L.a, L.aa, L.ab, LH.a, LH.aa, LH.ab = cc_loops2.cc_loops2.update_l_2h1p(L.a, L.aa, L.ab,
+    L.a, L.aa, L.ab, LH.a, LH.aa, LH.ab = cc_loops2.update_l_2h1p(L.a, L.aa, L.ab,
                                                                             LH.a, LH.aa, LH.ab,
                                                                             omega,
                                                                             H.a.oo, H.a.vv, H.b.oo, H.b.vv,
@@ -19,7 +19,7 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
     return L, LH
 
 def update_l(L, omega, H, RHF_symmetry, system):
-    L.a, L.aa, L.ab = cc_loops2.cc_loops2.update_r_2h1p(
+    L.a, L.aa, L.ab = cc_loops2.update_r_2h1p(
             L.a,
             L.aa,
             L.ab,

@@ -373,7 +373,7 @@ def build_hbar_cc3(T, H0, RHF_symmetry, system, *args):
     X.bb.vvov = H0.bb.vvov + Q1 + np.einsum("abfe,fi->abie", X.bb.vvvv, T.b, optimize=True)
 
     # Add in the t3-dependent terms to Hbar computed on-the-fly
-    H.aa.vooo, H.aa.vvov, H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.bb.vooo, H.bb.vvov = hbar_cc3.hbar_cc3.build_hbar(
+    H.aa.vooo, H.aa.vvov, H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.bb.vooo, H.bb.vvov = hbar_cc3.build_hbar(
             H.aa.vooo, H.aa.vvov,
             H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo,
             H.bb.vooo, H.bb.vvov,

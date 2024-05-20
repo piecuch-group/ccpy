@@ -26,7 +26,7 @@ def calc_ccp4(T, L, corr_energy, H, H0, system, t4_excitations, use_RHF=False):
     d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
 
     #### aaaa correction ####
-    dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = crcc24_loops.crcc24_loops.crcc24a_p(
+    dA_aaaa, dB_aaaa, dC_aaaa, dD_aaaa = crcc24_loops.crcc24a_p(
         t4_excitations["aaaa"],
         T.aa,
         L.aa,
@@ -43,7 +43,7 @@ def calc_ccp4(T, L, corr_energy, H, H0, system, t4_excitations, use_RHF=False):
     )
 
     #### aaab correction ####
-    dA_aaab, dB_aaab, dC_aaab, dD_aaab = crcc24_loops.crcc24_loops.crcc24b_p(
+    dA_aaab, dB_aaab, dC_aaab, dD_aaab = crcc24_loops.crcc24b_p(
         t4_excitations["aaab"],
         T.aa,
         T.ab,
@@ -78,7 +78,7 @@ def calc_ccp4(T, L, corr_energy, H, H0, system, t4_excitations, use_RHF=False):
     )
 
     #### aabb correction ####
-    dA_aabb, dB_aabb, dC_aabb, dD_aabb = crcc24_loops.crcc24_loops.crcc24c_p(
+    dA_aabb, dB_aabb, dC_aabb, dD_aabb = crcc24_loops.crcc24c_p(
         t4_excitations["aabb"],
         T.aa,
         T.ab,
@@ -127,7 +127,7 @@ def calc_ccp4(T, L, corr_energy, H, H0, system, t4_excitations, use_RHF=False):
 
     else:
         #### abbb correction ####
-        dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_loops.crcc24_loops.crcc24d_p(
+        dA_abbb, dB_abbb, dC_abbb, dD_abbb = crcc24_loops.crcc24d_p(
                 t4_excitations["abbb"],
                 T.ab,
                 T.bb,
@@ -161,7 +161,7 @@ def calc_ccp4(T, L, corr_energy, H, H0, system, t4_excitations, use_RHF=False):
                 d3abb_v,
         )
         #### bbbb correction ####
-        dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_loops.crcc24_loops.crcc24e_p(
+        dA_bbbb, dB_bbbb, dC_bbbb, dD_bbbb = crcc24_loops.crcc24e_p(
                 t4_excitations["bbbb"],
                 T.bb,
                 L.bb,

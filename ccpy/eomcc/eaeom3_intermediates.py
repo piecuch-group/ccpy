@@ -72,7 +72,7 @@ def get_eaeom3_p_intermediates(H, R, R3_excitations):
                     +0.5*np.einsum("amef,efj->amj", H.aa.vovv, R.aa, optimize=True)
                     -np.einsum("amje,e->amj", H.aa.voov, R.a, optimize=True) # CAREFUL: this is a minus sign
     )
-    X["aa"]["voo"] = eaeom3_p_intermediates.eaeom3_p_intermediates.add_r3_x2a_voo(X["aa"]["voo"],
+    X["aa"]["voo"] = eaeom3_p_intermediates.add_r3_x2a_voo(X["aa"]["voo"],
                                                                                   R.aaa, R3_excitations["aaa"],
                                                                                   R.aab, R3_excitations["aab"],
                                                                                   H.aa.oovv, H.ab.oovv)
@@ -82,7 +82,7 @@ def get_eaeom3_p_intermediates(H, R, R3_excitations):
                     +np.einsum("mbef,efj->mbj", H.ab.ovvv, R.ab, optimize=True)
                     +np.einsum("mbfj,f->mbj", H.ab.ovvo, R.a, optimize=True)
     )
-    X["ab"]["ovo"] = eaeom3_p_intermediates.eaeom3_p_intermediates.add_r3_x2b_ovo(X["ab"]["ovo"],
+    X["ab"]["ovo"] = eaeom3_p_intermediates.add_r3_x2b_ovo(X["ab"]["ovo"],
                                                                                   R.aab, R3_excitations["aab"],
                                                                                   R.abb, R3_excitations["abb"],
                                                                                   H.aa.oovv, H.ab.oovv)
@@ -93,7 +93,7 @@ def get_eaeom3_p_intermediates(H, R, R3_excitations):
                     +np.einsum("amef,efj->amj", H.ab.vovv, R.ab, optimize=True)
                     +np.einsum("amej,e->amj", H.ab.vovo, R.a, optimize=True)
     )
-    X["ab"]["voo"] = eaeom3_p_intermediates.eaeom3_p_intermediates.add_r3_x2b_voo(X["ab"]["voo"],
+    X["ab"]["voo"] = eaeom3_p_intermediates.add_r3_x2b_voo(X["ab"]["voo"],
                                                                                   R.aab, R3_excitations["aab"],
                                                                                   R.abb, R3_excitations["abb"],
                                                                                   H.ab.oovv, H.bb.oovv)
@@ -105,7 +105,7 @@ def get_eaeom3_p_intermediates(H, R, R3_excitations):
                     +0.5*np.einsum("abfe,f->abe", H.aa.vvvv, R.a, optimize=True)
     )
     X["aa"]["vvv"] -= np.transpose(X["aa"]["vvv"], (1, 0, 2))
-    X["aa"]["vvv"] = eaeom3_p_intermediates.eaeom3_p_intermediates.add_r3_x2a_vvv(X["aa"]["vvv"],
+    X["aa"]["vvv"] = eaeom3_p_intermediates.add_r3_x2a_vvv(X["aa"]["vvv"],
                                                                                   R.aaa, R3_excitations["aaa"],
                                                                                   R.aab, R3_excitations["aab"],
                                                                                   H.aa.oovv, H.ab.oovv)
@@ -116,7 +116,7 @@ def get_eaeom3_p_intermediates(H, R, R3_excitations):
                     -np.einsum("amfe,fbm->abe", H.ab.vovv, R.ab, optimize=True)
                     +np.einsum("abfe,f->abe", H.ab.vvvv, R.a, optimize=True)
     )
-    X["ab"]["vvv"] = eaeom3_p_intermediates.eaeom3_p_intermediates.add_r3_x2b_vvv(X["ab"]["vvv"],
+    X["ab"]["vvv"] = eaeom3_p_intermediates.add_r3_x2b_vvv(X["ab"]["vvv"],
                                                                                   R.aab, R3_excitations["aab"],
                                                                                   R.abb, R3_excitations["abb"],
                                                                                   H.ab.oovv, H.bb.oovv)
