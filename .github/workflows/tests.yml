@@ -56,7 +56,7 @@ jobs:
           #
       - name: Short test
         run: |
-          pytest tests -v -m basic
+          pytest tests -v -m short
         if: github.event_name == 'pull_request'
 
       - name: Full test

@@ -1,4 +1,4 @@
-cython_c_args = ['-DCYTHON_CCOMPLEX=0'] # see gh-18975 for why we need this
+cython_c_args = ['-DCYTHON_CCOMPLEX=0']
 
 incdir_numpy = meson.get_external_property('numpy-include-dir', 'not-given')
 if incdir_numpy == 'not-given'
@@ -63,17 +63,6 @@ if f2py_version.version_compare('<'+min_numpy_version)
   error(f'Found f2py executable is too old: @f2py_version@')
 endif
 
-
-# ----- OLD FILE -----
-
-
-# Note that this works as long as BLAS and LAPACK are detected properly via
-# pkg-config. By default we look for OpenBLAS, other libraries can be configured via
-# `meson configure -Dblas=blas -Dlapack=lapack` (example to build with Netlib
-# BLAS and LAPACK).
-# For MKL and for auto-detecting one of multiple libs, we'll need a custom
-# dependency in Meson (like is done for scalapack) - see
-# https://github.com/mesonbuild/meson/issues/2835
 blas_name = get_option('blas')
 lapack_name = get_option('lapack')
 # pkg-config uses a lower-case name while CMake uses a capitalized name, so try
@@ -81,6 +70,7 @@ lapack_name = get_option('lapack')
 if blas_name == 'openblas'
   blas_name = ['openblas', 'OpenBLAS']
 endif
+
 if lapack_name == 'openblas'
   lapack_name = ['openblas', 'OpenBLAS']
 endif
