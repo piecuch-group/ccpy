@@ -33,7 +33,7 @@ jobs:
 
       - name: Install fortran
         run: |
-          sudo apt install -y gfortran intel-mkl meson
+          sudo apt install -y gfortran intel-mkl meson libopenblas-dev
 
       - name: Install python dependencies
         run: |
