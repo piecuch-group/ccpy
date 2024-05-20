@@ -71,7 +71,7 @@ def get_r0(R, H, omega):
     return r0 / omega
 
 def get_rel(R, r0):
-    """Compute the reduced excitation level (REL) metric, given by
+    r"""Compute the reduced excitation level (REL) metric, given by
     \sum_{n=0}^{N} n*<0|(R_{\mu,n})^+ R_{\mu,n})|0>/\sum_{n=0}^{N} <0|(R_{\mu,n})^+ R_{\mu,n})|0>.
     [See J. Chem. Phys. 122, 214107 (2005)]."""
     rel_0 = r0**2

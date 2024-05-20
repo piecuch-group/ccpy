@@ -54,9 +54,14 @@ test: ## Run tests
 
 ##@ Development
 
-all: ## Compile all fortran modules
+old-updates: ## Compile all fortran modules
 	cd ccpy/utilities/updates && $(MAKE) $@
 .PHONY: all
+
+dev-install: ## Create venv, compile, and install ccpy
+	python3 -m venv ../ccpyvenv
+	source env.sh && ython -m pip install --no-build-isolation --editable .
+.PHONY: dev-install
 
 check-dist: ## Check distribution
 	python setup.py check -ms

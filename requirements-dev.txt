@@ -19,3 +19,5 @@ autoflake
 pylint
 fprettify
 precommit
+
+ipython

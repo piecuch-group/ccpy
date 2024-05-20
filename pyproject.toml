@@ -18,16 +18,27 @@ name = "ccpy"
 version = "0.0.1"
 # TODO: add `license-files` once PEP 639 is accepted (see meson-python#88)
 #       at that point, no longer include them in `py3.install_sources()`
-license = { file = "LICENSE.txt" }
+license = { file = "COPYING" }
 description = "Coupled-cluster package written in Python."
+authors = [
+    { name = "Karthik Gururangan", email = "gururang@msu.edu" },
+]
+
 maintainers = [
-    { name = "Piecuch Group", email = "piecuch@msu.edu" },
+    { name = "Karthik Gururangan", email = "gururang@msu.edu" },
+    { name = "Emiliano Deustua", email = "edeustua@gmail.com" },
+    { name = "Piotr Piecuch", email = "piecuch@msu.edu" },
 ]
 # Note: Python and NumPy upper version bounds should be set correctly in
 # release branches, see:
 #     https://scipy.github.io/devdocs/dev/core-dev/index.html#version-ranges-for-numpy-and-other-dependencies
 requires-python = ">=3.10"
-dependencies = ["numpy>=1.23.5"]  # keep in sync with `min_numpy_version` in meson.build
+dependencies = [
+  "numpy>=1.23.5",
+  "pyscf",
+  "cclib",
+  "psutil",
+]  # keep in sync with `min_numpy_version` in meson.build
 readme = "README.md"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -51,7 +62,6 @@ classifiers = [
 [project.optional-dependencies]
 test = [
     "pytest",
-    "Cython",
     "meson",
     'ninja; sys_platform != "emscripten"',
 ]
@@ -70,7 +80,7 @@ tracker = "https://github.com/piecuch-group/ccpy/issues"
 
 
 [tool.cibuildwheel]
-skip = "cp36-* cp37-* cp38-* pp* *_ppc64le *_i686 *_s390x"
+skip = "cp37-* cp38-*"
 build-verbosity = "3"
 # gmpy2 and scikit-umfpack are usually added for testing. However, there are
 # currently wheels missing that make the test script fail.
