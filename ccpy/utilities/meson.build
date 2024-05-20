@@ -120,7 +120,9 @@ optimizations_sources = [
    '_updates/clusteranalysis.f90',
    '_updates/ecccp3_loops.f90',
    '_updates/reorder.f90',
-   '_updates/vvvv_contraction.f90'
+   '_updates/vvvv_contraction.f90',
+   '_updates/ccp3_full_correction.f90',
+   '_updates/eaccp3_correction.f90',
   ]
 
 optimizations_lib = static_library('optimizations',
