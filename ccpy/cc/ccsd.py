@@ -85,6 +85,7 @@ def update_t2a(T, dT, H, H0, shift):
     """
     Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2))_C|0>.
     """
+    nua, noa = T.a.shape
     # intermediates
     I2A_voov = H.aa.voov + (
         + 0.5 * np.einsum("mnef,afin->amie", H0.aa.oovv, T.aa, optimize=True)
@@ -102,7 +103,6 @@ def update_t2a(T, dT, H, H0, shift):
     dT.aa -= 0.5 * np.einsum("mi,abmj->abij", H.a.oo, T.aa, optimize=True)
     dT.aa += np.einsum("amie,ebmj->abij", I2A_voov, T.aa, optimize=True)
     dT.aa += np.einsum("amie,bejm->abij", I2B_voov, T.ab, optimize=True)
-    dT.aa += 0.25 * np.einsum("abef,efij->abij", H0.aa.vvvv, tau, optimize=True)
     dT.aa += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
 
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
@@ -116,6 +116,7 @@ def update_t2b(T, dT, H, H0, shift):
     """
     Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2))_C|0>.
     """
+    nua, nub, noa, nob = T.ab.shape
     # intermediates
     I2A_voov = H.aa.voov + (
         + np.einsum("mnef,aeim->anif", H0.aa.oovv, T.aa, optimize=True)
@@ -160,9 +161,9 @@ def update_t2c(T, dT, H, H0, shift):
     """
     Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2))_C|0>.
     """
+    nub, nob = T.b.shape
     # intermediates
     I2C_oooo = H.bb.oooo + 0.5 * np.einsum("mnef,efij->mnij", H0.bb.oovv, T.bb, optimize=True)
-
     I2B_ovvo = H.ab.ovvo + (
         + np.einsum("mnef,afin->maei", H0.ab.oovv, T.bb, optimize=True)
         + 0.5 * np.einsum("mnef,fani->maei", H0.aa.oovv, T.ab, optimize=True)
@@ -178,8 +179,8 @@ def update_t2c(T, dT, H, H0, shift):
     dT.bb -= 0.5 * np.einsum("mi,abmj->abij", H.b.oo, T.bb, optimize=True)
     dT.bb += np.einsum("amie,ebmj->abij", I2C_voov, T.bb, optimize=True)
     dT.bb += np.einsum("maei,ebmj->abij", I2B_ovvo, T.ab, optimize=True)
-    dT.bb += 0.25 * np.einsum("abef,efij->abij", H0.bb.vvvv, tau, optimize=True)
     dT.bb += 0.125 * np.einsum("mnij,abmn->abij", I2C_oooo, T.bb, optimize=True)
+    dT.bb += 0.25 * np.einsum("abef,efij->abij", H0.bb.vvvv, tau, optimize=True)
 
     T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
         T.bb, dT.bb + 0.25 * H0.bb.vvoo, H0.b.oo, H0.b.vv, shift

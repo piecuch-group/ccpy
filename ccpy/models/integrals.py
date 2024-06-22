@@ -133,6 +133,36 @@ def getHamiltonian(e1int, e2int, system, normal_ordered, sorted=True):
 
     return Integral(system, 2, {**onebody, **twobody}, sorted=sorted)
 
+def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
+
+    noa = system.noccupied_alpha
+    nob = system.noccupied_beta
+    nua = system.nunoccupied_alpha
+    nub = system.nunoccupied_beta
+
+    oa = slice(system.nfrozen, system.nfrozen + noa)
+    ob = slice(system.nfrozen, system.nfrozen + nob)
+    va = slice(system.nfrozen + noa, system.nfrozen + system.norbitals)
+    vb = slice(system.nfrozen + nob, system.nfrozen + system.norbitals)
+
+    H = Integral.from_none(system, 2)
+    #H.a.oo =
+
+    # corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
+    #
+    # twobody = build_v(e2int)
+    # if normal_ordered:
+    #     onebody = build_f(e1int, twobody, system)
+    # else:
+    #     onebody = {"a": e1int, "b": e1int}
+    # # Keep only correlated spatial orbitals in the one- and two-body matrices
+    # onebody["a"] = onebody["a"][corr_slice, corr_slice]
+    # onebody["b"] = onebody["b"][corr_slice, corr_slice]
+    # twobody["aa"] = twobody["aa"][corr_slice, corr_slice, corr_slice, corr_slice]
+    # twobody["ab"] = twobody["ab"][corr_slice, corr_slice, corr_slice, corr_slice]
+    # twobody["bb"] = twobody["bb"][corr_slice, corr_slice, corr_slice, corr_slice]
+    #
+    # return Integral(system, 2, {**onebody, **twobody}, sorted=sorted)
 
 def build_v(e2int):
     """Generate the antisymmetrized version of the twobody matrix.
@@ -196,3 +226,42 @@ def build_f(e1int, v, system):
 
     return f
 
+def build_f_chol(e1int, R_chol, system):
+    """This function generates the Fock matrix using the formula
+    F = Z + G where G is \sum_{i} <pi|v|qi>_A split for different
+    spin cases.
+
+    Parameters
+    ----------
+    e1int : ndarray(dtype=float, shape=(norb,norb))
+        Onebody MO integrals
+    v : dict
+        Twobody integral dictionary
+    sys : dict
+        System information dictionary
+
+    Returns
+    -------
+    f : dict
+        Dictionary containing the Fock matrices for the aa and bb cases
+    """
+    Nocc_a = system.noccupied_alpha + system.nfrozen
+    Nocc_b = system.noccupied_beta + system.nfrozen
+
+    # <p|f|q> = <p|z|q> + <pi|v|qi> + <pi~|v|qi~>
+    # f_a = (
+    #     e1int
+    #     + np.einsum("piqi->pq", v["aa"][:, :Nocc_a, :, :Nocc_a])
+    #     + np.einsum("piqi->pq", v["ab"][:, :Nocc_b, :, :Nocc_b])
+    # )
+    #
+    # # <p~|f|q~> = <p~|z|q~> + <p~i~|v|q~i~> + <ip~|v|iq~>
+    # f_b = (
+    #     e1int
+    #     + np.einsum("piqi->pq", v["bb"][:, :Nocc_b, :, :Nocc_b])
+    #     + np.einsum("ipiq->pq", v["ab"][:Nocc_a, :, :Nocc_a, :])
+    # )
+
+    f = {"a": f_a, "b": f_b}
+
+    return f

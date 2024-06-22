@@ -54,6 +54,69 @@ module vvvv_contraction
                          end do
                  
               end subroutine contract_vt2_pppp
+   
+              subroutine contract_vt2_aa_cholesky(resid, R_chol, t2a, noa, nua, naux, norb)
+                 
+                        ! input variables
+                        integer, intent(in) :: noa, nua, norb
+                        real(kind=8), intent(in) :: R_chol(naux,norb,norb)
+                        real(kind=8), intent(in) :: t2a(nua,nua,noa,noa)
+                        ! output variables
+                        real(kind=8), intent(inout) :: resid(nua,nua,noa,noa)
+                        ! local variables
+                        integer :: x, e, f, i, j, a, b, ab, nua2
+                        integer, allocatable :: idx(:,:)
+                        real(kind=8), allocatable :: batch_ints(:,:)
+                        
+                        !
+                        ! get map of linear index ab -> (a,b) for a<b
+                        !
+                        nua2 = nua*(nua-1)/2
+                        allocate(idx(nua2,2))
+                        ab = 1
+                        do a=1,nua
+                           do b=a+1,nua
+                              idx(ab,1)=a
+                              idx(ab,2)=b
+                              ab = ab + 1
+                           end do
+                        end do
+                        
+                        !
+                        ! Perform loop over pairs a<b
+                        !
+                        allocate(batch_ints(nua,nua))
+                        do ab=1,nua2
+                           ! indices a<b
+                           a = idx(ab,1); b = idx(ab,2);
+                           !
+                           ! build cholesky integral block
+                           !
+                           batch_ints = 0.0d0
+                           do x=1,naux
+                              do e=1,nua
+                                 do f=e+1,nua
+                                    batch_ints(e,f)=batch_ints(e,f)+R_chol(x,a+noa,e+noa)*R_chol(x,b+noa,f+noa)
+                                 end do
+                              end do
+                           end do
+                           !
+                           ! perform PPL contraction
+                           !
+                           do i=1,noa
+                              do j=i+1,noa
+                                 do e=1,nua
+                                    do f=e+1,nua
+                                       resid(a,b,i,j)=resid(a,b,i,j)+batch_ints(e,f)*t2a(e,f,i,j)
+                                       resid(b,a,i,j)=resid(b,a,i,j)+batch_ints(e,f)*t2a(e,f,i,j)
+                                    end do
+                                 end do
+                              end do
+                           end do
+                        end do
+                        deallocate(idx,batch_ints)
+                 
+              end subroutine contract_vt2_aa_cholesky
 
 
 end module vvvv_contraction

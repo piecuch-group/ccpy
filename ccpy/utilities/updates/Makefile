@@ -37,7 +37,6 @@ MODULES := cc_loops \
 		   clusteranalysis \
 		   ecccp3_loops \
 		   reorder \
-		   vvvv_contraction \
 		   ccp3_full_correction \
 		   eaccp3_correction
 

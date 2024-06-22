@@ -11,11 +11,11 @@ def test_cct3_f2():
     geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]
     mol = gto.M(
         atom=geometry,
-        basis="cc-pvdz",
+        basis="cc-pvtz",
         charge=0,
         spin=0,
         symmetry="D2H",
-        cart=True,
+        cart=False,
         unit="Bohr",
     )
     mf = scf.RHF(mol)
