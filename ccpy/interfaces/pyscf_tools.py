@@ -48,8 +48,9 @@ def load_pyscf_integrals(
         mo_occupation=meanfield.mo_occ,
     )
 
-    kinetic_aoints = molecule.intor_symmetric("int1e_kin")
-    nuclear_aoints = molecule.intor_symmetric("int1e_nuc")
+    #
+    #kinetic_aoints = molecule.intor_symmetric("int1e_kin")
+    #nuclear_aoints = molecule.intor_symmetric("int1e_nuc")
 
     #
     #eri_aoints = np.transpose(molecule.intor("int2e", aosym="s1"), (0, 2, 1, 3))
@@ -65,9 +66,9 @@ def load_pyscf_integrals(
     #e_core = e_core[idx]
     #mo_coeff = np.dot(X, mo_coeff[:, idx])
 
-    # Perform AO-to-MO transformation
+    # Perform AO-to-MO transformation (using mf.get_hcore() allows this to work with scalar 1e X2C models, for instance)
     e1int = np.einsum(
-        "pi,pq,qj->ij", mo_coeff, kinetic_aoints + nuclear_aoints, mo_coeff, optimize=True
+        "pi,pq,qj->ij", mo_coeff, meanfield.get_hcore(), mo_coeff, optimize=True
     )
     # put integrals into Fortran order
     e1int = np.asfortranarray(e1int)
@@ -80,6 +81,7 @@ def load_pyscf_integrals(
         # Stupid, but for now, just make the integrals out of Cholesky to test approximation
         e2int = np.einsum("xpr,xqs->pqrs", R_chol, R_chol, optimize=True)
     else:
+        R_chol = None
         e2int = np.transpose(
             np.reshape(ao2mo.kernel(molecule, mo_coeff, compact=False), 4 * (norbitals,)),
             (0, 2, 1, 3)
@@ -88,7 +90,6 @@ def load_pyscf_integrals(
     #e2int = np.einsum(
     #     "pi,qj,rk,sl,pqrs->ijkl", mo_coeff, mo_coeff, mo_coeff, mo_coeff, eri_aoints, optimize=True
     #)
-
     # Check that the HF energy calculated using the integrals matches the PySCF result
     hf_energy = get_hf_energy(e1int, e2int, system, notation="physics")
     hf_energy += nuclear_repulsion
@@ -103,8 +104,6 @@ def load_pyscf_integrals(
         dumpIntegralstoPGFiles(e1int, e2int, system)
 
     return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
-
-
 
 def get_kconserv1(a, kpts, thresh=1.0e-07):
     nkpts = len(kpts)

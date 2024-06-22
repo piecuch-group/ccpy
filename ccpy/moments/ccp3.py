@@ -7,8 +7,10 @@ from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_
 from ccpy.utilities.updates import ccp3_opt_loops, ccp3_adaptive_loops, ccp3_full_correction
 from ccpy.left.left_cc_intermediates import build_left_ccsdt_p_intermediates
 from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eomccsdt_intermediates, add_R3_p_terms
+from ccpy.utilities.utilities import get_memory_usage
+from ccpy.utilities.printing import get_timestamp
 
-def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
+def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, target_irrep=None):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy in a
     memory-optimized manner that avoids the usage of the large logical P space
@@ -141,7 +143,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
 
     return Eccp3, deltap3
 
-def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, num_add, use_RHF=False, min_thresh=0.0, buffer_factor=2):
+def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, num_add, use_RHF=False, min_thresh=0.0, buffer_factor=2, target_irrep=None):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
@@ -307,12 +309,26 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
 
     return Eccp3["D"], triples_list
 
-def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
+def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, target_irrep=None):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
+    print('   CC(P;3) Calculation')
+    print('   ------------------------------')
+    print('   Calculation started on', get_timestamp())
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
+
+    # get reference and target symmetry information
+    sym_ref = system.point_group_irrep_to_number[system.reference_symmetry]
+    if target_irrep is None:
+        sym_target = -1
+    else:
+        sym_target = system.point_group_irrep_to_number[target_irrep]
+    # get numerical array of orbital symmetry labels
+    orbsym = np.zeros(len(system.orbital_symmetries), dtype=np.int32)
+    for i, irrep in enumerate(system.orbital_symmetries):
+        orbsym[i] = system.point_group_irrep_to_number[irrep]
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -347,6 +363,8 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
     I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
 
     #### aaa correction ####
+    tic = time.perf_counter()
+    print("   Performing aaa correction... ", end="")
     dA_aaa = 0.0
     dB_aaa = 0.0
     dC_aaa = 0.0
@@ -354,6 +372,9 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
+                sym_ijk = sym_ref ^ orbsym[i]
+                sym_ijk = sym_ijk ^ orbsym[j]
+                sym_ijk = sym_ijk ^ orbsym[k]
                 M3A = ccp3_full_correction.ccp3_full_correction.build_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
@@ -363,6 +384,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                     H.aa.oovv, I2A_vvov.transpose(3, 0, 1, 2), H.aa.vooo.transpose(1, 0, 2, 3),
                     H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
                     H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
+                    orbsym, sym_ijk, sym_target,
                 )
                 L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
                     i + 1, j + 1, k + 1,
@@ -374,6 +396,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                     H.aa.voov, H.aa.vovv, H.aa.vvvv,
                     H.ab.ovvo,
                     X.aa.ooov, X.aa.vovv,
+                    orbsym, sym_ijk, sym_target,
                 )
                 dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction.ccp3_full_correction.ccp3a_ijk(
                     dA_aaa, dB_aaa, dC_aaa, dD_aaa,
@@ -382,8 +405,13 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                     H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
                     H.aa.voov, H.aa.oooo, H.aa.vvvv,
                     d3aaa_o, d3aaa_v,
+                    #orbsym, sym_ijk, sym_target,
                 )
+    toc = time.perf_counter()
+    print(f"completed in {toc - tic}s.  Memory Usage = {round(get_memory_usage(), 2)} MB")
     #### aab correction ####
+    tic = time.perf_counter()
+    print("   Performing aab correction... ", end="")
     dA_aab = 0.0
     dB_aab = 0.0
     dC_aab = 0.0
@@ -391,6 +419,9 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
+                sym_ijk = sym_ref ^ orbsym[i]
+                sym_ijk = sym_ijk ^ orbsym[j]
+                sym_ijk = sym_ijk ^ orbsym[k]
                 M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
@@ -402,6 +433,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                     H.ab.oovv, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3), I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo,
                     H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
                     H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
+                    orbsym, sym_ijk, sym_target,
                 )
                 L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
                     i + 1, j + 1, k + 1,
@@ -419,7 +451,8 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                     H.ab.vovv, H.ab.ovvv, H.ab.vvvv,
                     H.bb.voov,
                     X.aa.ooov, X.aa.vovv,
-                    X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv
+                    X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
+                    orbsym, sym_ijk, sym_target,
                 )
                 dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction.ccp3_full_correction.ccp3b_ijk(
                     dA_aab, dB_aab, dC_aab, dD_aab,
@@ -433,6 +466,8 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                     H.bb.voov,
                     d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
                 )
+    toc = time.perf_counter()
+    print(f"completed in {toc - tic}s.  Memory Usage = {round(get_memory_usage(), 2)} MB")
     if use_RHF:
         correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
         correction_B = 2.0 * dB_aaa + 2.0 * dB_aab
@@ -440,6 +475,8 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
         correction_D = 2.0 * dD_aaa + 2.0 * dD_aab
     else:
         #### abb correction ####
+        tic = time.perf_counter()
+        print("   Performing abb correction... ", end="")
         dA_abb = 0.0
         dB_abb = 0.0
         dC_abb = 0.0
@@ -447,6 +484,9 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
         for i in range(system.noccupied_alpha):
             for j in range(system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
+                    sym_ijk = sym_ref ^ orbsym[i]
+                    sym_ijk = sym_ijk ^ orbsym[j]
+                    sym_ijk = sym_ijk ^ orbsym[k]
                     M3C = ccp3_full_correction.ccp3_full_correction.build_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         T.aab, t3_excitations["aab"],
@@ -458,6 +498,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                         H.ab.oovv, I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3), H.ab.oooo,
                         H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
                         H.bb.oovv, I2C_vooo.transpose(1, 0, 2, 3), H.bb.vvov.transpose(3, 0, 1, 2), H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
+                        orbsym, sym_ijk, sym_target,
                     )
                     L3C = ccp3_full_correction.ccp3_full_correction.build_leftamps3c_ijk(
                         i + 1, j + 1, k + 1,
@@ -476,6 +517,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                         H.bb.voov, H.bb.vovv, H.bb.vvvv,
                         X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
                         X.bb.ooov, X.bb.vovv,
+                        orbsym, sym_ijk, sym_target,
                     )
                     dA_abb, dB_abb, dC_abb, dD_abb = ccp3_full_correction.ccp3_full_correction.ccp3c_ijk(
                         dA_abb, dB_abb, dC_abb, dD_abb,
@@ -489,7 +531,11 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                         H.bb.voov, H.bb.oooo, H.bb.vvvv,
                         d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
                     )
+        toc = time.perf_counter()
+        print(f"completed in {toc - tic}s.  Memory Usage = {round(get_memory_usage(), 2)} MB")
         #### bbb correction ####
+        tic = time.perf_counter()
+        print("   Performing bbb correction... ", end="")
         dA_bbb = 0.0
         dB_bbb = 0.0
         dC_bbb = 0.0
@@ -497,6 +543,9 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
         for i in range(system.noccupied_beta):
             for j in range(i + 1, system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
+                    sym_ijk = sym_ref ^ orbsym[i]
+                    sym_ijk = sym_ijk ^ orbsym[j]
+                    sym_ijk = sym_ijk ^ orbsym[k]
                     M3D = ccp3_full_correction.ccp3_full_correction.build_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         T.abb, t3_excitations["abb"],
@@ -506,6 +555,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                         H.bb.oovv, H.bb.vvov.transpose(3, 0, 1, 2), I2C_vooo.transpose(1, 0, 2, 3),
                         H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
                         H.ab.oovv, H.ab.ovvo.transpose(0, 2, 1, 3),
+                        orbsym, sym_ijk, sym_target,
                     )
                     L3D = ccp3_full_correction.ccp3_full_correction.build_leftamps3d_ijk(
                         i + 1, j + 1, k + 1,
@@ -517,6 +567,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                         H.bb.oooo, H.bb.ooov, H.bb.oovv,
                         H.bb.voov, H.bb.vovv, H.bb.vvvv,
                         X.bb.ooov, X.bb.vovv,
+                        orbsym, sym_ijk, sym_target,
                     )
                     dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction.ccp3_full_correction.ccp3d_ijk(
                         dA_bbb, dB_bbb, dC_bbb, dD_bbb,
@@ -526,6 +577,8 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
                         H.bb.voov, H.bb.oooo, H.bb.vvvv,
                         d3bbb_o, d3bbb_v,
                     )
+        toc = time.perf_counter()
+        print(f"completed in {toc - tic}s.  Memory Usage = {round(get_memory_usage(), 2)} MB")
         correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
         correction_B = dB_aaa + dB_aab + dB_abb + dB_bbb
         correction_C = dC_aaa + dC_aab + dC_abb + dC_bbb
@@ -545,8 +598,6 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
     total_energy_C = system.reference_energy + energy_C
     total_energy_D = system.reference_energy + energy_D
 
-    print('   CC(P;3) Calculation Summary')
-    print('   -------------------------------------')
     print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
     print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
     print("   CC(P) = {:>10.10f}".format(system.reference_energy + corr_energy))
@@ -573,10 +624,10 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False):
 
     Eccp3 = {"A": total_energy_A, "B": total_energy_B, "C": total_energy_C, "D": total_energy_D}
     deltap3 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
-
+    print('   Calculation ended on', get_timestamp())
     return Eccp3, deltap3
 
-def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, num_add, use_RHF=False, min_thresh=0.0, buffer_factor=2):
+def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, num_add, use_RHF=False, min_thresh=0.0, buffer_factor=2, target_irrep=None):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
@@ -876,7 +927,7 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
     deltap3 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
     return Eccp3["D"], triples_list
 
-def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy, H, H0, system, use_RHF=False):
+def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy, H, H0, system, use_RHF=False, target_irrep=None):
     """
     Calculate the excited-state EOMCC(P;3) correction to the EOMCC(P) energy.
     """
@@ -1240,7 +1291,7 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
     deltap3 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
     return Eccp3, deltap3
 
-def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy, H, H0, system, num_add, use_RHF=False, min_thresh=0.0, buffer_factor=2):
+def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy, H, H0, system, num_add, use_RHF=False, min_thresh=0.0, buffer_factor=2, target_irrep=None):
     """
     Calculate the excited-state EOMCC(P;3) correction to the EOMCC(P) energy.
     """

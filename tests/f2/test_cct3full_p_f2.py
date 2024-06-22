@@ -31,7 +31,7 @@ def test_cct3_f2():
     driver.run_leftccp(method="left_ccsdt_p", t3_excitations=t3_excitations)
 
     driver.options["RHF_symmetry"] = False
-    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, two_body_approx=False, state_index=0)
+    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, two_body_approx=False, state_index=0, target_irrep="AG")
 
     # Check reference energy
     assert np.allclose(driver.system.reference_energy, -198.4200962814, atol=1.0e-07)
