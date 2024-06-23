@@ -104,6 +104,7 @@ def update_t2a(T, dT, H, H0, shift):
     dT.aa += np.einsum("amie,ebmj->abij", I2A_voov, T.aa, optimize=True)
     dT.aa += np.einsum("amie,bejm->abij", I2B_voov, T.ab, optimize=True)
     dT.aa += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
+    dT.aa += 0.25 * np.einsum("abef,efij->abij", H0.aa.vvvv, tau, optimize=True)
 
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
         T.aa, dT.aa + 0.25 * H0.aa.vvoo, H0.a.oo, H0.a.vv, shift
