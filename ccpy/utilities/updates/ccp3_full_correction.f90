@@ -452,14 +452,15 @@ module ccp3_full_correction
                                              H2A_oovv, H2A_vvov, H2A_vooo,&
                                              H2A_oooo, H2A_voov, H2A_vvvv,&
                                              H2B_oovv, H2B_voov,&
-                                             orbsym, sym_ijk, target_sym,&
+                                             !orbsym, sym_ijk, target_sym,&
                                              n3aaa, n3aab,&
-                                             noa, nua, nob, nub, norb)
+                                             noa, nua, nob, nub)
+                                             ! norb)
 
                   integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab
-                  integer, intent(in) :: norb
+                  !integer, intent(in) :: norb
                   integer, intent(in) :: i, j, k
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
+                  !integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
                   integer, intent(in) :: t3a_excits(n3aaa,6), t3b_excits(n3aab,6)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa), t3b_amps(n3aab)
                   real(kind=8), intent(in) :: t2a(nua,nua,noa,noa),&
@@ -510,11 +511,11 @@ module ccp3_full_correction
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         a = t3a_excits_copy(jdet,1); b = t3a_excits_copy(jdet,2); c = t3a_excits_copy(jdet,3);
                         ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+noa))
-                        sym = ieor(sym,orbsym(b+noa))
-                        sym = ieor(sym,orbsym(c+noa))
+                        !sym = ieor(sym_ijk,orbsym(a+noa))
+                        !sym = ieor(sym,orbsym(b+noa))
+                        !sym = ieor(sym,orbsym(c+noa))
                         ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
+                        !if (sym /= target_sym) cycle
                         qspace(a,b,c) = .false.
                      end do
                   end if
@@ -2224,13 +2225,14 @@ module ccp3_full_correction
                                              H2B_oovv, H2B_vvov, H2B_vvvo, H2B_vooo, H2B_ovoo,&
                                              H2B_oooo, H2B_voov, H2B_vovo, H2B_ovov, H2B_ovvo, H2B_vvvv,&
                                              H2C_oovv, H2C_voov,&
-                                             orbsym, sym_ijk, target_sym,&
+                                             !orbsym, sym_ijk, target_sym,&
                                              n3aaa, n3aab, n3abb,&
-                                             noa, nua, nob, nub, norb)
+                                             noa, nua, nob, nub)
+                                             !, norb)
 
                   integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
+                  !integer, intent(in) :: norb
+                  !integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
                   ! occupied orbital block indices
                   integer, intent(in) :: i, j, k
                   !
@@ -2299,11 +2301,11 @@ module ccp3_full_correction
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         a = t3b_excits_copy(jdet,1); b = t3b_excits_copy(jdet,2); c = t3b_excits_copy(jdet,3);
                         ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+noa))
-                        sym = ieor(sym,orbsym(b+noa))
-                        sym = ieor(sym,orbsym(c+nob))
+                        !sym = ieor(sym_ijk,orbsym(a+noa))
+                        !sym = ieor(sym,orbsym(b+noa))
+                        !sym = ieor(sym,orbsym(c+nob))
                         ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
+                        !if (sym /= target_sym) cycle
                         qspace(a,b,c) = .false.
                      end do
                   end if
@@ -3668,13 +3670,14 @@ module ccp3_full_correction
                                       H2B_oovv, H2B_vooo, H2B_ovoo, H2B_vvov, H2B_vvvo, H2B_oooo,&
                                       H2B_voov, H2B_vovo, H2B_ovov, H2B_ovvo, H2B_vvvv,&
                                       H2C_oovv, H2C_vooo, H2C_vvov, H2C_oooo, H2C_voov, H2C_vvvv,&
-                                      orbsym, sym_ijk, target_sym,&
+                                      !orbsym, sym_ijk, target_sym,&
                                       n3aab, n3abb, n3bbb,&
-                                      noa, nua, nob, nub, norb)
+                                      noa, nua, nob, nub)
+                                      !, norb)
 
                   integer, intent(in) :: noa, nua, nob, nub, n3aab, n3abb, n3bbb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
+                  !integer, intent(in) :: norb
+                  !integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
                   ! occupied orbital block indices
                   integer, intent(in) :: i, j, k
                   !
@@ -3740,11 +3743,11 @@ module ccp3_full_correction
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         a = t3c_excits_copy(jdet,1); b = t3c_excits_copy(jdet,2); c = t3c_excits_copy(jdet,3);
                         ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+noa))
-                        sym = ieor(sym,orbsym(b+nob))
-                        sym = ieor(sym,orbsym(c+nob))
+                        !sym = ieor(sym_ijk,orbsym(a+noa))
+                        !sym = ieor(sym,orbsym(b+nob))
+                        !sym = ieor(sym,orbsym(c+nob))
                         ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
+                        !if (sym /= target_sym) cycle
                         qspace(a,b,c) = .false.
                      end do
                   end if
@@ -5125,13 +5128,14 @@ module ccp3_full_correction
                                       H2C_oovv, H2C_vvov, H2C_vooo,&
                                       H2C_oooo, H2C_voov, H2C_vvvv,&
                                       H2B_oovv, H2B_ovvo,&
-                                      orbsym, sym_ijk, target_sym,&
+                                      !orbsym, sym_ijk, target_sym,&
                                       n3abb, n3bbb,&
-                                      noa, nua, nob, nub, norb)
+                                      noa, nua, nob, nub)
+                                      !, norb)
                   ! input variables 
                   integer, intent(in) :: noa, nua, nob, nub, n3abb, n3bbb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
+                  !integer, intent(in) :: norb
+                  !integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
                   ! orbital block indices
                   integer, intent(in) :: i, j, k
                   integer, intent(in) :: t3c_excits(n3abb,6), t3d_excits(n3bbb,6)
@@ -5182,11 +5186,11 @@ module ccp3_full_correction
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         a = t3d_excits_copy(jdet,1); b = t3d_excits_copy(jdet,2); c = t3d_excits_copy(jdet,3);
                         ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+nob))
-                        sym = ieor(sym,orbsym(b+nob))
-                        sym = ieor(sym,orbsym(c+nob))
+                        !sym = ieor(sym_ijk,orbsym(a+nob))
+                        !sym = ieor(sym,orbsym(b+nob))
+                        !sym = ieor(sym,orbsym(c+nob))
                         ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
+                        !if (sym /= target_sym) cycle
                         qspace(a,b,c) = .false.
                      end do
                   end if
@@ -6900,12 +6904,13 @@ module ccp3_full_correction
                                               h2a_voov, h2a_vovv, h2a_vvvv,&
                                               h2b_ovvo,&
                                               x2a_ooov, x2a_vovv,&
-                                              orbsym, sym_ijk, target_sym,&
+                                              !orbsym, sym_ijk, target_sym,&
                                               n3aaa, n3aab,&
-                                              noa, nua, nob, nub, norb)
+                                              noa, nua, nob, nub)
+                                              !, norb)
                   ! Input dimension variables
-                  integer, intent(in) :: noa, nua, nob, nub, norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
+                  integer, intent(in) :: noa, nua, nob, nub!, norb
+                  !integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
                   integer, intent(in) :: n3aaa, n3aab
                   ! occupied block indices
                   integer, intent(in) :: i, j, k
@@ -6965,11 +6970,11 @@ module ccp3_full_correction
                         a = l3a_excits_copy(jdet,1); b = l3a_excits_copy(jdet,2); c = l3a_excits_copy(jdet,3);
                         qspace(a,b,c) = .false.
                         ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+noa))
-                        sym = ieor(sym,orbsym(b+noa))
-                        sym = ieor(sym,orbsym(c+noa))
+                        !sym = ieor(sym_ijk,orbsym(a+noa))
+                        !sym = ieor(sym,orbsym(b+noa))
+                        !sym = ieor(sym,orbsym(c+noa))
                         ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
+                        !if (sym /= target_sym) cycle
                      end do
                   end if
                   deallocate(loc_arr,idx_table3)
@@ -8589,14 +8594,15 @@ module ccp3_full_correction
                                               h2c_voov,&
                                               x2a_ooov, x2a_vovv,&
                                               x2b_ooov, x2b_oovo, x2b_vovv, x2b_ovvv,&
-                                              orbsym, sym_ijk, target_sym,&
+                                              !orbsym, sym_ijk, target_sym,&
                                               n3aaa, n3aab, n3abb,&
-                                              noa, nua, nob, nub, norb)
+                                              noa, nua, nob, nub)
+                                              !, norb)
                   ! Input dimension variables
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa, n3aab, n3abb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
+                  !integer, intent(in) :: norb
+                  !integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
                   ! occupied block indices
                   integer :: i, j, k
                   ! Input L arrays
@@ -8653,11 +8659,11 @@ module ccp3_full_correction
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         a = l3b_excits_copy(jdet,1); b = l3b_excits_copy(jdet,2); c = l3b_excits_copy(jdet,3);
                         ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+noa))
-                        sym = ieor(sym,orbsym(b+noa))
-                        sym = ieor(sym,orbsym(c+nob))
+                        !sym = ieor(sym_ijk,orbsym(a+noa))
+                        !sym = ieor(sym,orbsym(b+noa))
+                        !sym = ieor(sym,orbsym(c+nob))
                         ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
+                        !if (sym /= target_sym) cycle
                         qspace(a,b,c) = .false.
                      end do
                   end if
@@ -9901,14 +9907,15 @@ module ccp3_full_correction
                               h2c_voov, h2c_vovv, h2c_vvvv,&
                               x2b_ooov, x2b_oovo, x2b_vovv, x2b_ovvv,&
                               x2c_ooov, x2c_vovv,&
-                              orbsym, sym_ijk, target_sym,&
+                              !orbsym, sym_ijk, target_sym,&
                               n3aab, n3abb, n3bbb,&
-                              noa, nua, nob, nub, norb)
+                              noa, nua, nob, nub)
+                              !, norb)
                   ! Input dimension variables
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab, n3abb, n3bbb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
+                  !integer, intent(in) :: norb
+                  !integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
                   ! occupied orbital block indices
                   integer, intent(in) :: i, j, k
                   ! Input L arrays
@@ -9962,11 +9969,11 @@ module ccp3_full_correction
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         a = l3c_excits_copy(jdet,1); b = l3c_excits_copy(jdet,2); c = l3c_excits_copy(jdet,3);
                         ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+noa))
-                        sym = ieor(sym,orbsym(b+nob))
-                        sym = ieor(sym,orbsym(c+nob))
+                        !sym = ieor(sym_ijk,orbsym(a+noa))
+                        !sym = ieor(sym,orbsym(b+nob))
+                        !sym = ieor(sym,orbsym(c+nob))
                         ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
+                        !if (sym /= target_sym) cycle
                         qspace(a,b,c) = .false.
                      end do
                   end if
@@ -11220,14 +11227,15 @@ module ccp3_full_correction
                               h2c_oooo, h2c_ooov, h2c_oovv,&
                               h2c_voov, h2c_vovv, h2c_vvvv,&
                               x2c_ooov, x2c_vovv,&
-                              orbsym, sym_ijk, target_sym,&
+                              !orbsym, sym_ijk, target_sym,&
                               n3abb, n3bbb,&
-                              noa, nua, nob, nub, norb)
+                              noa, nua, nob, nub)
+                              !, norb)
                   ! Input dimension variables
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3abb, n3bbb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
+                  !integer, intent(in) :: norb
+                  !integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
                   ! orbital integer blocks
                   integer, intent(in) :: i, j, k
                   ! Input L arrays
@@ -11280,11 +11288,11 @@ module ccp3_full_correction
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         a = l3d_excits_copy(jdet,1); b = l3d_excits_copy(jdet,2); c = l3d_excits_copy(jdet,3);
                         ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+nob))
-                        sym = ieor(sym,orbsym(b+nob))
-                        sym = ieor(sym,orbsym(c+nob))
+                        !sym = ieor(sym_ijk,orbsym(a+nob))
+                        !sym = ieor(sym,orbsym(b+nob))
+                        !sym = ieor(sym,orbsym(c+nob))
                         ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
+                        !if (sym /= target_sym) cycle
                         qspace(a,b,c) = .false.
                      end do
                   end if

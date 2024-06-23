@@ -100,10 +100,9 @@ def update(T: ClusterOperator,
 
 def update_t1a(T: ClusterOperator,
                dT: ClusterOperator,
-               H: Integral,
                X: Integral,
-               shift: float,
-               acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
+               H: Integral,
+               shift: float) -> Tuple[ClusterOperator, ClusterOperator]:
     """Update t1a amplitudes as t1a(ai) <- t1(ai) + <ia|(H_N exp(T1+T2))_C|0>/D_MP(ai),
 
     Parameters
@@ -112,10 +111,10 @@ def update_t1a(T: ClusterOperator,
         Cluster operator containing T1 and T2 components
     dT : ClusterOperator
         Residual for T1 and T2 amplitude equations
-    H : Integral
-        Bare Hamiltonian in the normal-ordered form
     X : Integral
         Intermediates for the CC iterations that are roughly given by a CCSD-like similarity-transformed Hamiltonian
+    H : Integral
+        Bare Hamiltonian in the normal-ordered form
     shift : float
         Energy denominator shift for stabilizing update
     acparray : List[float]
@@ -146,10 +145,9 @@ def update_t1a(T: ClusterOperator,
 
 def update_t1b(T: ClusterOperator,
                dT: ClusterOperator,
-               H: Integral,
                X: Integral,
-               shift: float,
-               acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
+               H: Integral,
+               shift: float) -> Tuple[ClusterOperator, ClusterOperator]:
     """Update t1b amplitudes as t1b(a~i~) <- t1b(a~i~) + <i~a~|(H_N exp(T1 + T2))_C|0>/D_MP(a~i~)
 
     Parameters
@@ -158,10 +156,10 @@ def update_t1b(T: ClusterOperator,
         Cluster operator containing T1 and T2 components
     dT : ClusterOperator
         Residual for T1 and T2 amplitude equations
-    H : Integral
-        Bare Hamiltonian in the normal-ordered form
     X : Integral
         Intermediates for the CC iterations that are roughly given by a CCSD-like similarity-transformed Hamiltonian
+    H : Integral
+        Bare Hamiltonian in the normal-ordered form
     shift : float
         Energy denominator shift for stabilizing update
     acparray : List[float]
@@ -192,8 +190,8 @@ def update_t1b(T: ClusterOperator,
 
 def update_t2a(T: ClusterOperator,
                dT: ClusterOperator,
-               H0: Integral,
                H: Integral,
+               H0: Integral,
                shift: float,
                acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
     """Update t2aa amplitudes as t2aa(abij) <- t2ab(abij) + <ijab|(H_N exp(T1 + T2))_C|0>/D_MP(abij)
@@ -204,10 +202,10 @@ def update_t2a(T: ClusterOperator,
         Cluster operator containing T1 and T2 components
     dT : ClusterOperator
         Residual for T1 and T2 amplitude equations
-    H0 : Integral
-        Bare Hamiltonian in the normal-ordered form
     H : Integral
         Intermediates for the CC iterations that are roughly given by a CCSD-like similarity-transformed Hamiltonian
+    H0 : Integral
+        Bare Hamiltonian in the normal-ordered form
     shift : float
         Energy denominator shift for stabilizing update
     acparray : List[float]
@@ -260,8 +258,8 @@ def update_t2a(T: ClusterOperator,
 
 def update_t2b(T: ClusterOperator,
                dT: ClusterOperator,
-               H0: Integral,
                H: Integral,
+               H0: Integral,
                shift: float,
                acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
     """Update t2ab amplitudes as t2ab(abij) <- t2ab(ab~ij~) + <ij~ab~|(H_N exp(T1 + T2))_C|0>/D_MP(ab~ij~)
@@ -272,10 +270,10 @@ def update_t2b(T: ClusterOperator,
         Cluster operator containing T1 and T2 components
     dT : ClusterOperator
         Residual for T1 and T2 amplitude equations
-    H0 : Integral
-        Bare Hamiltonian in the normal-ordered form
     H : Integral
         Intermediates for the CC iterations that are roughly given by a CCSD-like similarity-transformed Hamiltonian
+    H0 : Integral
+        Bare Hamiltonian in the normal-ordered form
     shift : float
         Energy denominator shift for stabilizing update
     acparray : List[float]
@@ -344,8 +342,8 @@ def update_t2b(T: ClusterOperator,
 
 def update_t2c(T: ClusterOperator,
                dT: ClusterOperator,
-               H0: Integral,
                H: Integral,
+               H0: Integral,
                shift: float,
                acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
     """Update t2bb amplitudes as t2bb(a~b~i~j~) <- t2bb(a~b~i~j~) + <i~j~a~b~|(H_N exp(T1 + T2))_C|0>/D(a~b~i~j~)
@@ -356,10 +354,10 @@ def update_t2c(T: ClusterOperator,
         Cluster operator containing T1 and T2 components
     dT : ClusterOperator
         Residual for T1 and T2 amplitude equations
-    H0 : Integral
-        Bare Hamiltonian in the normal-ordered form
     H : Integral
         Intermediates for the CC iterations that are roughly given by a CCSD-like similarity-transformed Hamiltonian
+    H0 : Integral
+        Bare Hamiltonian in the normal-ordered form
     shift : float
         Energy denominator shift for stabilizing update
     acparray : List[float]

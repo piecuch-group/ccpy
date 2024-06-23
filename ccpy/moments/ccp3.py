@@ -319,16 +319,16 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 
-    # get reference and target symmetry information
-    sym_ref = system.point_group_irrep_to_number[system.reference_symmetry]
-    if target_irrep is None:
-        sym_target = -1
-    else:
-        sym_target = system.point_group_irrep_to_number[target_irrep]
-    # get numerical array of orbital symmetry labels
-    orbsym = np.zeros(len(system.orbital_symmetries), dtype=np.int32)
-    for i, irrep in enumerate(system.orbital_symmetries):
-        orbsym[i] = system.point_group_irrep_to_number[irrep]
+    # # get reference and target symmetry information
+    # sym_ref = system.point_group_irrep_to_number[system.reference_symmetry]
+    # if target_irrep is None:
+    #     sym_target = -1
+    # else:
+    #     sym_target = system.point_group_irrep_to_number[target_irrep]
+    # # get numerical array of orbital symmetry labels
+    # orbsym = np.zeros(len(system.orbital_symmetries), dtype=np.int32)
+    # for i, irrep in enumerate(system.orbital_symmetries):
+    #     orbsym[i] = system.point_group_irrep_to_number[irrep]
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -372,9 +372,9 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
-                sym_ijk = sym_ref ^ orbsym[i]
-                sym_ijk = sym_ijk ^ orbsym[j]
-                sym_ijk = sym_ijk ^ orbsym[k]
+                # sym_ijk = sym_ref ^ orbsym[i]
+                # sym_ijk = sym_ijk ^ orbsym[j]
+                # sym_ijk = sym_ijk ^ orbsym[k]
                 M3A = ccp3_full_correction.ccp3_full_correction.build_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
@@ -384,7 +384,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
                     H.aa.oovv, I2A_vvov.transpose(3, 0, 1, 2), H.aa.vooo.transpose(1, 0, 2, 3),
                     H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
                     H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
-                    orbsym, sym_ijk, sym_target,
+                    #orbsym, sym_ijk, sym_target,
                 )
                 L3A = ccp3_full_correction.ccp3_full_correction.build_leftamps3a_ijk(
                     i + 1, j + 1, k + 1,
@@ -396,7 +396,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
                     H.aa.voov, H.aa.vovv, H.aa.vvvv,
                     H.ab.ovvo,
                     X.aa.ooov, X.aa.vovv,
-                    orbsym, sym_ijk, sym_target,
+                    #orbsym, sym_ijk, sym_target,
                 )
                 dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction.ccp3_full_correction.ccp3a_ijk(
                     dA_aaa, dB_aaa, dC_aaa, dD_aaa,
@@ -416,26 +416,12 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
     dB_aab = 0.0
     dC_aab = 0.0
     dD_aab = 0.0
-
-    temp2a_vvov = H.aa.vvov.transpose(3, 0, 1, 2)
-    temp2a_vooo = I2A_vooo.transpose(1, 0, 2, 3)
-    temp2a_voov = H.aa.voov.transpose(1, 3, 0, 2)
-    temp2a_vvvv = H.aa.vvvv.transpose(3, 2, 1, 0)
-    temp2b_vvov = H.ab.vvov.transpose(3, 0, 1, 2)
-    temp2b_vvvo = H.ab.vvvo.transpose(2, 0, 1, 3)
-    temp2b_vooo = I2B_vooo.transpose(1, 0, 2, 3)
-    temp2b_voov = H.ab.voov.transpose(1, 3, 0, 2)
-    temp2b_vovo = H.ab.vovo.transpose(1, 2, 0, 3)
-    temp2b_ovov = H.ab.ovov.transpose(0, 3, 1, 2)
-    temp2b_ovvo = H.ab.ovvo.transpose(0, 2, 1, 3)
-    temp2b_vvvv = H.ab.vvvv.transpose(3, 2, 1, 0)
-    temp2c_voov = H.bb.voov.transpose(1, 3, 0, 2)
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
-                sym_ijk = sym_ref ^ orbsym[i]
-                sym_ijk = sym_ijk ^ orbsym[j]
-                sym_ijk = sym_ijk ^ orbsym[k]
+                # sym_ijk = sym_ref ^ orbsym[i]
+                # sym_ijk = sym_ijk ^ orbsym[j]
+                # sym_ijk = sym_ijk ^ orbsym[k]
                 M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
@@ -443,11 +429,14 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
                     T.abb, t3_excitations["abb"],
                     T.aa, T.ab,
                     H.a.oo, H.a.vv.T, H.b.oo, H.b.vv.T,
-                    H.aa.oovv, temp2a_vvov, temp2a_vooo, H.aa.oooo, temp2a_voov, temp2a_vvvv,
-                    H.ab.oovv, temp2b_vvov, temp2b_vvvo, temp2b_vooo, I2B_ovoo,
-                    H.ab.oooo, temp2b_voov, temp2b_vovo, temp2b_ovov, temp2b_ovvo, temp2b_vvvv,
-                    H.bb.oovv, temp2c_voov,
-                    orbsym, sym_ijk, sym_target,
+                    H.aa.oovv, H.aa.vvov.transpose(3, 0, 1, 2), I2A_vooo.transpose(1, 0, 2, 3), H.aa.oooo,
+                    H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
+                    H.ab.oovv, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3),
+                    I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo,
+                    H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3),
+                    H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
+                    H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
+                    #orbsym, sym_ijk, sym_target,
                 )
                 L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
                     i + 1, j + 1, k + 1,
@@ -466,7 +455,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
                     H.bb.voov,
                     X.aa.ooov, X.aa.vovv,
                     X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
-                    orbsym, sym_ijk, sym_target,
+                    #orbsym, sym_ijk, sym_target,
                 )
                 dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction.ccp3_full_correction.ccp3b_ijk(
                     dA_aab, dB_aab, dC_aab, dD_aab,
@@ -498,9 +487,9 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
         for i in range(system.noccupied_alpha):
             for j in range(system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
-                    sym_ijk = sym_ref ^ orbsym[i]
-                    sym_ijk = sym_ijk ^ orbsym[j]
-                    sym_ijk = sym_ijk ^ orbsym[k]
+                    # sym_ijk = sym_ref ^ orbsym[i]
+                    # sym_ijk = sym_ijk ^ orbsym[j]
+                    # sym_ijk = sym_ijk ^ orbsym[k]
                     M3C = ccp3_full_correction.ccp3_full_correction.build_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         T.aab, t3_excitations["aab"],
@@ -512,7 +501,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
                         H.ab.oovv, I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3), H.ab.oooo,
                         H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
                         H.bb.oovv, I2C_vooo.transpose(1, 0, 2, 3), H.bb.vvov.transpose(3, 0, 1, 2), H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
-                        orbsym, sym_ijk, sym_target,
+                        #orbsym, sym_ijk, sym_target,
                     )
                     L3C = ccp3_full_correction.ccp3_full_correction.build_leftamps3c_ijk(
                         i + 1, j + 1, k + 1,
@@ -531,7 +520,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
                         H.bb.voov, H.bb.vovv, H.bb.vvvv,
                         X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
                         X.bb.ooov, X.bb.vovv,
-                        orbsym, sym_ijk, sym_target,
+                        #orbsym, sym_ijk, sym_target,
                     )
                     dA_abb, dB_abb, dC_abb, dD_abb = ccp3_full_correction.ccp3_full_correction.ccp3c_ijk(
                         dA_abb, dB_abb, dC_abb, dD_abb,
@@ -557,9 +546,9 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
         for i in range(system.noccupied_beta):
             for j in range(i + 1, system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
-                    sym_ijk = sym_ref ^ orbsym[i]
-                    sym_ijk = sym_ijk ^ orbsym[j]
-                    sym_ijk = sym_ijk ^ orbsym[k]
+                    # sym_ijk = sym_ref ^ orbsym[i]
+                    # sym_ijk = sym_ijk ^ orbsym[j]
+                    # sym_ijk = sym_ijk ^ orbsym[k]
                     M3D = ccp3_full_correction.ccp3_full_correction.build_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         T.abb, t3_excitations["abb"],
@@ -569,7 +558,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
                         H.bb.oovv, H.bb.vvov.transpose(3, 0, 1, 2), I2C_vooo.transpose(1, 0, 2, 3),
                         H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
                         H.ab.oovv, H.ab.ovvo.transpose(0, 2, 1, 3),
-                        orbsym, sym_ijk, sym_target,
+                        #orbsym, sym_ijk, sym_target,
                     )
                     L3D = ccp3_full_correction.ccp3_full_correction.build_leftamps3d_ijk(
                         i + 1, j + 1, k + 1,
@@ -581,7 +570,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
                         H.bb.oooo, H.bb.ooov, H.bb.oovv,
                         H.bb.voov, H.bb.vovv, H.bb.vvvv,
                         X.bb.ooov, X.bb.vovv,
-                        orbsym, sym_ijk, sym_target,
+                        #orbsym, sym_ijk, sym_target,
                     )
                     dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction.ccp3_full_correction.ccp3d_ijk(
                         dA_bbb, dB_bbb, dC_bbb, dD_bbb,
@@ -959,6 +948,17 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 
+    # # get reference and target symmetry information
+    # sym_ref = system.point_group_irrep_to_number[system.reference_symmetry]
+    # if target_irrep is None:
+    #     sym_target = -1
+    # else:
+    #     sym_target = system.point_group_irrep_to_number[target_irrep]
+    # # get numerical array of orbital symmetry labels
+    # orbsym = np.zeros(len(system.orbital_symmetries), dtype=np.int32)
+    # for i, irrep in enumerate(system.orbital_symmetries):
+    #     orbsym[i] = system.point_group_irrep_to_number[irrep]
+
     # initialize empty moments vector and triples list
     num_add = int(num_add)
     moments = np.zeros(buffer_factor * num_add)
@@ -1005,6 +1005,9 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
+                # sym_ijk = sym_ref ^ orbsym[i]
+                # sym_ijk = sym_ijk ^ orbsym[j]
+                # sym_ijk = sym_ijk ^ orbsym[k]
                 M3A = ccp3_full_correction.ccp3_full_correction.build_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
@@ -1048,6 +1051,9 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
+                # sym_ijk = sym_ref ^ orbsym[i]
+                # sym_ijk = sym_ijk ^ orbsym[j]
+                # sym_ijk = sym_ijk ^ orbsym[k]
                 M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     T.aaa, t3_excitations["aaa"],
@@ -1107,6 +1113,9 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
         for i in range(system.noccupied_alpha):
             for j in range(system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
+                    # sym_ijk = sym_ref ^ orbsym[i]
+                    # sym_ijk = sym_ijk ^ orbsym[j]
+                    # sym_ijk = sym_ijk ^ orbsym[k]
                     M3C = ccp3_full_correction.ccp3_full_correction.build_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         T.aab, t3_excitations["aab"],
@@ -1160,6 +1169,9 @@ def calc_ccp3_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, n
         for i in range(system.noccupied_beta):
             for j in range(i + 1, system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
+                    # sym_ijk = sym_ref ^ orbsym[i]
+                    # sym_ijk = sym_ijk ^ orbsym[j]
+                    # sym_ijk = sym_ijk ^ orbsym[k]
                     M3D = ccp3_full_correction.ccp3_full_correction.build_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         T.abb, t3_excitations["abb"],
@@ -1259,6 +1271,17 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 
+    # # get reference and target symmetry information
+    # sym_ref = system.point_group_irrep_to_number[system.reference_symmetry]
+    # if target_irrep is None:
+    #     sym_target = -1
+    # else:
+    #     sym_target = system.point_group_irrep_to_number[target_irrep]
+    # # get numerical array of orbital symmetry labels
+    # orbsym = np.zeros(len(system.orbital_symmetries), dtype=np.int32)
+    # for i, irrep in enumerate(system.orbital_symmetries):
+    #     orbsym[i] = system.point_group_irrep_to_number[irrep]
+
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
     d3aab_v, d3aab_o = aab_H3_aab_diagonal(T, H, system)
@@ -1307,6 +1330,9 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
+                # sym_ijk = sym_ref ^ orbsym[i]
+                # sym_ijk = sym_ijk ^ orbsym[j]
+                # sym_ijk = sym_ijk ^ orbsym[k]
                 EOMM3A = ccp3_full_correction.ccp3_full_correction.build_eom_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     R.aa,
@@ -1361,6 +1387,9 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
+                # sym_ijk = sym_ref ^ orbsym[i]
+                # sym_ijk = sym_ijk ^ orbsym[j]
+                # sym_ijk = sym_ijk ^ orbsym[k]
                 EOMM3B = ccp3_full_correction.ccp3_full_correction.build_eom_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     R.aa, R.ab,
@@ -1444,6 +1473,9 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
         for i in range(system.noccupied_alpha):
             for j in range(system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
+                    # sym_ijk = sym_ref ^ orbsym[i]
+                    # sym_ijk = sym_ijk ^ orbsym[j]
+                    # sym_ijk = sym_ijk ^ orbsym[k]
                     EOMM3C = ccp3_full_correction.ccp3_full_correction.build_eom_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         R.ab, R.bb,
@@ -1521,6 +1553,9 @@ def calc_eomccp3(T, R, L, t3_excitations, r3_excitations, r0, omega, corr_energy
         for i in range(system.noccupied_beta):
             for j in range(i + 1, system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
+                    # sym_ijk = sym_ref ^ orbsym[i]
+                    # sym_ijk = sym_ijk ^ orbsym[j]
+                    # sym_ijk = sym_ijk ^ orbsym[k]
                     EOMM3D = ccp3_full_correction.ccp3_full_correction.build_eom_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         R.bb,
@@ -1623,6 +1658,17 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 
+    # # get reference and target symmetry information
+    # sym_ref = system.point_group_irrep_to_number[system.reference_symmetry]
+    # if target_irrep is None:
+    #     sym_target = -1
+    # else:
+    #     sym_target = system.point_group_irrep_to_number[target_irrep]
+    # # get numerical array of orbital symmetry labels
+    # orbsym = np.zeros(len(system.orbital_symmetries), dtype=np.int32)
+    # for i, irrep in enumerate(system.orbital_symmetries):
+    #     orbsym[i] = system.point_group_irrep_to_number[irrep]
+
     # initialize empty moments vector and triples list
     num_add = int(num_add)
     moments = np.zeros(buffer_factor * num_add)
@@ -1677,6 +1723,9 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(j + 1, system.noccupied_alpha):
+                # sym_ijk = sym_ref ^ orbsym[i]
+                # sym_ijk = sym_ijk ^ orbsym[j]
+                # sym_ijk = sym_ijk ^ orbsym[k]
                 EOMM3A = ccp3_full_correction.ccp3_full_correction.build_eom_moments3a_ijk(
                     i + 1, j + 1, k + 1,
                     R.aa,
@@ -1737,6 +1786,9 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
     for i in range(system.noccupied_alpha):
         for j in range(i + 1, system.noccupied_alpha):
             for k in range(system.noccupied_beta):
+                # sym_ijk = sym_ref ^ orbsym[i]
+                # sym_ijk = sym_ijk ^ orbsym[j]
+                # sym_ijk = sym_ijk ^ orbsym[k]
                 EOMM3B = ccp3_full_correction.ccp3_full_correction.build_eom_moments3b_ijk(
                     i + 1, j + 1, k + 1,
                     R.aa, R.ab,
@@ -1823,6 +1875,9 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
         for i in range(system.noccupied_alpha):
             for j in range(system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
+                    # sym_ijk = sym_ref ^ orbsym[i]
+                    # sym_ijk = sym_ijk ^ orbsym[j]
+                    # sym_ijk = sym_ijk ^ orbsym[k]
                     EOMM3C = ccp3_full_correction.ccp3_full_correction.build_eom_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         R.ab, R.bb,
@@ -1903,6 +1958,9 @@ def calc_eomccp3_with_selection(T, R, L, t3_excitations, r3_excitations, r0, ome
         for i in range(system.noccupied_beta):
             for j in range(i + 1, system.noccupied_beta):
                 for k in range(j + 1, system.noccupied_beta):
+                    # sym_ijk = sym_ref ^ orbsym[i]
+                    # sym_ijk = sym_ijk ^ orbsym[j]
+                    # sym_ijk = sym_ijk ^ orbsym[k]
                     EOMM3D = ccp3_full_correction.ccp3_full_correction.build_eom_moments3d_ijk(
                         i + 1, j + 1, k + 1,
                         R.bb,

@@ -67,8 +67,7 @@ if __name__ == "__main__":
                      H {coords[7,0]} {coords[7,1]} {coords[7,2]}
                      H {coords[8,0]} {coords[8,1]} {coords[8,2]}
                      H {coords[9,0]} {coords[9,1]} {coords[9,2]}''',
-            basis={"H": gto.basis.parse('''
-                         ''')},
+            basis="cc-pvdz",
             spin=0,
             unit="Angstrom",
             symmetry="D2H",
