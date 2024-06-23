@@ -1638,7 +1638,7 @@ class Driver:
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   ec-CC calculation ended on", get_timestamp())
 
-    def run_ccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, target_irrep=None):
+    def run_ccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, target_irrep=None, high_memory=False):
 
         if method.lower() == "crcc23":
             from ccpy.moments.crcc23 import calc_crcc23
@@ -1690,7 +1690,7 @@ class Driver:
                                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                         self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
         elif method.lower() == "ccp3":
-            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3, calc_eomccp3
+            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3, calc_eomccp3, calc_ccp3_high_memory
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
             # Ensure that both HBar is set
             assert self.flag_hbar
@@ -1705,7 +1705,10 @@ class Driver:
                     _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"], target_irrep=target_irrep)
                 # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
                 else:
-                    _, self.deltap3[0] = calc_ccp3(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"], target_irrep=target_irrep)
+                    if high_memory:
+                        _, self.deltap3[0] = calc_ccp3_high_memory(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"], target_irrep=target_irrep)
+                    else:
+                        _, self.deltap3[0] = calc_ccp3(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"], target_irrep=target_irrep)
             # Excited-state corrections
             else:
                 # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)

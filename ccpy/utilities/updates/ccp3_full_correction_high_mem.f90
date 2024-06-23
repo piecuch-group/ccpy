@@ -1,4 +1,4 @@
-module ccp3_full_correction
+module ccp3_full_correction_high_mem
 
       use omp_lib
 
@@ -6,18 +6,18 @@ module ccp3_full_correction
 
       contains
          
-              subroutine ccp3a_ijk(deltaA,deltaB,deltaC,deltaD,&
-                                    i,j,k,omega,&
+              subroutine ccp3a(deltaA,deltaB,deltaC,deltaD,&
+                                    qspace,omega,&
                                     M3A,L3A,t3a_excits,&
                                     fA_oo,fA_vv,H1A_oo,H1A_vv,&
                                     H2A_voov,H2A_oooo,H2A_vvvv,&
-                                    D3A_O,D3A_V,n3aaa,noa,nua)
+                                    D3A_O,D3A_V,n3aaa,num_q,noa,nua)
 
-                        integer, intent(in) :: noa, nua, n3aaa
-                        integer, intent(in) :: i, j, k
+                        integer, intent(in) :: noa, nua, n3aaa, num_q
+                        integer, intent(in) :: qspace(num_q,6)
                         integer, intent(in) :: t3a_excits(n3aaa,6)
-                        real(kind=8), intent(in) :: M3A(1:nua,1:nua,1:nua),&
-                                                    L3A(1:nua,1:nua,1:nua),&
+                        real(kind=8), intent(in) :: M3A(num_q),&
+                                                    L3A(num_q),&
                                                     fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
                                                     H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
                                                     H2A_voov(1:nua,1:noa,1:noa,1:nua),&
@@ -27,90 +27,57 @@ module ccp3_full_correction
                                                     D3A_V(1:nua,1:noa,1:nua)
                         real(kind=8), intent(in) :: omega
                         ! output variables
-                        real(kind=8), intent(inout) :: deltaA
-                        !f2py intent(in,out) :: deltaA
-                        real(kind=8), intent(inout) :: deltaB
-                        !f2py intent(in,out) :: deltaB
-                        real(kind=8), intent(inout) :: deltaC
-                        !f2py intent(in,out) :: deltaC
-                        real(kind=8), intent(inout) :: deltaD
-                        !f2py intent(in,out) :: deltaD
-                        
-                        ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nua,nua,nua)
-                        integer :: nloc, idet, idx
-                        integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
-                        integer :: excits_buff(n3aaa,6)
-                        real(kind=8) :: amps_buff(n3aaa)
+                        real(kind=8), intent(out) :: deltaA
+                        real(kind=8), intent(out) :: deltaB
+                        real(kind=8), intent(out) :: deltaC
+                        real(kind=8), intent(out) :: deltaD
                         ! local variables
-                        integer :: a, b, c
+                        integer :: i, j, k, a, b, c, idet
                         real(kind=8) :: D, LM
 
-                        ! reorder t3a into (i,j,k) order
-                        excits_buff(:,:) = t3a_excits(:,:)
-                        amps_buff = 0.0
-                        nloc = noa*(noa-1)*(noa-2)/6
-                        allocate(loc_arr(2,nloc))
-                        allocate(idx_table(noa,noa,noa))
-                        call get_index_table3(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), noa, noa, noa)
-                        call sort3(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6/), noa, noa, noa, nloc, n3aaa)
-                        
-                        ! Construct Q space for block (i,j,k)
-                        qspace = .true.
-                        idx = idx_table(i,j,k)
-                        if (idx/=0) then
-                           do idet = loc_arr(1,idx), loc_arr(2,idx)
-                              a = excits_buff(idet,1); b = excits_buff(idet,2); c = excits_buff(idet,3);
-                              qspace(a,b,c) = .false.
-                           end do
-                        end if
-                        deallocate(idx_table,loc_arr)
-                        
-                        do a = 1, nua
-                            do b = a+1, nua
-                                do c = b+1, nua
-
-                                    if (.not. qspace(a,b,c)) cycle
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0 
+                        do idet=1,num_q
+                            a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                            i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                                    
-                                    LM = M3A(a,b,c) * L3A(a,b,c)
+                            LM = M3A(idet) * L3A(idet)
 
-                                    D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
-                                    - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
+                            D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
+                            - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
 
-                                    deltaA = deltaA + LM/(omega+D)
+                            deltaA = deltaA + LM/(omega+D)
 
-                                    D = H1A_oo(i,i) + H1A_oo(j,j) + H1A_oo(k,k)&
-                                    - H1A_vv(a,a) - H1A_vv(b,b) - H1A_vv(c,c)
+                            D = H1A_oo(i,i) + H1A_oo(j,j) + H1A_oo(k,k)&
+                            - H1A_vv(a,a) - H1A_vv(b,b) - H1A_vv(c,c)
 
-                                    deltaB = deltaB + LM/(omega+D)
+                            deltaB = deltaB + LM/(omega+D)
 
-                                    D = D &
-                                    -H2A_voov(a,i,i,a) - H2A_voov(b,i,i,b) - H2A_voov(c,i,i,c)&
-                                    -H2A_voov(a,j,j,a) - H2A_voov(b,j,j,b) - H2A_voov(c,j,j,c)&
-                                    -H2A_voov(a,k,k,a) - H2A_voov(b,k,k,b) - H2A_voov(c,k,k,c)&
-                                    -H2A_oooo(j,i,j,i) - H2A_oooo(k,i,k,i) - H2A_oooo(k,j,k,j)&
-                                    -H2A_vvvv(b,a,b,a) - H2A_vvvv(c,a,c,a) - H2A_vvvv(c,b,c,b)
+                            D = D &
+                            -H2A_voov(a,i,i,a) - H2A_voov(b,i,i,b) - H2A_voov(c,i,i,c)&
+                            -H2A_voov(a,j,j,a) - H2A_voov(b,j,j,b) - H2A_voov(c,j,j,c)&
+                            -H2A_voov(a,k,k,a) - H2A_voov(b,k,k,b) - H2A_voov(c,k,k,c)&
+                            -H2A_oooo(j,i,j,i) - H2A_oooo(k,i,k,i) - H2A_oooo(k,j,k,j)&
+                            -H2A_vvvv(b,a,b,a) - H2A_vvvv(c,a,c,a) - H2A_vvvv(c,b,c,b)
 
-                                    deltaC = deltaC + LM/(omega+D)
+                            deltaC = deltaC + LM/(omega+D)
 
-                                    D = D &
-                                    +D3A_O(a,i,j)+D3A_O(a,i,k)+D3A_O(a,j,k)&
-                                    +D3A_O(b,i,j)+D3A_O(b,i,k)+D3A_O(b,j,k)&
-                                    +D3A_O(c,i,j)+D3A_O(c,i,k)+D3A_O(c,j,k)&
-                                    -D3A_V(a,i,b)-D3A_V(a,i,c)-D3A_V(b,i,c)&
-                                    -D3A_V(a,j,b)-D3A_V(a,j,c)-D3A_V(b,j,c)&
-                                    -D3A_V(a,k,b)-D3A_V(a,k,c)-D3A_V(b,k,c)
+                            D = D &
+                            +D3A_O(a,i,j)+D3A_O(a,i,k)+D3A_O(a,j,k)&
+                            +D3A_O(b,i,j)+D3A_O(b,i,k)+D3A_O(b,j,k)&
+                            +D3A_O(c,i,j)+D3A_O(c,i,k)+D3A_O(c,j,k)&
+                            -D3A_V(a,i,b)-D3A_V(a,i,c)-D3A_V(b,i,c)&
+                            -D3A_V(a,j,b)-D3A_V(a,j,c)-D3A_V(b,j,c)&
+                            -D3A_V(a,k,b)-D3A_V(a,k,c)-D3A_V(b,k,c)
 
-                                    deltaD = deltaD + LM/(omega+D)
-
-                                end do
-                            end do
+                            deltaD = deltaD + LM/(omega+D)
                         end do
-                 
-              end subroutine ccp3a_ijk
+              end subroutine ccp3a
          
-              subroutine ccp3b_ijk(deltaA,deltaB,deltaC,deltaD,&
-                                    i,j,k,omega,&
+              subroutine ccp3b(deltaA,deltaB,deltaC,deltaD,&
+                                    qspace,omega,&
                                     M3B,L3B,t3b_excits,&
                                     fA_oo,fA_vv,fB_oo,fB_vv,&
                                     H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
@@ -119,13 +86,13 @@ module ccp3_full_correction
                                     H2B_oooo,H2B_vvvv,&
                                     H2C_voov,&
                                     D3A_O,D3A_V,D3B_O,D3B_V,D3C_O,D3C_V,&
-                                    n3aab,noa,nua,nob,nub)
+                                    n3aab,num_q,noa,nua,nob,nub)
 
-                        integer, intent(in) :: noa, nua, nob, nub, n3aab
-                        integer, intent(in) :: i, j, k
+                        integer, intent(in) :: noa, nua, nob, nub, n3aab, num_q
+                        integer, intent(in) :: qspace(num_q,6)
                         integer, intent(in) :: t3b_excits(n3aab,6)
-                        real(kind=8), intent(in) :: M3B(1:nua,1:nua,1:nub),&
-                                                    L3B(1:nua,1:nua,1:nub),&
+                        real(kind=8), intent(in) :: M3B(num_q),&
+                                                    L3B(num_q),&
                                                     fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
                                                     fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
                                                     H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
@@ -146,88 +113,57 @@ module ccp3_full_correction
                                                     D3C_V(1:nua,1:nob,1:nub)
                         real(kind=8), intent(in) :: omega
                         ! output variables
-                        real(kind=8), intent(inout) :: deltaA
-                        !f2py intent(in,out) :: deltaA
-                        real(kind=8), intent(inout) :: deltaB
-                        !f2py intent(in,out) :: deltaB
-                        real(kind=8), intent(inout) :: deltaC
-                        !f2py intent(in,out) :: deltaC
-                        real(kind=8), intent(inout) :: deltaD
-                        !f2py intent(in,out) :: deltaD
-                        
-                        ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nua,nua,nub)
-                        integer :: nloc, idet, idx
-                        integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
-                        integer :: excits_buff(n3aab,6)
-                        real(kind=8) :: amps_buff(n3aab)
+                        real(kind=8), intent(out) :: deltaA
+                        real(kind=8), intent(out) :: deltaB
+                        real(kind=8), intent(out) :: deltaC
+                        real(kind=8), intent(out) :: deltaD
                         ! local variables
-                        integer :: a, b, c
+                        integer :: i, j, k, a, b, c, idet
                         real(kind=8) :: D, LM
 
-                        ! reorder t3b into (i,j,k) order
-                        excits_buff(:,:) = t3b_excits(:,:)
-                        amps_buff = 0.0
-                        nloc = noa*(noa-1)/2*nob
-                        allocate(loc_arr(2,nloc))
-                        allocate(idx_table(noa,noa,nob))
-                        call get_index_table3(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), noa, noa, nob)
-                        call sort3(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6/), noa, noa, nob, nloc, n3aab)
-                        
-                        ! Construct Q space for block (i,j,k)
-                        qspace = .true.
-                        idx = idx_table(i,j,k)
-                        if (idx/=0) then
-                           do idet = loc_arr(1,idx), loc_arr(2,idx)
-                              a = excits_buff(idet,1); b = excits_buff(idet,2); c = excits_buff(idet,3);
-                              qspace(a,b,c) = .false.
-                           end do
-                        end if
-                        deallocate(idx_table,loc_arr)
-                        
-                        do a = 1, nua
-                            do b = a+1, nua
-                                do c = 1, nub
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0 
+                        do idet=1,num_q
+                            a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                            i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
+                           
+                            LM = M3B(idet) * L3B(idet)
+                            
+                            D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
+                            - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
 
-                                    if (.not. qspace(a,b,c)) cycle
-                                   
-                                    LM = M3B(a,b,c) * L3B(a,b,c)
-                                    
-                                    D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
-                                    - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
-   
-                                    deltaA = deltaA + LM/(omega+D)
-   
-                                    D = H1A_oo(i,i) + H1A_oo(j,j) + H1B_oo(k,k)&
-                                    - H1A_vv(a,a) - H1A_vv(b,b) - H1B_vv(c,c)
-   
-                                    deltaB = deltaB + LM/(omega+D)
-   
-                                    D = D &
-                                    -H2A_voov(a,i,i,a)-H2A_voov(b,i,i,b)+H2B_ovov(i,c,i,c)&
-                                    -H2A_voov(a,j,j,a)-H2A_voov(b,j,j,b)+H2B_ovov(j,c,j,c)&
-                                    +H2B_vovo(a,k,a,k)+H2B_vovo(b,k,b,k)-H2C_voov(c,k,k,c)&
-                                    -H2A_oooo(j,i,j,i)-H2B_oooo(i,k,i,k)-H2B_oooo(j,k,j,k)&
-                                    -H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
-   
-                                    deltaC = deltaC + LM/(omega+D)
-   
-                                    D = D &
-                                    +D3A_O(a,i,j)+D3B_O(a,i,k)+D3B_O(a,j,k)&
-                                    +D3A_O(b,i,j)+D3B_O(b,i,k)+D3B_O(b,j,k)&
-                                    +D3C_O(c,i,k)+D3C_O(c,j,k)&
-                                    -D3A_V(a,i,b)-D3B_V(a,i,c)-D3B_V(b,i,c)&
-                                    -D3A_V(a,j,b)-D3B_V(a,j,c)-D3B_V(b,j,c)&
-                                    -D3C_V(a,k,c)-D3C_V(b,k,c)
-   
-                                    deltaD = deltaD + LM/(omega+D)
-                                end do
-                            end do
+                            deltaA = deltaA + LM/(omega+D)
+
+                            D = H1A_oo(i,i) + H1A_oo(j,j) + H1B_oo(k,k)&
+                            - H1A_vv(a,a) - H1A_vv(b,b) - H1B_vv(c,c)
+
+                            deltaB = deltaB + LM/(omega+D)
+
+                            D = D &
+                            -H2A_voov(a,i,i,a)-H2A_voov(b,i,i,b)+H2B_ovov(i,c,i,c)&
+                            -H2A_voov(a,j,j,a)-H2A_voov(b,j,j,b)+H2B_ovov(j,c,j,c)&
+                            +H2B_vovo(a,k,a,k)+H2B_vovo(b,k,b,k)-H2C_voov(c,k,k,c)&
+                            -H2A_oooo(j,i,j,i)-H2B_oooo(i,k,i,k)-H2B_oooo(j,k,j,k)&
+                            -H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
+
+                            deltaC = deltaC + LM/(omega+D)
+
+                            D = D &
+                            +D3A_O(a,i,j)+D3B_O(a,i,k)+D3B_O(a,j,k)&
+                            +D3A_O(b,i,j)+D3B_O(b,i,k)+D3B_O(b,j,k)&
+                            +D3C_O(c,i,k)+D3C_O(c,j,k)&
+                            -D3A_V(a,i,b)-D3B_V(a,i,c)-D3B_V(b,i,c)&
+                            -D3A_V(a,j,b)-D3B_V(a,j,c)-D3B_V(b,j,c)&
+                            -D3C_V(a,k,c)-D3C_V(b,k,c)
+
+                            deltaD = deltaD + LM/(omega+D)
                         end do
-              end subroutine ccp3b_ijk
+              end subroutine ccp3b
          
-              subroutine ccp3c_ijk(deltaA,deltaB,deltaC,deltaD,&
-                                    i,j,k,omega,&
+              subroutine ccp3c(deltaA,deltaB,deltaC,deltaD,&
+                                    qspace,omega,&
                                     M3C,L3C,t3c_excits,&
                                     fA_oo,fA_vv,fB_oo,fB_vv,&
                                     H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
@@ -236,13 +172,13 @@ module ccp3_full_correction
                                     H2B_oooo,H2B_vvvv,&
                                     H2C_voov,H2C_oooo,H2C_vvvv,&
                                     D3B_O,D3B_V,D3C_O,D3C_V,D3D_O,D3D_V,&
-                                    n3abb,noa,nua,nob,nub)
+                                    n3abb,num_q,noa,nua,nob,nub)
 
-                        integer, intent(in) :: noa, nua, nob, nub, n3abb
-                        integer, intent(in) :: i, j, k
+                        integer, intent(in) :: noa, nua, nob, nub, n3abb, num_q
+                        integer, intent(in) :: qspace(num_q,6)
                         integer, intent(in) :: t3c_excits(n3abb,6)
-                        real(kind=8), intent(in) :: M3C(1:nua,1:nub,1:nub),&
-                                                    L3C(1:nua,1:nub,1:nub),&
+                        real(kind=8), intent(in) :: M3C(num_q),&
+                                                    L3C(num_q),&
                                                     fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
                                                     fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
                                                     H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
@@ -263,96 +199,67 @@ module ccp3_full_correction
                                                     D3D_V(1:nub,1:nob,1:nub)
                         real(kind=8), intent(in) :: omega
                         ! output variables
-                        real(kind=8), intent(inout) :: deltaA
-                        !f2py intent(in,out) :: deltaA
-                        real(kind=8), intent(inout) :: deltaB
-                        !f2py intent(in,out) :: deltaB
-                        real(kind=8), intent(inout) :: deltaC
-                        !f2py intent(in,out) :: deltaC
-                        real(kind=8), intent(inout) :: deltaD
-                        !f2py intent(in,out) :: deltaD
-                        
-                        ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nua,nub,nub)
-                        integer :: nloc, idet, idx
-                        integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
-                        integer :: excits_buff(n3abb,6)
-                        real(kind=8) :: amps_buff(n3abb)
+                        real(kind=8), intent(out) :: deltaA
+                        real(kind=8), intent(out) :: deltaB
+                        real(kind=8), intent(out) :: deltaC
+                        real(kind=8), intent(out) :: deltaD
                         ! local variables
-                        integer :: a, b, c
+                        integer :: i, j, k, a, b, c, idet
                         real(kind=8) :: D, LM
+                        
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0 
+                        do idet=1,num_q
+                            a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                            i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
 
-                        ! reorder t3b into (i,j,k) order
-                        excits_buff(:,:) = t3c_excits(:,:)
-                        amps_buff = 0.0
-                        nloc = nob*(nob-1)/2*noa
-                        allocate(loc_arr(2,nloc))
-                        allocate(idx_table(nob,nob,noa))
-                        call get_index_table3(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), nob, nob, noa)
-                        call sort3(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,4/), nob, nob, noa, nloc, n3abb)
-                        
-                        ! Construct Q space for block (i,j,k)
-                        qspace = .true.
-                        idx = idx_table(j,k,i)
-                        if (idx/=0) then
-                           do idet = loc_arr(1,idx), loc_arr(2,idx)
-                              a = excits_buff(idet,1); b = excits_buff(idet,2); c = excits_buff(idet,3);
-                              qspace(a,b,c) = .false.
-                           end do
-                        end if
-                        deallocate(idx_table,loc_arr)
-                        
-                        do a = 1, nua
-                            do b = 1, nub
-                                do c = b+1, nub
-                                    if (.not. qspace(a,b,c)) cycle
-                                    LM = M3C(a,b,c) * L3C(a,b,c)
-   
-                                    D = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
-                                    - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
-   
-                                    deltaA = deltaA + LM/(omega+D)
-   
-                                    D = H1A_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)&
-                                    - H1A_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c)
-   
-                                    deltaB = deltaB + LM/(omega+D)
-   
-                                    D = D &
-                                    -H2A_voov(a,i,i,a)+H2B_ovov(i,b,i,b)+H2B_ovov(i,c,i,c)&
-                                    +H2B_vovo(a,j,a,j)-H2C_voov(b,j,j,b)-H2C_voov(c,j,j,c)&
-                                    +H2B_vovo(a,k,a,k)-H2C_voov(b,k,k,b)-H2C_voov(c,k,k,c)&
-                                    -H2B_oooo(i,j,i,j)-H2B_oooo(i,k,i,k)-H2C_oooo(k,j,k,j)&
-                                    -H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
-                                    
-                                    deltaC = deltaC + LM/(omega+D)
-                                    
-                                    D = D &
-                                    +D3B_O(a,i,j)+D3B_O(a,i,k)&
-                                    +D3C_O(b,i,j)+D3C_O(b,i,k)+D3D_O(b,j,k)&
-                                    +D3C_O(c,i,j)+D3C_O(c,i,k)+D3D_O(c,j,k)&
-                                    -D3B_V(a,i,b)-D3B_V(a,i,c)&
-                                    -D3C_V(a,j,b)-D3C_V(a,j,c)-D3D_V(b,j,c)&
-                                    -D3C_V(a,k,b)-D3C_V(a,k,c)-D3D_V(b,k,c)
-   
-                                    deltaD = deltaD + LM/(omega+D)
-                                end do
-                            end do
+                            LM = M3C(idet) * L3C(idet)
+
+                            D = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
+                            - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
+
+                            deltaA = deltaA + LM/(omega+D)
+
+                            D = H1A_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)&
+                            - H1A_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c)
+
+                            deltaB = deltaB + LM/(omega+D)
+
+                            D = D &
+                            -H2A_voov(a,i,i,a)+H2B_ovov(i,b,i,b)+H2B_ovov(i,c,i,c)&
+                            +H2B_vovo(a,j,a,j)-H2C_voov(b,j,j,b)-H2C_voov(c,j,j,c)&
+                            +H2B_vovo(a,k,a,k)-H2C_voov(b,k,k,b)-H2C_voov(c,k,k,c)&
+                            -H2B_oooo(i,j,i,j)-H2B_oooo(i,k,i,k)-H2C_oooo(k,j,k,j)&
+                            -H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
+                            
+                            deltaC = deltaC + LM/(omega+D)
+                            
+                            D = D &
+                            +D3B_O(a,i,j)+D3B_O(a,i,k)&
+                            +D3C_O(b,i,j)+D3C_O(b,i,k)+D3D_O(b,j,k)&
+                            +D3C_O(c,i,j)+D3C_O(c,i,k)+D3D_O(c,j,k)&
+                            -D3B_V(a,i,b)-D3B_V(a,i,c)&
+                            -D3C_V(a,j,b)-D3C_V(a,j,c)-D3D_V(b,j,c)&
+                            -D3C_V(a,k,b)-D3C_V(a,k,c)-D3D_V(b,k,c)
+
+                            deltaD = deltaD + LM/(omega+D)
                         end do
-              end subroutine ccp3c_ijk
+              end subroutine ccp3c
          
-              subroutine ccp3d_ijk(deltaA,deltaB,deltaC,deltaD,&
-                                   i,j,k,omega,&
+              subroutine ccp3d(deltaA,deltaB,deltaC,deltaD,&
+                                   qspace,omega,&
                                    M3D,L3D,t3d_excits,&
                                    fB_oo,fB_vv,H1B_oo,H1B_vv,&
                                    H2C_voov,H2C_oooo,H2C_vvvv,&
-                                   D3D_O,D3D_V,n3bbb,nob,nub)
+                                   D3D_O,D3D_V,n3bbb,num_q,nob,nub)
 
-                        integer, intent(in) :: nob, nub, n3bbb
-                        integer, intent(in) :: i, j, k
+                        integer, intent(in) :: nob, nub, n3bbb, num_q
+                        integer, intent(in) :: qspace(num_q,6)
                         integer, intent(in) :: t3d_excits(n3bbb,6)
-                        real(kind=8), intent(in) :: M3D(1:nub,1:nub,1:nub),&
-                                                    L3D(1:nub,1:nub,1:nub),&
+                        real(kind=8), intent(in) :: M3D(num_q),&
+                                                    L3D(num_q),&
                                                     fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
                                                     H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
                                                     H2C_voov(1:nub,1:nob,1:nob,1:nub),&
@@ -362,89 +269,56 @@ module ccp3_full_correction
                                                     D3D_V(1:nub,1:nob,1:nub)
                         real(kind=8), intent(in) :: omega
                         ! output variables
-                        real(kind=8), intent(inout) :: deltaA
-                        !f2py intent(in,out) :: deltaA
-                        real(kind=8), intent(inout) :: deltaB
-                        !f2py intent(in,out) :: deltaB
-                        real(kind=8), intent(inout) :: deltaC
-                        !f2py intent(in,out) :: deltaC
-                        real(kind=8), intent(inout) :: deltaD
-                        !f2py intent(in,out) :: deltaD
-                        
-                        ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nub,nub,nub)
-                        integer :: nloc, idet, idx
-                        integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
-                        integer :: excits_buff(n3bbb,6)
-                        real(kind=8) :: amps_buff(n3bbb)
+                        real(kind=8), intent(out) :: deltaA
+                        real(kind=8), intent(out) :: deltaB
+                        real(kind=8), intent(out) :: deltaC
+                        real(kind=8), intent(out) :: deltaD
                         ! local variables
-                        integer :: a, b, c
+                        integer :: i, j, k, a, b, c, idet
                         real(kind=8) :: D, LM
-
-                        ! reorder t3d into (i,j,k) order
-                        excits_buff(:,:) = t3d_excits(:,:)
-                        amps_buff = 0.0
-                        nloc = nob*(nob-1)*(nob-2)/6
-                        allocate(loc_arr(2,nloc))
-                        allocate(idx_table(nob,nob,nob))
-                        call get_index_table3(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), nob, nob, nob)
-                        call sort3(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6/), nob, nob, nob, nloc, n3bbb)
                         
-                        ! Construct Q space for block (i,j,k)
-                        qspace = .true.
-                        idx = idx_table(i,j,k)
-                        if (idx/=0) then
-                           do idet = loc_arr(1,idx), loc_arr(2,idx)
-                              a = excits_buff(idet,1); b = excits_buff(idet,2); c = excits_buff(idet,3);
-                              qspace(a,b,c) = .false.
-                           end do
-                        end if
-                        deallocate(idx_table,loc_arr)
-                        
-                        do a = 1, nub
-                            do b = a+1, nub
-                                do c = b+1, nub
-
-                                    if (.not. qspace(a,b,c)) cycle
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0 
+                        do idet=1,num_q
+                            a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                            i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                                    
-                                    LM = M3D(a,b,c) * L3D(a,b,c)
+                            LM = M3D(idet) * L3D(idet)
 
-                                    D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
-                                    - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
+                            D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
+                            - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
 
-                                    deltaA = deltaA + LM/(omega+D)
+                            deltaA = deltaA + LM/(omega+D)
 
-                                    D = H1B_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)&
-                                    - H1B_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c)
+                            D = H1B_oo(i,i) + H1B_oo(j,j) + H1B_oo(k,k)&
+                            - H1B_vv(a,a) - H1B_vv(b,b) - H1B_vv(c,c)
 
-                                    deltaB = deltaB + LM/(omega+D)
+                            deltaB = deltaB + LM/(omega+D)
 
-                                    D = D &
-                                    -H2C_voov(a,i,i,a) - H2C_voov(b,i,i,b) - H2C_voov(c,i,i,c)&
-                                    -H2C_voov(a,j,j,a) - H2C_voov(b,j,j,b) - H2C_voov(c,j,j,c)&
-                                    -H2C_voov(a,k,k,a) - H2C_voov(b,k,k,b) - H2C_voov(c,k,k,c)&
-                                    -H2C_oooo(j,i,j,i) - H2C_oooo(k,i,k,i) - H2C_oooo(k,j,k,j)&
-                                    -H2C_vvvv(b,a,b,a) - H2C_vvvv(c,a,c,a) - H2C_vvvv(c,b,c,b)
+                            D = D &
+                            -H2C_voov(a,i,i,a) - H2C_voov(b,i,i,b) - H2C_voov(c,i,i,c)&
+                            -H2C_voov(a,j,j,a) - H2C_voov(b,j,j,b) - H2C_voov(c,j,j,c)&
+                            -H2C_voov(a,k,k,a) - H2C_voov(b,k,k,b) - H2C_voov(c,k,k,c)&
+                            -H2C_oooo(j,i,j,i) - H2C_oooo(k,i,k,i) - H2C_oooo(k,j,k,j)&
+                            -H2C_vvvv(b,a,b,a) - H2C_vvvv(c,a,c,a) - H2C_vvvv(c,b,c,b)
 
-                                    deltaC = deltaC + LM/(omega+D)
+                            deltaC = deltaC + LM/(omega+D)
 
-                                    D = D &
-                                    +D3D_O(a,i,j)+D3D_O(a,i,k)+D3D_O(a,j,k)&
-                                    +D3D_O(b,i,j)+D3D_O(b,i,k)+D3D_O(b,j,k)&
-                                    +D3D_O(c,i,j)+D3D_O(c,i,k)+D3D_O(c,j,k)&
-                                    -D3D_V(a,i,b)-D3D_V(a,i,c)-D3D_V(b,i,c)&
-                                    -D3D_V(a,j,b)-D3D_V(a,j,c)-D3D_V(b,j,c)&
-                                    -D3D_V(a,k,b)-D3D_V(a,k,c)-D3D_V(b,k,c)
+                            D = D &
+                            +D3D_O(a,i,j)+D3D_O(a,i,k)+D3D_O(a,j,k)&
+                            +D3D_O(b,i,j)+D3D_O(b,i,k)+D3D_O(b,j,k)&
+                            +D3D_O(c,i,j)+D3D_O(c,i,k)+D3D_O(c,j,k)&
+                            -D3D_V(a,i,b)-D3D_V(a,i,c)-D3D_V(b,i,c)&
+                            -D3D_V(a,j,b)-D3D_V(a,j,c)-D3D_V(b,j,c)&
+                            -D3D_V(a,k,b)-D3D_V(a,k,c)-D3D_V(b,k,c)
 
-                                    deltaD = deltaD + LM/(omega+D)
-
-                                end do
-                            end do
+                            deltaD = deltaD + LM/(omega+D)
                         end do
-                 
-              end subroutine ccp3d_ijk
+              end subroutine ccp3d
          
-              subroutine build_moments3a_ijk(resid, qspace,&
+              subroutine build_moments3a(resid, qspace,&
                                              t3a_amps, t3a_excits,&
                                              t3b_amps, t3b_excits,&
                                              t2a,&
@@ -478,19 +352,16 @@ module ccp3_full_correction
                   real(kind=8), allocatable :: amps_buff(:), t3a_amps_copy(:), xbuf(:,:,:,:)
                   integer, allocatable :: excits_buff(:,:), t3a_excits_copy(:,:)
                   
-                  real(kind=8) :: val, denom, t_amp, res_mm23, hmatel
-                  real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4
-                  integer :: ii, jj, kk, a, b, c, d, l, e, f, m, n, jdet
+                  real(kind=8) :: hmatel, hmatel1, hmatel2, hmatel3, hmatel4
+                  integer :: i, j, k, ii, jj, kk, a, b, c, d, l, e, f, m, n, jdet, idet
                   integer :: idx, nloc
 
                   ! Zero the residual container
                   resid = 0.0d0
-                  
                   ! copy over t3a_amps and t3a_excits
                   allocate(t3a_amps_copy(n3aaa),t3a_excits_copy(n3aaa,6))
                   t3a_amps_copy(:) = t3a_amps(:)
                   t3a_excits_copy(:,:) = t3a_excits(:,:)
-
                   !!!! diagram 1: -A(i/jk) h1a(mi) * t3a(abcmjk)
                   !!!! diagram 3: 1/2 A(i/jk) h2a(mnij) * t3a(abcmnk)
                   ! NOTE: WITHIN THESE LOOPS, H1A(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
@@ -564,7 +435,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel*t3a_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -634,7 +505,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel*t3a_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -704,7 +575,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel*t3a_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -787,7 +658,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel*t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -860,7 +731,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel*t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -933,7 +804,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel*t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -1058,7 +929,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -1175,7 +1046,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -1292,7 +1163,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -1409,7 +1280,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -1526,7 +1397,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -1643,7 +1514,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -1760,7 +1631,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -1877,7 +1748,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -1994,7 +1865,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2123,7 +1994,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2162,7 +2033,7 @@ module ccp3_full_correction
                           resid(idet) = resid(idet) - H2A_vooo(m,b,i,k) * xbuf(m,j,a,c)
                           resid(idet) = resid(idet) - H2A_vooo(m,c,i,k) * xbuf(m,j,b,a)
                       end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   deallocate(xbuf)
@@ -2184,14 +2055,14 @@ module ccp3_full_correction
                           resid(idet) = resid(idet) + H2A_vvov(e,c,b,k) * t2a(e,a,j,i)
                           resid(idet) = resid(idet) + H2A_vvov(e,a,c,k) * t2a(e,b,j,i)
                       end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   ! deallocate the copied t3 vectors and excitations
                   deallocate(t3a_amps_copy,t3a_excits_copy)
-              end subroutine build_moments3a_ijk
+              end subroutine build_moments3a
 
-              subroutine build_moments3b_ijk(resid,i,j,k,&
+              subroutine build_moments3b(resid, qspace,&
                                              t3a_amps, t3a_excits,&
                                              t3b_amps, t3b_excits,&
                                              t3c_amps, t3c_excits,&
@@ -2201,15 +2072,11 @@ module ccp3_full_correction
                                              H2B_oovv, H2B_vvov, H2B_vvvo, H2B_vooo, H2B_ovoo,&
                                              H2B_oooo, H2B_voov, H2B_vovo, H2B_ovov, H2B_ovvo, H2B_vvvv,&
                                              H2C_oovv, H2C_voov,&
-                                             orbsym, sym_ijk, target_sym,&
-                                             n3aaa, n3aab, n3abb,&
-                                             noa, nua, nob, nub, norb)
+                                             n3aaa, n3aab, n3abb, num_q,&
+                                             noa, nua, nob, nub)
 
-                  integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
-                  ! occupied orbital block indices
-                  integer, intent(in) :: i, j, k
+                  integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb, num_q
+                  integer, intent(in) :: qspace(num_q,6)
                   !
                   integer, intent(in) :: t3a_excits(n3aaa,6), t3b_excits(n3aab,6), t3c_excits(n3abb,6)
                   real(kind=8), intent(in) :: t3a_amps(n3aaa), t3b_amps(n3aab), t3c_amps(n3abb)
@@ -2239,7 +2106,7 @@ module ccp3_full_correction
                                               H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
                                               H2C_voov(nob,nub,nub,nob)   ! reordered
 
-                  real(kind=8), intent(out) :: resid(nua,nua,nub)
+                  real(kind=8), intent(out) :: resid(num_q)
 
                   real(kind=8), allocatable :: amps_buff(:), t3b_amps_copy(:), xbuf(:,:,:,:)
                   integer, allocatable :: excits_buff(:,:), t3b_excits_copy(:,:)
@@ -2249,11 +2116,8 @@ module ccp3_full_correction
 
                   real(kind=8) :: denom, val, t_amp, res_mm23, hmatel
                   real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4
-                  integer :: ii, jj, kk, l, a, b, c, d, m, n, e, f, jdet
+                  integer :: i, j, k, ii, jj, kk, l, a, b, c, d, m, n, e, f, jdet, idet
                   integer :: idx, nloc
-                  integer :: sym
-                  !
-                  logical(kind=1) :: qspace(nua,nua,nub)
 
                   ! Zero the residual container
                   resid = 0.0d0
@@ -2262,30 +2126,6 @@ module ccp3_full_correction
                   allocate(t3b_amps_copy(n3aab),t3b_excits_copy(n3aab,6))
                   t3b_amps_copy(:) = t3b_amps(:)
                   t3b_excits_copy(:,:) = t3b_excits(:,:)
-
-                  ! reorder t3b into (i,j,k) order
-                  nloc = noa*(noa-1)/2*nob
-                  allocate(loc_arr(2,nloc))
-                  allocate(idx_table3(noa,noa,nob))
-                  call get_index_table3(idx_table3, (/1,noa-1/), (/-1,noa/), (/1,nob/), noa, noa, nob)
-                  call sort3(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table3, (/4,5,6/), noa, noa, nob, nloc, n3aab)
-                  ! Construct Q space for block (i,j,k)
-                  qspace = .true.
-                  idx = idx_table3(i,j,k)
-                  if (idx/=0) then
-                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                        a = t3b_excits_copy(jdet,1); b = t3b_excits_copy(jdet,2); c = t3b_excits_copy(jdet,3);
-                        ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+noa))
-                        sym = ieor(sym,orbsym(b+noa))
-                        sym = ieor(sym,orbsym(c+nob))
-                        ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
-                        qspace(a,b,c) = .false.
-                     end do
-                  end if
-                  deallocate(loc_arr,idx_table3)
-
                   !!!! diagram 1: -A(ij) h1a(mi)*t3b(abcmjk)
                   !!!! diagram 5: A(ij) 1/2 h2a(mnij)*t3b(abcmnk)
                   !!! ABCK LOOP !!!
@@ -2320,7 +2160,7 @@ module ccp3_full_correction
                         if (l==i) hmatel4 = -h1a_oo(m,j)
                         resid(idet) = resid(idet) + (hmatel + hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3b_amps_copy(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2364,7 +2204,7 @@ module ccp3_full_correction
                         if (a==d) hmatel4 = h1a_vv(e,b)  !h1a_vv(b,e)
                         resid(idet) = resid(idet) + (hmatel + hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3b_amps_copy(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2415,7 +2255,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + (hmatel + hmatel1)*t3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2451,7 +2291,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECITON !!!!
@@ -2504,7 +2344,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + (hmatel + hmatel1)*t3b_amps_copy(jdet)
                          end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2542,7 +2382,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * t3b_amps_copy(jdet)
                          end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2610,7 +2450,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2670,7 +2510,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2730,7 +2570,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2790,7 +2630,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2825,7 +2665,7 @@ module ccp3_full_correction
                          hmatel = h2c_voov(n,f,c,k)
                          resid(idet) = resid(idet) + hmatel * t3b_amps_copy(jdet)
                       end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2871,7 +2711,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2909,7 +2749,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2955,7 +2795,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -2993,7 +2833,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3033,7 +2873,7 @@ module ccp3_full_correction
                         hmatel = h2b_ovvo(n,f,c,k)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3060,7 +2900,7 @@ module ccp3_full_correction
                         hmatel = -h2b_ovvo(n,e,c,k)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3087,7 +2927,7 @@ module ccp3_full_correction
                         hmatel = h2b_ovvo(n,d,c,k)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3114,7 +2954,7 @@ module ccp3_full_correction
                         hmatel = -h2b_ovvo(m,f,c,k)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3141,7 +2981,7 @@ module ccp3_full_correction
                         hmatel = h2b_ovvo(m,e,c,k)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3168,7 +3008,7 @@ module ccp3_full_correction
                         hmatel = -h2b_ovvo(m,d,c,k)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3195,7 +3035,7 @@ module ccp3_full_correction
                         hmatel = h2b_ovvo(l,f,c,k)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3222,7 +3062,7 @@ module ccp3_full_correction
                         hmatel = -h2b_ovvo(l,e,c,k)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3249,7 +3089,7 @@ module ccp3_full_correction
                         hmatel = h2b_ovvo(l,d,c,k)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3326,7 +3166,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3388,7 +3228,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3450,7 +3290,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3512,7 +3352,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3534,7 +3374,7 @@ module ccp3_full_correction
                           resid(idet) = resid(idet) + H2B_vvvo(e,b,c,k) * t2a(e,a,j,i)
                           resid(idet) = resid(idet) - H2B_vvvo(e,a,c,k) * t2a(e,b,j,i)
                       end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
 
@@ -3548,7 +3388,7 @@ module ccp3_full_correction
                           resid(idet) = resid(idet) + H2A_vvov(e,a,b,i) * t2b(e,c,j,k)
                           resid(idet) = resid(idet) - H2A_vvov(e,a,b,j) * t2b(e,c,i,k)
                       end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
 
@@ -3574,7 +3414,7 @@ module ccp3_full_correction
                           resid(idet) = resid(idet) - H2B_vvov(e,b,c,i) * xbuf(e,a,k,j)
                           resid(idet) = resid(idet) + H2B_vvov(e,b,c,j) * xbuf(e,a,k,i)
                       end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   deallocate(xbuf)
@@ -3599,7 +3439,7 @@ module ccp3_full_correction
                           resid(idet) = resid(idet) - H2B_ovoo(m,c,j,k) * xbuf(m,i,b,a)
                           resid(idet) = resid(idet) + H2B_ovoo(m,c,i,k) * xbuf(m,j,b,a)
                       end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   deallocate(xbuf)
@@ -3624,7 +3464,7 @@ module ccp3_full_correction
                           resid(idet) = resid(idet) - H2A_vooo(m,a,i,j) * xbuf(m,k,b,c)
                           resid(idet) = resid(idet) + H2A_vooo(m,b,i,j) * xbuf(m,k,a,c)
                       end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   deallocate(xbuf)
@@ -3651,16 +3491,16 @@ module ccp3_full_correction
                           resid(idet) = resid(idet) + H2B_vooo(m,a,j,k) * xbuf(m,i,c,b)
                           resid(idet) = resid(idet) - H2B_vooo(m,b,j,k) * xbuf(m,i,c,a)
                       end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   deallocate(xbuf)
 
                   ! deallocate copies of t3b amplitude and excitation arrays
                   deallocate(t3b_amps_copy,t3b_excits_copy)
-              end subroutine build_moments3b_ijk
+              end subroutine build_moments3b
 
-              subroutine build_moments3c_ijk(resid, i, j, k,&
+              subroutine build_moments3c(resid, qspace,&
                                       t3b_amps, t3b_excits,&
                                       t3c_amps, t3c_excits,&
                                       t3d_amps, t3d_excits,&
@@ -3670,15 +3510,11 @@ module ccp3_full_correction
                                       H2B_oovv, H2B_vooo, H2B_ovoo, H2B_vvov, H2B_vvvo, H2B_oooo,&
                                       H2B_voov, H2B_vovo, H2B_ovov, H2B_ovvo, H2B_vvvv,&
                                       H2C_oovv, H2C_vooo, H2C_vvov, H2C_oooo, H2C_voov, H2C_vvvv,&
-                                      orbsym, sym_ijk, target_sym,&
-                                      n3aab, n3abb, n3bbb,&
-                                      noa, nua, nob, nub, norb)
+                                      n3aab, n3abb, n3bbb, num_q,&
+                                      noa, nua, nob, nub)
 
-                  integer, intent(in) :: noa, nua, nob, nub, n3aab, n3abb, n3bbb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
-                  ! occupied orbital block indices
-                  integer, intent(in) :: i, j, k
+                  integer, intent(in) :: noa, nua, nob, nub, n3aab, n3abb, n3bbb, num_q
+                  integer, intent(in) :: qspace(num_q,6)
                   !
                   integer, intent(in) :: t3b_excits(n3aab,6), t3c_excits(n3abb,6), t3d_excits(n3bbb,6)
                   real(kind=8), intent(in) :: t2b(1:nua,1:nub,1:noa,1:nob),&
@@ -3708,7 +3544,7 @@ module ccp3_full_correction
                                               H2C_voov(nob,nub,nub,nob),& ! reordered
                                               H2C_vvvv(1:nub,1:nub,1:nub,1:nub)
                   ! output variables
-                  real(kind=8), intent(out) :: resid(nua,nub,nub)
+                  real(kind=8), intent(out) :: resid(num_q)
                   ! local variables
                   real(kind=8), allocatable :: amps_buff(:), t3c_amps_copy(:)
                   integer, allocatable :: excits_buff(:,:), t3c_excits_copy(:,:)
@@ -3717,44 +3553,16 @@ module ccp3_full_correction
                   !
                   real(kind=8) :: denom, val, t_amp, res_mm23, hmatel
                   real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4
-                  integer :: ii, jj, kk, l, a, b, c, d, m, n, e, f, jdet
+                  integer :: i, j, k, ii, jj, kk, l, a, b, c, d, m, n, e, f, jdet, idet
                   integer :: idx, nloc
-                  integer :: sym
                   real(kind=8), allocatable :: xbuf(:,:,:,:)
-                  !
-                  logical(kind=1) :: qspace(nua,nub,nub)
 
                   ! copy over t3c_amps_copy and t3c_excits_copy
                   allocate(t3c_amps_copy(n3abb),t3c_excits_copy(n3abb,6))
                   t3c_amps_copy(:) = t3c_amps(:)
                   t3c_excits_copy(:,:) = t3c_excits(:,:)
-
-                  ! reorder t3c into (i,j,k) order
-                  nloc = nob*(nob-1)/2*noa
-                  allocate(loc_arr(2,nloc))
-                  allocate(idx_table3(nob,nob,noa))
-                  call get_index_table3(idx_table3, (/1,nob-1/), (/-1,nob/), (/1,noa/), nob, nob, noa)
-                  call sort3(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table3, (/5,6,4/), nob, nob, noa, nloc, n3abb)
-                  ! Construct Q space for block (j,k,i)
-                  qspace = .true.
-                  idx = idx_table3(j,k,i)
-                  if (idx/=0) then
-                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                        a = t3c_excits_copy(jdet,1); b = t3c_excits_copy(jdet,2); c = t3c_excits_copy(jdet,3);
-                        ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+noa))
-                        sym = ieor(sym,orbsym(b+nob))
-                        sym = ieor(sym,orbsym(c+nob))
-                        ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
-                        qspace(a,b,c) = .false.
-                     end do
-                  end if
-                  deallocate(loc_arr,idx_table3)
-
                   ! Zero the residual container
                   resid = 0.0d0
-
                   !!!! diagram 1: -A(jk) h1b(mk)*t3c(abcijm)
                   !!!! diagram 5: A(jk) 1/2 h2c(mnjk)*t3c(abcimn)
                   !!! BCAI LOOP !!!
@@ -3790,7 +3598,7 @@ module ccp3_full_correction
                         if (m==j) hmatel4 = -h1b_oo(n,k) ! (jk)(mn)
                         resid(idet) = resid(idet) + (hmatel + hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3c_amps_copy(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3832,7 +3640,7 @@ module ccp3_full_correction
                         if (b==e) hmatel4 = h1b_vv(f,c)  !h1b_vv(c,f) ! (bc)(ef)
                         resid(idet) = resid(idet) + (hmatel + hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3c_amps_copy(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3883,7 +3691,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + (hmatel + hmatel1)*t3c_amps_copy(jdet)
                          end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -3919,7 +3727,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * t3c_amps_copy(jdet)
                          end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECITON !!!!
@@ -3970,7 +3778,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + (hmatel + hmatel1)*t3c_amps_copy(jdet)
                          end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4007,7 +3815,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * t3c_amps_copy(jdet)
                          end do
                       end if
-                  end do; end do; end do; ! end loop over idet
+                  end do ! end loop over idet
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4075,7 +3883,7 @@ module ccp3_full_correction
                              resid(idet) = resid(idet) + hmatel * t3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4135,7 +3943,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * t3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4195,7 +4003,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * t3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4255,7 +4063,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * t3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4290,7 +4098,7 @@ module ccp3_full_correction
                          hmatel = h2a_voov(l,d,a,i)
                          resid(idet) = resid(idet) + hmatel * t3c_amps_copy(jdet)
                       end do
-                  end do; end do; end do; ! end loop over idet
+                  end do ! end loop over idet
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4336,7 +4144,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * t3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4374,7 +4182,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * t3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4420,7 +4228,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * t3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4458,7 +4266,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * t3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4500,7 +4308,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4529,7 +4337,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4558,7 +4366,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4587,7 +4395,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4616,7 +4424,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4645,7 +4453,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4674,7 +4482,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4703,7 +4511,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4732,7 +4540,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4809,7 +4617,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4871,7 +4679,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4933,7 +4741,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -4995,7 +4803,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -5019,7 +4827,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) - H2B_vvvo(e,a,c,j) * t2b(e,b,i,k)
                         resid(idet) = resid(idet) + H2B_vvvo(e,a,c,k) * t2b(e,b,i,j)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
 
@@ -5033,7 +4841,7 @@ module ccp3_full_correction
                          resid(idet) = resid(idet) + H2B_vvov(e,a,b,i) * t2c(e,c,j,k)
                          resid(idet) = resid(idet) - H2B_vvov(e,a,c,i) * t2c(e,b,j,k)
                       end do
-                   end do; end do; end do;
+                   end do
                    !$omp end do
                    !$omp end parallel
 
@@ -5057,7 +4865,7 @@ module ccp3_full_correction
                          resid(idet) = resid(idet) + H2C_vvov(e,c,b,k) * xbuf(e,a,j,i)
                          resid(idet) = resid(idet) - H2C_vvov(e,c,b,j) * xbuf(e,a,k,i)
                       end do
-                   end do; end do; end do;
+                   end do
                    !$omp end do
                    !$omp end parallel
                    deallocate(xbuf)
@@ -5084,7 +4892,7 @@ module ccp3_full_correction
                          resid(idet) = resid(idet) + H2B_ovoo(m,b,i,k) * xbuf(m,j,a,c)
                          resid(idet) = resid(idet) - H2B_ovoo(m,c,i,k) * xbuf(m,j,a,b)
                       end do
-                   end do; end do; end do;
+                   end do
                    !$omp end do
                    !$omp end parallel
                    deallocate(xbuf)
@@ -5109,7 +4917,7 @@ module ccp3_full_correction
                          resid(idet) = resid(idet) - H2B_vooo(m,a,i,j) * xbuf(m,k,b,c)
                          resid(idet) = resid(idet) + H2B_vooo(m,a,i,k) * xbuf(m,j,b,c)
                       end do
-                   end do; end do; end do;
+                   end do
                    !$omp end do
                    !$omp end parallel
                    deallocate(xbuf)
@@ -5134,7 +4942,7 @@ module ccp3_full_correction
                          resid(idet) = resid(idet) - H2C_vooo(m,c,k,j) * xbuf(m,i,b,a)
                          resid(idet) = resid(idet) + H2C_vooo(m,b,k,j) * xbuf(m,i,c,a)
                       end do
-                   end do; end do; end do;
+                   end do
                    !$omp end do
                    !$omp end parallel
                    deallocate(xbuf)
@@ -5142,9 +4950,9 @@ module ccp3_full_correction
                    ! deallocate t3c copy arrays
                    deallocate(t3c_amps_copy,t3c_excits_copy)
 
-              end subroutine build_moments3c_ijk
+              end subroutine build_moments3c
 
-              subroutine build_moments3d_ijk(resid, i, j, k,&
+              subroutine build_moments3d(resid, qspace,&
                                       t3c_amps, t3c_excits,&
                                       t3d_amps, t3d_excits,&
                                       t2c,&
@@ -5152,15 +4960,12 @@ module ccp3_full_correction
                                       H2C_oovv, H2C_vvov, H2C_vooo,&
                                       H2C_oooo, H2C_voov, H2C_vvvv,&
                                       H2B_oovv, H2B_ovvo,&
-                                      orbsym, sym_ijk, target_sym,&
-                                      n3abb, n3bbb,&
-                                      noa, nua, nob, nub, norb)
+                                      n3abb, n3bbb, num_q,&
+                                      noa, nua, nob, nub)
                   ! input variables 
                   integer, intent(in) :: noa, nua, nob, nub, n3abb, n3bbb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
-                  ! orbital block indices
-                  integer, intent(in) :: i, j, k
+                  integer, intent(in) :: num_q
+                  integer, intent(in) :: qspace(num_q,6)
                   integer, intent(in) :: t3c_excits(n3abb,6), t3d_excits(n3bbb,6)
                   real(kind=8), intent(in) :: t2c(nub,nub,nob,nob),&
                                               t3c_amps(n3abb),&
@@ -5175,7 +4980,7 @@ module ccp3_full_correction
                                               H2C_voov(nob,nub,nub,nob),& ! reordered
                                               H2C_vvvv(nub,nub,nub,nub)
                   ! output variables
-                  real(kind=8), intent(out) :: resid(nub,nub,nub)
+                  real(kind=8), intent(out) :: resid(num_q)
                   ! local variables
                   integer, allocatable :: idx_table(:,:,:,:), idx_table3(:,:,:)
                   integer, allocatable :: loc_arr(:,:)
@@ -5184,44 +4989,15 @@ module ccp3_full_correction
 
                   real(kind=8) :: val, denom, t_amp, res_mm23, hmatel
                   real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4
-                  integer :: a, b, c, d, ii, jj, kk, l, e, f, m, n, jdet
+                  integer :: i, j, k, a, b, c, d, ii, jj, kk, l, e, f, m, n, jdet, idet
                   integer :: idx, nloc
-                  integer :: sym
                   real(kind=8), allocatable :: xbuf(:,:,:,:)
-                  !
-                  logical(kind=1) :: qspace(nub,nub,nub)
-
                   ! copy over t3d_amps and t3d_excits
                   allocate(t3d_amps_copy(n3bbb),t3d_excits_copy(n3bbb,6))
                   t3d_amps_copy(:) = t3d_amps(:)
                   t3d_excits_copy(:,:) = t3d_excits(:,:)
-                  
-                  ! reorder t3d into (i,j,k) order
-                  nloc = nob*(nob-1)*(nob-2)/6
-                  allocate(loc_arr(2,nloc))
-                  allocate(idx_table3(nob,nob,nob))
-                  call get_index_table3(idx_table3, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), nob, nob, nob)
-                  call sort3(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table3, (/4,5,6/), nob, nob, nob, nloc, n3bbb)
-                  ! Construct Q space for block (i,j,k)
-                  qspace = .true.
-                  idx = idx_table3(i,j,k)
-                  if (idx/=0) then
-                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                        a = t3d_excits_copy(jdet,1); b = t3d_excits_copy(jdet,2); c = t3d_excits_copy(jdet,3);
-                        ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+nob))
-                        sym = ieor(sym,orbsym(b+nob))
-                        sym = ieor(sym,orbsym(c+nob))
-                        ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
-                        qspace(a,b,c) = .false.
-                     end do
-                  end if
-                  deallocate(loc_arr,idx_table3)
-
                   ! Zero the residual
                   resid = 0.0d0
-                  
                   !!!! diagram 1: -A(i/jk) h1b(mi) * t3d(abcmjk)
                   !!!! diagram 3: 1/2 A(i/jk) h2c(mnij) * t3d(abcmnk)
                   ! NOTE: WITHIN THESE LOOPS, H1B(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
@@ -5295,7 +5071,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -5365,7 +5141,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -5435,7 +5211,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -5518,7 +5294,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -5591,7 +5367,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if 
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -5664,7 +5440,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -5789,7 +5565,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -5906,7 +5682,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -6023,7 +5799,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -6140,7 +5916,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -6257,7 +6033,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -6374,7 +6150,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -6491,7 +6267,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -6608,7 +6384,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -6725,7 +6501,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -6854,7 +6630,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
                      end if
-                 end do; end do; end do;
+                 end do
                  !$omp end do
                  !$omp end parallel
                  !!!! END OMP PARALLEL SECTION !!!!
@@ -6893,7 +6669,7 @@ module ccp3_full_correction
                        resid(idet) = resid(idet) - H2C_vooo(m,b,i,k) * xbuf(m,j,a,c)
                        resid(idet) = resid(idet) - H2C_vooo(m,c,i,k) * xbuf(m,j,b,a)
                     end do
-                 end do; end do; end do;
+                 end do
                  !$omp end do
                  !$omp end parallel
                  deallocate(xbuf)
@@ -6915,15 +6691,15 @@ module ccp3_full_correction
                        resid(idet) = resid(idet) + H2C_vvov(e,c,b,k) * t2c(e,a,j,i)
                        resid(idet) = resid(idet) + H2C_vvov(e,a,c,k) * t2c(e,b,j,i)
                     end do
-                 end do; end do; end do;
+                 end do
                  !$omp end do
                  !$omp end parallel
 
                   ! deallocate copied t3d arrays
                   deallocate(t3d_amps_copy,t3d_excits_copy)
-              end subroutine build_moments3d_ijk
+              end subroutine build_moments3d
 
-              subroutine build_leftamps3a_ijk(resid, i, j, k,&
+              subroutine build_leftamps3a(resid, qspace,&
                                               l1a, l2a,&
                                               l3a_amps, l3a_excits,&
                                               l3b_amps, l3b_excits,&
@@ -6932,15 +6708,12 @@ module ccp3_full_correction
                                               h2a_voov, h2a_vovv, h2a_vvvv,&
                                               h2b_ovvo,&
                                               x2a_ooov, x2a_vovv,&
-                                              orbsym, sym_ijk, target_sym,&
-                                              n3aaa, n3aab,&
-                                              noa, nua, nob, nub, norb)
+                                              n3aaa, n3aab, num_q,&
+                                              noa, nua, nob, nub)
                   ! Input dimension variables
-                  integer, intent(in) :: noa, nua, nob, nub, norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
+                  integer, intent(in) :: noa, nua, nob, nub, num_q
+                  integer, intent(in) :: qspace(num_q,6)
                   integer, intent(in) :: n3aaa, n3aab
-                  ! occupied block indices
-                  integer, intent(in) :: i, j, k
                   ! Input L arrays
                   real(kind=8), intent(in) :: l1a(nua,noa)
                   real(kind=8), intent(in) :: l2a(nua,nua,noa,noa)
@@ -6962,50 +6735,22 @@ module ccp3_full_correction
                   real(kind=8), intent(in) :: x2a_ooov(noa,noa,noa,nua)
                   real(kind=8), intent(in) :: x2a_vovv(nua,noa,nua,nua)
                   ! Output variables
-                  real(kind=8), intent(out) :: resid(nua,nua,nua)
+                  real(kind=8), intent(out) :: resid(num_q)
                   ! Local variables
                   integer, allocatable :: excits_buff(:,:), l3a_excits_copy(:,:)
                   real(kind=8), allocatable :: amps_buff(:), l3a_amps_copy(:)
                   integer, allocatable :: idx_table(:,:,:,:), idx_table3(:,:,:)
                   integer, allocatable :: loc_arr(:,:)
                   real(kind=8) :: l_amp, hmatel, hmatel1, res
-                  integer :: a, b, c, d, ii, jj, kk, l, m, n, e, f, jdet
+                  integer :: i, j, k, a, b, c, d, ii, jj, kk, l, m, n, e, f, jdet, idet
                   integer :: idx, nloc
-                  integer :: sym
-                  ! Q space array
-                  logical(kind=1) :: qspace(nua,nua,nua)
 
                   ! zero the residual vector
                   resid = 0.0d0
-
                   ! copy over l3a_amps_copy and l3a_excits_copy
                   allocate(l3a_amps_copy(n3aaa),l3a_excits_copy(n3aaa,6))
                   l3a_amps_copy(:) = l3a_amps(:)
                   l3a_excits_copy(:,:) = l3a_excits(:,:)
-
-                  ! reorder l3a into (i,j,k) order
-                  nloc = noa*(noa-1)*(noa-2)/6
-                  allocate(loc_arr(2,nloc))
-                  allocate(idx_table3(noa,noa,noa))
-                  call get_index_table3(idx_table3, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), noa, noa, noa)
-                  call sort3(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table3, (/4,5,6/), noa, noa, noa, nloc, n3aaa)
-                  ! Construct Q space for block (i,j,k)
-                  qspace = .true.
-                  idx = idx_table3(i,j,k)
-                  if (idx/=0) then
-                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                        a = l3a_excits_copy(jdet,1); b = l3a_excits_copy(jdet,2); c = l3a_excits_copy(jdet,3);
-                        qspace(a,b,c) = .false.
-                        ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+noa))
-                        sym = ieor(sym,orbsym(b+noa))
-                        sym = ieor(sym,orbsym(c+noa))
-                        ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
-                     end do
-                  end if
-                  deallocate(loc_arr,idx_table3)
-        
                   !if (n3aaa/=0) then
                   !!!! diagram 1: -A(i/jk) h1a(im) * l3a(abcmjk)
                   !!!! diagram 3: 1/2 A(k/ij) h2a(ijmn) * l3a(abcmnk)
@@ -7077,7 +6822,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -7144,7 +6889,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -7211,7 +6956,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -7288,7 +7033,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!! END OMP PARALLEL SECTION !!!!
@@ -7357,7 +7102,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -7424,7 +7169,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -7540,7 +7285,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -7648,7 +7393,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -7756,7 +7501,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -7864,7 +7609,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -7972,7 +7717,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -8080,7 +7825,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -8188,7 +7933,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -8296,7 +8041,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -8404,7 +8149,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3a_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -8524,7 +8269,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -8601,16 +8346,16 @@ module ccp3_full_correction
                                + l2a(e,c,i,k)*h2a_vovv(e,j,a,b)  ! (jk)(bc)
                       end do
                       resid(idet) = resid(idet) + res
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
 
                   ! deallocate copies of l3a amplitude and excitation arrays
                   deallocate(l3a_amps_copy,l3a_excits_copy)
-              end subroutine build_leftamps3a_ijk
+              end subroutine build_leftamps3a
 
-              subroutine build_leftamps3b_ijk(resid, i, j, k,&
+              subroutine build_leftamps3b(resid, qspace,&
                                               l1a, l1b, l2a, l2b,&
                                               l3a_amps, l3a_excits,&
                                               l3b_amps, l3b_excits,&
@@ -8625,16 +8370,13 @@ module ccp3_full_correction
                                               h2c_voov,&
                                               x2a_ooov, x2a_vovv,&
                                               x2b_ooov, x2b_oovo, x2b_vovv, x2b_ovvv,&
-                                              orbsym, sym_ijk, target_sym,&
-                                              n3aaa, n3aab, n3abb,&
-                                              noa, nua, nob, nub, norb)
+                                              n3aaa, n3aab, n3abb, num_q,&
+                                              noa, nua, nob, nub)
                   ! Input dimension variables
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aaa, n3aab, n3abb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
-                  ! occupied block indices
-                  integer :: i, j, k
+                  integer, intent(in) :: num_q
+                  integer, intent(in) :: qspace(num_q,6)
                   ! Input L arrays
                   real(kind=8), intent(in) :: l1a(nua,noa), l1b(nub,nob)
                   real(kind=8), intent(in) :: l2a(nua,nua,noa,noa), l2b(nua,nub,noa,nob)
@@ -8655,50 +8397,22 @@ module ccp3_full_correction
                   real(kind=8), intent(in) :: x2a_vovv(nua,noa,nua,nua), x2b_vovv(nua,nob,nua,nub), x2b_ovvv(noa,nub,nua,nub)
                   real(kind=8), intent(in) :: h2c_voov(nub,nob,nob,nub)
                   ! Output and Inout variables
-                  real(kind=8), intent(out) :: resid(nua,nua,nub)
+                  real(kind=8), intent(out) :: resid(num_q)
                   ! Local variables
                   integer, allocatable :: excits_buff(:,:), l3b_excits_copy(:,:)
                   real(kind=8), allocatable :: amps_buff(:), l3b_amps_copy(:)
                   integer, allocatable :: idx_table(:,:,:,:), idx_table3(:,:,:)
                   integer, allocatable :: loc_arr(:,:)
                   real(kind=8) :: l_amp, hmatel, hmatel1, res
-                  integer :: a, b, c, d, ii, jj, kk, l, m, n, e, f, jdet
+                  integer :: i, j, k, a, b, c, d, ii, jj, kk, l, m, n, e, f, jdet, idet
                   integer :: idx, nloc
-                  integer :: sym
-                  ! Q space array
-                  logical(kind=1) :: qspace(nua,nua,nub)
 
                   ! zero residual array
                   resid = 0.0d0
-
                   ! copy over l3b_amps_copy and l3b_excits_copy
                   allocate(l3b_amps_copy(n3aab),l3b_excits_copy(n3aab,6))
                   l3b_amps_copy(:) = l3b_amps(:)
                   l3b_excits_copy(:,:) = l3b_excits(:,:)
-
-                  ! reorder l3b into (i,j,k) order
-                  nloc = noa*(noa-1)/2*nob
-                  allocate(loc_arr(2,nloc))
-                  allocate(idx_table3(noa,noa,nob))
-                  call get_index_table3(idx_table3, (/1,noa-1/), (/-1,noa/), (/1,nob/), noa, noa, nob)
-                  call sort3(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table3, (/4,5,6/), noa, noa, nob, nloc, n3aab)
-                  ! Construct Q space for block (i,j,k)
-                  qspace = .true.
-                  idx = idx_table3(i,j,k)
-                  if (idx/=0) then
-                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                        a = l3b_excits_copy(jdet,1); b = l3b_excits_copy(jdet,2); c = l3b_excits_copy(jdet,3);
-                        ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+noa))
-                        sym = ieor(sym,orbsym(b+noa))
-                        sym = ieor(sym,orbsym(c+nob))
-                        ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
-                        qspace(a,b,c) = .false.
-                     end do
-                  end if
-                  deallocate(loc_arr,idx_table3)
-                  
                   !if (n3aab/=0) then
                   !!!! diagram 1: -A(ij) h1a(im)*l3b(abcmjk)
                   !!!! diagram 5: A(ij) 1/2 h2a(ijmn)*l3b(abcmnk)
@@ -8732,7 +8446,7 @@ module ccp3_full_correction
                         if (l==i) hmatel = hmatel - h1a_oo(j,m)
                         resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -8772,7 +8486,7 @@ module ccp3_full_correction
                         if (a==d) hmatel = hmatel + h1a_vv(e,b)
                         resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -8821,7 +8535,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -8857,7 +8571,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECITON !!!!
@@ -8904,7 +8618,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                          end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -8938,7 +8652,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                          end do
                       end if
-                  end do; end do; end do; ! end loop over idet
+                  end do ! end loop over idet
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9002,7 +8716,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9058,7 +8772,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9114,7 +8828,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9170,7 +8884,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9204,7 +8918,7 @@ module ccp3_full_correction
                          hmatel = h2c_voov(f,k,n,c)
                          resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                       end do
-                  end do; end do; end do; ! end loop over idet
+                  end do ! end loop over idet
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9248,7 +8962,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9284,7 +8998,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9328,7 +9042,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9364,7 +9078,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3b_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9405,7 +9119,7 @@ module ccp3_full_correction
                         hmatel = h2b_voov(f,k,n,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9431,7 +9145,7 @@ module ccp3_full_correction
                         hmatel = -h2b_voov(e,k,n,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do; 
+                  end do 
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9457,7 +9171,7 @@ module ccp3_full_correction
                         hmatel = h2b_voov(d,k,n,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do; 
+                  end do 
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9483,7 +9197,7 @@ module ccp3_full_correction
                         hmatel = -h2b_voov(f,k,m,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do; 
+                  end do 
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9509,7 +9223,7 @@ module ccp3_full_correction
                         hmatel = h2b_voov(e,k,m,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do; 
+                  end do 
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9535,7 +9249,7 @@ module ccp3_full_correction
                         hmatel = -h2b_voov(d,k,m,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do; 
+                  end do 
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9561,7 +9275,7 @@ module ccp3_full_correction
                         hmatel = h2b_voov(f,k,l,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do; 
+                  end do 
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9587,7 +9301,7 @@ module ccp3_full_correction
                         hmatel = -h2b_voov(e,k,l,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do; 
+                  end do 
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9613,7 +9327,7 @@ module ccp3_full_correction
                         hmatel = h2b_voov(d,k,l,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9687,7 +9401,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9745,7 +9459,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9803,7 +9517,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9861,7 +9575,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9933,16 +9647,15 @@ module ccp3_full_correction
                                +h2b_ovvv(j,e,b,c)*l2b(a,e,i,k) + x2b_ovvv(j,e,b,c)*h2b_oovv(i,k,a,e)  ! (ij)(ab)
                       end do
                       resid(idet) = resid(idet) + res
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!                 
-                 
                   ! deallocate copies of l3b amplitude and excitation arrays
                   deallocate(l3b_amps_copy,l3b_excits_copy)
-        end subroutine build_leftamps3b_ijk
+        end subroutine build_leftamps3b
 
-        subroutine build_leftamps3c_ijk(resid, i, j, k,&
+        subroutine build_leftamps3c(resid, qspace,&
                               l1a, l1b, l2b, l2c,&
                               l3b_amps, l3b_excits,&
                               l3c_amps, l3c_excits,&
@@ -9957,16 +9670,13 @@ module ccp3_full_correction
                               h2c_voov, h2c_vovv, h2c_vvvv,&
                               x2b_ooov, x2b_oovo, x2b_vovv, x2b_ovvv,&
                               x2c_ooov, x2c_vovv,&
-                              orbsym, sym_ijk, target_sym,&
-                              n3aab, n3abb, n3bbb,&
-                              noa, nua, nob, nub, norb)
+                              n3aab, n3abb, n3bbb, num_q,&
+                              noa, nua, nob, nub)
                   ! Input dimension variables
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3aab, n3abb, n3bbb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
-                  ! occupied orbital block indices
-                  integer, intent(in) :: i, j, k
+                  integer, intent(in) :: num_q
+                  integer, intent(in) :: qspace(num_q,6)
                   ! Input L arrays
                   real(kind=8), intent(in) :: l1a(nua,noa), l1b(nub,nob)
                   real(kind=8), intent(in) :: l2c(nub,nub,nob,nob), l2b(nua,nub,noa,nob)
@@ -9987,50 +9697,22 @@ module ccp3_full_correction
                   real(kind=8), intent(in) :: x2c_vovv(nub,nob,nub,nub), x2b_vovv(nua,nob,nua,nub), x2b_ovvv(noa,nub,nua,nub)
                   real(kind=8), intent(in) :: h2a_voov(nua,noa,noa,nua)
                   ! Output and Inout variables
-                  real(kind=8), intent(out) :: resid(nua,nub,nub)
+                  real(kind=8), intent(out) :: resid(num_q)
                   ! Local variables
                   integer, allocatable :: excits_buff(:,:), l3c_excits_copy(:,:)
                   real(kind=8), allocatable :: amps_buff(:), l3c_amps_copy(:)
                   integer, allocatable :: idx_table(:,:,:,:), idx_table3(:,:,:)
                   integer, allocatable :: loc_arr(:,:)
                   real(kind=8) :: l_amp, hmatel, hmatel1, res
-                  integer :: a, b, c, d, ii, jj, kk, l, m, n, e, f, idet, jdet
+                  integer :: i, j, k, a, b, c, d, ii, jj, kk, l, m, n, e, f, idet, jdet
                   integer :: idx, nloc
-                  integer :: sym
-                  ! Q space array
-                  logical(kind=1) :: qspace(nua,nub,nub)
 
                   ! copy over l3c_amps_copy and l3c_excits_copy
                   allocate(l3c_amps_copy(n3abb),l3c_excits_copy(n3abb,6))
                   l3c_amps_copy(:) = l3c_amps(:)
                   l3c_excits_copy(:,:) = l3c_excits(:,:)
-
-                  ! reorder l3c into (i,j,k) order
-                  nloc = nob*(nob-1)/2*noa
-                  allocate(loc_arr(2,nloc))
-                  allocate(idx_table3(nob,nob,noa))
-                  call get_index_table3(idx_table3, (/1,nob-1/), (/-1,nob/), (/1,noa/), nob, nob, noa)
-                  call sort3(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table3, (/5,6,4/), nob, nob, noa, nloc, n3abb)
-                  ! Construct Q space for block (j,k,i)
-                  qspace = .true.
-                  idx = idx_table3(j,k,i)
-                  if (idx/=0) then
-                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                        a = l3c_excits_copy(jdet,1); b = l3c_excits_copy(jdet,2); c = l3c_excits_copy(jdet,3);
-                        ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+noa))
-                        sym = ieor(sym,orbsym(b+nob))
-                        sym = ieor(sym,orbsym(c+nob))
-                        ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
-                        qspace(a,b,c) = .false.
-                     end do
-                  end if
-                  deallocate(loc_arr,idx_table3)
-
                   ! Zero the residual container
                   resid = 0.0d0
-                  
                   !if (n3abb/=0) then
                   !!!! diagram 1: -A(jk) h1b(km)*l3c(abcijm)
                   !!!! diagram 5: A(jk) 1/2 h2c(jkmn)*l3c(abcimn)
@@ -10065,7 +9747,7 @@ module ccp3_full_correction
                         if (m==j) hmatel = hmatel - h1b_oo(k,n) ! (jk)(mn)
                         resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10104,7 +9786,7 @@ module ccp3_full_correction
                         if (b==e) hmatel = hmatel + h1b_vv(f,c) ! (bc)(ef)
                         resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                      end do
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10153,7 +9835,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                          end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10189,7 +9871,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                          end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECITON !!!!
@@ -10236,7 +9918,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                          end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10271,7 +9953,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                          end do
                       end if
-                  end do; end do; end do; ! end loop over idet
+                  end do ! end loop over idet
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10335,7 +10017,7 @@ module ccp3_full_correction
                              resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10391,7 +10073,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10447,7 +10129,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10503,7 +10185,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10537,7 +10219,7 @@ module ccp3_full_correction
                          hmatel = h2a_voov(d,i,l,a)
                          resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                       end do
-                  end do; end do; end do; ! end loop over idet
+                  end do ! end loop over idet
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10581,7 +10263,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10617,7 +10299,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10661,7 +10343,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10697,7 +10379,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * l3c_amps_copy(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10740,7 +10422,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10768,7 +10450,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10796,7 +10478,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10824,7 +10506,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10852,7 +10534,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10880,7 +10562,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10908,7 +10590,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10936,7 +10618,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -10964,7 +10646,7 @@ module ccp3_full_correction
                               resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                           end do
                       end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11039,7 +10721,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11097,7 +10779,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11155,7 +10837,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11213,7 +10895,7 @@ module ccp3_full_correction
                             resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11224,7 +10906,7 @@ module ccp3_full_correction
 
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
+                  !$omp l3c_excits,&
                   !$omp l1a,l1b,l2b,l2c,&
                   !$omp H1A_ov,H1B_ov,H2B_oovv,H2C_oovv,&
                   !$omp H2C_vovv,H2C_ooov,&
@@ -11232,26 +10914,29 @@ module ccp3_full_correction
                   !$omp X2C_vovv,X2C_ooov,&
                   !$omp X2B_vovv,X2B_ovvv,X2B_ooov,X2B_oovo,&
                   !$omp noa,nob,nua,nub,n3bbb),&
+                  !$omp private(idet,a,b,c,d,i,j,k,l,m,n,e,f,&
+                  !$omp res)
                   !$omp do schedule(static)
-                  do c=1,nua; do b=1,nub; do a=b+1,nub;
-                      kk = i; jj = j; ii = k;
+                  do idet = 1, num_q
+                      c = qspace(idet,1); b = qspace(idet,2); a = qspace(idet,3);
+                      k = qspace(idet,4); j = qspace(idet,5); i = qspace(idet,6);
                       ! A(ab)A(ij) l1b(ai)*h2b(kjcb)
                       ! l1a(ck)*h2c(ijab)
                       ! A(ab)A(ij) l2b(cbkj)*h1b(ia)
                       ! l2c(abij)*h1a(kc)
-                      res =  l1b(a,ii)*h2b_oovv(kk,jj,c,b) + l2b(c,b,kk,jj)*h1b_ov(ii,a)& ! (1)
-                            -l1b(a,jj)*h2b_oovv(kk,ii,c,b) - l2b(c,b,kk,ii)*h1b_ov(jj,a)& ! (ij)
-                            -l1b(b,ii)*h2b_oovv(kk,jj,c,a) - l2b(c,a,kk,jj)*h1b_ov(ii,b)& ! (ab)
-                            +l1b(b,jj)*h2b_oovv(kk,ii,c,a) + l2b(c,a,kk,ii)*h1b_ov(jj,b)& ! (ab)(ij)
-                            +l1a(c,kk)*h2c_oovv(ii,jj,a,b) + l2c(a,b,ii,jj)*h1a_ov(kk,c)
+                      res =  l1b(a,i)*h2b_oovv(k,j,c,b) + l2b(c,b,k,j)*h1b_ov(i,a)& ! (1)
+                            -l1b(a,j)*h2b_oovv(k,i,c,b) - l2b(c,b,k,i)*h1b_ov(j,a)& ! (ij)
+                            -l1b(b,i)*h2b_oovv(k,j,c,a) - l2b(c,a,k,j)*h1b_ov(i,b)& ! (ab)
+                            +l1b(b,j)*h2b_oovv(k,i,c,a) + l2b(c,a,k,i)*h1b_ov(j,b)& ! (ab)(ij)
+                            +l1a(c,k)*h2c_oovv(i,j,a,b) + l2c(a,b,i,j)*h1a_ov(k,c)
                       ! A(ab)A(ij) h2b(eica)*l2b(ebkj)
                       ! A(ab)A(ij) x2b(eica)*h2b(kjeb)
                       do e = 1, nua
                          res = res&
-                               +h2b_vovv(e,ii,c,a)*l2b(e,b,kk,jj) + x2b_vovv(e,ii,c,a)*h2b_oovv(kk,jj,e,b)& ! (1)
-                               -h2b_vovv(e,jj,c,a)*l2b(e,b,kk,ii) - x2b_vovv(e,jj,c,a)*h2b_oovv(kk,ii,e,b)& ! (iijj)
-                               -h2b_vovv(e,ii,c,b)*l2b(e,a,kk,jj) - x2b_vovv(e,ii,c,b)*h2b_oovv(kk,jj,e,a)& ! (ab)
-                               +h2b_vovv(e,jj,c,b)*l2b(e,a,kk,ii) + x2b_vovv(e,jj,c,b)*h2b_oovv(kk,ii,e,a)  ! (iijj)(ab)
+                               +h2b_vovv(e,i,c,a)*l2b(e,b,k,j) + x2b_vovv(e,i,c,a)*h2b_oovv(k,j,e,b)& ! (1)
+                               -h2b_vovv(e,j,c,a)*l2b(e,b,k,i) - x2b_vovv(e,j,c,a)*h2b_oovv(k,i,e,b)& ! (ij)
+                               -h2b_vovv(e,i,c,b)*l2b(e,a,k,j) - x2b_vovv(e,i,c,b)*h2b_oovv(k,j,e,a)& ! (ab)
+                               +h2b_vovv(e,j,c,b)*l2b(e,a,k,i) + x2b_vovv(e,j,c,b)*h2b_oovv(k,i,e,a)  ! (ij)(ab)
                       end do
                       ! A(ab) h2b(kecb)*l2c(aeij)
                       ! A(ij) h2c(eiba)*l2b(cekj)
@@ -11259,19 +10944,19 @@ module ccp3_full_correction
                       ! A(ij) x2c(eiba)*h2b(kjce)
                       do e = 1, nub
                          res = res&
-                               +h2b_ovvv(kk,e,c,b)*l2c(a,e,ii,jj) - h2b_ovvv(kk,e,c,a)*l2c(b,e,ii,jj)&
-                               +h2c_vovv(e,ii,b,a)*l2b(c,e,kk,jj) - h2c_vovv(e,jj,b,a)*l2b(c,e,kk,ii)&
-                               +x2b_ovvv(kk,e,c,b)*h2c_oovv(ii,jj,a,e) - x2b_ovvv(kk,e,c,a)*h2c_oovv(ii,jj,b,e)&
-                               +x2c_vovv(e,ii,b,a)*h2b_oovv(kk,jj,c,e) - x2c_vovv(e,jj,b,a)*h2b_oovv(kk,ii,c,e)
+                               +h2b_ovvv(k,e,c,b)*l2c(a,e,i,j) - h2b_ovvv(k,e,c,a)*l2c(b,e,i,j)&
+                               +h2c_vovv(e,i,b,a)*l2b(c,e,k,j) - h2c_vovv(e,j,b,a)*l2b(c,e,k,i)&
+                               +x2b_ovvv(k,e,c,b)*h2c_oovv(i,j,a,e) - x2b_ovvv(k,e,c,a)*h2c_oovv(i,j,b,e)&
+                               +x2c_vovv(e,i,b,a)*h2b_oovv(k,j,c,e) - x2c_vovv(e,j,b,a)*h2b_oovv(k,i,c,e)
                       end do
                       ! A(ij)A(ab) -h2b(kima)*l2b(cbmj)
                       ! A(ij)A(ab) -x2b(kima)*h2b(mjcb)
                       do m = 1, noa
                          res = res&
-                              -h2b_ooov(kk,ii,m,a)*l2b(c,b,m,jj) - x2b_ooov(kk,ii,m,a)*h2b_oovv(m,jj,c,b)& ! (1)
-                              +h2b_ooov(kk,jj,m,a)*l2b(c,b,m,ii) + x2b_ooov(kk,jj,m,a)*h2b_oovv(m,ii,c,b)& ! (iijj)
-                              +h2b_ooov(kk,ii,m,b)*l2b(c,a,m,jj) + x2b_ooov(kk,ii,m,b)*h2b_oovv(m,jj,c,a)& ! (ab)
-                              -h2b_ooov(kk,jj,m,b)*l2b(c,a,m,ii) - x2b_ooov(kk,jj,m,b)*h2b_oovv(m,ii,c,a)  ! (iijj)(ab)
+                              -h2b_ooov(k,i,m,a)*l2b(c,b,m,j) - x2b_ooov(k,i,m,a)*h2b_oovv(m,j,c,b)& ! (1)
+                              +h2b_ooov(k,j,m,a)*l2b(c,b,m,i) + x2b_ooov(k,j,m,a)*h2b_oovv(m,i,c,b)& ! (ij)
+                              +h2b_ooov(k,i,m,b)*l2b(c,a,m,j) + x2b_ooov(k,i,m,b)*h2b_oovv(m,j,c,a)& ! (ab)
+                              -h2b_ooov(k,j,m,b)*l2b(c,a,m,i) - x2b_ooov(k,j,m,b)*h2b_oovv(m,i,c,a)  ! (ij)(ab)
                       end do
                       ! A(ij) -h2b(kjcm)*l2c(abim)
                       ! A(ab) -h2c(jima)*l2b(cbkm)
@@ -11279,13 +10964,13 @@ module ccp3_full_correction
                       ! A(ab) -x2c(jima)*h2b(kmcb)
                       do m = 1, nob
                          res = res&
-                              -h2b_oovo(kk,jj,c,m)*l2c(a,b,ii,m) + h2b_oovo(kk,ii,c,m)*l2c(a,b,jj,m)&
-                              -h2c_ooov(jj,ii,m,a)*l2b(c,b,kk,m) + h2c_ooov(jj,ii,m,b)*l2b(c,a,kk,m)&
-                              -x2b_oovo(kk,jj,c,m)*h2c_oovv(ii,m,a,b) + x2b_oovo(kk,ii,c,m)*h2c_oovv(jj,m,a,b)&
-                              -x2c_ooov(jj,ii,m,a)*h2b_oovv(kk,m,c,b) + x2c_ooov(jj,ii,m,b)*h2b_oovv(kk,m,c,a)
+                              -h2b_oovo(k,j,c,m)*l2c(a,b,i,m) + h2b_oovo(k,i,c,m)*l2c(a,b,j,m)&
+                              -h2c_ooov(j,i,m,a)*l2b(c,b,k,m) + h2c_ooov(j,i,m,b)*l2b(c,a,k,m)&
+                              -x2b_oovo(k,j,c,m)*h2c_oovv(i,m,a,b) + x2b_oovo(k,i,c,m)*h2c_oovv(j,m,a,b)&
+                              -x2c_ooov(j,i,m,a)*h2b_oovv(k,m,c,b) + x2c_ooov(j,i,m,b)*h2b_oovv(k,m,c,a)
                       end do
-                      resid(c,b,a) = resid(c,b,a) + res
-                  end do; end do; end do;
+                      resid(idet) = resid(idet) + res
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11293,9 +10978,9 @@ module ccp3_full_correction
                   ! deallocate copied l3c arrays
                   deallocate(l3c_excits_copy,l3c_amps_copy)
 
-        end subroutine build_leftamps3c_ijk
+        end subroutine build_leftamps3c
 
-        subroutine build_leftamps3d_ijk(resid, i, j, k,&
+        subroutine build_leftamps3d(resid,qspace,&
                               l1b, l2c,&
                               l3c_amps, l3c_excits,&
                               l3d_amps, l3d_excits,&
@@ -11304,16 +10989,13 @@ module ccp3_full_correction
                               h2c_oooo, h2c_ooov, h2c_oovv,&
                               h2c_voov, h2c_vovv, h2c_vvvv,&
                               x2c_ooov, x2c_vovv,&
-                              orbsym, sym_ijk, target_sym,&
-                              n3abb, n3bbb,&
-                              noa, nua, nob, nub, norb)
+                              n3abb, n3bbb, num_q,&
+                              noa, nua, nob, nub)
                   ! Input dimension variables
                   integer, intent(in) :: noa, nua, nob, nub
                   integer, intent(in) :: n3abb, n3bbb
-                  integer, intent(in) :: norb
-                  integer, intent(in) :: orbsym(norb), sym_ijk, target_sym
-                  ! orbital integer blocks
-                  integer, intent(in) :: i, j, k
+                  integer, intent(in) :: num_q
+                  integer, intent(in) :: qspace(num_q,6)
                   ! Input L arrays
                   real(kind=8), intent(in) :: l1b(nub,nob)
                   real(kind=8), intent(in) :: l2c(nub,nub,nob,nob)
@@ -11333,50 +11015,22 @@ module ccp3_full_correction
                   real(kind=8), intent(in) :: x2c_ooov(nob,nob,nob,nub)
                   real(kind=8), intent(in) :: x2c_vovv(nub,nob,nub,nub)
                   ! Output and variables
-                  real(kind=8), intent(out) :: resid(nub,nub,nub)
+                  real(kind=8), intent(out) :: resid(num_q)
                   ! Local variables
                   integer, allocatable :: excits_buff(:,:), l3d_excits_copy(:,:)
                   real(kind=8), allocatable :: amps_buff(:), l3d_amps_copy(:)
                   integer, allocatable :: idx_table(:,:,:,:), idx_table3(:,:,:)
                   integer, allocatable :: loc_arr(:,:)
                   real(kind=8) :: l_amp, hmatel, hmatel1, res
-                  integer :: a, b, c, d, ii, jj, kk, l, m, n, e, f, jdet
+                  integer :: i, j, k, a, b, c, d, ii, jj, kk, l, m, n, e, f, jdet, idet
                   integer :: idx, nloc
-                  integer :: sym
-                  !
-                  logical(kind=1) :: qspace(nub,nub,nub)
 
                   ! copy over l3d_amps and l3d_excits
                   allocate(l3d_amps_copy(n3bbb),l3d_excits_copy(n3bbb,6))
                   l3d_amps_copy(:) = l3d_amps(:)
                   l3d_excits_copy(:,:) = l3d_excits(:,:)
-                  
-                  ! reorder l3d into (i,j,k) order
-                  nloc = nob*(nob-1)*(nob-2)/6
-                  allocate(loc_arr(2,nloc))
-                  allocate(idx_table3(nob,nob,nob))
-                  call get_index_table3(idx_table3, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), nob, nob, nob)
-                  call sort3(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table3, (/4,5,6/), nob, nob, nob, nloc, n3bbb)
-                  ! Construct Q space for block (i,j,k)
-                  qspace = .true.
-                  idx = idx_table3(i,j,k)
-                  if (idx/=0) then
-                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                        a = l3d_excits_copy(jdet,1); b = l3d_excits_copy(jdet,2); c = l3d_excits_copy(jdet,3);
-                        ! get symmetry of |ijkabc>
-                        sym = ieor(sym_ijk,orbsym(a+nob))
-                        sym = ieor(sym,orbsym(b+nob))
-                        sym = ieor(sym,orbsym(c+nob))
-                        ! skip excitation if not in correct symmetry
-                        if (sym /= target_sym) cycle
-                        qspace(a,b,c) = .false.
-                     end do
-                  end if
-                  deallocate(loc_arr,idx_table3)
-
                   ! zero the residual
                   resid = 0.0d0
-
                   !if (n3bbb/=0) then
                   !!!! diagram 1: -A(i/jk) h1b(im) * l3d(abcmjk)
                   !!!! diagram 3: 1/2 A(k/ij) h2c(ijmn) * l3d(abcmnk)
@@ -11448,7 +11102,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11515,7 +11169,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11582,7 +11236,7 @@ module ccp3_full_correction
                            resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                         end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11659,7 +11313,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11726,7 +11380,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if 
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11741,8 +11395,9 @@ module ccp3_full_correction
                   !$omp H1B_vv,H2C_vvvv,&
                   !$omp nob,nub,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      ! (1)
                      idx = idx_table(i,j,k,c)
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
@@ -11792,7 +11447,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11815,8 +11470,9 @@ module ccp3_full_correction
                   !$omp h2c_voov,&
                   !$omp noa,nua,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      ! (1)
                      idx = idx_table(a,b,i,j)
                      if (idx/=0) then
@@ -11907,7 +11563,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -11922,8 +11578,9 @@ module ccp3_full_correction
                   !$omp h2c_voov,&
                   !$omp noa,nua,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      ! (1)
                      idx = idx_table(a,c,i,j)
                      if (idx/=0) then
@@ -12014,7 +11671,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -12029,8 +11686,9 @@ module ccp3_full_correction
                   !$omp h2c_voov,&
                   !$omp noa,nua,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      ! (1)
                      idx = idx_table(b,c,i,j)
                      if (idx/=0) then
@@ -12121,7 +11779,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -12136,8 +11794,9 @@ module ccp3_full_correction
                   !$omp h2c_voov,&
                   !$omp noa,nua,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      ! (1)
                      idx = idx_table(a,b,i,k)
                      if (idx/=0) then
@@ -12228,7 +11887,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -12243,8 +11902,9 @@ module ccp3_full_correction
                   !$omp h2c_voov,&
                   !$omp noa,nua,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      ! (1)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then
@@ -12335,7 +11995,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -12350,8 +12010,9 @@ module ccp3_full_correction
                   !$omp h2c_voov,&
                   !$omp noa,nua,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      ! (1)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then
@@ -12442,7 +12103,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -12457,8 +12118,9 @@ module ccp3_full_correction
                   !$omp h2c_voov,&
                   !$omp noa,nua,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      ! (1)
                      idx = idx_table(a,b,j,k)
                      if (idx/=0) then
@@ -12549,7 +12211,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -12564,8 +12226,9 @@ module ccp3_full_correction
                   !$omp h2c_voov,&
                   !$omp noa,nua,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      ! (1)
                      idx = idx_table(a,c,j,k)
                      if (idx/=0) then
@@ -12656,7 +12319,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -12671,8 +12334,9 @@ module ccp3_full_correction
                   !$omp h2c_voov,&
                   !$omp noa,nua,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
@@ -12763,7 +12427,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
                      end if
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -12792,8 +12456,9 @@ module ccp3_full_correction
                   !$omp H2B_voov,&
                   !$omp noa,nua,nob,nub,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                     if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      ! (1)
                      idx = idx_table(b,c,j,k)
                      if (idx/=0) then
@@ -12884,7 +12549,7 @@ module ccp3_full_correction
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
                      end if
-                 end do; end do; end do;
+                 end do
                  !$omp end do
                  !$omp end parallel
                  !!!! END OMP PARALLEL SECTION !!!!
@@ -12901,8 +12566,9 @@ module ccp3_full_correction
                   !$omp X2C_vovv,X2C_ooov,&
                   !$omp nob,nub,n3bbb),&
                   !$omp do schedule(static)
-                  do a=1,nub; do b=a+1,nub; do c=b+1,nub;
-                      if (.not. qspace(a,b,c)) cycle
+                  do idet=1,num_q
+                     a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
+                     i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                       ! A(i/jk)A(a/bc) [l1b(ai) * h2c(jkbc) + h1b(ia) * l2c(bcjk)]
                       res =  l1b(a,i)*h2c_oovv(j,k,b,c) + h1b_ov(i,a)*l2c(b,c,j,k)& ! (1)
                             -l1b(a,j)*h2c_oovv(i,k,b,c) - h1b_ov(j,a)*l2c(b,c,i,k)& ! (ij)
@@ -12960,14 +12626,14 @@ module ccp3_full_correction
                                + l2c(e,c,i,k)*h2c_vovv(e,j,a,b)  ! (jk)(bc)
                       end do
                       resid(idet) = resid(idet) + res
-                  end do; end do; end do;
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
           
                   ! deallocate l3d array copies
                   deallocate(l3d_excits_copy,l3d_amps_copy)
-        end subroutine build_leftamps3d_ijk
+        end subroutine build_leftamps3d
          
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SORTING FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -13328,4 +12994,4 @@ module ccp3_full_correction
 
       end subroutine sum4
 
-end module ccp3_full_correction
+end module ccp3_full_correction_high_mem

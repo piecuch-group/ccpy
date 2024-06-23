@@ -645,11 +645,11 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
     """
-    from ccpy.utilities.qspace import get_triples_qspace
+    from ccpy.utilities.qspace import get_triples_qspace, get_active_triples_qspace
 
     print('   CC(P;3) Calculation (High-Memory Version)')
-    print('   ------------------------------')
-    print('   Calculation started on', get_timestamp())
+    print('   -----------------------------------------')
+    print('   Calculation started on', get_timestamp(), "\n")
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 
@@ -665,7 +665,18 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
     for i, irrep in enumerate(system.orbital_symmetries):
         orbsym[i] = system.point_group_irrep_to_number[irrep]
 
-    qspace = get_triples_qspace(t3_excitations, target_irrep=target_irrep)
+    # obtain the Q space containing all triples not in the P space
+    qspace = get_triples_qspace(system, t3_excitations, target_irrep=target_irrep)
+    #qspace = get_active_triples_qspace(system, num_active=1, target_irrep=target_irrep)
+    do_correction = {"aaa": True, "aab": True, "abb": True, "bbb": True}
+    if np.array_equal(qspace["aaa"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_correction["aaa"] = False
+    if np.array_equal(qspace["aab"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_correction["aab"] = False
+    if np.array_equal(qspace["abb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_correction["abb"] = False
+    if np.array_equal(qspace["bbb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
+        do_correction["bbb"] = False
 
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
@@ -706,35 +717,37 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
     dB_aaa = 0.0
     dC_aaa = 0.0
     dD_aaa = 0.0
-    M3A = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_moments3a(
-        qspace["aaa"],
-        T.aaa, t3_excitations["aaa"],
-        T.aab, t3_excitations["aab"],
-        T.aa,
-        H.a.oo, H.a.vv.T,
-        H.aa.oovv, I2A_vvov.transpose(3, 0, 1, 2), H.aa.vooo.transpose(1, 0, 2, 3),
-        H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
-        H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
-    )
-    L3A = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_leftamps3a(
-        qspace["aaa"],
-        L.a, L.aa,
-        L.aaa, t3_excitations["aaa"],
-        L.aab, t3_excitations["aab"],
-        H.a.ov, H.a.oo, H.a.vv,
-        H.aa.oooo, H.aa.ooov, H.aa.oovv,
-        H.aa.voov, H.aa.vovv, H.aa.vvvv,
-        H.ab.ovvo,
-        X.aa.ooov, X.aa.vovv,
-    )
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.ccp3a(
-        dA_aaa, dB_aaa, dC_aaa, dD_aaa,
-        qspace["aaa"], 0.0,
-        M3A, L3A, t3_excitations["aaa"],
-        H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
-        H.aa.voov, H.aa.oooo, H.aa.vvvv,
-        d3aaa_o, d3aaa_v,
-    )
+    if do_correction["aaa"]:
+        M3A = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_moments3a(
+            qspace["aaa"],
+            T.aaa, t3_excitations["aaa"],
+            T.aab, t3_excitations["aab"],
+            T.aa,
+            H.a.oo, H.a.vv.T,
+            H.aa.oovv, I2A_vvov.transpose(3, 0, 1, 2), H.aa.vooo.transpose(1, 0, 2, 3),
+            H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
+            H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
+        )
+        L3A = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_leftamps3a(
+            qspace["aaa"],
+            L.a, L.aa,
+            L.aaa, t3_excitations["aaa"],
+            L.aab, t3_excitations["aab"],
+            H.a.ov, H.a.oo, H.a.vv,
+            H.aa.oooo, H.aa.ooov, H.aa.oovv,
+            H.aa.voov, H.aa.vovv, H.aa.vvvv,
+            H.ab.ovvo,
+            X.aa.ooov, X.aa.vovv,
+        )
+        dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.ccp3a(
+            qspace["aaa"], 0.0,
+            M3A, L3A, t3_excitations["aaa"],
+            H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
+            H.aa.voov, H.aa.oooo, H.aa.vvvv,
+            d3aaa_o, d3aaa_v,
+        )
+    else:
+        print("no aaa triples in Q space", end=" ")
     toc = time.perf_counter()
     print(f"completed in {toc - tic}s.  Memory Usage = {round(get_memory_usage(), 2)} MB")
 
@@ -745,56 +758,50 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
     dB_aab = 0.0
     dC_aab = 0.0
     dD_aab = 0.0
-    for i in range(system.noccupied_alpha):
-        for j in range(i + 1, system.noccupied_alpha):
-            for k in range(system.noccupied_beta):
-                sym_ijk = sym_ref ^ orbsym[i]
-                sym_ijk = sym_ijk ^ orbsym[j]
-                sym_ijk = sym_ijk ^ orbsym[k]
-                M3B = ccp3_full_correction.ccp3_full_correction.build_moments3b_ijk(
-                    i + 1, j + 1, k + 1,
-                    T.aaa, t3_excitations["aaa"],
-                    T.aab, t3_excitations["aab"],
-                    T.abb, t3_excitations["abb"],
-                    T.aa, T.ab,
-                    H.a.oo, H.a.vv.T, H.b.oo, H.b.vv.T,
-                    H.aa.oovv, H.aa.vvov.transpose(3, 0, 1, 2), I2A_vooo.transpose(1, 0, 2, 3), H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
-                    H.ab.oovv, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3), I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo,
-                    H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
-                    H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
-                    orbsym, sym_ijk, sym_target,
-                )
-                L3B = ccp3_full_correction.ccp3_full_correction.build_leftamps3b_ijk(
-                    i + 1, j + 1, k + 1,
-                    L.a, L.b, L.aa, L.ab,
-                    L.aaa, t3_excitations["aaa"],
-                    L.aab, t3_excitations["aab"],
-                    L.abb, t3_excitations["abb"],
-                    H.a.ov, H.a.oo, H.a.vv,
-                    H.b.ov, H.b.oo, H.b.vv,
-                    H.aa.oooo, H.aa.ooov, H.aa.oovv,
-                    H.aa.voov, H.aa.vovv, H.aa.vvvv,
-                    H.ab.oooo, H.ab.ooov, H.ab.oovo,
-                    H.ab.oovv,
-                    H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
-                    H.ab.vovv, H.ab.ovvv, H.ab.vvvv,
-                    H.bb.voov,
-                    X.aa.ooov, X.aa.vovv,
-                    X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
-                    orbsym, sym_ijk, sym_target,
-                )
-                dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction.ccp3_full_correction.ccp3b_ijk(
-                    dA_aab, dB_aab, dC_aab, dD_aab,
-                    i + 1, j + 1, k + 1, 0.0,
-                    M3B, L3B, t3_excitations["aab"],
-                    H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-                    H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                    H.aa.voov, H.aa.oooo, H.aa.vvvv,
-                    H.ab.ovov, H.ab.vovo,
-                    H.ab.oooo, H.ab.vvvv,
-                    H.bb.voov,
-                    d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
-                )
+    if do_correction["aab"]:
+        M3B = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_moments3b(
+            qspace["aab"],
+            T.aaa, t3_excitations["aaa"],
+            T.aab, t3_excitations["aab"],
+            T.abb, t3_excitations["abb"],
+            T.aa, T.ab,
+            H.a.oo, H.a.vv.T, H.b.oo, H.b.vv.T,
+            H.aa.oovv, H.aa.vvov.transpose(3, 0, 1, 2), I2A_vooo.transpose(1, 0, 2, 3), H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
+            H.ab.oovv, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3), I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo,
+            H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
+            H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
+        )
+        L3B = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_leftamps3b(
+            qspace["aab"],
+            L.a, L.b, L.aa, L.ab,
+            L.aaa, t3_excitations["aaa"],
+            L.aab, t3_excitations["aab"],
+            L.abb, t3_excitations["abb"],
+            H.a.ov, H.a.oo, H.a.vv,
+            H.b.ov, H.b.oo, H.b.vv,
+            H.aa.oooo, H.aa.ooov, H.aa.oovv,
+            H.aa.voov, H.aa.vovv, H.aa.vvvv,
+            H.ab.oooo, H.ab.ooov, H.ab.oovo,
+            H.ab.oovv,
+            H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
+            H.ab.vovv, H.ab.ovvv, H.ab.vvvv,
+            H.bb.voov,
+            X.aa.ooov, X.aa.vovv,
+            X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
+        )
+        dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.ccp3b(
+            qspace["aab"], 0.0,
+            M3B, L3B, t3_excitations["aab"],
+            H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+            H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+            H.aa.voov, H.aa.oooo, H.aa.vvvv,
+            H.ab.ovov, H.ab.vovo,
+            H.ab.oooo, H.ab.vvvv,
+            H.bb.voov,
+            d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
+        )
+    else:
+        print("no aab triples in Q space", end=" ")
     toc = time.perf_counter()
     print(f"completed in {toc - tic}s.  Memory Usage = {round(get_memory_usage(), 2)} MB")
     if use_RHF:
@@ -810,58 +817,53 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
         dB_abb = 0.0
         dC_abb = 0.0
         dD_abb = 0.0
-        for i in range(system.noccupied_alpha):
-            for j in range(system.noccupied_beta):
-                for k in range(j + 1, system.noccupied_beta):
-                    sym_ijk = sym_ref ^ orbsym[i]
-                    sym_ijk = sym_ijk ^ orbsym[j]
-                    sym_ijk = sym_ijk ^ orbsym[k]
-                    M3C = ccp3_full_correction.ccp3_full_correction.build_moments3c_ijk(
-                        i + 1, j + 1, k + 1,
-                        T.aab, t3_excitations["aab"],
-                        T.abb, t3_excitations["abb"],
-                        T.bbb, t3_excitations["bbb"],
-                        T.ab, T.bb,
-                        H.a.oo, H.a.vv.T, H.b.oo, H.b.vv.T,
-                        H.aa.oovv, H.aa.voov.transpose(1, 3, 0, 2),
-                        H.ab.oovv, I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3), H.ab.oooo,
-                        H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
-                        H.bb.oovv, I2C_vooo.transpose(1, 0, 2, 3), H.bb.vvov.transpose(3, 0, 1, 2), H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
-                        orbsym, sym_ijk, sym_target,
-                    )
-                    L3C = ccp3_full_correction.ccp3_full_correction.build_leftamps3c_ijk(
-                        i + 1, j + 1, k + 1,
-                        L.a, L.b, L.ab, L.bb,
-                        L.aab, t3_excitations["aab"],
-                        L.abb, t3_excitations["abb"],
-                        L.bbb, t3_excitations["bbb"],
-                        H.a.ov, H.a.oo, H.a.vv,
-                        H.b.ov, H.b.oo, H.b.vv,
-                        H.aa.voov,
-                        H.ab.oooo, H.ab.ooov, H.ab.oovo,
-                        H.ab.oovv,
-                        H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
-                        H.ab.vovv, H.ab.ovvv, H.ab.vvvv,
-                        H.bb.oooo, H.bb.ooov, H.bb.oovv,
-                        H.bb.voov, H.bb.vovv, H.bb.vvvv,
-                        X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
-                        X.bb.ooov, X.bb.vovv,
-                        orbsym, sym_ijk, sym_target,
-                    )
-                    dA_abb, dB_abb, dC_abb, dD_abb = ccp3_full_correction.ccp3_full_correction.ccp3c_ijk(
-                        dA_abb, dB_abb, dC_abb, dD_abb,
-                        i + 1, j + 1, k + 1, 0.0,
-                        M3C, L3C, t3_excitations["abb"],
-                        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-                        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                        H.aa.voov,
-                        H.ab.ovov, H.ab.vovo,
-                        H.ab.oooo, H.ab.vvvv,
-                        H.bb.voov, H.bb.oooo, H.bb.vvvv,
-                        d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
-                    )
+        if do_correction["abb"]:
+            M3C = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_moments3c(
+                qspace["abb"],
+                T.aab, t3_excitations["aab"],
+                T.abb, t3_excitations["abb"],
+                T.bbb, t3_excitations["bbb"],
+                T.ab, T.bb,
+                H.a.oo, H.a.vv.T, H.b.oo, H.b.vv.T,
+                H.aa.oovv, H.aa.voov.transpose(1, 3, 0, 2),
+                H.ab.oovv, I2B_vooo.transpose(1, 0, 2, 3), I2B_ovoo, H.ab.vvov.transpose(3, 0, 1, 2), H.ab.vvvo.transpose(2, 0, 1, 3), H.ab.oooo,
+                H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
+                H.bb.oovv, I2C_vooo.transpose(1, 0, 2, 3), H.bb.vvov.transpose(3, 0, 1, 2), H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
+            )
+            L3C = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_leftamps3c(
+                qspace["abb"],
+                L.a, L.b, L.ab, L.bb,
+                L.aab, t3_excitations["aab"],
+                L.abb, t3_excitations["abb"],
+                L.bbb, t3_excitations["bbb"],
+                H.a.ov, H.a.oo, H.a.vv,
+                H.b.ov, H.b.oo, H.b.vv,
+                H.aa.voov,
+                H.ab.oooo, H.ab.ooov, H.ab.oovo,
+                H.ab.oovv,
+                H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo,
+                H.ab.vovv, H.ab.ovvv, H.ab.vvvv,
+                H.bb.oooo, H.bb.ooov, H.bb.oovv,
+                H.bb.voov, H.bb.vovv, H.bb.vvvv,
+                X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
+                X.bb.ooov, X.bb.vovv,
+            )
+            dA_abb, dB_abb, dC_abb, dD_abb = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.ccp3c(
+                qspace["abb"], 0.0,
+                M3C, L3C, t3_excitations["abb"],
+                H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+                H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                H.aa.voov,
+                H.ab.ovov, H.ab.vovo,
+                H.ab.oooo, H.ab.vvvv,
+                H.bb.voov, H.bb.oooo, H.bb.vvvv,
+                d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
+            )
+        else:
+            print("no abb triples in Q space", end=" ")
         toc = time.perf_counter()
         print(f"completed in {toc - tic}s.  Memory Usage = {round(get_memory_usage(), 2)} MB")
+
         #### bbb correction ####
         tic = time.perf_counter()
         print("   Performing bbb correction... ", end="")
@@ -869,43 +871,37 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
         dB_bbb = 0.0
         dC_bbb = 0.0
         dD_bbb = 0.0
-        for i in range(system.noccupied_beta):
-            for j in range(i + 1, system.noccupied_beta):
-                for k in range(j + 1, system.noccupied_beta):
-                    sym_ijk = sym_ref ^ orbsym[i]
-                    sym_ijk = sym_ijk ^ orbsym[j]
-                    sym_ijk = sym_ijk ^ orbsym[k]
-                    M3D = ccp3_full_correction.ccp3_full_correction.build_moments3d_ijk(
-                        i + 1, j + 1, k + 1,
-                        T.abb, t3_excitations["abb"],
-                        T.bbb, t3_excitations["bbb"],
-                        T.bb,
-                        H.b.oo, H.b.vv.T,
-                        H.bb.oovv, H.bb.vvov.transpose(3, 0, 1, 2), I2C_vooo.transpose(1, 0, 2, 3),
-                        H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
-                        H.ab.oovv, H.ab.ovvo.transpose(0, 2, 1, 3),
-                        orbsym, sym_ijk, sym_target,
-                    )
-                    L3D = ccp3_full_correction.ccp3_full_correction.build_leftamps3d_ijk(
-                        i + 1, j + 1, k + 1,
-                        L.b, L.bb,
-                        L.abb, t3_excitations["abb"],
-                        L.bbb, t3_excitations["bbb"],
-                        H.b.ov, H.b.oo, H.b.vv,
-                        H.ab.voov,
-                        H.bb.oooo, H.bb.ooov, H.bb.oovv,
-                        H.bb.voov, H.bb.vovv, H.bb.vvvv,
-                        X.bb.ooov, X.bb.vovv,
-                        orbsym, sym_ijk, sym_target,
-                    )
-                    dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction.ccp3_full_correction.ccp3d_ijk(
-                        dA_bbb, dB_bbb, dC_bbb, dD_bbb,
-                        i + 1, j + 1, k + 1, 0.0,
-                        M3D, L3D, t3_excitations["bbb"],
-                        H0.b.oo, H0.b.vv, H.b.oo, H.b.vv,
-                        H.bb.voov, H.bb.oooo, H.bb.vvvv,
-                        d3bbb_o, d3bbb_v,
-                    )
+        if do_correction["bbb"]:
+            M3D = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_moments3d(
+                qspace["bbb"],
+                T.abb, t3_excitations["abb"],
+                T.bbb, t3_excitations["bbb"],
+                T.bb,
+                H.b.oo, H.b.vv.T,
+                H.bb.oovv, H.bb.vvov.transpose(3, 0, 1, 2), I2C_vooo.transpose(1, 0, 2, 3),
+                H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
+                H.ab.oovv, H.ab.ovvo.transpose(0, 2, 1, 3),
+            )
+            L3D = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_leftamps3d(
+                qspace["bbb"],
+                L.b, L.bb,
+                L.abb, t3_excitations["abb"],
+                L.bbb, t3_excitations["bbb"],
+                H.b.ov, H.b.oo, H.b.vv,
+                H.ab.voov,
+                H.bb.oooo, H.bb.ooov, H.bb.oovv,
+                H.bb.voov, H.bb.vovv, H.bb.vvvv,
+                X.bb.ooov, X.bb.vovv,
+            )
+            dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.ccp3d(
+                qspace["bbb"], 0.0,
+                M3D, L3D, t3_excitations["bbb"],
+                H0.b.oo, H0.b.vv, H.b.oo, H.b.vv,
+                H.bb.voov, H.bb.oooo, H.bb.vvvv,
+                d3bbb_o, d3bbb_v,
+            )
+        else:
+            print("no bbb triples in Q space", end=" ")
         toc = time.perf_counter()
         print(f"completed in {toc - tic}s.  Memory Usage = {round(get_memory_usage(), 2)} MB")
         correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb

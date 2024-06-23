@@ -19,7 +19,7 @@ def test_eomcct3_ch():
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_leftccp(method="left_ccsdt_p", t3_excitations=t3_excitations)
-    driver.run_ccp3(method="ccp3", state_index=0, two_body_approx=False, t3_excitations=t3_excitations)
+    driver.run_ccp3(method="ccp3", state_index=0, two_body_approx=False, t3_excitations=t3_excitations, high_memory=False)
         
     driver.run_guess(method="cis", multiplicity=2, roots_per_irrep={"A1": 1, "B1": 1, "B2": 0, "A2": 1})
     r3_excitations = get_active_triples_pspace(driver.system, target_irrep=None)

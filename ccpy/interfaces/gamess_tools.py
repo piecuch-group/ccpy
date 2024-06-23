@@ -71,10 +71,7 @@ def load_gamess_integrals(
     #)
     system.reference_energy = hf_energy
     system.frozen_energy = calc_hf_frozen_core_energy(e1int, e2int, system)
-
-    # no way to get Cholesky vectors from GAMESS
-    R_chol = None
-    return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted), R_chol
+    return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
 
 def get_reference_energy(gamess_logfile):
 

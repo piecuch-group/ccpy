@@ -11,11 +11,11 @@ def test_cct3_f2():
     geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]
     mol = gto.M(
         atom=geometry,
-        basis="cc-pvtz",
+        basis="cc-pvdz",
         charge=0,
         spin=0,
         symmetry="D2H",
-        cart=False,
+        cart=True,
         unit="Bohr",
     )
     mf = scf.RHF(mol)
@@ -31,7 +31,7 @@ def test_cct3_f2():
     driver.run_leftccp(method="left_ccsdt_p", t3_excitations=t3_excitations)
 
     driver.options["RHF_symmetry"] = False
-    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, two_body_approx=False, state_index=0, target_irrep="AG")
+    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, two_body_approx=False, state_index=0, target_irrep="AG", high_memory=True)
 
     # Check reference energy
     assert np.allclose(driver.system.reference_energy, -198.4200962814, atol=1.0e-07)
