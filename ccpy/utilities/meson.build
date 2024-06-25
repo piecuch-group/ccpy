@@ -80,6 +80,16 @@ lapack_dep = dependency(lapack_name)
 
 
 # Build CCPY optimizations
+sort_sources = [
+   '_sort/qsort_module.f90',
+   '_sort/qsort.c',
+  ]
+
+sort_lib = static_library('sort',
+ sort_sources,
+ c_args: '-O3',
+ fortran_args: '-ffree-line-length-512'
+ )
 
 optimizations_sources = [
    '_updates/cc_loops.f90',
@@ -142,7 +152,7 @@ py3.extension_module('_optimizations',
   c_args: numpy_nodepr_api,
   include_directories: [inc_np, inc_f2py],
   dependencies: [fortranobject_dep, lapack_dep, blas_dep],
-  link_with: optimizations_lib,
+  link_with:[optimizations_lib, sort_lib],
   link_language: 'fortran',
   install: true,
   subdir: 'ccpy/utilities'

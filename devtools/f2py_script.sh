@@ -24,7 +24,7 @@ done
 
 
 echo "Building PYF"
-$F2PY_EXE ${SOURCES[@]} -m _optimizations -h _optimizations.pyf --build-dir $BUILD_DIR
+$F2PY_EXE --quiet ${SOURCES[@]} -m _optimizations -h _optimizations.pyf --build-dir $BUILD_DIR
 
 echo "Building wrappers"
-$F2PY_EXE $BUILD_DIR/_optimizations.pyf --build-dir $BUILD_DIR
+$F2PY_EXE --quiet $BUILD_DIR/_optimizations.pyf --build-dir $BUILD_DIR
