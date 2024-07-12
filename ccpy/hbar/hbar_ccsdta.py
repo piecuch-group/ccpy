@@ -35,8 +35,8 @@ def build_hbar_ccsdta(T, H0, RHF_symmetry, system, *args):
         0.0)
 
     cc_energy = get_cc_energy(T, H0)
-    #print(f"   \nCCSD Correlation Energy: {cc_energy_old}")
-    #print(f"   CCSD(T)(a) Correlation Energy: {cc_energy}\n")
+    print(f"   CCSD Correlation Energy: {cc_energy_old}")
+    print(f"   CCSD(T)(a) Correlation Energy: {cc_energy}")
 
     # Copy the Bare Hamiltonian object for T1/T2-similarity transformed HBar
     H = deepcopy(H0)

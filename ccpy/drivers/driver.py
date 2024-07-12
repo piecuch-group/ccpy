@@ -376,14 +376,14 @@ class Driver:
 
         # Replace the driver hamiltonian with the Hbar
         print("")
-        print("   HBar construction began on", get_timestamp(), end="")
+        print(f"   {method.upper()} HBar construction began on", get_timestamp())
         if method.lower() == "cc3":
             self.hamiltonian, self.cc3_intermediates = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system)
         elif method.lower() == "ccsdta":
             self.hamiltonian, self.T = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system)
         else:
             self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system, t3_excitations)
-        print("... completed on", get_timestamp(), "\n")
+        print("   HBar construction completed on", get_timestamp(), "\n")
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
 
