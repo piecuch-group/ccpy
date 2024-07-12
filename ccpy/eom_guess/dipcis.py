@@ -22,8 +22,8 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
     #omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=debug)
     omega, V_act = np.linalg.eig(Hmat)
     idx = np.argsort(omega)
-    omega = omega[idx]
-    V_act = V_act[:, idx]
+    omega = np.real(omega[idx])
+    V_act = np.real(V_act[:, idx])
 
     nroot = min(nroot, V_act.shape[1])
 

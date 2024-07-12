@@ -379,6 +379,8 @@ class Driver:
         print("   HBar construction began on", get_timestamp(), end="")
         if method.lower() == "cc3":
             self.hamiltonian, self.cc3_intermediates = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system)
+        elif method.lower() == "ccsdta":
+            self.hamiltonian, self.T = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system)
         else:
             self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system, t3_excitations)
         print("... completed on", get_timestamp(), "\n")
@@ -1767,6 +1769,19 @@ class Driver:
             _, self.deltap3[state_index] = calc_eaccp3(self.T, self.R[state_index], self.L[state_index], r3_excitations,
                                                        self.vertical_excitation_energy[state_index], self.correlation_energy,
                                                        self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+
+    def run_dipccp4(self, method, state_index):
+        from ccpy.moments.dipeom4star import calc_dipeom4star
+        # Ensure that HBar is set upon entry
+        assert self.flag_hbar
+        # Perform 4p-2h correction for a specific state index
+        if method == "dipeom4star":
+            for i in state_index:
+                _, self.deltap4[i] = calc_dipeom4star(self.T, self.R[i], None,
+                                                      self.vertical_excitation_energy[i],
+                                                      self.correlation_energy,
+                                                      self.hamiltonian, self.fock, self.system,
+                                                      self.options["RHF_symmetry"])
 
     def run_ccp4(self, method, state_index=[0], two_body_approx=True, t4_excitations=None):
 
