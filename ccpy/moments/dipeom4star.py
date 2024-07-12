@@ -12,43 +12,57 @@ def calc_dipeom4star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 
-    eps_oa = np.diagonal(H0.a.oo)
-    eps_ob = np.diagonal(H0.b.oo)
-    eps_va = np.diagonal(H0.a.vv)
-    eps_vb = np.diagonal(H0.b.vv)
     n = np.newaxis
-    e4b_ijcdkl = (-eps_oa[:, n, n, n, n, n] - eps_ob[n, :, n, n, n, n]
-                  +eps_va[n, n, :, n, n, n] + eps_va[n, n, n, :, n, n] - eps_oa[n, n, n, n, :, n] - eps_oa[n, n, n, n, n, :])
-    e4c_ijcdkl = (-eps_oa[:, n, n, n, n, n] - eps_ob[n, :, n, n, n, n]
-                  +eps_va[n, n, :, n, n, n] + eps_vb[n, n, n, :, n, n] - eps_oa[n, n, n, n, :, n] - eps_ob[n, n, n, n, n, :])
+    eps_o_a = np.diagonal(H0.a.oo); eps_v_a = np.diagonal(H0.a.vv);
+    eps_o_b = np.diagonal(H0.b.oo); eps_v_b = np.diagonal(H0.b.vv);
+    e4_abaa = (eps_o_a[:, n, n, n, n, n] + eps_o_b[n, :, n, n, n, n]
+              -eps_v_a[n, n, :, n, n, n] - eps_v_a[n, n, n, :, n, n]
+              +eps_o_a[n, n, n, n, :, n] + eps_o_a[n, n, n, n, n, :])
+    e4_abab = (eps_o_a[:, n, n, n, n, n] + eps_o_b[n, :, n, n, n, n]
+              -eps_v_a[n, n, :, n, n, n] - eps_v_b[n, n, n, :, n, n]
+              +eps_o_a[n, n, n, n, :, n] + eps_o_b[n, n, n, n, n, :])
 
     X = get_dipeom4_intermediates(H, R)
 
     # update R4
     M4B = build_HR_4B(R, T, H0, X)
-    L4B = M4B/(omega - e4b_ijcdkl)
+    L4B = M4B/(omega + e4_abaa)
     dA_abaa = (1.0 / 12.0) * np.einsum("ijcdkl,ijcdkl->", L4B, M4B, optimize=True)
     # for i in range(system.noccupied_alpha):
     #     for j in range(system.noccupied_beta):
-    #         for k in range(i + 1, system.noccupied_alpha):
-    #             for l in range(k + 1, system.noccupied_alpha):
-    #                 for c in range(system.nunoccupied_alpha):
-    #                     for d in range(c + 1, system.nunoccupied_alpha):
-    #                         if abs(M4B[i, j, c, d, k, l]) > 1.0e-03:
-    #                             print(i, j, k, l, c, d, ":", M4B[i, j, c, d, k, l])
-    # print(np.linalg.norm(M4B.flatten() / 1.471528782808038))
+    #         for c in range(system.nunoccupied_alpha):
+    #             for d in range(system.nunoccupied_alpha):
+    #                 for k in range(system.noccupied_alpha):
+    #                     for l in range(system.noccupied_alpha):
+    #                         if i == k or i == l or k == l or c == d:
+    #                             if abs(M4B[i, j, c, d, k, l]) != 0.0:
+    #                                 print(M4B[i, j, c, d, k, l])
 
     M4C = build_HR_4C(R, T, H0, X)
-    L4C = M4C/(omega - e4c_ijcdkl)
+    L4C = M4C/(omega + e4_abab)
     dA_abab = (1.0 / 4.0) * np.einsum("ijcdkl,ijcdkl->", L4C, M4C, optimize=True)
+    # print(dA_abab)
+    # d2 = 0.0
+    # for i in range(system.noccupied_alpha):
+    #     for j in range(system.noccupied_beta):
+    #         for c in range(system.nunoccupied_alpha):
+    #             for d in range(system.nunoccupied_alpha):
+    #                 for k in range(i + 1, system.noccupied_alpha):
+    #                     for l in range(j + 1, system.noccupied_alpha):
+    #                         denom = H0.a.oo[i, i] + H0.b.oo[j, j] + H0.a.oo[k, k] + H0.b.oo[l, l]
+    #                         denom -= H0.a.vv[c, c] + H0.b.vv[d, d]
+    #                         d2 += M4C[i, j, c, d, k, l]**2 / (omega + denom)
+    # print(d2)
 
     if use_RHF:
         correction_A = 2.0 * dA_abaa + dA_abab
     else:
-        e4d_ijcdkl = (-eps_oa[:, n, n, n, n, n] - eps_ob[n, :, n, n, n, n]
-                      + eps_vb[n, n, :, n, n, n] + eps_vb[n, n, n, :, n, n] - eps_ob[n, n, n, n, :, n] - eps_ob[n, n, n, n, n, :])
+        e4_abbb = (eps_o_a[:, n, n, n, n, n] + eps_o_b[n, :, n, n, n, n]
+                  -eps_v_b[n, n, :, n, n, n] - eps_v_b[n, n, n, :, n, n]
+                  +eps_o_b[n, n, n, n, :, n] + eps_o_b[n, n, n, n, n, :])
+
         M4D = build_HR_4D(R, T, H0, X)
-        L4D = M4D/(omega - e4d_ijcdkl)
+        L4D = M4D/(omega + e4_abbb)
         dA_abbb = (1.0 / 12.0) * np.einsum("ijcdkl,ijcdkl->", L4D, M4D, optimize=True)
 
         correction_A = dA_abaa + dA_abab + dA_abbb
@@ -60,10 +74,11 @@ def calc_dipeom4star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     energy_A = corr_energy + omega + correction_A
     total_energy_A = system.reference_energy + energy_A
 
+    print("")
     print('   DIP-EOMCC(4h-2p)(T)(a)* Calculation Summary')
     print('   -------------------------------------------------')
     print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
-    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds\n")
+    print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds")
     print("   DIP-EOMCC(3h-1p)T(a) = {:>10.10f}    ω = {:>10.10f}     VEE = {:>10.5f} eV".format(system.reference_energy + corr_energy + omega, omega, hartreetoeV * omega))
     print(
         "   DIP-EOMCC(4h-2p)T(a)* = {:>10.10f}     δ_A = {:>10.10f}     VEE = {:>10.5f} eV".format(
@@ -189,5 +204,4 @@ def get_dipeom4_intermediates(H, R):
     )
     # antisymmetrize A(jl)
     X["abb"]["vovo"] -= np.transpose(X["abb"]["vovo"], (0, 3, 2, 1))
-
     return X
