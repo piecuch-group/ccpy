@@ -28,31 +28,10 @@ def calc_dipeom4star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     M4B = build_HR_4B(R, T, H0, X)
     L4B = M4B/(omega + e4_abaa)
     dA_abaa = (1.0 / 12.0) * np.einsum("ijcdkl,ijcdkl->", L4B, M4B, optimize=True)
-    # for i in range(system.noccupied_alpha):
-    #     for j in range(system.noccupied_beta):
-    #         for c in range(system.nunoccupied_alpha):
-    #             for d in range(system.nunoccupied_alpha):
-    #                 for k in range(system.noccupied_alpha):
-    #                     for l in range(system.noccupied_alpha):
-    #                         if i == k or i == l or k == l or c == d:
-    #                             if abs(M4B[i, j, c, d, k, l]) != 0.0:
-    #                                 print(M4B[i, j, c, d, k, l])
 
     M4C = build_HR_4C(R, T, H0, X)
     L4C = M4C/(omega + e4_abab)
     dA_abab = (1.0 / 4.0) * np.einsum("ijcdkl,ijcdkl->", L4C, M4C, optimize=True)
-    # print(dA_abab)
-    # d2 = 0.0
-    # for i in range(system.noccupied_alpha):
-    #     for j in range(system.noccupied_beta):
-    #         for c in range(system.nunoccupied_alpha):
-    #             for d in range(system.nunoccupied_alpha):
-    #                 for k in range(i + 1, system.noccupied_alpha):
-    #                     for l in range(j + 1, system.noccupied_alpha):
-    #                         denom = H0.a.oo[i, i] + H0.b.oo[j, j] + H0.a.oo[k, k] + H0.b.oo[l, l]
-    #                         denom -= H0.a.vv[c, c] + H0.b.vv[d, d]
-    #                         d2 += M4C[i, j, c, d, k, l]**2 / (omega + denom)
-    # print(d2)
 
     if use_RHF:
         correction_A = 2.0 * dA_abaa + dA_abab
@@ -66,6 +45,12 @@ def calc_dipeom4star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
         dA_abbb = (1.0 / 12.0) * np.einsum("ijcdkl,ijcdkl->", L4D, M4D, optimize=True)
 
         correction_A = dA_abaa + dA_abab + dA_abbb
+
+    # divide by norm of R vector as a mimic to <L|R> = 1
+    rnorm = np.einsum("ij,ij->", R.ab, R.ab, optimize=True)
+    rnorm += 0.5 * np.einsum("ijck,ijck->", R.aba, R.aba, optimize=True)
+    rnorm += 0.5 * np.einsum("ijck,ijck->", R.abb, R.abb, optimize=True)
+    correction_A /= rnorm
 
     t_end = time.perf_counter()
     t_cpu_end = time.process_time()
