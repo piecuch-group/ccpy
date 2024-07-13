@@ -60,7 +60,7 @@ def calc_dipeom4star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     total_energy_A = system.reference_energy + energy_A
 
     print("")
-    print('   DIP-EOMCC(4h-2p)(T)(a)* Calculation Summary')
+    print('   DIP-EOMCC(4h-2p)T(a)* Calculation Summary')
     print('   -------------------------------------------------')
     print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
     print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds")
