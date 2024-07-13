@@ -381,7 +381,7 @@ class Driver:
             self.hamiltonian, self.cc3_intermediates = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system)
         elif method.lower() == "ccsdta":
             self.fock = self.hamiltonian # set the "fock" operator to the bare Hamiltonian, as this is used in subsequent computations (DIP4star)
-            self.hamiltonian, self.T = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system)
+            self.hamiltonian, self.T, self.correlation_energy = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system)
         else:
             self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system, t3_excitations)
         print("   HBar construction completed on", get_timestamp(), "\n")

@@ -16,7 +16,6 @@ def test_dipeom4_cl2():
 
     driver = Driver.from_pyscf(mf, nfrozen=nfrozen)
     driver.system.print_info()
-    driver.fock = driver.hamiltonian
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsdta")
