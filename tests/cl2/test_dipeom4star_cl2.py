@@ -25,7 +25,7 @@ def test_dipeom4_cl2():
     #           3     -> singlet \Sigma_{g}^+
     #           4     -> singlet \Sigma_{u}^-
     driver.run_dipeomcc(method="dipeom3", state_index=[0, 1, 3, 4])
-    driver.run_dipccp4(method="dipeom4star", state_index=[0, 1, 3, 4])
+    driver.run_dipccp4(method="dipeomccsdta_star", state_index=[0, 1, 3, 4])
 
 if __name__ == "__main__":
     test_dipeom4_cl2()

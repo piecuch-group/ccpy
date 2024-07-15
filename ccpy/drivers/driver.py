@@ -1731,6 +1731,17 @@ class Driver:
         # else:
         #     raise NotImplementedError("Triples correction {} not implemented".format(method.lower()))
 
+        if method.lower() == "eomccsdta_star":
+            from ccpy.moments.eomccsdta_star import calc_eomccsdta_star
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            for i in state_index:
+                if i == 0: continue
+                # Perform excited-state corrections
+                _, self.deltap3[i] = calc_eomccsdta_star(self.T, self.R[i], self.L[i],
+                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                         self.system, self.options["RHF_symmetry"])
+
     def run_ipccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, pspace=None):
 
         if method.lower() == "cripcc23":
@@ -1772,17 +1783,17 @@ class Driver:
                                                        self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
 
     def run_dipccp4(self, method, state_index):
-        from ccpy.moments.dipeom4star import calc_dipeom4star
+        from ccpy.moments.dipeomccsdta_star import calc_dipeomccsdta_star
         # Ensure that HBar is set upon entry
         assert self.flag_hbar
         # Perform 4p-2h correction for a specific state index
-        if method == "dipeom4star":
+        if method == "dipeomccsdta_star":
             for i in state_index:
-                _, self.deltap4[i] = calc_dipeom4star(self.T, self.R[i], None,
-                                                      self.vertical_excitation_energy[i],
-                                                      self.correlation_energy,
-                                                      self.hamiltonian, self.fock, self.system,
-                                                      self.options["RHF_symmetry"])
+                _, self.deltap4[i] = calc_dipeomccsdta_star(self.T, self.R[i], None,
+                                                            self.vertical_excitation_energy[i],
+                                                            self.correlation_energy,
+                                                            self.hamiltonian, self.fock, self.system,
+                                                            self.options["RHF_symmetry"])
 
     def run_ccp4(self, method, state_index=[0], two_body_approx=True, t4_excitations=None):
 

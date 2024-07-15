@@ -5,7 +5,7 @@ import time
 import numpy as np
 from ccpy.constants.constants import hartreetoeV
 
-def calc_dipeom4star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
+def calc_dipeomccsdta_star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     """
     Calculate the ground-state DIP-EOMCCSDT(4h-2p)T(a)* correction to the DIP-EOMCCSD(3h-1p) energy.
     The specific formula used to formula the correction is
