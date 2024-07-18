@@ -9,8 +9,6 @@ def build_hbar_ccsdta(T, H0, RHF_symmetry, system, *args):
      D_MP = e_a+e_b+e_c-e_i-e_j-e_k."""
     from copy import deepcopy
 
-    cc_energy_old = get_cc_energy(T, H0)
-
     nua, noa = T.a.shape
     nub, nob = T.b.shape
 
@@ -20,6 +18,23 @@ def build_hbar_ccsdta(T, H0, RHF_symmetry, system, *args):
     resid_ab = np.zeros((nua, nub, noa, nob))
     resid_bb = np.zeros((nub, nub, nob, nob))
 
+    # Copy the Bare Hamiltonian object for T1/T2-similarity transformed HBar
+    H = deepcopy(H0)
+
+    # Add in the t3-dependent terms to Hbar computed on-the-fly
+    H.aa.vooo, H.aa.vvov, H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.bb.vooo, H.bb.vvov = hbar_cc3.hbar_cc3.build_hbar(
+            H.aa.vooo, H.aa.vvov,
+            H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo,
+            H.bb.vooo, H.bb.vvov,
+            T.aa, T.ab, T.bb,
+            H0.aa.vooo, H0.aa.vvov,
+            H0.ab.vooo, H0.ab.ovoo, H0.ab.vvov, H0.ab.vvvo,
+            H0.bb.vooo, H0.bb.vvov,
+            H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+            H0.aa.oovv, H0.ab.oovv, H0.bb.oovv,
+    )
+
+    # Update T1/T2 with T3[2]
     T.a, T.b, T.aa, T.ab, T.bb, _, _, _, _, _ = cc3_loops.cc3_loops.update_t(
         T.a, T.b, T.aa, T.ab, T.bb,
         resid_a, resid_b, resid_aa, resid_ab, resid_bb,
@@ -37,9 +52,6 @@ def build_hbar_ccsdta(T, H0, RHF_symmetry, system, *args):
     cc_energy = get_cc_energy(T, H0)
     print(f"   CCSD(T)(a) Correlation Energy: {cc_energy}")
     print(f"   CCSD(T)(a) Total Energy: {cc_energy + system.reference_energy}")
-
-    # Copy the Bare Hamiltonian object for T1/T2-similarity transformed HBar
-    H = deepcopy(H0)
 
     H.a.ov += (
             np.einsum("imae,em->ia", H0.aa.oovv, T.a, optimize=True)
@@ -285,19 +297,6 @@ def build_hbar_ccsdta(T, H0, RHF_symmetry, system, *args):
             - np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
             + np.einsum("abfe,fi->abie", H.bb.vvvv, T.b, optimize=True)
             + 0.5 * np.einsum("mnie,abmn->abie", H0.bb.ooov, T.bb, optimize=True)
-    )
-
-    # Add in the t3-dependent terms to Hbar computed on-the-fly
-    H.aa.vooo, H.aa.vvov, H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.bb.vooo, H.bb.vvov = hbar_cc3.hbar_cc3.build_hbar(
-            H.aa.vooo, H.aa.vvov,
-            H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo,
-            H.bb.vooo, H.bb.vvov,
-            T.aa, T.ab, T.bb,
-            H0.aa.vooo, H0.aa.vvov,
-            H0.ab.vooo, H0.ab.ovoo, H0.ab.vvov, H0.ab.vvvo,
-            H0.bb.vooo, H0.bb.vvov,
-            H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-            H0.aa.oovv, H0.ab.oovv, H0.bb.oovv,
     )
 
     # For RHF symmetry, copy a parts to b and aa parts to bb

@@ -177,7 +177,7 @@ class Driver:
             self.order = 3
             self.num_particles = 1
             self.num_holes = 3
-        elif method.lower() in ["dipeom4", "left_dipeom4"]:
+        elif method.lower() in ["dipeom4", "left_dipeom4", "dipeomccsdt"]:
             self.order = 4
             self.num_particles = 2
             self.num_holes = 4
@@ -1762,6 +1762,16 @@ class Driver:
                                                             self.vertical_excitation_energy[state_index], self.correlation_energy,
                                                             self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
 
+        if method.lower() == "ipeomccsdta_star":
+            from ccpy.moments.ipeomccsdta_star import calc_ipeomccsdta_star
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            for i in state_index:
+                # Perform 3h-2p corrections
+                _, self.deltap3[i] = calc_ipeomccsdta_star(self.T, self.R[i], self.L[i],
+                                                           self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                           self.system, self.options["RHF_symmetry"])
+
     def run_eaccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, pspace=None):
 
         if method.lower() == "creacc23":
@@ -1781,6 +1791,16 @@ class Driver:
             _, self.deltap3[state_index] = calc_eaccp3(self.T, self.R[state_index], self.L[state_index], r3_excitations,
                                                        self.vertical_excitation_energy[state_index], self.correlation_energy,
                                                        self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+
+        if method.lower() == "eaeomccsdta_star":
+            from ccpy.moments.eaeomccsdta_star import calc_eaeomccsdta_star
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            for i in state_index:
+                # Perform 3h-2p corrections
+                _, self.deltap3[i] = calc_eaeomccsdta_star(self.T, self.R[i], self.L[i],
+                                                           self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                           self.system, self.options["RHF_symmetry"])
 
     def run_dipccp4(self, method, state_index):
         from ccpy.moments.dipeomccsdta_star import calc_dipeomccsdta_star

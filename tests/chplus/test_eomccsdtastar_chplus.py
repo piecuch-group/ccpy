@@ -29,8 +29,8 @@ def test_eomccsdtastar_chplus():
     assert np.allclose(driver.correlation_energy, -0.11587601076883182)
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -38.018644194459256)
     #
-    expected_vee_eomccsd = [0.3354922655, 0.4997670283, 0.6371296653, 0.1205533220, 0.5321145396, 0.2907349235, 0.6509314770]
-    expected_delta_star = [-0.0132113153, -0.0025073236, -0.0036116514, -0.0017407448, -0.0047327010, -0.0235589825, -0.0230871191]
+    expected_vee_eomccsd = [0.3354923755, 0.4997656842, 0.6371275358, 0.1205517602, 0.5321109625, 0.2907349366, 0.6509314995]
+    expected_delta_star = [-0.0132113073, -0.0025074237, -0.0036117876, -0.0017407286, -0.0047324606, -0.0235589830, -0.0230871240]
     for i, istate in enumerate([2, 3, 4, 5, 6, 7, 8]):
         assert np.allclose(driver.vertical_excitation_energy[istate], expected_vee_eomccsd[i])
         assert np.allclose(driver.deltap3[istate]["A"], expected_delta_star[i])
