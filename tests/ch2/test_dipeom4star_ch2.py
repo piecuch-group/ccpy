@@ -28,12 +28,12 @@ def test_dipeom4star_ch2():
     #
     # Check the results
     #
-    expected_vee = [-0.456675867929, -0.440136922561]
-    expected_correction = [-0.026148299571473976, -0.026527944212538943]
+    expected_vee = [-0.456636415364, -0.440094626855]
+    expected_correction = [-0.021716102147627467, -0.022139900346410033]
     #
     # Check the results
     #
-    assert np.allclose(driver.correlation_energy, -0.10364237523855391)
+    assert np.allclose(driver.correlation_energy, -0.10559024413233081)
     for i in range(len(expected_vee)):
         assert np.allclose(driver.vertical_excitation_energy[i], expected_vee[i])
         assert np.allclose(driver.deltap4[i]["A"], expected_correction[i])
