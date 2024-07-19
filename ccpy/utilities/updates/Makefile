@@ -29,6 +29,7 @@ MODULES := cc_loops \
 		   cc_active_loops \
 		   cct3_loops \
 		   cc_loops_t4 \
+		   cc4_loops \
 		   ccp3_loops \
 		   ccp3_opt_loops \
 		   ccp3_adaptive_loops \

@@ -189,7 +189,7 @@ def print_block_eomcc_iteration(
         else:
             print(
                 ITERATION_FMT.format(
-                    "", residuum[j], omega[istate], delta_energy[j], time_str
+                    "", residuum[j], omega[istate], delta_energy[j], time_str, memory
                 )
             )
     print("      Current subspace size = ", curr_size)

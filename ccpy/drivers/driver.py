@@ -128,7 +128,7 @@ class Driver:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
-        elif method.lower() in ["ccsdt", "eomccsdt", "left_ccsdt"]:
+        elif method.lower() in ["ccsdt", "eomccsdt", "left_ccsdt", "cc4"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
@@ -797,25 +797,44 @@ class Driver:
                           self.num_particles,
                           self.num_holes)
 
-        for j, istate in enumerate(state_index):
-            print("   IP-EOMCC calculation for root %d started on" % istate, get_timestamp())
-            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
-            print_ip_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
-            self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
-                                                                                                   update_function,
-                                                                                                   #B0[:, j],
-                                                                                                   self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
-                                                                                                   self.R[istate],
-                                                                                                   dR,
-                                                                                                   self.vertical_excitation_energy[istate],
-                                                                                                   self.T,
-                                                                                                   self.hamiltonian,
-                                                                                                   self.system,
-                                                                                                   self.options)
-            # compute the relative excitation level (REL) metric
-            self.relative_excitation_level[istate] = get_rel_ip(self.R[istate])
-            ipeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
-            print("   IP-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
+        if self.options["davidson_solver"] == "multiroot":
+            print("   Multiroot EOMCC calculation started on", get_timestamp(), "\n")
+            # Form the initial subspace vectors
+            B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+            print("   Energy of initial guess")
+            for istate in state_index:
+                print("      Root  {} = {:>10.10f}".format(istate, self.vertical_excitation_energy[istate]))
+            self.R, self.vertical_excitation_energy, is_converged = eomcc_block_davidson(HR_function, update_function,
+                                                                                         B0,
+                                                                                         self.R, dR,
+                                                                                         self.vertical_excitation_energy,
+                                                                                         self.T, self.hamiltonian,
+                                                                                         self.system, state_index, self.options)
+            for j, istate in enumerate(state_index):
+                # compute the relative excitation level (REL) metric
+                self.relative_excitation_level[istate] = get_rel_ip(self.R[istate])
+                ipeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
+            print("   Multiroot EOMCC calculation ended on", get_timestamp(), "\n")
+        else:
+            for j, istate in enumerate(state_index):
+                print("   IP-EOMCC calculation for root %d started on" % istate, get_timestamp())
+                print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
+                print_ip_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+                self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
+                                                                                                       update_function,
+                                                                                                       #B0[:, j],
+                                                                                                       self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
+                                                                                                       self.R[istate],
+                                                                                                       dR,
+                                                                                                       self.vertical_excitation_energy[istate],
+                                                                                                       self.T,
+                                                                                                       self.hamiltonian,
+                                                                                                       self.system,
+                                                                                                       self.options)
+                # compute the relative excitation level (REL) metric
+                self.relative_excitation_level[istate] = get_rel_ip(self.R[istate])
+                ipeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
+                print("   IP-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
 
     def run_ipeomccp(self, method, state_index, r3_excitations, t3_excitations=None):
         """Performs the particle-nonconserving IP-EOMCC calculation specified by the user in the input."""
