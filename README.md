@@ -720,6 +720,49 @@ def test_adaptive_f2():
     adaptdriver.options["two_body_approx"] = True
     adaptdriver.run()
 ```
+</details>
+
+<details>
+<summary>CC4</summary>
+
+### Summary
+<p align="justify">
+</p>
+
+### Sample Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["O", (0.0, 0.0, -0.0180)],
+              ["H", (0.0, 3.030526, -2.117796)],
+              ["H", (0.0, -3.030526, -2.117796)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # run CC4 calculation
+    driver.run_cc(method="cc4")
+```
+### References
+</details>
 
 ### References
 
