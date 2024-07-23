@@ -720,6 +720,10 @@ def test_adaptive_f2():
     adaptdriver.options["two_body_approx"] = True
     adaptdriver.run()
 ```
+### References
+
+1. K. Gururangan and P. Piecuch, J. Chem. Phys. **159**, 084108 (2023) <br />
+(see https://doi.org/10.1063/5.0162873; cf. also https://doi.org/10.48550/arXiv.2306.09638) <br />
 </details>
 
 <details>
@@ -762,12 +766,6 @@ def test_adaptive_f2():
     driver.run_cc(method="cc4")
 ```
 ### References
-</details>
-
-### References
-
-1. K. Gururangan and P. Piecuch, J. Chem. Phys. **159**, 084108 (2023) <br />
-(see https://doi.org/10.1063/5.0162873; cf. also https://doi.org/10.48550/arXiv.2306.09638) <br />
 </details>
 
 #### Externally Corrected (ec) CC Approaches
