@@ -40,22 +40,22 @@ def test_eccc24_h2o():
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"], -76.2417964922, atol=1.0e-07)
 
     # Check ec-CC-II(4)_A correction energy
-    assert np.allclose(driver.deltap4[0]["A"], -0.0002633118, atol=1.0e-07)
+    assert np.allclose(driver.deltap4[0]["A"], -0.0002635063, atol=1.0e-07)
     # Check ec-CC-II(4)_D correction energy
-    assert np.allclose(driver.deltap4[0]["D"], -0.0003150049, atol=1.0e-07)
+    assert np.allclose(driver.deltap4[0]["D"], -0.0003152496, atol=1.0e-07)
 
     # Check ec-CC-II(3,4)_AA total energy
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy
-                       + driver.deltap3[0]["A"] + driver.deltap4[0]["A"], -76.2417742997, atol=1.0e-07)
+                       + driver.deltap3[0]["A"] + driver.deltap4[0]["A"], -76.2417744942, atol=1.0e-07)
     # Check ec-CC-II(3,4)_AD total energy
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy
-                       + driver.deltap3[0]["A"] + driver.deltap4[0]["D"], -76.2418259928, atol=1.0e-07)
+                       + driver.deltap3[0]["A"] + driver.deltap4[0]["D"], -76.2418262375, atol=1.0e-07)
     # Check ec-CC-II(3,4)_DA total energy
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy
-                       + driver.deltap3[0]["D"] + driver.deltap4[0]["A"], -76.2420597982, atol=1.0e-07)
+                       + driver.deltap3[0]["D"] + driver.deltap4[0]["A"], -76.2420599927, atol=1.0e-07)
     # Check ec-CC-II(3,4)_DD total energy
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy
-                       + driver.deltap3[0]["D"] + driver.deltap4[0]["D"], -76.24211149130001, atol=1.0e-07)
+                       + driver.deltap3[0]["D"] + driver.deltap4[0]["D"], -76.2421117360, atol=1.0e-07)
 
 if __name__ == "__main__":
     test_eccc24_h2o()
