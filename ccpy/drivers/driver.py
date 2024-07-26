@@ -247,6 +247,9 @@ class Driver:
         self.set_operator_params(method)
         self.options["method"] = method.upper()
 
+        if method.lower() == "cc4": # CC4 only implemented for closed shells for now
+            assert self.options["RHF_symmetry"]
+
         # import the specific CC method module and get its update function
         cc_mod = import_module("ccpy.cc." + method.lower())
         update_function = getattr(cc_mod, 'update')

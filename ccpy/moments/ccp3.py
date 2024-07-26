@@ -10,6 +10,9 @@ from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eom
 from ccpy.utilities.utilities import get_memory_usage
 from ccpy.utilities.printing import get_timestamp
 
+# [TODO]: EOMCC(P;3) full correction using high-memory Q-space vector
+# [TODO]: EOMCC(P;3)_2BA selection algorithm analogous to calc_ccp3_2ba_with_selection
+
 def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, target_irrep=None):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy in a
