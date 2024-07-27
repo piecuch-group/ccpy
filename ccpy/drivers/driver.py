@@ -32,6 +32,7 @@ from ccpy.utilities.printing import (
 from ccpy.utilities.utilities import convert_excitations_c_to_f, reorder_triples_amplitudes
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
+from ccpy.interfaces.fcidump_tools import load_fcidump_integrals
 
 
 class Driver:
@@ -47,6 +48,12 @@ class Driver:
     def from_gamess(cls, logfile, nfrozen, ndelete=0, multiplicity=None, fcidump=None, onebody=None, twobody=None, normal_ordered=True, sorted=True, data_type=np.float64):
         return cls(
                     *load_gamess_integrals(logfile, fcidump, onebody, twobody, nfrozen, ndelete, multiplicity, normal_ordered=normal_ordered, sorted=sorted, data_type=data_type)
+                   )
+
+    @classmethod
+    def from_fcidump(cls, fcidump, nfrozen, charge=0, rohf_canonicalization="Guest-Saunders", normal_ordered=True, sorted=True, data_type=np.float64):
+        return cls(
+                    *load_fcidump_integrals(fcidump, nfrozen, charge=charge, rohf_canonicalization=rohf_canonicalization, normal_ordered=normal_ordered, sorted=sorted, data_type=data_type)
                    )
 
     def __init__(self, system, hamiltonian, max_number_states=50):
