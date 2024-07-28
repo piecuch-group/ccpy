@@ -2,7 +2,7 @@
 energies and linear excitation amplitudes for doubly-attached states
 using the DIP-EOMCCSDT approach with up to 4h-2p excitations"""
 import numpy as np
-from ccpy.eomcc.dipeom4_intermediates import get_dipeomccsdt_intermediates
+from ccpy.eomcc.dipeom4_intermediates import get_dipeomccsdt_intermediates, add_ov_intermediates
 from ccpy.utilities.updates import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
@@ -36,6 +36,10 @@ def HR(dR, R, T, H, flag_RHF, system):
        dR.abb = np.transpose(dR.aba, (1, 0, 2, 3))
     else:
        dR.abb = build_HR_3C(R, T, H, X)
+
+    # Add H1(ov)*R1 to I_vo and I_ov intermediates
+    X = add_ov_intermediates(X, R, H)
+
     # update R4
     dR.abaa = build_HR_4B(R, T, H, X)
     dR.abab = build_HR_4C(R, T, H, X)
@@ -132,6 +136,9 @@ def build_HR_4B(R, T, H, X):
     x4b += (3.0 / 12.0) * np.einsum("ijem,ecdmkl->ijcdkl", X["aba"]["oovo"], T.aaa, optimize=True)
     x4b += (3.0 / 12.0) * np.einsum("ijem,cdeklm->ijcdkl", X["abb"]["oovo"], T.aab, optimize=True)
     x4b -= (3.0 / 12.0) * np.einsum("iemk,cdemlj->ijcdkl", X["aba"]["ovoo"], T.aab, optimize=True)
+    #
+    x4b += (6.0 / 12.0) * np.einsum("dlef,ecfikj->ijcdkl", X["aba"]["vovv"], T.aab, optimize=True)
+    x4b += (2.0 / 24.0) * np.einsum("dfej,feclik->ijcdkl", X["aba"]["vvvo"], T.aaa, optimize=True)
     ### Terms < ij~klcd | (H(2)R(4h-2p)_C | 0 > ###
     x4b -= (3.0 / 12.0) * np.einsum("ml,ijcdkm->ijcdkl", H.a.oo, R.abaa, optimize=True)
     x4b -= (1.0 / 12.0) * np.einsum("mj,imcdkl->ijcdkl", H.b.oo, R.abaa, optimize=True)
@@ -171,6 +178,11 @@ def build_HR_4C(R, T, H, X):
     x4c += np.einsum("ijem,cedkml->ijcdkl", X["abb"]["oovo"], T.abb, optimize=True)
     x4c -= (1.0 / 4.0) * np.einsum("ejml,ecdikm->ijcdkl", X["abb"]["vooo"], T.aab, optimize=True)
     x4c -= (1.0 / 4.0) * np.einsum("iemk,cedmjl->ijcdkl", X["aba"]["ovoo"], T.abb, optimize=True)
+    #
+    x4c += (2.0 / 8.0) * np.einsum("cfej,efdikl->ijcdkl", X["aba"]["vvvo"], T.aab, optimize=True)
+    x4c += (2.0 / 8.0) * np.einsum("dfei,cefkjl->ijcdkl", X["abb"]["vvvo"], T.abb, optimize=True)
+    x4c += (2.0 / 4.0) * np.einsum("ckef,efdijl->ijcdkl", X["aba"]["vovv"], T.abb, optimize=True)
+    x4c += (2.0 / 4.0) * np.einsum("dlef,cfekij->ijcdkl", X["abb"]["vovv"], T.aab, optimize=True)
     ### Terms < ij~kl~cd~  | (H(2)R(4h-2p)_C | 0 > ###
     x4c -= (2.0 / 4.0) * np.einsum("mi,mjcdkl->ijcdkl", H.a.oo, R.abab, optimize=True)
     x4c -= (2.0 / 4.0) * np.einsum("mj,imcdkl->ijcdkl", H.b.oo, R.abab, optimize=True)
@@ -208,6 +220,9 @@ def build_HR_4D(R, T, H, X):
     x4d += (3.0 / 12.0) * np.einsum("ijem,ecdmkl->ijcdkl", X["aba"]["oovo"], T.abb, optimize=True)
     x4d += (3.0 / 12.0) * np.einsum("ijem,ecdmkl->ijcdkl", X["abb"]["oovo"], T.bbb, optimize=True)
     x4d -= (3.0 / 12.0) * np.einsum("ejml,ecdikm->ijcdkl", X["abb"]["vooo"], T.abb, optimize=True)
+    #
+    x4d += (2.0 / 24.0) * np.einsum("dfei,ecfjkl->ijcdkl", X["abb"]["vvvo"], T.bbb, optimize=True)
+    x4d += (6.0 / 12.0) * np.einsum("dlef,fecijk->ijcdkl", X["abb"]["vovv"], T.abb, optimize=True)
     ### Terms < ij~k~l~c~d~  | (H(2)R(4h-2p)_C | 0 > ###
     x4d -= (3.0 / 12.0) * np.einsum("ml,ijcdkm->ijcdkl", H.b.oo, R.abbb, optimize=True)
     x4d -= (1.0 / 12.0) * np.einsum("mi,mjcdkl->ijcdkl", H.a.oo, R.abbb, optimize=True)

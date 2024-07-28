@@ -102,8 +102,12 @@ def get_dipeomccsdt_intermediates(H, R):
 
     # Create dictionary to store intermediates, which have spincases that resemble those of the DIP R operator itself
     X = {"ab": {"vo": np.array([0.0]), "ov": np.array([0.0]), "vv": np.array([0.0])},
-         "aba": {"oooo": np.array([0.0]), "oovv": np.array([0.0]), "ovvo": np.array([0.0]), "oovo": np.array([0.0]), "ovoo": np.array([0.0])},
-         "abb": {"oooo": np.array([0.0]), "oovv": np.array([0.0]), "vovo": np.array([0.0]), "oovo": np.array([0.0]), "vooo": np.array([0.0])}}
+         "aba": {"oooo": np.array([0.0]), "oovv": np.array([0.0]), "ovvo": np.array([0.0]),
+                 "oovo": np.array([0.0]), "ovoo": np.array([0.0]),
+                 "vovv": np.array([0.0]), "vvvo": np.array([0.0])},
+         "abb": {"oooo": np.array([0.0]), "oovv": np.array([0.0]), "vovo": np.array([0.0]),
+                 "oovo": np.array([0.0]), "vooo": np.array([0.0]),
+                 "vovv": np.array([0.0]), "vvvo": np.array([0.0])}}
 
     ### one-body intermediates ###
     # x(ie~)
@@ -194,38 +198,72 @@ def get_dipeomccsdt_intermediates(H, R):
     # antisymmetrize A(jl)
     X["abb"]["vovo"] -= np.transpose(X["abb"]["vovo"], (0, 3, 2, 1))
 
-    # Intermediates [7] - [10] are only needed in DIP-EOMCCSDT to contract with T3
+    # Intermediates [7] - [14] are only needed in DIP-EOMCCSDT to contract with T3
 
     # x(ij~em) [7]
     X["aba"]["oovo"] = (
         -np.einsum("mnej,in->ijem", H.ab.oovo, R.ab, optimize=True)
         -np.einsum("nmie,nj->ijem", H.aa.ooov, R.ab, optimize=True)
-        #+np.einsum("mnef,ijfn->ijem", H.aa.oovv, R.aba, optimize=True)
-        #+np.einsum("mnef,ijfn->ijem", H.ab.oovv, R.abb, optimize=True)
+        +np.einsum("mnef,ijfn->ijem", H.aa.oovv, R.aba, optimize=True)
+        +np.einsum("mnef,ijfn->ijem", H.ab.oovv, R.abb, optimize=True)
     )
 
     # x(ij~e~m~) [8]
     X["abb"]["oovo"] = (
         -np.einsum("nmje,in->ijem", H.bb.ooov, R.ab, optimize=True)
         -np.einsum("nmie,nj->ijem", H.ab.ooov, R.ab, optimize=True)
-        #+np.einsum("nmfe,ijfn->ijem", H.ab.oovv, R.aba, optimize=True)
-        #+np.einsum("mnef,ijfn->ijem", H.bb.oovv, R.abb, optimize=True)
+        +np.einsum("nmfe,ijfn->ijem", H.ab.oovv, R.aba, optimize=True)
+        +np.einsum("mnef,ijfn->ijem", H.bb.oovv, R.abb, optimize=True)
     )
 
     # x(ie~mk) [9]; i ->, e~ -> (j~), k -> m
     X["aba"]["ovoo"] = (
-        #-0.5 * np.einsum("mnfe,infk->iemk", H.ab.oovv, R.aba, optimize=True)
-        -np.einsum("mnie,kn->iemk", H.ab.ooov, R.ab, optimize=True)
+        -0.5 * np.einsum("mnfe,infk->iemk", H.ab.oovv, R.aba, optimize=True)
+        -np.einsum("mnke,in->iemk", H.ab.ooov, R.ab, optimize=True)
     )
     # antisymmetrize (ik)
     X["aba"]["ovoo"] -= np.transpose(X["aba"]["ovoo"], (3, 1, 2, 0))
 
     # x(ej~m~k~) [10]; j~ ->, e -> (i), k~ -> m~
     X["abb"]["vooo"] = (
-        #-0.5 * np.einsum("nmef,njfk->ejmk", H.ab.oovv, R.abb, optimize=True)
+        -0.5 * np.einsum("nmef,njfk->ejmk", H.ab.oovv, R.abb, optimize=True)
         -np.einsum("nmek,nj->ejmk", H.ab.oovo, R.ab, optimize=True)
     )
     # antisymmetrize A(j~k~)
     X["abb"]["vooo"] -= np.transpose(X["abb"]["vooo"], (0, 3, 2, 1))
 
+    # x(ckef~) [11]; c <-> k, e -> (i), f~ -> (j~)
+    X["aba"]["vovv"] = (
+        np.einsum("mnef,mnck->ckef", H.ab.oovv, R.aba, optimize=True)
+        + np.einsum("cmef,km->ckef", H.ab.vovv, R.ab, optimize=True)
+    )
+
+    # x(c~k~e~f) [12]; c~ <-> k~, e~ -> (j~), f -> (i)
+    X["abb"]["vovv"] = (
+        np.einsum("nmfe,nmck->ckef", H.ab.oovv, R.abb, optimize=True)
+        + np.einsum("ncfe,nk->ckef", H.ab.ovvv, R.ab, optimize=True)
+    )
+
+    # x(cfej~) [13]: c <-> f, e <-> j~
+    X["aba"]["vvvo"] = (
+        0.5 * np.einsum("mnef,mjcn->cfej", H.aa.oovv, R.aba, optimize=True)
+        - np.einsum("cnfe,nj->cfej", H.aa.vovv, R.ab, optimize=True)
+    )
+
+    # x(c~f~e~i) [14]; c~ <-> f~, e~ <-> i
+    X["abb"]["vvvo"] = (
+        0.5 * np.einsum("mnef,imcn->cfei", H.bb.oovv, R.abb, optimize=True)
+        - np.einsum("cnfe,in->cfei", H.bb.vovv, R.ab, optimize=True)
+    )
+
+    return X
+
+def add_ov_intermediates(X, R, H):
+    # These terms are required to contract with T3 in the 4h-2p updates in DIP-EOMCCSDT,
+    # but they should not be included in the 3h-1p updates (since H1(ov)*R.ab is implicilty
+    # included in H2(vooo)*R.ab already).
+    # x(ie~)
+    X["ab"]["ov"] -= np.einsum("me,im->ie", H.b.ov, R.ab, optimize=True)
+    # x(ej~)
+    X["ab"]["vo"] -= np.einsum("me,mj->ej", H.a.ov, R.ab, optimize=True)
     return X
