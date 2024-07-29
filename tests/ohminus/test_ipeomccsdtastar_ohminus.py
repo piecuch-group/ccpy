@@ -1,6 +1,6 @@
 """
-IP-EOMCCSD(2h-1p) calculation to obtain the vertical excitation spectrum of
-the open-shell OH radical, as by described by the 6-31G** basis set, by removing
+IP-EOMCCSDT(a)* calculation to obtain the vertical excitation spectrum of
+the open-shell OH radical, as by described by the 6-31G basis set, by removing
 one electron from the (OH)- closed shell.
 Reference: J. Chem. Phys. 123, 134113 (2005)
 """
@@ -34,11 +34,17 @@ def test_ipeomccsdtastar_ohminus():
     #
     # Check the results
     #
-    #expected_vee = [-0.02049758, 0.56909275, 0.14122875, 0.60699750, 0.61645987, 0.70904961, 0.51783683, 0.58412700]
-    #for i, vee in enumerate(expected_vee):
-    #    assert np.allclose(driver.vertical_excitation_energy[i], vee)
-    #    en = driver.vertical_excitation_energy[i] - driver.vertical_excitation_energy[0]
-    #    print(f"root {i} = {en*27.2114} eV")
+    expected_vee = [-0.003347942028767371,
+                    0.10492491595761046,
+                    0.12214269570376851,
+                    0.3465144798386487,
+                    0.2437123658196561,
+                    0.30641350125651096,
+                    0.1501940563414676,
+                    0.20678796226069587,
+    ]
+    for i, vee in enumerate(expected_vee):
+       assert np.allclose(driver.vertical_excitation_energy[i] + driver.deltap3[i]["A"], vee)
 
 if __name__ == "__main__":
     test_ipeomccsdtastar_ohminus()

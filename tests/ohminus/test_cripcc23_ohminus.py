@@ -9,7 +9,7 @@ import numpy as np
 from pyscf import scf, gto
 from ccpy import Driver
 
-def test_ipeom2_ohminus():
+def test_cripcc23_ohminus():
     mol = gto.M(atom='''O  0.0  0.0  -0.96966/2
                         H  0.0  0.0   0.96966/2''',
                 basis="6-31g**",
@@ -41,4 +41,4 @@ def test_ipeom2_ohminus():
         print(f"root {i} = {en*27.2114} eV")
 
 if __name__ == "__main__":
-    test_ipeom2_ohminus()
+    test_cripcc23_ohminus()
