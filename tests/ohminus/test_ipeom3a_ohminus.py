@@ -48,8 +48,15 @@ def test_ipeom3a_ohminus():
     # Check the results
     #
     expected_vee = [-0.01583013, 0.41171370, 0.14362613, 0.38859946, 0.43476381, 0.67650621, 0.29502520, 0.33377185]
+    print("Excitation Spectrum of Target Species")
     for i, vee in enumerate(expected_vee):
+        print(f"Root {i}")
         assert np.allclose(driver.vertical_excitation_energy[i], vee)
+        en = driver.vertical_excitation_energy[i] - driver.vertical_excitation_energy[0]
+        print(f"     IP-EOMCCSDt = {en*27.2114} eV") 
+        for denom in ['A', 'B', 'C', 'D']:
+            cren = en + driver.deltap3[i][denom] - driver.deltap3[0][denom]
+            print(f"     IP-EOMCCSD(t;3)_{denom} = {cren*27.2114} eV") 
 
 if __name__ == "__main__":
     test_ipeom3a_ohminus()
