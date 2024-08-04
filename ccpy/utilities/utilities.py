@@ -18,7 +18,7 @@ def convert_t3_from_pspace(driver, t3_excitations):
     if np.array_equal(t3_excitations["bbb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["bbb"] = False
 
-    T_new = unravel_triples_amplitudes(driver.T, t3_excitations, driver.system, {"aaa": True, "aab": True, "abb": True, "bbb": True})
+    T_new = unravel_triples_amplitudes(driver.T, t3_excitations, driver.system, do_t3)
     setattr(driver, "T", T_new)
     return
 
