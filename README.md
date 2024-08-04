@@ -830,6 +830,7 @@ def test_eccc23_h2o():
   - IP-EOMCCSDT(a)*
   - Active-space IP-EOMCCSD(3h-2p){N<sub>o</sub>} (also known as IP-EOMCCSDt)
   - IP-EOMCCSD(3h-2p)
+  - IP-EOMCCSDT
   - EA-EOMCCSD(2p-1h)
   - EA-EOMCCSDT(a)*
   - Active-space EA-EOMCCSD(3p-2h){N<sub>u</sub>} (also known as EA-EOMCCSDt)
