@@ -381,14 +381,14 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
         B[:, j] = B0[:, j]
         R[istate].unflatten(B[:, j])
         dR.unflatten(dR.flatten() * 0.0)
-        if t3_excitations and r3_excitations:
+        if t3_excitations or r3_excitations:
             sigma[:, j] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
         else:
             sigma[:, j] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
         num_add += 1
         curr_size += 1
 
-    is_converged = [False] * nroot
+    is_converged = [False for _ in range(nroot)]
     residual = np.zeros(nroot)
     delta_energy = np.zeros(nroot)
     for niter in range(options["maximum_iterations"]):
@@ -435,7 +435,7 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
                 is_converged[j] = True
             else:
                 # update the residual vector
-                if t3_excitations and r3_excitations:
+                if t3_excitations or r3_excitations:
                     R[istate] = update_r(R[istate], omega[istate], H, options["RHF_symmetry"], system, r3_excitations)
                 else:
                     R[istate] = update_r(R[istate], omega[istate], H, options["RHF_symmetry"], system)
@@ -446,7 +446,7 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
                 q /= np.linalg.norm(q)
                 R[istate].unflatten(q)
                 B[:, curr_size + num_add] = q
-                if t3_excitations and r3_excitations:
+                if t3_excitations or r3_excitations:
                     sigma[:, curr_size + num_add] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
                 else:
                     sigma[:, curr_size + num_add] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)

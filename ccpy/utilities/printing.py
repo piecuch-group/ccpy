@@ -332,8 +332,8 @@ def print_ip_amplitudes(R, system, order, thresh_print):
                     "      [{}]     {}A  {}A  ->  {}A  =   {:.6f}".format(
                         n,
                         i + system.nfrozen + 1,
-                        b + system.noccupied_alpha + system.nfrozen + 1,
                         j + system.nfrozen + 1,
+                        b + system.noccupied_alpha + system.nfrozen + 1,
                         R.aa[i, b, j],
                     )
                 )
@@ -346,8 +346,8 @@ def print_ip_amplitudes(R, system, order, thresh_print):
                     "      [{}]     {}A  {}B  ->  {}B  =   {:.6f}".format(
                         n,
                         i + system.nfrozen + 1,
-                        b + system.noccupied_beta + system.nfrozen + 1,
                         j + system.nfrozen + 1,
+                        b + system.noccupied_beta + system.nfrozen + 1,
                         R.ab[i, b, j],
                     )
                 )
