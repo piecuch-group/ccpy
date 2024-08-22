@@ -49,6 +49,8 @@ TARGETS := $(addsuffix $(EXT_SUFFIX), $(MODULES))
 # If OpenMP is not available, remove the last two flags, -fopenmp, -lgomp
 # For GitHub CI pipeline, remove OpenMP
 FFLAGS := -fbounds-check -std=f2018 -O3 -ffree-line-length-512# -march=native -mtune=native -mavx -fopenmp -lgomp
+# Interestingly, cc_loop_t4.f90 and cc4_loops.f90 only compile with -fbounds-check is off
+#FFLAGS := -std=f2018 -O3 -ffree-line-length-512# -march=native -mtune=native -mavx -fopenmp -lgomp
 
 ifeq ($(CONDA_PREFIX),)
 

@@ -20,6 +20,9 @@ def load_gamess_integrals(
     from ccpy.models.integrals import getHamiltonian
     from ccpy.models.system import System
 
+    # flag to check HF energy against logfile (default on, but turned off for FCIDUMP weirdness)
+    do_assert = True
+    #
     data = ccread(gamess_logfile)
     # unable to change nelectrons attribute
     nelectrons = data.nelectrons
@@ -31,6 +34,7 @@ def load_gamess_integrals(
         nmo_fcidump, nelectron_fcidump, ms2_fcidump = load_system_params_from_fcidump(fcidump_file)
         data.nmo = nmo_fcidump
         if data.nelectrons != nelectron_fcidump:
+            do_assert = False
             print("\n   =============================================================================================")
             print("      WARNING: NELEC in GAMESS logfile and FCIDUMP do not match! Using NELEC listed in FCIDUMP.")
             print("      (Beware, GAMESS FCIDUMP prints wrong NELEC and MS2 for open-shell systems!)")
@@ -66,9 +70,10 @@ def load_gamess_integrals(
     # Check that the HF energy calculated using the integrals matches the GAMESS result
     hf_energy = calc_hf_energy(e1int, e2int, system)
     hf_energy += system.nuclear_repulsion
-    assert np.allclose(
-        hf_energy, get_reference_energy(gamess_logfile), atol=1.0e-06, rtol=0.0
-    )
+    if do_assert:
+        assert np.allclose(
+            hf_energy, get_reference_energy(gamess_logfile), atol=1.0e-06, rtol=0.0
+        )
     system.reference_energy = hf_energy
     system.frozen_energy = calc_hf_frozen_core_energy(e1int, e2int, system)
     return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
