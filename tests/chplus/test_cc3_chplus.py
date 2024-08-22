@@ -19,7 +19,7 @@ def test_cc3_chplus():
     driver.run_hbar(method="cc3")
 
     # Initial guess
-    driver.run_guess(method="cisd", multiplicity=1, roots_per_irrep={"A1": 4, "B1": 2, "B2": 0, "A2": 2},  nact_occupied=3, nact_unoccupied=11)
+    driver.run_guess(method="cisd", multiplicity=1, roots_per_irrep={"A1": 4, "B1": 2, "B2": 0, "A2": 2},  nact_occupied=3, nact_unoccupied=3)
     # Run excited-state CC3
     roots = [2, 3, 4, 5, 6, 7, 8]
     irreps = ["A1", "A1", "A1", "A1", "B1", "B1", "A2", "A2"]

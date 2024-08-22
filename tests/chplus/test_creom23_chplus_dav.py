@@ -12,6 +12,7 @@ def test_creom23_chplus():
         ndelete=0,
     )
     driver.system.print_info()
+    driver.options["davidson_solver"] = "multiroot"
     # Run ground-state CC calculation
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd") 

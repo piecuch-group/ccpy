@@ -56,12 +56,13 @@ module deaeom4_p_loops
                   real(kind=8) :: r_amp, hmatel, hmatel1, res_mm23
                   integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet, jdet
                   integer :: idx, nloc
+                  real(kind=8) :: ff
                   
                   ! Zero the container that holds H*R
                   resid = 0.0d0
                   
-                  !!!! diagram 4: A(d/ac) h1a(de) r4b(ab~cekl)
-                  !!!! diagram 8: 1/2 A(a/cd) h2a(cdef) r4b(ab~efkl)
+                  !!!! diagram 1: A(d/ac) h1a(de) r4b(ab~cekl)
+                  !!!! diagram 2: 1/2 A(a/cd) h2a(cdef) r4b(ab~efkl)
                   ! NOTE: WITHIN THESE LOOPS, H1A(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
                   ! allocate new sorting arrays
                   nloc = noa*(noa-1)/2*nua*nub
@@ -235,6 +236,275 @@ module deaeom4_p_loops
                      end do
                      end if
                   end do
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+
+                  !!!! diagram 3: h1b(b~e~) * r4b(ae~cdkl)
+                  !!!! diagram 4: A(a/cd) h2b(ab~ef~) * r4b(ef~cdkl)
+                  ff = 1.0d0 / 3.0d0
+                  ! allocate new sorting arrays
+                  nloc = noa*(noa-1)/2*(nua-1)*(nua-2)/2
+                  allocate(loc_arr(2,nloc))
+                  allocate(idx_table(noa,noa,nua,nua))
+                  !!! SB: (5,6,3,4) !!!
+                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/2,nua-1/), (/-1,nua/), noa, noa, nua, nua)
+                  call sort4(r4b_excits, r4b_amps, loc_arr, idx_table, (/5,6,3,4/), noa, noa, nua, nua, nloc, n4abaa, resid)
+                  do idet = 1,n4abaa
+                     a = r4b_excits(idet,1); b = r4b_excits(idet,2); c = r4b_excits(idet,3); d = r4b_excits(idet,4)
+                     k = r4b_excits(idet,5); l = r4b_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(k,l,c,d)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4b_excits(jdet,1); f = r4b_excits(jdet,2);
+                        ! compute < klab~cd | h2b(vvvv) | klef~cd >
+                        hmatel = h2b_vvvv(a,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(a,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (a==e) hmatel1 = hmatel1 + h1b_vv(b,f) 
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     ! (ac)
+                     idx = idx_table(k,l,a,d)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4b_excits(jdet,1); f = r4b_excits(jdet,2);
+                        ! compute < klab~cd | h2b(vvvv) | klef~ad >
+                        hmatel = -h2b_vvvv(c,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(c,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (c==e) hmatel1 = hmatel1 - h1b_vv(b,f) 
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     end if
+                     ! (ad), -
+                     idx = idx_table(k,l,a,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4b_excits(jdet,1); f = r4b_excits(jdet,2);
+                        ! compute < klab~cd | h2b(vvvv) | klef~ac >
+                        hmatel = h2b_vvvv(d,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(d,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (d==e) hmatel1 = hmatel1 + h1b_vv(b,f) 
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (5,6,1,4) !!!
+                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nua-2/), (/-2,nua/), noa, noa, nua, nua)
+                  call sort4(r4b_excits, r4b_amps, loc_arr, idx_table, (/5,6,1,4/), noa, noa, nua, nua, nloc, n4abaa, resid)
+                  do idet = 1,n4abaa
+                     a = r4b_excits(idet,1); b = r4b_excits(idet,2); c = r4b_excits(idet,3); d = r4b_excits(idet,4)
+                     k = r4b_excits(idet,5); l = r4b_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(k,l,a,d)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4b_excits(jdet,3); f = r4b_excits(jdet,2);
+                        ! compute < klab~cd | h2b(vvvv) | klaf~ed >
+                        hmatel = h2b_vvvv(c,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klaf~ed > = delta(c,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (c==e) hmatel1 = hmatel1 + h1b_vv(b,f) 
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     ! (ac)
+                     idx = idx_table(k,l,c,d)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4b_excits(jdet,3); f = r4b_excits(jdet,2);
+                        ! compute < klab~cd | h2b(vvvv) | klcf~ed >
+                        hmatel = -h2b_vvvv(a,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klaf~ed > = delta(a,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (a==e) hmatel1 = hmatel1 - h1b_vv(b,f) 
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(k,l,a,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4b_excits(jdet,3); f = r4b_excits(jdet,2);
+                        ! compute < klab~cd | h2b(vvvv) | klaf~ec >
+                        hmatel = -h2b_vvvv(d,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klaf~ed > = delta(d,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (d==e) hmatel1 = hmatel1 - h1b_vv(b,f) 
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (5,6,1,3) !!!
+                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nua-2/), (/-1,nua-1/), noa, noa, nua, nua)
+                  call sort4(r4b_excits, r4b_amps, loc_arr, idx_table, (/5,6,1,3/), noa, noa, nua, nua, nloc, n4abaa, resid)
+                  do idet = 1,n4abaa
+                     a = r4b_excits(idet,1); b = r4b_excits(idet,2); c = r4b_excits(idet,3); d = r4b_excits(idet,4)
+                     k = r4b_excits(idet,5); l = r4b_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(k,l,a,c)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4b_excits(jdet,4); f = r4b_excits(jdet,2);
+                        ! compute < klab~cd | h2b(vvvv) | klaf~ce >
+                        hmatel = h2b_vvvv(d,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klaf~ce > = delta(d,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (d==e) hmatel1 = hmatel1 + h1b_vv(b,f) 
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     ! (ad), -
+                     idx = idx_table(k,l,c,d)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4b_excits(jdet,4); f = r4b_excits(jdet,2);
+                        ! compute < klab~cd | h2b(vvvv) | klaf~ce >
+                        hmatel = h2b_vvvv(a,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klaf~ce > = delta(a,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (a==e) hmatel1 = hmatel1 + h1b_vv(b,f) 
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(k,l,a,d)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4b_excits(jdet,4); f = r4b_excits(jdet,2);
+                        ! compute < klab~cd | h2b(vvvv) | klaf~ce >
+                        hmatel = -h2b_vvvv(c,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klaf~ce > = delta(c,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (c==e) hmatel1 = hmatel1 - h1b_vv(b,f) 
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+
+                  !!! diagram 5: h2a(mnkl) * r4b(ab~cdmn)
+                  ! allocate new sorting arrays
+                  nloc = nua*(nua-1)*(nua-2)/6 * nub 
+                  allocate(loc_arr(2,nloc))
+                  allocate(idx_table(nua,nua,nua,nub))
+                  !!! SB: (1,3,4,2) !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/1,nub/), nua, nua, nua, nub)
+                  call sort4(r4b_excits, r4b_amps, loc_arr, idx_table, (/1,3,4,2/), nua, nua, nua, nub, nloc, n4abaa, resid)
+                  do idet = 1,n4abaa
+                     a = r4b_excits(idet,1); b = r4b_excits(idet,2); c = r4b_excits(idet,3); d = r4b_excits(idet,4)
+                     k = r4b_excits(idet,5); l = r4b_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(a,c,d,b)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        m = r4b_excits(jdet,5); n = r4b_excits(jdet,6);
+                        ! compute < klab~cd | h2a(oooo) | mnab~cd >
+                        hmatel = h2a_oooo(m,n,k,l)
+                        ! compute < klab~cd | h1a(oo) | mnab~cd > = A(kl)A(mn) -delta(m,k) * h1a_oo(n,l)
+                        hmatel1 = 0.0d0
+                        if (m==k) hmatel1 = hmatel1  - h1a_oo(n,l) ! (1) 
+                        if (m==l) hmatel1 = hmatel1  + h1a_oo(n,k) ! (kl) 
+                        if (n==k) hmatel1 = hmatel1  + h1a_oo(m,l) ! (mn) 
+                        if (n==l) hmatel1 = hmatel1  - h1a_oo(m,k) ! (kl)(mn) 
+                        hmatel = hmatel + hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                  end do
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+
+                  !!! diagram 6: A(d/ac)A(kl) h2a(dmle) * r4b(abcekm)
+                  ! allocate new sorting arrays
+                  nloc = (nua-1)*(nua-2)/2 * (noa-1) * nub 
+                  allocate(loc_arr(2,nloc))
+                  allocate(idx_table(nua,nua,noa,nub))
+                  !!! SB: (1,3,5,2) !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-1/), (/1,nub/), nua, nua, noa, nub)
+                  call sort4(r4b_excits, r4b_amps, loc_arr, idx_table, (/1,3,5,2/), nua, nua, noa, nub, nloc, n4abaa, resid)
+                  do idet = 1,n4abaa
+                     a = r4b_excits(idet,1); b = r4b_excits(idet,2); c = r4b_excits(idet,3); d = r4b_excits(idet,4)
+                     k = r4b_excits(idet,5); l = r4b_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(a,c,k,b)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4b_excits(jdet,4); n = r4b_excits(jdet,6);
+                        ! compute < klab~cd | h2a(voov) | knab~cf >
+                        hmatel = h2a_voov(d,n,l,f)
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     ! (ad), -
+                     idx = idx_table(c,d,k,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4b_excits(jdet,4); n = r4b_excits(jdet,6);
+                        ! compute < klab~cd | h2a(voov) | kndb~cf >
+                        hmatel = h2a_voov(a,n,l,f)
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(a,d,k,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4b_excits(jdet,4); n = r4b_excits(jdet,6);
+                        ! compute < klab~cd | h2a(voov) | knab~df >
+                        hmatel = -h2a_voov(c,n,l,f)
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     end if
+                     ! (kl)
+                     idx = idx_table(a,c,l,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4b_excits(jdet,4); n = r4b_excits(jdet,6);
+                        ! compute < klab~cd | h2a(voov) | lnab~cf >
+                        hmatel = -h2a_voov(d,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     end if
+                     ! (ad)(kl), -
+                     idx = idx_table(c,d,l,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4b_excits(jdet,4); n = r4b_excits(jdet,6);
+                        ! compute < klab~cd | h2a(voov) | lndb~cf >
+                        hmatel = -h2a_voov(a,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)(kl)
+                     idx = idx_table(a,d,l,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4b_excits(jdet,4); n = r4b_excits(jdet,6);
+                        ! compute < klab~cd | h2a(voov) | lnab~df >
+                        hmatel = h2a_voov(c,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * r4b_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (1,4,5,2) !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-1/), (/1,nub/), nua, nua, noa, nub)
+                  call sort4(r4b_excits, r4b_amps, loc_arr, idx_table, (/1,4,5,2/), nua, nua, noa, nub, nloc, n4abaa, resid)
+                  !!! SB: (3,4,5,2) !!!
+                  call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-1/), (/1,nub/), nua, nua, noa, nub)
+                  call sort4(r4b_excits, r4b_amps, loc_arr, idx_table, (/3,4,5,2/), nua, nua, noa, nub, nloc, n4abaa, resid)
+                  !!! SB: (1,3,6,2) !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa/), (/1,nub/), nua, nua, noa, nub)
+                  call sort4(r4b_excits, r4b_amps, loc_arr, idx_table, (/1,3,6,2/), nua, nua, noa, nub, nloc, n4abaa, resid)
+                  !!! SB: (1,4,6,2) !!!
+                  call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa/), (/1,nub/), nua, nua, noa, nub)
+                  call sort4(r4b_excits, r4b_amps, loc_arr, idx_table, (/1,4,6,2/), nua, nua, noa, nub, nloc, n4abaa, resid)
+                  !!! SB: (3,4,6,2) !!!
+                  call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa/), (/1,nub/), nua, nua, noa, nub)
+                  call sort4(r4b_excits, r4b_amps, loc_arr, idx_table, (/3,4,6,2/), nua, nua, noa, nub, nloc, n4abaa, resid)
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   
