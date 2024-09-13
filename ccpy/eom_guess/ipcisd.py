@@ -35,8 +35,7 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
         # Compute the S2 matrix in the same projection subspace
         S2mat = build_s2matrix(system, nacto, nactu, idx_a, idx_aa, idx_ab)
         # Project H onto the spin subspace with the specified multiplicity
-        omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=debug)
-
+        omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=True)
         nroot = min(nroot, V_act.shape[1])
         kout = 0
         for i in range(len(omega)):
@@ -47,8 +46,26 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
             kout += 1
             if kout == nroot:
                 break
-
+        # omega, V_act = np.linalg.eig(Hmat)
+        # idx = np.argsort(omega)
+        # omega = omega[idx]
+        # V_act = V_act[:, idx]
+        #
+        # nroot = min(nroot, V_act.shape[1])
+        # kout = 0
+        # for i in range(len(omega)):
+        #     if omega[i] == 0.0: continue
+        #     V2, guess_mult = scatter_with_spin(V_act[:, i], nacto, nactu, system)
+        #     print("I AM IN:", omega[i], "GUESS MULT:", guess_mult)
+        #     if guess_mult == multiplicity or multiplicity == -1:
+        #         V[:, n_found] = V2
+        #         omega_guess[n_found] = omega[i]
+        #         n_found += 1
+        #         kout += 1
+        #     if kout == nroot:
+        #         break
         elapsed_time = time.time() - t1
+
         print("   -----------------------------------")
         print("   Target symmetry irrep = ", irrep, f"({system.point_group})")
         print("   Dimension of eigenvalue problem = ", ndim_irrep)
@@ -94,6 +111,62 @@ def scatter(V_in, nacto, nactu, system):
                     V_ab_out[i, b, j] = V_in[offset]
                     offset += 1
     return np.hstack((V_a_out.flatten(), V_aa_out.flatten(), V_ab_out.flatten()))
+
+def scatter_with_spin(V_in, nacto, nactu, system):
+    # orbital dimensions
+    noa = system.noccupied_alpha
+    nob = system.noccupied_beta
+    nua = system.nunoccupied_alpha
+    nub = system.nunoccupied_beta
+
+    # set active space parameters
+    nacto_a = min(nacto + (system.multiplicity - 1), noa)
+    nacto_b = min(nacto, nob)
+    nactu_a = min(nactu, nua)
+    nactu_b = min(nactu + (system.multiplicity - 1), nub)
+
+    # allocate full-length output vector
+    V_a_out = np.zeros(noa)
+    V_aa_out = np.zeros((noa, nua, noa))
+    V_ab_out = np.zeros((noa, nub, nob))
+    # amplitude sums for spin assignment
+    sum_aa = 0.0
+    sum_ab = 0.0
+    # Start filling in the array
+    offset = 0
+    for i in range(noa):
+        V_a_out[i] = V_in[offset]
+        offset += 1
+    for i in range(noa):
+        for b in range(nua):
+            for j in range(i + 1, noa):
+                if i >= noa - nacto_a and b < nactu_a and j >= noa - nacto_a:
+                    V_aa_out[i, b, j] = V_in[offset]
+                    V_aa_out[j, b, i] = -V_in[offset]
+                    sum_aa += V_aa_out[i, b, j]
+                    offset += 1
+    for i in range(noa):
+        for b in range(nub):
+            for j in range(nob):
+                if i >= noa - nacto_a and b < nactu_b and j >= nob - nacto_b:
+                    V_ab_out[i, b, j] = V_in[offset]
+                    if i < j:
+                        sum_ab += V_ab_out[i, b, j]
+                    offset += 1
+    # Assign multiplicity in a cheap way
+    guess_mult = -1
+    if np.max(np.abs(V_a_out)) > 1.0e-08: # if there is ANY R1 amplitude, it is a doublet
+        guess_mult = 2
+    else: # either a doublet or quartet
+        print(sum_aa, sum_ab)
+        print("")
+        if abs(sum_aa) - abs(sum_ab) < 1.0e-08: # r2a(i,b,j) + r2b(i,b,j) = 0 for i /= j signifies quartet
+            guess_mult = 4
+        # elif abs(2.0 * sum_ab) - abs(sum_aa) < 1.0e-08: # 2*r2b(i,b,j) - r2a(i,b,j) = 0 for i /= j signifies doublet
+        #     guess_mult = 2
+        else:
+            guess_mult = 2
+    return np.hstack((V_a_out.flatten(), V_aa_out.flatten(), V_ab_out.flatten())), guess_mult
 
 def build_ipcisd_hamiltonian(H, nacto, nactu, idx_a, idx_aa, idx_ab, system):
     # orbital dimensions
@@ -297,7 +370,10 @@ def build_ipcisd_hamiltonian(H, nacto, nactu, idx_a, idx_aa, idx_ab, system):
     )
 
 def get_sz2(system, Ms):
-    Ns = float((system.noccupied_alpha + Ms) - (system.noccupied_beta - Ms))
+    # Ns = float((system.noccupied_alpha + Ms) - (system.noccupied_beta - Ms))
+    # sz = Ns / 2.0
+    # sz2 = (sz + 1.0) * sz
+    Ns = float((system.noccupied_alpha - 1) - (system.noccupied_beta))
     sz = Ns / 2.0
     sz2 = (sz + 1.0) * sz
     return sz2
@@ -316,6 +392,11 @@ def build_s2matrix(system, nacto, nactu, idx_a, idx_aa, idx_ab):
     nactu_a = min(nactu, system.nunoccupied_alpha)
     nactu_b = min(nactu + (system.multiplicity - 1), system.nunoccupied_beta)
 
+    #
+    n1a = noa
+    n2a = int(noa * (noa - 1)/2 * nua)
+    n2b = noa * nob * nub
+
     def chi_beta(p):
         if p >= 0 and p < system.noccupied_beta:
             return 1.0
@@ -328,7 +409,74 @@ def build_s2matrix(system, nacto, nactu, idx_a, idx_aa, idx_ab):
         else:
             return 0.0
 
-    return -1
+    sz2 = get_sz2(system, Ms=0)
+
+    # < i | S2 | j >
+    a_S_a = np.zeros((n1a, n1a))
+    for i in range(noa):
+        idet = idx_a[i]
+        if idet == 0: continue
+        ind1 = abs(idet) - 1
+        for j in range(noa):
+            jdet = idx_a[j]
+            if jdet != 0:
+                ind2 = abs(jdet) - 1
+                # < Ia | S2 | Ja > = Sz*(Sz + 1)
+                a_S_a[ind1, ind2] = 0.75 * (i == j)
+
+    # < i | S2 | jck >
+    a_S_aa = np.zeros((n1a, n2a))
+
+    # < i | S2 | jc~k~ >
+    a_S_ab = np.zeros((n1a, n2b))
+
+    aa_S_aa = np.zeros((n2a, n2a))
+    aa_S_ab = np.zeros((n2a, n2b))
+    for i in range(noa - nacto_a, noa):
+        for j in range(i + 1, noa):
+            for b in range(nacto_a):
+                idet = idx_aa[i, b, j]
+                if idet == 0: continue
+                ind1 = abs(idet) - 1
+                # < ibj | S2 | kdl >
+                aa_S_aa[ind1, ind1] = 0.75
+                # < ibj | S2 | kd~l~ >
+                for k in range(noa - nacto_a, noa):
+                    for l in range(nob - nacto_b, nob):
+                        for d in range(nacto_b):
+                            jdet = idx_ab[i, b, j]
+                            if jdet != 0:
+                                ind2 = abs(jdet) - 1
+                                aa_S_ab[ind1, ind2] = (
+                                                        (j == l) * (b == d) * (i == k)
+                                                        - (i == l) * (b == d) * (j == k)
+                                )
+
+    # < ib~j~ | S2 | kd~l~ >
+    ab_S_ab = np.zeros((n2b, n2b))
+    for i in range(noa - nacto_a, noa):
+        for j in range(nob - nacto_b, nob):
+            for b in range(nacto_b):
+                idet = idx_ab[i, b, j]
+                if idet == 0: continue
+                ind1 = abs(idet) - 1
+
+                ab_S_ab[ind1, ind1] = 0.75
+
+                for k in range(noa - nacto_a, noa):
+                    for l in range(nob - nacto_b, nob):
+                        for d in range(nacto_b):
+                            jdet = idx_ab[i, b, j]
+                            if jdet != 0:
+                                ind2 = abs(jdet) - 1
+                                ab_S_ab[ind1, ind2] = (i == l) * (j == k) * (b == d)
+
+    S2mat = np.concatenate(
+        (np.concatenate((a_S_a, a_S_aa, a_S_ab), axis=1),
+         np.concatenate((a_S_aa.T, aa_S_aa, aa_S_ab), axis=1),
+         np.concatenate((a_S_ab.T, aa_S_ab.T, ab_S_ab), axis=1),
+         ), axis=0)
+    return S2mat
 
 def get_index_arrays(nacto, nactu, system, target_irrep):
 
