@@ -43,7 +43,7 @@ class System:
         self.point_group_irrep_to_number = get_pg_irreps(self.point_group)
         self.point_group_number_to_irrep = {v: k for k, v in self.point_group_irrep_to_number.items()}
         if orbital_symmetries is None:
-            self.orbital_symmetries_all = ["A1"] * norbitals
+            self.orbital_symmetries_all = ["A"] * norbitals
         else:
             self.orbital_symmetries_all = orbital_symmetries
         # MO energies and occupation
