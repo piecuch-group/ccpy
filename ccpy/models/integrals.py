@@ -205,10 +205,10 @@ def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
                     np.einsum("xai,xbe->abie", H.chol_a[:, va, oa], H.chol_a[:, va, va], optimize=True)
                     - np.einsum("xbi,xae->abie", H.chol_a[:, va, oa], H.chol_a[:, va, va], optimize=True)
     ) # h(abie)
-    # H.aa.vvvv = (
-    #                 np.einsum("xae,xbf->abef", H.chol_a[:, va, va], H.chol_a[:, va, va], optimize=True)
-    #                 - np.einsum("xaf,xbe->abef", H.chol_a[:, va, va], H.chol_a[:, va, va], optimize=True)
-    # ) # h(abef)
+    H.aa.vvvv = (
+                    np.einsum("xae,xbf->abef", H.chol_a[:, va, va], H.chol_a[:, va, va], optimize=True)
+                    - np.einsum("xaf,xbe->abef", H.chol_a[:, va, va], H.chol_a[:, va, va], optimize=True)
+    ) # h(abef)
     # ---
     # bb
     # ---
@@ -244,10 +244,10 @@ def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
                     np.einsum("xai,xbe->abie", H.chol_b[:, vb, ob], H.chol_b[:, vb, vb], optimize=True)
                     - np.einsum("xbi,xae->abie", H.chol_b[:, vb, ob], H.chol_b[:, vb, vb], optimize=True)
     ) # h(abie)
-    # H.bb.vvvv = (
-    #                 np.einsum("xae,xbf->abef", H.chol_b[:, vb, vb], H.chol_b[:, vb, vb], optimize=True)
-    #                 - np.einsum("xaf,xbe->abef", H.chol_b[:, vb, vb], H.chol_b[:, vb, vb], optimize=True)
-    # ) # h(abef)
+    H.bb.vvvv = (
+                    np.einsum("xae,xbf->abef", H.chol_b[:, vb, vb], H.chol_b[:, vb, vb], optimize=True)
+                    - np.einsum("xaf,xbe->abef", H.chol_b[:, vb, vb], H.chol_b[:, vb, vb], optimize=True)
+    ) # h(abef)
     # ---
     # ab
     # ---
@@ -296,9 +296,9 @@ def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
     H.ab.vvvo = (
                     np.einsum("xae,xbi->abei", H.chol_a[:, va, va], H.chol_b[:, vb, ob], optimize=True)
     ) # h(abei)
-    # H.ab.vvvv = (
-    #                 np.einsum("xae,xbf->abef", H.chol_a[:, va, va], H.chol_b[:, vb, vb], optimize=True)
-    # ) # h(abef)
+    H.ab.vvvv = (
+                    np.einsum("xae,xbf->abef", H.chol_a[:, va, va], H.chol_b[:, vb, vb], optimize=True)
+    ) # h(abef)
     return H
 
 def build_v(e2int):
