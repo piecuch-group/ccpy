@@ -22,11 +22,14 @@ def test_ccsdpt_f2():
     mf = scf.RHF(mol)
     mf.kernel()
 
+    #driver = Driver.from_pyscf(mf, nfrozen=2)
     driver = Driver.from_pyscf(mf, nfrozen=2, use_cholesky=True, cholesky_tol=1.0e-09)
     driver.system.print_info()
     driver.options["RHF_symmetry"] = False
-    driver.run_cc(method="ccsd")
+    driver.run_cc(method="ccsd_chol")
     driver.run_ccp3(method="ccsd(t)")
+
+    #assert np.allclose(-0.58878044, driver.correlation_energy, atol=1.0e-07)
 
     # Check reference energy
     assert np.allclose(driver.system.reference_energy, -198.48327030, atol=1.0e-07)

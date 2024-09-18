@@ -76,8 +76,11 @@ class SortedIntegral:
                 self.slices.append(''.join(attr))
 
 class Integral:
-    def __init__(self, system, order, matrices, sorted=True, use_none=False):
+    def __init__(self, system, order, matrices, sorted=True, use_none=False, chol_a=None, chol_b=None):
         self.order = order
+        # set alpha and beta Cholesky vectors
+        self.chol_a = chol_a
+        self.chol_b = chol_b
         for i in range(1, order + 1):  # Loop over many-body ranks
             for j in range(i + 1):  # Loop over distinct spin cases per rank
                 name = get_operator_name(i, j)
@@ -140,29 +143,163 @@ def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
     nua = system.nunoccupied_alpha
     nub = system.nunoccupied_beta
 
-    oa = slice(system.nfrozen, system.nfrozen + noa)
-    ob = slice(system.nfrozen, system.nfrozen + nob)
-    va = slice(system.nfrozen + noa, system.nfrozen + system.norbitals)
-    vb = slice(system.nfrozen + nob, system.nfrozen + system.norbitals)
+    corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
+    oa = slice(noa)
+    ob = slice(nob)
+    va = slice(noa, noa + nua)
+    vb = slice(nob, nob + nub)
 
-    H = Integral.from_none(system, 2)
-    #H.a.oo =
+    if normal_ordered:
+        onebody = build_f_chol(e1int, R_chol, system)
+    else:
+        onebody = {"a": e1int, "b": e1int}
+    # Keep only correlated spatial orbitals in the one- and two-body matrices
+    onebody["a"] = onebody["a"][corr_slice, corr_slice]
+    onebody["b"] = onebody["b"][corr_slice, corr_slice]
 
-    # corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
-    #
-    # twobody = build_v(e2int)
-    # if normal_ordered:
-    #     onebody = build_f(e1int, twobody, system)
-    # else:
-    #     onebody = {"a": e1int, "b": e1int}
-    # # Keep only correlated spatial orbitals in the one- and two-body matrices
-    # onebody["a"] = onebody["a"][corr_slice, corr_slice]
-    # onebody["b"] = onebody["b"][corr_slice, corr_slice]
-    # twobody["aa"] = twobody["aa"][corr_slice, corr_slice, corr_slice, corr_slice]
-    # twobody["ab"] = twobody["ab"][corr_slice, corr_slice, corr_slice, corr_slice]
-    # twobody["bb"] = twobody["bb"][corr_slice, corr_slice, corr_slice, corr_slice]
-    #
-    # return Integral(system, 2, {**onebody, **twobody}, sorted=sorted)
+    H = Integral.from_empty(system, 2, data_type=np.float64, use_none=True)
+    H.chol_a = R_chol[:, corr_slice, corr_slice]
+    H.chol_b = R_chol[:, corr_slice, corr_slice]
+    # a
+    H.a.oo = onebody["a"][oa, oa]
+    H.a.vv = onebody["a"][va, va]
+    H.a.ov = onebody["a"][oa, va]
+    H.a.vo = onebody["a"][va, oa]
+    # b
+    H.b.oo = onebody["b"][ob, ob]
+    H.b.vv = onebody["b"][vb, vb]
+    H.b.ov = onebody["b"][ob, vb]
+    H.b.vo = onebody["b"][vb, ob]
+    # ---
+    # aa
+    # ---
+    H.aa.oooo = (
+                    np.einsum("xmi,xnj->mnij", H.chol_a[:, oa, oa], H.chol_a[:, oa, oa], optimize=True)
+                    - np.einsum("xmj,xni->mnij", H.chol_a[:, oa, oa], H.chol_a[:, oa, oa], optimize=True)
+    ) # h(mnij)
+    H.aa.ooov = (
+                    np.einsum("xmi,xne->mnie", H.chol_a[:, oa, oa], H.chol_a[:, oa, va], optimize=True)
+                    - np.einsum("xni,xme->mnie", H.chol_a[:, oa, oa], H.chol_a[:, oa, va], optimize=True)
+    ) # h(mnie)
+    H.aa.vooo = (
+                    np.einsum("xai,xmj->amij", H.chol_a[:, va, oa], H.chol_a[:, oa, oa], optimize=True)
+                    - np.einsum("xaj,xmi->amij", H.chol_a[:, va, oa], H.chol_a[:, oa, oa], optimize=True)
+    ) # h(amij)
+    H.aa.voov = (
+                    np.einsum("xai,xme->amie", H.chol_a[:, va, oa], H.chol_a[:, oa, va], optimize=True)
+                    - np.einsum("xae,xmi->amie", H.chol_a[:, va, va], H.chol_a[:, oa, oa], optimize=True)
+    ) # h(amie)
+    H.aa.oovv = (
+                    np.einsum("xme,xnf->mnef", H.chol_a[:, oa, va], H.chol_a[:, oa, va], optimize=True)
+                    - np.einsum("xmf,xne->mnef", H.chol_a[:, oa, va], H.chol_a[:, oa, va], optimize=True)
+    ) # h(mnef)
+    H.aa.vvoo = (
+                    np.einsum("xai,xbj->abij", H.chol_a[:, va, oa], H.chol_a[:, va, oa], optimize=True)
+                    - np.einsum("xaj,xbi->abij", H.chol_a[:, va, oa], H.chol_a[:, va, oa], optimize=True)
+    ) # h(abij)
+    H.aa.vovv = (
+                    np.einsum("xae,xmf->amef", H.chol_a[:, va, va], H.chol_a[:, oa, va], optimize=True)
+                    - np.einsum("xaf,xme->amef", H.chol_a[:, va, va], H.chol_a[:, oa, va], optimize=True)
+    ) # h(amef)
+    H.aa.vvov = (
+                    np.einsum("xai,xbe->abie", H.chol_a[:, va, oa], H.chol_a[:, va, va], optimize=True)
+                    - np.einsum("xbi,xae->abie", H.chol_a[:, va, oa], H.chol_a[:, va, va], optimize=True)
+    ) # h(abie)
+    # H.aa.vvvv = (
+    #                 np.einsum("xae,xbf->abef", H.chol_a[:, va, va], H.chol_a[:, va, va], optimize=True)
+    #                 - np.einsum("xaf,xbe->abef", H.chol_a[:, va, va], H.chol_a[:, va, va], optimize=True)
+    # ) # h(abef)
+    # ---
+    # bb
+    # ---
+    H.bb.oooo = (
+                    np.einsum("xmi,xnj->mnij", H.chol_b[:, ob, ob], H.chol_b[:, ob, ob], optimize=True)
+                    - np.einsum("xmj,xni->mnij", H.chol_b[:, ob, ob], H.chol_b[:, ob, ob], optimize=True)
+    ) # h(mnij)
+    H.bb.ooov = (
+                    np.einsum("xmi,xne->mnie", H.chol_b[:, ob, ob], H.chol_b[:, ob, vb], optimize=True)
+                    - np.einsum("xni,xme->mnie", H.chol_b[:, ob, ob], H.chol_b[:, ob, vb], optimize=True)
+    ) # h(mnie)
+    H.bb.vooo = (
+                    np.einsum("xai,xmj->amij", H.chol_b[:, vb, ob], H.chol_b[:, ob, ob], optimize=True)
+                    - np.einsum("xaj,xmi->amij", H.chol_b[:, vb, ob], H.chol_b[:, ob, ob], optimize=True)
+    ) # h(amij)
+    H.bb.voov = (
+                    np.einsum("xai,xme->amie", H.chol_b[:, vb, ob], H.chol_b[:, ob, vb], optimize=True)
+                    - np.einsum("xae,xmi->amie", H.chol_b[:, vb, vb], H.chol_b[:, ob, ob], optimize=True)
+    ) # h(amie)
+    H.bb.oovv = (
+                    np.einsum("xme,xnf->mnef", H.chol_b[:, ob, vb], H.chol_b[:, ob, vb], optimize=True)
+                    - np.einsum("xmf,xne->mnef", H.chol_b[:, ob, vb], H.chol_b[:, ob, vb], optimize=True)
+    ) # h(mnef)
+    H.bb.vvoo = (
+                    np.einsum("xai,xbj->abij", H.chol_b[:, vb, ob], H.chol_b[:, vb, ob], optimize=True)
+                    - np.einsum("xaj,xbi->abij", H.chol_b[:, vb, ob], H.chol_b[:, vb, ob], optimize=True)
+    ) # h(abij)
+    H.bb.vovv = (
+                    np.einsum("xae,xmf->amef", H.chol_b[:, vb, vb], H.chol_b[:, ob, vb], optimize=True)
+                    - np.einsum("xaf,xme->amef", H.chol_b[:, vb, vb], H.chol_b[:, ob, vb], optimize=True)
+    ) # h(amef)
+    H.bb.vvov = (
+                    np.einsum("xai,xbe->abie", H.chol_b[:, vb, ob], H.chol_b[:, vb, vb], optimize=True)
+                    - np.einsum("xbi,xae->abie", H.chol_b[:, vb, ob], H.chol_b[:, vb, vb], optimize=True)
+    ) # h(abie)
+    # H.bb.vvvv = (
+    #                 np.einsum("xae,xbf->abef", H.chol_b[:, vb, vb], H.chol_b[:, vb, vb], optimize=True)
+    #                 - np.einsum("xaf,xbe->abef", H.chol_b[:, vb, vb], H.chol_b[:, vb, vb], optimize=True)
+    # ) # h(abef)
+    # ---
+    # ab
+    # ---
+    H.ab.oooo = (
+                    np.einsum("xmi,xnj->mnij", H.chol_a[:, oa, oa], H.chol_b[:, ob, ob], optimize=True)
+    ) # h(mnij)
+    H.ab.ooov = (
+                    np.einsum("xmi,xne->mnie", H.chol_a[:, oa, oa], H.chol_b[:, ob, vb], optimize=True)
+    ) # h(mnie)
+    H.ab.oovo = (
+                    np.einsum("xme,xni->mnei", H.chol_a[:, oa, va], H.chol_b[:, ob, ob], optimize=True)
+    ) # h(mnei)
+    H.ab.vooo = (
+                    np.einsum("xai,xmj->amij", H.chol_a[:, va, oa], H.chol_b[:, ob, ob], optimize=True)
+    ) # h(amij)
+    H.ab.ovoo = (
+                    np.einsum("xmj,xai->maji", H.chol_a[:, oa, oa], H.chol_b[:, vb, ob], optimize=True)
+    ) # h(maji)
+    H.ab.voov = (
+                    np.einsum("xai,xme->amie", H.chol_a[:, va, oa], H.chol_b[:, ob, vb], optimize=True)
+    ) # h(amie)
+    H.ab.ovvo = (
+                    np.einsum("xme,xai->maei", H.chol_a[:, oa, va], H.chol_b[:, vb, ob], optimize=True)
+    ) # h(maei)
+    H.ab.vovo = (
+                    np.einsum("xae,xmi->amei", H.chol_a[:, va, va], H.chol_b[:, ob, ob], optimize=True)
+    ) # h(amei)
+    H.ab.ovov = (
+                    np.einsum("xmj,xbe->mbje", H.chol_a[:, oa, oa], H.chol_b[:, vb, vb], optimize=True)
+    ) # h(mbje)
+    H.ab.oovv = (
+                    np.einsum("xme,xnf->mnef", H.chol_a[:, oa, va], H.chol_b[:, ob, vb], optimize=True)
+    ) # h(mnef)
+    H.ab.vvoo = (
+                    np.einsum("xai,xbj->abij", H.chol_a[:, va, oa], H.chol_b[:, vb, ob], optimize=True)
+    ) # h(abij)
+    H.ab.vovv = (
+                    np.einsum("xae,xmf->amef", H.chol_a[:, va, va], H.chol_b[:, ob, vb], optimize=True)
+    ) # h(amef)
+    H.ab.ovvv = (
+                    np.einsum("xmf,xae->mafe", H.chol_a[:, oa, va], H.chol_b[:, vb, vb], optimize=True)
+    ) # h(mafe)
+    H.ab.vvov = (
+                    np.einsum("xai,xbe->abie", H.chol_a[:, va, oa], H.chol_b[:, vb, vb], optimize=True)
+    ) # h(abie)
+    H.ab.vvvo = (
+                    np.einsum("xae,xbi->abei", H.chol_a[:, va, va], H.chol_b[:, vb, ob], optimize=True)
+    ) # h(abei)
+    # H.ab.vvvv = (
+    #                 np.einsum("xae,xbf->abef", H.chol_a[:, va, va], H.chol_b[:, vb, vb], optimize=True)
+    # ) # h(abef)
+    return H
 
 def build_v(e2int):
     """Generate the antisymmetrized version of the twobody matrix.
@@ -245,23 +382,19 @@ def build_f_chol(e1int, R_chol, system):
     f : dict
         Dictionary containing the Fock matrices for the aa and bb cases
     """
-    Nocc_a = system.noccupied_alpha + system.nfrozen
-    Nocc_b = system.noccupied_beta + system.nfrozen
+    noa = system.noccupied_alpha + system.nfrozen
+    nob = system.noccupied_beta + system.nfrozen
 
     # <p|f|q> = <p|z|q> + <pi|v|qi> + <pi~|v|qi~>
-    # f_a = (
-    #     e1int
-    #     + np.einsum("piqi->pq", v["aa"][:, :Nocc_a, :, :Nocc_a])
-    #     + np.einsum("piqi->pq", v["ab"][:, :Nocc_b, :, :Nocc_b])
-    # )
-    #
-    # # <p~|f|q~> = <p~|z|q~> + <p~i~|v|q~i~> + <ip~|v|iq~>
-    # f_b = (
-    #     e1int
-    #     + np.einsum("piqi->pq", v["bb"][:, :Nocc_b, :, :Nocc_b])
-    #     + np.einsum("ipiq->pq", v["ab"][:Nocc_a, :, :Nocc_a, :])
-    # )
-
+    f_a = e1int + (
+        np.einsum("xpq,xii->pq", R_chol, R_chol[:, :noa, :noa], optimize=True) # <pi|v|qi>
+        - np.einsum("xpi,xiq->pq", R_chol[:, :, :noa], R_chol[:, :noa, :], optimize=True) # <pi|v|iq>
+        + np.einsum("xpq,xii->pq", R_chol, R_chol[:, :nob, :nob], optimize=True) # <pi~|v|qi~>
+    )
+    f_b = e1int + (
+        np.einsum("xpq,xii->pq", R_chol, R_chol[:, :nob, :nob], optimize=True)  # <p~i~|v|q~i~>
+        - np.einsum("xpi,xiq->pq", R_chol[:, :, :nob], R_chol[:, :nob, :], optimize=True)  # <p~i~|v|i~q~>
+        + np.einsum("xii,xpq->pq", R_chol[:, :noa, :noa], R_chol, optimize=True)  # <ip~|v|iq~>
+    )
     f = {"a": f_a, "b": f_b}
-
     return f

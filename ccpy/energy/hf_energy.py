@@ -127,3 +127,26 @@ def calc_khf_energy(e1int, e2int, system):
     Escf = e1a + e1b + e2a + e2b + e2c
 
     return np.real(Escf) / system.nkpts
+
+def calc_hf_energy_chol(e1int, R_chol, system):
+    oa = slice(0, system.nfrozen + system.noccupied_alpha)
+    ob = slice(0, system.nfrozen + system.noccupied_beta)
+
+    g_aa_oooo = (
+                    np.einsum("xmi,xnj->mnij", R_chol[:, oa, oa], R_chol[:, oa, oa], optimize=True)
+                    - np.einsum("xmj,xni->mnij", R_chol[:, oa, oa], R_chol[:, oa, oa], optimize=True)
+    )
+    g_ab_oooo = (
+                    np.einsum("xmi,xnj->mnij", R_chol[:, oa, oa], R_chol[:, ob, ob], optimize=True)
+    )
+    g_bb_oooo = (
+                    np.einsum("xmi,xnj->mnij", R_chol[:, ob, ob], R_chol[:, ob, ob], optimize=True)
+                    - np.einsum("xmj,xni->mnij", R_chol[:, ob, ob], R_chol[:, ob, ob], optimize=True)
+    )
+    e1a = np.einsum("ii->", e1int[oa, oa])
+    e1b = np.einsum("ii->", e1int[ob, ob])
+    e2a = 0.5 * np.einsum("ijij->", g_aa_oooo)
+    e2b = 1.0 * np.einsum("ijij->", g_ab_oooo)
+    e2c = 0.5 * np.einsum("ijij->", g_bb_oooo)
+    E_scf = e1a + e1b + e2a + e2b + e2c
+    return E_scf
