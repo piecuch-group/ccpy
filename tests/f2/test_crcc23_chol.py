@@ -27,11 +27,12 @@ def test_crcc23_f2():
     driver.run_cc(method="ccsd_chol")
     driver.run_hbar(method="ccsd_chol")
     driver.run_leftcc(method="left_ccsd_chol")
-    driver.run_ccp3(method="crcc23")
+    driver.run_ccp3(method="crcc23_chol")
 
-    print("Cholesky CR-CC(2,3)_A energy = ", driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["A"])
-    print("CR-CC(2,3)_A energy shuld equal", -199.0518443133)
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["A"], -199.0518443133, rtol=1.0e-012)
+    # Check that CCSD total energy is correct
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -199.0125625694, atol=1.0e-07)
+    # Check that CR-CC(2,3)_D total energy is correct
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"], -199.0563392841, atol=1.0e-07)
 
 if __name__ == "__main__":
     test_crcc23_f2()

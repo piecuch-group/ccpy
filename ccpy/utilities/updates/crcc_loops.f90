@@ -19,7 +19,8 @@ module crcc_loops
                         H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
                         H2A_voov(1:nua,1:noa,1:noa,1:nua),&
                         H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
-                        H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                        !H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                        H2A_vvvv(1:nua,1:nua),&
                         D3A_O(1:nua,1:noa,1:noa),&
                         D3A_V(1:nua,1:noa,1:nua),&
                         H2A_vooo(nua,noa,noa,noa),I2A_vvov(nua,nua,noa,nua),t2a(nua,nua,noa,noa),&
@@ -113,7 +114,8 @@ module crcc_loops
                                                 -H2A_voov(a,j,j,a) - H2A_voov(b,j,j,b) - H2A_voov(c,j,j,c)&
                                                 -H2A_voov(a,k,k,a) - H2A_voov(b,k,k,b) - H2A_voov(c,k,k,c)&
                                                 -H2A_oooo(j,i,j,i) - H2A_oooo(k,i,k,i) - H2A_oooo(k,j,k,j)&
-                                                -H2A_vvvv(b,a,b,a) - H2A_vvvv(c,a,c,a) - H2A_vvvv(c,b,c,b)
+                                                -H2A_vvvv(b,a) - H2A_vvvv(c,a) - H2A_vvvv(c,b)
+                                                !-H2A_vvvv(b,a,b,a) - H2A_vvvv(c,a,c,a) - H2A_vvvv(c,b,c,b)
 
                                                 deltaC = deltaC + LM/D
 
@@ -173,11 +175,13 @@ module crcc_loops
                         H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
                         H2A_voov(1:nua,1:noa,1:noa,1:nua),&
                         H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
-                        H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                        !H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                        H2A_vvvv(1:nua,1:nua),&
                         H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
                         H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
                         H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
-                        H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        !H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        H2B_vvvv(1:nua,1:nub),&
                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                         D3A_O(1:nua,1:noa,1:noa),&
                         D3A_V(1:nua,1:noa,1:nua),&
@@ -290,7 +294,8 @@ module crcc_loops
                                                 -H2A_voov(a,j,j,a)-H2A_voov(b,j,j,b)+H2B_ovov(j,c,j,c)&
                                                 +H2B_vovo(a,k,a,k)+H2B_vovo(b,k,b,k)-H2C_voov(c,k,k,c)&
                                                 -H2A_oooo(j,i,j,i)-H2B_oooo(i,k,i,k)-H2B_oooo(j,k,j,k)&
-                                                -H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
+                                                -H2A_vvvv(b,a) - H2B_vvvv(a,c) - H2B_vvvv(b,c)
+                                                !-H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
      
                                                 deltaC = deltaC + LM/D
 
@@ -352,10 +357,12 @@ module crcc_loops
                         H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
                         H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
                         H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
-                        H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        !H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        H2B_vvvv(1:nua,1:nub),&
                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                         H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
-                        H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        !H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        H2C_vvvv(1:nub,1:nub),&
                         D3B_O(1:nua,1:noa,1:nob),&
                         D3B_V(1:nua,1:noa,1:nub),&
                         D3C_O(1:nub,1:noa,1:nob),&
@@ -475,7 +482,8 @@ module crcc_loops
                                                 +H2B_vovo(a,j,a,j)-H2C_voov(b,j,j,b)-H2C_voov(c,j,j,c)&
                                                 +H2B_vovo(a,k,a,k)-H2C_voov(b,k,k,b)-H2C_voov(c,k,k,c)&
                                                 -H2B_oooo(i,j,i,j)-H2B_oooo(i,k,i,k)-H2C_oooo(k,j,k,j)&
-                                                -H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
+                                                -H2B_vvvv(a,b)-H2B_vvvv(a,c)-H2C_vvvv(c,b)
+                                                !-H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
      
                                                 deltaC = deltaC + LM/D
                                                 D = D &
@@ -510,7 +518,8 @@ module crcc_loops
                         H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                         H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
-                        H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        !H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        H2C_vvvv(1:nub,1:nub),&
                         D3D_O(1:nub,1:nob,1:nob),&
                         D3D_V(1:nub,1:nob,1:nub),&
                         H2C_vooo(nub,nob,nob,nob),I2C_vvov(nub,nub,nob,nub),t2c(nub,nub,nob,nob),&
@@ -604,7 +613,8 @@ module crcc_loops
                                                 -H2C_voov(a,j,j,a) - H2C_voov(b,j,j,b) - H2C_voov(c,j,j,c)&
                                                 -H2C_voov(a,k,k,a) - H2C_voov(b,k,k,b) - H2C_voov(c,k,k,c)&
                                                 -H2C_oooo(j,i,j,i) - H2C_oooo(k,i,k,i) - H2C_oooo(k,j,k,j)&
-                                                -H2C_vvvv(b,a,b,a) - H2C_vvvv(c,a,c,a) - H2C_vvvv(c,b,c,b)
+                                                -H2C_vvvv(b,a) - H2C_vvvv(c,a) - H2C_vvvv(c,b)
+                                                !-H2C_vvvv(b,a,b,a) - H2C_vvvv(c,a,c,a) - H2C_vvvv(c,b,c,b)
 
                                                 deltaC = deltaC + LM/D
 

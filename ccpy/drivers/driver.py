@@ -1926,6 +1926,22 @@ class Driver:
                     _, self.deltap3[i], self.ddeltap3[i] = calc_creomcc23(self.T, self.R[i], self.L[i], self.r0[i],
                                                                           self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                           self.system, self.options["RHF_symmetry"])
+
+        elif method.lower() == "crcc23_chol":
+            from ccpy.moments.crcc23_chol import calc_crcc23
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            for i in state_index:
+                # Perform ground-state correction
+                if i == 0:
+                    _, self.deltap3[i] = calc_crcc23(self.T, self.L[i], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+                else:
+                    pass
+                    # # Perform excited-state corrections
+                    # _, self.deltap3[i], self.ddeltap3[i] = calc_creomcc23(self.T, self.R[i], self.L[i], self.r0[i],
+                    #                                                       self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                    #                                                       self.system, self.options["RHF_symmetry"])
+
         elif method.lower() == "ccsd(t)":
             from ccpy.moments.crcc23 import calc_ccsdpt
             # Ensure that only the bare Hamiltonian is used
