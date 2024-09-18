@@ -10,7 +10,7 @@ References:
 """
 import numpy as np
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
-from ccpy.utilities.updates import cc_loops2
+from ccpy.utilities.updates import cc_loops2, vvvv_contraction
 
 def update(T, dT, H, X, shift, flag_RHF, system):
 
@@ -109,10 +109,11 @@ def update_t2a(T, dT, H, H0, shift):
 
     # dT.aa += 0.25 * np.einsum("abef,efij->abij", H0.aa.vvvv, tau, optimize=True)
     for a in range(nua):
-        for b in range(a + 1, nua):
-            # <ab|ef> = <x|ae><x|bf>
-            v_ef = np.einsum("xe,xf->ef", H0.chol_a[:, a + noa, va], H0.chol_a[:, b + noa, va], optimize=True)
-            dT.aa[a, b, :, :] += 0.5 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), tau, optimize=True)
+       for b in range(a + 1, nua):
+           # <ab|ef> = <x|ae><x|bf>
+           v_ef = np.einsum("xe,xf->ef", H0.chol_a[:, a + noa, va], H0.chol_a[:, b + noa, va], optimize=True)
+           dT.aa[a, b, :, :] += 0.5 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), tau, optimize=True)
+    # dT.aa = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(dT.aa, H0.chol_a, tau)
 
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
         T.aa, dT.aa + 0.25 * H0.aa.vvoo, H0.a.oo, H0.a.vv, shift
@@ -163,9 +164,11 @@ def update_t2b(T, dT, H, H0, shift):
     dT.ab += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
 
     # dT.ab += np.einsum("abef,efij->abij", H0.ab.vvvv, tau, optimize=True)
+    # the one-loop Python is faster than the two-loop Fortran
     for a in range(nua):
         v_bef = np.einsum("xe,xbf->bef", H0.chol_a[:, a + noa, va], H0.chol_b[:, vb, vb], optimize=True)
         dT.ab[a, :, :, :] += np.einsum("bef,efij->bij", v_bef, tau, optimize=True)
+    # dT.ab = vvvv_contraction.vvvv_contraction.vvvv_t2(dT.ab, H0.chol_a, H0.chol_b, tau)
 
     T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
         T.ab, dT.ab + H0.ab.vvoo, H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv, shift
@@ -202,10 +205,11 @@ def update_t2c(T, dT, H, H0, shift):
 
     # dT.bb += 0.25 * np.einsum("abef,efij->abij", H0.bb.vvvv, tau, optimize=True)
     for a in range(nub):
-        for b in range(a + 1, nub):
-            # <ab|ef> = <x|ae><x|bf>
-            v_ef = np.einsum("xe,xf->ef", H0.chol_b[:, a + nob, vb], H0.chol_b[:, b + nob, vb], optimize=True)
-            dT.bb[a, b, :, :] += 0.5 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), tau, optimize=True)
+       for b in range(a + 1, nub):
+           # <ab|ef> = <x|ae><x|bf>
+           v_ef = np.einsum("xe,xf->ef", H0.chol_b[:, a + nob, vb], H0.chol_b[:, b + nob, vb], optimize=True)
+           dT.bb[a, b, :, :] += 0.5 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), tau, optimize=True)
+    # dT.bb = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(dT.bb, H0.chol_b, tau)
 
     T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
         T.bb, dT.bb + 0.25 * H0.bb.vvoo, H0.b.oo, H0.b.vv, shift
