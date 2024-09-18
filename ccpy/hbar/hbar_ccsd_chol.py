@@ -103,27 +103,27 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
     H.bb.ooov = I2C_ooov + 0.5 * Q1
 
     #x1 = time.time()
-    #H.aa.vvvv = (
+    # H.aa.vvvv = (
     #        0.5 * H0.aa.vvvv
     #        + 0.25 * np.einsum("mnef,abmn->abef", H0.aa.oovv, tau_aa, optimize=True)
     #        - np.einsum("amef,bm->abef", H0.aa.vovv, T.a, optimize=True)
-    #)
-    #H.aa.vvvv -= np.transpose(H.aa.vvvv, (1, 0, 2, 3))
-    #if RHF_symmetry:
+    # )
+    # H.aa.vvvv -= np.transpose(H.aa.vvvv, (1, 0, 2, 3))
+    # if RHF_symmetry:
     #    H.bb.vvvv = H.aa.vvvv
-    #else:
+    # else:
     #    H.bb.vvvv = (
     #            0.5 * H0.bb.vvvv
     #            + 0.25 * np.einsum("mnef,abmn->abef", H0.bb.oovv, tau_bb, optimize=True)
     #            - np.einsum("amef,bm->abef", H0.bb.vovv, T.b, optimize=True)
     #    )
     #    H.bb.vvvv -= np.transpose(H.bb.vvvv, (1, 0, 2, 3))
-    #H.ab.vvvv = (
+    # H.ab.vvvv = (
     #        H0.ab.vvvv
     #        - np.einsum("mbef,am->abef", H0.ab.ovvv, T.a, optimize=True)
     #        - np.einsum("amef,bm->abef", H0.ab.vovv, T.b, optimize=True)
     #        + np.einsum("mnef,abmn->abef", H0.ab.oovv, tau_ab, optimize=True)
-    #)
+    # )
     #x2 = time.time()
     #print("vvvv:", x2 - x1)
 
@@ -271,7 +271,7 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
         for b in range(a + 1, nua):
             batch_ints = np.einsum("xe,xf->ef", H0.chol_a[:, a + noa, va], H0.chol_a[:, b + noa, va], optimize=True)
             batch_ints -= batch_ints.T
-            H.aa.vvov[a, b, :, :] += 0.5 * np.einsum("fe,fi->ie", batch_ints, T.a, optimize=True)
+            H.aa.vvov[a, b, :, :] += np.einsum("fe,fi->ie", batch_ints, T.a, optimize=True)
     H.aa.vvov -= np.transpose(H.aa.vvov, (1, 0, 2, 3))
     if RHF_symmetry:
         H.bb.vvov = H.aa.vvov
@@ -292,7 +292,7 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
             for b in range(a + 1, nub):
                 batch_ints = np.einsum("xe,xf->ef", H0.chol_b[:, a + nob, vb], H0.chol_b[:, b + nob, vb], optimize=True)
                 batch_ints -= batch_ints.T
-                H.bb.vvov[a, b, :, :] += 0.5 * np.einsum("fe,fi->ie", batch_ints, T.b, optimize=True)
+                H.bb.vvov[a, b, :, :] += np.einsum("fe,fi->ie", batch_ints, T.b, optimize=True)
         H.bb.vvov -= np.transpose(H.bb.vvov, (1, 0, 2, 3))
 
     # need to define x2b_voov and x2b_ovov such that [10] and [18] are not double counted

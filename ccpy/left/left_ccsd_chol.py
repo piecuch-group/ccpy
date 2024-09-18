@@ -143,10 +143,10 @@ def build_LH_2A(L, LH, T, X, H):
     LH.aa -= 0.25 * np.einsum("jine,enab->abij", X.aa.ooov, I2A_vovv, optimize=True)
     # deal with the bare (vvvv) term using Cholesky
     for a in range(nua):
-       for b in range(a + 1, nua):
-           # <ab|ef> = <x|ae><x|bf>
-           v_ef = np.einsum("xe,xf->ef", H.chol_a[:, va, a + noa], H.chol_a[:, va, b + noa], optimize=True)
-           LH.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), L.aa, optimize=True)
+      for b in range(a + 1, nua):
+          # <ab|ef> = <x|ae><x|bf>
+          v_ef = np.einsum("xe,xf->ef", H.chol_a[:, va, a + noa], H.chol_a[:, va, b + noa], optimize=True)
+          LH.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), L.aa, optimize=True)
 
     LH.aa += 0.5 * np.einsum("ejab,ei->abij", H.aa.vovv, L.a, optimize=True)
     LH.aa -= 0.5 * np.einsum("ijmb,am->abij", H.aa.ooov, L.a, optimize=True)
@@ -177,9 +177,9 @@ def build_LH_2B(L, LH, T, X, H):
     # 
     # deal with the bare (vvvv) term using Cholesky
     for a in range(nua):
-       # <ab|ef> = <x|ae><x|bf>
-       v_bef = np.einsum("xe,xbf->bef", H.chol_a[:, va, a + noa], H.chol_b[:, va, va], optimize=True)
-       LH.ab[a, :, :, :] += np.einsum("bef,efij->bij", v_bef, L.ab, optimize=True)
+      # <ab|ef> = <x|ae><x|bf>
+      v_bef = np.einsum("xe,xbf->bef", H.chol_a[:, va, a + noa], H.chol_b[:, va, va], optimize=True)
+      LH.ab[a, :, :, :] += np.einsum("bef,efij->bij", v_bef, L.ab, optimize=True)
 
     LH.ab += np.einsum("ejmb,aeim->abij", H.ab.voov, L.aa, optimize=True)
     LH.ab += np.einsum("eima,ebmj->abij", H.aa.voov, L.ab, optimize=True)
@@ -221,10 +221,10 @@ def build_LH_2C(L, LH, T, X, H):
     #
     # deal with the bare (vvvv) term using Cholesky
     for a in range(nub):
-       for b in range(a + 1, nub):
-           # <ab|ef> = <x|ae><x|bf>
-           v_ef = np.einsum("xe,xf->ef", H.chol_b[:, vb, a + nob], H.chol_b[:, vb, b + nob], optimize=True)
-           LH.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), L.bb, optimize=True)
+      for b in range(a + 1, nub):
+          # <ab|ef> = <x|ae><x|bf>
+          v_ef = np.einsum("xe,xf->ef", H.chol_b[:, vb, a + nob], H.chol_b[:, vb, b + nob], optimize=True)
+          LH.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), L.bb, optimize=True)
 
     LH.bb += 0.5 * np.einsum("ejab,ei->abij", H.bb.vovv, L.b, optimize=True)
     LH.bb -= 0.5 * np.einsum("ijmb,am->abij", H.bb.ooov, L.b, optimize=True)
