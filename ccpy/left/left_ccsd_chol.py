@@ -1,11 +1,11 @@
 import numpy as np
 from ccpy.utilities.updates import cc_loops2
-from ccpy.left.left_cc_intermediates import build_left_ccsd_intermediates
+from ccpy.left.left_cc_intermediates import build_left_ccsd_chol_intermediates
 
 def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
 
     # get LT intermediates
-    X = build_left_ccsd_intermediates(L, T, system)
+    X = build_left_ccsd_chol_intermediates(L, T, system)
 
     # build L1
     LH = build_LH_1A(L, LH, T, X, H)
@@ -70,19 +70,22 @@ def update_l(L, omega, H, RHF_symmetry, system):
 
 def LH_fun(LH, L, T, H, flag_RHF, system):
 
+    # get LT intermediates
+    X = build_left_ccsd_chol_intermediates(L, T, system)
+
     # build L1
-    LH = build_LH_1A(L, LH, T, H)
+    LH = build_LH_1A(L, LH, T, X, H)
     if flag_RHF:
         LH.b = LH.a.copy()
     else:
-        LH = build_LH_1B(L, LH, T, H)
+        LH = build_LH_1B(L, LH, T, X, H)
     # build L2
-    LH = build_LH_2A(L, LH, T, H)
-    LH = build_LH_2B(L, LH, T, H)
+    LH = build_LH_2A(L, LH, T, X, H)
+    LH = build_LH_2B(L, LH, T, X, H)
     if flag_RHF:
         LH.bb = LH.aa.copy()
     else:
-        LH = build_LH_2C(L, LH, T, H)
+        LH = build_LH_2C(L, LH, T, X, H)
     return LH.flatten()
 
 def build_LH_1A(L, LH, T, X, H):

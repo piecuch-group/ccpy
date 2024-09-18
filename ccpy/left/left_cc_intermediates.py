@@ -24,6 +24,30 @@ def build_left_ccsd_intermediates(L, T, system):
                 -0.5 * np.einsum("abij,abnj->in", L.bb, T.bb, optimize=True)
                 - np.einsum("abij,abin->jn", L.ab, T.ab, optimize=True)
     )
+    return X
+
+def build_left_ccsd_chol_intermediates(L, T, system):
+
+    # Create new 2-body integral object
+    X = Integral.from_empty(system, 2, data_type=T.a.dtype, use_none=True)
+
+    # (L2 * T2)_C
+    X.a.vv = (
+                0.5 * np.einsum("efmn,fgnm->ge", L.aa, T.aa, optimize=True)
+                + np.einsum("abij,fbij->fa", L.ab, T.ab, optimize=True)
+    )
+    X.a.oo = (
+                -0.5 * np.einsum("efmo,efno->mn", L.aa, T.aa, optimize=True)
+                - np.einsum("abij,abnj->in", L.ab, T.ab, optimize=True)
+    )
+    X.b.vv = (
+                0.5 * np.einsum("abij,fbij->fa", L.bb, T.bb, optimize=True)
+                + np.einsum("abij,afij->fb", L.ab, T.ab, optimize=True)
+    )
+    X.b.oo = (
+                -0.5 * np.einsum("abij,abnj->in", L.bb, T.bb, optimize=True)
+                - np.einsum("abij,abin->jn", L.ab, T.ab, optimize=True)
+    )
     X.aa.oooo = 0.5 * np.einsum("efij,efmn->ijmn", L.aa, T.aa, optimize=True)
     X.ab.oooo = np.einsum("efij,efmn->ijmn", L.ab, T.ab, optimize=True)
     X.bb.oooo = 0.5 * np.einsum("efij,efmn->ijmn", L.bb, T.bb, optimize=True)
