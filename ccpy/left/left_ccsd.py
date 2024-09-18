@@ -121,7 +121,7 @@ def build_LH_1B(L, LH, T, X, H):
     )
     LH.b += (
         np.einsum("ge,eiga->ai", X.a.vv, H.ab.vovv, optimize=True)
-        + np.einsum("mo,oima->ai", X.b.oo, H.ab.ooov, optimize=True)
+        + np.einsum("mo,oima->ai", X.a.oo, H.ab.ooov, optimize=True)
     )
     return LH
 
