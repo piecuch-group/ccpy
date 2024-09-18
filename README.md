@@ -818,7 +818,7 @@ def test_eccc23_h2o():
 ### EOMCC approaches for ground, excited, attached, and ionized states
   - EOMCCSD
   - CR-EOMCC(2,3) and its size-intensive *δ*-CR-EOMCC(2,3) extension
-  - EOMCCSDT(a)*
+  - EOMCCSD(T)(a)*
   - EOM-CC3
   - EOMCCSDt
   - Excited-state CC(t;3)
@@ -827,12 +827,12 @@ def test_eccc23_h2o():
   - SF-EOMCCSD
   - SF-EOMCC(2,3)
   - IP-EOMCCSD(2h-1p)
-  - IP-EOMCCSDT(a)*
+  - IP-EOMCCSD(T)(a)*
   - Active-space IP-EOMCCSD(3h-2p){N<sub>o</sub>} (also known as IP-EOMCCSDt)
   - IP-EOMCCSD(3h-2p)
   - IP-EOMCCSDT
   - EA-EOMCCSD(2p-1h)
-  - EA-EOMCCSDT(a)*
+  - EA-EOMCCSD(T)(a)*
   - Active-space EA-EOMCCSD(3p-2h){N<sub>u</sub>} (also known as EA-EOMCCSDt)
   - EA-EOMCCSD(3p-2h)
   - EA-EOMCCSDT
