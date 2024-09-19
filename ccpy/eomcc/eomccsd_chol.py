@@ -4,6 +4,7 @@ energies and linear excitation amplitudes for excited states using
 the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD).
 """
 import numpy as np
+from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa, build_3index_batch_vvvv_ab, build_2index_batch_vvvv_bb
 from ccpy.eomcc.eomccsd_intermediates import get_eomccsd_chol_intermediates
 from ccpy.utilities.updates import cc_loops2
 
@@ -94,8 +95,9 @@ def build_HR_2A(R, T, X, H):
     for a in range(R.a.shape[0]):
       for b in range(a + 1, R.a.shape[0]):
           # <ab|ef> = <x|ae><x|bf>
-          v_ef = np.einsum("xe,xf->ef", H.chol.a.vv[:, a, :], H.chol.a.vv[:, b, :], optimize=True)
-          X2A[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), R.aa, optimize=True)
+          # v_ef = np.einsum("xe,xf->ef", H.chol.a.vv[:, a, :], H.chol.a.vv[:, b, :], optimize=True)
+          batch_ints = build_2index_batch_vvvv_aa(a, b, H)
+          X2A[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, R.aa, optimize=True)
 
     X2A += np.einsum("amie,ebmj->abij", H.aa.voov, R.aa, optimize=True)  # A(ij)A(ab)
     X2A += np.einsum("amie,bejm->abij", H.ab.voov, R.ab, optimize=True)  # A(ij)A(ab)
@@ -125,8 +127,9 @@ def build_HR_2B(R, T, X, H):
     # deal with the bare (vvvv) term using Cholesky
     for a in range(R.a.shape[0]):
       # <ab|ef> = <x|ae><x|bf>
-      v_bef = np.einsum("xe,xbf->bef", H.chol.a.vv[:, a, :], H.chol.b.vv, optimize=True)
-      X2B[a, :, :, :] += np.einsum("bef,efij->bij", v_bef, R.ab, optimize=True)
+      # v_bef = np.einsum("xe,xbf->bef", H.chol.a.vv[:, a, :], H.chol.b.vv, optimize=True)
+      batch_ints = build_3index_batch_vvvv_ab(a, H)
+      X2B[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, R.ab, optimize=True)
 
     X2B += np.einsum("amie,ebmj->abij", H.aa.voov, R.ab, optimize=True)
     X2B += np.einsum("amie,ebmj->abij", H.ab.voov, R.bb, optimize=True)
@@ -160,8 +163,9 @@ def build_HR_2C(R, T, X, H):
     for a in range(R.b.shape[0]):
       for b in range(a + 1, R.b.shape[0]):
           # <ab|ef> = <x|ae><x|bf>
-          v_ef = np.einsum("xe,xf->ef", H.chol.b.vv[:, a, :], H.chol.b.vv[:, b, :], optimize=True)
-          X2C[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), R.bb, optimize=True)
+          # v_ef = np.einsum("xe,xf->ef", H.chol.b.vv[:, a, :], H.chol.b.vv[:, b, :], optimize=True)
+          batch_ints = build_2index_batch_vvvv_bb(a, b, H)
+          X2C[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, R.bb, optimize=True)
 
     X2C += np.einsum("amie,ebmj->abij", H.bb.voov, R.bb, optimize=True)  # A(ij)A(ab)
     X2C += np.einsum("maei,ebmj->abij", H.ab.ovvo, R.ab, optimize=True)  # A(ij)A(ab)

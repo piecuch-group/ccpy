@@ -1,5 +1,6 @@
 import numpy as np
 from ccpy.utilities.updates import cc_loops2
+from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa_herm, build_3index_batch_vvvv_ab_herm, build_2index_batch_vvvv_bb_herm
 from ccpy.left.left_cc_intermediates import build_left_ccsd_chol_intermediates
 
 def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
@@ -144,8 +145,9 @@ def build_LH_2A(L, LH, T, X, H):
     for a in range(L.a.shape[0]):
       for b in range(a + 1, L.a.shape[0]):
           # <ab|ef> = <x|ae><x|bf>
-          v_ef = np.einsum("xe,xf->ef", H.chol.a.vv[:, :, a], H.chol.a.vv[:, :, b], optimize=True)
-          LH.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), L.aa, optimize=True)
+          # v_ef = np.einsum("xe,xf->ef", H.chol.a.vv[:, :, a], H.chol.a.vv[:, :, b], optimize=True)
+          batch_ints = build_2index_batch_vvvv_aa_herm(a, b, H)
+          LH.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, L.aa, optimize=True)
 
     LH.aa += 0.5 * np.einsum("ejab,ei->abij", H.aa.vovv, L.a, optimize=True)
     LH.aa -= 0.5 * np.einsum("ijmb,am->abij", H.aa.ooov, L.a, optimize=True)
@@ -171,8 +173,9 @@ def build_LH_2B(L, LH, T, X, H):
     # deal with the bare (vvvv) term using Cholesky
     for a in range(L.a.shape[0]):
       # <ab|ef> = <x|ae><x|bf>
-      v_bef = np.einsum("xe,xbf->bef", H.chol.a.vv[:, :, a], H.chol.b.vv, optimize=True)
-      LH.ab[a, :, :, :] += np.einsum("bef,efij->bij", v_bef, L.ab, optimize=True)
+      # v_bef = np.einsum("xe,xbf->bef", H.chol.a.vv[:, :, a], H.chol.b.vv, optimize=True)
+      batch_ints = build_3index_batch_vvvv_ab_herm(a, H)
+      LH.ab[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, L.ab, optimize=True)
 
     LH.ab += np.einsum("ejmb,aeim->abij", H.ab.voov, L.aa, optimize=True)
     LH.ab += np.einsum("eima,ebmj->abij", H.aa.voov, L.ab, optimize=True)
@@ -212,8 +215,9 @@ def build_LH_2C(L, LH, T, X, H):
     for a in range(L.b.shape[0]):
       for b in range(a + 1, L.b.shape[0]):
           # <ab|ef> = <x|ae><x|bf>
-          v_ef = np.einsum("xe,xf->ef", H.chol.b.vv[:, :, a], H.chol.b.vv[:, :, b], optimize=True)
-          LH.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), L.bb, optimize=True)
+          # v_ef = np.einsum("xe,xf->ef", H.chol.b.vv[:, :, a], H.chol.b.vv[:, :, b], optimize=True)
+          batch_ints = build_2index_batch_vvvv_bb_herm(a, b, H)
+          LH.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, L.bb, optimize=True)
 
     LH.bb += 0.5 * np.einsum("ejab,ei->abij", H.bb.vovv, L.b, optimize=True)
     LH.bb -= 0.5 * np.einsum("ijmb,am->abij", H.bb.ooov, L.b, optimize=True)

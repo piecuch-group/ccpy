@@ -10,6 +10,7 @@ References:
 """
 import numpy as np
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
+from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa, build_2index_batch_vvvv_bb, build_3index_batch_vvvv_ab
 from ccpy.utilities.updates import cc_loops2, vvvv_contraction
 
 def update(T, dT, H, X, shift, flag_RHF, system):
@@ -108,8 +109,8 @@ def update_t2a(T, dT, H, H0, shift):
     for a in range(T.a.shape[0]):
        for b in range(a + 1, T.a.shape[0]):
            # <ab|ef> = <x|ae><x|bf>
-           v_ef = np.einsum("xe,xf->ef", H0.chol.a.vv[:, a, :], H0.chol.a.vv[:, b, :], optimize=True)
-           dT.aa[a, b, :, :] += 0.5 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), tau, optimize=True)
+           batch_ints = build_2index_batch_vvvv_aa(a, b, H0)
+           dT.aa[a, b, :, :] += 0.5 * np.einsum("ef,efij->ij", batch_ints, tau, optimize=True)
     # dT.aa = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(dT.aa, H0.chol_a, tau)
 
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
@@ -158,8 +159,8 @@ def update_t2b(T, dT, H, H0, shift):
     # dT.ab += np.einsum("abef,efij->abij", H0.ab.vvvv, tau, optimize=True)
     # the one-loop Python is faster than the two-loop Fortran
     for a in range(T.a.shape[0]):
-        v_bef = np.einsum("xe,xbf->bef", H0.chol.a.vv[:, a, :], H0.chol.b.vv, optimize=True)
-        dT.ab[a, :, :, :] += np.einsum("bef,efij->bij", v_bef, tau, optimize=True)
+        batch_ints = build_3index_batch_vvvv_ab(a, H0)
+        dT.ab[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, tau, optimize=True)
     # dT.ab = vvvv_contraction.vvvv_contraction.vvvv_t2(dT.ab, H0.chol_a, H0.chol_b, tau)
 
     T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
@@ -196,8 +197,8 @@ def update_t2c(T, dT, H, H0, shift):
     for a in range(T.b.shape[0]):
        for b in range(a + 1, T.b.shape[0]):
            # <ab|ef> = <x|ae><x|bf>
-           v_ef = np.einsum("xe,xf->ef", H0.chol.b.vv[:, a, :], H0.chol.b.vv[:, b, :], optimize=True)
-           dT.bb[a, b, :, :] += 0.5 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), tau, optimize=True)
+           batch_ints = build_2index_batch_vvvv_bb(a, b, H0)
+           dT.bb[a, b, :, :] += 0.5 * np.einsum("ef,efij->ij", batch_ints, tau, optimize=True)
     # dT.bb = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(dT.bb, H0.chol_b, tau)
 
     T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(

@@ -388,39 +388,41 @@ def calc_eomm23d_intermediates(T, R, H):
 
 
 def get_vvvv_diagonal(H, T):
+    from ccpy.cholesky.cholesky_builders import (build_2index_batch_vvvv_aa,
+                                                 build_2index_batch_vvvv_ab,
+                                                 build_2index_batch_vvvv_bb)
+
     # form the diagonal part of the h(vvvv) elements
     nua, nub, noa, nob = T.ab.shape
-    va = slice(noa, noa + nua)
-    vb = slice(nob, nob + nub)
     # <ab|ab> = <x|aa><x|bb>
     h_aa_vvvv = np.zeros((nua, nua))
     for a in range(nua):
         for b in range(a + 1, nua):
-            batch_ints = np.einsum("xe,xf->ef", H.chol_a[:, a + noa, va], H.chol_a[:, b + noa, va])
-            batch_ints -= batch_ints.T
+            # batch_ints = np.einsum("xe,xf->ef", H.chol.a.vv[:, a, :], H.chol.a.vv[:, b, :])
+            # batch_ints -= batch_ints.T
+            batch_ints = build_2index_batch_vvvv_aa(a, b, H)
             h_aa_vvvv[a, b] = batch_ints[a, b]
             h_aa_vvvv[b, a] = batch_ints[a, b]
     h_bb_vvvv = np.zeros((nub, nub))
     for a in range(nub):
         for b in range(a + 1, nub):
-            batch_ints = np.einsum("xe,xf->ef", H.chol_b[:, a + nob, vb], H.chol_b[:, b + nob, vb])
-            batch_ints -= batch_ints.T
+            # batch_ints = np.einsum("xe,xf->ef", H.chol.b.vv[:, a, :], H.chol.b.vv[:, b, :])
+            # batch_ints -= batch_ints.T
+            batch_ints = build_2index_batch_vvvv_bb(a, b, H)
             h_bb_vvvv[a, b] = batch_ints[a, b]
             h_bb_vvvv[b, a] = batch_ints[a, b]
     h_ab_vvvv = np.zeros((nua, nub))
     for a in range(nua):
         for b in range(nub):
-            batch_ints = np.einsum("xe,xf->ef", H.chol_a[:, a + noa, va], H.chol_b[:, b + nob, vb])
+            # batch_ints = np.einsum("xe,xf->ef", H.chol.a.vv[:, a, :], H.chol.b.vv[:, b, :])
+            batch_ints = build_2index_batch_vvvv_ab(a, b, H)
             h_ab_vvvv[a, b] = batch_ints[a, b]
 
     # Make useful intermediates
     tau_aa = 0.5 * T.aa + np.einsum("ai,bj->abij", T.a, T.a, optimize=True)
     tau_aa -= np.transpose(tau_aa, (0, 1, 3, 2))
-    if use_RHF:
-        tau_bb = tau_aa
-    else:
-        tau_bb = 0.5 * T.bb + np.einsum("ai,bj->abij", T.b, T.b, optimize=True)
-        tau_bb -= np.transpose(tau_bb, (0, 1, 3, 2))
+    tau_bb = 0.5 * T.bb + np.einsum("ai,bj->abij", T.b, T.b, optimize=True)
+    tau_bb -= np.transpose(tau_bb, (0, 1, 3, 2))
     tau_ab = T.ab + np.einsum("ai,bj->abij", T.a, T.b, optimize=True)
 
     Q1 = -np.einsum("mnfe,an->amef", H.aa.oovv, T.a, optimize=True)

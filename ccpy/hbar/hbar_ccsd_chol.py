@@ -1,5 +1,5 @@
-import time
 import numpy as np
+from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa, build_2index_batch_vvvv_bb, build_3index_batch_vvvv_ab
 
 def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
     """Calculate the CCSD similarity-transformed Hamiltonian (H_N e^(T1+T2))_C.
@@ -265,8 +265,7 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
     # Add on h0(vvvv) term using Cholesky
     for a in range(nua):
         for b in range(a + 1, nua):
-            batch_ints = np.einsum("xe,xf->ef", H0.chol.a.vv[:, a, :], H0.chol.a.vv[:, b, :], optimize=True)
-            batch_ints -= batch_ints.T
+            batch_ints = build_2index_batch_vvvv_aa(a, b, H0)
             H.aa.vvov[a, b, :, :] += np.einsum("fe,fi->ie", batch_ints, T.a, optimize=True)
     H.aa.vvov -= np.transpose(H.aa.vvov, (1, 0, 2, 3))
     if RHF_symmetry:
@@ -286,8 +285,7 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
         # Add on h0(vvvv) term using Cholesky
         for a in range(nub):
             for b in range(a + 1, nub):
-                batch_ints = np.einsum("xe,xf->ef", H0.chol.b.vv[:, a, :], H0.chol.b.vv[:, b, :], optimize=True)
-                batch_ints -= batch_ints.T
+                batch_ints = build_2index_batch_vvvv_bb(a, b, H0)
                 H.bb.vvov[a, b, :, :] += np.einsum("fe,fi->ie", batch_ints, T.b, optimize=True)
         H.bb.vvov -= np.transpose(H.bb.vvov, (1, 0, 2, 3))
 
@@ -324,7 +322,7 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
     #print("vvov:", x2 - x1)
     # add on h0(vvvv) term using Cholesky
     for a in range(nua):
-        batch_ints = np.einsum("xe,xbf->bef", H0.chol.a.vv[:, a, :], H0.chol.b.vv, optimize=True)
+        batch_ints = build_3index_batch_vvvv_ab(a, H0)
         H.ab.vvov[a, :, :, :] += np.einsum("bfe,fi->bie", batch_ints, T.a, optimize=True)
         H.ab.vvvo[a, :, :, :] += np.einsum("bef,fi->bei", batch_ints, T.b, optimize=True)
     return H
