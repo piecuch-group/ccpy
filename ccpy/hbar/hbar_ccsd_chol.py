@@ -13,10 +13,6 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
 
     # Orbital dimensions
     nua, nub, noa, nob = T.ab.shape
-    oa = slice(noa)
-    va = slice(noa, noa + nua)
-    ob = slice(nob)
-    vb = slice(nob, nob + nub)
 
     # Make useful intermediates
     tau_aa = 0.5 * T.aa + np.einsum("ai,bj->abij", T.a, T.a, optimize=True)
@@ -269,7 +265,7 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
     # Add on h0(vvvv) term using Cholesky
     for a in range(nua):
         for b in range(a + 1, nua):
-            batch_ints = np.einsum("xe,xf->ef", H0.chol_a[:, a + noa, va], H0.chol_a[:, b + noa, va], optimize=True)
+            batch_ints = np.einsum("xe,xf->ef", H0.chol.a.vv[:, a, :], H0.chol.a.vv[:, b, :], optimize=True)
             batch_ints -= batch_ints.T
             H.aa.vvov[a, b, :, :] += np.einsum("fe,fi->ie", batch_ints, T.a, optimize=True)
     H.aa.vvov -= np.transpose(H.aa.vvov, (1, 0, 2, 3))
@@ -290,7 +286,7 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
         # Add on h0(vvvv) term using Cholesky
         for a in range(nub):
             for b in range(a + 1, nub):
-                batch_ints = np.einsum("xe,xf->ef", H0.chol_b[:, a + nob, vb], H0.chol_b[:, b + nob, vb], optimize=True)
+                batch_ints = np.einsum("xe,xf->ef", H0.chol.b.vv[:, a, :], H0.chol.b.vv[:, b, :], optimize=True)
                 batch_ints -= batch_ints.T
                 H.bb.vvov[a, b, :, :] += np.einsum("fe,fi->ie", batch_ints, T.b, optimize=True)
         H.bb.vvov -= np.transpose(H.bb.vvov, (1, 0, 2, 3))
@@ -328,7 +324,7 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
     #print("vvov:", x2 - x1)
     # add on h0(vvvv) term using Cholesky
     for a in range(nua):
-        batch_ints = np.einsum("xe,xbf->bef", H0.chol_a[:, a + noa, va], H0.chol_b[:, vb, vb], optimize=True)
+        batch_ints = np.einsum("xe,xbf->bef", H0.chol.a.vv[:, a, :], H0.chol.b.vv, optimize=True)
         H.ab.vvov[a, :, :, :] += np.einsum("bfe,fi->bie", batch_ints, T.a, optimize=True)
         H.ab.vvvo[a, :, :, :] += np.einsum("bef,fi->bei", batch_ints, T.b, optimize=True)
     return H

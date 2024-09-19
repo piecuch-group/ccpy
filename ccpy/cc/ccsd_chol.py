@@ -85,9 +85,6 @@ def update_t2a(T, dT, H, H0, shift):
     """
     Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2))_C|0>.
     """
-    nua, noa = T.a.shape
-    oa = slice(noa)
-    va = slice(noa, noa + nua)
     # intermediates
     I2A_voov = H.aa.voov + (
         + 0.5 * np.einsum("mnef,afin->amie", H0.aa.oovv, T.aa, optimize=True)
@@ -108,10 +105,10 @@ def update_t2a(T, dT, H, H0, shift):
     dT.aa += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
 
     # dT.aa += 0.25 * np.einsum("abef,efij->abij", H0.aa.vvvv, tau, optimize=True)
-    for a in range(nua):
-       for b in range(a + 1, nua):
+    for a in range(T.a.shape[0]):
+       for b in range(a + 1, T.a.shape[0]):
            # <ab|ef> = <x|ae><x|bf>
-           v_ef = np.einsum("xe,xf->ef", H0.chol_a[:, a + noa, va], H0.chol_a[:, b + noa, va], optimize=True)
+           v_ef = np.einsum("xe,xf->ef", H0.chol.a.vv[:, a, :], H0.chol.a.vv[:, b, :], optimize=True)
            dT.aa[a, b, :, :] += 0.5 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), tau, optimize=True)
     # dT.aa = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(dT.aa, H0.chol_a, tau)
 
@@ -126,11 +123,6 @@ def update_t2b(T, dT, H, H0, shift):
     """
     Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2))_C|0>.
     """
-    nua, nub, noa, nob = T.ab.shape
-    oa = slice(noa)
-    va = slice(noa, noa + nua)
-    ob = slice(nob)
-    vb = slice(nob, nob + nub)
     # intermediates
     I2A_voov = H.aa.voov + (
         + np.einsum("mnef,aeim->anif", H0.aa.oovv, T.aa, optimize=True)
@@ -165,8 +157,8 @@ def update_t2b(T, dT, H, H0, shift):
 
     # dT.ab += np.einsum("abef,efij->abij", H0.ab.vvvv, tau, optimize=True)
     # the one-loop Python is faster than the two-loop Fortran
-    for a in range(nua):
-        v_bef = np.einsum("xe,xbf->bef", H0.chol_a[:, a + noa, va], H0.chol_b[:, vb, vb], optimize=True)
+    for a in range(T.a.shape[0]):
+        v_bef = np.einsum("xe,xbf->bef", H0.chol.a.vv[:, a, :], H0.chol.b.vv, optimize=True)
         dT.ab[a, :, :, :] += np.einsum("bef,efij->bij", v_bef, tau, optimize=True)
     # dT.ab = vvvv_contraction.vvvv_contraction.vvvv_t2(dT.ab, H0.chol_a, H0.chol_b, tau)
 
@@ -181,9 +173,6 @@ def update_t2c(T, dT, H, H0, shift):
     """
     Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2))_C|0>.
     """
-    nub, nob = T.b.shape
-    ob = slice(nob)
-    vb = slice(nob, nob + nub)
     # intermediates
     I2C_oooo = H.bb.oooo + 0.5 * np.einsum("mnef,efij->mnij", H0.bb.oovv, T.bb, optimize=True)
     I2B_ovvo = H.ab.ovvo + (
@@ -204,10 +193,10 @@ def update_t2c(T, dT, H, H0, shift):
     dT.bb += 0.125 * np.einsum("mnij,abmn->abij", I2C_oooo, T.bb, optimize=True)
 
     # dT.bb += 0.25 * np.einsum("abef,efij->abij", H0.bb.vvvv, tau, optimize=True)
-    for a in range(nub):
-       for b in range(a + 1, nub):
+    for a in range(T.b.shape[0]):
+       for b in range(a + 1, T.b.shape[0]):
            # <ab|ef> = <x|ae><x|bf>
-           v_ef = np.einsum("xe,xf->ef", H0.chol_b[:, a + nob, vb], H0.chol_b[:, b + nob, vb], optimize=True)
+           v_ef = np.einsum("xe,xf->ef", H0.chol.b.vv[:, a, :], H0.chol.b.vv[:, b, :], optimize=True)
            dT.bb[a, b, :, :] += 0.5 * np.einsum("ef,efij->ij", v_ef - v_ef.transpose(1, 0), tau, optimize=True)
     # dT.bb = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(dT.bb, H0.chol_b, tau)
 

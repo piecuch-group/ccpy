@@ -131,7 +131,7 @@ class Driver:
             self.operator_params["order"] = 1
             self.operator_params["number_particles"] = 1
             self.operator_params["number_holes"] = 1
-        elif method.lower() in ["cc2", "ccd", "ccsd", "ccsd_chol", "accd", "accsd", "eomcc2", "eomccsd", "left_ccsd", "left_ccsd_chol", "eccc2", "cc3", "eomcc3"]:
+        elif method.lower() in ["cc2", "ccd", "ccsd", "ccsd_chol", "accd", "accsd", "eomcc2", "eomccsd", "eomccsd_chol", "left_ccsd", "left_ccsd_chol", "eccc2", "cc3", "eomcc3"]:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
@@ -1929,6 +1929,7 @@ class Driver:
 
         elif method.lower() == "crcc23_chol":
             from ccpy.moments.crcc23_chol import calc_crcc23
+            from ccpy.moments.creomcc23_chol import calc_creomcc23
             # Ensure that HBar is set upon entry
             assert self.flag_hbar
             for i in state_index:
@@ -1936,11 +1937,10 @@ class Driver:
                 if i == 0:
                     _, self.deltap3[i] = calc_crcc23(self.T, self.L[i], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
                 else:
-                    pass
-                    # # Perform excited-state corrections
-                    # _, self.deltap3[i], self.ddeltap3[i] = calc_creomcc23(self.T, self.R[i], self.L[i], self.r0[i],
-                    #                                                       self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
-                    #                                                       self.system, self.options["RHF_symmetry"])
+                    # Perform excited-state corrections
+                    _, self.deltap3[i], self.ddeltap3[i] = calc_creomcc23(self.T, self.R[i], self.L[i], self.r0[i],
+                                                                          self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                                          self.system, self.options["RHF_symmetry"])
 
         elif method.lower() == "ccsd(t)":
             from ccpy.moments.crcc23 import calc_ccsdpt
