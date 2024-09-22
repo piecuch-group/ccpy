@@ -43,7 +43,7 @@ def build_2index_batch_vvvv_bb_herm(a, b, H):
 def build_3index_batch_vvvv_ab_herm(a, H):
     '''Builds the 3-index batch of 4-particle ERIs out of Cholesky vectors
     V_ef(a) = <x|ea><x~|f~b~>'''
-    batch_ints = np.einsum("xe,xbf->bef", H.chol.a.vv[:, a, :], H.chol.b.vv, optimize=True)
+    batch_ints = np.einsum("xe,xfb->bef", H.chol.a.vv[:, :, a], H.chol.b.vv, optimize=True)
     return batch_ints
 
 def build_2index_batch_vvvv_ab_herm(a, b, H):
