@@ -173,50 +173,25 @@ def get_vvvv_diagonal(H, T):
             batch_ints = build_2index_batch_vvvv_ab(a, b, H)
             h_ab_vvvv[a, b] = batch_ints[a, b]
 
-    # Make useful intermediates
-    tau_aa = 0.5 * T.aa + np.einsum("ai,bj->abij", T.a, T.a, optimize=True)
-    tau_aa -= np.transpose(tau_aa, (0, 1, 3, 2))
-    tau_bb = 0.5 * T.bb + np.einsum("ai,bj->abij", T.b, T.b, optimize=True)
-    tau_bb -= np.transpose(tau_bb, (0, 1, 3, 2))
-    tau_ab = T.ab + np.einsum("ai,bj->abij", T.a, T.b, optimize=True)
-
-    Q1 = -np.einsum("mnfe,an->amef", H.aa.oovv, T.a, optimize=True)
-    h_aa_vovv = H.aa.vovv - Q1
-
-    Q1 = -np.einsum("nmef,an->amef", H.ab.oovv, T.a, optimize=True)
-    h_ab_vovv = H.ab.vovv - Q1
-
-    Q1 = -np.einsum("mnef,an->maef", H.ab.oovv, T.b, optimize=True)
-    h_ab_ovvv = H.ab.ovvv - Q1
-
-    Q1 = -np.einsum("nmef,an->amef", H.bb.oovv, T.b, optimize=True)
-    h_bb_vovv = H.bb.vovv - Q1
-
     for a in range(nua):
         for b in range(a + 1, nua):
             for m in range(noa):
-                h_aa_vvvv[a, b] -= h_aa_vovv[a, m, a, b] * T.a[b, m]
-                h_aa_vvvv[a, b] -= h_aa_vovv[b, m, b, a] * T.a[a, m]
+                # h_aa_vvvv[a, b] -= h_aa_vovv[a, m, a, b] * T.a[b, m]
                 for n in range(m + 1, noa):
-                    h_aa_vvvv[a, b] += H.aa.oovv[m, n, a, b] * tau_aa[a, b, m, n]
+                    h_aa_vvvv[a, b] += H.aa.oovv[m, n, a, b] * T.aa[a, b, m, n]
             h_aa_vvvv[b, a] = h_aa_vvvv[a, b]
     #
     for a in range(nub):
         for b in range(a + 1, nub):
             for m in range(nob):
-                h_bb_vvvv[a, b] -= h_bb_vovv[a, m, a, b] * T.b[b, m]
-                h_bb_vvvv[a, b] -= h_bb_vovv[b, m, b, a] * T.b[a, m]
                 for n in range(m + 1, nob):
-                    h_bb_vvvv[a, b] += H.bb.oovv[m, n, a, b] * tau_bb[a, b, m, n]
+                    h_bb_vvvv[a, b] += H.bb.oovv[m, n, a, b] * T.bb[a, b, m, n]
             h_bb_vvvv[b, a] = h_bb_vvvv[a, b]
     #
     for a in range(nua):
         for b in range(nub):
-            for m in range(nob):
-                h_ab_vvvv[a, b] -= h_ab_vovv[a, m, a, b] * T.b[b, m]
             for m in range(noa):
-                h_ab_vvvv[a, b] -= h_ab_ovvv[m, b, a, b] * T.a[a, m]
                 for n in range(nob):
-                    h_ab_vvvv[a, b] += H.ab.oovv[m, n, a, b] * tau_ab[a, b, m, n]
+                    h_ab_vvvv[a, b] += H.ab.oovv[m, n, a, b] * T.ab[a, b, m, n]
 
     return h_aa_vvvv, h_ab_vvvv, h_bb_vvvv

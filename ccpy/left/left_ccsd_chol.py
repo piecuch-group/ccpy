@@ -1,6 +1,6 @@
 import numpy as np
 from ccpy.utilities.updates import cc_loops2
-from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa_herm, build_3index_batch_vvvv_ab_herm, build_2index_batch_vvvv_bb_herm
+from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa_herm, build_2index_batch_vvvv_ab_herm, build_2index_batch_vvvv_bb_herm
 from ccpy.left.left_cc_intermediates import build_left_ccsd_chol_intermediates
 
 def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
@@ -137,10 +137,7 @@ def build_LH_2A(L, LH, T, X, H):
     LH.aa += np.einsum("ieam,bejm->abij", H.ab.ovvo, L.ab, optimize=True)
     LH.aa += 0.125 * np.einsum("ijmn,abmn->abij", H.aa.oooo, L.aa, optimize=True)
 
-    #LH.aa += 0.125 * np.einsum("efab,efij->abij", H.aa.vvvv, L.aa, optimize=True)
-    I2A_vovv = H.aa.vovv + 0.5 * np.einsum("mnfe,an->amef", H.aa.oovv, T.a, optimize=True)
     LH.aa += 0.125 * np.einsum("ijmn,mnab->abij", X.aa.oooo, H.aa.oovv, optimize=True) # V*T2 + V*T1^2
-    LH.aa -= 0.25 * np.einsum("jine,enab->abij", X.aa.ooov, I2A_vovv, optimize=True)
     # deal with the bare (vvvv) term using Cholesky
     for a in range(L.a.shape[0]):
       for b in range(a + 1, L.a.shape[0]):
@@ -163,19 +160,13 @@ def build_LH_2B(L, LH, T, X, H):
     LH.ab += np.einsum("ieab,ej->abij", H.ab.ovvv, L.b, optimize=True)
     LH.ab += np.einsum("ijmn,abmn->abij", H.ab.oooo, L.ab, optimize=True)
 
-    #LH.ab += np.einsum("efab,efij->abij", H.ab.vvvv, L.ab, optimize=True)
-    I2B_ovvv = H.ab.ovvv + 0.5 * np.einsum("mnef,an->maef", H.ab.oovv, T.b, optimize=True)
-    I2B_vovv = H.ab.vovv + 0.5 * np.einsum("nmef,an->amef", H.ab.oovv, T.a, optimize=True)
     LH.ab += np.einsum("ijmn,mnab->abij", X.ab.oooo, H.ab.oovv, optimize=True)
-    LH.ab -= np.einsum("ijmf,mfab->abij", X.ab.ooov, I2B_ovvv, optimize=True)
-    LH.ab -= np.einsum("ijen,enab->abij", X.ab.oovo, I2B_vovv, optimize=True)
-    #
     # deal with the bare (vvvv) term using Cholesky
     for a in range(L.a.shape[0]):
-      # <ab|ef> = <x|ae><x|bf>
-      # v_bef = np.einsum("xe,xbf->bef", H.chol.a.vv[:, :, a], H.chol.b.vv, optimize=True)
-      batch_ints = build_3index_batch_vvvv_ab_herm(a, H)
-      LH.ab[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, L.ab, optimize=True)
+        for b in range(L.b.shape[0]):
+          # <ab|ef> = <x|ae><x|bf>
+          batch_ints = build_2index_batch_vvvv_ab_herm(a, b, H)
+          LH.ab[a, b, :, :] += np.einsum("ef,efij->ij", batch_ints, L.ab, optimize=True)
 
     LH.ab += np.einsum("ejmb,aeim->abij", H.ab.voov, L.aa, optimize=True)
     LH.ab += np.einsum("eima,ebmj->abij", H.aa.voov, L.ab, optimize=True)
@@ -206,11 +197,7 @@ def build_LH_2C(L, LH, T, X, H):
     LH.bb += np.einsum("eima,ebmj->abij", H.ab.voov, L.ab, optimize=True)
     LH.bb += 0.125 * np.einsum("ijmn,abmn->abij", H.bb.oooo, L.bb, optimize=True)
 
-    #LH.bb += 0.125 * np.einsum("efab,efij->abij", H.bb.vvvv, L.bb, optimize=True)
-    I2C_vovv = H.bb.vovv + 0.5 * np.einsum("mnfe,an->amef", H.bb.oovv, T.b, optimize=True)
     LH.bb += 0.125 * np.einsum("ijmn,mnab->abij", X.bb.oooo, H.bb.oovv, optimize=True) # V*T2 + V*T1^2
-    LH.bb -= 0.25 * np.einsum("jine,enab->abij", X.bb.ooov, I2C_vovv, optimize=True)
-    #
     # deal with the bare (vvvv) term using Cholesky
     for a in range(L.b.shape[0]):
       for b in range(a + 1, L.b.shape[0]):

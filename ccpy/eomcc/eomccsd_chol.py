@@ -79,23 +79,16 @@ def build_HR_1B(R, H):
 
 def build_HR_2A(R, T, X, H):
 
-    # Make useful intermediates
-    tau_aa = 0.5 * T.aa + np.einsum("ai,bj->abij", T.a, T.a, optimize=True)
-    tau_aa -= np.transpose(tau_aa, (0, 1, 3, 2))
-
     # < ijab | [H(2)*(R1+R2)]_C | 0 >
     X2A = -0.5 * np.einsum("mi,abmj->abij", H.a.oo, R.aa, optimize=True)  # A(ij)
     X2A += 0.5 * np.einsum("ae,ebij->abij", H.a.vv, R.aa, optimize=True)  # A(ab)
     X2A += 0.125 * np.einsum("mnij,abmn->abij", H.aa.oooo, R.aa, optimize=True)
 
-    # X2A += 0.125 * np.einsum("abef,efij->abij", H.aa.vvvv, R.aa, optimize=True)
-    X2A += 0.125 * np.einsum("mnij,abmn->abij", X.aa.oooo, tau_aa, optimize=True)
-    X2A -= 0.5 * np.einsum("amij,bm->abij", X.aa.vooo, T.a, optimize=True)
+    X2A += 0.125 * np.einsum("mnij,abmn->abij", X.aa.oooo, T.aa, optimize=True)
     # deal with the bare (vvvv) term using Cholesky
     for a in range(R.a.shape[0]):
       for b in range(a + 1, R.a.shape[0]):
           # <ab|ef> = <x|ae><x|bf>
-          # v_ef = np.einsum("xe,xf->ef", H.chol.a.vv[:, a, :], H.chol.a.vv[:, b, :], optimize=True)
           batch_ints = build_2index_batch_vvvv_aa(a, b, H)
           X2A[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, R.aa, optimize=True)
 
@@ -111,23 +104,16 @@ def build_HR_2A(R, T, X, H):
 
 def build_HR_2B(R, T, X, H):
 
-    tau_ab = T.ab + np.einsum("ai,bj->abij", T.a, T.b, optimize=True)
-    
     X2B = np.einsum("ae,ebij->abij", H.a.vv, R.ab, optimize=True)
     X2B += np.einsum("be,aeij->abij", H.b.vv, R.ab, optimize=True)
     X2B -= np.einsum("mi,abmj->abij", H.a.oo, R.ab, optimize=True)
     X2B -= np.einsum("mj,abim->abij", H.b.oo, R.ab, optimize=True)
     X2B += np.einsum("mnij,abmn->abij", H.ab.oooo, R.ab, optimize=True)
 
-    # X2B += np.einsum("abef,efij->abij", H.ab.vvvv, R.ab, optimize=True)
-    X2B += np.einsum("mnij,abmn->abij", X.ab.oooo, tau_ab, optimize=True)
-    X2B -= np.einsum("amij,bm->abij", X.ab.vooo, T.b, optimize=True)
-    X2B -= np.einsum("mbij,am->abij", X.ab.ovoo, T.a, optimize=True)
-    #
+    X2B += np.einsum("mnij,abmn->abij", X.ab.oooo, T.ab, optimize=True)
     # deal with the bare (vvvv) term using Cholesky
     for a in range(R.a.shape[0]):
       # <ab|ef> = <x|ae><x|bf>
-      # v_bef = np.einsum("xe,xbf->bef", H.chol.a.vv[:, a, :], H.chol.b.vv, optimize=True)
       batch_ints = build_3index_batch_vvvv_ab(a, H)
       X2B[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, R.ab, optimize=True)
 
@@ -149,21 +135,15 @@ def build_HR_2B(R, T, X, H):
 
 def build_HR_2C(R, T, X, H):
 
-    tau_bb = 0.5 * T.bb + np.einsum("ai,bj->abij", T.b, T.b, optimize=True)
-    tau_bb -= np.transpose(tau_bb, (0, 1, 3, 2))
-
     X2C = -0.5 * np.einsum("mi,abmj->abij", H.b.oo, R.bb, optimize=True)  # A(ij)
     X2C += 0.5 * np.einsum("ae,ebij->abij", H.b.vv, R.bb, optimize=True)  # A(ab)
     X2C += 0.125 * np.einsum("mnij,abmn->abij", H.bb.oooo, R.bb, optimize=True)
 
-    # X2C += 0.125 * np.einsum("abef,efij->abij", H.bb.vvvv, R.bb, optimize=True)
-    X2C += 0.125 * np.einsum("mnij,abmn->abij", X.bb.oooo, tau_bb, optimize=True)
-    X2C -= 0.5 * np.einsum("amij,bm->abij", X.bb.vooo, T.b, optimize=True)
+    X2C += 0.125 * np.einsum("mnij,abmn->abij", X.bb.oooo, T.bb, optimize=True)
     # deal with the bare (vvvv) term using Cholesky
     for a in range(R.b.shape[0]):
       for b in range(a + 1, R.b.shape[0]):
           # <ab|ef> = <x|ae><x|bf>
-          # v_ef = np.einsum("xe,xf->ef", H.chol.b.vv[:, a, :], H.chol.b.vv[:, b, :], optimize=True)
           batch_ints = build_2index_batch_vvvv_bb(a, b, H)
           X2C[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, R.bb, optimize=True)
 

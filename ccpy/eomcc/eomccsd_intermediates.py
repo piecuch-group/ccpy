@@ -89,23 +89,4 @@ def get_eomccsd_chol_intermediates(H, T, R, system):
     X.bb.oooo = (
         0.5 * np.einsum("mnef,efij->mnij", H.bb.oovv, R.bb, optimize=True)
     )
-
-    # Recover bare (vovv) and (ooov) parts from hbar(vovv) and hbar(ooov)
-    h0_aa_vovv = H.aa.vovv + np.einsum("mnfe,an->amef", H.aa.oovv, T.a, optimize=True)
-    h0_ab_ovvv = H.ab.ovvv + np.einsum("mnef,an->maef", H.ab.oovv, T.b, optimize=True)
-    h0_ab_vovv = H.ab.vovv + np.einsum("nmef,an->amef", H.ab.oovv, T.a, optimize=True)
-    h0_bb_vovv = H.bb.vovv + np.einsum("mnfe,an->amef", H.bb.oovv, T.b, optimize=True)
-    X.aa.vooo = (
-        0.5 * np.einsum("anef,efij->anij", h0_aa_vovv, R.aa, optimize=True)
-    )
-    X.bb.vooo = (
-        0.5 * np.einsum("anef,efij->anij", h0_bb_vovv, R.bb, optimize=True)
-    )
-    X.ab.vooo = (
-        np.einsum("amef,efij->amij", h0_ab_vovv, R.ab, optimize=True)
-    )
-    X.ab.ovoo = (
-        np.einsum("mbef,efij->mbij", h0_ab_ovvv, R.ab, optimize=True)
-    )
-
     return X

@@ -307,7 +307,7 @@ def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
                     np.einsum("xae,xbi->abei", H.chol.a.vv, H.chol.b.vo, optimize=True)
     ) # h(abei)
     # H.ab.vvvv = (
-    #                 np.einsum("xae,xbf->abef", H.chol.a.vv, H.chol.b.vv optimize=True)
+    #                 np.einsum("xae,xbf->abef", H.chol.a.vv, H.chol.b.vv, optimize=True)
     # ) # h(abef)
     return H
 

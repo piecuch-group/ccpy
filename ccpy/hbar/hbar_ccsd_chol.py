@@ -63,7 +63,6 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
     tau_ab = T.ab + np.einsum("ai,bj->abij", T.a, T.b, optimize=True)
     # -------------------------------------------------------------------------
 
-
     # -------------------------------------------------------------------------
     ### TYPE: OOOO
     ### NEEDS: H0.ooov
@@ -315,6 +314,17 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
         H.bb.vovv -= np.einsum("mnfe,an->amef", H0.bb.oovv, T.b, optimize=True)
     H.ab.vovv -= np.einsum("nmef,an->amef", H0.ab.oovv, T.a, optimize=True) 
     H.ab.ovvv -= np.einsum("mnef,an->maef", H0.ab.oovv, T.b, optimize=True)
+    # -------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
+    ### T1-transformation of Cholesky vectors
+    print("   Performing T1-transformation of Cholesky vectors")
+    ### a ###
+    H.chol.a.oo = H0.chol.a.oo.copy() + np.einsum("xme,ei->xmi", H.chol.a.ov, T.a, optimize=True)
+    H.chol.a.vv = H0.chol.a.vv.copy() - np.einsum("xme,am->xae", H.chol.a.ov, T.a, optimize=True)
+    ### b ###
+    H.chol.b.oo = H0.chol.b.oo.copy() + np.einsum("xme,ei->xmi", H.chol.b.ov, T.b, optimize=True)
+    H.chol.b.vv = H0.chol.b.vv.copy() - np.einsum("xme,am->xae", H.chol.b.ov, T.b, optimize=True)
     # -------------------------------------------------------------------------
     return H
 
