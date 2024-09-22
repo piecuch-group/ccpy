@@ -1,5 +1,5 @@
 import numpy as np
-
+import time
 from ccpy.models.integrals import Integral
 from ccpy.utilities.updates import hbar_ccsdt_p
 
@@ -55,7 +55,12 @@ def get_eomccsdt_intermediates(H, R, T, X_eomccsd, system):
     routine."""
 
     # Create new 2-body integral object
-    X = Integral.from_empty(system, 2, data_type=H.a.oo.dtype)
+    X = Integral.from_empty(system, 2, data_type=H.a.oo.dtype, use_none=True)
+
+    # these should be removed
+    X.aa.oovv = np.zeros_like(H.aa.oovv)
+    X.ab.oovv = np.zeros_like(H.ab.oovv)
+    X.bb.oovv = np.zeros_like(H.bb.oovv)
 
     # X.a.ov = (
     #     np.einsum("mnef,fn->me", H.aa.oovv, R.a, optimize=True)
@@ -68,7 +73,8 @@ def get_eomccsdt_intermediates(H, R, T, X_eomccsd, system):
     #     + np.einsum("nmfe,fn->me", H.bb.oovv, R.b, optimize=True)
     # )
     X.b.ov = X_eomccsd.b.ov
-
+    
+    #tic = time.time()
     X.a.oo = (
             np.einsum("me,ej->mj", H.a.ov, R.a, optimize=True)
             + X_eomccsd.a.oo
@@ -77,16 +83,6 @@ def get_eomccsdt_intermediates(H, R, T, X_eomccsd, system):
             # + 0.5 * np.einsum("mnef,efjn->mj", H.aa.oovv, R.aa, optimize=True)
             # + np.einsum("mnef,efjn->mj", H.ab.oovv, R.ab, optimize=True)
     )
-
-    X.a.vv = (
-            -1.0 * np.einsum("me,bm->be", H.a.ov, R.a, optimize=True)
-            + X_eomccsd.a.vv
-            # + np.einsum("bnef,fn->be", H.aa.vovv, R.a, optimize=True)
-            # + np.einsum("bnef,fn->be", H.ab.vovv, R.b, optimize=True)
-            # - 0.5 * np.einsum("mnef,bfmn->be", H.aa.oovv, R.aa, optimize=True)
-            # - np.einsum("mnef,bfmn->be", H.ab.oovv, R.ab, optimize=True)
-    )
-
     X.b.oo = (
             np.einsum("me,ek->mk", H.b.ov, R.b, optimize=True)
             + X_eomccsd.b.oo
@@ -95,7 +91,18 @@ def get_eomccsdt_intermediates(H, R, T, X_eomccsd, system):
             # + np.einsum("nmfe,fenk->mk", H.ab.oovv, R.ab, optimize=True)
             # + 0.5 * np.einsum("mnef,efkn->mk", H.bb.oovv, R.bb, optimize=True)
     )
+    #toc = time.time()
+    #print("time for oo = ", tic - toc, "s")
 
+    #tic = time.time()
+    X.a.vv = (
+            -1.0 * np.einsum("me,bm->be", H.a.ov, R.a, optimize=True)
+            + X_eomccsd.a.vv
+            # + np.einsum("bnef,fn->be", H.aa.vovv, R.a, optimize=True)
+            # + np.einsum("bnef,fn->be", H.ab.vovv, R.b, optimize=True)
+            # - 0.5 * np.einsum("mnef,bfmn->be", H.aa.oovv, R.aa, optimize=True)
+            # - np.einsum("mnef,bfmn->be", H.ab.oovv, R.ab, optimize=True)
+    )
     X.b.vv = (
             -1.0 * np.einsum("me,cm->ce", H.b.ov, R.b, optimize=True)
             + X_eomccsd.b.vv
@@ -104,7 +111,10 @@ def get_eomccsdt_intermediates(H, R, T, X_eomccsd, system):
             # -1.0 * np.einsum("nmfe,fcnm->ce", H.ab.oovv, R.ab, optimize=True)
             # - 0.5 * np.einsum("mnef,fcnm->ce", H.bb.oovv, R.bb, optimize=True)
     )
+    #toc = time.time()
+    #print("time for vv = ", tic - toc, "s")
 
+    #tic = time.time()
     X.aa.oooo = (
         np.einsum("nmje,ei->mnij", H.aa.ooov, R.a, optimize=True)
         + 0.25 * np.einsum("mnef,efij->mnij", H.aa.oovv, R.aa, optimize=True)
@@ -122,7 +132,10 @@ def get_eomccsdt_intermediates(H, R, T, X_eomccsd, system):
         + 0.25 * np.einsum("mnef,efij->mnij", H.bb.oovv, R.bb, optimize=True)
     )
     X.bb.oooo -= np.transpose(X.bb.oooo, (0, 1, 3, 2))
+    #toc = time.time()
+    #print("time for oooo = ", tic - toc, "s")
 
+    #tic = time.time()
     X.aa.vvvv = (
         -1.0 * np.einsum("amef,bm->abef", H.aa.vovv, R.a, optimize=True)
         + 0.25 * np.einsum("mnef,abmn->abef", H.aa.oovv, R.aa, optimize=True)
@@ -140,7 +153,10 @@ def get_eomccsdt_intermediates(H, R, T, X_eomccsd, system):
         + 0.25 * np.einsum("mnef,abmn->abef", H.bb.oovv, R.bb, optimize=True)
     )
     X.bb.vvvv -= np.transpose(X.bb.vvvv, (1, 0, 2, 3))
+    #toc = time.time()
+    #print("time for vvvv = ", tic - toc, "s")
 
+    #tic = time.time()
     X.aa.voov = (
         -1.0 * np.einsum("nmje,bn->bmje", H.aa.ooov, R.a, optimize=True)
         + np.einsum("bmfe,fj->bmje", H.aa.vovv, R.a, optimize=True)
@@ -180,6 +196,8 @@ def get_eomccsdt_intermediates(H, R, T, X_eomccsd, system):
             + np.einsum("mnef,ecmk->cnkf", H.ab.oovv, R.ab, optimize=True)
             + np.einsum("mnef,ecmk->cnkf", H.bb.oovv, R.bb, optimize=True)
     )
+    #toc = time.time()
+    #print("time for voov = ", tic - toc, "s")
 
     X.aa.vvov =(
         np.einsum("amje,bm->baje", H.aa.voov, R.a, optimize=True)

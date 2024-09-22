@@ -278,7 +278,11 @@ class AdaptDriver:
             if self.options["reset_amplitudes"]:
                 self.driver.T = None
                 self.driver.L[0] = None
-            setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+
+            #setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+            # Since the HBar routines are now using H = H0, so there is no deepcopy of the hamiltonian there,
+            # we need to use deepcopy every imacro iteration to reset the driver Hamiltonian
+            self.driver.hamiltonian = deepcopy(self.bare_hamiltonian)
 
             # Step 7: Report wall and CPU timings of each step
             print(f"   Timing breakdown for macrostep {imacro}")
@@ -629,10 +633,15 @@ class AdaptEOMDriverSS:
                 self.driver.R[self.state_index] = None
                 self.driver.T = None
                 self.driver.L[0] = None
+
             # ALWAYS reset the excited-state left amplitude. This forces L to begin with converged R as a guess,
             # which generally ensures that R and L converge the same root.
             self.driver.L[self.state_index] = None
-            setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+
+            #setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+            # Since the HBar routines are now using H = H0, so there is no deepcopy of the hamiltonian there,
+            # we need to use deepcopy every imacro iteration to reset the driver Hamiltonian
+            self.driver.hamiltonian = deepcopy(self.bare_hamiltonian)
 
             # Step 7: Report timings of each step
             print(f"   Timing breakdown for macrostep {imacro}")
@@ -1064,7 +1073,11 @@ class AdaptEOMDriver:
             # which generally ensures that R and L converge the same root.
             for istate in self.state_index:
                 self.driver.L[istate] = None
-            setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+
+            #setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+            # Since the HBar routines are now using H = H0, so there is no deepcopy of the hamiltonian there,
+            # we need to use deepcopy every imacro iteration to reset the driver Hamiltonian
+            self.driver.hamiltonian = deepcopy(self.bare_hamiltonian)
 
             # Step 7: Report timings of each step
             print(f"   Timing breakdown for macrostep {imacro}")
@@ -1367,7 +1380,11 @@ class AdaptEAEOMDriverSS:
             # ALWAYS reset the excited-state left amplitude. This forces L to begin with converged R as a guess,
             # which generally ensures that R and L converge the same root.
             self.driver.L[self.state_index] = None
-            setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+
+            #setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+            # Since the HBar routines are now using H = H0, so there is no deepcopy of the hamiltonian there,
+            # we need to use deepcopy every imacro iteration to reset the driver Hamiltonian
+            self.driver.hamiltonian = deepcopy(self.bare_hamiltonian)
 
             # Step 7: Report timings of each step
             print(f"   Timing breakdown for macrostep {imacro}")
