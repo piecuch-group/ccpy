@@ -13,34 +13,42 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 
-    # Containers for the CR-EOMCC(2,3) correction
-    correction_A = 0.0
-    correction_B = 0.0
-    correction_C = 0.0
-    correction_D = 0.0
-    # Containers for the delta-CR-EOMCC(2,3) correction
-    dcorrection_A = 0.0
-    dcorrection_B = 0.0
-    dcorrection_C = 0.0
-    dcorrection_D = 0.0
-
     # get the Hbar 3-body diagonal
     d3aaa_v, d3aaa_o = aaa_H3_aaa_diagonal(T, H, system)
     d3aab_v, d3aab_o = aab_H3_aab_diagonal(T, H, system)
     d3abb_v, d3abb_o = abb_H3_abb_diagonal(T, H, system)
     d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
 
+    # form the diagonal part of the h(vvvv) elements
+    nua, nub, noa, nob = T.ab.shape
+    h_aa_vvvv = np.zeros((nua, nua))
+    for a in range(nua):
+        for b in range(a, nua):
+            h_aa_vvvv[a, b] = H.aa.vvvv[a, b, a, b]
+            h_aa_vvvv[b, a] = h_aa_vvvv[a, b]
+    h_ab_vvvv = np.zeros((nua, nub))
+    for a in range(nua):
+        for b in range(nub):
+            h_ab_vvvv[a, b] = H.ab.vvvv[a, b, a, b]
+    h_bb_vvvv = np.zeros((nub, nub))
+    for a in range(nub):
+        for b in range(a, nub):
+            h_bb_vvvv[a, b] = H.bb.vvvv[a, b, a, b]
+            h_bb_vvvv[b, a] = h_bb_vvvv[a, b]
+
+    # get intermediates
+    X = get_eomcc23_intermediates(H, R, T, system)
+
     #### aaa correction ####
     # calculate intermediates
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
-    chi2A_vvvo, chi2A_ovoo = calc_eomm23a_intermediates(T, R, H)
     # perform correction in-loop
     dA_aaa, dB_aaa, dC_aaa, dD_aaa, ddA_aaa, ddB_aaa, ddC_aaa, ddD_aaa = crcc_loops.crcc_loops.creomcc23a_opt(
                                                                omega, r0, T.aa, R.aa, L.a, L.aa,
-                                                               H.aa.vooo, I2A_vvov, H.aa.vvov, chi2A_vvvo,
-                                                               chi2A_ovoo, H.aa.oovv, H.a.ov, H.aa.vovv,
+                                                               H.aa.vooo, I2A_vvov, H.aa.vvov, X.aa.vvov.transpose(1, 0, 3, 2),
+                                                               X.aa.vooo.transpose(1, 0, 3, 2), H.aa.oovv, H.a.ov, H.aa.vovv,
                                                                H.aa.ooov, H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
-                                                               H.aa.voov, H.aa.oooo, H.aa.vvvv,
+                                                               H.aa.voov, H.aa.oooo, h_aa_vvvv,
                                                                d3aaa_o, d3aaa_v,
                                                                system.noccupied_alpha, system.nunoccupied_alpha)
     #### aab correction ####
@@ -48,26 +56,18 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    (
-        chi2B_vvvo,
-        chi2B_ovoo,
-        chi2A_vvvo,
-        chi2A_vooo,
-        chi2B_vvov,
-        chi2B_vooo,
-    ) = calc_eomcc23b_intermediates(T, R, H)
     # perform correction in-loop
     dA_aab, dB_aab, dC_aab, dD_aab, ddA_aab, ddB_aab, ddC_aab, ddD_aab = crcc_loops.crcc_loops.creomcc23b_opt(
                                                                omega, r0, T.aa, T.ab, R.aa, R.ab, L.a, L.b, L.aa, L.ab,
                                                                I2B_ovoo, I2B_vooo, I2A_vooo, H.ab.vvvo, H.ab.vvov,
                                                                H.aa.vvov, H.ab.vovv, H.ab.ovvv, H.aa.vovv,
                                                                H.ab.ooov, H.ab.oovo, H.aa.ooov,
-                                                               chi2B_vvvo, chi2B_ovoo, chi2A_vvvo, chi2A_vooo,
-                                                               chi2B_vvov, chi2B_vooo, H.ab.ovoo, H.aa.vooo, H.ab.vooo,
+                                                               X.ab.vvvo, X.ab.ovoo, X.aa.vvov.transpose(1, 0, 3, 2), X.aa.vooo,
+                                                               X.ab.vvov, X.ab.vooo, H.ab.ovoo, H.aa.vooo, H.ab.vooo,
                                                                H.a.ov, H.b.ov, H.aa.oovv, H.ab.oovv, H0.a.oo, H0.a.vv,
                                                                H0.b.oo, H0.b.vv, H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                                                               H.aa.voov, H.aa.oooo, H.aa.vvvv, H.ab.ovov, H.ab.vovo,
-                                                               H.ab.oooo, H.ab.vvvv, H.bb.voov,
+                                                               H.aa.voov, H.aa.oooo, h_aa_vvvv, H.ab.ovov, H.ab.vovo,
+                                                               H.ab.oooo, h_ab_vvvv, H.bb.voov,
                                                                d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
                                                                system.noccupied_alpha, system.nunoccupied_alpha,
                                                                system.noccupied_beta, system.nunoccupied_beta)
@@ -87,38 +87,29 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
         I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
-        (
-            chi2B_vvov,
-            chi2B_vooo,
-            chi2C_vvvo,
-            chi2C_vooo,
-            chi2B_vvvo,
-            chi2B_ovoo,
-        ) = calc_eomcc23c_intermediates(T, R, H)
         dA_abb, dB_abb, dC_abb, dD_abb, ddA_abb, ddB_abb, ddC_abb, ddD_abb = crcc_loops.crcc_loops.creomcc23c_opt(
                                                                               omega, r0, T.ab, T.bb, R.ab, R.bb, L.a, L.b, L.ab, L.bb,
                                                                               I2B_vooo, I2C_vooo, I2B_ovoo, H.ab.vvov, H.bb.vvov,
                                                                               H.ab.vvvo, H.ab.ovvv, H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
-                                                                              H.bb.ooov, chi2B_vvov, chi2B_vooo, chi2C_vvvo, chi2C_vooo,
-                                                                              chi2B_vvvo, chi2B_ovoo, H.ab.vooo, H.bb.vooo, H.ab.ovoo,
+                                                                              H.bb.ooov, X.ab.vvov, X.ab.vooo, X.bb.vvov.transpose(1, 0, 3, 2), X.bb.vooo,
+                                                                              X.ab.vvvo, X.ab.ovoo, H.ab.vooo, H.bb.vooo, H.ab.ovoo,
                                                                               H.a.ov, H.b.ov, H.ab.oovv, H.bb.oovv, H0.a.oo, H0.a.vv,
                                                                               H0.b.oo, H0.b.vv, H.a.oo, H.a.vv, H.b.oo, H.b.vv, H.aa.voov,
-                                                                              H.ab.ovov, H.ab.vovo, H.ab.oooo, H.ab.vvvv, H.bb.voov,
-                                                                              H.bb.oooo, H.bb.vvvv,
+                                                                              H.ab.ovov, H.ab.vovo, H.ab.oooo, h_ab_vvvv, H.bb.voov,
+                                                                              H.bb.oooo, h_bb_vvvv,
                                                                               d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
                                                                               system.noccupied_alpha, system.nunoccupied_alpha,
                                                                               system.noccupied_beta, system.nunoccupied_beta)
         #### bbb correction ####
         # calculate intermediates
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
-        chi2C_vvvo, chi2C_ovoo = calc_eomm23d_intermediates(T, R, H)
         dA_bbb, dB_bbb, dC_bbb, dD_bbb, ddA_bbb, ddB_bbb, ddC_bbb, ddD_bbb = crcc_loops.crcc_loops.creomcc23d_opt(
                                                                               omega, r0, T.bb, R.bb, L.b, L.bb,
                                                                               H.bb.vooo, I2C_vvov, H.bb.vvov,
-                                                                              chi2C_vvvo, chi2C_ovoo, H.bb.oovv,
+                                                                              X.bb.vvov.transpose(1, 0, 3, 2), X.bb.vooo.transpose(1, 0, 3, 2), H.bb.oovv,
                                                                               H.b.ov, H.bb.vovv, H.bb.ooov, H0.b.oo,
                                                                               H0.b.vv, H.b.oo, H.b.vv, H.bb.voov,
-                                                                              H.bb.oooo, H.bb.vvvv,
+                                                                              H.bb.oooo, h_bb_vvvv,
                                                                               d3bbb_o, d3bbb_v,
                                                                               system.noccupied_beta, system.nunoccupied_beta)
         correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
@@ -207,177 +198,102 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
 
     return Ecrcc23, delta23, ddelta23
 
+def get_eomcc23_intermediates(H, R, T, system):
+    """Calculate the CCSD-like intermediates for CCSDT. This routine
+    should only calculate terms with T2 and any remaining terms outside of the CCS intermediate
+    routine."""
+    from ccpy.models.integrals import Integral
 
-def calc_eomm23a_intermediates(T, R, H):
+    # Create new 2-body integral object
+    X = Integral.from_empty(system, 2, data_type=H.a.oo.dtype, use_none=True)
 
-    Q1 = np.einsum("mnef,fn->me", H.aa.oovv, R.a, optimize=True)
-    Q1 += np.einsum("mnef,fn->me", H.ab.oovv, R.b, optimize=True)
-    
-    I1 = np.einsum("amje,bm->abej", H.aa.voov, R.a, optimize=True)
-    I1 += np.einsum("amfe,bejm->abfj", H.aa.vovv, R.aa, optimize=True)
-    I1 += np.einsum("amfe,bejm->abfj", H.ab.vovv, R.ab, optimize=True)
-    I1 -= np.transpose(I1, (1, 0, 2, 3))
-    I2 = np.einsum("abfe,ej->abfj", H.aa.vvvv, R.a, optimize=True)
-    I2 += 0.5 * np.einsum("nmje,abmn->abej", H.aa.ooov, R.aa, optimize=True)
-    I2 -= np.einsum("me,abmj->abej", Q1, T.aa, optimize=True)
-    chi2A_vvvo = I1 + I2
-    
-    I1 = -np.einsum("bmie,ej->mbij", H.aa.voov, R.a, optimize=True)
-    I1 += np.einsum("nmie,bejm->nbij", H.aa.ooov, R.aa, optimize=True)
-    I1 += np.einsum("nmie,bejm->nbij", H.ab.ooov, R.ab, optimize=True)
-    I1 -= np.transpose(I1, (0, 1, 3, 2))
-    I2 = -1.0 * np.einsum("nmij,bm->nbij", H.aa.oooo, R.a, optimize=True)
-    I2 += 0.5 * np.einsum("bmfe,efij->mbij", H.aa.vovv, R.aa, optimize=True)
-    chi2A_ovoo = I1 + I2
-
-    return chi2A_vvvo, chi2A_ovoo
-
-
-def calc_eomcc23b_intermediates(T, R, H):
-
-    Q1 = (
+    X.a.ov = (
             np.einsum("mnef,fn->me", H.aa.oovv, R.a, optimize=True)
             + np.einsum("mnef,fn->me", H.ab.oovv, R.b, optimize=True)
     )
-    Q2 = (
+
+    X.b.ov = (
             np.einsum("nmfe,fn->me", H.ab.oovv, R.a, optimize=True)
             + np.einsum("nmfe,fn->me", H.bb.oovv, R.b, optimize=True)
     )
-    # Intermediate 1: X2B(bcek)*Y2A(aeij) -> Z3B(abcijk)
-    Int1 = -1.0 * np.einsum("mcek,bm->bcek", H.ab.ovvo, R.a, optimize=True)
-    Int1 -= np.einsum("bmek,cm->bcek", H.ab.vovo, R.b, optimize=True)
-    Int1 += np.einsum("bcfe,ek->bcfk", H.ab.vvvv, R.b, optimize=True)
-    Int1 += np.einsum("mnek,bcmn->bcek", H.ab.oovo, R.ab, optimize=True)
-    Int1 += np.einsum("bmfe,ecmk->bcfk", H.aa.vovv, R.ab, optimize=True)
-    Int1 += np.einsum("bmfe,ecmk->bcfk", H.ab.vovv, R.bb, optimize=True)
-    Int1 -= np.einsum("mcfe,bemk->bcfk", H.ab.ovvv, R.ab, optimize=True)
-    # Intermediate 2: X2B(ncjk)*Y2A(abin) -> Z3B(abcijk)
-    Int2 = -1.0 * np.einsum("nmjk,cm->ncjk", H.ab.oooo, R.b, optimize=True)
-    Int2 += np.einsum("mcje,ek->mcjk", H.ab.ovov, R.b, optimize=True)
-    Int2 += np.einsum("mcek,ej->mcjk", H.ab.ovvo, R.a, optimize=True)
-    Int2 += np.einsum("mcef,efjk->mcjk", H.ab.ovvv, R.ab, optimize=True)
-    Int2 += np.einsum("nmje,ecmk->ncjk", H.aa.ooov, R.ab, optimize=True)
-    Int2 += np.einsum("nmje,ecmk->ncjk", H.ab.ooov, R.bb, optimize=True)
-    Int2 -= np.einsum("nmek,ecjm->ncjk", H.ab.oovo, R.ab, optimize=True)
-    # Intermediate 3: X2A(abej)*Y2B(ecik) -> Z3B(abcijk)
-    Int3 = np.einsum("amje,bm->abej", H.aa.voov, R.a, optimize=True)  # (*) flipped sign to use H2A(voov) instead of H2A(vovo)
-    Int3 += 0.5 * np.einsum("abfe,ej->abfj", H.aa.vvvv, R.a, optimize=True)  # (*) added factor 1/2 to compensate A(ab)
-    Int3 += 0.25 * np.einsum("nmje,abmn->abej", H.aa.ooov, R.aa, optimize=True)  # (*) added factor 1/2 to compensate A(ab)
-    Int3 += np.einsum("amfe,bejm->abfj", H.aa.vovv, R.aa, optimize=True)
-    Int3 += np.einsum("amfe,bejm->abfj", H.ab.vovv, R.ab, optimize=True)
-    Int3 -= 0.5 * np.einsum("me,abmj->abej", Q1, T.aa, optimize=True)  # (*) added factor 1/2 to compensate A(ab)
-    Int3 -= np.transpose(Int3, (1, 0, 2, 3))
-    # Intermediate 4: X2A(bnji)*Y2B(acnk) -> Z3B(abcijk)
-    Int4 = -0.5 * np.einsum("nmij,bm->bnji", H.aa.oooo, R.a, optimize=True)  # (*) added factor 1/2 to compenate A(ij)
-    Int4 -= np.einsum("bmie,ej->bmji", H.aa.voov, R.a, optimize=True)  # (*) flipped sign to use H2A(voov) instead of H2A(vovo)
-    Int4 += 0.25 * np.einsum("bmfe,efij->bmji", H.aa.vovv, R.aa, optimize=True)  # (*) added factor 1/2 to compensate A(ij)
-    Int4 += np.einsum("nmie,bejm->bnji", H.aa.ooov, R.aa, optimize=True)
-    Int4 += np.einsum("nmie,bejm->bnji", H.ab.ooov, R.ab, optimize=True)
-    Int4 += 0.5 * np.einsum("me,ebij->bmji", Q1, T.aa, optimize=True)  # (*) added factor 1/2 to compensate A(ij)
-    Int4 -= np.transpose(Int4, (0, 1, 3, 2))
-    # Intermediate 5: X2B(bcje)*Y2B(aeik) -> Z3B(abcijk)
-    Int5 = -1.0 * np.einsum("mcje,bm->bcje", H.ab.ovov, R.a, optimize=True)
-    Int5 -= np.einsum("bmje,cm->bcje", H.ab.voov, R.b, optimize=True)
-    Int5 += np.einsum("bcef,ej->bcjf", H.ab.vvvv, R.a, optimize=True)
-    Int5 += np.einsum("mnjf,bcmn->bcjf", H.ab.ooov, R.ab, optimize=True)
-    Int5 += np.einsum("mcef,bejm->bcjf", H.ab.ovvv, R.aa, optimize=True)
-    Int5 += np.einsum("cmfe,bejm->bcjf", H.bb.vovv, R.ab, optimize=True)
-    Int5 -= np.einsum("bmef,ecjm->bcjf", H.ab.vovv, R.ab, optimize=True)
-    # Intermediate 6: X2B(bnjk)*Y2B(acin) -> Z3B(abcijk)
-    Int6 = -1.0 * np.einsum("mnjk,bm->bnjk", H.ab.oooo, R.a, optimize=True)
-    Int6 += np.einsum("bmje,ek->bmjk", H.ab.voov, R.b, optimize=True)
-    Int6 += np.einsum("bmek,ej->bmjk", H.ab.vovo, R.a, optimize=True)
-    Int6 += np.einsum("bnef,efjk->bnjk", H.ab.vovv, R.ab, optimize=True)
-    Int6 += np.einsum("mnek,bejm->bnjk", H.ab.oovo, R.aa, optimize=True)
-    Int6 += np.einsum("nmke,bejm->bnjk", H.bb.ooov, R.ab, optimize=True)
-    Int6 -= np.einsum("nmje,benk->bmjk", H.ab.ooov, R.ab, optimize=True)
-    Int6 += np.einsum("me,bejk->bmjk", Q2, T.ab, optimize=True)
 
-    return Int1, Int2, Int3, Int4, Int5, Int6
-
-
-def calc_eomcc23c_intermediates(T, R, H):
-    Q1 = (
-        np.einsum("mnef,fn->me", H.bb.oovv, R.b, optimize=True)
-        + np.einsum("nmfe,fn->me", H.ab.oovv, R.a, optimize=True)
+    X.aa.vvov = (
+            np.einsum("amje,bm->baje", H.aa.voov, R.a, optimize=True)
+            + np.einsum("amfe,bejm->bajf", H.aa.vovv, R.aa, optimize=True)
+            + np.einsum("amfe,bejm->bajf", H.ab.vovv, R.ab, optimize=True)
+            + 0.5 * np.einsum("abfe,ej->bajf", H.aa.vvvv, R.a, optimize=True)
+            + 0.25 * np.einsum("nmje,abmn->baje", H.aa.ooov, R.aa, optimize=True)
+            - 0.5 * np.einsum("me,abmj->baje", X.a.ov, T.aa, optimize=True)  # counterterm, similar to CR-CC(2,3)
     )
-    Q2 = (
-        np.einsum("mnef,fn->me", H.ab.oovv, R.b, optimize=True)
-        + np.einsum("nmfe,fn->me", H.aa.oovv, R.a, optimize=True)
+    X.aa.vvov -= np.transpose(X.aa.vvov, (1, 0, 2, 3))
+
+    X.aa.vooo = (
+            -np.einsum("bmie,ej->bmji", H.aa.voov, R.a, optimize=True)
+            + np.einsum("nmie,bejm->bnji", H.aa.ooov, R.aa, optimize=True)
+            + np.einsum("nmie,bejm->bnji", H.ab.ooov, R.ab, optimize=True)
+            - 0.5 * np.einsum("nmij,bm->bnji", H.aa.oooo, R.a, optimize=True)
+            + 0.25 * np.einsum("bmfe,efij->bmji", H.aa.vovv, R.aa, optimize=True)
     )
-    # Intermediate 1: X2B(cbke)*Y2C(aeij) -> Z3C(cbakji)
-    Int1 = -1.0 * np.einsum("cmke,bm->cbke", H.ab.voov, R.b, optimize=True)
-    Int1 -= np.einsum("mbke,cm->cbke", H.ab.ovov, R.a, optimize=True)
-    Int1 += np.einsum("cbef,ek->cbkf", H.ab.vvvv, R.a, optimize=True)
-    Int1 += np.einsum("nmke,cbnm->cbke", H.ab.ooov, R.ab, optimize=True)
-    Int1 += np.einsum("bmfe,cekm->cbkf", H.bb.vovv, R.ab, optimize=True)
-    Int1 += np.einsum("mbef,ecmk->cbkf", H.ab.ovvv, R.aa, optimize=True)
-    Int1 -= np.einsum("cmef,ebkm->cbkf", H.ab.vovv, R.ab, optimize=True)
-    # Intermediate 2: X2B(cnkj)*Y2C(abin) -> Z3C(cbakji)
-    Int2 = -1.0 * np.einsum("mnkj,cm->cnkj", H.ab.oooo, R.a, optimize=True)
-    Int2 += np.einsum("cmej,ek->cmkj", H.ab.vovo, R.a, optimize=True)
-    Int2 += np.einsum("cmke,ej->cmkj", H.ab.voov, R.b, optimize=True)
-    Int2 += np.einsum("cmfe,fekj->cmkj", H.ab.vovv, R.ab, optimize=True)
-    Int2 += np.einsum("nmje,cekm->cnkj", H.bb.ooov, R.ab, optimize=True)
-    Int2 += np.einsum("mnej,ecmk->cnkj", H.ab.oovo, R.aa, optimize=True)
-    Int2 -= np.einsum("mnke,cemj->cnkj", H.ab.ooov, R.ab, optimize=True)
-    # Intermediate 3: X2C(abej)*Y2B(ceki) -> Z3C(cbakji)
-    Int3 = np.einsum("amje,bm->abej", H.bb.voov, R.b, optimize=True)  # (*) flipped sign to use H2A(voov) instead of H2A(vovo)
-    Int3 += 0.5 * np.einsum("abfe,ej->abfj", H.bb.vvvv, R.b, optimize=True)  # (*) added factor 1/2 to compensate A(ab)
-    Int3 += 0.25 * np.einsum("nmje,abmn->abej", H.bb.ooov, R.bb, optimize=True)  # (*) added factor 1/2 to compensate A(ab)
-    Int3 += np.einsum("amfe,bejm->abfj", H.bb.vovv, R.bb, optimize=True)
-    Int3 += np.einsum("maef,ebmj->abfj", H.ab.ovvv, R.ab, optimize=True)
-    Int3 -= 0.5 * np.einsum("me,abmj->abej", Q1, T.bb, optimize=True)  # (*) added factor 1/2 to compensate A(ab)
-    Int3 -= np.transpose(Int3, (1, 0, 2, 3))
-    # Intermediate 4: X2C(bnji)*Y2B(cakn) -> Z3C(cbakji)
-    Int4 = -0.5 * np.einsum("nmij,bm->bnji", H.bb.oooo, R.b, optimize=True)  # (*) added factor 1/2 to compenate A(ij)
-    Int4 -= np.einsum("bmie,ej->bmji", H.bb.voov, R.b, optimize=True)  # (*) flipped sign to use H2A(voov) instead of H2A(vovo)
-    Int4 += 0.25 * np.einsum("bmfe,efij->bmji", H.bb.vovv, R.bb, optimize=True)  # (*) added factor 1/2 to compensate A(ij)
-    Int4 += np.einsum("nmie,bejm->bnji", H.bb.ooov, R.bb, optimize=True)
-    Int4 += np.einsum("mnei,ebmj->bnji", H.ab.oovo, R.ab, optimize=True)
-    Int4 += 0.5 * np.einsum("me,ebij->bmji", Q1, T.bb, optimize=True)  # (*) added factor 1/2 to compensate A(ij)
-    Int4 -= np.transpose(Int4, (0, 1, 3, 2))
-    # Intermediate 5: X2B(cbej)*Y2B(eaki) -> Z3C(cbakji)
-    Int5 = -1.0 * np.einsum("cmej,bm->cbej", H.ab.vovo, R.b, optimize=True)
-    Int5 -= np.einsum("mbej,cm->cbej", H.ab.ovvo, R.a, optimize=True)
-    Int5 += np.einsum("cbfe,ej->cbfj", H.ab.vvvv, R.b, optimize=True)
-    Int5 += np.einsum("nmfj,cbnm->cbfj", H.ab.oovo, R.ab, optimize=True)
-    Int5 += np.einsum("cmfe,bejm->cbfj", H.ab.vovv, R.bb, optimize=True)
-    Int5 += np.einsum("cmfe,ebmj->cbfj", H.aa.vovv, R.ab, optimize=True)
-    Int5 -= np.einsum("mbfe,cemj->cbfj", H.ab.ovvv, R.ab, optimize=True)
-    # Intermediate 6: X2B(nbkj)*Y2B(cani) -> Z3C(cbakji)
-    Int6 = -1.0 * np.einsum("nmkj,bm->nbkj", H.ab.oooo, R.b, optimize=True)
-    Int6 += np.einsum("mbej,ek->mbkj", H.ab.ovvo, R.a, optimize=True)
-    Int6 += np.einsum("mbke,ej->mbkj", H.ab.ovov, R.b, optimize=True)
-    Int6 += np.einsum("nbfe,fekj->nbkj", H.ab.ovvv, R.ab, optimize=True)
-    Int6 += np.einsum("nmke,bejm->nbkj", H.ab.ooov, R.bb, optimize=True)
-    Int6 += np.einsum("nmke,ebmj->nbkj", H.aa.ooov, R.ab, optimize=True)
-    Int6 -= np.einsum("mnej,ebkn->mbkj", H.ab.oovo, R.ab, optimize=True)
-    Int6 += np.einsum("me,ebkj->mbkj", Q2, T.ab, optimize=True)
+    X.aa.vooo -= np.transpose(X.aa.vooo, (0, 1, 3, 2))
 
-    return Int1, Int2, Int3, Int4, Int5, Int6
+    X.ab.vvvo = (
+            - np.einsum("mcek,bm->bcek", H.ab.ovvo, R.a, optimize=True)
+            - np.einsum("bmek,cm->bcek", H.ab.vovo, R.b, optimize=True)
+            + np.einsum("bcfe,ek->bcfk", H.ab.vvvv, R.b, optimize=True)
+            + np.einsum("mnek,bcmn->bcek", H.ab.oovo, R.ab, optimize=True)
+            + np.einsum("bmfe,ecmk->bcfk", H.aa.vovv, R.ab, optimize=True)
+            + np.einsum("bmfe,ecmk->bcfk", H.ab.vovv, R.bb, optimize=True)
+            - np.einsum("mcfe,bemk->bcfk", H.ab.ovvv, R.ab, optimize=True)
+            - np.einsum("me,bcmk->bcek", X.a.ov, T.ab, optimize=True)  # counterterm, similar to CR-CC(2,3)
+    )
 
+    X.ab.ovoo = (
+            - np.einsum("nmjk,cm->ncjk", H.ab.oooo, R.b, optimize=True)
+            + np.einsum("mcje,ek->mcjk", H.ab.ovov, R.b, optimize=True)
+            + np.einsum("mcek,ej->mcjk", H.ab.ovvo, R.a, optimize=True)
+            + np.einsum("mcef,efjk->mcjk", H.ab.ovvv, R.ab, optimize=True)
+            + np.einsum("nmje,ecmk->ncjk", H.aa.ooov, R.ab, optimize=True)
+            + np.einsum("nmje,ecmk->ncjk", H.ab.ooov, R.bb, optimize=True)
+            - np.einsum("nmek,ecjm->ncjk", H.ab.oovo, R.ab, optimize=True)
+    )
 
-def calc_eomm23d_intermediates(T, R, H):
+    X.ab.vvov = (
+            - np.einsum("mcje,bm->bcje", H.ab.ovov, R.a, optimize=True)
+            - np.einsum("bmje,cm->bcje", H.ab.voov, R.b, optimize=True)
+            + np.einsum("bcef,ej->bcjf", H.ab.vvvv, R.a, optimize=True)
+            + np.einsum("mnjf,bcmn->bcjf", H.ab.ooov, R.ab, optimize=True)
+            + np.einsum("mcef,bejm->bcjf", H.ab.ovvv, R.aa, optimize=True)
+            + np.einsum("cmfe,bejm->bcjf", H.bb.vovv, R.ab, optimize=True)
+            - np.einsum("bmef,ecjm->bcjf", H.ab.vovv, R.ab, optimize=True)
+            - np.einsum("me,bcjm->bcje", X.b.ov, T.ab, optimize=True)  # counterterm, similar to CR-CC(2,3)
+    )
 
-    Q1 = np.einsum("mnef,fn->me", H.bb.oovv, R.b, optimize=True)
-    Q1 += np.einsum("nmfe,fn->me", H.ab.oovv, R.a, optimize=True)
+    X.ab.vooo = (
+            - np.einsum("mnjk,bm->bnjk", H.ab.oooo, R.a, optimize=True)
+            + np.einsum("bmje,ek->bmjk", H.ab.voov, R.b, optimize=True)
+            + np.einsum("bmek,ej->bmjk", H.ab.vovo, R.a, optimize=True)
+            + np.einsum("bnef,efjk->bnjk", H.ab.vovv, R.ab, optimize=True)
+            + np.einsum("mnek,bejm->bnjk", H.ab.oovo, R.aa, optimize=True)
+            + np.einsum("nmke,bejm->bnjk", H.bb.ooov, R.ab, optimize=True)
+            - np.einsum("nmje,benk->bmjk", H.ab.ooov, R.ab, optimize=True)
+    )
 
-    I1 = np.einsum("amje,bm->abej", H.bb.voov, R.b, optimize=True)
-    I1 += np.einsum("amfe,bejm->abfj", H.bb.vovv, R.bb, optimize=True)
-    I1 += np.einsum("maef,ebmj->abfj", H.ab.ovvv, R.ab, optimize=True)
-    I1 -= np.transpose(I1, (1, 0, 2, 3))
-    I2 = np.einsum("abfe,ej->abfj", H.bb.vvvv, R.b, optimize=True)
-    I2 += 0.5 * np.einsum("nmje,abmn->abej", H.bb.ooov, R.bb, optimize=True)
-    I2 -= np.einsum("me,abmj->abej", Q1, T.bb, optimize=True)
-    chi2C_vvvo = I1 + I2
+    X.bb.vvov = (
+            np.einsum("amje,bm->baje", H.bb.voov, R.b, optimize=True)
+            + 0.5 * np.einsum("abfe,ej->bajf", H.bb.vvvv, R.b, optimize=True)
+            + 0.25 * np.einsum("nmje,abmn->baje", H.bb.ooov, R.bb, optimize=True)
+            + np.einsum("amfe,bejm->bajf", H.bb.vovv, R.bb, optimize=True)
+            + np.einsum("maef,ebmj->bajf", H.ab.ovvv, R.ab, optimize=True)
+            - 0.5 * np.einsum("me,abmj->baje", X.b.ov, T.bb, optimize=True)  # counterterm, similar to CR-CC(2,3)
+    )
+    X.bb.vvov -= np.transpose(X.bb.vvov, (1, 0, 2, 3))
 
-    I1 = -np.einsum("bmie,ej->mbij", H.bb.voov, R.b, optimize=True)
-    I1 += np.einsum("nmie,bejm->nbij", H.bb.ooov, R.bb, optimize=True)
-    I1 += np.einsum("mnei,ebmj->nbij", H.ab.oovo, R.ab, optimize=True)
-    I1 -= np.transpose(I1, (0, 1, 3, 2))
-    I2 = -1.0 * np.einsum("nmij,bm->nbij", H.bb.oooo, R.b, optimize=True)
-    I2 += 0.5 * np.einsum("bmfe,efij->mbij", H.bb.vovv, R.bb, optimize=True)
-    chi2C_ovoo = I1 + I2
-
-    return chi2C_vvvo, chi2C_ovoo
+    X.bb.vooo = (
+            -0.5 * np.einsum("nmij,bm->bnji", H.bb.oooo, R.b, optimize=True)
+            - np.einsum("bmie,ej->bmji", H.bb.voov, R.b, optimize=True)
+            + 0.25 * np.einsum("bmfe,efij->bmji", H.bb.vovv, R.bb, optimize=True)
+            + np.einsum("nmie,bejm->bnji", H.bb.ooov, R.bb, optimize=True)
+            + np.einsum("mnei,ebmj->bnji", H.ab.oovo, R.ab, optimize=True)
+    )
+    X.bb.vooo -= np.transpose(X.bb.vooo, (0, 1, 3, 2))
+    return X
