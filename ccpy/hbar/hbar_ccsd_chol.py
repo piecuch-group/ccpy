@@ -322,9 +322,21 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
     ### a ###
     H.chol.a.oo = H0.chol.a.oo.copy() + np.einsum("xme,ei->xmi", H.chol.a.ov, T.a, optimize=True)
     H.chol.a.vv = H0.chol.a.vv.copy() - np.einsum("xme,am->xae", H.chol.a.ov, T.a, optimize=True)
+    H.chol.a.vo = (
+            H.chol.a.vo.copy()
+            - np.einsum("xmi,am->xai", H.chol.a.oo, T.a, optimize=True)
+            + np.einsum("xae,ei->xai", H.chol.a.vv, T.a, optimize=True)
+            + np.einsum("xme,ei,am->xai", H.chol.a.ov, T.a, T.a, optimize=True)
+    )
     ### b ###
     H.chol.b.oo = H0.chol.b.oo.copy() + np.einsum("xme,ei->xmi", H.chol.b.ov, T.b, optimize=True)
     H.chol.b.vv = H0.chol.b.vv.copy() - np.einsum("xme,am->xae", H.chol.b.ov, T.b, optimize=True)
+    H.chol.b.vo = (
+            H.chol.b.vo.copy()
+            - np.einsum("xmi,am->xai", H.chol.b.oo, T.b, optimize=True)
+            + np.einsum("xae,ei->xai", H.chol.b.vv, T.b, optimize=True)
+            + np.einsum("xme,ei,am->xai", H.chol.b.ov, T.b, T.b, optimize=True)
+    )
     # -------------------------------------------------------------------------
     return H
 
