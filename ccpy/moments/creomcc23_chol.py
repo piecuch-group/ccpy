@@ -197,6 +197,12 @@ def get_eomcc23_intermediates(H, R, T, system):
     # Create new 2-body integral object
     X = Integral.from_empty(system, 2, data_type=H.a.oo.dtype, use_none=True)
 
+    # Intermediates to take care of vvvv-based term
+    I_aa_ooov = np.einsum("mnef,ei->mnif", H.aa.oovv, R.a, optimize=True)
+    I_ab_ooov = np.einsum("mnef,ei->mnif", H.ab.oovv, R.a, optimize=True)
+    I_ab_oovo = np.einsum("mnef,fj->mnej", H.ab.oovv, R.b, optimize=True)
+    I_bb_ooov = np.einsum("mnef,ei->mnif", H.bb.oovv, R.b, optimize=True)
+
     X.a.ov = (
             np.einsum("mnef,fn->me", H.aa.oovv, R.a, optimize=True)
             + np.einsum("mnef,fn->me", H.ab.oovv, R.b, optimize=True)
@@ -212,6 +218,7 @@ def get_eomcc23_intermediates(H, R, T, system):
             + np.einsum("amfe,bejm->bajf", H.aa.vovv, R.aa, optimize=True)
             + np.einsum("amfe,bejm->bajf", H.ab.vovv, R.ab, optimize=True)
             # + 0.5 * np.einsum("abfe,ej->bajf", H.aa.vvvv, R.a, optimize=True)
+            + 0.25 * np.einsum("mnie,abmn->abie", I_aa_ooov, T.aa, optimize=True)
             + 0.25 * np.einsum("nmje,abmn->baje", H.aa.ooov, R.aa, optimize=True)
             - 0.5 * np.einsum("me,abmj->baje", X.a.ov, T.aa, optimize=True)  # counterterm, similar to CR-CC(2,3)
     )
@@ -219,7 +226,7 @@ def get_eomcc23_intermediates(H, R, T, system):
         for b in range(a + 1, R.a.shape[0]):
             # <ab|ef> = <x|ae><x|bf>
             batch_ints = build_2index_batch_vvvv_aa(a, b, H)
-            batch_ints += 0.5 * np.einsum("mnef,mn->ef", H.aa.oovv, T.aa[a, b, :, :], optimize=True)
+            # batch_ints += 0.5 * np.einsum("mnef,mn->ef", H.aa.oovv, T.aa[a, b, :, :], optimize=True)
             X.aa.vvov[a, b, :, :] += np.einsum("ef,ej->jf", batch_ints, R.a, optimize=True)
     X.aa.vvov -= np.transpose(X.aa.vvov, (1, 0, 2, 3))
 
@@ -227,6 +234,7 @@ def get_eomcc23_intermediates(H, R, T, system):
             - np.einsum("mcek,bm->bcek", H.ab.ovvo, R.a, optimize=True)
             - np.einsum("bmek,cm->bcek", H.ab.vovo, R.b, optimize=True)
             # + np.einsum("bcfe,ek->bcfk", H.ab.vvvv, R.b, optimize=True)
+            + np.einsum("mnej,abmn->abej", I_ab_oovo, T.ab, optimize=True)
             + np.einsum("mnek,bcmn->bcek", H.ab.oovo, R.ab, optimize=True)
             + np.einsum("bmfe,ecmk->bcfk", H.aa.vovv, R.ab, optimize=True)
             + np.einsum("bmfe,ecmk->bcfk", H.ab.vovv, R.bb, optimize=True)
@@ -237,6 +245,7 @@ def get_eomcc23_intermediates(H, R, T, system):
             - np.einsum("mcje,bm->bcje", H.ab.ovov, R.a, optimize=True)
             - np.einsum("bmje,cm->bcje", H.ab.voov, R.b, optimize=True)
             # + np.einsum("bcef,ej->bcjf", H.ab.vvvv, R.a, optimize=True)
+            + np.einsum("mnie,abmn->abie", I_ab_ooov, T.ab, optimize=True)
             + np.einsum("mnjf,bcmn->bcjf", H.ab.ooov, R.ab, optimize=True)
             + np.einsum("mcef,bejm->bcjf", H.ab.ovvv, R.aa, optimize=True)
             + np.einsum("cmfe,bejm->bcjf", H.bb.vovv, R.ab, optimize=True)
@@ -245,13 +254,14 @@ def get_eomcc23_intermediates(H, R, T, system):
     )
     for a in range(R.a.shape[0]):
         batch_ints = build_3index_batch_vvvv_ab(a, H)
-        batch_ints += np.einsum("mnef,bmn->bef", H.ab.oovv, T.ab[a, :, :, :], optimize=True)
+        # batch_ints += np.einsum("mnef,bmn->bef", H.ab.oovv, T.ab[a, :, :, :], optimize=True)
         X.ab.vvvo[a, :, :, :] += np.einsum("bef,fk->bek", batch_ints, R.b, optimize=True)
         X.ab.vvov[a, :, :, :] += np.einsum("bef,ei->bif", batch_ints, R.a, optimize=True)
 
     X.bb.vvov = (
             np.einsum("amje,bm->baje", H.bb.voov, R.b, optimize=True)
             # + 0.5 * np.einsum("abfe,ej->bajf", H.bb.vvvv, R.b, optimize=True)
+            + 0.25 * np.einsum("mnie,abmn->abie", I_bb_ooov, T.bb, optimize=True)
             + 0.25 * np.einsum("nmje,abmn->baje", H.bb.ooov, R.bb, optimize=True)
             + np.einsum("amfe,bejm->bajf", H.bb.vovv, R.bb, optimize=True)
             + np.einsum("maef,ebmj->bajf", H.ab.ovvv, R.ab, optimize=True)
@@ -261,7 +271,7 @@ def get_eomcc23_intermediates(H, R, T, system):
         for b in range(a + 1, R.b.shape[0]):
             # <ab|ef> = <x|ae><x|bf>
             batch_ints = build_2index_batch_vvvv_bb(a, b, H)
-            batch_ints += 0.5 * np.einsum("mnef,mn->ef", H.bb.oovv, T.bb[a, b, :, :], optimize=True)
+            # batch_ints += 0.5 * np.einsum("mnef,mn->ef", H.bb.oovv, T.bb[a, b, :, :], optimize=True)
             X.bb.vvov[a, b, :, :] += np.einsum("ef,ej->jf", batch_ints, R.b, optimize=True)
     X.bb.vvov -= np.transpose(X.bb.vvov, (1, 0, 2, 3))
 
