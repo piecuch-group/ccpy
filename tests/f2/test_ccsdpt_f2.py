@@ -23,7 +23,7 @@ def test_ccsdpt_f2():
     mf.kernel()
 
     #driver = Driver.from_pyscf(mf, nfrozen=2)
-    driver = Driver.from_pyscf(mf, nfrozen=2, use_cholesky=True, cholesky_tol=1.0e-09)
+    driver = Driver.from_pyscf(mf, nfrozen=2, use_cholesky=True, cholesky_tol=1.0e-07)
     driver.system.print_info()
     driver.options["RHF_symmetry"] = False
     driver.run_cc(method="ccsd_chol")

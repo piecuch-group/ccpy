@@ -13,7 +13,7 @@ def load_pyscf_integrals(
         meanfield, nfrozen=0, ndelete=0,
         num_act_holes_alpha=0, num_act_particles_alpha=0,
         num_act_holes_beta=0, num_act_particles_beta=0,
-        use_cholesky=False, cholesky_tol=1.0e-09,
+        use_cholesky=False, cholesky_tol=1.0e-09, cmax=10,
         normal_ordered=True, dump_integrals=False, sorted=True
 ):
     """Builds the System and Integral objects using the information contained within a PySCF
@@ -75,7 +75,7 @@ def load_pyscf_integrals(
 
     if use_cholesky:
         # Obtain AO Cholesky decomposition of ERIs
-        R_chol = cholesky_eri_from_pyscf(molecule, tol=cholesky_tol)
+        R_chol = cholesky_eri_from_pyscf(molecule, tol=cholesky_tol, cmax=cmax)
         # Transform to MO frame
         R_chol = np.einsum("xpq,pi,qj->xij", R_chol, mo_coeff, mo_coeff, optimize=True)
         # Compute HF energy (due to Cholesky error, this may not equal the true HF energy!)

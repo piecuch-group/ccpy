@@ -9,9 +9,9 @@ References:
     [4] P. Piecuch and J. Paldus, Int. J. Quantum Chem. 36, 429 (1989).
 """
 import numpy as np
-from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa, build_2index_batch_vvvv_bb, build_3index_batch_vvvv_ab
-from ccpy.utilities.updates import cc_loops2
+from ccpy.utilities.updates import cc_loops2, vvvv_contraction
 
+# @profile
 def update(T, dT, H, X, shift, flag_RHF, system):
 
     # pre-CCS intermediates
@@ -93,6 +93,7 @@ def update(T, dT, H, X, shift, flag_RHF, system):
         T, dT = update_t2c(T, dT, X, H, shift)
     return T, dT
 
+# @profile
 def update_t1a(T, dT, X, H, shift):
     """
     Update t1a amplitudes by calculating the projection <ia|(H_N e^(T1+T2))_C|0>.
@@ -164,6 +165,9 @@ def update_t2a(T, dT, X, H, shift):
             np.einsum("xai,xme->amie", X.chol.a.vo, X.chol.b.ov, optimize=True)
             + 0.5 * np.einsum("mnef,afin->amie", H.bb.oovv, T.ab, optimize=True)
     )
+    # save some voov intermediates for T2B update
+    X.aa.voov = h2a_voov
+    X.ab.voov = h2b_voov
     # <abij|H(1)|0>
     dT.aa = 0.5 * np.einsum("xai,xbj->abij", X.chol.a.vo, X.chol.a.vo, optimize=True)
     # <abij|[H(1)*T2]_C|0>
@@ -172,12 +176,13 @@ def update_t2a(T, dT, X, H, shift):
     dT.aa += np.einsum("amie,ebmj->abij", h2a_voov, T.aa, optimize=True)
     dT.aa += np.einsum("amie,bejm->abij", h2b_voov, T.ab, optimize=True)
     dT.aa += 0.125 * np.einsum("mnij,abmn->abij", h2a_oooo, T.aa, optimize=True)
-    for a in range(T.a.shape[0]):
-       for b in range(a + 1, T.a.shape[0]):
-           # <ab|ef> = <x|ae><x|bf>
-           batch_ints = build_2index_batch_vvvv_aa(a, b, X)
-           dT.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, T.aa, optimize=True)
-    # dT.aa = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(dT.aa, H0.chol_a, tau)
+    # for a in range(T.a.shape[0]):
+    #    for b in range(a + 1, T.a.shape[0]):
+    #        # <ab|ef> = <x|ae><x|bf>
+    #        batch_ints = build_2index_batch_vvvv_aa(a, b, X)
+    #        dT.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, T.aa, optimize=True)
+    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(X.chol.a.vv.transpose(0, 2, 1), 0.5 * T.aa.transpose(3, 2, 1, 0))
+    dT.aa += tmp.transpose(3, 2, 1, 0)
     T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
         T.aa, dT.aa, H.a.oo, H.a.vv, shift
     )
@@ -188,18 +193,18 @@ def update_t2b(T, dT, X, H, shift):
     """
     Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2))_C|0>.
     """
-    h2a_voov = (
-            np.einsum("xai,xme->amie", X.chol.a.vo, X.chol.a.ov, optimize=True)
-            - np.einsum("xae,xmi->amie", X.chol.a.vv, X.chol.a.oo, optimize=True)
-            + 0.5 * np.einsum("mnef,afin->amie", H.aa.oovv, T.aa, optimize=True)
-            + np.einsum("mnef,afin->amie", H.ab.oovv, T.ab, optimize=True)
-    )
-    h2b_voov = (
-            np.einsum("xai,xme->amie", X.chol.a.vo, X.chol.b.ov, optimize=True)
-            + 0.5 * np.einsum("mnef,afin->amie", H.bb.oovv, T.ab, optimize=True)
-    )
-    h2a_voov += 0.5 * np.einsum("mnef,aeim->anif", H.aa.oovv, T.aa, optimize=True)
-    h2b_voov += (
+    # h2a_voov = (
+    #         np.einsum("xai,xme->amie", X.chol.a.vo, X.chol.a.ov, optimize=True)
+    #         - np.einsum("xae,xmi->amie", X.chol.a.vv, X.chol.a.oo, optimize=True)
+    #         + 0.5 * np.einsum("mnef,afin->amie", H.aa.oovv, T.aa, optimize=True)
+    #         + np.einsum("mnef,afin->amie", H.ab.oovv, T.ab, optimize=True)
+    # )
+    # h2b_voov = (
+    #         np.einsum("xai,xme->amie", X.chol.a.vo, X.chol.b.ov, optimize=True)
+    #         + 0.5 * np.einsum("mnef,afin->amie", H.bb.oovv, T.ab, optimize=True)
+    # )
+    X.aa.voov += 0.5 * np.einsum("mnef,aeim->anif", H.aa.oovv, T.aa, optimize=True)
+    X.ab.voov += (
             0.5 * np.einsum("mnef,aeim->anif", H.bb.oovv, T.ab, optimize=True)
             + np.einsum("mnef,aeim->anif", H.ab.oovv, T.aa, optimize=True)
     )
@@ -228,18 +233,20 @@ def update_t2b(T, dT, X, H, shift):
     dT.ab += np.einsum("be,aeij->abij", X.b.vv, T.ab, optimize=True)
     dT.ab -= np.einsum("mi,abmj->abij", X.a.oo, T.ab, optimize=True)
     dT.ab -= np.einsum("mj,abim->abij", X.b.oo, T.ab, optimize=True)
-    dT.ab += np.einsum("amie,ebmj->abij", h2a_voov, T.ab, optimize=True)
-    dT.ab += np.einsum("amie,ebmj->abij", h2b_voov, T.bb, optimize=True)
+    dT.ab += np.einsum("amie,ebmj->abij", X.aa.voov, T.ab, optimize=True)
+    dT.ab += np.einsum("amie,ebmj->abij", X.ab.voov, T.bb, optimize=True)
     dT.ab += np.einsum("mbej,aeim->abij", h2b_ovvo, T.aa, optimize=True)
     dT.ab += np.einsum("bmje,aeim->abij", h2c_voov, T.ab, optimize=True)
     dT.ab -= np.einsum("mbie,aemj->abij", h2b_ovov, T.ab, optimize=True)
     dT.ab -= np.einsum("amej,ebim->abij", h2b_vovo, T.ab, optimize=True)
     dT.ab += np.einsum("mnij,abmn->abij", h2b_oooo, T.ab, optimize=True)
     # the one-loop Python is faster than the two-loop Fortran
-    for a in range(T.a.shape[0]):
-        batch_ints = build_3index_batch_vvvv_ab(a, X)
-        dT.ab[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, T.ab, optimize=True)
-    # dT.ab = vvvv_contraction.vvvv_contraction.vvvv_t2(dT.ab, H0.chol_a, H0.chol_b, tau)
+    # for a in range(T.a.shape[0]):
+    #     batch_ints = build_3index_batch_vvvv_ab(a, X)
+    #     dT.ab[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, T.ab, optimize=True)
+    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2(X.chol.a.vv.transpose(0, 2, 1), X.chol.b.vv.transpose(0, 2, 1), T.ab.transpose(3, 2, 1, 0))
+    dT.ab += tmp.transpose(3, 2, 1, 0)
+    # dT.ab = _contract_vvvv_ab(dT.ab, T.ab, X.chol.a.vv, X.chol.b.vv)
     T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
         T.ab, dT.ab, H.a.oo, H.a.vv, H.b.oo, H.b.vv, shift
     )
@@ -273,12 +280,13 @@ def update_t2c(T, dT, X, H, shift):
     dT.bb += np.einsum("amie,ebmj->abij", h2c_voov, T.bb, optimize=True)
     dT.bb += np.einsum("maei,ebmj->abij", h2b_ovvo, T.ab, optimize=True)
     dT.bb += 0.125 * np.einsum("mnij,abmn->abij", h2c_oooo, T.bb, optimize=True)
-    for a in range(T.b.shape[0]):
-       for b in range(a + 1, T.b.shape[0]):
-           # <ab|ef> = <x|ae><x|bf>
-           batch_ints = build_2index_batch_vvvv_bb(a, b, X)
-           dT.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, T.bb, optimize=True)
-    # dT.bb = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(dT.bb, X.chol_b, T.ab)
+    # for a in range(T.b.shape[0]):
+    #    for b in range(a + 1, T.b.shape[0]):
+    #        # <ab|ef> = <x|ae><x|bf>
+    #        batch_ints = build_2index_batch_vvvv_bb(a, b, X)
+    #        dT.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, T.bb, optimize=True)
+    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(X.chol.b.vv.transpose(0, 2, 1), 0.5 * T.bb.transpose(3, 2, 1, 0))
+    dT.bb += tmp.transpose(3, 2, 1, 0)
     T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
         T.bb, dT.bb, H.b.oo, H.b.vv, shift
     )

@@ -4,14 +4,15 @@ module vvvv_contraction
 
         contains
 
-              subroutine vvvv_t2_sym(resid, R, t2, no, nu, norb, naux)
+              subroutine vvvv_t2_sym(resid, R, t2, no, nu, naux)
                  ! Input variables
-                 integer, intent(in) :: no, nu, norb, naux
-                 real(kind=8), intent(in) :: R(naux,norb,norb)
-                 real(kind=8), intent(in) :: t2(nu,nu,no,no)
+                 integer, intent(in) :: no, nu, naux
+                 real(kind=8), intent(in) :: R(naux,nu,nu)
+                 real(kind=8), intent(in) :: t2(no,no,nu,nu)
                  ! InOut variables
-                 real(kind=8), intent(inout) :: resid(nu,nu,no,no)
-                 !f2py intent(in,out) :: resid(0:nu-1,0:nu-1,0:no-1,0:no-1)
+                 ! real(kind=8), intent(inout) :: resid(nu,nu,no,no)
+                 !!!!!!f2py intent(in,out) :: resid(0:nu-1,0:nu-1,0:no-1,0:no-1)
+                 real(kind=8), intent(out) :: resid(no,no,nu,nu)
                  ! Local variables
                  integer :: a, b, e, f, x
                  real(kind=8) :: batch_ints(nu,nu)
@@ -19,7 +20,7 @@ module vvvv_contraction
                  do a=1,nu
                     do b=a+1,nu
                        ! compute batch_ints(a,b) = <x|ae>*<x|bf>
-                       call dgemm('t','n',nu,nu,naux,1.0d0,R(:,a+no,no+1:norb),naux,R(:,b+no,no+1:norb),naux,0.0d0,batch_ints,nu)
+                       call dgemm('t','n',nu,nu,naux,1.0d0,R(:,:,b),naux,R(:,:,a),naux,0.0d0,batch_ints,nu)
                        ! antisymmetrize batch_ints(a,b) <- batch_ints(a,b) - v_fe(a,b)
                        batch_ints = batch_ints - transpose(batch_ints)
                        ! contract dT(a,b,:,:) <- 1/2 batch_ints(a,b) * t(efij)
@@ -30,38 +31,42 @@ module vvvv_contraction
                              !   batch_ints(e,f) = batch_ints(e,f) + R(x,a+no,e+no)*R(x,b+no,f+no)&
                              !                                     - R(x,a+no,f+no)*R(x,b+no,e+no)
                              !end do
-                             resid(a,b,:,:) = resid(a,b,:,:) + batch_ints(e,f)*t2(e,f,:,:)
+                             resid(:,:,b,a) = resid(:,:,b,a) + batch_ints(f,e)*t2(:,:,f,e)
                           end do
                        end do
                     end do
                  end do
               end subroutine vvvv_t2_sym
 
-              subroutine vvvv_t2(resid, Ra, Rb, t2, noa, nua, nob, nub, norb, naux)
+              subroutine vvvv_t2(resid, Ra, Rb, t2, noa, nua, nob, nub, naux)
                  ! Input variables
-                 integer, intent(in) :: noa, nua, nob, nub, norb, naux
-                 real(kind=8), intent(in) :: Ra(naux,norb,norb)
-                 real(kind=8), intent(in) :: Rb(naux,norb,norb)
-                 real(kind=8), intent(in) :: t2(nua,nub,noa,nob)
+                 integer, intent(in) :: noa, nua, nob, nub, naux
+                 real(kind=8), intent(in) :: Ra(naux,nua,nua)
+                 real(kind=8), intent(in) :: Rb(naux,nub,nub)
+                 real(kind=8), intent(in) :: t2(nob,noa,nub,nua)
                  ! InOut variables
-                 real(kind=8), intent(inout) :: resid(nua,nub,noa,nob)
-                 !f2py intent(in,out) :: resid(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+                 ! real(kind=8), intent(inout) :: resid(noa,nob,nua,nub)
+                 !!!!f2py intent(in,out) :: resid(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+                 real(kind=8), intent(out) :: resid(nob,noa,nub,nua)
                  ! Local variables
                  integer :: a, b, e, f, x
-                 real(kind=8) :: batch_ints(nua,nub)
+                 real(kind=8) :: batch_ints(nub,nua)
                  
+                 resid = 0.0d0
                  do a=1,nua
                     do b=1,nub
                        ! compute batch_ints(a) = <x|ae>*<x|bf>
-                       call dgemm('t','n',nua,nub,naux,1.0d0,Ra(:,a+noa,noa+1:norb),naux,Rb(:,b+nob,nob+1:norb),naux,0.0d0,batch_ints,nua)
+                       ! call dgemm('t','n',nua,nub,naux,1.0d0,Ra(:,a,:),naux,Rb(:,b,:),naux,0.0d0,batch_ints,nua)
+                       call dgemm('t','n',nub,nua,naux,1.0d0,Rb(:,:,b),naux,Ra(:,:,a),naux,0.0d0,batch_ints,nub)
                        ! contract dT(a,b,:,:) <- batch_ints(a,b) * t(efij)
                        do e=1,nua
                           do f=1,nub
-                             resid(a,b,:,:) = resid(a,b,:,:) + batch_ints(e,f)*t2(e,f,:,:)
+                             resid(:,:,b,a) = resid(:,:,b,a) + batch_ints(f,e)*t2(:,:,f,e)
                           end do
                        end do
                     end do
                  end do
+                 
               end subroutine vvvv_t2
            
               subroutine vvvv_index(idx,a,b,c,d,nu)
