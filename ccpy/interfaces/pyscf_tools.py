@@ -83,6 +83,7 @@ def load_pyscf_integrals(
         hf_energy += nuclear_repulsion
         system.reference_energy = hf_energy
         system.frozen_energy = 0.0
+        system.cholesky = True
         #
         return system, getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted)
 

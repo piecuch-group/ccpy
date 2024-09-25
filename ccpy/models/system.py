@@ -23,6 +23,7 @@ class System:
         mo_occupation=None,
         nact_occupied=0,
         nact_unoccupied=0,
+        cholesky=False,
     ):
         # basic information
         self.nelectrons = nelectrons - 2 * nfrozen
@@ -64,6 +65,8 @@ class System:
         self.nuclear_repulsion = nuclear_repulsion
         # periodic system information
         self.nkpts = nkpts
+        # Cholesky integrals
+        self.cholesky = cholesky
 
         # Get the point group symmetry of the reference state by exploiting
         # homomorphism between Abelian groups and binary vector spaces

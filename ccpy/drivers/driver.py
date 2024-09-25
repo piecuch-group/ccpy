@@ -280,6 +280,8 @@ class Driver:
                              num_active=self.operator_params["number_active_indices"])
         # Create the container for 1- and 2-body intermediates
         cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+        if self.system.cholesky:
+            cc_intermediates.chol = Integral.from_empty(self.system, 1, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
         # Run the CC calculation
         self.T, self.correlation_energy, _ = cc_jacobi(update_function,
                                                 self.T,
@@ -359,6 +361,8 @@ class Driver:
                              pspace_sizes=excitation_count)
         # Create the container for 1- and 2-body intermediates
         cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+        if self.system.cholesky:
+            cc_intermediates.chol = Integral.from_empty(self.system, 1, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
         # Run the CC(P) calculation
         # NOTE: It may not look like it, but t3_excitations is permuted and matches T at this point. It changes from its value at input!
         self.T, self.correlation_energy, _ = cc_jacobi(update_function,
@@ -411,13 +415,16 @@ class Driver:
         # Set operator parameters needed to build the guess R vector
         if method.lower() in ["cis", "sfcis", "eacis", "ipcis"]:
             self.guess_order = 1
-        elif method.lower() in ["cisd", "sfcisd", "deacis", "dipcis", "eacisd", "ipcisd"]:
+        elif method.lower() in ["cisd", "cisd_chol", "sfcisd", "deacis", "dipcis", "eacisd", "ipcisd"]:
             self.guess_order = 2
         # This is important. Turn off RHF symmetry (even for closed-shell references) when targetting non-singlets
         if multiplicity != 1:
             self.options["RHF_symmetry"] = False
         # Run the initial guess function and save all eigenpairs
-        self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, roots_per_irrep, nact_occupied, nact_unoccupied, debug=debug, use_symmetry=use_symmetry)
+        if self.system.cholesky:
+            self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, self.T, multiplicity, roots_per_irrep, nact_occupied, nact_unoccupied, debug=debug, use_symmetry=use_symmetry)
+        else:
+            self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, roots_per_irrep, nact_occupied, nact_unoccupied, debug=debug, use_symmetry=use_symmetry)
 
     def run_eomccp(self, method, state_index, t3_excitations, r3_excitations):
         """Performs the EOMCC calculation specified by the user in the input."""

@@ -215,7 +215,7 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
         )
     H.ab.voov = (
             np.einsum("xai,xme->amie", H.chol.a.vo, H.chol.b.ov, optimize=True)
-            + np.einsum("mnef,afin->amie", H0.ab.oovv, T.aa, optimize=True)
+            + np.einsum("nmfe,afin->amie", H0.ab.oovv, T.aa, optimize=True)
             + np.einsum("mnef,afin->amie", H0.bb.oovv, T.ab, optimize=True)
     )
     H.ab.ovvo = (

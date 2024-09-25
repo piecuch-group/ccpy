@@ -2,7 +2,7 @@ import numpy as np
 import time
 from ccpy.eom_guess.s2matrix import spin_adapt_guess
 
-def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, use_symmetry=True, debug=False):
+def run_diagonalization(system, H, T, multiplicity, roots_per_irrep, nacto, nactu, use_symmetry=True, debug=False):
 
     nroots_total = 0
     for key, value in roots_per_irrep.items():
@@ -31,7 +31,7 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
         idx_a, idx_b, idx_aa, idx_ab, idx_bb, ndim_irrep = get_index_arrays(nacto, nactu, system, irrep)
         t1 = time.perf_counter()
         # Compute the CISd-like Hamiltonian
-        Hmat = build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb, system)
+        Hmat = build_cisd_hamiltonian(H, T, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb, system)
         # Compute the S2 matrix in the same projection subspace
         S2mat = build_s2matrix(system, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb)
         # Project H onto the spin subspace with the specified multiplicity
@@ -117,7 +117,7 @@ def scatter(V_in, nacto, nactu, system):
     V_out = np.hstack((V_a_out.flatten(), V_b_out.flatten(), V_aa_out.flatten(), V_ab_out.flatten(), V_bb_out.flatten()))
     return V_out
 
-def build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb, system, with_ref=False):
+def build_cisd_hamiltonian(H, T, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb, system, with_ref=False):
 
     noa, nob, nua, nub = H.ab.oovv.shape
 
@@ -136,9 +136,9 @@ def build_cisd_hamiltonian(H, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb
     # total dimension
     ndim = n1a + n1b + n2a + n2b + n2c
 
-    h_aa_vvvv = build_active_h_aa_vvvv(H, nactu)
-    h_ab_vvvv = build_active_h_ab_vvvv(H, nactu)
-    h_bb_vvvv = build_active_h_bb_vvvv(H, nactu)
+    h_aa_vvvv = build_active_h_aa_vvvv(H, T, nactu_a)
+    h_ab_vvvv = build_active_h_ab_vvvv(H, T, nactu_a, nactu_b)
+    h_bb_vvvv = build_active_h_bb_vvvv(H, T, nactu_b)
 
     ####################################################################################
     # ALPHA SINGLES
@@ -974,69 +974,21 @@ def build_s2matrix(system, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb):
          ), axis=0)
     return S2mat
 
-def build_active_h_aa_vvvv(H, nactu):
-    nua, noa = H.a.ov.shape
-    # # Intermediates
-    # tau_aa = 0.5 * T.aa + np.einsum("ai,bj->abij", T.a, T.a, optimize=True)
-    # tau_aa -= np.transpose(tau_aa, (0, 1, 3, 2))
-    # # Bare vovv Hamiltonian element
-    # h_aa_vovv = H.aa.vovv[:nactu, :, :nactu, :nactu] + np.einsum("mnFE,An->AmEF", H.aa.oovv[:, :, :nactu, :nactu], T.a[:nactu, :], optimize=True)
-    # #
-    # h_aa_vvvv = 0.25 * np.einsum("mnEF,ABmn->ABEF", H.aa.oovv[:, :, :nactu, :nactu], tau_aa[:nactu, :nactu, :, :], optimize=True)
-    # h_aa_vvvv -= np.einsum("AmEF,Bm->ABEF", h_aa_vovv, T.a[:nactu, :], optimize=True)
-    # h_aa_vvvv -= np.transpose(h_aa_vvvv, (1, 0, 2, 3))
+def build_active_h_aa_vvvv(H, T, nactu):
     h_aa_vvvv = np.einsum("xAE,xBF->ABEF", H.chol.a.vv[:, :nactu, :nactu], H.chol.a.vv[:, :nactu, :nactu], optimize=True)
     h_aa_vvvv -= np.transpose(h_aa_vvvv, (0, 1, 3, 2))
-    # h_aa_vvvv = np.zeros((nactu, nactu, nactu, nactu))
-    # # handle bare vvvv using Cholesky
-    # for A in range(nactu):
-    #     for B in range(A + 1, nactu):
-    #         batch_ints = np.einsum("xE,xF->EF", H.chol_a[:, A + noa, :nactu], H.chol_a[:, B + noa, :nactu], optimize=True)
-    #         batch_ints -= batch_ints.T
-    #         h_aa_vvvv[A, B, :, :] += batch_ints
-    #         h_aa_vvvv[B, A, :, :] -= batch_ints
+    h_aa_vvvv += 0.5 * np.einsum("mnEF,ABmn->ABEF", H.aa.oovv[:, :, :nactu, :nactu], T.aa[:nactu, :nactu, :, :], optimize=True)
     return h_aa_vvvv
 
-def build_active_h_ab_vvvv(H, nactu):
-    noa, nob, nua, nub = H.ab.oovv.shape
-    # # Intermediates
-    # tau_ab = T.ab + np.einsum("ai,bj->abij", T.a, T.a, optimize=True)
-    # # Bare vovv Hamiltonian element
-    # h_ab_vovv = H.ab.vovv[:nactu, :, :nactu, :nactu] + np.einsum("mnFE,An->AmEF", H.ab.oovv[:, :, :nactu, :nactu], T.b[:nactu, :], optimize=True)
-    # h_ab_ovvv = H.ab.ovvv[:, :nactu, :nactu, :nactu] + np.einsum("mnFE,Bn->mBFE", H.ab.oovv[:, :, :nactu, :nactu], T.a[:nactu, :], optimize=True)
-    # #
-    # h_ab_vvvv = np.einsum("mnEF,ABmn->ABEF", H.ab.oovv[:, :, :nactu, :nactu], tau_ab[:nactu, :nactu, :, :], optimize=True)
-    # h_ab_vvvv -= np.einsum("AmEF,Bm->ABEF", h_ab_vovv, T.b[:nactu, :], optimize=True)
-    # h_ab_vvvv -= np.einsum("mBFE,Am->ABEF", h_ab_ovvv, T.a[:nactu, :], optimize=True)
-    h_ab_vvvv = np.einsum("xAE,xBF->ABEF", H.chol.a.vv[:, :nactu, :nactu], H.chol.b.vv[:, :nactu, :nactu], optimize=True)
-    # h_ab_vvvv = np.zeros((nactu, nactu, nactu, nactu))
-    # # handle bare vvvv using Cholesky
-    # for A in range(nactu):
-    #     batch_ints = np.einsum("xE,xBF->BEF", H.chol_a[:, A + noa, :nactu], H.chol_b[:, :nactu, :nactu], optimize=True)
-    #     h_ab_vvvv[A, :, :, :] += batch_ints
+def build_active_h_ab_vvvv(H, T, nactu_a, nactu_b):
+    h_ab_vvvv = np.einsum("xAE,xBF->ABEF", H.chol.a.vv[:, :nactu_a, :nactu_a], H.chol.b.vv[:, :nactu_b, :nactu_b], optimize=True)
+    h_ab_vvvv += np.einsum("mnEF,ABmn->ABEF", H.ab.oovv[:, :, :nactu_a, :nactu_b], T.ab[:nactu_a, :nactu_b, :, :], optimize=True)
     return h_ab_vvvv
 
-def build_active_h_bb_vvvv(H, nactu):
-    nob, nub = H.b.ov.shape
-    # # Intermediates
-    # tau_bb = 0.5 * T.bb + np.einsum("ai,bj->abij", T.b, T.b, optimize=True)
-    # tau_bb -= np.transpose(tau_bb, (0, 1, 3, 2))
-    # # Bare vovv Hamiltonian element
-    # h_bb_vovv = H.bb.vovv[:nactu, :, :nactu, :nactu] + np.einsum("mnFE,An->AmEF", H.bb.oovv[:, :, :nactu, :nactu], T.b[:nactu, :], optimize=True)
-    # #
-    # h_bb_vvvv = 0.25 * np.einsum("mnEF,ABmn->ABEF", H.bb.oovv[:, :, :nactu, :nactu], tau_bb[:nactu, :nactu, :, :], optimize=True)
-    # h_bb_vvvv -= np.einsum("AmEF,Bm->ABEF", h_bb_vovv, T.b[:nactu, :], optimize=True)
-    # h_bb_vvvv -= np.transpose(h_bb_vvvv, (1, 0, 2, 3))
+def build_active_h_bb_vvvv(H, T, nactu):
     h_bb_vvvv = np.einsum("xAE,xBF->ABEF", H.chol.b.vv[:, :nactu, :nactu], H.chol.b.vv[:, :nactu, :nactu], optimize=True)
     h_bb_vvvv -= np.transpose(h_bb_vvvv, (0, 1, 3, 2))
-    # h_bb_vvvv = np.zeros((nactu, nactu, nactu, nactu))
-    # # handle bare vvvv using Cholesky
-    # for A in range(nactu):
-    #     for B in range(A + 1, nactu):
-    #         batch_ints = np.einsum("xE,xF->EF", H.chol_b[:, A + nob, :nactu], H.chol_b[:, B + nob, :nactu], optimize=True)
-    #         batch_ints -= batch_ints.T
-    #         h_bb_vvvv[A, B, :, :] += batch_ints
-    #         h_bb_vvvv[B, A, :, :] -= batch_ints
+    h_bb_vvvv += 0.5 * np.einsum("mnEF,ABmn->ABEF", H.bb.oovv[:, :, :nactu, :nactu], T.bb[:nactu, :nactu, :, :], optimize=True)
     return h_bb_vvvv
 
 def get_index_arrays(nacto, nactu, system, target_irrep):
