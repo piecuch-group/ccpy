@@ -12,6 +12,7 @@ MODULES := cc_loops \
 		   mbgf_loops \
 		   mbpt_loops \
 		   ccsdt_p_loops \
+		   ccsdt_p_chol_loops \
 		   eomccsdt_p_loops \
 		   leftccsdt_p_loops \
 		   leftccsdt_p_intermediates \

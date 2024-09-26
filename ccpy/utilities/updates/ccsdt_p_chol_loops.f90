@@ -1972,16 +1972,16 @@ module ccsdt_p_chol_loops
                                       t3c_amps, t3c_excits,&
                                       t2a, t2b,&
                                       H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
-                                      H2A_oovv, H2A_vvov, H2A_vooo, H2A_oooo, H2A_voov, H2A_vvvv,&
+                                      H2A_oovv, H2A_vvov, H2A_vooo, H2A_oooo, H2A_voov, chol_a_vv,&
                                       H2B_oovv, H2B_vvov, H2B_vvvo, H2B_vooo, H2B_ovoo,&
-                                      H2B_oooo, H2B_voov, H2B_vovo, H2B_ovov, H2B_ovvo, H2B_vvvv,&
+                                      H2B_oooo, H2B_voov, H2B_vovo, H2B_ovov, H2B_ovvo, chol_b_vv,&
                                       H2C_oovv, H2C_voov,&
                                       fA_oo, fA_vv, fB_oo, fB_vv,&
                                       shift,&
                                       n3aaa, n3aab, n3abb,&
-                                      noa, nua, nob, nub)
+                                      noa, nua, nob, nub, nchol)
 
-                  integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb
+                  integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb, nchol
                   integer, intent(in) :: t3a_excits(n3aaa,6), t3c_excits(n3abb,6)
                   real(kind=8), intent(in) :: t2a(1:nua,1:nua,1:noa,1:noa),&
                                               t2b(1:nua,1:nub,1:noa,1:nob),&
@@ -1999,7 +1999,8 @@ module ccsdt_p_chol_loops
                                               H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
                                               !H2A_voov(1:nua,1:noa,1:noa,1:nua),&
                                               H2A_voov(noa,nua,nua,noa),& ! reordered
-                                              H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                                              !H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                                              chol_a_vv(nchol,nua,nua),&
                                               H2B_oovv(1:noa,1:nob,1:nua,1:nub),&
                                               !H2B_vooo(1:nua,1:nob,1:noa,1:nob),&
                                               H2B_vooo(nob,nua,noa,nob),& ! reordered
@@ -2017,7 +2018,8 @@ module ccsdt_p_chol_loops
                                               H2B_ovov(noa,nub,nub,noa),& ! reordered
                                               !H2B_ovvo(1:noa,1:nub,1:nua,1:nob),&
                                               H2B_ovvo(noa,nua,nub,nob),& ! reordered
-                                              H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                                              !H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                                              chol_b_vv(nchol,nub,nub),&
                                               H2C_oovv(1:nob,1:nob,1:nub,1:nub),&
                                               !H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                                               H2C_voov(nob,nub,nub,nob),& ! reordered
@@ -2032,13 +2034,14 @@ module ccsdt_p_chol_loops
 
                   real(kind=8), intent(out) :: resid(n3aab)
 
-                  real(kind=8), allocatable :: t3b_amps_copy1(:), t3b_amps_copy2(:), t3b_amps_copy3(:)
-                  integer, allocatable :: t3b_excits_copy1(:,:), t3b_excits_copy2(:,:), t3b_excits_copy3(:,:)
                   real(kind=8), allocatable :: t3_amps_buff(:), xbuf(:,:,:,:)
                   integer, allocatable :: t3_excits_buff(:,:)
+                  real(kind=8), allocatable :: t3b_amps1(:), t3b_amps2(:)
+                  integer, allocatable :: t3b_excits1(:,:), t3b_excits2(:,:)
 
-                  integer, allocatable :: idx_table(:,:,:,:), idx_table_copy1(:,:,:,:), idx_table_copy2(:,:,:,:), idx_table_copy3(:,:,:,:)
-                  integer, allocatable :: loc_arr(:,:), loc_arr_copy1(:,:), loc_arr_copy2(:,:), loc_arr_copy3(:,:)
+                  integer, allocatable :: idx_table(:,:,:,:), idx_table1(:,:,:,:), idx_table2(:,:,:,:)
+                  integer, allocatable :: loc_arr(:,:), loc_arr1(:,:), loc_arr2(:,:)
+                  real(kind=8), allocatable :: h_vv(:,:)
 
                   !real(kind=8) :: I2A_vooo(nua,noa,noa,noa)
                   real(kind=8) :: I2A_vooo(noa,nua,noa,noa) ! reordered
@@ -2055,6 +2058,7 @@ module ccsdt_p_chol_loops
                   real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4
                   integer :: i, j, k, l, a, b, c, d, m, n, e, f, idet, jdet
                   integer :: idx, nloc
+                  integer :: a_chol, b_chol
 
                   ! compute VT3 intermediates
                   I2A_vooo = 0.5d0 * H2A_vooo 
@@ -2136,7 +2140,6 @@ module ccsdt_p_chol_loops
                   deallocate(loc_arr,idx_table)
 
                   !!!! diagram 2: A(ab) h1a(ae)*t3b(ebcmjk)
-                  !!!! diagram 6: A(ab) 1/2 h2a(abef)*t3b(ebcmjk)
                   !!! CIJK LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nub*noa*(noa-1)/2*nob
@@ -2163,17 +2166,13 @@ module ccsdt_p_chol_loops
                      idx = idx_table(i,j,k,c)
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = t3b_excits(jdet,1); e = t3b_excits(jdet,2); ! swap t3b_excits everywher
-                        ! compute < ijk~abc~ | h2a(vvvv) | ijk~dec~ >
-                        !hmatel = h2a_vvvv(a,b,d,e)
-                        !hmatel = h2a_vvvv(d,e,a,b)
-                        hmatel = h2a_vvvv(e,d,b,a)
                         ! compute < ijk~abc~ | h1a(vv) | ijk~dec > = A(ab)A(de) h1a_vv(a,d)*delta(b,e)
                         hmatel1 = 0.0d0; hmatel2 = 0.0d0; hmatel3 = 0.0d0; hmatel4 = 0.0d0;
                         if (b==e) hmatel1 = h1a_vv(d,a)  !h1a_vv(a,d)
                         if (a==e) hmatel2 = -h1a_vv(d,b) !-h1a_vv(b,d)
                         if (b==d) hmatel3 = -h1a_vv(e,a) !-h1a_vv(a,e)
                         if (a==d) hmatel4 = h1a_vv(e,b)  !h1a_vv(b,e)
-                        resid(idet) = resid(idet) + (hmatel + hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3b_amps(jdet)
+                        resid(idet) = resid(idet) + (hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3b_amps(jdet)
                      end do
                   end do
                   !$omp end do
@@ -2274,7 +2273,6 @@ module ccsdt_p_chol_loops
                   deallocate(loc_arr,idx_table) 
 
                   !!!! diagram 5: h1b(ce)*t3b(abeijm)
-                  !!!! diagram 8: A(ab) h2b(bcef)*t3b(aefijk)
                   ! allocate new sorting arrays
                   nloc = nua*noa*(noa-1)/2*nob ! no3nu
                   allocate(loc_arr(2,nloc)) ! 2*no3nu
@@ -2299,73 +2297,24 @@ module ccsdt_p_chol_loops
                       idx = idx_table(i,j,k,a) ! make sizes powers of two to speed up address lookup
                       do jdet = loc_arr(1,idx), loc_arr(2,idx)
                          e = t3b_excits(jdet,2); f = t3b_excits(jdet,3);
-                         ! compute < ijk~abc~ | h2b(vvvv) | ijk~aef~ >
-                         !hmatel = h2b_vvvv(b,c,e,f)
-                         !hmatel = h2b_vvvv(e,f,b,c)
-                         hmatel = h2b_vvvv(f,e,c,b)
                          hmatel1 = 0.0d0
                          if (b==e) hmatel1 = h1b_vv(f,c) !h1b_vv(c,f)
-                         resid(idet) = resid(idet) + (hmatel + hmatel1)*t3b_amps(jdet)
+                         resid(idet) = resid(idet) + hmatel1*t3b_amps(jdet)
                       end do
                       ! (ab)
                       idx = idx_table(i,j,k,b)
                       if (idx/=0) then ! protect against case where b = nua because a = 1, nua-1
                          do jdet = loc_arr(1,idx), loc_arr(2,idx)
                             e = t3b_excits(jdet,2); f = t3b_excits(jdet,3);
-                            ! compute < ijk~abc~ | h2b(vvvv) | ijk~bef~ >
-                            !hmatel = -h2b_vvvv(a,c,e,f)
-                            !hmatel = -h2b_vvvv(e,f,a,c)
-                            hmatel = -h2b_vvvv(f,e,c,a)
                             hmatel1 = 0.0d0
                             if (a==e) hmatel1 = -h1b_vv(f,c) !-h1b_vv(c,f)
-                            resid(idet) = resid(idet) + (hmatel + hmatel1)*t3b_amps(jdet)
+                            resid(idet) = resid(idet) + hmatel1*t3b_amps(jdet)
                          end do
                       end if
                   end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
-                  !!! BIJK LOOP !!!
-                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/2,nua/), noa, noa, nob, nua)
-                  call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab, resid)
-                  !!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits,&
-                  !$omp t3b_amps,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vvvv,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp private(hmatel,a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,&
-                  !$omp idx)
-                  !$omp do schedule(static)
-                  do idet = 1, n3aab
-                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
-                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      idx = idx_table(i,j,k,b)
-                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                         d = t3b_excits(jdet,1); f = t3b_excits(jdet,3);
-                         ! compute < ijk~abc~ | h2b(vvvv) | ijk~dbf~ >
-                         !hmatel = h2b_vvvv(a,c,d,f)
-                         !hmatel = h2b_vvvv(d,f,a,c)
-                         hmatel = h2b_vvvv(f,d,c,a)
-                         resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                      end do
-                      idx = idx_table(i,j,k,a)
-                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                            d = t3b_excits(jdet,1); f = t3b_excits(jdet,3);
-                            ! compute < ijk~abc~ | h2b(vvvv) | ijk~daf~ >
-                            !hmatel = -h2b_vvvv(b,c,d,f)
-                            !hmatel = -h2b_vvvv(d,f,b,c)
-                            hmatel = -h2b_vvvv(f,d,c,b)
-                            resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
-                         end do
-                      end if
-                  end do ! end loop over idet
-                  !$omp end do
-                  !$omp end parallel
-                  !!!! END OMP PARALLEL SECTION !!!!
-                  ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
                   !!!! diagram 9: A(ij)A(ab) h2a(amie)*t3b(ebcmjk)
@@ -3384,66 +3333,133 @@ module ccsdt_p_chol_loops
                   ! deallocate t3 buffer arrays
                   deallocate(t3_amps_buff,t3_excits_buff)
 
+                  !!!! diagram 6: A(ab) 1/2 h2a(abef)*t3b(ebcmjk)
+                  !!! CIJK LOOP !!!
+                  ! allocate new sorting arrays
+                  nloc = nub*noa*(noa-1)/2*nob
+                  allocate(loc_arr(2,nloc))
+                  allocate(idx_table(noa,noa,nob,nub))
+                  allocate(h_vv(nua,nua))
+                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nub/), noa, noa, nob, nub)
+                  call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab, resid)
+                  do a_chol=1,nua; do b_chol=a_chol+1,nua;
+                  !
+                  ! get a batch of h2a_vvvv(ef)[a_chol,b_chol] integrals, where a_chol < b_chol
+                  !
+                  call dgemm('t','n',nua,nua,nchol,1.0d0,chol_a_vv(:,:,a_chol),nchol,chol_a_vv(:,:,b_chol),nchol,0.0d0,h_vv,nua)
+                  h_vv = h_vv - transpose(h_vv)
+                  do e=1,nua
+                     do f=e+1,nua
+                        do m=1,noa
+                           do n=m+1,noa
+                              h_vv(e,f) = h_vv(e,f) + h2a_oovv(m,n,e,f)*t2a(a_chol,b_chol,m,n)
+                           end do
+                        end do
+                        h_vv(f,e) = -h_vv(e,f)
+                     end do
+                  end do  
+                  do idet = 1, n3aab
+                     a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
+                     i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
+                     if (a_chol==a .and. b_chol==b) then
+                        idx = idx_table(i,j,k,c)
+                        do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                           d = t3b_excits(jdet,1); e = t3b_excits(jdet,2); ! swap t3b_excits everywher
+                           ! compute < ijk~abc~ | h2a(vvvv) | ijk~dec~ >
+                           hmatel = h_vv(d,e)
+                           resid(idet) = resid(idet) + hmatel*t3b_amps(jdet)
+                        end do
+                     end if
+                  end do
+                  end do; end do; ! end loop over a_chol < b_chol
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table,h_vv)
+
                   !!!! diagram 8: A(ab) h2b(bcef)*t3b(aefijk)
                   ! allocate new sorting arrays
                   nloc = nua*noa*(noa-1)/2*nob ! no3nu
-                  allocate(loc_arr(2,nloc)) ! 2*no3nu
-                  allocate(idx_table(noa,noa,nob,nua)) ! no3nu
+                  allocate(h_vv(nub,nua))
+                  allocate(loc_arr1(2,nloc)) ! 2*no3nu
+                  allocate(loc_arr2(2,nloc)) ! 2*no3nu
+                  allocate(idx_table1(noa,noa,nob,nua)) ! no3nu
+                  allocate(idx_table2(noa,noa,nob,nua)) ! no3nu
+                  allocate(t3b_excits1(n3aab,6),t3b_excits2(n3aab,6))
+                  allocate(t3b_amps1(n3aab),t3b_amps2(n3aab))
+                  t3b_excits1(:,:) = t3b_excits(:,:); t3b_amps1(:) = t3b_amps(:);
+                  t3b_excits2(:,:) = t3b_excits(:,:); t3b_amps2(:) = t3b_amps(:);
                   !!! AIJK LOOP !!!
-                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nua-1/), noa, noa, nob, nua)
-                  call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab, resid)
-                  do a_chol=1,nchol
+                  call get_index_table(idx_table1, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nua-1/), noa, noa, nob, nua)
+                  call sort4(t3b_excits1, t3b_amps1, loc_arr1, idx_table1, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab)
+                  !!! BIJK LOOP !!!
+                  call get_index_table(idx_table2, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/2,nua/), noa, noa, nob, nua)
+                  call sort4(t3b_excits2, t3b_amps2, loc_arr2, idx_table2, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab)
+                  do a_chol=1,nua; do b_chol=1,nub;
                     !
-                    ! compute block of h2b_vvvv
+                    ! get a batch of h2b_vvvv(ef)[a_chol,b_chol] integrals
                     !
+                    call dgemm('t','n',nub,nua,nchol,1.0d0,chol_b_vv(:,:,b_chol),nchol,chol_a_vv(:,:,a_chol),nchol,0.0d0,h_vv,nub)
+                    do e=1,nua
+                       do f=1,nub
+                          do m=1,noa
+                             do n=1,nob
+                                h_vv(f,e) = h_vv(f,e) + h2b_oovv(m,n,e,f)*t2b(a_chol,b_chol,m,n)
+                             end do
+                          end do
+                       end do
+                    end do  
                     do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
+                      !!!! SB 1 !!!!
                       ! (1)
-                      idx = idx_table(i,j,k,a) ! make sizes powers of two to speed up address lookup
-                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                         e = t3b_excits(jdet,2); f = t3b_excits(jdet,3);
+                      if (a_chol==b .and. b_chol==c) then
+                      idx = idx_table1(i,j,k,a) ! make sizes powers of two to speed up address lookup
+                      do jdet = loc_arr1(1,idx), loc_arr1(2,idx)
+                         e = t3b_excits1(jdet,2); f = t3b_excits1(jdet,3);
                          ! compute < ijk~abc~ | h2b(vvvv) | ijk~aef~ >
-                         hmatel = h2b_vvvv(b,c,e,f)
-                         resid(idet) = resid(idet) + hmatel*t3b_amps(jdet)
+                         hmatel = h_vv(f,e)
+                         resid(idet) = resid(idet) + hmatel*t3b_amps1(jdet)
                       end do
+                      end if
                       ! (ab)
-                      idx = idx_table(i,j,k,b)
+                      if (a_chol==a .and. b_chol==c) then
+                      idx = idx_table1(i,j,k,b)
                       if (idx/=0) then ! protect against case where b = nua because a = 1, nua-1
-                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                            e = t3b_excits(jdet,2); f = t3b_excits(jdet,3);
+                         do jdet = loc_arr1(1,idx), loc_arr1(2,idx)
+                            e = t3b_excits1(jdet,2); f = t3b_excits1(jdet,3);
                             ! compute < ijk~abc~ | h2b(vvvv) | ijk~bef~ >
-                            hmatel = -h2b_vvvv(a,c,e,f)
-                            resid(idet) = resid(idet) + hmatel*t3b_amps(jdet)
+                            hmatel = -h_vv(f,e)
+                            resid(idet) = resid(idet) + hmatel*t3b_amps1(jdet)
                          end do
                       end if
-                  end do
-                  !!! BIJK LOOP !!!
-                  call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/2,nua/), noa, noa, nob, nua)
-                  call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab, resid)
-                  do idet = 1, n3aab
-                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
-                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      idx = idx_table(i,j,k,b)
-                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                         d = t3b_excits(jdet,1); f = t3b_excits(jdet,3);
+                      end if
+                      !!!! SB 2 !!!!
+                      ! (1)
+                      if (a_chol==a .and. b_chol==c) then
+                      idx = idx_table2(i,j,k,b)
+                      do jdet = loc_arr2(1,idx), loc_arr2(2,idx)
+                         d = t3b_excits2(jdet,1); f = t3b_excits2(jdet,3);
                          ! compute < ijk~abc~ | h2b(vvvv) | ijk~dbf~ >
-                         hmatel = h2b_vvvv(a,c,d,f)
-                         resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                         hmatel = h_vv(f,d)
+                         resid(idet) = resid(idet) + hmatel*t3b_amps2(jdet)
                       end do
-                      idx = idx_table(i,j,k,a)
+                      end if
+                      if (a_chol==b .and. b_chol==c) then
+                      idx = idx_table2(i,j,k,a)
                       if (idx/=0) then ! protect against case where a = 1 because b = 2, nua
-                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                            d = t3b_excits(jdet,1); f = t3b_excits(jdet,3);
+                         do jdet = loc_arr2(1,idx), loc_arr2(2,idx)
+                            d = t3b_excits2(jdet,1); f = t3b_excits2(jdet,3);
                             ! compute < ijk~abc~ | h2b(vvvv) | ijk~daf~ >
-                            hmatel = -h2b_vvvv(b,c,d,f)
-                            resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
+                            hmatel = -h_vv(f,d)
+                            resid(idet) = resid(idet) + hmatel*t3b_amps2(jdet)
                          end do
+                      end if
                       end if
                     end do ! end loop over idet
-                  end do ! end loop over a_chol
+                  end do; end do; ! end loop over a_chol < b_chol
                   ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)
+                  deallocate(loc_arr1,loc_arr2,idx_table1,idx_table2,h_vv)
+                  deallocate(t3b_excits1,t3b_excits2,t3b_amps1,t3b_amps2)
 
                   !
                   ! Moment contributions
