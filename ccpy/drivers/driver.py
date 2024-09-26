@@ -135,7 +135,7 @@ class Driver:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
-        elif method.lower() in ["ccsdt", "eomccsdt", "left_ccsdt", "cc4", "cc4-old"]:
+        elif method.lower() in ["ccsdt", "ccsdt_chol", "eomccsdt", "left_ccsdt", "cc4", "cc4-old"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3

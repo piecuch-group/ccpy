@@ -278,6 +278,274 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
     # -------------------------------------------------------------------------
     return H
 
+def get_ccsd_intermediates(T, H, H0, RHF_symmetry):
+
+    # Cholesky-based intermediates folding some T2
+    x_a_vo = (
+            H.chol.a.vo.copy()
+            + np.einsum("xnf,afin->xai", H.chol.a.ov, T.aa)
+            + np.einsum("xnf,afin->xai", H.chol.b.ov, T.ab)
+    )
+    if RHF_symmetry:
+        x_b_vo = x_a_vo.copy()
+    else:
+        x_b_vo = (
+                H.chol.b.vo.copy()
+                + np.einsum("xnf,afin->xai", H.chol.b.ov, T.bb)
+                + np.einsum("xnf,fani->xai", H.chol.a.ov, T.ab)
+        )
+
+    H.a.ov = H0.a.ov.copy() + (
+            np.einsum("imae,em->ia", H0.aa.oovv, T.a, optimize=True)
+            + np.einsum("imae,em->ia", H0.ab.oovv, T.b, optimize=True)
+    )
+    if RHF_symmetry:
+        H.b.ov = H.a.ov.copy()
+    else:
+        H.b.ov = H0.b.ov.copy() + (
+                np.einsum("imae,em->ia", H0.bb.oovv, T.b, optimize=True)
+                + np.einsum("miea,em->ia", H0.ab.oovv, T.a, optimize=True)
+        )
+
+
+    H.a.oo = H0.a.oo.copy() + (
+            np.einsum("je,ei->ji", H.a.ov, T.a, optimize=True)
+            + np.einsum("jmie,em->ji", H0.aa.ooov, T.a, optimize=True)
+            + np.einsum("jmie,em->ji", H0.ab.ooov, T.b, optimize=True)
+            + 0.5 * np.einsum("jnef,efin->ji", H0.aa.oovv, T.aa, optimize=True)
+            + np.einsum("jnef,efin->ji", H0.ab.oovv, T.ab, optimize=True)
+    )
+    if RHF_symmetry:
+        H.b.oo = H.a.oo.copy()
+    else:
+        H.b.oo = H0.b.oo.copy() + (
+                np.einsum("je,ei->ji", H.b.ov, T.b, optimize=True)
+                + np.einsum("jmie,em->ji", H0.bb.ooov, T.b, optimize=True)
+                + np.einsum("mjei,em->ji", H0.ab.oovo, T.a, optimize=True)
+                + 0.5 * np.einsum("jnef,efin->ji", H0.bb.oovv, T.bb, optimize=True)
+                + np.einsum("njfe,feni->ji", H0.ab.oovv, T.ab, optimize=True)
+        )
+
+    H.a.vv = H0.a.vv.copy() + (
+            - np.einsum("mb,am->ab", H.a.ov, T.a, optimize=True)
+            + np.einsum("ambe,em->ab", H0.aa.vovv, T.a, optimize=True)
+            + np.einsum("ambe,em->ab", H0.ab.vovv, T.b, optimize=True)
+            - 0.5 * np.einsum("mnbf,afmn->ab", H0.aa.oovv, T.aa, optimize=True)
+            - np.einsum("mnbf,afmn->ab", H0.ab.oovv, T.ab, optimize=True)
+    )
+    if RHF_symmetry:
+        H.b.vv = H.a.vv.copy()
+    else:
+        H.b.vv = H0.b.vv.copy() + (
+                - np.einsum("mb,am->ab", H.b.ov, T.b, optimize=True)
+                + np.einsum("ambe,em->ab", H0.bb.vovv, T.b, optimize=True)
+                + np.einsum("maeb,em->ab", H0.ab.ovvv, T.a, optimize=True)
+                - 0.5 * np.einsum("mnbf,afmn->ab", H0.bb.oovv, T.bb, optimize=True)
+                - np.einsum("nmfb,fanm->ab", H0.ab.oovv, T.ab, optimize=True)
+        )
+
+    # -------------------------------------------------------------------------
+    ### TYPE: OOOO
+    ### NEEDS: H0.ooov
+    H.aa.oooo = (
+            np.einsum("xmi,xnj->mnij", H.chol.a.oo, H.chol.a.oo, optimize=True)
+            - np.einsum("xmj,xni->mnij", H.chol.a.oo, H.chol.a.oo, optimize=True)
+            + 0.5 * np.einsum("mnef,efij->mnij", H0.aa.oovv, T.aa, optimize=True)
+    )
+    if RHF_symmetry:
+        H.bb.oooo = H.aa.oooo.copy()
+    else:
+        H.bb.oooo = (
+                np.einsum("xmi,xnj->mnij", H.chol.b.oo, H.chol.b.oo, optimize=True)
+                - np.einsum("xmj,xni->mnij", H.chol.b.oo, H.chol.b.oo, optimize=True)
+                + 0.5 * np.einsum("mnef,efij->mnij", H0.bb.oovv, T.bb, optimize=True)
+        )
+    H.ab.oooo = (
+            np.einsum("xmi,xnj->mnij", H.chol.a.oo, H.chol.b.oo, optimize=True)
+            + np.einsum("mnef,efij->mnij", H0.ab.oovv, T.ab, optimize=True)
+    )
+    # -------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
+    ### TYPE: OOOV
+    ### NEEDS: H0.ooov
+    H.aa.ooov = np.einsum("xmi,xne->mnie", H.chol.a.oo, H.chol.a.ov, optimize=True)
+    H.aa.ooov -= np.transpose(H.aa.ooov, (1, 0, 2, 3))
+    if RHF_symmetry:
+        H.bb.ooov = H.aa.ooov.copy()
+    else:
+        H.bb.ooov = np.einsum("xmi,xne->mnie", H.chol.b.oo, H.chol.b.ov, optimize=True)
+        H.bb.ooov -= np.transpose(H.bb.ooov, (1, 0, 2, 3))
+    H.ab.ooov = (
+        np.einsum("xmi,xne->mnie", H.chol.a.oo, H.chol.b.ov, optimize=True)
+    )
+    H.ab.oovo = (
+        np.einsum("xme,xni->mnei", H.chol.a.ov, H.chol.b.oo, optimize=True)
+    )
+    # -------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
+    ### TYPE: VOVV
+    ### NEEDS: H0.vovv
+    H.aa.vovv = np.einsum("xbe,xnf->bnef", H.chol.a.vv, H.chol.a.ov, optimize=True)
+    H.aa.vovv -= np.transpose(H.aa.vovv, (0, 1, 3, 2))
+    if RHF_symmetry:
+        H.bb.vovv = H.aa.vovv.copy()
+    else:
+        H.bb.vovv = np.einsum("xbe,xnf->bnef", H.chol.b.vv, H.chol.b.ov, optimize=True)
+        H.bb.vovv -= np.transpose(H.bb.vovv, (0, 1, 3, 2))
+    H.ab.vovv = np.einsum("xbe,xnf->bnef", H.chol.a.vv, H.chol.b.ov, optimize=True)
+    H.ab.ovvv = np.einsum("xnf,xbe->nbfe", H.chol.a.ov, H.chol.b.vv, optimize=True)
+    # -------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
+    ### TYPE: VOOO
+    ### NEEDS: H.ov, H.oooo, H.ooov, H0.voov, H0.vovv
+    H.aa.vooo = (
+            np.einsum("xai,xmj->amij", x_a_vo, H.chol.a.oo, optimize=True)
+            + 0.25 * np.einsum("amef,efij->amij", H.aa.vovv, T.aa, optimize=True)
+            + 0.5 * np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+            #
+            # This exchange term won't go away!!!
+            #
+            - np.einsum("xnj,xmf,afin->amij", H.chol.a.oo, H.chol.a.ov, T.aa, optimize=True)
+    )
+    H.aa.vooo -= np.transpose(H.aa.vooo, (0, 1, 3, 2))
+    if RHF_symmetry:
+        H.bb.vooo = H.aa.vooo.copy()
+    else:
+        H.bb.vooo = (
+                np.einsum("xai,xmj->amij", x_b_vo, H.chol.b.oo, optimize=True)
+                + 0.25 * np.einsum("amef,efij->amij", H.bb.vovv, T.bb, optimize=True)
+                + 0.5 * np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
+                #
+                # This exchange term won't go away!!!
+                #
+                - np.einsum("xnj,xmf,afin->amij", H.chol.b.oo, H.chol.b.ov, T.bb, optimize=True)
+        )
+        H.bb.vooo -= np.transpose(H.bb.vooo, (0, 1, 3, 2))
+    H.ab.vooo = (
+            np.einsum("xai,xmj->amij", H.chol.a.vo, H.chol.b.oo, optimize=True)
+            + np.einsum("amef,efij->amij", H.ab.vovv, T.ab, optimize=True)
+            + np.einsum("nmfj,afin->amij", H.ab.oovo, T.aa, optimize=True)
+            + np.einsum("mnjf,afin->amij", H.bb.ooov, T.ab, optimize=True)
+            - np.einsum("nmif,afnj->amij", H.ab.ooov, T.ab, optimize=True)
+            + np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
+    )
+    H.ab.ovoo = (
+            np.einsum("xmi,xbj->mbij", H.chol.a.oo, H.chol.b.vo, optimize=True)
+            + np.einsum("mnif,fbnj->mbij", H.aa.ooov, T.ab, optimize=True)
+            + np.einsum("mnif,fbnj->mbij", H.ab.ooov, T.bb, optimize=True)
+            - np.einsum("mnfj,fbin->mbij", H.ab.oovo, T.ab, optimize=True)
+            + np.einsum("mbef,efij->mbij", H.ab.ovvv, T.ab, optimize=True)
+            + np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+    )
+    # -------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
+    ### TYPE: VOOV
+    ### NEDDS: H0.vovv, H.ooov
+    H.aa.voov = (
+            np.einsum("xai,xme->amie", H.chol.a.vo, H.chol.a.ov, optimize=True)
+            - np.einsum("xae,xmi->amie", H.chol.a.vv, H.chol.a.oo, optimize=True)
+            + np.einsum("mnef,afin->amie", H0.aa.oovv, T.aa, optimize=True)
+            + np.einsum("mnef,afin->amie", H0.ab.oovv, T.ab, optimize=True)
+    )
+    if RHF_symmetry:
+        H.bb.voov = H.aa.voov.copy()
+    else:
+        H.bb.voov = (
+                np.einsum("xai,xme->amie", H.chol.b.vo, H.chol.b.ov, optimize=True)
+                - np.einsum("xae,xmi->amie", H.chol.b.vv, H.chol.b.oo, optimize=True)
+                + np.einsum("mnef,afin->amie", H0.bb.oovv, T.bb, optimize=True)
+                + np.einsum("nmfe,fani->amie", H0.ab.oovv, T.ab, optimize=True)
+        )
+    H.ab.voov = (
+            np.einsum("xai,xme->amie", H.chol.a.vo, H.chol.b.ov, optimize=True)
+            + np.einsum("nmfe,afin->amie", H0.ab.oovv, T.aa, optimize=True)
+            + np.einsum("mnef,afin->amie", H0.bb.oovv, T.ab, optimize=True)
+    )
+    H.ab.ovvo = (
+            np.einsum("xbj,xme->mbej", H.chol.b.vo, H.chol.a.ov, optimize=True)
+            + np.einsum("mnef,fbnj->mbej", H0.aa.oovv, T.ab, optimize=True)
+            + np.einsum("mnef,fbnj->mbej", H0.ab.oovv, T.bb, optimize=True)
+    )
+    H.ab.ovov = (
+            np.einsum("xmi,xbe->mbie", H.chol.a.oo, H.chol.b.vv, optimize=True)
+            - np.einsum("mnfe,fbin->mbie", H0.ab.oovv, T.ab, optimize=True)
+    )
+    H.ab.vovo = (
+            np.einsum("xae,xmj->amej", H.chol.a.vv, H.chol.b.oo, optimize=True)
+            - np.einsum("nmef,afnj->amej", H0.ab.oovv, T.ab, optimize=True)
+    )
+    # -------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
+    ### TYPE: VVOV
+    ### NEDDS: H.ov, H.voov, H.ooov, H0.vvvv, H0.vovv
+    H.aa.vvov = (
+            np.einsum("xai,xbe->abie", x_a_vo, H.chol.a.vv, optimize=True)
+            + 0.25 * np.einsum("mnie,abmn->abie", H.aa.ooov, T.aa, optimize=True)
+            - 0.5 * np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
+            #
+            # This exchange term won't go away! Cost is Naux*O^2*V^4, very expensive...
+            #
+            - np.einsum("xbf,xne,afin->abie", H.chol.a.vv, H.chol.a.ov, T.aa, optimize=True)
+    )
+    H.aa.vvov -= np.transpose(H.aa.vvov, (1, 0, 2, 3))
+    if RHF_symmetry:
+        H.bb.vvov = H.aa.vvov.copy()
+    else:
+        H.bb.vvov = (
+                np.einsum("xai,xbe->abie", x_b_vo, H.chol.b.vv, optimize=True)
+                + 0.25 * np.einsum("mnie,abmn->abie", H.bb.ooov, T.bb, optimize=True)
+                - 0.5 * np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
+                #
+                # This exchange term won't go away! Cost is Naux*O^2*V^4, very expensive...
+                #
+                - np.einsum("xbf,xne,afin->abie", H.chol.b.vv, H.chol.b.ov, T.bb, optimize=True)
+        )
+        H.bb.vvov -= np.transpose(H.bb.vvov, (1, 0, 2, 3))
+    H.ab.vvov = (
+            np.einsum("xai,xbe->abie", H.chol.a.vo, H.chol.b.vv, optimize=True)
+            + np.einsum("nbfe,afin->abie", H.ab.ovvv, T.aa, optimize=True)
+            + np.einsum("bnef,afin->abie", H.bb.vovv, T.ab, optimize=True)
+            - np.einsum("anfe,fbin->abie", H.ab.vovv, T.ab, optimize=True)
+            + np.einsum("mnie,abmn->abie", H.ab.ooov, T.ab, optimize=True)
+            - np.einsum("me,abim->abie", H.b.ov, T.ab, optimize=True)
+    )
+    H.ab.vvvo = (
+            np.einsum("xae,xbj->abej", H.chol.a.vv, H.chol.b.vo, optimize=True)
+            + np.einsum("anef,fbnj->abej", H.aa.vovv, T.ab, optimize=True)
+            + np.einsum("anef,fbnj->abej", H.ab.vovv, T.bb, optimize=True)
+            - np.einsum("mbef,afmj->abej", H.ab.ovvv, T.ab, optimize=True)
+            + np.einsum("mnej,abmn->abej", H.ab.oovo, T.ab, optimize=True)
+            - np.einsum("me,abmj->abej", H.a.ov, T.ab, optimize=True)
+    )
+    # -------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
+    ### TYPE: VVVV
+    H.aa.vvvv = (
+            np.einsum("xae,xbf->abef", H.chol.a.vv, H.chol.a.vv, optimize=True)
+            - np.einsum("xaf,xbe->abef", H.chol.a.vv, H.chol.a.vv, optimize=True)
+            + 0.5 * np.einsum("mnef,abmn->abef", H0.aa.oovv, T.aa, optimize=True)
+    )
+    H.ab.vvvv = (
+            np.einsum("xae,xbf->abef", H.chol.a.vv, H.chol.b.vv, optimize=True)
+            + np.einsum("mnef,abmn->abef", H0.ab.oovv, T.ab, optimize=True)
+    )
+    if RHF_symmetry:
+        H.bb.vvvv = H.aa.vvvv.copy()
+    else:
+        H.bb.vvvv = (
+                np.einsum("xae,xbf->abef", H.chol.b.vv, H.chol.b.vv, optimize=True)
+                - np.einsum("xaf,xbe->abef", H.chol.b.vv, H.chol.b.vv, optimize=True)
+                + 0.5 * np.einsum("mnef,abmn->abef", H0.bb.oovv, T.bb, optimize=True)
+        )
+    # -------------------------------------------------------------------------
+    return H
+
 def build_hbar_ccsd_chol_bak(T, H0, RHF_symmetry, *args):
 
     # Reference to HBar is copied from reference H (not duplicated!) 
