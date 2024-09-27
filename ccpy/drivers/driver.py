@@ -1984,6 +1984,31 @@ class Driver:
                     _, self.deltap3[i], self.ddeltap3[i] = calc_eomcct3(self.T, self.R[i], self.L[i], self.r0[i],
                                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                         self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
+        elif method.lower() == "cct3_chol":
+            from ccpy.moments.cct3_chol import calc_cct3
+            from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
+            # Ensure that HBar is set
+            assert self.flag_hbar
+            # Set this value as a failsafe since CC(t;3) can also be run through CC(P) and left-CC(P) routines
+            if num_active == 1:
+                self.operator_params["number_active_indices"] = [1]
+            elif num_active == 2:
+                self.operator_params["number_active_indices"] = [2]
+            elif num_active == 3:
+                self.operator_params["number_active_indices"] = [3]
+            for i in state_index:
+                if i == 0:
+                    # Perform ground-state correction
+                    # In order to use two-body approximation consistently for excited states, remove the V*T3 terms in vooo and vvov elements of HBar
+                    if two_body_approx and self.L[0].order > 2:
+                        self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
+                    if two_body_approx:
+                        _, self.deltap3[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
+                                                       self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
+                else:
+                    # Perform excited-state correction
+                    pass
+
         elif method.lower() == "ccp3":
             from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3, calc_eomccp3, calc_ccp3_high_memory
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
@@ -2011,6 +2036,30 @@ class Driver:
                                                                      self.r0[state_index], self.vertical_excitation_energy[state_index],
                                                                      self.correlation_energy, self.hamiltonian, self.fock,
                                                                      self.system, self.options["RHF_symmetry"], target_irrep=target_irrep)
+
+        elif method.lower() == "ccp3_chol":
+            from ccpy.moments.ccp3_chol import calc_ccp3_2ba
+            from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
+            # Ensure that both HBar is set
+            assert self.flag_hbar
+            # Reomve V*T3 from HBar if left-CC(P)/EOMCC(P) was performed and you want to use 2BA with CCSD HBar
+            if two_body_approx and self.L[0].order > 2:
+                self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
+
+            # Ground-state correction
+            if state_index == 0:
+                # Use the 2BA (requires only L1, L2 and HBar of CCSD)
+                if two_body_approx:
+                    _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], t3_excitations, self.correlation_energy,
+                                                       self.hamiltonian, self.fock, self.system,
+                                                       self.options["RHF_symmetry"], target_irrep=target_irrep)
+                # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
+                else:
+                    pass
+            # Excited-state corrections
+            else:
+                pass
+
         # elif method.lower() == "ccp3(t)":
         #     from ccpy.moments.ccp3 import calc_ccpert3
         #     # Ensure that pspace is set

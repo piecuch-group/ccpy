@@ -21,7 +21,7 @@ def test_cct3_f2():
     mf = scf.RHF(mol)
     mf.kernel()
 
-    driver = Driver.from_pyscf(mf, nfrozen=2, use_cholesky=True, cholesky_tol=1.0e-09)
+    driver = Driver.from_pyscf(mf, nfrozen=2, use_cholesky=True, cholesky_tol=1.0e-07)
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=5, nact_unoccupied=1)
     t3_excitations = get_active_triples_pspace(driver.system, target_irrep="AG")
@@ -29,7 +29,7 @@ def test_cct3_f2():
     driver.run_ccp(method="ccsdt_p_chol", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsd_chol")
     driver.run_leftcc(method="left_ccsd_chol")
-    # driver.run_ccp3(method="cct3")
+    driver.run_ccp3(method="cct3_chol")
 
     # Check reference energy
     assert np.allclose(driver.system.reference_energy, -198.41983912, rtol=1.0e-07)
@@ -39,28 +39,28 @@ def test_cct3_f2():
         driver.system.reference_energy + driver.correlation_energy, -199.05228420,
         rtol=1.0e-07
     )
-    # # Check CC(t;3)_A energy
-    # assert np.allclose(
-    #     driver.correlation_energy + driver.deltap3[0]["A"], -0.6376818524, atol=1.0e-07
-    # )
-    # assert np.allclose(
-    #     driver.system.reference_energy
-    #     + driver.correlation_energy
-    #     + driver.deltap3[0]["A"],
-    #     -199.0577781338,
-    #     atol=1.0e-07
-    # )
-    # # Check CC(t;3)_D energy
-    # assert np.allclose(
-    #     driver.correlation_energy + driver.deltap3[0]["D"], -0.6378384699, atol=1.0e-07
-    # )
-    # assert np.allclose(
-    #     driver.system.reference_energy
-    #     + driver.correlation_energy
-    #     + driver.deltap3[0]["D"],
-    #     -199.0579347513,
-    #     atol=1.0e-07
-    # )
+    # Check CC(t;3)_A energy
+    assert np.allclose(
+        driver.correlation_energy + driver.deltap3[0]["A"], -0.6337332279, rtol=1.0e-07
+    )
+    assert np.allclose(
+        driver.system.reference_energy
+        + driver.correlation_energy
+        + driver.deltap3[0]["A"],
+        -199.0535722189,
+        rtol=1.0e-07
+    )
+    # Check CC(t;3)_D energy
+    assert np.allclose(
+        driver.correlation_energy + driver.deltap3[0]["D"], -0.6338844036, rtol=1.0e-07
+    )
+    assert np.allclose(
+        driver.system.reference_energy
+        + driver.correlation_energy
+        + driver.deltap3[0]["D"],
+        -199.0537233946,
+        rtol=1.0e-07
+    )
 
 if __name__ == "__main__":
     test_cct3_f2()

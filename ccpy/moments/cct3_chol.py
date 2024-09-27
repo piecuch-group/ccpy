@@ -19,23 +19,7 @@ def calc_cct3(T, L, corr_energy, H, H0, system, use_RHF=False, num_active=1):
     d3abb_v, d3abb_o = abb_H3_abb_diagonal(T, H, system)
     d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
 
-    # form the diagonal part of the h(vvvv) elements
-    nua, nub, noa, nob = T.ab.shape
-    h_aa_vvvv = np.zeros((nua, nua))
-    for a in range(nua):
-        for b in range(a, nua):
-            h_aa_vvvv[a, b] = H.aa.vvvv[a, b, a, b]
-            h_aa_vvvv[b, a] = h_aa_vvvv[a, b]
-    h_ab_vvvv = np.zeros((nua, nub))
-    for a in range(nua):
-        for b in range(nub):
-            h_ab_vvvv[a, b] = H.ab.vvvv[a, b, a, b]
-    h_bb_vvvv = np.zeros((nub, nub))
-    for a in range(nub):
-        for b in range(a, nub):
-            h_bb_vvvv[a, b] = H.bb.vvvv[a, b, a, b]
-            h_bb_vvvv[b, a] = h_bb_vvvv[a, b]
-
+    h_aa_vvvv, h_ab_vvvv, h_bb_vvvv = get_vvvv_diagonal(H, T)
 
     #### aaa correction ####
     # calculate intermediates
@@ -575,3 +559,57 @@ def calc_eomm23d_intermediates(T, R, H):
     chi2C_ovoo = I1 + I2
 
     return chi2C_vvvo, chi2C_ovoo
+
+def get_vvvv_diagonal(H, T):
+    from ccpy.cholesky.cholesky_builders import (build_2index_batch_vvvv_aa,
+                                                 build_2index_batch_vvvv_ab,
+                                                 build_2index_batch_vvvv_bb)
+
+    # form the diagonal part of the h(vvvv) elements
+    nua, nub, noa, nob = T.ab.shape
+    # <ab|ab> = <x|aa><x|bb>
+    h_aa_vvvv = np.zeros((nua, nua))
+    for a in range(nua):
+        for b in range(a + 1, nua):
+            # batch_ints = np.einsum("xe,xf->ef", H.chol.a.vv[:, a, :], H.chol.a.vv[:, b, :])
+            # batch_ints -= batch_ints.T
+            batch_ints = build_2index_batch_vvvv_aa(a, b, H)
+            h_aa_vvvv[a, b] = batch_ints[a, b]
+            h_aa_vvvv[b, a] = batch_ints[a, b]
+    h_bb_vvvv = np.zeros((nub, nub))
+    for a in range(nub):
+        for b in range(a + 1, nub):
+            # batch_ints = np.einsum("xe,xf->ef", H.chol.b.vv[:, a, :], H.chol.b.vv[:, b, :])
+            # batch_ints -= batch_ints.T
+            batch_ints = build_2index_batch_vvvv_bb(a, b, H)
+            h_bb_vvvv[a, b] = batch_ints[a, b]
+            h_bb_vvvv[b, a] = batch_ints[a, b]
+    h_ab_vvvv = np.zeros((nua, nub))
+    for a in range(nua):
+        for b in range(nub):
+            # batch_ints = np.einsum("xe,xf->ef", H.chol.a.vv[:, a, :], H.chol.b.vv[:, b, :])
+            batch_ints = build_2index_batch_vvvv_ab(a, b, H)
+            h_ab_vvvv[a, b] = batch_ints[a, b]
+
+    for a in range(nua):
+        for b in range(a + 1, nua):
+            for m in range(noa):
+                # h_aa_vvvv[a, b] -= h_aa_vovv[a, m, a, b] * T.a[b, m]
+                for n in range(m + 1, noa):
+                    h_aa_vvvv[a, b] += H.aa.oovv[m, n, a, b] * T.aa[a, b, m, n]
+            h_aa_vvvv[b, a] = h_aa_vvvv[a, b]
+    #
+    for a in range(nub):
+        for b in range(a + 1, nub):
+            for m in range(nob):
+                for n in range(m + 1, nob):
+                    h_bb_vvvv[a, b] += H.bb.oovv[m, n, a, b] * T.bb[a, b, m, n]
+            h_bb_vvvv[b, a] = h_bb_vvvv[a, b]
+    #
+    for a in range(nua):
+        for b in range(nub):
+            for m in range(noa):
+                for n in range(nob):
+                    h_ab_vvvv[a, b] += H.ab.oovv[m, n, a, b] * T.ab[a, b, m, n]
+
+    return h_aa_vvvv, h_ab_vvvv, h_bb_vvvv

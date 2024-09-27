@@ -28,6 +28,23 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
     d3abb_v, d3abb_o = abb_H3_abb_diagonal(T, H, system)
     d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
 
+    # form the diagonal part of the h(vvvv) elements
+    nua, nub, noa, nob = T.ab.shape
+    h_aa_vvvv = np.zeros((nua, nua))
+    for a in range(nua):
+        for b in range(a, nua):
+            h_aa_vvvv[a, b] = H.aa.vvvv[a, b, a, b]
+            h_aa_vvvv[b, a] = h_aa_vvvv[a, b]
+    h_ab_vvvv = np.zeros((nua, nub))
+    for a in range(nua):
+        for b in range(nub):
+            h_ab_vvvv[a, b] = H.ab.vvvv[a, b, a, b]
+    h_bb_vvvv = np.zeros((nub, nub))
+    for a in range(nub):
+        for b in range(a, nub):
+            h_bb_vvvv[a, b] = H.bb.vvvv[a, b, a, b]
+            h_bb_vvvv[b, a] = h_bb_vvvv[a, b]
+
     #### aaa correction ####
     # calculate intermediates
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
@@ -38,7 +55,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
             H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
             H.aa.vovv, H.aa.ooov, H0.a.oo, H0.a.vv,
             H.a.oo, H.a.vv, H.aa.voov, H.aa.oooo,
-            H.aa.vvvv,
+            h_aa_vvvv,
             d3aaa_o, d3aaa_v,
     )
     #### aab correction ####
@@ -56,8 +73,8 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
             H.a.ov, H.b.ov, H.aa.oovv, H.ab.oovv,
             H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
             H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-            H.aa.voov, H.aa.oooo, H.aa.vvvv, H.ab.ovov,
-            H.ab.vovo, H.ab.oooo, H.ab.vvvv, H.bb.voov,
+            H.aa.voov, H.aa.oooo, h_aa_vvvv, H.ab.ovov,
+            H.ab.vovo, H.ab.oooo, h_ab_vvvv, H.bb.voov,
             d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
     )
     if use_RHF:
@@ -82,7 +99,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
                 H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
                 H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                 H.aa.voov, H.ab.ovov, H.ab.vovo, H.ab.oooo,
-                H.ab.vvvv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
+                h_ab_vvvv, H.bb.voov, H.bb.oooo, h_bb_vvvv,
                 d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
         )
 
@@ -92,7 +109,7 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
                 T.bb, L.b, L.bb,
                 H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
                 H.bb.vovv, H.bb.ooov, H0.b.oo, H0.b.vv,
-                H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
+                H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, h_bb_vvvv,
                 d3bbb_o, d3bbb_v,
         )
 
@@ -159,6 +176,23 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
     d3abb_v, d3abb_o = abb_H3_abb_diagonal(T, H, system)
     d3bbb_v, d3bbb_o = bbb_H3_bbb_diagonal(T, H, system)
 
+    # form the diagonal part of the h(vvvv) elements
+    nua, nub, noa, nob = T.ab.shape
+    h_aa_vvvv = np.zeros((nua, nua))
+    for a in range(nua):
+        for b in range(a, nua):
+            h_aa_vvvv[a, b] = H.aa.vvvv[a, b, a, b]
+            h_aa_vvvv[b, a] = h_aa_vvvv[a, b]
+    h_ab_vvvv = np.zeros((nua, nub))
+    for a in range(nua):
+        for b in range(nub):
+            h_ab_vvvv[a, b] = H.ab.vvvv[a, b, a, b]
+    h_bb_vvvv = np.zeros((nub, nub))
+    for a in range(nub):
+        for b in range(a, nub):
+            h_bb_vvvv[a, b] = H.bb.vvvv[a, b, a, b]
+            h_bb_vvvv[b, a] = h_bb_vvvv[a, b]
+
     # initialize empty moments vector and triples list
     num_add = int(num_add)
     moments = np.zeros(buffer_factor * num_add)
@@ -178,7 +212,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
         H.aa.vooo, I2A_vvov, H0.aa.oovv, H.a.ov,
         H.aa.vovv, H.aa.ooov, H0.a.oo, H0.a.vv,
         H.a.oo, H.a.vv, H.aa.voov, H.aa.oooo,
-        H.aa.vvvv,
+        h_aa_vvvv,
         d3aaa_o, d3aaa_v,
         num_add, min_thresh, buffer_factor,
         )
@@ -201,8 +235,8 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
         H.a.ov, H.b.ov, H0.aa.oovv, H0.ab.oovv,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-        H.aa.voov, H.aa.oooo, H.aa.vvvv, H.ab.ovov,
-        H.ab.vovo, H.ab.oooo, H.ab.vvvv, H.bb.voov,
+        H.aa.voov, H.aa.oooo, h_aa_vvvv, H.ab.ovov,
+        H.ab.vovo, H.ab.oooo, h_ab_vvvv, H.bb.voov,
         d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
         num_add, min_thresh, buffer_factor,
     )
@@ -232,7 +266,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
             H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
             H.a.oo, H.a.vv, H.b.oo, H.b.vv,
             H.aa.voov, H.ab.ovov, H.ab.vovo, H.ab.oooo,
-            H.ab.vvvv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
+            h_ab_vvvv, H.bb.voov, H.bb.oooo, h_bb_vvvv,
             d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
             num_add, min_thresh, buffer_factor,
         )
@@ -246,7 +280,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
             T.bb, L.b, L.bb,
             H.bb.vooo, I2C_vvov, H0.bb.oovv, H.b.ov,
             H.bb.vovv, H.bb.ooov, H0.b.oo, H0.b.vv,
-            H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, H.bb.vvvv,
+            H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, h_bb_vvvv,
             d3bbb_o, d3bbb_v,
             num_add, min_thresh, buffer_factor,
         )
