@@ -1,5 +1,6 @@
 module ccsdt_p_chol_loops
 
+      use omp_lib
       implicit none
 
       contains
@@ -62,6 +63,7 @@ module ccsdt_p_chol_loops
                   integer :: a, b, c, d, i, j, k, l, e, f, m, n, k1, idet, jdet
                   integer :: a_chol, b_chol
                   integer :: idx, nloc
+                  integer :: ab_table(nua*(nua-1)/2,2)
                   
                   ! Start the VT3 intermediates at Hbar (factor of 1/2 to compensate for antisymmetrization)
                   I2A_vooo = 0.5d0 * H2A_vooo 
@@ -1554,7 +1556,15 @@ module ccsdt_p_chol_loops
                       end do
                   end do
                   
-                  !!!! diagram 4: 1/2 A(c/ab) h2a(abef) * t3a(ebcijk) 
+                  !!!! diagram 4: 1/2 A(c/ab) h2a(abef) * t3a(ebcijk)
+                  k1 = 1 
+                  do a_chol=1,nua
+                     do b_chol=a_chol+1,nua
+                        ab_table(k1,1) = a_chol
+                        ab_table(k1,2) = b_chol
+                        k1 = k1 + 1
+                     end do
+                  end do 
                   ! allocate new sorting arrays
                   nloc = noa*(noa-1)*(noa-2)/6*nua
                   allocate(loc_arr_copy1(2,nloc),loc_arr_copy2(2,nloc),loc_arr_copy3(2,nloc))
@@ -1576,8 +1586,9 @@ module ccsdt_p_chol_loops
                   !!! IJKC LOOP !!!
                   call get_index_table(idx_table_copy3, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
                   call sort4(t3a_excits_copy3, t3a_amps_copy3, loc_arr_copy3, idx_table_copy3, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa)
-                  do a_chol = 1,nua
-                     do b_chol = a_chol+1,nua
+                  !$omp parallel do reduction(+:resid) private(h2a_vvvv,a,b,c,i,j,k,l,m,n,d,e,f,a_chol,b_chol,idx,hmatel,idet,jdet) 
+                  do k1=1,nua*(nua-1)/2
+                     a_chol = ab_table(k1,1); b_chol = ab_table(k1,2);
                         !
                         ! get a batch of h2a_vvvv(ef)[a_chol,b_chol] integrals, where a_chol < b_chol
                         !
@@ -1585,6 +1596,12 @@ module ccsdt_p_chol_loops
                         h2a_vvvv = h2a_vvvv - transpose(h2a_vvvv)
                         do e=1,nua
                            do f=e+1,nua
+                              !h2a_vvvv(e,f) = 0.0d0
+                              !do d=1,nchol
+                              !   h2a_vvvv(e,f) = h2a_vvvv(e,f)&
+                              !                   +chol_a_vv(d,e,a_chol)*chol_a_vv(d,f,b_chol)&
+                              !                   -chol_a_vv(d,f,a_chol)*chol_a_vv(d,e,b_chol)
+                              !end do
                               do m=1,noa
                                  do n=m+1,noa
                                     h2a_vvvv(e,f) = h2a_vvvv(e,f) + h2a_oovv(m,n,e,f)*t2a(a_chol,b_chol,m,n)
@@ -1719,8 +1736,8 @@ module ccsdt_p_chol_loops
                                !
                             end do ! end master copy loop
                             !
-                       end do
                   end do
+                  !$omp end parallel do
                   deallocate(t3a_excits_copy1,t3a_excits_copy2,t3a_excits_copy3)
                   deallocate(t3a_amps_copy1,t3a_amps_copy2,t3a_amps_copy3)
                   deallocate(idx_table_copy1,idx_table_copy2,idx_table_copy3)
@@ -1829,7 +1846,8 @@ module ccsdt_p_chol_loops
                   real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4
                   integer :: i, j, k, l, a, b, c, d, m, n, e, f, idet, jdet
                   integer :: idx, nloc
-                  integer :: a_chol, b_chol
+                  integer :: a_chol, b_chol, k1
+                  integer :: ab_table(nua*(nua-1)/2,2)
 
                   ! compute VT3 intermediates
                   I2A_vooo = 0.5d0 * H2A_vooo 
@@ -2750,6 +2768,14 @@ module ccsdt_p_chol_loops
                   deallocate(t3_amps_buff,t3_excits_buff)
 
                   !!!! diagram 6: A(ab) 1/2 h2a(abef)*t3b(ebcmjk)
+                  k1 = 1 
+                  do a_chol=1,nua
+                     do b_chol=a_chol+1,nua
+                        ab_table(k1,1) = a_chol
+                        ab_table(k1,2) = b_chol
+                        k1 = k1 + 1
+                     end do
+                  end do 
                   !!! CIJK LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nub*noa*(noa-1)/2*nob
@@ -2758,7 +2784,10 @@ module ccsdt_p_chol_loops
                   allocate(h_vv(nua,nua))
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nub/), noa, noa, nob, nub)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab, resid)
-                  do a_chol=1,nua; do b_chol=a_chol+1,nua;
+                  !do a_chol=1,nua; do b_chol=a_chol+1,nua;
+                  !$omp parallel do reduction(+:resid) private(h_vv,a_chol,b_chol,a,b,c,i,j,k,l,m,n,d,e,f,idx,idet,jdet,hmatel)
+                  do k1=1,nua*(nua-1)/2
+                  a_chol = ab_table(k1,1); b_chol = ab_table(k1,2);
                   !
                   ! get a batch of h2a_vvvv(ef)[a_chol,b_chol] integrals, where a_chol < b_chol
                   !
@@ -2766,6 +2795,12 @@ module ccsdt_p_chol_loops
                   h_vv = h_vv - transpose(h_vv)
                   do e=1,nua
                      do f=e+1,nua
+                        !h_vv(e,f) = 0.0d0
+                        !do d=1,nchol
+                        !   h_vv(e,f) = h_vv(e,f)&
+                        !               +chol_a_vv(d,e,a_chol)*chol_a_vv(d,f,b_chol)&
+                        !               -chol_a_vv(d,f,a_chol)*chol_a_vv(d,e,b_chol)
+                        !end do
                         do m=1,noa
                            do n=m+1,noa
                               h_vv(e,f) = h_vv(e,f) + h2a_oovv(m,n,e,f)*t2a(a_chol,b_chol,m,n)
@@ -2787,7 +2822,8 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
-                  end do; end do; ! end loop over a_chol < b_chol
+                  end do ! end loop over a_chol < b_chol
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table,h_vv)
 
@@ -2809,6 +2845,7 @@ module ccsdt_p_chol_loops
                   !!! BIJK LOOP !!!
                   call get_index_table(idx_table2, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/2,nua/), noa, noa, nob, nua)
                   call sort4(t3b_excits2, t3b_amps2, loc_arr2, idx_table2, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab)
+                  !$omp parallel do reduction(+:resid) private(a_chol,b_chol,h_vv,a,b,c,i,j,k,l,m,n,d,e,f,idx,idet,jdet,hmatel)
                   do a_chol=1,nua; do b_chol=1,nub;
                     !
                     ! get a batch of h2b_vvvv(ef)[a_chol,b_chol] integrals
@@ -2816,6 +2853,10 @@ module ccsdt_p_chol_loops
                     call dgemm('t','n',nub,nua,nchol,1.0d0,chol_b_vv(:,:,b_chol),nchol,chol_a_vv(:,:,a_chol),nchol,0.0d0,h_vv,nub)
                     do e=1,nua
                        do f=1,nub
+                          !h_vv(f,e) = 0.0d0
+                          !do d=1,nchol
+                          !   h_vv(f,e) = h_vv(f,e) + chol_b_vv(d,f,b_chol)*chol_a_vv(d,e,a_chol)
+                          !end do
                           do m=1,noa
                              do n=1,nob
                                 h_vv(f,e) = h_vv(f,e) + h2b_oovv(m,n,e,f)*t2b(a_chol,b_chol,m,n)
@@ -2872,7 +2913,8 @@ module ccsdt_p_chol_loops
                       end if
                       end if
                     end do ! end loop over idet
-                  end do; end do; ! end loop over a_chol < b_chol
+                  end do; end do; ! end loop over a_chol, b_chol
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr1,loc_arr2,idx_table1,idx_table2,h_vv)
                   deallocate(t3b_excits1,t3b_excits2,t3b_amps1,t3b_amps2)
@@ -3088,7 +3130,8 @@ module ccsdt_p_chol_loops
                   real(kind=8) :: denom, val, t_amp, res_mm23, hmatel
                   real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4
                   integer :: i, j, k, l, a, b, c, d, m, n, e, f, idet, jdet
-                  integer :: idx, nloc, a_chol, b_chol
+                  integer :: idx, nloc, a_chol, b_chol, k1
+                  integer :: ab_table(nub*(nub-1)/2,2)
                   real(kind=8), allocatable :: xbuf(:,:,:,:), h_vv(:,:)
 
                   ! VT3 intermediates
@@ -4029,6 +4072,14 @@ module ccsdt_p_chol_loops
                   deallocate(t3_amps_buff,t3_excits_buff)
                   
                   !!!! diagram 6: A(bc) 1/2 h2c(bcef)*t3c(aefijk)
+                  k1 = 1 
+                  do a_chol=1,nub
+                     do b_chol=a_chol+1,nub
+                        ab_table(k1,1) = a_chol
+                        ab_table(k1,2) = b_chol
+                        k1 = k1 + 1
+                     end do
+                  end do 
                   !!! JKIA LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nua*nob*(nob-1)/2*noa
@@ -4037,7 +4088,10 @@ module ccsdt_p_chol_loops
                   allocate(idx_table(nob,nob,noa,nua))
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nua/), nob, nob, noa, nua)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/5,6,4,1/), nob, nob, noa, nua, nloc, n3abb, resid)
-                  do a_chol=1,nub; do b_chol=a_chol+1,nub;
+                  !$omp parallel do reduction(+:resid) private(h_vv,a_chol,b_chol,a,b,c,d,i,j,k,l,m,n,e,f,idx,hmatel,idet,jdet)
+                  !do a_chol=1,nub; do b_chol=a_chol+1,nub;
+                  do k1=1,nub*(nub-1)/2
+                  a_chol = ab_table(k1,1); b_chol = ab_table(k1,2);
                   !
                   ! get a batch of h2c_vvvv(ef)[a_chol,b_chol] integrals, where a_chol < b_chol
                   !
@@ -4066,7 +4120,8 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
-                  end do; end do; ! end loop over a_chol < b_chol
+                  end do ! end loop over a_chol < b_chol
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table,h_vv)
                   
@@ -4088,6 +4143,7 @@ module ccsdt_p_chol_loops
                   !!! JKIC LOOP !!!
                   call get_index_table(idx_table2, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/2,nub/), nob, nob, noa, nub)
                   call sort4(t3c_excits2, t3c_amps2, loc_arr2, idx_table2, (/5,6,4,3/), nob, nob, noa, nub, nloc, n3abb)
+                  !$omp parallel do reduction(+:resid) private(b_chol,h_vv,a,b,c,d,i,j,k,l,m,n,e,f,idx,idet,jdet,hmatel)
                   do a_chol=1,nua; do b_chol=1,nub;
                   !
                   ! get a batch of h2b_vvvv(ef)[a_chol,b_chol] integrals
@@ -4152,6 +4208,7 @@ module ccsdt_p_chol_loops
                       end if
                   end do ! end loop over idet
                   end do; end do; ! end loop over a_chol, b_chol
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(h_vv)
                   deallocate(loc_arr1)
@@ -4340,7 +4397,8 @@ module ccsdt_p_chol_loops
                   real(kind=8) :: I2C_vvov(nub,nub,nub,nob) ! reordered
                   real(kind=8) :: H2C_vvvv(nub,nub)
                   integer :: a, b, c, d, i, j, k, l, e, f, m, n, idet, jdet
-                  integer :: idx, nloc, a_chol, b_chol
+                  integer :: idx, nloc, a_chol, b_chol, k1
+                  integer :: ab_table(nub*(nub-1)/2,2)
 
                   ! compute VT3 intermediates
                   I2C_vooo(:,:,:,:) = 0.5d0 * H2C_vooo(:,:,:,:)
@@ -5786,6 +5844,14 @@ module ccsdt_p_chol_loops
                  deallocate(t3_amps_buff,t3_excits_buff)
 
                   !!!! diagram 4: 1/2 A(c/ab) h2c(abef) * t3d(ebcijk) 
+                  k1 = 1 
+                  do a_chol=1,nub
+                     do b_chol=a_chol+1,nub
+                        ab_table(k1,1) = a_chol
+                        ab_table(k1,2) = b_chol
+                        k1 = k1 + 1
+                     end do
+                  end do 
                   ! allocate new sorting arrays
                   nloc = nob*(nob-1)*(nob-2)/6*nub
                   allocate(loc_arr_copy1(2,nloc),loc_arr_copy2(2,nloc),loc_arr_copy3(2,nloc))
@@ -5807,8 +5873,11 @@ module ccsdt_p_chol_loops
                   !!! IJKC LOOP !!!
                   call get_index_table(idx_table_copy3, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/3,nub/), nob, nob, nob, nub)
                   call sort4(t3d_excits_copy3, t3d_amps_copy3, loc_arr_copy3, idx_table_copy3, (/4,5,6,3/), nob, nob, nob, nub, nloc, n3bbb)
-                  do a_chol = 1,nub
-                     do b_chol = a_chol+1,nub
+                  !do a_chol = 1,nub
+                  !   do b_chol = a_chol+1,nub
+                  !$omp parallel do reduction(+:resid) private(a_chol,b_chol,h2c_vvvv,a,b,c,d,i,j,k,l,m,n,e,f,idx,idet,jdet,hmatel)
+                  do k1=1,nub*(nub-1)/2
+                     a_chol = ab_table(k1,1); b_chol = ab_table(k1,2);
                         !
                         ! get a batch of h2c_vvvv(ef)[a_chol,b_chol] integrals, where a_chol < b_chol
                         !
@@ -5942,8 +6011,9 @@ module ccsdt_p_chol_loops
                                !
                             end do ! end master copy loop
                             !
-                       end do
+                  !     end do
                   end do
+                  !$omp end parallel do
                   deallocate(t3d_excits_copy1,t3d_excits_copy2,t3d_excits_copy3)
                   deallocate(t3d_amps_copy1,t3d_amps_copy2,t3d_amps_copy3)
                   deallocate(idx_table_copy1,idx_table_copy2,idx_table_copy3)
