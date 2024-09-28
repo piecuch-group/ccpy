@@ -151,7 +151,7 @@ def update_t1b(T, dT, X, H, shift):
     Update t1b amplitudes by calculating the projection <i~a~|(H_N e^(T1+T2))_C|0>.
     """
     dT.b = -np.einsum("mi,am->ai", X.b.oo, T.b, optimize=True)
-    dT.b += np.einsum("ae,ei->ai", X.b.vvv, T.b, optimize=True)
+    dT.b += np.einsum("ae,ei->ai", X.b.vv, T.b, optimize=True)
     dT.b += np.einsum("anif,fn->ai", H.bb.voov, T.b, optimize=True)
     dT.b += np.einsum("nafi,fn->ai", H.ab.ovvo, T.a, optimize=True)
     dT.b += np.einsum("me,eami->ai", X.a.ov, T.ab, optimize=True)
