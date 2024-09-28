@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import cc_loops2
+from ccpy.utilities.updates import cc_loops2, vvvv_contraction
 from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa_herm, build_3index_batch_vvvv_ab_herm, build_2index_batch_vvvv_bb_herm
 from ccpy.left.left_cc_intermediates import build_left_ccsd_chol_intermediates
 
@@ -145,11 +145,13 @@ def build_LH_2A(L, LH, T, X, H):
 
     LH.aa += 0.125 * np.einsum("ijmn,mnab->abij", X.aa.oooo, H.aa.oovv, optimize=True) # V*T2 + V*T1^2
     # deal with the bare (vvvv) term using Cholesky
-    for a in range(L.a.shape[0]):
-        for b in range(a + 1, L.a.shape[0]):
-            # <ab|ef> = <x|ae><x|bf>
-            batch_ints = build_2index_batch_vvvv_aa_herm(a, b, H)
-            LH.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, L.aa, optimize=True)
+    # for a in range(L.a.shape[0]):
+    #     for b in range(a + 1, L.a.shape[0]):
+    #         # <ab|ef> = <x|ae><x|bf>
+    #         batch_ints = build_2index_batch_vvvv_aa_herm(a, b, H)
+    #         LH.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, L.aa, optimize=True)
+    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(H.chol.a.vv, 0.5 * L.aa.transpose(3, 2, 1, 0))
+    LH.aa += tmp.transpose(3, 2, 1, 0)
 
     LH.aa += 0.5 * np.einsum("ejab,ei->abij", H.aa.vovv, L.a, optimize=True)
     LH.aa -= 0.5 * np.einsum("ijmb,am->abij", H.aa.ooov, L.a, optimize=True)
@@ -167,10 +169,12 @@ def build_LH_2B(L, LH, T, X, H):
 
     LH.ab += np.einsum("ijmn,mnab->abij", X.ab.oooo, H.ab.oovv, optimize=True)
     # deal with the bare (vvvv) term using Cholesky
-    for a in range(L.a.shape[0]):
-        # <ab|ef> = <x|ae><x|bf>
-        batch_ints = build_3index_batch_vvvv_ab_herm(a, H)
-        LH.ab[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, L.ab, optimize=True)
+    # for a in range(L.a.shape[0]):
+    #     # <ab|ef> = <x|ae><x|bf>
+    #     batch_ints = build_3index_batch_vvvv_ab_herm(a, H)
+    #     LH.ab[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, L.ab, optimize=True)
+    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2(H.chol.a.vv, H.chol.b.vv, L.ab.transpose(3, 2, 1, 0))
+    LH.ab += tmp.transpose(3, 2, 1, 0)
 
     LH.ab += np.einsum("ejmb,aeim->abij", H.ab.voov, L.aa, optimize=True)
     LH.ab += np.einsum("eima,ebmj->abij", H.aa.voov, L.ab, optimize=True)
@@ -203,11 +207,13 @@ def build_LH_2C(L, LH, T, X, H):
 
     LH.bb += 0.125 * np.einsum("ijmn,mnab->abij", X.bb.oooo, H.bb.oovv, optimize=True) # V*T2 + V*T1^2
     # deal with the bare (vvvv) term using Cholesky
-    for a in range(L.b.shape[0]):
-        for b in range(a + 1, L.b.shape[0]):
-            # <ab|ef> = <x|ae><x|bf>
-            batch_ints = build_2index_batch_vvvv_bb_herm(a, b, H)
-            LH.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, L.bb, optimize=True)
+    # for a in range(L.b.shape[0]):
+    #     for b in range(a + 1, L.b.shape[0]):
+    #         # <ab|ef> = <x|ae><x|bf>
+    #         batch_ints = build_2index_batch_vvvv_bb_herm(a, b, H)
+    #         LH.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, L.bb, optimize=True)
+    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(H.chol.b.vv, 0.5 * L.bb.transpose(3, 2, 1, 0))
+    LH.bb += tmp.transpose(3, 2, 1, 0)
 
     LH.bb += 0.5 * np.einsum("ejab,ei->abij", H.bb.vovv, L.b, optimize=True)
     LH.bb -= 0.5 * np.einsum("ijmb,am->abij", H.bb.ooov, L.b, optimize=True)

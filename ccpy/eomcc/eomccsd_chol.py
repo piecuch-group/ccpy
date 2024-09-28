@@ -6,7 +6,7 @@ the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD).
 import numpy as np
 from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa, build_3index_batch_vvvv_ab, build_2index_batch_vvvv_bb
 from ccpy.eomcc.eomccsd_intermediates import get_eomccsd_chol_intermediates
-from ccpy.utilities.updates import cc_loops2
+from ccpy.utilities.updates import cc_loops2, vvvv_contraction
 
 def update(R, omega, H, RHF_symmetry, system):
 
@@ -86,11 +86,13 @@ def build_HR_2A(R, T, X, H):
 
     X2A += 0.125 * np.einsum("mnij,abmn->abij", X.aa.oooo, T.aa, optimize=True)
     # deal with the bare (vvvv) term using Cholesky
-    for a in range(R.a.shape[0]):
-        for b in range(a + 1, R.a.shape[0]):
-            # <ab|ef> = <x|ae><x|bf>
-            batch_ints = build_2index_batch_vvvv_aa(a, b, H)
-            X2A[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, R.aa, optimize=True)
+    # for a in range(R.a.shape[0]):
+    #     for b in range(a + 1, R.a.shape[0]):
+    #         # <ab|ef> = <x|ae><x|bf>
+    #         batch_ints = build_2index_batch_vvvv_aa(a, b, H)
+    #         X2A[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, R.aa, optimize=True)
+    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(H.chol.a.vv.transpose(0, 2, 1), 0.5 * R.aa.transpose(3, 2, 1, 0))
+    X2A += tmp.transpose(3, 2, 1, 0)
 
     X2A += np.einsum("amie,ebmj->abij", H.aa.voov, R.aa, optimize=True)  # A(ij)A(ab)
     X2A += np.einsum("amie,bejm->abij", H.ab.voov, R.ab, optimize=True)  # A(ij)A(ab)
@@ -112,10 +114,12 @@ def build_HR_2B(R, T, X, H):
 
     X2B += np.einsum("mnij,abmn->abij", X.ab.oooo, T.ab, optimize=True)
     # deal with the bare (vvvv) term using Cholesky
-    for a in range(R.a.shape[0]):
-        # <ab|ef> = <x|ae><x|bf>
-        batch_ints = build_3index_batch_vvvv_ab(a, H)
-        X2B[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, R.ab, optimize=True)
+    # for a in range(R.a.shape[0]):
+    #     # <ab|ef> = <x|ae><x|bf>
+    #     batch_ints = build_3index_batch_vvvv_ab(a, H)
+    #     X2B[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, R.ab, optimize=True)
+    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2(H.chol.a.vv.transpose(0, 2, 1), H.chol.b.vv.transpose(0, 2, 1), R.ab.transpose(3, 2, 1, 0))
+    X2B += tmp.transpose(3, 2, 1, 0)
 
     X2B += np.einsum("amie,ebmj->abij", H.aa.voov, R.ab, optimize=True)
     X2B += np.einsum("amie,ebmj->abij", H.ab.voov, R.bb, optimize=True)
@@ -141,11 +145,13 @@ def build_HR_2C(R, T, X, H):
 
     X2C += 0.125 * np.einsum("mnij,abmn->abij", X.bb.oooo, T.bb, optimize=True)
     # deal with the bare (vvvv) term using Cholesky
-    for a in range(R.b.shape[0]):
-        for b in range(a + 1, R.b.shape[0]):
-            # <ab|ef> = <x|ae><x|bf>
-            batch_ints = build_2index_batch_vvvv_bb(a, b, H)
-            X2C[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, R.bb, optimize=True)
+    # for a in range(R.b.shape[0]):
+    #     for b in range(a + 1, R.b.shape[0]):
+    #         # <ab|ef> = <x|ae><x|bf>
+    #         batch_ints = build_2index_batch_vvvv_bb(a, b, H)
+    #         X2C[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, R.bb, optimize=True)
+    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(H.chol.b.vv.transpose(0, 2, 1), 0.5 * R.bb.transpose(3, 2, 1, 0))
+    X2C += tmp.transpose(3, 2, 1, 0)
 
     X2C += np.einsum("amie,ebmj->abij", H.bb.voov, R.bb, optimize=True)  # A(ij)A(ab)
     X2C += np.einsum("maei,ebmj->abij", H.ab.ovvo, R.ab, optimize=True)  # A(ij)A(ab)

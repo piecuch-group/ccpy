@@ -40,37 +40,54 @@ def update(T: ClusterOperator,
             + np.einsum("mnef,fn->me", H.ab.oovv, T.b, optimize=True)
     )
     X.a.vv = H.a.vv + (
-            np.einsum("anef,fn->ae", H.aa.vovv, T.a, optimize=True)
-            + np.einsum("anef,fn->ae", H.ab.vovv, T.b, optimize=True)
-            # - np.einsum("me,am->ae", X.a.ov, T.a, optimize=True)
             - 0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, T.aa, optimize=True)  #
             - np.einsum("mnef,afmn->ae", H.ab.oovv, T.ab, optimize=True)  #
+    )
+    bt1 = (
+            np.einsum("xnf,fn->x", H.chol.a.ov, T.a, optimize=True)
+            + np.einsum("xnf,fn->x", H.chol.b.ov, T.b, optimize=True)
+    )
+    bxt1 = -np.einsum("xne,fn->xfe", H.chol.a.ov, T.a, optimize=True)
+    X.a.vv += (
+            np.einsum("xae,x->ae", H.chol.a.vv, bt1, optimize=True)
+            + np.einsum("xaf,xfe->ae", H.chol.a.vv, bxt1, optimize=True)
     )
     X.a.oo = H.a.oo + (
             np.einsum("mnif,fn->mi", H.aa.ooov, T.a, optimize=True)
             + np.einsum("mnif,fn->mi", H.ab.ooov, T.b, optimize=True)
             + np.einsum("me,ei->mi", X.a.ov, T.a, optimize=True)
-            + 0.5 * np.einsum("mnef,efin->mi", H.aa.oovv, T.aa, optimize=True)  #
-            + np.einsum("mnef,efin->mi", H.ab.oovv, T.ab, optimize=True)  #
+            + 0.5 * np.einsum("mnef,efin->mi", H.aa.oovv, T.aa, optimize=True)
+            + np.einsum("mnef,efin->mi", H.ab.oovv, T.ab, optimize=True)
     )
-    X.b.ov = H.b.ov + (
-            np.einsum("nmfe,fn->me", H.ab.oovv, T.a, optimize=True)
-            + np.einsum("mnef,fn->me", H.bb.oovv, T.b, optimize=True)
-    )
-    X.b.vv = H.b.vv + (
-            + np.einsum("anef,fn->ae", H.bb.vovv, T.b, optimize=True)
-            + np.einsum("nafe,fn->ae", H.ab.ovvv, T.a, optimize=True)
-            # - np.einsum("me,am->ae", X.b.ov, T.b, optimize=True)
-            - 0.5 * np.einsum("mnef,afmn->ae", H.bb.oovv, T.bb, optimize=True)  #
-            - np.einsum("nmfe,fanm->ae", H.ab.oovv, T.ab, optimize=True)  #
-    )
-    X.b.oo = H.b.oo + (
-            + np.einsum("mnif,fn->mi", H.bb.ooov, T.b, optimize=True)
-            + np.einsum("nmfi,fn->mi", H.ab.oovo, T.a, optimize=True)
-            + np.einsum("me,ei->mi", X.b.ov, T.b, optimize=True)
-            + 0.5 * np.einsum("mnef,efin->mi", H.bb.oovv, T.bb, optimize=True)  #
-            + np.einsum("nmfe,feni->mi", H.ab.oovv, T.ab, optimize=True)  #
-    )
+    if flag_RHF:
+        X.b.ov = X.a.ov.copy()
+        X.b.oo = X.a.oo.copy()
+        X.b.vv = X.a.vv.copy()
+    else:
+        X.b.ov = H.b.ov + (
+                np.einsum("nmfe,fn->me", H.ab.oovv, T.a, optimize=True)
+                + np.einsum("mnef,fn->me", H.bb.oovv, T.b, optimize=True)
+        )
+        X.b.vv = H.b.vv + (
+                - 0.5 * np.einsum("mnef,afmn->ae", H.bb.oovv, T.bb, optimize=True)
+                - np.einsum("nmfe,fanm->ae", H.ab.oovv, T.ab, optimize=True)
+        )
+        bt1 = (
+                np.einsum("xnf,fn->x", H.chol.b.ov, T.b, optimize=True)
+                + np.einsum("xnf,fn->x", H.chol.a.ov, T.a, optimize=True)
+        )
+        bxt1 = -np.einsum("xne,fn->xfe", H.chol.b.ov, T.b, optimize=True)
+        X.b.vv += (
+                np.einsum("xae,x->ae", H.chol.b.vv, bt1, optimize=True)
+                + np.einsum("xaf,xfe->ae", H.chol.b.vv, bxt1, optimize=True)
+        )
+        X.b.oo = H.b.oo + (
+                + np.einsum("mnif,fn->mi", H.bb.ooov, T.b, optimize=True)
+                + np.einsum("nmfi,fn->mi", H.ab.oovo, T.a, optimize=True)
+                + np.einsum("me,ei->mi", X.b.ov, T.b, optimize=True)
+                + 0.5 * np.einsum("mnef,efin->mi", H.bb.oovv, T.bb, optimize=True)  #
+                + np.einsum("nmfe,feni->mi", H.ab.oovv, T.ab, optimize=True)  #
+        )
 
     # update T1
     T, dT = update_t1a(T, dT, H, X, shift, t3_excitations)
@@ -82,7 +99,10 @@ def update(T: ClusterOperator,
 
     # Adjust (vv) intermediates
     X.a.vv -= np.einsum("me,am->ae", X.a.ov, T.a, optimize=True)
-    X.b.vv -= np.einsum("me,am->ae", X.b.ov, T.b, optimize=True)
+    if flag_RHF:
+        X.b.vv = X.a.vv.copy()
+    else:
+        X.b.vv -= np.einsum("me,am->ae", X.b.ov, T.b, optimize=True)
     # T1-transform Cholesky vectors
     X.chol.a.ov = H.chol.a.ov.copy()
     X.chol.a.oo = H.chol.a.oo.copy() + np.einsum("xme,ei->xmi", X.chol.a.ov, T.a, optimize=True)
@@ -93,15 +113,21 @@ def update(T: ClusterOperator,
             + np.einsum("xae,ei->xai", X.chol.a.vv, T.a, optimize=True)
             + np.einsum("xme,ei,am->xai", X.chol.a.ov, T.a, T.a, optimize=True)
     )
-    X.chol.b.ov = H.chol.b.ov.copy()
-    X.chol.b.oo = H.chol.b.oo.copy() + np.einsum("xme,ei->xmi", X.chol.b.ov, T.b, optimize=True)
-    X.chol.b.vv = H.chol.b.vv.copy() - np.einsum("xme,am->xae", X.chol.b.ov, T.b, optimize=True)
-    X.chol.b.vo = (
-            H.chol.b.vo.copy()
-            - np.einsum("xmi,am->xai", X.chol.b.oo, T.b, optimize=True)
-            + np.einsum("xae,ei->xai", X.chol.b.vv, T.b, optimize=True)
-            + np.einsum("xme,ei,am->xai", X.chol.b.ov, T.b, T.b, optimize=True)
-    )
+    if flag_RHF:
+        X.chol.b.ov = X.chol.a.ov.copy()
+        X.chol.b.oo = X.chol.a.oo.copy()
+        X.chol.b.vv = X.chol.a.vv.copy()
+        X.chol.b.vo = X.chol.a.vo.copy()
+    else:
+        X.chol.b.ov = H.chol.b.ov.copy()
+        X.chol.b.oo = H.chol.b.oo.copy() + np.einsum("xme,ei->xmi", X.chol.b.ov, T.b, optimize=True)
+        X.chol.b.vv = H.chol.b.vv.copy() - np.einsum("xme,am->xae", X.chol.b.ov, T.b, optimize=True)
+        X.chol.b.vo = (
+                H.chol.b.vo.copy()
+                - np.einsum("xmi,am->xai", X.chol.b.oo, T.b, optimize=True)
+                + np.einsum("xae,ei->xai", X.chol.b.vv, T.b, optimize=True)
+                + np.einsum("xme,ei,am->xai", X.chol.b.ov, T.b, T.b, optimize=True)
+        )
 
     # update T2
     T, dT = update_t2a(T, dT, X, H, shift, t3_excitations)

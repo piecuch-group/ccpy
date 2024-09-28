@@ -14,11 +14,26 @@ module vvvv_contraction
                  !!!!!!f2py intent(in,out) :: resid(0:nu-1,0:nu-1,0:no-1,0:no-1)
                  real(kind=8), intent(out) :: resid(no,no,nu,nu)
                  ! Local variables
-                 integer :: a, b, e, f, x
+                 integer :: a, b, e, f, x, k1
                  real(kind=8) :: batch_ints(nu,nu)
-                 
+                 integer :: ab_table(nu*(nu-1)/2,2)
+
+                 resid = 0.0d0
+
+                 k1 = 1
                  do a=1,nu
                     do b=a+1,nu
+                       ab_table(k1,1) = a
+                       ab_table(k1,2) = b
+                       k1 = k1 + 1
+                    end do
+                 end do
+                 
+                 !$omp parallel default(shared),&
+                 !$omp private(a,b,e,f,batch_ints)
+                 !$omp do reduction(+:resid)
+                 do k1=1,nu*(nu-1)/2
+                       a = ab_table(k1,1); b = ab_table(k1,2);
                        ! compute batch_ints(a,b) = <x|ae>*<x|bf>
                        call dgemm('t','n',nu,nu,naux,1.0d0,R(:,:,b),naux,R(:,:,a),naux,0.0d0,batch_ints,nu)
                        ! antisymmetrize batch_ints(a,b) <- batch_ints(a,b) - v_fe(a,b)
@@ -34,8 +49,9 @@ module vvvv_contraction
                              resid(:,:,b,a) = resid(:,:,b,a) + batch_ints(f,e)*t2(:,:,f,e)
                           end do
                        end do
-                    end do
                  end do
+                 !$omp end do
+                 !$omp end parallel
               end subroutine vvvv_t2_sym
 
               subroutine vvvv_t2(resid, Ra, Rb, t2, noa, nua, nob, nub, naux)
@@ -53,6 +69,9 @@ module vvvv_contraction
                  real(kind=8) :: batch_ints(nub,nua)
                  
                  resid = 0.0d0
+                 !$omp parallel default(shared),&
+                 !$omp private(b,e,f,batch_ints)
+                 !$omp do reduction(+:resid)
                  do a=1,nua
                     do b=1,nub
                        ! compute batch_ints(a) = <x|ae>*<x|bf>
@@ -66,6 +85,8 @@ module vvvv_contraction
                        end do
                     end do
                  end do
+                 !$omp end do
+                 !$omp end parallel
                  
               end subroutine vvvv_t2
            

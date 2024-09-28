@@ -207,14 +207,14 @@ def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
                     np.einsum("xai,xbj->abij", H.chol.a.vo, H.chol.a.vo, optimize=True)
                     - np.einsum("xaj,xbi->abij", H.chol.a.vo, H.chol.a.vo, optimize=True)
     ) # h(abij)
-    H.aa.vovv = (
-                    np.einsum("xae,xmf->amef", H.chol.a.vv, H.chol.a.ov, optimize=True)
-                    - np.einsum("xaf,xme->amef", H.chol.a.vv, H.chol.a.ov, optimize=True)
-    ) # h(amef)
-    H.aa.vvov = (
-                    np.einsum("xai,xbe->abie", H.chol.a.vo, H.chol.a.vv, optimize=True)
-                    - np.einsum("xbi,xae->abie", H.chol.a.vo, H.chol.a.vv, optimize=True)
-    ) # h(abie)
+    # H.aa.vovv = (
+    #                 np.einsum("xae,xmf->amef", H.chol.a.vv, H.chol.a.ov, optimize=True)
+    #                 - np.einsum("xaf,xme->amef", H.chol.a.vv, H.chol.a.ov, optimize=True)
+    # ) # h(amef)
+    # H.aa.vvov = (
+    #                 np.einsum("xai,xbe->abie", H.chol.a.vo, H.chol.a.vv, optimize=True)
+    #                 - np.einsum("xbi,xae->abie", H.chol.a.vo, H.chol.a.vv, optimize=True)
+    # ) # h(abie)
     # H.aa.vvvv = (
     #                 np.einsum("xae,xbf->abef", H.chol.a.vv, H.chol.a.vv, optimize=True)
     #                 - np.einsum("xaf,xbe->abef", H.chol.a.vv, H.chol.a.vv, optimize=True)
@@ -246,14 +246,14 @@ def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
                     np.einsum("xai,xbj->abij", H.chol.b.vo, H.chol.b.vo, optimize=True)
                     - np.einsum("xaj,xbi->abij", H.chol.b.vo, H.chol.b.vo, optimize=True)
     ) # h(abij)
-    H.bb.vovv = (
-                    np.einsum("xae,xmf->amef", H.chol.b.vv, H.chol.b.ov, optimize=True)
-                    - np.einsum("xaf,xme->amef", H.chol.b.vv, H.chol.b.ov, optimize=True)
-    ) # h(amef)
-    H.bb.vvov = (
-                    np.einsum("xai,xbe->abie", H.chol.b.vo, H.chol.b.vv, optimize=True)
-                    - np.einsum("xbi,xae->abie", H.chol.b.vo, H.chol.b.vv, optimize=True)
-    ) # h(abie)
+    # H.bb.vovv = (
+    #                 np.einsum("xae,xmf->amef", H.chol.b.vv, H.chol.b.ov, optimize=True)
+    #                 - np.einsum("xaf,xme->amef", H.chol.b.vv, H.chol.b.ov, optimize=True)
+    # ) # h(amef)
+    # H.bb.vvov = (
+    #                 np.einsum("xai,xbe->abie", H.chol.b.vo, H.chol.b.vv, optimize=True)
+    #                 - np.einsum("xbi,xae->abie", H.chol.b.vo, H.chol.b.vv, optimize=True)
+    # ) # h(abie)
     # H.bb.vvvv = (
     #                 np.einsum("xae,xbf->abef", H.chol.b.vv, H.chol.b.vv, optimize=True)
     #                 - np.einsum("xaf,xbe->abef", H.chol.b.vv, H.chol.b.vv, optimize=True)
@@ -294,18 +294,18 @@ def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
     H.ab.vvoo = (
                     np.einsum("xai,xbj->abij", H.chol.a.vo, H.chol.b.vo, optimize=True)
     ) # h(abij)
-    H.ab.vovv = (
-                    np.einsum("xae,xmf->amef", H.chol.a.vv, H.chol.b.ov, optimize=True)
-    ) # h(amef)
-    H.ab.ovvv = (
-                    np.einsum("xmf,xae->mafe", H.chol.a.ov, H.chol.b.vv, optimize=True)
-    ) # h(mafe)
-    H.ab.vvov = (
-                    np.einsum("xai,xbe->abie", H.chol.a.vo, H.chol.b.vv, optimize=True)
-    ) # h(abie)
-    H.ab.vvvo = (
-                    np.einsum("xae,xbi->abei", H.chol.a.vv, H.chol.b.vo, optimize=True)
-    ) # h(abei)
+    # H.ab.vovv = (
+    #                 np.einsum("xae,xmf->amef", H.chol.a.vv, H.chol.b.ov, optimize=True)
+    # ) # h(amef)
+    # H.ab.ovvv = (
+    #                 np.einsum("xmf,xae->mafe", H.chol.a.ov, H.chol.b.vv, optimize=True)
+    # ) # h(mafe)
+    # H.ab.vvov = (
+    #                 np.einsum("xai,xbe->abie", H.chol.a.vo, H.chol.b.vv, optimize=True)
+    # ) # h(abie)
+    # H.ab.vvvo = (
+    #                 np.einsum("xae,xbi->abei", H.chol.a.vv, H.chol.b.vo, optimize=True)
+    # ) # h(abei)
     # H.ab.vvvv = (
     #                 np.einsum("xae,xbf->abef", H.chol.a.vv, H.chol.b.vv, optimize=True)
     # ) # h(abef)
