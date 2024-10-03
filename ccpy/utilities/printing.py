@@ -26,6 +26,14 @@ def cc_calculation_summary(T, reference_energy, cc_energy, system, print_thresh)
     print_ee_amplitudes(T, system, T.order, print_thresh)
     print("")
 
+def lrcc_calculation_summary(T1, lrcc_energy, system, print_thresh):
+    DATA_FMT = "{:<30} {:>20.8f}"
+    print("\n   LR-CC Calculation Summary")
+    print("  --------------------------------------------------")
+    print(DATA_FMT.format("   LR-CC correlation property", lrcc_energy))
+    print_ee_amplitudes(T1, system, T1.order, print_thresh)
+    print("")
+
 def eomcc_calculation_summary(R, omega, corr_energy, r0, rel, is_converged, istate, system, print_thresh):
     DATA_FMT = "{:<30} {:>20.8f}"
     if is_converged:

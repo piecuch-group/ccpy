@@ -8,6 +8,7 @@ import ccpy.hbar
 import ccpy.left
 import ccpy.eom_guess
 import ccpy.eomcc
+import ccpy.lrcc
 from ccpy.drivers.solvers import (
                 cc_jacobi,
                 left_cc_jacobi,
@@ -15,13 +16,14 @@ from ccpy.drivers.solvers import (
                 eomcc_block_davidson,
                 eomcc_nonlinear_diis,
                 eccc_jacobi,
+                lrcc_jacobi,
 )
 from ccpy.energy.cc_energy import get_LR, get_LR_ipeom, get_LR_eaeom, get_r0, get_rel, get_rel_ea, get_rel_ip
 from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator, SpinFlipOperator, FockOperator
 from ccpy.utilities.printing import (
                 get_timestamp,
-                cc_calculation_summary,
+                cc_calculation_summary, lrcc_calculation_summary,
                 eomcc_calculation_summary, leftcc_calculation_summary, print_ee_amplitudes,
                 print_sf_amplitudes, sfeomcc_calculation_summary,
                 print_ea_amplitudes, eaeomcc_calculation_summary, lefteacc_calculation_summary,
@@ -107,6 +109,8 @@ class Driver:
         self.ddeltap3 = [None] * max_number_states
         self.deltap4 = [None] * max_number_states
         self.ddeltap4 = [None] * max_number_states
+        self.T1 = None
+        self.correlation_property = 0.0
 
         # Store alpha and beta fock matrices for later usage before HBar overwrites bare Hamiltonian
         self.fock = Integral.from_empty(system, 1, data_type=self.hamiltonian.a.oo.dtype)
@@ -131,11 +135,12 @@ class Driver:
             self.operator_params["order"] = 1
             self.operator_params["number_particles"] = 1
             self.operator_params["number_holes"] = 1
-        elif method.lower() in ["cc2", "ccd", "ccsd", "ccsd_chol", "accd", "accsd", "eomcc2", "eomccsd", "eomccsd_chol", "left_ccsd", "left_ccsd_chol", "eccc2", "cc3", "eomcc3"]:
+        elif method.lower() in ["cc2", "ccd", "ccsd", "ccsd_chol", "accd", "accsd", "eomcc2", "eomccsd", "eomccsd_chol",
+                                "left_ccsd", "left_ccsd_chol", "eccc2", "cc3", "eomcc3", "lrccsd"]:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
-        elif method.lower() in ["ccsdt", "ccsdt_chol", "eomccsdt", "left_ccsdt", "cc4", "cc4-old"]:
+        elif method.lower() in ["ccsdt", "ccsdt_chol", "eomccsdt", "left_ccsdt", "cc4", "cc4-old", "lrccsdt"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
@@ -149,7 +154,7 @@ class Driver:
             self.operator_params["number_holes"] = 3
             self.operator_params["active_orders"] = [3]
             self.operator_params["number_active_indices"] = [1]
-        elif method.lower() in ["ccsdt_p", "ccsdt_p_chol", "accsdt_p", "eomccsdt_p", "left_ccsdt_p"]:
+        elif method.lower() in ["ccsdt_p", "ccsdt_p_chol", "accsdt_p", "eomccsdt_p", "left_ccsdt_p", "lrccsdt_p"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
@@ -376,6 +381,67 @@ class Driver:
                                                        acparray=acparray)
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   CC(P) calculation ended on", get_timestamp())
+
+    def run_lrcc(self, prop, method):
+        """Run the ground-state coupled-cluster (CC) calculation for a many-body system.
+
+        Parameters
+        ----------
+        method : str
+            Name of the ground-state CC method that will be run.
+        prop : Integral
+            Integral object representation of the one-body property operator (e.g., dipole moment in x-, y-, or z-direction)
+            that we are working with.
+        """
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.lrcc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+
+        # Ensure that Hbar is set upon entry
+        assert(self.flag_hbar)
+
+        # Set operator parameters needed to build T
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # import the specific CC method module and get its update function
+        cc_mod = import_module("ccpy.lrcc." + method.lower())
+        update_function = getattr(cc_mod, 'update')
+
+        # Print the options as a header
+        self.print_options()
+        print("   LR-CC calculation started on", get_timestamp())
+
+        # Create either the standard 1st-order perturbed CC cluster operator
+        # Note: No restarts, since you will often be running the LR-CC calculation multiple times (e.g., x-, y-, z-component)
+        self.T1 = ClusterOperator(self.system,
+                                  order=self.operator_params["order"],
+                                  active_orders=self.operator_params["active_orders"],
+                                  num_active=self.operator_params["number_active_indices"])
+        # regardless of restart status, initialize residual anew
+        dT = ClusterOperator(self.system,
+                             order=self.operator_params["order"],
+                             active_orders=self.operator_params["active_orders"],
+                             num_active=self.operator_params["number_active_indices"])
+        # Create the container for 1- and 2-body intermediates
+        cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+        if self.system.cholesky:
+            cc_intermediates.chol = Integral.from_empty(self.system, 1, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+        # Run the CC calculation
+        self.T1, self.correlation_property, _ = lrcc_jacobi(update_function,
+                                                            self.T1,
+                                                            prop,
+                                                            dT,
+                                                            self.T,
+                                                            self.hamiltonian,
+                                                            cc_intermediates,
+                                                            self.system,
+                                                            self.options,
+                                                            )
+        lrcc_calculation_summary(self.T1, self.correlation_property, self.system, self.options["amp_print_threshold"])
+        print("   LR-CC calculation ended on", get_timestamp())
 
     def run_hbar(self, method, t3_excitations=None):
         # check if requested CC calculation is implemented in modules

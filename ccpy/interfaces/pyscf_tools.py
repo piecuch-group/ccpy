@@ -1,7 +1,7 @@
 import numpy as np
 from pyscf import ao2mo, symm
 
-from ccpy.models.integrals import getHamiltonian, getCholeskyHamiltonian
+from ccpy.models.integrals import getHamiltonian, getCholeskyHamiltonian, Integral
 from ccpy.models.system import System
 from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 
@@ -107,6 +107,94 @@ def load_pyscf_integrals(
             dumpIntegralstoPGFiles(e1int, e2int, system)
 
         return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
+
+def get_multipole_integral(l, mol, mf, system):
+    print(f"   Computing L = {l} Multipole Integrals using PySCF")
+    nao = system.norbitals + system.nfrozen
+    noa = system.noccupied_alpha
+    nob = system.noccupied_beta
+    nua = system.nunoccupied_alpha
+    nub = system.nunoccupied_beta
+    corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
+    oa = slice(noa)
+    ob = slice(nob)
+    va = slice(noa, noa + nua)
+    vb = slice(nob, nob + nub)
+    occ_a = slice(noa + system.nfrozen)
+    occ_b = slice(nob + system.nfrozen)
+    # Dipole
+    if l == 1:
+        Q_ao = mol.intor("int1e_r").reshape(3, nao, nao)
+        Q_mo = np.einsum("xij,ip,jq->xpq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
+        Q_ref = np.einsum("xii->x", Q_mo[:, occ_a, occ_a]) + np.einsum("xii->x", Q_mo[:, occ_b, occ_b])
+        Q_mo = Q_mo[:, corr_slice, corr_slice]
+        mu = [Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)]
+        for x in range(3):
+            mu[x].a.oo = Q_mo[x, oa, oa]
+            mu[x].a.vv = Q_mo[x, va, va]
+            mu[x].a.ov = Q_mo[x, oa, va]
+            mu[x].a.vo = Q_mo[x, va, oa]
+            mu[x].b.oo = Q_mo[x, ob, ob]
+            mu[x].b.vv = Q_mo[x, vb, vb]
+            mu[x].b.ov = Q_mo[x, ob, vb]
+            mu[x].b.vo = Q_mo[x, vb, ob]
+    # Quadrupole
+    elif l == 2:
+        Q_ao = mol.intor('int1e_rr').reshape(3, 3, nao, nao)
+        Q_mo = np.einsum("xyij,ip,jq->xypq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
+        Q_ref = np.einsum("xyii->xy", Q_mo[:, :, occ_a, occ_a]) + np.einsum("xyii->xy", Q_mo[:, :, occ_b, occ_b])
+        Q_mo = Q_mo[:, :, corr_slice, corr_slice]
+        mu = [[Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)] for _ in range(3)]
+        for x in range(3):
+            for y in range(3):
+                mu[x][y].a.oo = Q_mo[x, y, oa, oa]
+                mu[x][y].a.vv = Q_mo[x, y, va, va]
+                mu[x][y].a.ov = Q_mo[x, y, oa, va]
+                mu[x][y].a.vo = Q_mo[x, y, va, oa]
+                mu[x][y].b.oo = Q_mo[x, y, ob, ob]
+                mu[x][y].b.vv = Q_mo[x, y, vb, vb]
+                mu[x][y].b.ov = Q_mo[x, y, ob, vb]
+                mu[x][y].b.vo = Q_mo[x, y, vb, ob]
+    # Octopole
+    elif l == 3:
+        Q_ao = mol.intor('int1e_rrr').reshape(3, 3, nao, nao)
+        Q_mo = np.einsum("xyzij,ip,jq->xyzpq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
+        Q_ref = np.einsum("xyzii->xyz", Q_mo[:, :, :, occ_a, occ_a]) + np.einsum("xii->x", Q_mo[:, :, :, occ_b, occ_b])
+        Q_mo = Q_mo[:, :, :, corr_slice, corr_slice]
+        mu = [[[Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)] for _ in range(3)] for _ in range(3)]
+        for x in range(3):
+            for y in range(3):
+                for z in range(3):
+                    mu[x][y][z].a.oo = Q_mo[x, y, z, oa, oa]
+                    mu[x][y][z].a.vv = Q_mo[x, y, z, va, va]
+                    mu[x][y][z].a.ov = Q_mo[x, y, z, oa, va]
+                    mu[x][y][z].a.vo = Q_mo[x, y, z, va, oa]
+                    mu[x][y][z].b.oo = Q_mo[x, y, z, ob, ob]
+                    mu[x][y][z].b.vv = Q_mo[x, y, z, vb, vb]
+                    mu[x][y][z].b.ov = Q_mo[x, y, z, ob, vb]
+                    mu[x][y][z].b.vo = Q_mo[x, y, z, vb, ob]
+    # Hexadecapole
+    elif l == 4:
+        Q_ao = mol.intor('int1e_rrrr').reshape(3, 3, 3, 3, nao, nao)
+        Q_mo = np.einsum("xyzwij,ip,jq->xyzwpq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
+        Q_ref = np.einsum("xyzwii->xyzw", Q_mo[:, :, :, :, occ_a, occ_a]) + np.einsum("xyzwii->xyzw", Q_mo[:, :, :, :, occ_b, occ_b])
+        Q_mo = Q_mo[:, :, :, :, corr_slice, corr_slice]
+        mu = [[[[Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)] for _ in range(3)] for _ in range(3)] for _ in range(3)]
+        for x in range(3):
+            for y in range(3):
+                for z in range(3):
+                    for w in range(3):
+                        mu[x][y][z][w].a.oo = Q_mo[x, y, z, w, oa, oa]
+                        mu[x][y][z][w].a.vv = Q_mo[x, y, z, w, va, va]
+                        mu[x][y][z][w].a.ov = Q_mo[x, y, z, w, oa, va]
+                        mu[x][y][z][w].a.vo = Q_mo[x, y, z, w, va, oa]
+                        mu[x][y][z][w].b.oo = Q_mo[x, y, z, w, ob, ob]
+                        mu[x][y][z][w].b.vv = Q_mo[x, y, z, w, vb, vb]
+                        mu[x][y][z][w].b.ov = Q_mo[x, y, z, w, ob, vb]
+                        mu[x][y][z][w].b.vo = Q_mo[x, y, z, w, vb, ob]
+    else:
+        print(f"Angular momentum {l} not supported in PySCF.")
+    return mu, Q_ref
 
 def get_kconserv1(a, kpts, thresh=1.0e-07):
     nkpts = len(kpts)
