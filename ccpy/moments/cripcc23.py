@@ -3,7 +3,7 @@ import numpy as np
 
 from ccpy.constants.constants import hartreetoeV
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
-from ccpy.utilities.updates import cripcc_loops
+from ccpy.lib.core import cripcc_loops
 
 
 def calc_cripcc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):

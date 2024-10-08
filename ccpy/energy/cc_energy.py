@@ -1,7 +1,7 @@
 """Module containing function to calculate the CC correlation energy."""
 import numpy as np
 from ccpy.models.operators import ClusterOperator, FockOperator
-from ccpy.utilities.updates import leftccsdt_p_loops
+from ccpy.lib.core import leftccsdt_p_loops
 
 def get_ci_energy(C, H0):
 

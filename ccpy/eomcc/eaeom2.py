@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 # R.a -> (nua) -> (a)
 # R.aa -> (nua,nua,noa) -> (abj)

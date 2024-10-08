@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import cc_loops2, vvvv_contraction
+from ccpy.lib.core import cc_loops2, vvvv_contraction
 from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa_herm, build_3index_batch_vvvv_ab_herm, build_2index_batch_vvvv_bb_herm
 from ccpy.left.left_cc_intermediates import build_left_ccsd_chol_intermediates
 

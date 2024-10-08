@@ -9,7 +9,7 @@ from ccpy.models.operators import ClusterOperator
 from ccpy.models.system import System
 from ccpy.models.integrals import Integral
 # Modules for computation
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 
 def update(T: ClusterOperator,

@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from ccpy.utilities.updates import reorder
+from ccpy.lib.core import reorder
 
 def convert_t3_from_pspace(driver, t3_excitations):
 

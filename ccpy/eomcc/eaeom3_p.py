@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import eaeom3_p_loops
+from ccpy.lib.core import eaeom3_p_loops
 from ccpy.eomcc.eaeom3_intermediates import get_eaeom3_p_intermediates
 
 def update(R, omega, H, RHF_symmetry, system, r3_excitations):

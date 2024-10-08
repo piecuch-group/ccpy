@@ -9,8 +9,8 @@ from ccpy.models.system import System
 from ccpy.models.integrals import Integral
 #
 from ccpy.hbar.hbar_ccsd_chol import get_ccsd_intermediates
-from ccpy.utilities.updates import vvvv_contraction
-from ccpy.utilities.updates import ccsdt_p_loops, ccsdt_p_chol_loops
+from ccpy.lib.core import vvvv_contraction
+from ccpy.lib.core import ccsdt_p_loops, ccsdt_p_chol_loops
 
 def update(T: ClusterOperator,
            dT: ClusterOperator,

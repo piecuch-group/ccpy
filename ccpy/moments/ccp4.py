@@ -3,7 +3,7 @@ import time
 
 from ccpy.energy.cc_energy import get_cc_energy
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
-from ccpy.utilities.updates import crcc24_loops
+from ccpy.lib.core import crcc24_loops
 from ccpy.moments.crcc24 import calc_crcc24
 
 

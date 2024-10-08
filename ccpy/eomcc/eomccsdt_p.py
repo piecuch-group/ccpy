@@ -1,6 +1,6 @@
 import numpy as np
 from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eomccsdt_intermediates, add_R3_p_terms
-from ccpy.utilities.updates import eomccsdt_p_loops
+from ccpy.lib.core import eomccsdt_p_loops
 
 def update(R, omega, H, RHF_symmetry, system, r3_excitations):
     R.a, R.b, R.aa, R.ab, R.bb, R.aaa, R.aab, R.abb, R.bbb = eomccsdt_p_loops.update_r(

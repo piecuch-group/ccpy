@@ -1,6 +1,6 @@
 python_sources = [
-  'integrals.py',
   '__init__.py',
+  'integrals.py',
   'hilbert.py',
   'system.py',
   'operators.py'

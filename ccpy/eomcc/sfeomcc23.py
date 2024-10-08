@@ -5,7 +5,7 @@ diagonalized in the space of singles, doubles, and triples [SF-EOMCC(2,3)]."""
 
 import numpy as np
 from ccpy.eomcc.sfeomcc23_intermediates import get_sfeomcc23_intermediates
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
 

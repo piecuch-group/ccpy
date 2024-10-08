@@ -12,7 +12,7 @@ References:
 """
 import numpy as np
 from ccpy.eomcc.eomcc3_intermediates import get_HR1_intermediates, get_eomccsd_intermediates
-from ccpy.utilities.updates import cc3_loops
+from ccpy.lib.core import cc3_loops
 
 def update(R, omega, fock, RHF_symmetry, system):
     R.a, R.b, R.aa, R.ab, R.bb = cc3_loops.update_r(

@@ -1,5 +1,5 @@
 import time
-from ccpy.utilities.updates import mbpt_loops
+from ccpy.lib.core import mbpt_loops
 
 # [TODO]: Generalize MPn methods to MBPT(n) methods for non-HF orbitals.
 

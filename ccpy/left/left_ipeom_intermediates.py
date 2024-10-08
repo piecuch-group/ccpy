@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import leftipeom3_p_intermediates
+from ccpy.lib.core import leftipeom3_p_intermediates
 
 def get_leftipeom3_intermediates(L, T, system):
     """Calculate the L*T intermediates used in the left-IP-EOMCCSD(3h-2p) equations"""

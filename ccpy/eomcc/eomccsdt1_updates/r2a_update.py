@@ -1,7 +1,7 @@
 import numpy as np
 
 from ccpy.utilities.active_space import get_active_slices
-from ccpy.utilities.updates import eomcc_active_loops
+from ccpy.lib.core import eomcc_active_loops
 
 def update(R, omega, H):
 

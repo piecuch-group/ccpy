@@ -1,6 +1,6 @@
 import numpy as np
 
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 from ccpy.left.left_eaeom_intermediates import get_lefteaeom3_intermediates
 
 def update_l(L, omega, H, RHF_symmetry, system):

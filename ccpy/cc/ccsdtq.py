@@ -6,8 +6,8 @@ triples, and quadruples (CCSDTQ) calculation for a molecular system.
 import numpy as np
 
 from ccpy.hbar.hbar_ccsdt import add_VT3_intermediates
-from ccpy.utilities.updates import cc_loops2
-from ccpy.utilities.updates import cc_loops_t4
+from ccpy.lib.core import cc_loops2
+from ccpy.lib.core import cc_loops_t4
 
 def update(T, dT, H, X, shift, flag_RHF, system):
 

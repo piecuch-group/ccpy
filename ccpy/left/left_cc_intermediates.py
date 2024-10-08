@@ -1,6 +1,6 @@
 import numpy as np
 from ccpy.models.integrals import Integral
-from ccpy.utilities.updates import leftccsdt_p_intermediates
+from ccpy.lib.core import leftccsdt_p_intermediates
 
 def build_left_ccsd_intermediates(L, T, system):
 

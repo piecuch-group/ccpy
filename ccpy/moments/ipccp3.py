@@ -4,7 +4,7 @@ import numpy as np
 
 from ccpy.constants.constants import hartreetoeV
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
-from ccpy.utilities.updates import ipccp3_loops
+from ccpy.lib.core import ipccp3_loops
 from ccpy.eomcc.ipeom3_intermediates import get_ipeom3_p_intermediates
 from ccpy.left.left_ipeom_intermediates import get_leftipeom3_p_intermediates
 from ccpy.eomcc.ipeom3 import build_HR_3A, build_HR_3B, build_HR_3C

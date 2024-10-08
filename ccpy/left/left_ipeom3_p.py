@@ -1,6 +1,6 @@
 import numpy as np
-from ccpy.utilities.updates import ipeom3_p_loops
-from ccpy.utilities.updates import leftipeom3_p_loops
+from ccpy.lib.core import ipeom3_p_loops
+from ccpy.lib.core import leftipeom3_p_loops
 from ccpy.left.left_ipeom_intermediates import get_leftipeom3_p_intermediates
 
 def update_l(L, omega, H, RHF_symmetry, system, l3_excitations):

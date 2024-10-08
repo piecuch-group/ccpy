@@ -1,18 +1,20 @@
 python_sources = [
-  'accd.py',
-  'eccc2.py',
   '__init__.py',
-  'ccsdt1.py',
-  'ccsdtq-rev.py',
-  'ccd.py',
-  'ccsdt.py',
-  'ccsd.py',
-  'accsdt_p.py',
+  'accd.py',
   'accsd.py',
+  'accsdt_p.py',
   'cc2.py',
+  'cc3.py',
+  'cc4.py',
+  'ccd.py',
+  'ccsd_chol.py',
+  'ccsd.py',
+  'ccsdt_p_chol.py',
   'ccsdt_p.py',
+  'ccsdt.py',
+  'ccsdt1.py',
   'ccsdtq.py',
-  'cc3.py'
+  'eccc2.py',
 ]
 
 py3.install_sources(

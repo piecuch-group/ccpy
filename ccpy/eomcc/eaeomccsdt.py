@@ -1,6 +1,6 @@
 import numpy as np
 from ccpy.eomcc.eaeom3_intermediates import get_eaeomccsdt_intermediates, add_o_term
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 # R.a -> (nua) -> (a)
 # R.aa -> (nua,nua,noa) -> (abj)

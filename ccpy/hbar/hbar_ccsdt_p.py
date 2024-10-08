@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import hbar_ccsdt_p
+from ccpy.lib.core import hbar_ccsdt_p
 
 def build_hbar_ccsdt_p(T, H0, RHF_symmetry, system, t3_excitations, *args):
 

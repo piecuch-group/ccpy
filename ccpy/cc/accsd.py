@@ -10,7 +10,7 @@ from ccpy.models.system import System
 from ccpy.models.integrals import Integral
 # Modules for computation
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 
 def update(T: ClusterOperator,

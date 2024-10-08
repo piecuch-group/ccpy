@@ -17,7 +17,7 @@ from ccpy.models.integrals import Integral
 # Modules for computation
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.hbar.hbar_cc3 import get_cc3_intermediates
-from ccpy.utilities.updates import cc3_loops
+from ccpy.lib.core import cc3_loops
 
 
 def update(T: ClusterOperator,

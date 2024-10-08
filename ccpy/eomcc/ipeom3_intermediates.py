@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import ipeom3_p_intermediates
+from ccpy.lib.core import ipeom3_p_intermediates
 
 def get_ipeom3_intermediates(H, R):
 

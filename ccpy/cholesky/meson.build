@@ -1,6 +1,7 @@
 python_sources = [
   '__init__.py',
-  'cholesky.py'
+  'cholesky_builders.py',
+  'cholesky.py',
 ]
 
 py3.install_sources(

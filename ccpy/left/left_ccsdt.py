@@ -1,6 +1,6 @@
 import numpy as np
 
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 from ccpy.left.left_cc_intermediates import build_left_ccsdt_intermediates
 
 def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):

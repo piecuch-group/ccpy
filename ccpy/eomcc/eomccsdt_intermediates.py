@@ -1,7 +1,7 @@
 import numpy as np
 import time
 from ccpy.models.integrals import Integral
-from ccpy.utilities.updates import hbar_ccsdt_p
+from ccpy.lib.core import hbar_ccsdt_p
 
 def get_eomccsd_intermediates(H, R, system):
     """Calculate the H*(R1+R2) intermediates for EOMCCSD."""

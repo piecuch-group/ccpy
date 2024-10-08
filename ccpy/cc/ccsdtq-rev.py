@@ -10,8 +10,8 @@ from ccpy.models.integrals import Integral
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.hbar.hbar_ccsdt import add_VT3_intermediates
-from ccpy.utilities.updates import cc_loops2
-from ccpy.utilities.updates import cc_loops_t4
+from ccpy.lib.core import cc_loops2
+from ccpy.lib.core import cc_loops_t4
 
 #@profile
 def update(T, dT, H, X, shift, flag_RHF, system):

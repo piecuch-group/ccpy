@@ -1,6 +1,6 @@
 import numpy as np
 from ccpy.lrcc.lrccsd_intermediates import get_lrccsd_intermediates
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 def update(T1, dT, T, W, H, X, shift, flag_RHF, system):
 

@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import lefteaeom3_p_intermediates
+from ccpy.lib.core import lefteaeom3_p_intermediates
 
 def get_lefteaeom3_intermediates(L, T, system):
     """Calculate the L*T intermediates used in the left-EA-EOMCCSD(3p-2h) equations"""

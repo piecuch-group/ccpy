@@ -5,7 +5,7 @@ from ccpy.extcorr.contractions_t3 import contract_vt3_singles
 from ccpy.extcorr.contractions_t4 import contract_vt4_doubles
 from ccpy.models.operators import ClusterOperator
 from ccpy.models.integrals import Integral
-from ccpy.utilities.updates import clusteranalysis
+from ccpy.lib.core import clusteranalysis
 from ccpy.energy.cc_energy import get_cc_energy, get_ci_energy
 import time
 
