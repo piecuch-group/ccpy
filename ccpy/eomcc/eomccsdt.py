@@ -2,11 +2,11 @@
 energies and linear excitation amplitudes for excited states using
 the equation-of-motion (EOM) CC with singles, doubles, and triples (EOMCCSDT)."""
 import numpy as np
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eomccsdt_intermediates, add_R3_terms
 
 def update(R, omega, H, RHF_symmetry, system):
-    R.a, R.b, R.aa, R.ab, R.bb, R.aaa, R.aab, R.abb, R.bbb = cc_loops2.cc_loops2.update_r_ccsdt(
+    R.a, R.b, R.aa, R.ab, R.bb, R.aaa, R.aab, R.abb, R.bbb = cc_loops2.update_r_ccsdt(
         R.a,
         R.b,
         R.aa,

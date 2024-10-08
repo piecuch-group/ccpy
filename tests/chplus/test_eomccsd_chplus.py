@@ -3,12 +3,14 @@ Re = 2.13713 bohr described using the Olsen basis set.
 Reference: Chem. Phys. Lett. 154, 380 (1989) [original Olsen paper with basis set]
            Mol. Phys. 118, e1817592 (2020) [CC(P;Q) results]"""
 
+import pytest
 from pathlib import Path
 import numpy as np
 from ccpy import Driver
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
+@pytest.mark.short
 def test_eomccsd_chplus():
 
     driver = Driver.from_gamess(

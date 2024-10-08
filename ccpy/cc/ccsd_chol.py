@@ -9,7 +9,7 @@ References:
     [4] P. Piecuch and J. Paldus, Int. J. Quantum Chem. 36, 429 (1989).
 """
 import numpy as np
-from ccpy.utilities.updates import cc_loops2, vvvv_contraction
+from ccpy.lib.core import cc_loops2, vvvv_contraction
 
 # @profile
 def update(T, dT, H, X, shift, flag_RHF, system):

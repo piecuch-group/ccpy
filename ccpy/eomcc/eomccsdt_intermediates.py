@@ -1,7 +1,7 @@
 import numpy as np
 import time
 from ccpy.models.integrals import Integral
-from ccpy.utilities.updates import hbar_ccsdt_p
+from ccpy.lib.core import hbar_ccsdt_p
 
 def get_eomccsd_intermediates(H, R, system):
     """Calculate the H*(R1+R2) intermediates for EOMCCSD."""
@@ -326,42 +326,42 @@ def add_R3_terms(X, H, R):
 
 def add_R3_p_terms(X, H, R, R3_excitations):
 
-    X.aa.vooo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2a_vooo(X.aa.vooo,
+    X.aa.vooo = hbar_ccsdt_p.add_t3_h2a_vooo(X.aa.vooo,
                                                           R.aaa, R3_excitations["aaa"],
                                                           R.aab, R3_excitations["aab"],
                                                           H.aa.oovv, H.ab.oovv, phase=1.0,
     )
-    X.aa.vvov = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2a_vvov(X.aa.vvov,
+    X.aa.vvov = hbar_ccsdt_p.add_t3_h2a_vvov(X.aa.vvov,
                                                           R.aaa, R3_excitations["aaa"],
                                                           R.aab, R3_excitations["aab"],
                                                           H.aa.oovv, H.ab.oovv, phase=1.0,
     )
-    X.ab.vooo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_vooo(X.ab.vooo,
+    X.ab.vooo = hbar_ccsdt_p.add_t3_h2b_vooo(X.ab.vooo,
                                                           R.aab, R3_excitations["aab"],
                                                           R.abb, R3_excitations["abb"],
                                                           H.ab.oovv, H.bb.oovv, phase=1.0,
     )
-    X.ab.ovoo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_ovoo(X.ab.ovoo,
+    X.ab.ovoo = hbar_ccsdt_p.add_t3_h2b_ovoo(X.ab.ovoo,
                                                           R.aab, R3_excitations["aab"],
                                                           R.abb, R3_excitations["abb"],
                                                           H.aa.oovv, H.ab.oovv, phase=1.0,
     )
-    X.ab.vvov = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_vvov(X.ab.vvov,
+    X.ab.vvov = hbar_ccsdt_p.add_t3_h2b_vvov(X.ab.vvov,
                                                           R.aab, R3_excitations["aab"],
                                                           R.abb, R3_excitations["abb"],
                                                           H.ab.oovv, H.bb.oovv, phase=1.0,
     )
-    X.ab.vvvo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2b_vvvo(X.ab.vvvo,
+    X.ab.vvvo = hbar_ccsdt_p.add_t3_h2b_vvvo(X.ab.vvvo,
                                                           R.aab, R3_excitations["aab"],
                                                           R.abb, R3_excitations["abb"],
                                                           H.aa.oovv, H.ab.oovv, phase=1.0,
     )
-    X.bb.vooo = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2c_vooo(X.bb.vooo,
+    X.bb.vooo = hbar_ccsdt_p.add_t3_h2c_vooo(X.bb.vooo,
                                                           R.abb, R3_excitations["abb"],
                                                           R.bbb, R3_excitations["bbb"],
                                                           H.ab.oovv, H.bb.oovv, phase=1.0,
     )
-    X.bb.vvov = hbar_ccsdt_p.hbar_ccsdt_p.add_t3_h2c_vvov(X.bb.vvov,
+    X.bb.vvov = hbar_ccsdt_p.add_t3_h2c_vvov(X.bb.vvov,
                                                           R.abb, R3_excitations["abb"],
                                                           R.bbb, R3_excitations["bbb"],
                                                           H.ab.oovv, H.bb.oovv, phase=1.0,

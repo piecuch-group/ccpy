@@ -3,7 +3,7 @@ energies and linear excitation amplitudes for doubly-attached states
 using the DIP-EOMCCSDT approach with up to 4h-2p excitations"""
 import numpy as np
 from ccpy.eomcc.dipeom4_intermediates import get_dipeomccsdt_intermediates, add_ov_intermediates
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
     R.ab, R.aba, R.abb, R.abaa, R.abab, R.abbb = cc_loops2.cc_loops2.update_r_4h2p(

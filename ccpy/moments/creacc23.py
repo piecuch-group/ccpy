@@ -3,7 +3,7 @@ import numpy as np
 
 from ccpy.constants.constants import hartreetoeV
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
-from ccpy.utilities.updates import creacc_loops
+from ccpy.lib.core import creacc_loops
 
 
 def calc_creacc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
@@ -27,7 +27,7 @@ def calc_creacc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     M3A = build_HR_3A(R, T, X, H)
     L3A = build_LH_3A(L, T, H)
     # perform correction in-loop
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa = creacc_loops.creacc_loops.crcc23a(M3A, L3A, omega,
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa = creacc_loops.crcc23a(M3A, L3A, omega,
                                                                        H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
                                                                        H.aa.vvvv, H.aa.oooo, H.aa.voov,
                                                                        d3aaa_o, d3aaa_v)
@@ -36,7 +36,7 @@ def calc_creacc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     M3B = build_HR_3B(R, T, X, H)
     L3B = build_LH_3B(L, T, H)
     # perform correction in-loop
-    dA_aab, dB_aab, dC_aab, dD_aab = creacc_loops.creacc_loops.crcc23b(M3B, L3B, omega,
+    dA_aab, dB_aab, dC_aab, dD_aab = creacc_loops.crcc23b(M3B, L3B, omega,
                                                                        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
                                                                        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                                        H.aa.vvvv, H.aa.voov,
@@ -48,7 +48,7 @@ def calc_creacc23(T, R, L, omega, corr_energy, H, H0, system, use_RHF=False):
     M3C = build_HR_3C(R, T, X, H) 
     L3C = build_LH_3C(L, T, H)
     # perform correction in-loop
-    dA_abb, dB_abb, dC_abb, dD_abb = creacc_loops.creacc_loops.crcc23c(M3C, L3C, omega,
+    dA_abb, dB_abb, dC_abb, dD_abb = creacc_loops.crcc23c(M3C, L3C, omega,
                                                                        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
                                                                        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                                        H.ab.vvvv, H.ab.ovov, H.ab.vovo,

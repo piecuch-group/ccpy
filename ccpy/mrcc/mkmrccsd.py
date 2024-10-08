@@ -6,7 +6,7 @@ import numpy as np
 
 from ccpy.mrcc.normal_order import shift_normal_order
 from ccpy.hbar.hbar_ccs import get_ccs_intermediates_unsorted
-from ccpy.utilities.updates import mrcc_loops
+from ccpy.lib.core import mrcc_loops
 
 def update(T, dT, H, model_space, Heff, C, shift, flag_RHF, system):
 

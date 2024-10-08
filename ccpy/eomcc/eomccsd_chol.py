@@ -6,7 +6,7 @@ the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD).
 import numpy as np
 from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa, build_3index_batch_vvvv_ab, build_2index_batch_vvvv_bb
 from ccpy.eomcc.eomccsd_intermediates import get_eomccsd_chol_intermediates
-from ccpy.utilities.updates import cc_loops2, vvvv_contraction
+from ccpy.lib.core import cc_loops2, vvvv_contraction
 
 def update(R, omega, H, RHF_symmetry, system):
 

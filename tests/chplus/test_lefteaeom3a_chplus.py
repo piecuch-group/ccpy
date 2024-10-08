@@ -2,12 +2,14 @@
 describe the vertical excitation spectrum of the open-shell CH molecule by attaching
 an electron to CH+ closed shell."""
 
+import pytest
 from pathlib import Path
 import numpy as np
 from ccpy import Driver, get_active_3p2h_pspace
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
+@pytest.mark.short
 def test_eaeom3a_chplus():
     # Obtain the Driver from GAMESS logfile and FCIDUMP
     driver = Driver.from_gamess(

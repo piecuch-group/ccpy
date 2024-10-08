@@ -5,11 +5,11 @@ the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD).
 """
 import numpy as np
 from ccpy.eomcc.eomccsd_intermediates import get_eomccsd_intermediates
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
 
-    R.a, R.b, R.aa, R.ab, R.bb = cc_loops2.cc_loops2.update_r(
+    R.a, R.b, R.aa, R.ab, R.bb = cc_loops2.update_r(
         R.a,
         R.b,
         R.aa,

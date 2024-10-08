@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import leftipeom3_p_intermediates
+from ccpy.lib.core import leftipeom3_p_intermediates
 
 def get_leftipeom3_intermediates(L, T, system):
     """Calculate the L*T intermediates used in the left-IP-EOMCCSD(3h-2p) equations"""
@@ -55,27 +55,27 @@ def get_leftipeom3_p_intermediates(L, l3_excitations, T, do_l3, system):
         - np.einsum("mfn,efmn->e", L.ab, T.ab, optimize=True)
     )
     # x2a(abj)
-    X["aa"]["vvo"] = leftipeom3_p_intermediates.leftipeom3_p_intermediates.get_x2a_vvo(L.aaa, l3_excitations["aaa"],
+    X["aa"]["vvo"] = leftipeom3_p_intermediates.get_x2a_vvo(L.aaa, l3_excitations["aaa"],
                                                                                        L.aab, l3_excitations["aab"],
                                                                                        T.aa, T.ab,
                                                                                        do_l3["aaa"], do_l3["aab"])
     # x2a(ijk)
-    X["aa"]["ooo"] = leftipeom3_p_intermediates.leftipeom3_p_intermediates.get_x2a_ooo(L.aaa, l3_excitations["aaa"],
+    X["aa"]["ooo"] = leftipeom3_p_intermediates.get_x2a_ooo(L.aaa, l3_excitations["aaa"],
                                                                                        L.aab, l3_excitations["aab"],
                                                                                        T.aa, T.ab,
                                                                                        do_l3["aaa"], do_l3["aab"])
     # x2b(ab~j~)
-    X["ab"]["vvo"] = leftipeom3_p_intermediates.leftipeom3_p_intermediates.get_x2b_vvo(L.aab, l3_excitations["aab"],
+    X["ab"]["vvo"] = leftipeom3_p_intermediates.get_x2b_vvo(L.aab, l3_excitations["aab"],
                                                                                        L.abb, l3_excitations["abb"],
                                                                                        T.aa, T.ab,
                                                                                        do_l3["aab"], do_l3["abb"])
     # x2b(ic~b~)
-    X["ab"]["ovv"] = leftipeom3_p_intermediates.leftipeom3_p_intermediates.get_x2b_ovv(L.aab, l3_excitations["aab"],
+    X["ab"]["ovv"] = leftipeom3_p_intermediates.get_x2b_ovv(L.aab, l3_excitations["aab"],
                                                                                        L.abb, l3_excitations["abb"],
                                                                                        T.ab, T.bb,
                                                                                        do_l3["aab"], do_l3["abb"])
     # x2b(ij~k~)
-    X["ab"]["ooo"] = leftipeom3_p_intermediates.leftipeom3_p_intermediates.get_x2b_ooo(L.aab, l3_excitations["aab"],
+    X["ab"]["ooo"] = leftipeom3_p_intermediates.get_x2b_ooo(L.aab, l3_excitations["aab"],
                                                                                        L.abb, l3_excitations["abb"],
                                                                                        T.ab, T.bb,
                                                                                        do_l3["aab"], do_l3["abb"])

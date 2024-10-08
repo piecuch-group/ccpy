@@ -1,10 +1,11 @@
 """EA-EOMCCSD(2h-1p) computation used to describe the spectrum of the
 open-shell CH molecule by attaching an electron to closed-shell CH+."""
 
-import numpy as np
+import pytest
 from ccpy import Driver
 from pyscf import gto, scf
 
+@pytest.mark.short
 def test_eaeom2_chplus():
 
     mol = gto.M(

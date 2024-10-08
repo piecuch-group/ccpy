@@ -1,6 +1,6 @@
 import numpy as np
 from ccpy.energy.cc_energy import get_cc_energy
-from ccpy.utilities.updates import hbar_cc3, cc3_loops
+from ccpy.lib.core import hbar_cc3, cc3_loops
 from ccpy.models.integrals import Integral
 
 def build_hbar_ccsdta(T, H0, RHF_symmetry, system, *args):

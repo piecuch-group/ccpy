@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import hbar_cc3
+from ccpy.lib.core import hbar_cc3
 from ccpy.models.integrals import Integral
 
 def build_hbar_cc3(T, H0, RHF_symmetry, system, *args):
@@ -149,7 +149,7 @@ def build_hbar_cc3(T, H0, RHF_symmetry, system, *args):
     H = H0
 
     # Add in the t3-dependent terms to Hbar computed on-the-fly
-    H.aa.vooo, H.aa.vvov, H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.bb.vooo, H.bb.vvov = hbar_cc3.hbar_cc3.build_hbar(
+    H.aa.vooo, H.aa.vvov, H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.bb.vooo, H.bb.vvov = hbar_cc3.build_hbar(
             H.aa.vooo, H.aa.vvov,
             H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo,
             H.bb.vooo, H.bb.vvov,

@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import hbar_cc3
+from ccpy.lib.core import hbar_cc3
 from ccpy.models.integrals import Integral
 
 def build_hbar_cc3(T, H0, RHF_symmetry, system, *args):

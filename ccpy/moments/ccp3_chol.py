@@ -4,7 +4,7 @@ import numpy as np
 
 from ccpy.constants.constants import hartreetoeV
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
-from ccpy.utilities.updates import ccp3_opt_loops, ccp3_adaptive_loops, ccp3_full_correction, ccp3_full_correction_high_mem
+from ccpy.lib.core import ccp3_opt_loops, ccp3_adaptive_loops, ccp3_full_correction, ccp3_full_correction_high_mem
 from ccpy.left.left_cc_intermediates import build_left_ccsdt_p_intermediates
 from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eomccsdt_intermediates, add_R3_p_terms
 from ccpy.utilities.utilities import get_memory_usage

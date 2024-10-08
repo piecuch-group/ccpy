@@ -2,7 +2,7 @@ import numpy as np
 
 from ccpy.utilities.active_space import get_active_slices
 
-from ccpy.utilities.updates import cc_active_loops
+from ccpy.lib.core import cc_active_loops
 
 #@profile
 def build_ccsd(T, H, H0):
@@ -539,7 +539,7 @@ def build_0000(T, dT, H, system):
 
 def update(T, dT, H, shift):
 
-    T.bb, dT.bb = cc_active_loops.cc_active_loops.update_t2c(
+    T.bb, dT.bb = cc_active_loops.update_t2c(
         T.bb,
         dT.bb,
         H.b.oo,
