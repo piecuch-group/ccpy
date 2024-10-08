@@ -32,17 +32,17 @@ def test_creom23_a1_singlets_h2o():
     driver.run_ccp3(method="crcc23", state_index=[0, 1, 2, 3])
 
     # Check the CCSD total energy
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -76.0299191191, atol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -76.0299191191, rtol=1.0e-08)
     # Check the CR-CC(2,3)_D total energy
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"], -76.0385721524, atol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"], -76.0385721524, rtol=1.0e-08)
     # Check the EOMCCSD total energies
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1], -75.7051577894, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2], -75.8177593641, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3], -75.6371348770, atol=1.0e-08) 
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1], -75.7051577894, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2], -75.8177593641, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3], -75.6371348770, rtol=1.0e-08)
     # Check the CR-EOMCC(2,3)_D total energies
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1] + driver.deltap3[1]["D"], -75.7354406458, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.8365241661, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.6555306790, atol=1.0e-08) 
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1] + driver.deltap3[1]["D"], -75.7354406458, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.8365241661, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.6555306790, rtol=1.0e-08)
 
 def test_creom23_a2_singlets_h2o():
 
@@ -61,11 +61,11 @@ def test_creom23_a2_singlets_h2o():
     driver.run_ccp3(method="crcc23", state_index=[1, 2])
 
     # Check the EOMCCSD total energies
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1], -75.9741899000, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2], -75.7311853758, atol=1.0e-08) 
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1], -75.9741899000, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2], -75.7311853758, rtol=1.0e-08)
     # Check the CR-EOMCC(2,3)_D total energies
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1] + driver.deltap3[1]["D"], -75.9892626216, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.7317203543, atol=1.0e-08) 
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1] + driver.deltap3[1]["D"], -75.9892626216, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.7317203543, rtol=1.0e-08)
 
 def test_creom23_a1_triplets_h2o():
 
@@ -84,13 +84,13 @@ def test_creom23_a1_triplets_h2o():
     driver.run_ccp3(method="crcc23", state_index=[1, 2, 3])
 
     # Check the EOMCCSD total energies
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1], -75.9806957586, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2], -75.8249571441, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3], -75.6428074690, atol=1.0e-08) 
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1], -75.9806957586, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2], -75.8249571441, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3], -75.6428074690, rtol=1.0e-08)
     # Check the CR-EOMCC(2,3)_D total energies
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1] + driver.deltap3[1]["D"], -75.9839755205, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.8406855050, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.6517974898, atol=1.0e-08) 
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1] + driver.deltap3[1]["D"], -75.9839755205, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.8406855050, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.6517974898, rtol=1.0e-08)
 
 def test_creom23_a2_triplets_h2o():
 
@@ -109,13 +109,13 @@ def test_creom23_a2_triplets_h2o():
     driver.run_ccp3(method="crcc23", state_index=[1, 2, 3])
 
     # Check the EOMCCSD total energies
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1], -75.9819074697, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2], -75.7539048494, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3], -75.6629328071, atol=1.0e-08) 
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1], -75.9819074697, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2], -75.7539048494, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3], -75.6629328071, rtol=1.0e-08)
     # Check the CR-EOMCC(2,3)_D total energies
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1] + driver.deltap3[1]["D"], -75.9958999644, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.7590284455, atol=1.0e-08) 
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.7171758472, atol=1.0e-08) 
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1] + driver.deltap3[1]["D"], -75.9958999644, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.7590284455, rtol=1.0e-08)
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.7171758472, rtol=1.0e-08)
 
 if __name__ == "__main__":
 

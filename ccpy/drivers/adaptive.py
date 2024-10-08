@@ -110,6 +110,17 @@ class AdaptDriver:
             self.driver.run_leftccp(method="left_ccsdt_p", state_index=[0], t3_excitations=self.t3_excitations)
         self.ccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy
 
+    def run_ccp_chol(self, imacro):
+        """Runs iterative CC(P), and if needed, HBar and iterative left-CC calculations."""
+        self.driver.run_ccp(method="ccsdt_p_chol", t3_excitations=self.t3_excitations)
+        if self.options["two_body_approx"]:
+            self.driver.run_hbar(method="ccsd_chol")
+            self.driver.run_leftcc(method="left_ccsd_chol")
+        else:
+            self.driver.run_hbar(method="ccsdt_p_chol", t3_excitations=self.t3_excitations)
+            self.driver.run_leftccp(method="left_ccsdt_p_chol", state_index=[0], t3_excitations=self.t3_excitations)
+        self.ccp_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy
+
     def run_ccp3(self, imacro):
         """Runs the CC(P;3) correction using either the CR-CC(2,3)- or CCSD(T)-like approach,
            while simultaneously selecting the leading triply excited determinants and returning
@@ -146,6 +157,40 @@ class AdaptDriver:
             triples_list = []
             self.driver.run_ccp3(method="ccp3", state_index=0, two_body_approx=self.options["two_body_approx"], t3_excitations=self.t3_excitations)
             self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.deltap3[0]["D"]
+
+        return triples_list
+
+    def run_ccp3_chol(self, imacro):
+        """Runs the CC(P;3) correction using either the CR-CC(2,3)- or CCSD(T)-like approach,
+           while simultaneously selecting the leading triply excited determinants and returning
+           the result in an array. For the last calculation, this should not perform the
+           selection steps."""
+        from ccpy.moments.ccp3_chol import calc_ccp3_2ba_with_selection
+
+        if imacro < self.nmacro - 1:
+            if self.options["two_body_approx"]:
+                self.ccpq_energy[imacro], triples_list = calc_ccp3_2ba_with_selection(self.driver.T,
+                                                                                      self.driver.L[0],
+                                                                                      self.t3_excitations,
+                                                                                      self.driver.correlation_energy,
+                                                                                      self.driver.hamiltonian,
+                                                                                      self.bare_hamiltonian,
+                                                                                      self.driver.system,
+                                                                                      self.num_dets_to_add[imacro],
+                                                                                      use_RHF=self.driver.options[
+                                                                                          "RHF_symmetry"],
+                                                                                      min_thresh=self.options[
+                                                                                          "minimum_threshold"],
+                                                                                      buffer_factor=self.options[
+                                                                                          "buffer_factor"])
+            else:
+                pass
+        else:
+            triples_list = []
+            self.driver.run_ccp3(method="ccp3_chol", state_index=0, two_body_approx=self.options["two_body_approx"],
+                                 t3_excitations=self.t3_excitations)
+            self.ccpq_energy[imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + \
+                                       self.driver.deltap3[0]["D"]
 
         return triples_list
 
@@ -217,13 +262,19 @@ class AdaptDriver:
 
             # Step 2: Run CC(P) on this P space
             x1 = time.perf_counter()
-            self.run_ccp(imacro)
+            if self.driver.system.cholesky:
+                self.run_ccp_chol(imacro)
+            else:
+                self.run_ccp(imacro)
             x2 = time.perf_counter()
             t_ccp = x2 - x1
 
             # Step 3: Moment correction + adaptive selection
             x1 = time.perf_counter()
-            selection_arr = self.run_ccp3(imacro)
+            if self.driver.system.cholesky:
+                selection_arr = self.run_ccp3_chol(imacro)
+            else:
+                selection_arr = self.run_ccp3(imacro)
             x2 = time.perf_counter()
             t_selection_and_ccp3 = x2 - x1
 
@@ -278,7 +329,11 @@ class AdaptDriver:
             if self.options["reset_amplitudes"]:
                 self.driver.T = None
                 self.driver.L[0] = None
-            setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+
+            #setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+            # Since the HBar routines are now using H = H0, so there is no deepcopy of the hamiltonian there,
+            # we need to use deepcopy every imacro iteration to reset the driver Hamiltonian
+            self.driver.hamiltonian = deepcopy(self.bare_hamiltonian)
 
             # Step 7: Report wall and CPU timings of each step
             print(f"   Timing breakdown for macrostep {imacro}")
@@ -629,10 +684,15 @@ class AdaptEOMDriverSS:
                 self.driver.R[self.state_index] = None
                 self.driver.T = None
                 self.driver.L[0] = None
+
             # ALWAYS reset the excited-state left amplitude. This forces L to begin with converged R as a guess,
             # which generally ensures that R and L converge the same root.
             self.driver.L[self.state_index] = None
-            setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+
+            #setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+            # Since the HBar routines are now using H = H0, so there is no deepcopy of the hamiltonian there,
+            # we need to use deepcopy every imacro iteration to reset the driver Hamiltonian
+            self.driver.hamiltonian = deepcopy(self.bare_hamiltonian)
 
             # Step 7: Report timings of each step
             print(f"   Timing breakdown for macrostep {imacro}")
@@ -1064,7 +1124,11 @@ class AdaptEOMDriver:
             # which generally ensures that R and L converge the same root.
             for istate in self.state_index:
                 self.driver.L[istate] = None
-            setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+
+            #setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+            # Since the HBar routines are now using H = H0, so there is no deepcopy of the hamiltonian there,
+            # we need to use deepcopy every imacro iteration to reset the driver Hamiltonian
+            self.driver.hamiltonian = deepcopy(self.bare_hamiltonian)
 
             # Step 7: Report timings of each step
             print(f"   Timing breakdown for macrostep {imacro}")
@@ -1367,7 +1431,11 @@ class AdaptEAEOMDriverSS:
             # ALWAYS reset the excited-state left amplitude. This forces L to begin with converged R as a guess,
             # which generally ensures that R and L converge the same root.
             self.driver.L[self.state_index] = None
-            setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+
+            #setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
+            # Since the HBar routines are now using H = H0, so there is no deepcopy of the hamiltonian there,
+            # we need to use deepcopy every imacro iteration to reset the driver Hamiltonian
+            self.driver.hamiltonian = deepcopy(self.bare_hamiltonian)
 
             # Step 7: Report timings of each step
             print(f"   Timing breakdown for macrostep {imacro}")

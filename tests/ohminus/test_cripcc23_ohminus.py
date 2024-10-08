@@ -9,7 +9,7 @@ import numpy as np
 from pyscf import scf, gto
 from ccpy import Driver
 
-def test_ipeom2_ohminus():
+def test_cripcc23_ohminus():
     mol = gto.M(atom='''O  0.0  0.0  -0.96966/2
                         H  0.0  0.0   0.96966/2''',
                 basis="6-31g**",
@@ -35,10 +35,16 @@ def test_ipeom2_ohminus():
     # Check the results
     #
     expected_vee = [-0.02049758, 0.56909275, 0.14122875, 0.60699750, 0.61645987, 0.70904961, 0.51783683, 0.58412700]
+
+    print("Excitation Spectrum of Target Species")
     for i, vee in enumerate(expected_vee):
+        print(f"Root {i}")
         assert np.allclose(driver.vertical_excitation_energy[i], vee)
         en = driver.vertical_excitation_energy[i] - driver.vertical_excitation_energy[0]
-        print(f"root {i} = {en*27.2114} eV")
+        print(f"     IP-EOMCCSD = {en*27.2114} eV") 
+        for denom in ['A', 'B', 'C', 'D']:
+            cren = en + driver.deltap3[i][denom] - driver.deltap3[0][denom]
+            print(f"     CR-IP-EOMCCSD_{denom} = {cren*27.2114} eV") 
 
 if __name__ == "__main__":
-    test_ipeom2_ohminus()
+    test_cripcc23_ohminus()

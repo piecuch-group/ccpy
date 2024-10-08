@@ -600,7 +600,6 @@ def count_excitations_in_pspace(pspace, system):
 
     return excitation_count
 
-
 def get_active_triples_pspace(system, num_active=1, target_irrep=None):
     from ccpy.utilities.active_space import active_hole, active_particle
 

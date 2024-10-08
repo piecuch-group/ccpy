@@ -1,0 +1,236 @@
+
+
+!!!! diagram 4: 1/2 A(c/ab) h2a(abef) * t3a(ebcijk)
+! allocate new sorting arrays
+nloc = noa*(noa-1)*(noa-2)/6*nua
+allocate(loc_arr(2,nloc))
+allocate(idx_table(noa,noa,noa,nua))
+
+!
+! Note: I believe that
+!
+
+!!! IJKA LOOP !!!
+call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
+call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa, resid)
+!!!! BEGIN OMP PARALLEL SECTION !!!!
+!$omp parallel shared(resid,&
+!$omp t3a_excits,&
+!$omp t3a_amps,&
+!$omp R_chol,i2a_vovv,h2a_oovv,t1a,t2a,&
+!$omp loc_arr,idx_table,&
+!$omp n_chol,noa,nua,n3aaa),&
+!$omp private(hmatel,h2a_vvvv,&
+!$omp a,b,c,d,i,j,k,l,e,f,m,n,idet,jdet,a_chol,b_chol,&
+!$omp idx)
+!$omp do schedule(static)
+do a_chol = 1,nua
+   do b_chol = a_chol+1,nua
+        !
+        ! get a batch of h2a_vvvv(ef)[a_chol,b_chol] integrals
+        !
+        h2a_vvvv = build_hbar_chol_batch_asym(a_chol, b_chol, R_chol, i2a_vovv, h2a_oovv, t1a, t2a, nchol, noa, nua, noa+nua)
+        !
+        do idet = 1, n3aaa
+           a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
+           i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
+           ! (1)
+           if (a_chol == b .and. b_chol == c) then
+              idx = idx_table(i,j,k,a)
+              do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                 e = t3a_excits(jdet,2); f = t3a_excits(jdet,3);
+                 ! compute < ijkabc | h2a(vvvv) | ijkaef >
+                 hmatel = h2a_vvvv(e,f)
+                 resid(idet) = resid(idet) + hmatel*t3a_amps(jdet)
+              end do
+           end if
+           ! (ab)
+           if (a_chol == a .and. b_chol == c) then
+              idx = idx_table(i,j,k,b)
+              if (idx/=0) then
+              do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                 e = t3a_excits(jdet,2); f = t3a_excits(jdet,3);
+                 ! compute < ijkabc | h2a(vvvv) | ijkbef >
+                 hmatel = -h2a_vvvv(e,f)
+                 resid(idet) = resid(idet) + hmatel*t3a_amps(jdet)
+              end do
+              end if
+           end if
+           ! (ac)
+           if (a_chol == a .and. b_chol == b) then
+              idx = idx_table(i,j,k,c)
+              if (idx/=0) then
+              do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                 e = t3a_excits(jdet,2); f = t3a_excits(jdet,3);
+                 ! compute < ijkabc | h2a(vvvv) | ijkcef >
+                 hmatel = h2a_vvvv(e,f)
+                 resid(idet) = resid(idet) + hmatel*t3a_amps(jdet)
+              end do
+              end if
+           end if
+        end do
+        !
+   end do
+end do
+!$omp end do
+!$omp end parallel
+!!!! END OMP PARALLEL SECTION !!!!
+
+!!! IJKB LOOP !!!
+call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/2,nua-1/), noa, noa, noa, nua)
+call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa, resid)
+do idet = 1, n3aaa
+ a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
+ i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
+ ! (1)
+ idx = idx_table(i,j,k,b)
+ do jdet = loc_arr(1,idx), loc_arr(2,idx)
+    d = t3a_excits(jdet,1); f = t3a_excits(jdet,3);
+    ! compute < ijkabc | h2a(vvvv) | ijkdbf >
+    hmatel = h2a_vvvv(a,c,d,f)
+    resid(idet) = resid(idet) + hmatel*t3a_amps(jdet)
+ end do
+ ! (ab)
+ idx = idx_table(i,j,k,a)
+ if (idx/=0) then
+ do jdet = loc_arr(1,idx), loc_arr(2,idx)
+    d = t3a_excits(jdet,1); f = t3a_excits(jdet,3);
+    ! compute < ijkabc | h2a(vvvv) | ijkdaf >
+    hmatel = -h2a_vvvv(b,c,d,f)
+    resid(idet) = resid(idet) + hmatel*t3a_amps(jdet)
+ end do
+ end if
+ ! (bc)
+ idx = idx_table(i,j,k,c)
+ if (idx/=0) then
+ do jdet = loc_arr(1,idx), loc_arr(2,idx)
+    d = t3a_excits(jdet,1); f = t3a_excits(jdet,3);
+    ! compute < ijkabc | h2a(vvvv) | ijkdcf >
+    hmatel = -h2a_vvvv(a,b,d,f)
+    resid(idet) = resid(idet) + hmatel*t3a_amps(jdet)
+ end do
+ end if
+end do
+
+!!! IJKC LOOP !!!
+call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
+call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa, resid)
+do idet = 1, n3aaa
+ a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
+ i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
+ ! (1)
+ idx = idx_table(i,j,k,c)
+ do jdet = loc_arr(1,idx), loc_arr(2,idx)
+    d = t3a_excits(jdet,1); e = t3a_excits(jdet,2);
+    ! compute < ijkabc | h2a(vvvv) | ijkdec >
+    hmatel = h2a_vvvv(a,b,d,e)
+    resid(idet) = resid(idet) + hmatel*t3a_amps(jdet)
+ end do
+ ! (ac)
+ idx = idx_table(i,j,k,a)
+ if (idx/=0) then
+ do jdet = loc_arr(1,idx), loc_arr(2,idx)
+    d = t3a_excits(jdet,1); e = t3a_excits(jdet,2);
+    ! compute < ijkabc | h2a(vvvv) | ijkdea >
+    hmatel = -h2a_vvvv(c,b,d,e)
+    resid(idet) = resid(idet) + hmatel*t3a_amps(jdet)
+ end do
+ end if
+ ! (bc)
+ idx = idx_table(i,j,k,b)
+ if (idx/=0) then
+ do jdet = loc_arr(1,idx), loc_arr(2,idx)
+    d = t3a_excits(jdet,1); e = t3a_excits(jdet,2);
+    ! compute < ijkabc | h2a(vvvv) | ijkdeb >
+    hmatel = -h2a_vvvv(a,c,d,e)
+    resid(idet) = resid(idet) + hmatel*t3a_amps(jdet)
+ end do
+ end if
+end do
+! deallocate sorting arrays
+deallocate(loc_arr,idx_table)
+
+
+function build_hbar_chol_batch(a, b, R_chol, h2b_ovvv, h2b_vovv, h2b_oovv, t1a, t1b, t2b, nchol, noa, nob, nua, nub, norb) result(batch)
+    ! input variables
+    integer :: a, b
+    integer :: nchol
+    integer :: norb, no, nu
+    real(kind=8) :: R_chol(nchol,norb,norb)
+    real(kind=8) :: h2b_ovvv(noa,nub,nua,nub), h2b_vovv(nua,nob,nua,nub), h2b_oovv(noa,nob,nua,nub)
+    real(kind=8) :: t1a(nua,nob), t1b(nub,nob), t2b(nua,nub,noa,nob)
+    ! output variables
+    real(kind=8) :: batch(nu,nu)
+    ! local variables
+    integer :: x, e, f
+    !
+    ! construct v_ab batch of integrals v(ef~)[ab~] = (x|ae)*(x|b~f~)
+    !
+    batch = 0.0d0
+    do e=1,nu
+       do f=1,nu
+          !
+          ! get bare 2-electron integral batch from Cholesky vectors
+          !
+          do x=1,nchol
+             batch(e,f) = batch(e,f) + R_chol(x,a+no,e+no)*R_chol(x,b+no,f+no)
+          end do
+          !
+          ! add on additional CCSD-like Hbar terms
+          !
+          do m=1,noa
+             batch(e,f) = batch(e,f) - h2b_ovvv(m,b,e,f)*t1a(a,m)
+          end do
+          do m=1,nob
+             batch(e,f) = batch(e,f) - h2b_vovv(a,m,e,f)*t1b(b,m)
+          end do
+          do m=1,noa
+             do n=1,nob
+                batch(e,f) = batch(e,f) + h2b_oovv(m,n,e,f)*t2b(a,b,m,n)
+             end do
+          end do
+          !
+       end do
+    end do
+end function build_hbar_chol_batch
+
+function build_hbar_chol_batch_asym(a, b, R_chol, h2_vovv, h2_oovv, t1, t2, nchol, no, nu, norb) result(batch)
+    ! input variables
+    integer :: a, b
+    integer :: nchol
+    integer :: norb, no, nu
+    real(kind=8) :: R_chol(nchol,norb,norb)
+    real(kind=8) :: t1(nu,no), t2(nu,nu,no,no)
+    real(kind=8) :: h2_vovv(nu,no,nu,nu), h2_oovv(no,no,nu,nu)
+    ! output variables
+    real(kind=8) :: batch(nu,nu)
+    ! local variables
+    integer :: x, e, f
+    !
+    ! construct v_aa/v_bb batch of integrals v(ef)[ab] = (x|ae)*(x|bf) - (x|af)(x|be)
+    !
+    batch = 0.0d0
+    do e=1,nu
+       do f=1,nu
+          !
+          ! get bare 2-electron integral batch from Cholesky vectors
+          !
+          do x=1,nchol
+             batch(e,f) = batch(e,f) + R_chol(x,a+no,e+no)*R_chol(x,b+no,f+no)&
+                                     - R_chol(x,a+no,f+no)*R_chol(x,b+no,e+no)
+          end do
+          !
+          ! add on additional CCSD-like Hbar terms
+          !
+          do m=1,no
+             batch(e,f) = batch(e,f) - h2_vovv(b,m,f,e)*t1(a,m) + h2_vovv(a,m,f,e)*t1(b,m)
+          end do
+          do m=1,no
+             do n=m+1,no
+                batch(e,f) = batch(e,f) + h2_oovv(m,n,e,f)*t2(a,b,m,n)
+             end do
+          end do
+          !
+       end do
+    end do
+end function build_hbar_chol_batch_asym

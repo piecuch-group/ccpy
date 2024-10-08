@@ -1,5 +1,10 @@
-"""Module with functions that perform the CC with doubles
-(CCD) calculation for a molecular system."""
+"""
+Module with functions to perform the coupled-cluster (CC) approach with doubles, 
+abbreviated as CCD (originally known as coupled-pair many-electron theory, or CPMET).
+
+References:
+    [1] J. Cizek, J. Chem. Phys. 45, 4256 (1966).
+"""
 import numpy as np
 
 from ccpy.utilities.updates import cc_loops2

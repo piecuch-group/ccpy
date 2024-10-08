@@ -15,16 +15,25 @@ module crcc_loops
 
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua
-                        real(kind=8), intent(in) :: fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
-                        H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
-                        H2A_voov(1:nua,1:noa,1:noa,1:nua),&
-                        H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
-                        H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
-                        D3A_O(1:nua,1:noa,1:noa),&
-                        D3A_V(1:nua,1:noa,1:nua),&
-                        H2A_vooo(nua,noa,noa,noa),I2A_vvov(nua,nua,noa,nua),t2a(nua,nua,noa,noa),&
-                        l1a(nua,noa),l2a(nua,nua,noa,noa),vA_oovv(noa,noa,nua,nua),&
-                        H1A_ov(noa,nua),H2A_vovv(nua,noa,nua,nua),H2A_ooov(noa,noa,noa,nua)
+                        real(kind=8), intent(in) :: fA_oo(1:noa,1:noa)
+                        real(kind=8), intent(in) :: fA_vv(1:nua,1:nua)
+                        real(kind=8), intent(in) :: H1A_oo(1:noa,1:noa)
+                        real(kind=8), intent(in) :: H1A_vv(1:nua,1:nua)
+                        real(kind=8), intent(in) :: H2A_voov(1:nua,1:noa,1:noa,1:nua)
+                        real(kind=8), intent(in) :: H2A_oooo(1:noa,1:noa,1:noa,1:noa)
+                        !real(kind=8), intent(in) :: H2A_vvvv(1:nua,1:nua,1:nua,1:nua)
+                        real(kind=8), intent(in) :: H2A_vvvv(1:nua,1:nua)
+                        real(kind=8), intent(in) :: D3A_O(1:nua,1:noa,1:noa)
+                        real(kind=8), intent(in) :: D3A_V(1:nua,1:noa,1:nua)
+                        real(kind=8), intent(in) :: H2A_vooo(nua,noa,noa,noa)
+                        real(kind=8), intent(in) :: I2A_vvov(nua,nua,noa,nua)
+                        real(kind=8), intent(in) :: t2a(nua,nua,noa,noa)
+                        real(kind=8), intent(in) :: l1a(nua,noa)
+                        real(kind=8), intent(in) :: l2a(nua,nua,noa,noa)
+                        real(kind=8), intent(in) :: vA_oovv(noa,noa,nua,nua)
+                        real(kind=8), intent(in) :: H1A_ov(noa,nua)
+                        real(kind=8), intent(in) :: H2A_vovv(nua,noa,nua,nua)
+                        real(kind=8), intent(in) :: H2A_ooov(noa,noa,noa,nua)
                         integer :: i, j, k, a, b, c, nua2
                         real(kind=8) :: D, temp1, temp2, temp3, LM, X3A(nua,nua,nua), L3A(nua,nua,nua)
 
@@ -113,7 +122,8 @@ module crcc_loops
                                                 -H2A_voov(a,j,j,a) - H2A_voov(b,j,j,b) - H2A_voov(c,j,j,c)&
                                                 -H2A_voov(a,k,k,a) - H2A_voov(b,k,k,b) - H2A_voov(c,k,k,c)&
                                                 -H2A_oooo(j,i,j,i) - H2A_oooo(k,i,k,i) - H2A_oooo(k,j,k,j)&
-                                                -H2A_vvvv(b,a,b,a) - H2A_vvvv(c,a,c,a) - H2A_vvvv(c,b,c,b)
+                                                -H2A_vvvv(b,a) - H2A_vvvv(c,a) - H2A_vvvv(c,b)
+                                                !-H2A_vvvv(b,a,b,a) - H2A_vvvv(c,a,c,a) - H2A_vvvv(c,b,c,b)
 
                                                 deltaC = deltaC + LM/D
 
@@ -156,45 +166,62 @@ module crcc_loops
                         
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, nob, nub
-                        real(kind=8), intent(in) :: t2a(nua,nua,noa,noa),t2b(nua,nub,noa,nob),&
-                        l1a(nua,noa),l1b(nub,nob),&
-                        l2a(nua,nua,noa,noa),l2b(nua,nub,noa,nob),&
-                        I2B_ovoo(noa,nub,noa,nob),I2B_vooo(nua,nob,noa,nob),&
-                        I2A_vooo(nua,noa,noa,noa),H2B_vvvo(nua,nub,nua,nob),&
-                        H2B_vvov(nua,nub,noa,nub),H2A_vvov(nua,nua,noa,nua),&
-                        H2B_vovv(nua,nob,nua,nub),H2B_ovvv(noa,nub,nua,nub),&
-                        H2A_vovv(nua,noa,nua,nua),H2B_ooov(noa,nob,noa,nub),&
-                        H2B_oovo(noa,nob,nua,nob),H2A_ooov(noa,noa,noa,nua),&
-                        H1A_ov(noa,nua),H1B_ov(nob,nub),&
-                        vA_oovv(noa,noa,nua,nua),vB_oovv(noa,nob,nua,nub),& 
-                        fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
-                        fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
-                        H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
-                        H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
-                        H2A_voov(1:nua,1:noa,1:noa,1:nua),&
-                        H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
-                        H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
-                        H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
-                        H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
-                        H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
-                        H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
-                        H2C_voov(1:nub,1:nob,1:nob,1:nub),&
-                        D3A_O(1:nua,1:noa,1:noa),&
-                        D3A_V(1:nua,1:noa,1:nua),&
-                        D3B_O(1:nua,1:noa,1:nob),&
-                        D3B_V(1:nua,1:noa,1:nub),&
-                        D3C_O(1:nub,1:noa,1:nob),&
-                        D3C_V(1:nua,1:nob,1:nub)
+                        real(kind=8), intent(in) :: H1A_ov(noa,nua)
+                        real(kind=8), intent(in) :: H1B_ov(nob,nub)
+                        real(kind=8), intent(in) :: vA_oovv(noa,noa,nua,nua)
+                        real(kind=8), intent(in) :: vB_oovv(noa,nob,nua,nub)
+                        real(kind=8), intent(in) :: fA_oo(1:noa,1:noa)
+                        real(kind=8), intent(in) :: fA_vv(1:nua,1:nua)
+                        real(kind=8), intent(in) :: fB_oo(1:nob,1:nob)
+                        real(kind=8), intent(in) :: fB_vv(1:nub,1:nub)
+                        real(kind=8), intent(in) :: H1A_oo(1:noa,1:noa)
+                        real(kind=8), intent(in) :: H1A_vv(1:nua,1:nua)
+                        real(kind=8), intent(in) :: H1B_oo(1:nob,1:nob)
+                        real(kind=8), intent(in) :: H1B_vv(1:nub,1:nub)
+                        real(kind=8), intent(in) :: t2a(nua,nua,noa,noa)
+                        real(kind=8), intent(in) :: t2b(nua,nub,noa,nob)
+                        real(kind=8), intent(in) :: l1a(nua,noa)
+                        real(kind=8), intent(in) :: l1b(nub,nob)
+                        real(kind=8), intent(in) :: l2a(nua,nua,noa,noa)
+                        real(kind=8), intent(in) :: l2b(nua,nub,noa,nob)
+                        real(kind=8), intent(in) :: I2B_ovoo(noa,nub,noa,nob)
+                        real(kind=8), intent(in) :: I2B_vooo(nua,nob,noa,nob)
+                        real(kind=8), intent(in) :: I2A_vooo(nua,noa,noa,noa)
+                        real(kind=8), intent(in) :: H2B_vvvo(nua,nub,nua,nob)
+                        real(kind=8), intent(in) :: H2B_vvov(nua,nub,noa,nub)
+                        real(kind=8), intent(in) :: H2A_vvov(nua,nua,noa,nua)
+                        real(kind=8), intent(in) :: H2B_vovv(nua,nob,nua,nub)
+                        real(kind=8), intent(in) :: H2B_ovvv(noa,nub,nua,nub)
+                        real(kind=8), intent(in) :: H2A_vovv(nua,noa,nua,nua)
+                        real(kind=8), intent(in) :: H2B_ooov(noa,nob,noa,nub)
+                        real(kind=8), intent(in) :: H2B_oovo(noa,nob,nua,nob)
+                        real(kind=8), intent(in) :: H2A_ooov(noa,noa,noa,nua)
+                        real(kind=8), intent(in) :: H2A_voov(1:nua,1:noa,1:noa,1:nua)
+                        real(kind=8), intent(in) :: H2A_oooo(1:noa,1:noa,1:noa,1:noa)
+                        !real(kind=8), intent(in) :: H2A_vvvv(1:nua,1:nua,1:nua,1:nua)
+                        real(kind=8), intent(in) :: H2A_vvvv(1:nua,1:nua)
+                        real(kind=8), intent(in) :: H2B_ovov(1:noa,1:nub,1:noa,1:nub)
+                        real(kind=8), intent(in) :: H2B_vovo(1:nua,1:nob,1:nua,1:nob)
+                        real(kind=8), intent(in) :: H2B_oooo(1:noa,1:nob,1:noa,1:nob)
+                        !real(kind=8), intent(in) :: H2B_vvvv(1:nua,1:nub,1:nua,1:nub)
+                        real(kind=8), intent(in) :: H2B_vvvv(1:nua,1:nub)
+                        real(kind=8), intent(in) :: H2C_voov(1:nub,1:nob,1:nob,1:nub)
+                        real(kind=8), intent(in) :: D3A_O(1:nua,1:noa,1:noa)
+                        real(kind=8), intent(in) :: D3A_V(1:nua,1:noa,1:nua)
+                        real(kind=8), intent(in) :: D3B_O(1:nua,1:noa,1:nob)
+                        real(kind=8), intent(in) :: D3B_V(1:nua,1:noa,1:nub)
+                        real(kind=8), intent(in) :: D3C_O(1:nub,1:noa,1:nob)
+                        real(kind=8), intent(in) :: D3C_V(1:nua,1:nob,1:nub)
                         integer :: i, j, k, a, b, c, nuanub, nua2
                         real(kind=8) :: D, temp1, temp2, temp3, LM, X3B(nua,nua,nub), L3B(nua,nua,nub)
 
                         ! arrays for reordering 
                         real(kind=8) :: t2a_1243(nua,nua,noa,noa), H2B_vvov_1243(nua,nub,nub,noa),&
-                            t2b_1243(nua,nub,nob,noa), H2A_vvov_1243(nua,nua,nua,noa),&
-                            H2B_vovv_1342(nua,nua,nub,nob), H2A_vovv_4312(nua,nua,nua,noa),&
-                            H2B_ovvv_2341(nub,nua,nub,noa), H2B_ooov_3412(noa,nub,noa,nob),&
-                            H2A_ooov_4312(nua,noa,noa,noa), H2B_oovo_3412(nua,nob,noa,nob),&
-                            l2b_1243(nua,nub,nob,noa)
+                                        t2b_1243(nua,nub,nob,noa), H2A_vvov_1243(nua,nua,nua,noa),&
+                                        H2B_vovv_1342(nua,nua,nub,nob), H2A_vovv_4312(nua,nua,nua,noa),&
+                                        H2B_ovvv_2341(nub,nua,nub,noa), H2B_ooov_3412(noa,nub,noa,nob),&
+                                        H2A_ooov_4312(nua,noa,noa,noa), H2B_oovo_3412(nua,nob,noa,nob),&
+                                        l2b_1243(nua,nub,nob,noa)
 
                         call reorder1243(t2a,t2a_1243)
                         call reorder1243(H2B_vvov,H2B_vvov_1243)
@@ -290,7 +317,8 @@ module crcc_loops
                                                 -H2A_voov(a,j,j,a)-H2A_voov(b,j,j,b)+H2B_ovov(j,c,j,c)&
                                                 +H2B_vovo(a,k,a,k)+H2B_vovo(b,k,b,k)-H2C_voov(c,k,k,c)&
                                                 -H2A_oooo(j,i,j,i)-H2B_oooo(i,k,i,k)-H2B_oooo(j,k,j,k)&
-                                                -H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
+                                                -H2A_vvvv(b,a) - H2B_vvvv(a,c) - H2B_vvvv(b,c)
+                                                !-H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
      
                                                 deltaC = deltaC + LM/D
 
@@ -352,10 +380,12 @@ module crcc_loops
                         H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
                         H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
                         H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
-                        H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        !H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        H2B_vvvv(1:nua,1:nub),&
                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                         H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
-                        H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        !H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        H2C_vvvv(1:nub,1:nub),&
                         D3B_O(1:nua,1:noa,1:nob),&
                         D3B_V(1:nua,1:noa,1:nub),&
                         D3C_O(1:nub,1:noa,1:nob),&
@@ -475,7 +505,8 @@ module crcc_loops
                                                 +H2B_vovo(a,j,a,j)-H2C_voov(b,j,j,b)-H2C_voov(c,j,j,c)&
                                                 +H2B_vovo(a,k,a,k)-H2C_voov(b,k,k,b)-H2C_voov(c,k,k,c)&
                                                 -H2B_oooo(i,j,i,j)-H2B_oooo(i,k,i,k)-H2C_oooo(k,j,k,j)&
-                                                -H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
+                                                -H2B_vvvv(a,b)-H2B_vvvv(a,c)-H2C_vvvv(c,b)
+                                                !-H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
      
                                                 deltaC = deltaC + LM/D
                                                 D = D &
@@ -510,7 +541,8 @@ module crcc_loops
                         H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                         H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
-                        H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        !H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        H2C_vvvv(1:nub,1:nub),&
                         D3D_O(1:nub,1:nob,1:nob),&
                         D3D_V(1:nub,1:nob,1:nub),&
                         H2C_vooo(nub,nob,nob,nob),I2C_vvov(nub,nub,nob,nub),t2c(nub,nub,nob,nob),&
@@ -604,7 +636,8 @@ module crcc_loops
                                                 -H2C_voov(a,j,j,a) - H2C_voov(b,j,j,b) - H2C_voov(c,j,j,c)&
                                                 -H2C_voov(a,k,k,a) - H2C_voov(b,k,k,b) - H2C_voov(c,k,k,c)&
                                                 -H2C_oooo(j,i,j,i) - H2C_oooo(k,i,k,i) - H2C_oooo(k,j,k,j)&
-                                                -H2C_vvvv(b,a,b,a) - H2C_vvvv(c,a,c,a) - H2C_vvvv(c,b,c,b)
+                                                -H2C_vvvv(b,a) - H2C_vvvv(c,a) - H2C_vvvv(c,b)
+                                                !-H2C_vvvv(b,a,b,a) - H2C_vvvv(c,a,c,a) - H2C_vvvv(c,b,c,b)
 
                                                 deltaC = deltaC + LM/D
 
@@ -648,7 +681,8 @@ module crcc_loops
                         H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
                         H2A_voov(1:nua,1:noa,1:noa,1:nua),&
                         H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
-                        H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                        !H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                        H2A_vvvv(1:nua,1:nua),&
                         D3A_O(1:nua,1:noa,1:noa),&
                         D3A_V(1:nua,1:noa,1:nua),&
                         H2A_vooo(nua,noa,noa,noa),I2A_vvov(nua,nua,noa,nua),t2a(nua,nua,noa,noa),&
@@ -780,7 +814,8 @@ module crcc_loops
                                                 -H2A_voov(a,j,j,a) - H2A_voov(b,j,j,b) - H2A_voov(c,j,j,c)&
                                                 -H2A_voov(a,k,k,a) - H2A_voov(b,k,k,b) - H2A_voov(c,k,k,c)&
                                                 -H2A_oooo(j,i,j,i) - H2A_oooo(k,i,k,i) - H2A_oooo(k,j,k,j)&
-                                                -H2A_vvvv(b,a,b,a) - H2A_vvvv(c,a,c,a) - H2A_vvvv(c,b,c,b)
+                                                -H2A_vvvv(b,a) - H2A_vvvv(c,a) - H2A_vvvv(c,b)
+                                                !-H2A_vvvv(b,a,b,a) - H2A_vvvv(c,a,c,a) - H2A_vvvv(c,b,c,b)
 
                                                 deltaC = deltaC + LM/(omega+D)
                                                 ddeltaC = ddeltaC + LM1/(omega+D)
@@ -850,11 +885,13 @@ module crcc_loops
                         H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
                         H2A_voov(1:nua,1:noa,1:noa,1:nua),&
                         H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
-                        H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                        !H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
+                        H2A_vvvv(1:nua,1:nua),&
                         H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
                         H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
                         H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
-                        H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        !H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        H2B_vvvv(1:nua,1:nub),&
                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                         D3A_O(1:nua,1:noa,1:noa),&
                         D3A_V(1:nua,1:noa,1:nua),&
@@ -1020,7 +1057,8 @@ module crcc_loops
                                                 -H2A_voov(a,j,j,a)-H2A_voov(b,j,j,b)+H2B_ovov(j,c,j,c)&
                                                 +H2B_vovo(a,k,a,k)+H2B_vovo(b,k,b,k)-H2C_voov(c,k,k,c)&
                                                 -H2A_oooo(j,i,j,i)-H2B_oooo(i,k,i,k)-H2B_oooo(j,k,j,k)&
-                                                -H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
+                                                -H2A_vvvv(b,a) - H2B_vvvv(a,c) - H2B_vvvv(b,c)
+                                                !-H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
      
                                                 deltaC = deltaC + LM/(omega+D)
                                                 ddeltaC = ddeltaC + LM1/(omega+D)
@@ -1092,10 +1130,12 @@ module crcc_loops
                         H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
                         H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
                         H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
-                        H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        !H2B_vvvv(1:nua,1:nub,1:nua,1:nub),&
+                        H2B_vvvv(1:nua,1:nub),&
                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                         H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
-                        H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        !H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        H2C_vvvv(1:nub,1:nub),&
                         D3B_O(1:nua,1:noa,1:nob),&
                         D3B_V(1:nua,1:noa,1:nub),&
                         D3C_O(1:nub,1:noa,1:nob),&
@@ -1273,7 +1313,8 @@ module crcc_loops
                                                 +H2B_vovo(a,j,a,j)-H2C_voov(b,j,j,b)-H2C_voov(c,j,j,c)&
                                                 +H2B_vovo(a,k,a,k)-H2C_voov(b,k,k,b)-H2C_voov(c,k,k,c)&
                                                 -H2B_oooo(i,j,i,j)-H2B_oooo(i,k,i,k)-H2C_oooo(k,j,k,j)&
-                                                -H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
+                                                -H2B_vvvv(a,b) - H2B_vvvv(a,c) - H2C_vvvv(c,b)
+                                                !-H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
      
                                                 deltaC = deltaC + LM/(omega+D)
                                                 ddeltaC = ddeltaC + LM1/(omega+D)
@@ -1314,7 +1355,8 @@ module crcc_loops
                         H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                         H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
-                        H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        !H2C_vvvv(1:nub,1:nub,1:nub,1:nub),&
+                        H2C_vvvv(1:nub,1:nub),&
                         D3D_O(1:nub,1:nob,1:nob),&
                         D3D_V(1:nub,1:nob,1:nub),&
                         H2C_vooo(nub,nob,nob,nob),I2C_vvov(nub,nub,nob,nub),t2c(nub,nub,nob,nob),&
@@ -1446,7 +1488,8 @@ module crcc_loops
                                                 -H2C_voov(a,j,j,a) - H2C_voov(b,j,j,b) - H2C_voov(c,j,j,c)&
                                                 -H2C_voov(a,k,k,a) - H2C_voov(b,k,k,b) - H2C_voov(c,k,k,c)&
                                                 -H2C_oooo(j,i,j,i) - H2C_oooo(k,i,k,i) - H2C_oooo(k,j,k,j)&
-                                                -H2C_vvvv(b,a,b,a) - H2C_vvvv(c,a,c,a) - H2C_vvvv(c,b,c,b)
+                                                -H2C_vvvv(b,a) - H2C_vvvv(c,a) - H2C_vvvv(c,b)
+                                                !-H2C_vvvv(b,a,b,a) - H2C_vvvv(c,a,c,a) - H2C_vvvv(c,b,c,b)
 
                                                 deltaC = deltaC + LM/(omega+D)
                                                 ddeltaC = ddeltaC + LM1/(omega+D)

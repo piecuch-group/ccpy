@@ -18,6 +18,7 @@ MODULES := cc_loops \
 		   mbgf_loops \
 		   mbpt_loops \
 		   ccsdt_p_loops \
+		   ccsdt_p_chol_loops \
 		   eomccsdt_p_loops \
 		   leftccsdt_p_loops \
 		   leftccsdt_p_intermediates \
@@ -35,6 +36,7 @@ MODULES := cc_loops \
 		   cc_active_loops \
 		   cct3_loops \
 		   cc_loops_t4 \
+		   cc4_loops \
 		   ccp3_loops \
 		   ccp3_opt_loops \
 		   ccp3_adaptive_loops \
@@ -43,8 +45,9 @@ MODULES := cc_loops \
 		   clusteranalysis \
 		   ecccp3_loops \
 		   reorder \
-		   vvvv_contraction \
 		   ccp3_full_correction \
+		   ccp3_full_correction_high_mem \
+		   vvvv_contraction \
 		   eaccp3_correction
 
 EXT_SUFFIX := $(shell python -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")

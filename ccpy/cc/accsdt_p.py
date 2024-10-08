@@ -1,23 +1,75 @@
-"""Module with functions that perform the CC with singles, doubles,
-and P-space triples [CC(P)] calculation for a molecular system."""
+"""
+Module with functions that help perform the approximate coupled-pair (ACP) coupled-cluster (CC)
+approach with singles, doubles, and the subset of triples belonging to the P-space, abbreviated
+as ACCSDT(P).
+"""
 import numpy as np
-
+# Modules for type checking
+from typing import List, Tuple, Dict
+from ccpy.models.operators import ClusterOperator
+from ccpy.models.system import System
+from ccpy.models.integrals import Integral
+# Modules for computation
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.utilities.updates import ccsdt_p_loops
 
-def update(T, dT, H, X, shift, flag_RHF, system, t3_excitations, acparray, pspace=None):
 
-    # determine whether t3 updates should be done. Stupid compatibility with
-    # empty sections of t3_excitations
-    do_t3 = {"aaa" : True, "aab" : True, "abb" : True, "bbb" : True}
-    if np.array_equal(t3_excitations["aaa"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+def update(T: ClusterOperator,
+           dT: ClusterOperator,
+           H: Integral,
+           X: Integral,
+           shift: float,
+           flag_RHF: bool,
+           system: System,
+           t3_excitations: Dict[str, np.ndarray],
+           acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
+    """
+    Performs one update of the CC amplitude equations for the ACCSDT(P) method.
+
+    Parameters
+    ----------
+    T : ClusterOperator
+        Cluster operator containing T1 and T2 components.
+    dT : ClusterOperator
+        Residual of the CC amplitude equations corresponding to projections onto singles, doubles, and the subset of
+        triples included in the P space.
+    H : Integral
+        Bare Hamiltonian in the normal-ordered form.
+    X : Integral
+        Intermediates for the CC iterations that are roughly given by a CCSD-like similarity-transformed Hamiltonian.
+    shift : float
+        Energy denominator shift for stabilizing update in case of strong quasidegeneracy.
+    flag_RHF : bool
+        Flag to turn on/off RHF symmetry. Doing so skips updating components of T that are equivalent for closed shells.
+    system : System
+        System object containing information about the molecular system, such as orbital dimensions.
+    t3_excitations : Dict[str, np.ndarray]
+        Dictionary with the keys 'aaa', 'aab', 'abb', and 'bbb', corresponding to distinct T3 spincases, which are
+        asociated with values given by the 2D Numpy array containing the triple excitations [a, b, c, i, j, k] belonging
+        to the P space.
+    acparray : List[float]
+        List containing the ACP scaling factors for the 5 T2**2 diagrams.
+
+    Returns
+    -------
+    T : ClusterOperator
+        Cluster operator with updated T1, T2, and T3(P) components.
+    dT : ClusterOperator
+        Residual of the ACCSDT(P) amplitude equations corresponding to projections onto singles, doubles, and the
+        subset of triples included in the P space.
+    """
+
+    # Check for empty spincases in t3 list. Remember that [1., 1., 1., 1., 1., 1.]
+    # is defined as the "empty" state in the Fortran modules.
+    do_t3 = {"aaa": True, "aab": True, "abb": True, "bbb": True}
+    if np.array_equal(t3_excitations["aaa"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["aaa"] = False
-    if np.array_equal(t3_excitations["aab"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+    if np.array_equal(t3_excitations["aab"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["aab"] = False
-    if np.array_equal(t3_excitations["abb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+    if np.array_equal(t3_excitations["abb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["abb"] = False
-    if np.array_equal(t3_excitations["bbb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+    if np.array_equal(t3_excitations["bbb"][0, :], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["bbb"] = False
     build_hbar = do_t3["aaa"] or do_t3["aab"] or do_t3["abb"] or do_t3["bbb"]
 
@@ -35,24 +87,24 @@ def update(T, dT, H, X, shift, flag_RHF, system, t3_excitations, acparray, pspac
     X = get_ccs_intermediates_opt(X, T, H, system, flag_RHF)
     # Remove T2 parts from X.a.oo/X.b.oo and X.a.vv/X.b.vv
     X.a.vv += (
-            + 0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, T.aa, optimize=True) #
-            + np.einsum("mnef,afmn->ae", H.ab.oovv, T.ab, optimize=True) #
+            + 0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, T.aa, optimize=True)
+            + np.einsum("mnef,afmn->ae", H.ab.oovv, T.ab, optimize=True)
     )
     X.a.oo -= (
-            + 0.5 * np.einsum("mnef,efin->mi", H.aa.oovv, T.aa, optimize=True) # 
-            + np.einsum("mnef,efin->mi", H.ab.oovv, T.ab, optimize=True) #
+            + 0.5 * np.einsum("mnef,efin->mi", H.aa.oovv, T.aa, optimize=True)
+            + np.einsum("mnef,efin->mi", H.ab.oovv, T.ab, optimize=True)
     )
     if flag_RHF:
         X.b.vv = X.a.vv
         X.b.oo = X.a.oo
     else:
         X.b.vv += (
-                    + 0.5 * np.einsum("mnef,afmn->ae", H.bb.oovv, T.bb, optimize=True) #
-                    + np.einsum("nmfe,fanm->ae", H.ab.oovv, T.ab, optimize=True) #
+                    + 0.5 * np.einsum("mnef,afmn->ae", H.bb.oovv, T.bb, optimize=True)
+                    + np.einsum("nmfe,fanm->ae", H.ab.oovv, T.ab, optimize=True)
         )
         X.b.oo -= (
-                    + 0.5 * np.einsum("mnef,efin->mi", H.bb.oovv, T.bb, optimize=True) # 
-                    + np.einsum("nmfe,feni->mi", H.ab.oovv, T.ab, optimize=True) #
+                    + 0.5 * np.einsum("mnef,efin->mi", H.bb.oovv, T.bb, optimize=True) 
+                    + np.einsum("nmfe,feni->mi", H.ab.oovv, T.ab, optimize=True)
         )
 
     # update T2
@@ -87,7 +139,7 @@ def update(T, dT, H, X, shift, flag_RHF, system, t3_excitations, acparray, pspac
         )
 
     # CCSD intermediates
-    #[TODO]: Should accept CCS HBar as input and build only terms with T2 in it
+    # [TODO]: Should accept CCS HBar as input and build only terms with T2 in it
     if build_hbar:
         X = get_ccsd_intermediates(T, X, H, flag_RHF)
         # Transpose integrals appropriately 
@@ -106,7 +158,7 @@ def update(T, dT, H, X, shift, flag_RHF, system, t3_excitations, acparray, pspac
         X.ab.ovov = X.ab.ovov.transpose(0, 3, 1, 2)
         X.bb.voov = X.bb.voov.transpose(1, 3, 0, 2)
         X.aa.vvvv = X.aa.vvvv.transpose(3, 2, 1, 0)
-        #X.ab.vvvv = X.ab.vvvv.transpose(3, 2, 1, 0)
+        # X.ab.vvvv = X.ab.vvvv.transpose(3, 2, 1, 0)
         X.bb.vvvv = X.bb.vvvv.transpose(3, 2, 1, 0)
 
     # update T3
@@ -129,10 +181,39 @@ def update(T, dT, H, X, shift, flag_RHF, system, t3_excitations, acparray, pspac
 
     return T, dT
 
-def update_t1a(T, dT, H, X, shift, t3_excitations):
+def update_t1a(T: ClusterOperator,
+               dT: ClusterOperator,
+               H: Integral,
+               X: Integral,
+               shift: float,
+               t3_excitations: Dict[str, np.ndarray]) -> Tuple[ClusterOperator, ClusterOperator]:
+    """Update t1a amplitudes as t1a(ai) <- t1(ai) + <ia|(H_N exp(T1+T2+T3(P)))_C|0>/D_MP(ai)
+
+    Parameters
+    ----------
+    T : ClusterOperator
+        Cluster operator containing T1, T2, and T3(P) components
+    dT : ClusterOperator
+        Residual for T1, T2, and T3(P) amplitude equations
+    H : Integral
+        Bare Hamiltonian in the normal-ordered form
+    X : Integral
+        Intermediates for the CC iterations that are roughly given by a CCSD-like similarity-transformed Hamiltonian
+    shift : float
+        Energy denominator shift for stabilizing update
+    t3_excitations : Dict[str, np.ndarray]
+        Dictionary with the keys 'aaa', 'aab', 'abb', and 'bbb', corresponding to distinct T3 spincases, which are
+        asociated with values given by the 2D Numpy array containing the triple excitations [a, b, c, i, j, k] belonging
+        to the P space.
+
+    Returns
+    -------
+    T : ClusterOperator
+        Cluster operator containing updated t1a(ai) component in T.a
+    dT : ClusterOperator
+        Residual of CC amplitude equation containing <ia|(H_N exp(T1+T2+T3(P))_C|0>/D_MP(ai) in dT.a
     """
-    Update t1a amplitudes by calculating the projection <ia|(H_N e^(T1+T2+T3^(P)))_C|0>.
-    """
+
     dT.a = -np.einsum("mi,am->ai", X.a.oo, T.a, optimize=True)
     dT.a += np.einsum("ae,ei->ai", X.a.vv, T.a, optimize=True)
     dT.a += np.einsum("me,aeim->ai", X.a.ov, T.aa, optimize=True) # [+]
@@ -154,9 +235,14 @@ def update_t1a(T, dT, H, X, shift, t3_excitations):
     )
     return T, dT
 
-def update_t1b(T, dT, H, X, shift, t3_excitations):
+def update_t1b(T: ClusterOperator,
+               dT: ClusterOperator,
+               H: Integral,
+               X: Integral,
+               shift: float,
+               t3_excitations: Dict[str, np.ndarray]):
     """
-    Update t1b amplitudes by calculating the projection <i~a~|(H_N e^(T1+T2+t3^(P)))_C|0>.
+    Update t1b amplitudes by calculating the projection <i~a~|(H_N e^(T1+T2+T3(P)))_C|0>.
     """
     dT.b = -np.einsum("mi,am->ai", X.b.oo, T.b, optimize=True)
     dT.b += np.einsum("ae,ei->ai", X.b.vv, T.b, optimize=True)
@@ -182,7 +268,7 @@ def update_t1b(T, dT, H, X, shift, t3_excitations):
 # @profile
 def update_t2a(T, dT, H, H0, shift, t3_excitations, acparray):
     """
-    Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2+t3^(P)))_C|0>.
+    Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2+T3(P)))_C|0>.
     """
     d1, d2, d3, d4, d5 = acparray
     # intermediates
@@ -232,7 +318,7 @@ def update_t2a(T, dT, H, H0, shift, t3_excitations, acparray):
 # @profile
 def update_t2b(T, dT, H, H0, shift, t3_excitations, acparray):
     """
-    Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2+t3^(P)))_C|0>.
+    Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2+T3(P)))_C|0>.
     """
     d1, d2, d3, d4, d5 = acparray
 
@@ -296,7 +382,7 @@ def update_t2b(T, dT, H, H0, shift, t3_excitations, acparray):
 # @profile
 def update_t2c(T, dT, H, H0, shift, t3_excitations, acparray):
     """
-    Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2+t3^(P)))_C|0>.
+    Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2+T3(P)))_C|0>.
     """
     d1, d2, d3, d4, d5 = acparray
     # intermediates
@@ -345,7 +431,7 @@ def update_t2c(T, dT, H, H0, shift, t3_excitations, acparray):
 
 def update_t3a(T, dT, H, H0, shift, t3_excitations):
     """
-    Update t3a amplitudes by calculating the projection <ijkabc|(H_N e^(T1+T2+T3))_C|0>.
+    Update t3a amplitudes by calculating the projection <ijkabc|(H_N e^(T1+T2+T3(P)))_C|0>.
     """
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     I2A_vooo = I2A_vooo.transpose(1, 0, 2, 3)
@@ -365,7 +451,7 @@ def update_t3a(T, dT, H, H0, shift, t3_excitations):
 
 def update_t3b(T, dT, H, H0, shift, t3_excitations):
     """
-    Update t3b amplitudes by calculating the projection <ijk~abc~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t3b amplitudes by calculating the projection <ijk~abc~|(H_N e^(T1+T2+T3(P)))_C|0>.
     """
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
@@ -390,7 +476,7 @@ def update_t3b(T, dT, H, H0, shift, t3_excitations):
 
 def update_t3c(T, dT, H, H0, shift, t3_excitations):
     """
-    Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N e^(T1+T2+T3(P)))_C|0>.
     """
     I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
@@ -415,7 +501,7 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations):
 
 def update_t3d(T, dT, H, H0, shift, t3_excitations):
     """
-    Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N e^(T1+T2+T3))_C|0>.
+    Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N e^(T1+T2+T3(P)))_C|0>.
     """
     I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
     I2C_vooo = I2C_vooo.transpose(1, 0, 2, 3)

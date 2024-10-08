@@ -1,14 +1,48 @@
-"""Module with functions that perform the CC with singles, doubles,
-and iterative perturbative triples (CC3) calculation for a molecular system."""
+"""
+Module with functions to perform the approximate coupled-cluster (CC) method with
+singles, doubles, and triples, abbrevated as CC3, where the T3 operator is correct
+through 2st order of perturbation theory and T1 clusters are treated as 0th order.
 
+References:
+    [1] J. Chem. Phys. 106, 1808 (1997); doi: 10.1063/1.473322 [CC3 method]
+    [2] J. Chem. Phys. 103, 7429–7441 (1995); doi: 10.1063/1.470315 [CC3 response & excited states]
+    [3] J. Chem. Phys. 122, 054110 (2005); doi: 10.1063/1.1835953 [CC3 for open shells]
+"""
 import numpy as np
+# Modules for type checking
+from typing import List, Tuple
+from ccpy.models.operators import ClusterOperator
+from ccpy.models.system import System
+from ccpy.models.integrals import Integral
+# Modules for computation
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.hbar.hbar_cc3 import get_cc3_intermediates
 from ccpy.utilities.updates import cc3_loops
 
-#@profile
-def update(T, dT, H, hbar, shift, flag_RHF, system):
 
+def update(T: ClusterOperator,
+           dT: ClusterOperator,
+           H: Integral,
+           hbar: Integral,
+           shift: float,
+           flag_RHF: bool,
+           system: System) -> Tuple[ClusterOperator, ClusterOperator]:
+    """
+
+    Parameters
+    ----------
+    T :
+    dT :
+    H :
+    hbar :
+    shift :
+    flag_RHF :
+    system :
+
+    Returns
+    -------
+
+    """
     # pre-CCS intermediates
     hbar = get_pre_ccs_intermediates(hbar, T, H, system, flag_RHF)
 
@@ -65,7 +99,7 @@ def update(T, dT, H, hbar, shift, flag_RHF, system):
         shift)
     return T, dT
 
-#@profile
+
 def build_t1a(T, dT, H, X):
     """
     Update t1a amplitudes by calculating the projection <ia|(H_N e^(T1+T2))_C|0>.
@@ -83,7 +117,7 @@ def build_t1a(T, dT, H, X):
     dT.a += H.a.vo
     return dT
 
-#@profile
+
 def build_t1b(T, dT, H, X):
     """
     Update t1b amplitudes by calculating the projection <i~a~|(H_N e^(T1+T2))_C|0>.
@@ -101,7 +135,7 @@ def build_t1b(T, dT, H, X):
     dT.b += H.b.vo
     return dT
 
-#@profile
+
 def build_t2a(T, dT, H, H0):
     """
     Update t2a amplitudes by calculating the projection <ijab|(H_N e^(T1+T2))_C|0>.
@@ -128,7 +162,7 @@ def build_t2a(T, dT, H, H0):
     dT.aa += 0.25 * H0.aa.vvoo
     return dT
 
-#@profile
+
 def build_t2b(T, dT, H, H0):
     """
     Update t2b amplitudes by calculating the projection <ij~ab~|(H_N e^(T1+T2))_C|0>.
@@ -168,7 +202,7 @@ def build_t2b(T, dT, H, H0):
     dT.ab += H0.ab.vvoo
     return dT
 
-#@profile
+
 def build_t2c(T, dT, H, H0):
     """
     Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N e^(T1+T2))_C|0>.
@@ -195,3 +229,94 @@ def build_t2c(T, dT, H, H0):
     dT.bb += 0.125 * np.einsum("mnij,abmn->abij", I2C_oooo, T.bb, optimize=True)
     dT.bb += 0.25 * H0.bb.vvoo
     return dT
+
+### CODE FOR DOING BATCHED (abc) VECTORIZATION IN PYTHON ###
+    # ### t3aaa ###
+    # e_abc = -eps_a_v[:, n, n] - eps_a_v[n, :, n] - eps_a_v[n, n, :]
+    # for i in range(system.noccupied_alpha):
+    #     for j in range(i + 1, system.noccupied_alpha):
+    #         for k in range(j + 1, system.noccupied_alpha):
+    #             # fock denominator for occupied
+    #             e_ijk = H.a.oo[i, i] + H.a.oo[j, j] + H.a.oo[k, k]
+    #             # -1/2 A(k/ij)A(abc) I(amij) * t(bcmk)
+    #             t3a_abc = -0.5 * np.einsum("am,bcm->abc", X["aa"]["vooo"][:, :, i, j], T.aa[:, :, :, k], optimize=True)
+    #             t3a_abc += 0.5 * np.einsum("am,bcm->abc", X["aa"]["vooo"][:, :, k, j], T.aa[:, :, :, i], optimize=True)
+    #             t3a_abc += 0.5 * np.einsum("am,bcm->abc", X["aa"]["vooo"][:, :, i, k], T.aa[:, :, :, j], optimize=True)
+    #             # 1/2 A(i/jk)A(abc) I(abie) * t(ecjk)
+    #             t3a_abc += 0.5 * np.einsum("abe,ec->abc", X["aa"]["vvov"][:, :, i, :], T.aa[:, :, j, k], optimize=True)
+    #             t3a_abc -= 0.5 * np.einsum("abe,ec->abc", X["aa"]["vvov"][:, :, j, :], T.aa[:, :, i, k], optimize=True)
+    #             t3a_abc -= 0.5 * np.einsum("abe,ec->abc", X["aa"]["vvov"][:, :, k, :], T.aa[:, :, j, i], optimize=True)
+    #             # Antisymmetrize A(abc)
+    #             t3a_abc -= np.transpose(t3a_abc, (1, 0, 2)) + np.transpose(t3a_abc, (2, 1, 0)) # A(a/bc)
+    #             t3a_abc -= np.transpose(t3a_abc, (0, 2, 1)) # A(bc)
+    #             # Divide t_abc by the denominator
+    #             t3a_abc /= (e_ijk + e_abc)
+    #             # Compute diagram: 1/2 A(i/jk) v(jkbc) * t(abcijk)
+    #             dT.a[:, i] += 0.5 * np.einsum("bc,abc->a", H.aa.oovv[j, k, :, :], t3a_abc, optimize=True)
+    #             dT.a[:, j] -= 0.5 * np.einsum("bc,abc->a", H.aa.oovv[i, k, :, :], t3a_abc, optimize=True)
+    #             dT.a[:, k] -= 0.5 * np.einsum("bc,abc->a", H.aa.oovv[j, i, :, :], t3a_abc, optimize=True)
+    #             # Compute diagram: A(ij) [A(k/ij) h(ke) * t3(abeijk)]
+    #             dT.aa[:, :, i, j] += 0.5 * np.einsum("e,abe->ab", hbar.a.ov[k, :], t3a_abc, optimize=True) # (1)
+    #             dT.aa[:, :, j, k] += 0.5 * np.einsum("e,abe->ab", hbar.a.ov[i, :], t3a_abc, optimize=True) # (ik)
+    #             dT.aa[:, :, i, k] -= 0.5 * np.einsum("e,abe->ab", hbar.a.ov[j, :], t3a_abc, optimize=True) # (jk)
+    #             # Compute diagram: -A(j/ik) h(ik:f) * t3(abfijk)
+    #             dT.aa[:, :, :, j] -= 0.5 * np.einsum("mf,abf->abm", hbar.aa.ooov[i, k, :, :], t3a_abc, optimize=True)
+    #             dT.aa[:, :, :, i] += 0.5 * np.einsum("mf,abf->abm", hbar.aa.ooov[j, k, :, :], t3a_abc, optimize=True)
+    #             dT.aa[:, :, :, k] += 0.5 * np.einsum("mf,abf->abm", hbar.aa.ooov[i, j, :, :], t3a_abc, optimize=True)
+    #             # Compute diagram: 1/2 A(k/ij) h(akef) * t3(ebfijk)
+    #             dT.aa[:, :, i, j] += 0.5 * np.einsum("aef,ebf->ab", hbar.aa.vovv[:, k, :, :], t3a_abc, optimize=True)
+    #             dT.aa[:, :, j, k] += 0.5 * np.einsum("aef,ebf->ab", hbar.aa.vovv[:, i, :, :], t3a_abc, optimize=True)
+    #             dT.aa[:, :, i, k] -= 0.5 * np.einsum("aef,ebf->ab", hbar.aa.vovv[:, j, :, :], t3a_abc, optimize=True)
+    # ### t3aab ###
+    # e_abc = -eps_a_v[:, n, n] - eps_a_v[n, :, n] - eps_b_v[n, n, :]
+    # for i in range(system.noccupied_alpha):
+    #     for j in range(i + 1, system.noccupied_alpha):
+    #         for k in range(system.noccupied_beta):
+    #             # fock denominator for occupied
+    #             e_ijk = H.a.oo[i, i] + H.a.oo[j, j] + H.b.oo[k, k]
+    #             # Diagram 1: A(ab) H2B(bcek) * t2a(aeij)
+    #             t3b_abc = np.einsum("bce,ae->abe", X["ab"]["vvvo"][:, :, :, k], T.aa[:, :, i, j,], optimize=True)
+    #             # Diagram 2: -A(ij) I2B(mcjk) * t2a(abim)
+    #             t3b_abc -= 0.5 * np.einsum("mc,abm->abc", X["ab"]["ovoo"][:, :, j, k], T.aa[:, :, i, :], optimize=True)
+    #             t3b_abc += 0.5 * np.einsum("mc,abm->abc", X["ab"]["ovoo"][:, :, i, k], T.aa[:, :, j, :], optimize=True)
+    #             # Diagram 3: A(ab)A(ij) H2B(acie)*t2b(bejk)
+    #             t3b_abc += np.einsum("ace,be->abc", X["ab"]["vvov"][:, :, i, :], T.ab[:, :, j, k], optimize=True)
+    #             t3b_abc -= np.einsum("ace,be->abc", X["ab"]["vvov"][:, :, j, :], T.ab[:, :, i, k], optimize=True)
+    #             # Diagram 4: -A(ab)A(ij) I2B(amik)*t2b(bcjm)
+    #             t3b_abc -= np.einsum("am,bcm->abc", X["ab"]["vooo"][:, :, i, k], T.ab[:, :, j, :], optimize=True)
+    #             t3b_abc += np.einsum("am,bcm->abc", X["ab"]["vooo"][:, :, j, k], T.ab[:, :, i, :], optimize=True)
+    #             # Diagram 5: A(ij) H2A(abie)*t2b(ecjk)
+    #             t3b_abc += 0.5 * np.einsum("abe,ec->abc", X["ab"]["vvov"][:, :, i, :], T.ab[:, :, j, k], optimize=True)
+    #             t3b_abc -= 0.5 * np.einsum("abe,ec->abc", X["ab"]["vvov"][:, :, j, :], T.ab[:, :, i, k], optimize=True)
+    #             # Diagram 6: -A(ab) I2A(amij)*t2b(bcmk)
+    #             t3b_abc -= np.einsum("am,bcm->abc", X["aa"]["vooo"][:, :, i, j], T.ab[:, :, :, k], optimize=True)
+    #             # Antisymmetrize A(ab)
+    #             t3b_abc -= np.transpose(t3b_abc, (1, 0, 2)) # A(ab)
+    #             # Divide t_abc by the denominator
+    #             t3b_abc /= (e_ijk + e_abc)
+    #             # A(ij)A(ab) vB(jkbc) * t3b(abcijk)
+    #             dT.a[:, i] += np.einsum("bc,abc->a", H.ab.oovv[j, k, :, :], t3b_abc, optimize=True)
+    #             dT.a[:, j] -= np.einsum("bc,abc->a", H.ab.oovv[i, k, :, :], t3b_abc, optimize=True)
+    #             # vA(ijab) * t3b(abcijk)
+    #             dT.b[:, k] += np.einsum("ab,abc->c", H.aa.oovv[i, j, :, :], t3b_abc, optimize=True)
+    #             # A(ij)A(ab) [h1b(me) * t3b(abeijm)]
+    #             dT.aa[:, :, i, j] += np.einsum("c,abc->ab", hbar.b.ov[k, :], t3b_abc, optimize=True)
+    #             # A(ij)A(ab) [A(jm) -h2b(mnif) * t3b(abfmjn)]
+    #             dT.aa[:, :, :, j] -= np.einsum("mc,abc->abm", hbar.ab.ooov[i, k, :, :], t3b_abc, optimize=True)
+    #             dT.aa[:, :, :, i] += np.einsum("mc,abc->abm", hbar.ab.ooov[j, k, :, :], t3b_abc, optimize=True)
+    #             # A(ij)A(ab) [A(be) h2b(anef) * t3b(ebfijn)]
+    #             dT.aa[:, :, i, j] += np.einsum("eac,abc->eb", hbar.ab.vovv[:, k, :, :], t3b_abc, optimize=True)
+    #             # A(af) -h2a(mnif) * t3b(afbmnj)
+    #             dT.ab[:, :, :, k] -= np.einsum("mb,abc->acm", hbar.aa.ooov[i, j, :, :], t3b_abc, optimize=True)
+    #             # A(af)A(in) -h2b(nmfj) * t3b(afbinm)
+    #             dT.ab[:, :, i, :] -= np.einsum("bm,abc->acm", hbar.ab.oovo[j, k, :, :], t3b_abc, optimize=True)
+    #             dT.ab[:, :, j, :] += np.einsum("bm,abc->acm", hbar.ab.oovo[i, k, :, :], t3b_abc, optimize=True)
+    #             # A(in) h2a(anef) * t3b(efbinj)
+    #             dT.ab[:, :, i, k] += np.einsum("eab,abc->ec", hbar.aa.vovv[:, j, :, :], t3b_abc, optimize=True)
+    #             dT.ab[:, :, j, k] -= np.einsum("eab,abc->ec", hbar.aa.vovv[:, i, :, :], t3b_abc, optimize=True)
+    #             # A(af)A(in) h2b(nbfe) * t3b(afeinj)
+    #             dT.ab[:, :, i, k] += np.einsum("ebc,abc->ae", hbar.ab.ovvv[j, :, :, :], t3b_abc, optimize=True)
+    #             dT.ab[:, :, j, k] -= np.einsum("ebc,abc->ae", hbar.ab.ovvv[i, :, :, :], t3b_abc, optimize=True)
+    #             # A(ae)A(im) h1a(me) * t3b(aebimj)
+    #             dT.ab[:, :, i, k] += np.einsum("b,abc->ab", hbar.a.ov[j, :], t3b_abc, optimize=True)
+    #             dT.ab[:, :, j, k] -= np.einsum("b,abc->ab", hbar.a.ov[i, :], t3b_abc, optimize=True)

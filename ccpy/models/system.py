@@ -23,6 +23,7 @@ class System:
         mo_occupation=None,
         nact_occupied=0,
         nact_unoccupied=0,
+        cholesky=False,
     ):
         # basic information
         self.nelectrons = nelectrons - 2 * nfrozen
@@ -43,7 +44,7 @@ class System:
         self.point_group_irrep_to_number = get_pg_irreps(self.point_group)
         self.point_group_number_to_irrep = {v: k for k, v in self.point_group_irrep_to_number.items()}
         if orbital_symmetries is None:
-            self.orbital_symmetries_all = ["A1"] * norbitals
+            self.orbital_symmetries_all = ["A"] * norbitals
         else:
             self.orbital_symmetries_all = orbital_symmetries
         # MO energies and occupation
@@ -64,6 +65,8 @@ class System:
         self.nuclear_repulsion = nuclear_repulsion
         # periodic system information
         self.nkpts = nkpts
+        # Cholesky integrals
+        self.cholesky = cholesky
 
         # Get the point group symmetry of the reference state by exploiting
         # homomorphism between Abelian groups and binary vector spaces

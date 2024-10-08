@@ -381,14 +381,14 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
         B[:, j] = B0[:, j]
         R[istate].unflatten(B[:, j])
         dR.unflatten(dR.flatten() * 0.0)
-        if t3_excitations and r3_excitations:
+        if t3_excitations or r3_excitations:
             sigma[:, j] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
         else:
             sigma[:, j] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
         num_add += 1
         curr_size += 1
 
-    is_converged = [False] * nroot
+    is_converged = [False for _ in range(nroot)]
     residual = np.zeros(nroot)
     delta_energy = np.zeros(nroot)
     for niter in range(options["maximum_iterations"]):
@@ -435,7 +435,7 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
                 is_converged[j] = True
             else:
                 # update the residual vector
-                if t3_excitations and r3_excitations:
+                if t3_excitations or r3_excitations:
                     R[istate] = update_r(R[istate], omega[istate], H, options["RHF_symmetry"], system, r3_excitations)
                 else:
                     R[istate] = update_r(R[istate], omega[istate], H, options["RHF_symmetry"], system)
@@ -446,7 +446,7 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
                 q /= np.linalg.norm(q)
                 R[istate].unflatten(q)
                 B[:, curr_size + num_add] = q
-                if t3_excitations and r3_excitations:
+                if t3_excitations or r3_excitations:
                     sigma[:, curr_size + num_add] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
                 else:
                     sigma[:, curr_size + num_add] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
@@ -742,6 +742,90 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
         diis_engine.cleanup()
 
     return L, energy, LR, is_converged
+
+def lrcc_jacobi(update_t, T1, W, dT, T, H, X, system, options, t3_excitations=None):
+    from ccpy.energy.lrcc_energy import get_lrcc_energy
+
+    # check whether DIIS is being used
+    do_diis = True
+    if options["diis_size"] == -1:
+        do_diis = False
+
+    # instantiate the DIIS accelerator object
+    if do_diis:
+        diis_engine = DIIS(T1, options["diis_size"], options["diis_out_of_core"])
+
+    # Jacobi/DIIS iterations
+    num_throw_away = 0
+    ndiis_cycle = 0
+    energy = 0.0
+    energy_old = get_lrcc_energy(T1, W, T, H)
+    is_converged = False
+
+    print("   Initial property guess value = {:>20.10f}".format(energy_old))
+
+    t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
+    print_cc_iteration_header()
+    for niter in range(options["maximum_iterations"]):
+        # get iteration start time
+        t1 = time.perf_counter()
+
+        # Update the T vector
+        if t3_excitations: # CC(P) update
+             T1, dT = update_t(T1, dT, T, W, H, X, options["energy_shift"], options["RHF_symmetry"], system, t3_excitations)
+        else: # regular update
+             T1, dT = update_t(T1, dT, T, W, H, X, options["energy_shift"], options["RHF_symmetry"], system)
+
+        # CC correlation energy
+        energy = get_lrcc_energy(T1, W, T, H)
+
+        # change in energy
+        delta_energy = energy - energy_old
+
+        # check for exit condition
+        residuum = np.linalg.norm(dT.flatten())
+        if (
+            residuum < options["amp_convergence"]
+            and abs(delta_energy) < options["energy_convergence"]
+        ):
+            # print the iteration of convergence
+            elapsed_time = time.perf_counter() - t1
+            print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+
+            t_end = time.perf_counter()
+            minutes, seconds = divmod(t_end - t_start, 60)
+            print(
+                "   LR-CC calculation successfully converged! ({:0.2f}m  {:0.2f}s)".format(
+                    minutes, seconds
+                )
+            )
+            print(f"   Total CPU time is {time.process_time() - t_cpu_start} seconds")
+            is_converged = True
+            break
+
+        # Save T and dT vectors to disk for DIIS
+        if niter >= num_throw_away and do_diis:
+            diis_engine.push(T1, dT, niter)
+
+        # Do DIIS extrapolation
+        if niter >= options["diis_size"] + num_throw_away and do_diis:
+            ndiis_cycle += 1
+            T1.unflatten(diis_engine.extrapolate())
+
+        # Update old energy
+        energy_old = energy
+
+        elapsed_time = time.perf_counter() - t1
+        print_cc_iteration(niter, residuum, delta_energy, energy, elapsed_time)
+    else:
+        print("LR-CC calculation did not converge.")
+
+    # Remove the t.npy and dt.npy files if out-of-core DIIS was used
+    if do_diis:
+        diis_engine.cleanup()
+
+    return T1, energy, is_converged
 
 
 # def mrcc_jacobi(update_t, compute_Heff, T, dT, H, model_space, calculation, system):

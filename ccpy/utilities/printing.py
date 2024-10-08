@@ -26,6 +26,14 @@ def cc_calculation_summary(T, reference_energy, cc_energy, system, print_thresh)
     print_ee_amplitudes(T, system, T.order, print_thresh)
     print("")
 
+def lrcc_calculation_summary(T1, lrcc_energy, system, print_thresh):
+    DATA_FMT = "{:<30} {:>20.8f}"
+    print("\n   LR-CC Calculation Summary")
+    print("  --------------------------------------------------")
+    print(DATA_FMT.format("   LR-CC correlation property", lrcc_energy))
+    print_ee_amplitudes(T1, system, T1.order, print_thresh)
+    print("")
+
 def eomcc_calculation_summary(R, omega, corr_energy, r0, rel, is_converged, istate, system, print_thresh):
     DATA_FMT = "{:<30} {:>20.8f}"
     if is_converged:
@@ -189,7 +197,7 @@ def print_block_eomcc_iteration(
         else:
             print(
                 ITERATION_FMT.format(
-                    "", residuum[j], omega[istate], delta_energy[j], time_str
+                    "", residuum[j], omega[istate], delta_energy[j], time_str, memory
                 )
             )
     print("      Current subspace size = ", curr_size)
@@ -332,8 +340,8 @@ def print_ip_amplitudes(R, system, order, thresh_print):
                     "      [{}]     {}A  {}A  ->  {}A  =   {:.6f}".format(
                         n,
                         i + system.nfrozen + 1,
-                        b + system.noccupied_alpha + system.nfrozen + 1,
                         j + system.nfrozen + 1,
+                        b + system.noccupied_alpha + system.nfrozen + 1,
                         R.aa[i, b, j],
                     )
                 )
@@ -346,8 +354,8 @@ def print_ip_amplitudes(R, system, order, thresh_print):
                     "      [{}]     {}A  {}B  ->  {}B  =   {:.6f}".format(
                         n,
                         i + system.nfrozen + 1,
-                        b + system.noccupied_beta + system.nfrozen + 1,
                         j + system.nfrozen + 1,
+                        b + system.noccupied_beta + system.nfrozen + 1,
                         R.ab[i, b, j],
                     )
                 )

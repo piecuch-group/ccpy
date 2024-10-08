@@ -1,6 +1,8 @@
-"""Module containing functions to calculate the vertical excitation
+"""
+Module containing functions to calculate the vertical excitation
 energies and linear excitation amplitudes for excited states using
-the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD)."""
+the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD).
+"""
 import numpy as np
 from ccpy.eomcc.eomccsd_intermediates import get_eomccsd_intermediates
 from ccpy.utilities.updates import cc_loops2

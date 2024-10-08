@@ -8,6 +8,7 @@ import ccpy.hbar
 import ccpy.left
 import ccpy.eom_guess
 import ccpy.eomcc
+import ccpy.lrcc
 from ccpy.drivers.solvers import (
                 cc_jacobi,
                 left_cc_jacobi,
@@ -15,13 +16,14 @@ from ccpy.drivers.solvers import (
                 eomcc_block_davidson,
                 eomcc_nonlinear_diis,
                 eccc_jacobi,
+                lrcc_jacobi,
 )
 from ccpy.energy.cc_energy import get_LR, get_LR_ipeom, get_LR_eaeom, get_r0, get_rel, get_rel_ea, get_rel_ip
 from ccpy.models.integrals import Integral
 from ccpy.models.operators import ClusterOperator, SpinFlipOperator, FockOperator
 from ccpy.utilities.printing import (
                 get_timestamp,
-                cc_calculation_summary,
+                cc_calculation_summary, lrcc_calculation_summary,
                 eomcc_calculation_summary, leftcc_calculation_summary, print_ee_amplitudes,
                 print_sf_amplitudes, sfeomcc_calculation_summary,
                 print_ea_amplitudes, eaeomcc_calculation_summary, lefteacc_calculation_summary,
@@ -32,21 +34,28 @@ from ccpy.utilities.printing import (
 from ccpy.utilities.utilities import convert_excitations_c_to_f, reorder_triples_amplitudes
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
+from ccpy.interfaces.fcidump_tools import load_fcidump_integrals
 
 
 class Driver:
 
     @classmethod
-    def from_pyscf(cls, meanfield, nfrozen, ndelete=0, normal_ordered=True, dump_integrals=False, sorted=True, use_cholesky=False, cholesky_tol=1.0e-09):
+    def from_pyscf(cls, meanfield, nfrozen, ndelete=0, normal_ordered=True, dump_integrals=False, sorted=True, use_cholesky=False, cholesky_tol=1.0e-09, cmax=10):
         return cls(
                     *load_pyscf_integrals(meanfield, nfrozen, ndelete, normal_ordered=normal_ordered, dump_integrals=dump_integrals, sorted=sorted,
-                                          use_cholesky=use_cholesky, cholesky_tol=cholesky_tol)
+                                          use_cholesky=use_cholesky, cholesky_tol=cholesky_tol, cmax=cmax)
                   )
 
     @classmethod
     def from_gamess(cls, logfile, nfrozen, ndelete=0, multiplicity=None, fcidump=None, onebody=None, twobody=None, normal_ordered=True, sorted=True, data_type=np.float64):
         return cls(
                     *load_gamess_integrals(logfile, fcidump, onebody, twobody, nfrozen, ndelete, multiplicity, normal_ordered=normal_ordered, sorted=sorted, data_type=data_type)
+                   )
+
+    @classmethod
+    def from_fcidump(cls, fcidump, nfrozen, charge=0, rohf_canonicalization="Guest-Saunders", normal_ordered=True, sorted=True, data_type=np.float64):
+        return cls(
+                    *load_fcidump_integrals(fcidump, nfrozen, charge=charge, rohf_canonicalization=rohf_canonicalization, normal_ordered=normal_ordered, sorted=sorted, data_type=data_type)
                    )
 
     def __init__(self, system, hamiltonian, max_number_states=50):
@@ -100,6 +109,8 @@ class Driver:
         self.ddeltap3 = [None] * max_number_states
         self.deltap4 = [None] * max_number_states
         self.ddeltap4 = [None] * max_number_states
+        self.T1 = None
+        self.correlation_property = 0.0
 
         # Store alpha and beta fock matrices for later usage before HBar overwrites bare Hamiltonian
         self.fock = Integral.from_empty(system, 1, data_type=self.hamiltonian.a.oo.dtype)
@@ -124,11 +135,12 @@ class Driver:
             self.operator_params["order"] = 1
             self.operator_params["number_particles"] = 1
             self.operator_params["number_holes"] = 1
-        elif method.lower() in ["cc2", "ccd", "ccsd", "accd", "accsd", "eomcc2", "eomccsd", "left_ccsd", "eccc2", "cc3", "eomcc3"]:
+        elif method.lower() in ["cc2", "ccd", "ccsd", "ccsd_chol", "accd", "accsd", "eomcc2", "eomccsd", "eomccsd_chol",
+                                "left_ccsd", "left_ccsd_chol", "eccc2", "cc3", "eomcc3", "lrccsd"]:
             self.operator_params["order"] = 2
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 2
-        elif method.lower() in ["ccsdt", "eomccsdt", "left_ccsdt"]:
+        elif method.lower() in ["ccsdt", "ccsdt_chol", "eomccsdt", "left_ccsdt", "cc4", "cc4-old", "lrccsdt"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
@@ -142,7 +154,7 @@ class Driver:
             self.operator_params["number_holes"] = 3
             self.operator_params["active_orders"] = [3]
             self.operator_params["number_active_indices"] = [1]
-        elif method.lower() in ["ccsdt_p", "accsdt_p", "eomccsdt_p", "left_ccsdt_p"]:
+        elif method.lower() in ["ccsdt_p", "ccsdt_p_chol", "accsdt_p", "eomccsdt_p", "left_ccsdt_p", "lrccsdt_p"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
@@ -151,7 +163,7 @@ class Driver:
             self.order = 2
             self.num_particles = 1
             self.num_holes = 2
-        elif method.lower() in ["ipeom3", "left_ipeom3"]:
+        elif method.lower() in ["ipeom3", "left_ipeom3", "ipeomccsdt"]:
             self.order = 3
             self.num_particles = 2
             self.num_holes = 3
@@ -164,7 +176,7 @@ class Driver:
             self.order = 2
             self.num_particles = 2
             self.num_holes = 1
-        elif method.lower() in ["eaeom3", "left_eaeom3"]:
+        elif method.lower() in ["eaeom3", "left_eaeom3", "eaeomccsdt"]:
             self.order = 3
             self.num_particles = 3
             self.num_holes = 2
@@ -177,7 +189,7 @@ class Driver:
             self.order = 3
             self.num_particles = 1
             self.num_holes = 3
-        elif method.lower() in ["dipeom4", "left_dipeom4"]:
+        elif method.lower() in ["dipeom4", "left_dipeom4", "dipeomccsdt"]:
             self.order = 4
             self.num_particles = 2
             self.num_holes = 4
@@ -247,6 +259,9 @@ class Driver:
         self.set_operator_params(method)
         self.options["method"] = method.upper()
 
+        if method.lower() == "cc4": # CC4 only implemented for closed shells for now
+            assert self.options["RHF_symmetry"]
+
         # import the specific CC method module and get its update function
         cc_mod = import_module("ccpy.cc." + method.lower())
         update_function = getattr(cc_mod, 'update')
@@ -270,6 +285,8 @@ class Driver:
                              num_active=self.operator_params["number_active_indices"])
         # Create the container for 1- and 2-body intermediates
         cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+        if self.system.cholesky:
+            cc_intermediates.chol = Integral.from_empty(self.system, 1, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
         # Run the CC calculation
         self.T, self.correlation_energy, _ = cc_jacobi(update_function,
                                                 self.T,
@@ -349,6 +366,8 @@ class Driver:
                              pspace_sizes=excitation_count)
         # Create the container for 1- and 2-body intermediates
         cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+        if self.system.cholesky:
+            cc_intermediates.chol = Integral.from_empty(self.system, 1, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
         # Run the CC(P) calculation
         # NOTE: It may not look like it, but t3_excitations is permuted and matches T at this point. It changes from its value at input!
         self.T, self.correlation_energy, _ = cc_jacobi(update_function,
@@ -363,6 +382,67 @@ class Driver:
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   CC(P) calculation ended on", get_timestamp())
 
+    def run_lrcc(self, prop, method):
+        """Run the ground-state coupled-cluster (CC) calculation for a many-body system.
+
+        Parameters
+        ----------
+        method : str
+            Name of the ground-state CC method that will be run.
+        prop : Integral
+            Integral object representation of the one-body property operator (e.g., dipole moment in x-, y-, or z-direction)
+            that we are working with.
+        """
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.lrcc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+
+        # Ensure that Hbar is set upon entry
+        assert(self.flag_hbar)
+
+        # Set operator parameters needed to build T
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # import the specific CC method module and get its update function
+        cc_mod = import_module("ccpy.lrcc." + method.lower())
+        update_function = getattr(cc_mod, 'update')
+
+        # Print the options as a header
+        self.print_options()
+        print("   LR-CC calculation started on", get_timestamp())
+
+        # Create either the standard 1st-order perturbed CC cluster operator
+        # Note: No restarts, since you will often be running the LR-CC calculation multiple times (e.g., x-, y-, z-component)
+        self.T1 = ClusterOperator(self.system,
+                                  order=self.operator_params["order"],
+                                  active_orders=self.operator_params["active_orders"],
+                                  num_active=self.operator_params["number_active_indices"])
+        # regardless of restart status, initialize residual anew
+        dT = ClusterOperator(self.system,
+                             order=self.operator_params["order"],
+                             active_orders=self.operator_params["active_orders"],
+                             num_active=self.operator_params["number_active_indices"])
+        # Create the container for 1- and 2-body intermediates
+        cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+        if self.system.cholesky:
+            cc_intermediates.chol = Integral.from_empty(self.system, 1, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+        # Run the CC calculation
+        self.T1, self.correlation_property, _ = lrcc_jacobi(update_function,
+                                                            self.T1,
+                                                            prop,
+                                                            dT,
+                                                            self.T,
+                                                            self.hamiltonian,
+                                                            cc_intermediates,
+                                                            self.system,
+                                                            self.options,
+                                                            )
+        lrcc_calculation_summary(self.T1, self.correlation_property, self.system, self.options["amp_print_threshold"])
+        print("   LR-CC calculation ended on", get_timestamp())
+
     def run_hbar(self, method, t3_excitations=None):
         # check if requested CC calculation is implemented in modules
         if "hbar_" + method.lower() not in ccpy.hbar.MODULES:
@@ -376,12 +456,15 @@ class Driver:
 
         # Replace the driver hamiltonian with the Hbar
         print("")
-        print("   HBar construction began on", get_timestamp(), end="")
+        print(f"   {method.upper()} HBar construction began on", get_timestamp())
         if method.lower() == "cc3":
             self.hamiltonian, self.cc3_intermediates = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system)
+        elif method.lower() == "ccsdta":
+            self.fock = self.hamiltonian # set the "fock" operator to the bare Hamiltonian, as this is used in subsequent computations (DIP4star)
+            self.hamiltonian, self.T, self.correlation_energy = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system)
         else:
             self.hamiltonian = hbar_build_function(self.T, self.hamiltonian, self.options["RHF_symmetry"], self.system, t3_excitations)
-        print("... completed on", get_timestamp(), "\n")
+        print("   HBar construction completed on", get_timestamp(), "\n")
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
 
@@ -398,13 +481,16 @@ class Driver:
         # Set operator parameters needed to build the guess R vector
         if method.lower() in ["cis", "sfcis", "eacis", "ipcis"]:
             self.guess_order = 1
-        elif method.lower() in ["cisd", "sfcisd", "deacis", "dipcis", "eacisd", "ipcisd"]:
+        elif method.lower() in ["cisd", "cisd_chol", "sfcisd", "deacis", "dipcis", "eacisd", "ipcisd"]:
             self.guess_order = 2
         # This is important. Turn off RHF symmetry (even for closed-shell references) when targetting non-singlets
         if multiplicity != 1:
             self.options["RHF_symmetry"] = False
         # Run the initial guess function and save all eigenpairs
-        self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, roots_per_irrep, nact_occupied, nact_unoccupied, debug=debug, use_symmetry=use_symmetry)
+        if self.system.cholesky:
+            self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, self.T, multiplicity, roots_per_irrep, nact_occupied, nact_unoccupied, debug=debug, use_symmetry=use_symmetry)
+        else:
+            self.guess_energy, self.guess_vectors = guess_function(self.system, self.hamiltonian, multiplicity, roots_per_irrep, nact_occupied, nact_unoccupied, debug=debug, use_symmetry=use_symmetry)
 
     def run_eomccp(self, method, state_index, t3_excitations, r3_excitations):
         """Performs the EOMCC calculation specified by the user in the input."""
@@ -493,6 +579,104 @@ class Driver:
         self.relative_excitation_level[state_index] = get_rel(self.R[state_index], self.r0[state_index])
         eomcc_calculation_summary(self.R[state_index], self.vertical_excitation_energy[state_index], self.correlation_energy, self.r0[state_index], self.relative_excitation_level[state_index], is_converged, state_index, self.system, self.options["amp_print_threshold"])
         print("   EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
+
+    def run_eomcc_multiroot(self, method, state_index, t3_excitations, r3_excitations):
+        """Performs the EOMCC(P) calculation specified by the user in the input. This
+        version solves for several roots simultaneously using multiroot Davidson algorithm
+        within a unified P space."""
+
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.eomcc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build R
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert(self.flag_hbar)
+
+        # import the specific EOMCC method module and get its update function
+        eom_module = import_module("ccpy.eomcc." + method.lower())
+        HR_function = getattr(eom_module, 'HR')
+        update_function = getattr(eom_module, 'update')
+
+        # Convert excitations array to Fortran continuous
+        t3_excitations = convert_excitations_c_to_f(t3_excitations)
+        r3_excitations = convert_excitations_c_to_f(r3_excitations)
+
+        # Get dimensions of R3 spincases in P space
+        n3aaa_r = r3_excitations["aaa"].shape[0]
+        n3aab_r = r3_excitations["aab"].shape[0]
+        n3abb_r = r3_excitations["abb"].shape[0]
+        n3bbb_r = r3_excitations["bbb"].shape[0]
+        excitation_count = [[n3aaa_r, n3aab_r, n3abb_r, n3bbb_r]]
+
+        # If RHF, copy aab into abb and aaa in bbb
+        if self.options["RHF_symmetry"]:
+            assert (n3aaa_r == n3bbb_r)
+            assert (n3aab_r == n3abb_r)
+            r3_excitations["bbb"] = r3_excitations["aaa"].copy()
+            r3_excitations["abb"] = r3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
+
+        for i in state_index:
+            if self.R[i] is None:
+                self.R[i] = ClusterOperator(self.system,
+                                            order=self.operator_params["order"],
+                                            p_orders=self.operator_params["pspace_orders"],
+                                            pspace_sizes=excitation_count)
+                self.R[i].unflatten(self.guess_vectors[:, i - 1], order=self.guess_order)
+                self.vertical_excitation_energy[i] = self.guess_energy[i - 1]
+            else:
+                # extend self.R to hold a longer R vector. It is assumed that the new amplitudes and corresponding
+                # excitations are simply appended to the previous ones. This will break if this is not true.
+                # r_old = deepcopy(self.R[state_index])
+                # r_old.extend_pspace_t3_operator([n3aaa_r, n3aab_r, n3abb_r, n3bbb_r])
+                self.R[i].extend_pspace_t3_operator([n3aaa_r, n3aab_r, n3abb_r, n3bbb_r])
+                # self.R[state_index] = ClusterOperator(self.system,
+                #                                       order=self.operator_params["order"],
+                #                                       p_orders=self.operator_params["pspace_orders"],
+                #                                       pspace_sizes=excitation_count)
+                # self.R[state_index].unflatten(r_old.flatten())
+                # r3 is getting scrambled somehow... do this to avoid issues
+                self.R[i].aaa *= 0.0
+                self.R[i].aab *= 0.0
+                self.R[i].abb *= 0.0
+                self.R[i].bbb *= 0.0
+
+        # Print the options as a header
+        self.print_options()
+
+        # regardless of restart status, initialize residual anew
+        dR = ClusterOperator(self.system,
+                             order=self.operator_params["order"],
+                             p_orders=self.operator_params["pspace_orders"],
+                             pspace_sizes=excitation_count)
+
+        print("   Multiroot EOMCC(P) calculation started on", get_timestamp(), "\n")
+        # Form the initial subspace vectors
+        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+        print("   Energy of initial guess")
+        for istate in state_index:
+            print("      Root  {} = {:>10.10f}".format(istate, self.vertical_excitation_energy[istate]))
+        self.R, self.vertical_excitation_energy, is_converged = eomcc_block_davidson(HR_function, update_function,
+                                                                                     B0,
+                                                                                     self.R, dR,
+                                                                                     self.vertical_excitation_energy,
+                                                                                     self.T, self.hamiltonian,
+                                                                                     self.system, state_index, self.options,
+                                                                                     t3_excitations=t3_excitations,
+                                                                                     r3_excitations=r3_excitations)
+        for j, istate in enumerate(state_index):
+            # Compute r0 a posteriori
+            self.r0[istate] = get_r0(self.R[istate], self.hamiltonian, self.vertical_excitation_energy[istate])
+            # compute the relative excitation level (REL) metric
+            self.relative_excitation_level[istate] = get_rel(self.R[istate], self.r0[istate])
+            eomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy,
+                                      self.r0[istate], self.relative_excitation_level[istate], is_converged[j], istate, self.system,
+                                      self.options["amp_print_threshold"])
+        print("   Multiroot EOMCC(P) calculation ended on", get_timestamp(), "\n")
 
     def run_eomcc(self, method, state_index):
         """Performs the EOMCC calculation specified by the user in the input."""
@@ -794,25 +978,44 @@ class Driver:
                           self.num_particles,
                           self.num_holes)
 
-        for j, istate in enumerate(state_index):
-            print("   IP-EOMCC calculation for root %d started on" % istate, get_timestamp())
-            print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
-            print_ip_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
-            self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
-                                                                                                   update_function,
-                                                                                                   #B0[:, j],
-                                                                                                   self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
-                                                                                                   self.R[istate],
-                                                                                                   dR,
-                                                                                                   self.vertical_excitation_energy[istate],
-                                                                                                   self.T,
-                                                                                                   self.hamiltonian,
-                                                                                                   self.system,
-                                                                                                   self.options)
-            # compute the relative excitation level (REL) metric
-            self.relative_excitation_level[istate] = get_rel_ip(self.R[istate])
-            ipeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
-            print("   IP-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
+        if self.options["davidson_solver"] == "multiroot":
+            print("   Multiroot EOMCC calculation started on", get_timestamp(), "\n")
+            # Form the initial subspace vectors
+            B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+            print("   Energy of initial guess")
+            for istate in state_index:
+                print("      Root  {} = {:>10.10f}".format(istate, self.vertical_excitation_energy[istate]))
+            self.R, self.vertical_excitation_energy, is_converged = eomcc_block_davidson(HR_function, update_function,
+                                                                                         B0,
+                                                                                         self.R, dR,
+                                                                                         self.vertical_excitation_energy,
+                                                                                         self.T, self.hamiltonian,
+                                                                                         self.system, state_index, self.options)
+            for j, istate in enumerate(state_index):
+                # compute the relative excitation level (REL) metric
+                self.relative_excitation_level[istate] = get_rel_ip(self.R[istate])
+                ipeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
+            print("   Multiroot EOMCC calculation ended on", get_timestamp(), "\n")
+        else:
+            for j, istate in enumerate(state_index):
+                print("   IP-EOMCC calculation for root %d started on" % istate, get_timestamp())
+                print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
+                print_ip_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+                self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
+                                                                                                       update_function,
+                                                                                                       #B0[:, j],
+                                                                                                       self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
+                                                                                                       self.R[istate],
+                                                                                                       dR,
+                                                                                                       self.vertical_excitation_energy[istate],
+                                                                                                       self.T,
+                                                                                                       self.hamiltonian,
+                                                                                                       self.system,
+                                                                                                       self.options)
+                # compute the relative excitation level (REL) metric
+                self.relative_excitation_level[istate] = get_rel_ip(self.R[istate])
+                ipeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
+                print("   IP-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
 
     def run_ipeomccp(self, method, state_index, r3_excitations, t3_excitations=None):
         """Performs the particle-nonconserving IP-EOMCC calculation specified by the user in the input."""
@@ -880,6 +1083,77 @@ class Driver:
         self.relative_excitation_level[state_index] = get_rel_ip(self.R[state_index])
         ipeomcc_calculation_summary(self.R[state_index], self.vertical_excitation_energy[state_index], self.correlation_energy, self.relative_excitation_level[state_index], is_converged, self.system, self.options["amp_print_threshold"])
         print("   IP-EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
+
+    def run_ipeomccp_multiroot(self, method, state_index, r3_excitations, t3_excitations=None):
+        """Performs the particle-nonconserving IP-EOMCC calculation specified by the user in the input.
+        This version solves for several roots simultaneously using multiroot Davidson algorithm within
+        a unified P space."""
+
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.eomcc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build R
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert (self.flag_hbar)
+
+        # import the specific EOMCC method module and get its update function
+        eom_module = import_module("ccpy.eomcc." + method.lower())
+        HR_function = getattr(eom_module, 'HR')
+        update_function = getattr(eom_module, 'update')
+
+        # Convert excitations array to Fortran continuous
+        r3_excitations = convert_excitations_c_to_f(r3_excitations)
+
+        # Get dimensions of R3 spincases in P space
+        n3aaa_r = r3_excitations["aaa"].shape[0]
+        n3aab_r = r3_excitations["aab"].shape[0]
+        n3abb_r = r3_excitations["abb"].shape[0]
+        excitation_count = [[n3aaa_r, n3aab_r, n3abb_r]]
+
+        for i in state_index:
+            if self.R[i] is None:
+                self.R[i] = FockOperator(self.system,
+                                                   self.operator_params["number_particles"],
+                                                   self.operator_params["number_holes"],
+                                                   p_orders=self.operator_params["pspace_orders"],
+                                                   pspace_sizes=excitation_count)
+                self.R[i].unflatten(self.guess_vectors[:, i], order=self.guess_order)
+                self.vertical_excitation_energy[i] = self.guess_energy[i]
+
+        # Print the options as a header
+        self.print_options()
+
+        # regardless of restart status, initialize residual anew
+        dR = FockOperator(self.system,
+                          self.operator_params["number_particles"],
+                          self.operator_params["number_holes"],
+                          p_orders=self.operator_params["pspace_orders"],
+                          pspace_sizes=excitation_count)
+
+        print("   Multiroot IP-EOMCC(P) calculation started on", get_timestamp(), "\n")
+        # Form the initial subspace vectors
+        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+        print("   Energy of initial guess")
+        for istate in state_index:
+            print("      Root  {} = {:>10.10f}".format(istate, self.vertical_excitation_energy[istate]))
+        self.R, self.vertical_excitation_energy, is_converged = eomcc_block_davidson(HR_function, update_function,
+                                                                                     B0,
+                                                                                     self.R, dR,
+                                                                                     self.vertical_excitation_energy,
+                                                                                     self.T, self.hamiltonian,
+                                                                                     self.system, state_index, self.options,
+                                                                                     t3_excitations=t3_excitations,
+                                                                                     r3_excitations=r3_excitations)
+        for j, istate in enumerate(state_index):
+            # compute the relative excitation level (REL) metric
+            self.relative_excitation_level[istate] = get_rel_ip(self.R[istate])
+            ipeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
+        print("   Multiroot IP-EOMCC(P) calculation ended on", get_timestamp(), "\n")
 
     def run_eaeomcc(self, method, state_index):
         """Performs the particle-nonconserving EA-EOMCC calculation specified by the user in the input."""
@@ -1005,6 +1279,77 @@ class Driver:
         self.relative_excitation_level[state_index] = get_rel_ea(self.R[state_index])
         eaeomcc_calculation_summary(self.R[state_index], self.vertical_excitation_energy[state_index], self.correlation_energy, self.relative_excitation_level[state_index], is_converged, self.system, self.options["amp_print_threshold"])
         print("   EA-EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
+
+    def run_eaeomccp_multiroot(self, method, state_index, r3_excitations, t3_excitations=None):
+        """Performs the particle-nonconserving EA-EOMCC calculation specified by the user in the input.
+        This version solves for several roots simultaneously using multiroot Davidson algorithm within
+        a unified P space."""
+
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.eomcc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build R
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert (self.flag_hbar)
+
+        # import the specific EOMCC method module and get its update function
+        eom_module = import_module("ccpy.eomcc." + method.lower())
+        HR_function = getattr(eom_module, 'HR')
+        update_function = getattr(eom_module, 'update')
+
+        # Convert excitations array to Fortran continuous
+        r3_excitations = convert_excitations_c_to_f(r3_excitations)
+
+        # Get dimensions of R3 spincases in P space
+        n3aaa_r = r3_excitations["aaa"].shape[0]
+        n3aab_r = r3_excitations["aab"].shape[0]
+        n3abb_r = r3_excitations["abb"].shape[0]
+        excitation_count = [[n3aaa_r, n3aab_r, n3abb_r]]
+
+        for i in state_index:
+            if self.R[i] is None:
+                self.R[i] = FockOperator(self.system,
+                                                   self.operator_params["number_particles"],
+                                                   self.operator_params["number_holes"],
+                                                   p_orders=self.operator_params["pspace_orders"],
+                                                   pspace_sizes=excitation_count)
+                self.R[i].unflatten(self.guess_vectors[:, i], order=self.guess_order)
+                self.vertical_excitation_energy[i] = self.guess_energy[i]
+
+        # Print the options as a header
+        self.print_options()
+
+        # regardless of restart status, initialize residual anew
+        dR = FockOperator(self.system,
+                          self.operator_params["number_particles"],
+                          self.operator_params["number_holes"],
+                          p_orders=self.operator_params["pspace_orders"],
+                          pspace_sizes=excitation_count)
+
+        print("   Multiroot EA-EOMCC(P) calculation started on", get_timestamp(), "\n")
+        # Form the initial subspace vectors
+        B0, _ = np.linalg.qr(np.asarray([self.R[i].flatten() for i in state_index]).T)
+        print("   Energy of initial guess")
+        for istate in state_index:
+            print("      Root  {} = {:>10.10f}".format(istate, self.vertical_excitation_energy[istate]))
+        self.R, self.vertical_excitation_energy, is_converged = eomcc_block_davidson(HR_function, update_function,
+                                                                                     B0,
+                                                                                     self.R, dR,
+                                                                                     self.vertical_excitation_energy,
+                                                                                     self.T, self.hamiltonian,
+                                                                                     self.system, state_index, self.options,
+                                                                                     t3_excitations=t3_excitations,
+                                                                                     r3_excitations=r3_excitations)
+        for j, istate in enumerate(state_index):
+            # compute the relative excitation level (REL) metric
+            self.relative_excitation_level[istate] = get_rel_ea(self.R[istate])
+            eaeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
+        print("   Multiroot EA-EOMCC(P) calculation ended on", get_timestamp(), "\n")
 
     def run_leftcc(self, method, state_index=[0]):
         # check if requested CC calculation is implemented in modules
@@ -1638,7 +1983,7 @@ class Driver:
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   ec-CC calculation ended on", get_timestamp())
 
-    def run_ccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, pspace=None):
+    def run_ccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, target_irrep=None, high_memory=False):
 
         if method.lower() == "crcc23":
             from ccpy.moments.crcc23 import calc_crcc23
@@ -1654,6 +1999,22 @@ class Driver:
                     _, self.deltap3[i], self.ddeltap3[i] = calc_creomcc23(self.T, self.R[i], self.L[i], self.r0[i],
                                                                           self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                           self.system, self.options["RHF_symmetry"])
+
+        elif method.lower() == "crcc23_chol":
+            from ccpy.moments.crcc23_chol import calc_crcc23
+            from ccpy.moments.creomcc23_chol import calc_creomcc23
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            for i in state_index:
+                # Perform ground-state correction
+                if i == 0:
+                    _, self.deltap3[i] = calc_crcc23(self.T, self.L[i], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+                else:
+                    # Perform excited-state corrections
+                    _, self.deltap3[i], self.ddeltap3[i] = calc_creomcc23(self.T, self.R[i], self.L[i], self.r0[i],
+                                                                          self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                                          self.system, self.options["RHF_symmetry"])
+
         elif method.lower() == "ccsd(t)":
             from ccpy.moments.crcc23 import calc_ccsdpt
             # Ensure that only the bare Hamiltonian is used
@@ -1689,8 +2050,33 @@ class Driver:
                     _, self.deltap3[i], self.ddeltap3[i] = calc_eomcct3(self.T, self.R[i], self.L[i], self.r0[i],
                                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
                                                                         self.system, self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
+        elif method.lower() == "cct3_chol":
+            from ccpy.moments.cct3_chol import calc_cct3
+            from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
+            # Ensure that HBar is set
+            assert self.flag_hbar
+            # Set this value as a failsafe since CC(t;3) can also be run through CC(P) and left-CC(P) routines
+            if num_active == 1:
+                self.operator_params["number_active_indices"] = [1]
+            elif num_active == 2:
+                self.operator_params["number_active_indices"] = [2]
+            elif num_active == 3:
+                self.operator_params["number_active_indices"] = [3]
+            for i in state_index:
+                if i == 0:
+                    # Perform ground-state correction
+                    # In order to use two-body approximation consistently for excited states, remove the V*T3 terms in vooo and vvov elements of HBar
+                    if two_body_approx and self.L[0].order > 2:
+                        self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
+                    if two_body_approx:
+                        _, self.deltap3[0] = calc_cct3(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
+                                                       self.options["RHF_symmetry"], num_active=self.operator_params["number_active_indices"])
+                else:
+                    # Perform excited-state correction
+                    pass
+
         elif method.lower() == "ccp3":
-            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3, calc_eomccp3
+            from ccpy.moments.ccp3 import calc_ccp3_2ba, calc_ccp3, calc_eomccp3, calc_ccp3_high_memory
             from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
             # Ensure that both HBar is set
             assert self.flag_hbar
@@ -1702,17 +2088,44 @@ class Driver:
             if state_index == 0:
                 # Use the 2BA (requires only L1, L2 and HBar of CCSD)
                 if two_body_approx:
-                    _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+                    _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"], target_irrep=target_irrep)
                 # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
                 else:
-                    _, self.deltap3[0] = calc_ccp3(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+                    if high_memory:
+                        _, self.deltap3[0] = calc_ccp3_high_memory(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"], target_irrep=target_irrep)
+                    else:
+                        _, self.deltap3[0] = calc_ccp3(self.T, self.L[0], t3_excitations, self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"], target_irrep=target_irrep)
             # Excited-state corrections
             else:
                 # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
                 _, self.deltap3[state_index] = calc_eomccp3(self.T, self.R[state_index], self.L[state_index], t3_excitations, r3_excitations,
                                                                      self.r0[state_index], self.vertical_excitation_energy[state_index],
                                                                      self.correlation_energy, self.hamiltonian, self.fock,
-                                                                     self.system, self.options["RHF_symmetry"])
+                                                                     self.system, self.options["RHF_symmetry"], target_irrep=target_irrep)
+
+        elif method.lower() == "ccp3_chol":
+            from ccpy.moments.ccp3_chol import calc_ccp3_2ba
+            from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
+            # Ensure that both HBar is set
+            assert self.flag_hbar
+            # Reomve V*T3 from HBar if left-CC(P)/EOMCC(P) was performed and you want to use 2BA with CCSD HBar
+            if two_body_approx and self.L[0].order > 2:
+                self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
+
+            # Ground-state correction
+            if state_index == 0:
+                # Use the 2BA (requires only L1, L2 and HBar of CCSD)
+                if two_body_approx:
+                    _, self.deltap3[0] = calc_ccp3_2ba(self.T, self.L[0], t3_excitations, self.correlation_energy,
+                                                       self.hamiltonian, self.fock, self.system,
+                                                       self.options["RHF_symmetry"], target_irrep=target_irrep)
+                # full correction (requires L1, L2, and L3 as well as HBar of CCSDt)
+                else:
+                    pass
+            # Excited-state corrections
+            else:
+                pass
+
         # elif method.lower() == "ccp3(t)":
         #     from ccpy.moments.ccp3 import calc_ccpert3
         #     # Ensure that pspace is set
@@ -1724,6 +2137,17 @@ class Driver:
         #     _, self.deltap3[0] = calc_ccpert3(self.T, self.correlation_energy, self.hamiltonian, self.system, pspace, self.options["RHF_symmetry"])
         # else:
         #     raise NotImplementedError("Triples correction {} not implemented".format(method.lower()))
+
+        if method.lower() == "eomccsdta_star":
+            from ccpy.moments.eomccsdta_star import calc_eomccsdta_star
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            for i in state_index:
+                if i == 0: continue
+                # Perform excited-state corrections
+                _, self.deltap3[i] = calc_eomccsdta_star(self.T, self.R[i], self.L[i],
+                                                         self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                         self.system, self.options["RHF_symmetry"])
 
     def run_ipccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, pspace=None):
 
@@ -1745,6 +2169,16 @@ class Driver:
                                                             self.vertical_excitation_energy[state_index], self.correlation_energy,
                                                             self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
 
+        if method.lower() == "ipeomccsdta_star":
+            from ccpy.moments.ipeomccsdta_star import calc_ipeomccsdta_star
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            for i in state_index:
+                # Perform 3h-2p corrections
+                _, self.deltap3[i] = calc_ipeomccsdta_star(self.T, self.R[i], self.L[i],
+                                                           self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                           self.system, self.options["RHF_symmetry"])
+
     def run_eaccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, pspace=None):
 
         if method.lower() == "creacc23":
@@ -1764,6 +2198,29 @@ class Driver:
             _, self.deltap3[state_index] = calc_eaccp3(self.T, self.R[state_index], self.L[state_index], r3_excitations,
                                                        self.vertical_excitation_energy[state_index], self.correlation_energy,
                                                        self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+
+        if method.lower() == "eaeomccsdta_star":
+            from ccpy.moments.eaeomccsdta_star import calc_eaeomccsdta_star
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            for i in state_index:
+                # Perform 3h-2p corrections
+                _, self.deltap3[i] = calc_eaeomccsdta_star(self.T, self.R[i], self.L[i],
+                                                           self.vertical_excitation_energy[i], self.correlation_energy, self.hamiltonian, self.fock,
+                                                           self.system, self.options["RHF_symmetry"])
+
+    def run_dipccp4(self, method, state_index):
+        from ccpy.moments.dipeomccsdta_star import calc_dipeomccsdta_star
+        # Ensure that HBar is set upon entry
+        assert self.flag_hbar
+        # Perform 4p-2h correction for a specific state index
+        if method == "dipeomccsdta_star":
+            for i in state_index:
+                _, self.deltap4[i] = calc_dipeomccsdta_star(self.T, self.R[i], None,
+                                                            self.vertical_excitation_energy[i],
+                                                            self.correlation_energy,
+                                                            self.hamiltonian, self.fock, self.system,
+                                                            self.options["RHF_symmetry"])
 
     def run_ccp4(self, method, state_index=[0], two_body_approx=True, t4_excitations=None):
 

@@ -24,6 +24,9 @@ def test_dipeom4_ch2():
     driver.run_guess(method="dipcis", multiplicity=-1, nact_occupied=driver.system.noccupied_alpha, roots_per_irrep={"A1": 6})
     driver.run_dipeomcc(method="dipeom4", state_index=[0, 1, 2, 3, 4, 5])
 
+    #
+    # Check the results
+    #
     expected_vee = [-0.47006858, -0.44903598, -0.38539205, -0.28546072, -0.25449691, -0.22891625]
     for i in range(len(expected_vee)):
        assert np.allclose(expected_vee[i], driver.vertical_excitation_energy[i], atol=1.0e-07)

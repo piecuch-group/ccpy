@@ -59,8 +59,8 @@ def test_adaptive_f2():
     ]
 
     for imacro in range(len(percentages)):
-        assert np.allclose(expected_ccp[imacro], adaptdriver.ccp_energy[imacro], atol=1.0e-07)
-        assert np.allclose(expected_ccpq[imacro], adaptdriver.ccpq_energy[imacro], atol=1.0e-07)
+        assert np.allclose(expected_ccp[imacro], adaptdriver.ccp_energy[imacro], rtol=1.0e-07)
+        assert np.allclose(expected_ccpq[imacro], adaptdriver.ccpq_energy[imacro], rtol=1.0e-07)
 
 if __name__ == "__main__":
     test_adaptive_f2()

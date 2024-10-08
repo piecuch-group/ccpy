@@ -158,7 +158,6 @@ module cc3_loops
                       deallocate(temp)
                       ! contribution from t3b
                       allocate(temp(nua,nua,nub))
-                      !allocate(t(nua,nua,nub))
                       do i = 1,noa
                          do j = i+1,noa
                            do k = 1,nob
@@ -179,26 +178,6 @@ module cc3_loops
                               call dgemm('n','n',nua**2,nub,nua,-0.5d0,H2A_vvov_1243(:,:,:,j),nua**2,t2b(:,:,i,k),nua,1.0d0,temp,nua**2)
                               ! Diagram 6: -A(ab) I2A(amij)*t2b(bcmk)
                               call dgemm('n','t',nua,nua*nub,noa,-1.0d0,H2A_vooo(:,:,i,j),nua,t2b(:,:,:,k),nua*nub,1.0d0,temp,nua)
-                              
-!                              do a = 1,nua
-!                                 do b = a+1,nua
-!                                    do c = 1,nub
-!                                       t3_denom = fA_oo(i,i)+fA_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fA_vv(b,b)-fB_vv(c,c)
-!                                       t(a,b,c) = (temp(a,b,c) - temp(b,a,c)) / t3_denom
-!                                       t(b,a,c) = -t(a,b,c)
-!                                    end do
-!                                 end do
-!                              end do
-                              !!! A(ij)A(ab) [A(be) h2b(anef) * t3b(ebfijn)] (!!! expensive; ~3s)
-                              ! x(e,b) <- H[k](e,ac) * T_132[i,j,k](ac,b) = -H[k](e,ac) * T_213(b,ac)
-                              !resid_aa(:,b,i,j) = resid_aa(:,b,i,j) + H2B_vovv(:,k,a,c) * t3b ! (1)
-                              !call dgemm('n','t',nua,nua,nua*nub,-1.0d0,h2b_vovv(:,k,:,:),nua,t,nua,1.0d0,resid_aa(:,:,i,j),nua)
-                              !allocate(t_rs(nua,nub,nua))
-                              !call reorder132(t,t_rs)
-                              !call dgemm('n','n',nua,nua,nua*nub,1.0d0,h2b_vovv(:,k,:,:),nua,t_rs,nua*nub,1.0d0,resid_aa(:,:,i,j),nua)
-                              !deallocate(t_rs)
-                              ! x(e,a) <- H[k](e,bc) * T_123[i,j,k](a,bc)
-                              !resid_aa(:,a,i,j) = resid_aa(:,a,i,j) - H2B_vovv(:,k,b,c) * t3b ! (be)
                               do a = 1,nua
                                  do b = a+1,nua
                                     do c = 1,nub
@@ -218,46 +197,28 @@ module cc3_loops
                                        resid_aa(a,b,:,j) = resid_aa(a,b,:,j) - H2B_ooov(i,k,:,c) * t3b ! (1)
                                        resid_aa(a,b,:,i) = resid_aa(a,b,:,i) + H2B_ooov(j,k,:,c) * t3b ! (jm)
                                        !!! A(ij)A(ab) [A(be) h2b(anef) * t3b(ebfijn)] (!!! expensive; ~3s)
-                                       ! x(e,b) <- H[k](e,ac) * T_132[i,j,k](ac,b)
                                        resid_aa(:,b,i,j) = resid_aa(:,b,i,j) + H2B_vovv(:,k,a,c) * t3b ! (1)
-                                       ! x(e,a) <- H[k](e,bc) * T_123[i,j,k](a,bc)
                                        resid_aa(:,a,i,j) = resid_aa(:,a,i,j) - H2B_vovv(:,k,b,c) * t3b ! (be)
                                        !!! A(af) -h2a(mnif) * t3b(afbmnj)
-                                       ! x(ac,e) <- T_132[i,j,k](ac,b) * H[i,j](e,b)
                                        resid_ab(a,c,:,k) = resid_ab(a,c,:,k) - H2A_ooov(i,j,:,b) * t3b ! (1)
-                                       ! x(bc,e) <- T_231[i,j,k](bc,a) * H[i,j](e,a)
                                        resid_ab(b,c,:,k) = resid_ab(b,c,:,k) + H2A_ooov(i,j,:,a) * t3b ! (af)
                                        !!! A(af)A(in) -h2b(nmfj) * t3b(afbinm)
-                                       ! x(ac,e) <- T_132[i,j,k](ac,b) * H[j,k](b,e)
                                        resid_ab(a,c,i,:) = resid_ab(a,c,i,:) - H2B_oovo(j,k,b,:) * t3b ! (1)
-                                       ! x(ac,e) <- T_132[i,j,k](ac,b) * H[i,k](b,e)
                                        resid_ab(a,c,j,:) = resid_ab(a,c,j,:) + H2B_oovo(i,k,b,:) * t3b ! (in)
-                                       ! x(bc,e) <- T_231[i,j,k](bc,a) * H[j,k](a,e)
                                        resid_ab(b,c,i,:) = resid_ab(b,c,i,:) + H2B_oovo(j,k,a,:) * t3b ! (af)
-                                       ! x(bc,e) <- T_231[i,j,k](bc,a) * H[i,k](a,e)
                                        resid_ab(b,c,j,:) = resid_ab(b,c,j,:) - H2B_oovo(i,k,a,:) * t3b ! (af)(in)
                                        !!! A(in) h2a(anef) * t3b(efbinj) (!!! expensive; effect is not much, ~1-2s)
-                                       ! x(e,c) <- H[j](e,ab) * T_123[i,j,k](ab,c)
                                        resid_ab(:,c,i,k) = resid_ab(:,c,i,k) + H2A_vovv(:,j,a,b) * t3b ! (1)
-                                       ! x(e,c) <- H[i](e,ab) * T_123[i,j,k](ab,c)
                                        resid_ab(:,c,j,k) = resid_ab(:,c,j,k) - H2A_vovv(:,i,a,b) * t3b ! (in)
                                        !!! A(af)A(in) h2b(nbfe) * t3b(afeinj) (!!! expensive; LARGE effect ~8-10s)
-                                       ! x(a,e) <- T_123[i,j,k](a,bc) * H[j](e,bc)
                                        resid_ab(a,:,i,k) = resid_ab(a,:,i,k) + H2B_ovvv(j,:,b,c) * t3b ! (1)
-                                       ! x(a,e) <- T_123[i,j,k](a,bc) * H[i](e,bc)
                                        resid_ab(a,:,j,k) = resid_ab(a,:,j,k) - H2B_ovvv(i,:,b,c) * t3b ! (in)
-                                       ! x(b,e) <- T_213[i,j,k](b,ac) * H[j](e,ac)
                                        resid_ab(b,:,i,k) = resid_ab(b,:,i,k) - H2B_ovvv(j,:,a,c) * t3b ! (af)
-                                       ! x(b,e) <- T_213[i,j,k](b,ac) * H[i](e,ac)
                                        resid_ab(b,:,j,k) = resid_ab(b,:,j,k) + H2B_ovvv(i,:,a,c) * t3b ! (af)(in)
                                        !!! A(ae)A(im) h1a(me) * t3b(aebimj)
-                                       ! x(a,c) <- T_132[i,j,k](ac,b) * H[j](b)
                                        resid_ab(a,c,i,k) = resid_ab(a,c,i,k) + H1A_ov(j,b) * t3b ! (1)
-                                       ! x(a,c) <- T_132[i,j,k](ac,b) * H[i](b)
                                        resid_ab(a,c,j,k) = resid_ab(a,c,j,k) - H1A_ov(i,b) * t3b ! (im)
-                                       ! x(a,c) <- T_231[i,j,k](bc,a) * H[j](a)
                                        resid_ab(b,c,i,k) = resid_ab(b,c,i,k) - H1A_ov(j,a) * t3b ! (ae)
-                                       ! x(a,c) <- T_231[i,j,k](bc,a) * H[i](a)
                                        resid_ab(b,c,j,k) = resid_ab(b,c,j,k) + H1A_ov(i,a) * t3b ! (im)(ae)
                                     end do
                                  end do
@@ -266,7 +227,6 @@ module cc3_loops
                          end do
                       end do
                       deallocate(temp)
-                      !deallocate(t)
                       ! contribution from t3c
                       allocate(temp(nua,nub,nub))
                       do i = 1,noa
@@ -428,15 +388,15 @@ module cc3_loops
                             do a = 1,nua
                                do b = a+1,nua
                                   denom = fA_oo(i,i) + fA_oo(j,j) - fA_vv(a,a) - fA_vv(b,b)
-                                  
+
                                   resid_aa(a,b,i,j) = resid_aa(a,b,i,j) - resid_aa(b,a,i,j) - resid_aa(a,b,j,i) + resid_aa(b,a,j,i)
                                   !val = X2A(a,b,i,j) - X2A(b,a,i,j) - X2A(a,b,j,i) + X2A(b,a,j,i)
-                                  
+
                                   resid_aa(a,b,i,j) = resid_aa(a,b,i,j)/(denom - shift)
                                   resid_aa(b,a,i,j) = -resid_aa(a,b,i,j)
                                   resid_aa(a,b,j,i) = -resid_aa(a,b,i,j)
                                   resid_aa(b,a,j,i) = resid_aa(a,b,i,j)
-                                  
+
                                   t2a(a,b,i,j) = t2a(a,b,i,j) + resid_aa(a,b,i,j)
                                   t2a(b,a,i,j) = -t2a(a,b,i,j)
                                   t2a(a,b,j,i) = -t2a(a,b,i,j)
@@ -463,15 +423,15 @@ module cc3_loops
                             do a = 1,nub
                                do b = a+1,nub
                                   denom = fB_oo(i,i) + fB_oo(j,j) - fB_vv(a,a) - fB_vv(b,b)
-                                  
+
                                   resid_bb(a,b,i,j) = resid_bb(a,b,i,j) - resid_bb(b,a,i,j) - resid_bb(a,b,j,i) + resid_bb(b,a,j,i)
                                   !val = X2C(a,b,i,j) - X2C(b,a,i,j) - X2C(a,b,j,i) + X2C(b,a,j,i)
-                                  
+
                                   resid_bb(a,b,i,j) = resid_bb(a,b,i,j)/(denom - shift)
                                   resid_bb(b,a,i,j) = -resid_bb(a,b,i,j)
                                   resid_bb(a,b,j,i) = -resid_bb(a,b,i,j)
                                   resid_bb(b,a,j,i) = resid_bb(a,b,i,j)
-                                  
+
                                   t2c(a,b,i,j) = t2c(a,b,i,j) + resid_bb(a,b,i,j)
                                   t2c(b,a,i,j) = -t2c(a,b,i,j)
                                   t2c(a,b,j,i) = -t2c(a,b,i,j)
@@ -1115,6 +1075,386 @@ module cc3_loops
                       end do
 
                end subroutine build_HR
+       
+!               subroutine build_LH(resid_a,resid_b,resid_aa,resid_ab,resid_bb,&
+!                                   t2a,t2b,t2c,l1a,l1b,l2a,l2b,l2c,&
+!                                   fA_oo,fA_vv,fB_oo,fB_vv,&
+!                                   h1a_ov,h1b_ov,&
+!                                   vA_oovv,vB_oovv,vC_oovv,&
+!                                   h2a_ooov,h2a_vovv,&
+!                                   h2b_ooov,h2b_oovo,h2b_vovv,h2b_ovvv,&
+!                                   h2c_ooov,h2c_vovv,&
+!                                   h2a_vooo,h2a_vvov,&
+!                                   h2b_vooo,h2b_ovoo,h2b_vvov,h2b_vvvo,&
+!                                   h2c_vooo,h2c_vvov,&
+!                                   omega,&
+!                                   noa,nua,nob,nub)
+!
+!                      integer, intent(in) :: noa, nua, nob, nub
+!                      ! fock matrices used for MP denominators
+!                      real(kind=8), intent(in) :: fA_oo(noa,noa), fA_vv(nua,nua),&
+!                                                  fB_oo(nob,nob), fB_vv(nub,nub)
+!                      ! CCSD-like Hbar matrix elements (includes T1 and T2) used in contractions with L3
+!                      real(kind=8), intent(in) :: h1a_ov(noa,nua),h1b_ov(nob,nub),&
+!                                                  vA_oovv(noa,noa,nua,nua),vB_oovv(noa,nob,nua,nub),vC_oovv(nob,nob,nub,nub),&
+!                                                  h2a_ooov(noa,noa,noa,nua),h2a_vovv(nua,noa,nua,nua),&
+!                                                  h2b_ooov(noa,nob,noa,nub),h2b_oovo(noa,nob,nua,nob),h2b_vovv(nua,nob,nua,nub),h2b_ovvv(noa,nub,nua,nub),&
+!                                                  h2c_ooov(nob,nob,nob,nub),h2c_vovv(nub,nob,nub,nub)
+!                      ! CCS-like Hbar matrix elements (includes T1 only) used to construct L3 on-the-fly
+!                      real(kind=8), intent(in) :: h2a_vooo(nua,noa,noa,noa),h2a_vvov(nua,nua,noa,nua),&
+!                                                  h2b_vooo(nua,nob,noa,nob),h2b_ovoo(noa,nub,noa,nob),h2b_vvov(nua,nub,noa,nub),h2b_vvvo(nua,nub,nua,nob),&
+!                                                  h2c_vooo(nub,nob,nob,nob),h2c_vvov(nub,nub,nob,nub)
+!                      ! Input T and L amplitudes
+!                      real(kind=8), intent(in) :: t2a(1:nua,1:nua,1:noa,1:noa)
+!                      real(kind=8), intent(in) :: t2b(1:nua,1:nub,1:noa,1:nob)
+!                      real(kind=8), intent(in) :: t2c(1:nub,1:nub,1:nob,1:nob)
+!                      real(kind=8), intent(in) :: l1a(1:nua,1:noa), l1b(1:nub,1:nob)
+!                      real(kind=8), intent(in) :: l2a(1:nua,1:nua,1:noa,1:noa)
+!                      real(kind=8), intent(in) :: l2b(1:nua,1:nub,1:noa,1:nob)
+!                      real(kind=8), intent(in) :: l2c(1:nub,1:nub,1:nob,1:nob)
+!                      ! Current eigenvalue omega (LH is a function of omega in folded eigenvalue problem!)
+!                      real(kind=8), intent(in) :: omega
+!
+!                      ! Upon entry, resid_* holds HR projections of the CCSD-like parts (not antisymmetrized yet)
+!                      real(kind=8), intent(inout) :: resid_a(1:nua,1:noa)
+!                      !f2py intent(in,out) :: resid_a(0:nua-1,0:noa-1)
+!                      real(kind=8), intent(inout) :: resid_b(1:nub,1:nob)
+!                      !f2py intent(in,out) :: resid_b(0:nub-1,0:nob-1)
+!                      real(kind=8), intent(inout) :: resid_aa(1:nua,1:nua,1:noa,1:noa)
+!                      !f2py intent(in,out) :: resid_aa(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
+!                      real(kind=8), intent(inout) :: resid_ab(1:nua,1:nub,1:noa,1:nob)
+!                      !f2py intent(in,out) :: resid_ab(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
+!                      real(kind=8), intent(inout) :: resid_bb(1:nub,1:nub,1:nob,1:nob)
+!                      !f2py intent(in,out) :: resid_bb(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
+!
+!                      integer :: i, j, k, a, b, c
+!                      real(kind=8) :: denom, val
+!                      real(kind=8) :: l3a_o, l3a_v, l3b_o, l3b_v, l3c_o, l3c_v, l3d_o, l3d_v
+!                      real(kind=8) :: l3a, l3b, l3c, l3d
+!                      real(kind=8) :: l3_denom
+!
+!                      ! allocatable array to hold t3(abc) or l3(abc) for a given (i,j,k) block
+!                      real(kind=8), allocatable :: temp(:,:,:)
+!                      ! reordered arrays for the DGEMM operations
+!                      real(kind=8) :: H2A_vvov_1243(nua,nua,nua,noa)
+!                      real(kind=8) :: H2B_vvov_1243(nua,nub,nub,noa), t2b_1243(nua,nub,nob,noa)
+!                      real(kind=8) :: H2C_vvov_4213(nub,nub,nub,noa), H2C_vooo_2134(nob,nub,nob,nob)
+!                      real(kind=8) :: H2C_vvov_1243(nub,nub,nub,nob)
+!                      real(kind=8) :: X2A_vvov_1243(nua,nua,nua,noa)
+!                      real(kind=8) :: X2B_vvov_1243(nua,nub,nub,noa), r2b_1243(nua,nub,nob,noa)
+!                      real(kind=8) :: X2C_vvov_4213(nub,nub,nub,noa), X2C_vooo_2134(nob,nub,nob,nob)
+!                      real(kind=8) :: X2C_vvov_1243(nub,nub,nub,nob)
+!
+!                      ! l3a
+!                      !   h2a_vovv_4312 [x]
+!                      !   h2a_ooov_4312 [x]
+!                      ! l3b
+!                      !   h2b_vovv_1342
+!                      !   h2b_ovvv_2341
+!                      !   h2b_ooov_3412 [x]
+!                      !   h2b_oovo_3412 [x]
+!                      ! l3c
+!                      !   h2b_ovvv_3421
+!                      !   h2c_vovv_1342
+!                      !   h2b_vovv_3412
+!                      !   h2c_ooov_3412
+!                      ! l3d
+!                      !   h2c_vovv_4312
+!                      !   h2c_ooov_4312
+!                      call reorder4(t2a_1243, t2a, (/1,2,4,3/))
+!                      call reorder4(t2b_1243, t2b, (/1,2,4,3/))
+!                      call reorder4(l2b_1243, l2b, (/1,2,4,3/))
+!
+!                      call reorder4(h2a_vovv_4312, h2a_vovv, (/4,3,1,2/))
+!                      call reorder4(h2a_ooov_4312, h2a_ooov, (/4,3,1,2/))
+!                      call reorder4(h2b_vovv_1342, h2b_vovv, (/1,3,4,2/))
+!                      call reorder4(h2b_ovvv_2341, h2b_ovvv, (/2,3,4,1/))
+!                      call reorder4(h2b_ooov_3412, h2b_ooov, (/3,4,1,2/))
+!                      call reorder4(h2b_oovo_3412, h2b_oovo, (/3,4,1,2/))
+!                      call reorder4(h2b_ovvv_3421, h2b_ovvv, (/3,4,2,1/))
+!                      call reorder4(h2c_vovv_1342, h2c_vovv, (/1,3,4,2/))
+!                      call reorder4(h2b_vovv_3412, h2b_vovv, (/3,4,1,2/))
+!                      call reorder4(h2c_ooov_3412, h2c_ooov, (/3,4,1,2/))
+!                      call reorder4(h2c_vovv_4312, h2c_vovv, (/4,3,1,2/))
+!                      call reorder4(h2c_ooov_4312, h2c_ooov, (/4,3,1,2/))
+!
+!                      ! contribution from l3a
+!                      allocate(temp(nua,nua,nua))
+!                      do i = 1,noa
+!                        do j = i+1,noa
+!                           do k = j+1,noa
+!                              temp = 0.0d0
+!                              ! Diagram 1: A(i/jk)A(c/ab) H2A_vovv(e,i,b,a)*l2a(e,c,j,k)
+!                              call dgemm('n','n',nua**2,nua,nua,0.5d0,H2A_vovv_4312(:,:,:,i),nua**2,l2a(:,:,j,k),nua,1.0d0,temp,nua**2)
+!                              call dgemm('n','n',nua**2,nua,nua,-0.5d0,H2A_vovv_4312(:,:,:,j),nua**2,l2a(:,:,i,k),nua,1.0d0,temp,nua**2)
+!                              call dgemm('n','n',nua**2,nua,nua,-0.5d0,H2A_vovv_4312(:,:,:,k),nua**2,l2a(:,:,j,i),nua,1.0d0,temp,nua**2)
+!                              ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
+!                              call dgemm('n','t',nua,nua**2,noa,-0.5d0,H2A_ooov_4312(:,:,j,i),nua,l2a(:,:,:,k),nua**2,1.0d0,temp,nua)
+!                              call dgemm('n','t',nua,nua**2,noa,0.5d0,H2A_ooov_4312(:,:,k,i),nua,l2a(:,:,:,j),nua**2,1.0d0,temp,nua)
+!                              call dgemm('n','t',nua,nua**2,noa,0.5d0,H2A_ooov_4312(:,:,j,k),nua,l2a(:,:,:,i),nua**2,1.0d0,temp,nua)
+!                              do a = 1,nua
+!                                 do b = a+1,nua
+!                                    do c = b+1,nua
+!                                       l3_denom = fA_oo(i,i)+fA_oo(j,j)+fA_oo(k,k)-fA_vv(a,a)-fA_vv(b,b)-fA_vv(c,c)
+!                                       l3a = temp(a,b,c) + temp(b,c,a) + temp(c,a,b) - temp(a,c,b) - temp(b,a,c) - temp(c,b,a)
+!                                       l3a = l3a + &
+!                                                 l1a(c,k)*vA_oovv(i,j,a,b)&
+!                                                -l1a(a,k)*vA_oovv(i,j,c,b)&
+!                                                -l1a(b,k)*vA_oovv(i,j,a,c)&
+!                                                -l1a(c,i)*vA_oovv(k,j,a,b)&
+!                                                -l1a(c,j)*vA_oovv(i,k,a,b)&
+!                                                +l1a(a,i)*vA_oovv(k,j,c,b)&
+!                                                +l1a(b,i)*vA_oovv(k,j,a,c)&
+!                                                +l1a(a,j)*vA_oovv(i,k,c,b)&
+!                                                +l1a(b,j)*vA_oovv(i,k,a,c)&
+!                                                +H1A_ov(k,c)*l2a(a,b,i,j)&
+!                                                -H1A_ov(k,a)*l2a(c,b,i,j)&
+!                                                -H1A_ov(k,b)*l2a(a,c,i,j)&
+!                                                -H1A_ov(i,c)*l2a(a,b,k,j)&
+!                                                -H1A_ov(j,c)*l2a(a,b,i,k)&
+!                                                +H1A_ov(i,a)*l2a(c,b,k,j)&
+!                                                +H1A_ov(i,b)*l2a(a,c,k,j)&
+!                                                +H1A_ov(j,a)*l2a(c,b,i,k)&
+!                                                +H1A_ov(j,b)*l2a(a,c,i,k)
+!                                       l3a = l3a / l3_denom
+!                                       ! x2a(ebij) <- A(b/ac)A(k/ij) l3a(abcijk) * h2a_vvov(cake)
+!                                       resid_aa(:,b,i,j) = resid_aa(:,b,i,j) + h2a_vvov(c,a,k,:) * l3a ! (1)
+!                                       resid_aa(:,a,i,j) = resid_aa(:,a,i,j) - h2a_vvov(c,b,k,:) * l3a ! (ab)
+!                                       resid_aa(:,c,i,j) = resid_aa(:,c,i,j) - h2a_vvov(b,a,k,:) * l3a ! (bc)
+!                                       resid_aa(:,b,j,k) = resid_aa(:,b,j,k) + h2a_vvov(c,a,i,:) * l3a ! (ik)
+!                                       resid_aa(:,a,j,k) = resid_aa(:,a,j,k) - h2a_vvov(c,b,i,:) * l3a ! (ab)(ik)
+!                                       resid_aa(:,c,j,k) = resid_aa(:,c,j,k) - h2a_vvov(b,a,i,:) * l3a ! (bc)(ik)
+!                                       resid_aa(:,b,i,k) = resid_aa(:,b,i,k) - h2a_vvov(c,a,j,:) * l3a ! (jk)
+!                                       resid_aa(:,a,i,k) = resid_aa(:,a,i,k) + h2a_vvov(c,b,j,:) * l3a ! (ab)(jk)
+!                                       resid_aa(:,c,i,k) = resid_aa(:,c,i,k) + h2a_vvov(b,a,j,:) * l3a ! (bc)(jk)
+!                                       ! x2a(abmj) <- A(c/ab)A(j/ik) -l3a(abcijk) * h2a_vooo(cmki)
+!                                       resid_aa(a,b,:,j) = resid_aa(a,b,:,j) - h2a_vooo(c,:,k,i) * l3a ! (1)
+!                                       resid_aa(b,c,:,j) = resid_aa(b,c,:,j) - h2a_vooo(a,:,k,i) * l3a ! (ac)
+!                                       resid_aa(a,c,:,j) = resid_aa(a,c,:,j) + h2a_vooo(b,:,k,i) * l3a ! (bc)
+!                                       resid_aa(a,b,:,i) = resid_aa(a,b,:,i) + h2a_vooo(c,:,k,j) * l3a ! (ij)
+!                                       resid_aa(b,c,:,i) = resid_aa(b,c,:,i) + h2a_vooo(a,:,k,j) * l3a ! (ac)(ij)
+!                                       resid_aa(a,c,:,i) = resid_aa(a,c,:,i) - h2a_vooo(b,:,k,j) * l3a ! (bc)(ij)
+!                                       resid_aa(a,b,:,k) = resid_aa(a,b,:,k) + h2a_vooo(c,:,j,i) * l3a ! (jk)
+!                                       resid_aa(b,c,:,k) = resid_aa(b,c,:,k) + h2a_vooo(a,:,j,i) * l3a ! (ac)(jk)
+!                                       resid_aa(a,c,:,k) = resid_aa(a,c,:,k) - h2a_vooo(b,:,j,i) * l3a ! (bc)(jk)
+!                                    end do
+!                                 end do
+!                              end do
+!                           end do
+!                        end do
+!                      end do
+!                      deallocate(temp)
+!                      ! contribution from l3b
+!                      allocate(temp(nua,nua,nub))
+!                      do i = 1,noa
+!                         do j = i+1,noa
+!                           do k = 1,nob
+!                              temp = 0.0d0
+!                              ! Diagram 1: A(ab) H2B(ekbc)*l2a(aeij)
+!                              call dgemm('n','n',nua,nua*nub,nua,1.0d0,l2a(:,:,i,j),nua,H2B_vovv_1342(:,:,:,k),nua,1.0d0,temp,nua)
+!                              ! Diagram 2: A(ij) H2A(eiba)*l2b(ecjk)
+!                              call dgemm('n','n',nua**2,nub,nua,0.5d0,H2A_vovv_4312(:,:,:,i),nua**2,l2b(:,:,j,k),nua,1.0d0,temp,nua**2)
+!                              call dgemm('n','n',nua**2,nub,nua,-0.5d0,H2A_vovv_4312(:,:,:,j),nua**2,l2b(:,:,i,k),nua,1.0d0,temp,nua**2)
+!                              ! Diagram 3: A(ij)A(ab) H2B(ieac)*l2b(bejk) -> l2b(aeik)*H2B(jebc)
+!                              call dgemm('n','n',nua,nua*nub,nub,1.0d0,l2b(:,:,i,k),nua,H2B_ovvv_2341(:,:,:,j),nub,1.0d0,temp,nua)
+!                              call dgemm('n','n',nua,nua*nub,nub,-1.0d0,l2b(:,:,j,k),nua,H2B_ovvv_2341(:,:,:,i),nub,1.0d0,temp,nua)
+!                              ! Diagram 4: -A(ij) H2B(jkmc)*l2a(abim) -> +A(ij) H2B(jkmc)*l2a(abmi)
+!                              call dgemm('n','n',nua**2,nub,noa,0.5d0,l2a(:,:,:,i),nua**2,H2B_ooov_3412(:,:,j,k),noa,1.0d0,temp,nua**2)
+!                              call dgemm('n','n',nua**2,nub,noa,-0.5d0,l2a(:,:,:,j),nua**2,H2B_ooov_3412(:,:,i,k),noa,1.0d0,temp,nua**2)
+!                              ! Diagram 5: -A(ab) H2A(jima)*l2b(bcmk)
+!                              call dgemm('n','t',nua,nua*nub,noa,-1.0d0,H2A_ooov_4312(:,:,j,i),nua,l2b(:,:,:,k),nua*nub,1.0d0,temp,nua)
+!                              ! Diagram 6: -A(ij)A(ab) H2B(ikam)*l2b(bcjm)
+!                              call dgemm('n','t',nua,nua*nub,nob,-1.0d0,H2B_oovo_3412(:,:,i,k),nua,l2b_1243(:,:,:,j),nua*nub,1.0d0,temp,nua)
+!                              call dgemm('n','t',nua,nua*nub,nob,1.0d0,H2B_oovo_3412(:,:,j,k),nua,l2b_1243(:,:,:,i),nua*nub,1.0d0,temp,nua)
+!                              do a = 1,nua
+!                                 do b = a+1,nua
+!                                    do c = 1,nub
+!                                       l3_denom = fA_oo(i,i)+fA_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fA_vv(b,b)-fB_vv(c,c)
+!                                       l3b = temp(a,b,c) - temp(b,a,c)
+!                                       l3b = l3b +&
+!                                               l1a(a,i)*vB_oovv(j,k,b,c)&
+!                                              -l1a(a,j)*vB_oovv(i,k,b,c)&
+!                                              -l1a(b,i)*vB_oovv(j,k,a,c)&
+!                                              +l1a(b,j)*vB_oovv(i,k,a,c)&
+!                                              +l1b(c,k)*vA_oovv(i,j,a,b)&
+!                                              +l2b(b,c,j,k)*H1A_ov(i,a)&
+!                                              -l2b(b,c,i,k)*H1A_ov(j,a)&
+!                                              -l2b(a,c,j,k)*H1A_ov(i,b)&
+!                                              +l2b(a,c,i,k)*H1A_ov(j,b)&
+!                                              +l2a(a,b,i,j)*H1B_ov(k,c)
+!                                       l3b = l3b / l3_denom
+!                                       ! LH.aa += 0.5 * np.einsum("ebfijn,efan->abij", L.aab, H.ab.vvvo, optimize=True) # 2
+!                                       ! LH.aa -= 0.5 * np.einsum("abfmjn,ifmn->abij", L.aab, H.ab.ovoo, optimize=True) # 4
+!                                       ! LH.ab -= 0.5 * np.einsum("afbmnj,finm->abij", L.aab, H.aa.vooo, optimize=True) # 1
+!                                       ! LH.ab -= np.einsum("afbinm,fjnm->abij", L.aab, H.ab.vooo, optimize=True) # 3
+!                                       ! LH.ab += 0.5 * np.einsum("efbinj,fena->abij", L.aab, H.aa.vvov, optimize=True) # 5
+!                                       ! LH.ab += np.einsum("afeinj,fenb->abij", L.aab, H.ab.vvov, optimize=True) # 7
+!                                    end do
+!                                 end do
+!                              end do
+!                           end do
+!                         end do
+!                      end do
+!                      deallocate(temp)
+!                      ! contribution from l3c
+!                      allocate(temp(nua,nub,nub))
+!                      do i = 1,noa
+!                         do j = 1,nob
+!                           do k = j+1,nob
+!                              temp = 0.0d0
+!                              ! Diagram 1: A(bc) H2B_ovvv(i,e,a,b)*l2c(e,c,j,k)
+!                              call dgemm('n','n',nua*nub,nub,nub,1.0d0,H2B_ovvv_3421(:,:,:,i),nua*nub,l2c(:,:,j,k),nub,1.0d0,temp,nua*nub)
+!                              ! Diagram 2: A(jk) H2C_vovv(e,k,b,c)*l2b(a,e,i,j)
+!                              call dgemm('n','n',nua,nub**2,nub,0.5d0,l2b(:,:,i,j),nua,H2C_vovv_1342(:,:,:,k),nub,1.0d0,temp,nua)
+!                              call dgemm('n','n',nua,nub**2,nub,-0.5d0,l2b(:,:,i,k),nua,H2C_vovv_1342(:,:,:,j),nub,1.0d0,temp,nua)
+!                              ! Diagram 3: A(jk)A(bc) H2B_vovv(e,j,a,b)*l2b(e,c,i,k)
+!                              call dgemm('n','n',nua*nub,nub,nua,1.0d0,H2B_vovv_3412(:,:,:,j),nua*nub,l2b(:,:,i,k),nua,1.0d0,temp,nua*nub)
+!                              call dgemm('n','n',nua*nub,nub,nua,-1.0d0,H2B_vovv_3412(:,:,:,k),nua*nub,l2b(:,:,i,j),nua,1.0d0,temp,nua*nub)
+!                              ! Diagram 4: -A(jk) H2B_oovo(i,j,a,m)*l2c(b,c,m,k)
+!                              call dgemm('n','t',nua,nub**2,nob,-0.5d0,H2B_oovo_3412(:,:,i,j),nua,l2c(:,:,:,k),nub**2,1.0d0,temp,nua)
+!                              call dgemm('n','t',nua,nub**2,nob,0.5d0,H2B_oovo_3412(:,:,i,k),nua,l2c(:,:,:,j),nub**2,1.0d0,temp,nua)
+!                              ! Diagram 5: -A(bc) H2C_ooov(j,k,m,c)*l2b(a,b,i,m)
+!                              call dgemm('n','n',nua*nub,nub,nob,-1.0d0,l2b_1243(:,:,:,i),nua*nub,H2C_ooov_3412(:,:,j,k),nob,1.0d0,temp,nua*nub)
+!                              ! Diagram 6: -A(jk)A(bc) H2B_ooov(i,j,m,b)*l2b(a,c,m,k) -> -A(jk)A(bc) H2B_ooov(i,k,m,c)*l2b(a,b,m,j)
+!                              call dgemm('n','n',nua*nub,nub,noa,-1.0d0,l2b(:,:,:,j),nua*nub,H2B_ooov_3412(:,:,i,k),noa,1.0d0,temp,nua*nub)
+!                              call dgemm('n','n',nua*nub,nub,noa,1.0d0,l2b(:,:,:,k),nua*nub,H2B_ooov_3412(:,:,i,j),noa,1.0d0,temp,nua*nub)
+!                              do a = 1,nua
+!                                 do b = 1,nub
+!                                    do c = b+1,nub
+!                                       l3_denom = fA_oo(i,i)+fB_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fB_vv(b,b)-fB_vv(c,c)
+!                                       l3c = temp(a,b,c) - temp(a,c,b)
+!                                       l3c = l3c +&
+!                                               l1b(c,k)*vB_oovv(i,j,a,b)&
+!                                              -l1b(b,k)*vB_oovv(i,j,a,c)&
+!                                              -l1b(c,j)*vB_oovv(i,k,a,b)&
+!                                              +l1b(b,j)*vB_oovv(i,k,a,c)&
+!                                              +l1a(a,i)*vC_oovv(j,k,b,c)&
+!                                              +H1B_ov(k,c)*l2b(a,b,i,j)&
+!                                              -H1B_ov(k,b)*l2b(a,c,i,j)&
+!                                              -H1B_ov(j,c)*l2b(a,b,i,k)&
+!                                              +H1B_ov(j,b)*l2b(a,c,i,k)&
+!                                              +H1A_ov(i,a)*l2c(b,c,j,k)
+!                                       l3c = l3c / l3_denom
+!                                       ! LH.ab -= np.einsum("afbmnj,ifmn->abij", L.abb, H.ab.ovoo, optimize=True) # 2
+!                                       ! LH.ab -= 0.5 * np.einsum("afbinm,fjnm->abij", L.abb, H.bb.vooo, optimize=True) # 4
+!                                       ! LH.ab += np.einsum("efbinj,efan->abij", L.abb, H.ab.vvvo, optimize=True) # 6
+!                                       ! LH.ab += 0.5 * np.einsum("afeinj,fenb->abij", L.abb, H.bb.vvov, optimize=True) # 8
+!                                       ! LH.bb += 0.5 * np.einsum("fbenji,fena->abij", L.abb, H.ab.vvov, optimize=True) # 2
+!                                       ! LH.bb -= 0.5 * np.einsum("fbanjm,finm->abij", L.abb, H.ab.vooo, optimize=True) # 4
+!                                    end do
+!                                 end do
+!                              end do
+!                           end do
+!                         end do
+!                      end do
+!                      deallocate(temp)
+!                      ! contribution from l3d
+!                      allocate(temp(nub,nub,nub))
+!                      do i = 1,nob
+!                        do j = i+1,nob
+!                           do k = j+1,nob
+!                              temp = 0.0d0
+!                              ! Diagram 1: A(i/jk)A(c/ab) H2C_vovv(e,i,b,a)*l2c(e,c,j,k)
+!                              call dgemm('n','n',nub**2,nub,nub,0.5d0,H2C_vovv_4312(:,:,:,i),nub**2,l2c(:,:,j,k),nub,1.0d0,temp,nub**2)
+!                              call dgemm('n','n',nub**2,nub,nub,-0.5d0,H2C_vovv_4312(:,:,:,j),nub**2,l2c(:,:,i,k),nub,1.0d0,temp,nub**2)
+!                              call dgemm('n','n',nub**2,nub,nub,-0.5d0,H2C_vovv_4312(:,:,:,k),nub**2,l2c(:,:,j,i),nub,1.0d0,temp,nub**2)
+!                              ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
+!                              call dgemm('n','t',nub,nub**2,nob,-0.5d0,H2C_ooov_4312(:,:,j,i),nub,l2c(:,:,:,k),nub**2,1.0d0,temp,nub)
+!                              call dgemm('n','t',nub,nub**2,nob,0.5d0,H2C_ooov_4312(:,:,k,i),nub,l2c(:,:,:,j),nub**2,1.0d0,temp,nub)
+!                              call dgemm('n','t',nub,nub**2,nob,0.5d0,H2C_ooov_4312(:,:,j,k),nub,l2c(:,:,:,i),nub**2,1.0d0,temp,nub)
+!                              do a = 1,nub
+!                                 do b = a+1,nub
+!                                    do c = b+1,nub
+!                                       l3_denom = fB_oo(i,i)+fB_oo(j,j)+fB_oo(k,k)-fB_vv(a,a)-fB_vv(b,b)-fB_vv(c,c)
+!                                       l3d = temp(a,b,c) + temp(b,c,a) + temp(c,a,b) - temp(a,c,b) - temp(b,a,c) - temp(c,b,a)
+!                                       l3d = l3d +&
+!                                             l1b(c,k)*vC_oovv(i,j,a,b)&
+!                                             -l1b(a,k)*vC_oovv(i,j,c,b)&
+!                                             -l1b(b,k)*vC_oovv(i,j,a,c)&
+!                                             -l1b(c,i)*vC_oovv(k,j,a,b)&
+!                                             -l1b(c,j)*vC_oovv(i,k,a,b)&
+!                                             +l1b(a,i)*vC_oovv(k,j,c,b)&
+!                                             +l1b(b,i)*vC_oovv(k,j,a,c)&
+!                                             +l1b(a,j)*vC_oovv(i,k,c,b)&
+!                                             +l1b(b,j)*vC_oovv(i,k,a,c)&
+!                                             +H1B_ov(k,c)*l2c(a,b,i,j)&
+!                                             -H1B_ov(k,a)*l2c(c,b,i,j)&
+!                                             -H1B_ov(k,b)*l2c(a,c,i,j)&
+!                                             -H1B_ov(i,c)*l2c(a,b,k,j)&
+!                                             -H1B_ov(j,c)*l2c(a,b,i,k)&
+!                                             +H1B_ov(i,a)*l2c(c,b,k,j)&
+!                                             +H1B_ov(i,b)*l2c(a,c,k,j)&
+!                                             +H1B_ov(j,a)*l2c(c,b,i,k)&
+!                                             +H1b_ov(j,b)*l2c(a,c,i,k)
+!                                       l3d = l3d / l3_denom
+!                                       ! x2c(ebij) <- A(b/ac)A(k/ij) l3d(abcijk) * h2c_vvov(cake)
+!                                       resid_bb(:,b,i,j) = resid_bb(:,b,i,j) + h2c_vvov(c,a,k,:) * l3d ! (1)
+!                                       resid_bb(:,a,i,j) = resid_bb(:,a,i,j) - h2c_vvov(c,b,k,:) * l3d ! (ab)
+!                                       resid_bb(:,c,i,j) = resid_bb(:,c,i,j) - h2c_vvov(b,a,k,:) * l3d ! (bc)
+!                                       resid_bb(:,b,j,k) = resid_bb(:,b,j,k) + h2c_vvov(c,a,i,:) * l3d ! (ik)
+!                                       resid_bb(:,a,j,k) = resid_bb(:,a,j,k) - h2c_vvov(c,b,i,:) * l3d ! (ab)(ik)
+!                                       resid_bb(:,c,j,k) = resid_bb(:,c,j,k) - h2c_vvov(b,a,i,:) * l3d ! (bc)(ik)
+!                                       resid_bb(:,b,i,k) = resid_bb(:,b,i,k) - h2c_vvov(c,a,j,:) * l3d ! (jk)
+!                                       resid_bb(:,a,i,k) = resid_bb(:,a,i,k) + h2c_vvov(c,b,j,:) * l3d ! (ab)(jk)
+!                                       resid_bb(:,c,i,k) = resid_bb(:,c,i,k) + h2c_vvov(b,a,j,:) * l3d ! (bc)(jk)
+!                                       ! x2c(abmj) <- A(c/ab)A(j/ik) -l3d(abcijk) * h2c_vooo(cmki)
+!                                       resid_bb(a,b,:,j) = resid_bb(a,b,:,j) - h2c_vooo(c,:,k,i) * l3d ! (1)
+!                                       resid_bb(b,c,:,j) = resid_bb(b,c,:,j) - h2c_vooo(a,:,k,i) * l3d ! (ac)
+!                                       resid_bb(a,c,:,j) = resid_bb(a,c,:,j) + h2c_vooo(b,:,k,i) * l3d ! (bc)
+!                                       resid_bb(a,b,:,i) = resid_bb(a,b,:,i) + h2c_vooo(c,:,k,j) * l3d ! (ij)
+!                                       resid_bb(b,c,:,i) = resid_bb(b,c,:,i) + h2c_vooo(a,:,k,j) * l3d ! (ac)(ij)
+!                                       resid_bb(a,c,:,i) = resid_bb(a,c,:,i) - h2c_vooo(b,:,k,j) * l3d ! (bc)(ij)
+!                                       resid_bb(a,b,:,k) = resid_bb(a,b,:,k) + h2c_vooo(c,:,j,i) * l3d ! (jk)
+!                                       resid_bb(b,c,:,k) = resid_bb(b,c,:,k) + h2c_vooo(a,:,j,i) * l3d ! (ac)(jk)
+!                                       resid_bb(a,c,:,k) = resid_bb(a,c,:,k) - h2c_vooo(b,:,j,i) * l3d ! (bc)(jk)
+!                                    end do
+!                                 end do
+!                              end do
+!                           end do
+!                        end do
+!                      end do
+!                      deallocate(temp)
+!                      ! antisymmetrize resid_aa
+!                      do i = 1,noa
+!                         do j = i+1,noa
+!                            do a = 1,nua
+!                               do b = a+1,nua
+!                                  resid_aa(a,b,i,j) = resid_aa(a,b,i,j) - resid_aa(b,a,i,j) - resid_aa(a,b,j,i) + resid_aa(b,a,j,i)
+!                                  resid_aa(b,a,i,j) = -resid_aa(a,b,i,j)
+!                                  resid_aa(a,b,j,i) = -resid_aa(a,b,i,j)
+!                                  resid_aa(b,a,j,i) = resid_aa(a,b,i,j)
+!                               end do
+!                            end do
+!                         end do
+!                      end do
+!                      ! antisymmetrize resid_bb
+!                      do i = 1,nob
+!                         do j = i+1,nob
+!                            do a = 1,nub
+!                               do b = a+1,nub
+!                                  resid_bb(a,b,i,j) = resid_bb(a,b,i,j) - resid_bb(b,a,i,j) - resid_bb(a,b,j,i) + resid_bb(b,a,j,i)
+!                                  resid_bb(b,a,i,j) = -resid_bb(a,b,i,j)
+!                                  resid_bb(a,b,j,i) = -resid_bb(a,b,i,j)
+!                                  resid_bb(b,a,j,i) = resid_bb(a,b,i,j)
+!                               end do
+!                            end do
+!                         end do
+!                      end do
+!                      ! manually set diagonally broadcasted blocks in aa and bb residuals to 0
+!                      do a = 1,nua
+!                         resid_aa(a,a,:,:) = 0.0d0
+!                      end do
+!                      do i = 1,noa
+!                         resid_aa(:,:,i,i) = 0.0d0
+!                      end do
+!                      do a = 1,nub
+!                         resid_bb(a,a,:,:) = 0.0d0
+!                      end do
+!                      do i = 1,nob
+!                         resid_bb(:,:,i,i) = 0.0d0
+!                      end do
+!
+!               end subroutine build_LH
        
                subroutine update_R(r1a,r1b,r2a,r2b,r2c,&
                                    omega,&

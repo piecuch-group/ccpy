@@ -1,19 +1,19 @@
 import numpy as np
 from pyscf import ao2mo, symm
 
-from ccpy.models.integrals import getHamiltonian
+from ccpy.models.integrals import getHamiltonian, getCholeskyHamiltonian, Integral
 from ccpy.models.system import System
 from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 
 from ccpy.cholesky.cholesky import cholesky_eri_from_pyscf
-from ccpy.energy.hf_energy import calc_hf_frozen_core_energy
+from ccpy.energy.hf_energy import calc_hf_frozen_core_energy, calc_hf_energy, calc_hf_energy_chol
 
 
 def load_pyscf_integrals(
         meanfield, nfrozen=0, ndelete=0,
         num_act_holes_alpha=0, num_act_particles_alpha=0,
         num_act_holes_beta=0, num_act_particles_beta=0,
-        use_cholesky=False, cholesky_tol=1.0e-09,
+        use_cholesky=False, cholesky_tol=1.0e-09, cmax=10,
         normal_ordered=True, dump_integrals=False, sorted=True
 ):
     """Builds the System and Integral objects using the information contained within a PySCF
@@ -48,8 +48,9 @@ def load_pyscf_integrals(
         mo_occupation=meanfield.mo_occ,
     )
 
-    kinetic_aoints = molecule.intor_symmetric("int1e_kin")
-    nuclear_aoints = molecule.intor_symmetric("int1e_nuc")
+    #
+    #kinetic_aoints = molecule.intor_symmetric("int1e_kin")
+    #nuclear_aoints = molecule.intor_symmetric("int1e_nuc")
 
     #
     #eri_aoints = np.transpose(molecule.intor("int2e", aosym="s1"), (0, 2, 1, 3))
@@ -65,46 +66,135 @@ def load_pyscf_integrals(
     #e_core = e_core[idx]
     #mo_coeff = np.dot(X, mo_coeff[:, idx])
 
-    # Perform AO-to-MO transformation
+    # Perform AO-to-MO transformation (using mf.get_hcore() allows this to work with scalar 1e X2C models, for instance)
     e1int = np.einsum(
-        "pi,pq,qj->ij", mo_coeff, kinetic_aoints + nuclear_aoints, mo_coeff, optimize=True
+        "pi,pq,qj->ij", mo_coeff, meanfield.get_hcore(), mo_coeff, optimize=True
     )
     # put integrals into Fortran order
     e1int = np.asfortranarray(e1int)
 
     if use_cholesky:
         # Obtain AO Cholesky decomposition of ERIs
-        R_chol = cholesky_eri_from_pyscf(molecule, tol=cholesky_tol)
+        R_chol = cholesky_eri_from_pyscf(molecule, tol=cholesky_tol, cmax=cmax)
         # Transform to MO frame
         R_chol = np.einsum("xpq,pi,qj->xij", R_chol, mo_coeff, mo_coeff, optimize=True)
-        # Stupid, but for now, just make the integrals out of Cholesky to test approximation
-        e2int = np.einsum("xpr,xqs->pqrs", R_chol, R_chol, optimize=True)
+        # Compute HF energy (due to Cholesky error, this may not equal the true HF energy!)
+        hf_energy = calc_hf_energy_chol(e1int, R_chol, system)
+        hf_energy += nuclear_repulsion
+        system.reference_energy = hf_energy
+        system.frozen_energy = 0.0
+        system.cholesky = True
+        #
+        return system, getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted)
+
     else:
         e2int = np.transpose(
             np.reshape(ao2mo.kernel(molecule, mo_coeff, compact=False), 4 * (norbitals,)),
             (0, 2, 1, 3)
         )
-    e2int = np.asfortranarray(e2int)
-    #e2int = np.einsum(
-    #     "pi,qj,rk,sl,pqrs->ijkl", mo_coeff, mo_coeff, mo_coeff, mo_coeff, eri_aoints, optimize=True
-    #)
+        e2int = np.asfortranarray(e2int)
+        # Check that the HF energy calculated using the integrals matches the PySCF result
+        hf_energy = calc_hf_energy(e1int, e2int, system)
+        hf_energy += nuclear_repulsion
 
-    # Check that the HF energy calculated using the integrals matches the PySCF result
-    hf_energy = get_hf_energy(e1int, e2int, system, notation="physics")
-    hf_energy += nuclear_repulsion
+        if not np.allclose(hf_energy, meanfield.energy_tot(), atol=1.0e-06, rtol=0.0):
+            raise RuntimeError("Integrals don't match mean field energy")
 
-    if not np.allclose(hf_energy, meanfield.energy_tot(), atol=1.0e-06, rtol=0.0):
-        raise RuntimeError("Integrals don't match mean field energy")
+        system.reference_energy = hf_energy
+        system.frozen_energy = calc_hf_frozen_core_energy(e1int, e2int, system)
 
-    system.reference_energy = hf_energy
-    system.frozen_energy = calc_hf_frozen_core_energy(e1int, e2int, system)
+        if dump_integrals:
+            dumpIntegralstoPGFiles(e1int, e2int, system)
 
-    if dump_integrals:
-        dumpIntegralstoPGFiles(e1int, e2int, system)
+        return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
 
-    return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
-
-
+def get_multipole_integral(l, mol, mf, system):
+    print(f"   Computing L = {l} Multipole Integrals using PySCF")
+    nao = system.norbitals + system.nfrozen
+    noa = system.noccupied_alpha
+    nob = system.noccupied_beta
+    nua = system.nunoccupied_alpha
+    nub = system.nunoccupied_beta
+    corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
+    oa = slice(noa)
+    ob = slice(nob)
+    va = slice(noa, noa + nua)
+    vb = slice(nob, nob + nub)
+    occ_a = slice(noa + system.nfrozen)
+    occ_b = slice(nob + system.nfrozen)
+    # Dipole
+    if l == 1:
+        Q_ao = mol.intor("int1e_r").reshape(3, nao, nao)
+        Q_mo = np.einsum("xij,ip,jq->xpq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
+        Q_ref = np.einsum("xii->x", Q_mo[:, occ_a, occ_a]) + np.einsum("xii->x", Q_mo[:, occ_b, occ_b])
+        Q_mo = Q_mo[:, corr_slice, corr_slice]
+        mu = [Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)]
+        for x in range(3):
+            mu[x].a.oo = Q_mo[x, oa, oa]
+            mu[x].a.vv = Q_mo[x, va, va]
+            mu[x].a.ov = Q_mo[x, oa, va]
+            mu[x].a.vo = Q_mo[x, va, oa]
+            mu[x].b.oo = Q_mo[x, ob, ob]
+            mu[x].b.vv = Q_mo[x, vb, vb]
+            mu[x].b.ov = Q_mo[x, ob, vb]
+            mu[x].b.vo = Q_mo[x, vb, ob]
+    # Quadrupole
+    elif l == 2:
+        Q_ao = mol.intor('int1e_rr').reshape(3, 3, nao, nao)
+        Q_mo = np.einsum("xyij,ip,jq->xypq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
+        Q_ref = np.einsum("xyii->xy", Q_mo[:, :, occ_a, occ_a]) + np.einsum("xyii->xy", Q_mo[:, :, occ_b, occ_b])
+        Q_mo = Q_mo[:, :, corr_slice, corr_slice]
+        mu = [[Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)] for _ in range(3)]
+        for x in range(3):
+            for y in range(3):
+                mu[x][y].a.oo = Q_mo[x, y, oa, oa]
+                mu[x][y].a.vv = Q_mo[x, y, va, va]
+                mu[x][y].a.ov = Q_mo[x, y, oa, va]
+                mu[x][y].a.vo = Q_mo[x, y, va, oa]
+                mu[x][y].b.oo = Q_mo[x, y, ob, ob]
+                mu[x][y].b.vv = Q_mo[x, y, vb, vb]
+                mu[x][y].b.ov = Q_mo[x, y, ob, vb]
+                mu[x][y].b.vo = Q_mo[x, y, vb, ob]
+    # Octopole
+    elif l == 3:
+        Q_ao = mol.intor('int1e_rrr').reshape(3, 3, nao, nao)
+        Q_mo = np.einsum("xyzij,ip,jq->xyzpq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
+        Q_ref = np.einsum("xyzii->xyz", Q_mo[:, :, :, occ_a, occ_a]) + np.einsum("xii->x", Q_mo[:, :, :, occ_b, occ_b])
+        Q_mo = Q_mo[:, :, :, corr_slice, corr_slice]
+        mu = [[[Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)] for _ in range(3)] for _ in range(3)]
+        for x in range(3):
+            for y in range(3):
+                for z in range(3):
+                    mu[x][y][z].a.oo = Q_mo[x, y, z, oa, oa]
+                    mu[x][y][z].a.vv = Q_mo[x, y, z, va, va]
+                    mu[x][y][z].a.ov = Q_mo[x, y, z, oa, va]
+                    mu[x][y][z].a.vo = Q_mo[x, y, z, va, oa]
+                    mu[x][y][z].b.oo = Q_mo[x, y, z, ob, ob]
+                    mu[x][y][z].b.vv = Q_mo[x, y, z, vb, vb]
+                    mu[x][y][z].b.ov = Q_mo[x, y, z, ob, vb]
+                    mu[x][y][z].b.vo = Q_mo[x, y, z, vb, ob]
+    # Hexadecapole
+    elif l == 4:
+        Q_ao = mol.intor('int1e_rrrr').reshape(3, 3, 3, 3, nao, nao)
+        Q_mo = np.einsum("xyzwij,ip,jq->xyzwpq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
+        Q_ref = np.einsum("xyzwii->xyzw", Q_mo[:, :, :, :, occ_a, occ_a]) + np.einsum("xyzwii->xyzw", Q_mo[:, :, :, :, occ_b, occ_b])
+        Q_mo = Q_mo[:, :, :, :, corr_slice, corr_slice]
+        mu = [[[[Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)] for _ in range(3)] for _ in range(3)] for _ in range(3)]
+        for x in range(3):
+            for y in range(3):
+                for z in range(3):
+                    for w in range(3):
+                        mu[x][y][z][w].a.oo = Q_mo[x, y, z, w, oa, oa]
+                        mu[x][y][z][w].a.vv = Q_mo[x, y, z, w, va, va]
+                        mu[x][y][z][w].a.ov = Q_mo[x, y, z, w, oa, va]
+                        mu[x][y][z][w].a.vo = Q_mo[x, y, z, w, va, oa]
+                        mu[x][y][z][w].b.oo = Q_mo[x, y, z, w, ob, ob]
+                        mu[x][y][z][w].b.vv = Q_mo[x, y, z, w, vb, vb]
+                        mu[x][y][z][w].b.ov = Q_mo[x, y, z, w, ob, vb]
+                        mu[x][y][z][w].b.vo = Q_mo[x, y, z, w, vb, ob]
+    else:
+        print(f"Angular momentum {l} not supported in PySCF.")
+    return mu, Q_ref
 
 def get_kconserv1(a, kpts, thresh=1.0e-07):
     nkpts = len(kpts)
@@ -116,7 +206,6 @@ def get_kconserv1(a, kpts, thresh=1.0e-07):
             if np.linalg.norm(svec - np.rint(svec)) < thresh:
                 kconserv[p] = q
     return kconserv
-
 
 def get_kconserv2(a, kpts, thresh=1.0e-07):
     nkpts = len(kpts)
@@ -131,15 +220,12 @@ def get_kconserv2(a, kpts, thresh=1.0e-07):
                         kconserv[p, q, r] = s
     return kconserv
 
-
 def get_kpoints(cell, nk, G):
     kpts = cell.make_kpts(nk)
     nkpts = len(kpts)
     for i in range(nkpts):
         kpts[i, :] += G
-
     return kpts
-
 
 def get_pbc_mo_integrals(cell, kmf, kpts, notation="chemist"):
     from pyscf.pbc import df, tools
@@ -221,7 +307,6 @@ def get_pbc_mo_integrals(cell, kmf, kpts, notation="chemist"):
 
     return Z, V, e_nuc
 
-
 def calc_khf_energy(e1int, e2int, Nelec, Nkpts, notation):
     # Note that any V must have a factor of 1/Nkpts!
     e1a = 0.0
@@ -270,7 +355,6 @@ def calc_khf_energy(e1int, e2int, Nelec, Nkpts, notation):
 
     return np.real(Escf) / Nkpts
 
-
 def get_sc_mo_integrals(supcell, kmf, G, notation="chemist"):
     from pyscf.pbc import df, tools
 
@@ -299,7 +383,7 @@ def get_sc_mo_integrals(supcell, kmf, G, notation="chemist"):
     if notation != "chemist":
         V = np.transpose(V, (0, 2, 1, 3))
 
-    e_hf = get_hf_energy(Z, V, supcell.nelectron, notation)
+    e_hf = calc_hf_energy(Z, V, supcell.nelectron)
     e_calc = e_hf + e_nuc + e_ewald
     print("")
     print("PBC MO Integral Conversion Summary:")
@@ -329,50 +413,11 @@ def get_mo_integrals(mol, mf, notation="chemist"):
     if notation != "chemist":  # physics notation
         V = np.transpose(V, (0, 2, 1, 3))
 
-    e_calc = get_hf_energy(Z, V, mol.nelectron, notation)
+    e_calc = calc_hf_energy(Z, V, mol.nelectron)
     e_calc += e_nuc
     assert np.allclose(e_calc, mf.energy_tot(), atol=1.0e-06, rtol=0.0)
 
     return Z, V, e_nuc
-
-
-def get_hf_energy(e1int, e2int, system, notation="chemist"):
-    oa = slice(0, system.nfrozen + system.noccupied_alpha)
-    ob = slice(0, system.nfrozen + system.noccupied_beta)
-
-    if notation == "chemist":
-        e1a = np.einsum("ii->", e1int[oa, oa])
-        e1b = np.einsum("ii->", e1int[ob, ob])
-        e2a = 0.5 * (
-                np.einsum("iijj->", e2int[oa, oa, oa, oa])
-                - np.einsum("ijji->", e2int[oa, oa, oa, oa])
-        )
-        e2b = 1.0 * (np.einsum("iijj->", e2int[oa, ob, oa, ob]))
-        e2c = 0.5 * (
-                np.einsum("iijj->", e2int[ob, ob, ob, ob])
-                - np.einsum("ijji->", e2int[ob, ob, ob, ob])
-        )
-
-    elif notation == "physics":
-        e1a = np.einsum("ii->", e1int[oa, oa])
-        e1b = np.einsum("ii->", e1int[ob, ob])
-        e2a = 0.5 * (
-                np.einsum("ijij->", e2int[oa, oa, oa, oa])
-                - np.einsum("ijji->", e2int[oa, oa, oa, oa])
-        )
-        e2b = 1.0 * (np.einsum("ijij->", e2int[oa, ob, oa, ob]))
-        e2c = 0.5 * (
-                np.einsum("ijij->", e2int[ob, ob, ob, ob])
-                - np.einsum("ijji->", e2int[ob, ob, ob, ob])
-        )
-
-    else:
-        raise RuntimeError("Integral notation not recognized")
-
-    E_scf = e1a + e1b + e2a + e2b + e2c
-
-    return E_scf
-
 
 def write_onebody_pbc_integrals(Z):
     Nkpts = Z.shape[0]
@@ -385,7 +430,6 @@ def write_onebody_pbc_integrals(Z):
                     for j in range(i + 1):
                         f.write("     {}    {:.11f}\n".format(Z[kp, kq, i, j], ct))
                         ct += 1
-
 
 def write_twobody_pbc_integrals(V, e_nuc):
     # inefficient. we should be saving only those V(kp,kq,kr,ks) that
@@ -412,7 +456,6 @@ def write_twobody_pbc_integrals(V, e_nuc):
                                         )
         f.write("    {}    {}    {}    {}        {:.11f}\n".format(0, 0, 0, 0, e_nuc))
 
-
 def write_onebody_integrals(Z):
     Norb = Z.shape[0]
     with open("onebody.inp", "w") as f:
@@ -421,7 +464,6 @@ def write_onebody_integrals(Z):
             for j in range(i + 1):
                 f.write("     {}    {:.11f}\n".format(Z[i, j], ct))
                 ct += 1
-
 
 def write_twobody_integrals(V, e_nuc):
     Norb = V.shape[0]
@@ -436,7 +478,6 @@ def write_twobody_integrals(V, e_nuc):
                             )
                         )
         f.write("    {}    {}    {}    {}        {:.11f}\n".format(0, 0, 0, 0, e_nuc))
-
 
 def get_dipole_integrals(mol, mf):
 

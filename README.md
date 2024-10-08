@@ -720,11 +720,52 @@ def test_adaptive_f2():
     adaptdriver.options["two_body_approx"] = True
     adaptdriver.run()
 ```
-
 ### References
 
 1. K. Gururangan and P. Piecuch, J. Chem. Phys. **159**, 084108 (2023) <br />
 (see https://doi.org/10.1063/5.0162873; cf. also https://doi.org/10.48550/arXiv.2306.09638) <br />
+</details>
+
+<details>
+<summary>CC4</summary>
+
+### Summary
+<p align="justify">
+</p>
+
+### Sample Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    # build molecule using PySCF and run SCF calculation
+    mol = gto.M(
+        atom=[["O", (0.0, 0.0, -0.0180)],
+              ["H", (0.0, 3.030526, -2.117796)],
+              ["H", (0.0, -3.030526, -2.117796)]],
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    
+    # get the CCpy driver object using PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+
+    # set calculation parameters
+    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
+    driver.options["amp_convergence"] = 1.0e-07
+    driver.options["maximum_iterations"] = 80
+
+    # run CC4 calculation
+    driver.run_cc(method="cc4")
+```
+### References
 </details>
 
 #### Externally Corrected (ec) CC Approaches
@@ -777,6 +818,7 @@ def test_eccc23_h2o():
 ### EOMCC approaches for ground, excited, attached, and ionized states
   - EOMCCSD
   - CR-EOMCC(2,3) and its size-intensive *δ*-CR-EOMCC(2,3) extension
+  - EOMCCSD(T)(a)*
   - EOM-CC3
   - EOMCCSDt
   - Excited-state CC(t;3)
@@ -785,11 +827,15 @@ def test_eccc23_h2o():
   - SF-EOMCCSD
   - SF-EOMCC(2,3)
   - IP-EOMCCSD(2h-1p)
+  - IP-EOMCCSD(T)(a)*
   - Active-space IP-EOMCCSD(3h-2p){N<sub>o</sub>} (also known as IP-EOMCCSDt)
   - IP-EOMCCSD(3h-2p)
+  - IP-EOMCCSDT
   - EA-EOMCCSD(2p-1h)
+  - EA-EOMCCSD(T)(a)*
   - Active-space EA-EOMCCSD(3p-2h){N<sub>u</sub>} (also known as EA-EOMCCSDt)
   - EA-EOMCCSD(3p-2h)
+  - EA-EOMCCSDT
   - DEA-EOMCCSD(3p-1h)
   - DEA-EOMCCSD(4p-2h)
   - DIP-EOMCCSD(3h-1p)

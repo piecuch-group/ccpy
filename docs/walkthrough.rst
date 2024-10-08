@@ -1,4 +1,4 @@
-Sample Calculations
+Specific Walkthroughs
 ###################
 
 Here, we walkthrough some code for performing a few of the standard
@@ -8,7 +8,7 @@ manually, or using one of the provided interfaces. This way, the
 system is specified within :code:`driver.system` and the molecular 
 orbital integrals are loaded and available in :code:`driver.hamiltonian`.
 
-Running a CR-CC(2,3) Calculation
+Completely Renormalized (CR) CC Calculations
 ********************************
 Here is an example of how to perform a CR-CC(2,3) calculation in order to 
 obtain the nonperturbative correction to the CCSD energetics for the 
@@ -43,7 +43,7 @@ result corresponding to CR-CC(2,3)\ :sub:`D`\, which employs the full Epstein-Ne
 energy denominator, is generally most accurate and often simply referred to as the 
 CR-CC(2,3) energy (or by its former name, CR-CCSD(T)\ :sub:`L`\).
 
-Running a CC(t;3) Calculation
+Active-Orbital-Based CC(*P*; *Q*) Calculations
 ********************************
 Here is an example of how to perform a CC(t;3) calculation in order to 
 obtain the nonperturbative correction to the CCSDt energetics for the 
@@ -126,3 +126,12 @@ this increase in computational effort. On the other hand, the two-body approxima
 ground-state CC(t;3) calaculations, with previous applications demonstrating its ability to converge the parent
 CCSDT energetics to within a fraction of a millihartree, even in challenging situations featuring stronger 
 many-electron correlation effects where :math:`T_3` clusters become large and nonperturbative.
+
+Adaptive CC(*P*; *Q*) Calculations
+********************************
+
+CIPSI-Driven CC(*P*; *Q*) Calculations
+********************************
+
+CIPSI-Based Externally Corrected (ec) CC Calculations
+********************************

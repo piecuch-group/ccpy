@@ -2,6 +2,26 @@ import os
 import numpy as np
 from ccpy.utilities.updates import reorder
 
+def convert_t3_from_pspace(driver, t3_excitations):
+
+    print("   Converting T3(P) operator into full T3 array")
+
+    # Check for empty spincases in t3 list. Remember that [1., 1., 1., 1., 1., 1.]
+    # is defined as the "empty" state in the Fortran modules.
+    do_t3 = {"aaa" : True, "aab" : True, "abb" : True, "bbb" : True}
+    if np.array_equal(t3_excitations["aaa"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["aaa"] = False
+    if np.array_equal(t3_excitations["aab"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["aab"] = False
+    if np.array_equal(t3_excitations["abb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["abb"] = False
+    if np.array_equal(t3_excitations["bbb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
+        do_t3["bbb"] = False
+
+    T_new = unravel_triples_amplitudes(driver.T, t3_excitations, driver.system, do_t3)
+    setattr(driver, "T", T_new)
+    return
+
 def unravel_triples_amplitudes(T, t3_excitations, system, do_t3):
     """Replaces the triples parts of the T operator defined as P-space vectors
     with the corresponding 6-dimensional arrays."""
