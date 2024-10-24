@@ -47,7 +47,7 @@ def update_t1a(T1, dT, T, W, H, shift):
     dT.a += np.einsum("ae,ei->ai", W.a.vv, T.a, optimize=True)
     dT.a += np.einsum("me,aeim->ai", W.a.ov, T.aa, optimize=True)
     dT.a += np.einsum("me,aeim->ai", W.b.ov, T.ab, optimize=True)
-    T1.a, dT.a = cc_loops2.cc_loops2.update_t1a(
+    T1.a, dT.a = cc_loops2.update_t1a(
         T1.a, dT.a + W.a.vo, H.a.oo, H.a.vv, shift
     )
     return T1, dT
@@ -75,7 +75,7 @@ def update_t1b(T1, dT, T, W, H, shift):
     dT.b += np.einsum("ae,ei->ai", W.b.vv, T.b, optimize=True)
     dT.b += np.einsum("me,aeim->ai", W.b.ov, T.bb, optimize=True)
     dT.b += np.einsum("me,eami->ai", W.a.ov, T.ab, optimize=True)
-    T1.b, dT.b = cc_loops2.cc_loops2.update_t1b(
+    T1.b, dT.b = cc_loops2.update_t1b(
         T1.b, dT.b + W.b.vo, H.b.oo, H.b.vv, shift
     )
     return T1, dT
@@ -103,7 +103,7 @@ def update_t2a(T1, dT, T, W, X, H, shift):
     dT.aa -= 0.5 * np.einsum("mi,abmj->abij", I1A_oo, T.aa, optimize=True)
     dT.aa += 0.5 * np.einsum("ae,ebij->abij", I1A_vv, T.aa, optimize=True)
 
-    T1.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
+    T1.aa, dT.aa = cc_loops2.update_t2a(
         T1.aa, dT.aa, H.a.oo, H.a.vv, shift
     )
     return T1, dT
@@ -145,7 +145,7 @@ def update_t2b(T1, dT, T, W, X, H, shift):
     dT.ab -= np.einsum("mj,abim->abij", I1B_oo, T.ab, optimize=True)
     dT.ab += np.einsum("be,aeij->abij", I1B_vv, T.ab, optimize=True)
 
-    T1.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
+    T1.ab, dT.ab = cc_loops2.update_t2b(
         T1.ab, dT.ab, H.a.oo, H.a.vv, H.b.oo, H.b.vv, shift
     )
     return T1, dT
@@ -173,7 +173,7 @@ def update_t2c(T1, dT, T, W, X, H, shift):
     dT.bb -= 0.5 * np.einsum("mi,abmj->abij", I1B_oo, T.bb, optimize=True)
     dT.bb += 0.5 * np.einsum("ae,ebij->abij", I1B_vv, T.bb, optimize=True)
 
-    T1.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
+    T1.bb, dT.bb = cc_loops2.update_t2c(
         T1.bb, dT.bb, H.b.oo, H.b.vv, shift
     )
     return T1, dT

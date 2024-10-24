@@ -528,7 +528,7 @@ def calc_ccp3(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=False, t
                     # sym_ijk = sym_ref ^ orbsym[i]
                     # sym_ijk = sym_ijk ^ orbsym[j]
                     # sym_ijk = sym_ijk ^ orbsym[k]
-                    M3C = ccp3_full_correction.ccp3_full_correction.build_moments3c_ijk(
+                    M3C = ccp3_full_correction.build_moments3c_ijk(
                         i + 1, j + 1, k + 1,
                         T.aab, t3_excitations["aab"],
                         T.abb, t3_excitations["abb"],
@@ -745,7 +745,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
     dC_aaa = 0.0
     dD_aaa = 0.0
     if do_correction["aaa"]:
-        M3A = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_moments3a(
+        M3A = ccp3_full_correction_high_mem.build_moments3a(
             qspace["aaa"],
             T.aaa, t3_excitations["aaa"],
             T.aab, t3_excitations["aab"],
@@ -755,7 +755,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
             H.aa.oooo, H.aa.voov.transpose(1, 3, 0, 2), H.aa.vvvv.transpose(3, 2, 1, 0),
             H.ab.oovv, H.ab.voov.transpose(1, 3, 0, 2),
         )
-        L3A = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_leftamps3a(
+        L3A = ccp3_full_correction_high_mem.build_leftamps3a(
             qspace["aaa"],
             L.a, L.aa,
             L.aaa, t3_excitations["aaa"],
@@ -766,7 +766,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
             H.ab.ovvo,
             X.aa.ooov, X.aa.vovv,
         )
-        dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.ccp3a(
+        dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_full_correction_high_mem.ccp3a(
             qspace["aaa"], 0.0,
             M3A, L3A, t3_excitations["aaa"],
             H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
@@ -786,7 +786,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
     dC_aab = 0.0
     dD_aab = 0.0
     if do_correction["aab"]:
-        M3B = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_moments3b(
+        M3B = ccp3_full_correction_high_mem.build_moments3b(
             qspace["aab"],
             T.aaa, t3_excitations["aaa"],
             T.aab, t3_excitations["aab"],
@@ -798,7 +798,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
             H.ab.oooo, H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(3, 2, 1, 0),
             H.bb.oovv, H.bb.voov.transpose(1, 3, 0, 2),
         )
-        L3B = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_leftamps3b(
+        L3B = ccp3_full_correction_high_mem.build_leftamps3b(
             qspace["aab"],
             L.a, L.b, L.aa, L.ab,
             L.aaa, t3_excitations["aaa"],
@@ -816,7 +816,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
             X.aa.ooov, X.aa.vovv,
             X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
         )
-        dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.ccp3b(
+        dA_aab, dB_aab, dC_aab, dD_aab = ccp3_full_correction_high_mem.ccp3b(
             qspace["aab"], 0.0,
             M3B, L3B, t3_excitations["aab"],
             H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
@@ -845,7 +845,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
         dC_abb = 0.0
         dD_abb = 0.0
         if do_correction["abb"]:
-            M3C = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_moments3c(
+            M3C = ccp3_full_correction_high_mem.build_moments3c(
                 qspace["abb"],
                 T.aab, t3_excitations["aab"],
                 T.abb, t3_excitations["abb"],
@@ -857,7 +857,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
                 H.ab.voov.transpose(1, 3, 0, 2), H.ab.vovo.transpose(1, 2, 0, 3), H.ab.ovov.transpose(0, 3, 1, 2), H.ab.ovvo.transpose(0, 2, 1, 3), H.ab.vvvv.transpose(2, 3, 0, 1),
                 H.bb.oovv, I2C_vooo.transpose(1, 0, 2, 3), H.bb.vvov.transpose(3, 0, 1, 2), H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
             )
-            L3C = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_leftamps3c(
+            L3C = ccp3_full_correction_high_mem.build_leftamps3c(
                 qspace["abb"],
                 L.a, L.b, L.ab, L.bb,
                 L.aab, t3_excitations["aab"],
@@ -875,7 +875,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
                 X.ab.ooov, X.ab.oovo, X.ab.vovv, X.ab.ovvv,
                 X.bb.ooov, X.bb.vovv,
             )
-            dA_abb, dB_abb, dC_abb, dD_abb = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.ccp3c(
+            dA_abb, dB_abb, dC_abb, dD_abb = ccp3_full_correction_high_mem.ccp3c(
                 qspace["abb"], 0.0,
                 M3C, L3C, t3_excitations["abb"],
                 H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
@@ -899,7 +899,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
         dC_bbb = 0.0
         dD_bbb = 0.0
         if do_correction["bbb"]:
-            M3D = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_moments3d(
+            M3D = ccp3_full_correction_high_mem.build_moments3d(
                 qspace["bbb"],
                 T.abb, t3_excitations["abb"],
                 T.bbb, t3_excitations["bbb"],
@@ -909,7 +909,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
                 H.bb.oooo, H.bb.voov.transpose(1, 3, 0, 2), H.bb.vvvv.transpose(3, 2, 1, 0),
                 H.ab.oovv, H.ab.ovvo.transpose(0, 2, 1, 3),
             )
-            L3D = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.build_leftamps3d(
+            L3D = ccp3_full_correction_high_mem.build_leftamps3d(
                 qspace["bbb"],
                 L.b, L.bb,
                 L.abb, t3_excitations["abb"],
@@ -920,7 +920,7 @@ def calc_ccp3_high_memory(T, L, t3_excitations, corr_energy, H, H0, system, use_
                 H.bb.voov, H.bb.vovv, H.bb.vvvv,
                 X.bb.ooov, X.bb.vovv,
             )
-            dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction_high_mem.ccp3_full_correction_high_mem.ccp3d(
+            dA_bbb, dB_bbb, dC_bbb, dD_bbb = ccp3_full_correction_high_mem.ccp3d(
                 qspace["bbb"], 0.0,
                 M3D, L3D, t3_excitations["bbb"],
                 H0.b.oo, H0.b.vv, H.b.oo, H.b.vv,

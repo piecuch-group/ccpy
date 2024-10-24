@@ -11,7 +11,7 @@ from ccpy.lib.core import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
 
-    R.a, R.aa, R.ab, R.aaa, R.aab, R.abb = cc_loops2.cc_loops2.update_r_3p2h(
+    R.a, R.aa, R.ab, R.aaa, R.aab, R.abb = cc_loops2.update_r_3p2h(
         R.a,
         R.aa,
         R.ab,

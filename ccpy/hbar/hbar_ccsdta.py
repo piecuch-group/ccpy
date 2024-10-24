@@ -22,7 +22,7 @@ def build_hbar_ccsdta(T, H0, RHF_symmetry, system, *args):
     H = deepcopy(H0)
 
     # Add in the t3-dependent terms to Hbar computed on-the-fly
-    H.aa.vooo, H.aa.vvov, H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.bb.vooo, H.bb.vvov = hbar_cc3.hbar_cc3.build_hbar(
+    H.aa.vooo, H.aa.vvov, H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo, H.bb.vooo, H.bb.vvov = hbar_cc3.build_hbar(
             H.aa.vooo, H.aa.vvov,
             H.ab.vooo, H.ab.ovoo, H.ab.vvov, H.ab.vvvo,
             H.bb.vooo, H.bb.vvov,
@@ -35,7 +35,7 @@ def build_hbar_ccsdta(T, H0, RHF_symmetry, system, *args):
     )
 
     # Update T1/T2 with T3[2]
-    T.a, T.b, T.aa, T.ab, T.bb, _, _, _, _, _ = cc3_loops.cc3_loops.update_t(
+    T.a, T.b, T.aa, T.ab, T.bb, _, _, _, _, _ = cc3_loops.update_t(
         T.a, T.b, T.aa, T.ab, T.bb,
         resid_a, resid_b, resid_aa, resid_ab, resid_bb,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,

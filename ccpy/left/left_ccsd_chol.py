@@ -32,11 +32,11 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
         LH.ab += np.transpose(H.ab.oovv, (2, 3, 0, 1))
         LH.bb += np.transpose(H.bb.oovv, (2, 3, 0, 1))
 
-    L.a, L.b, LH.a, LH.b = cc_loops2.cc_loops2.update_l1(L.a, L.b, LH.a, LH.b,
+    L.a, L.b, LH.a, LH.b = cc_loops2.update_l1(L.a, L.b, LH.a, LH.b,
                                                          omega,
                                                          H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                          shift)
-    L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb = cc_loops2.cc_loops2.update_l2(L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb,
+    L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb = cc_loops2.update_l2(L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb,
                                                          omega,
                                                          H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                          shift)
@@ -51,7 +51,7 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
 
 def update_l(L, omega, H, RHF_symmetry, system):
 
-    L.a, L.b, L.aa, L.ab, L.bb = cc_loops2.cc_loops2.update_r(
+    L.a, L.b, L.aa, L.ab, L.bb = cc_loops2.update_r(
         L.a,
         L.b,
         L.aa,
@@ -150,7 +150,7 @@ def build_LH_2A(L, LH, T, X, H):
     #         # <ab|ef> = <x|ae><x|bf>
     #         batch_ints = build_2index_batch_vvvv_aa_herm(a, b, H)
     #         LH.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, L.aa, optimize=True)
-    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(H.chol.a.vv, 0.5 * L.aa.transpose(3, 2, 1, 0))
+    tmp = vvvv_contraction.vvvv_t2_sym(H.chol.a.vv, 0.5 * L.aa.transpose(3, 2, 1, 0))
     LH.aa += tmp.transpose(3, 2, 1, 0)
 
     LH.aa += 0.5 * np.einsum("ejab,ei->abij", H.aa.vovv, L.a, optimize=True)
@@ -173,7 +173,7 @@ def build_LH_2B(L, LH, T, X, H):
     #     # <ab|ef> = <x|ae><x|bf>
     #     batch_ints = build_3index_batch_vvvv_ab_herm(a, H)
     #     LH.ab[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, L.ab, optimize=True)
-    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2(H.chol.a.vv, H.chol.b.vv, L.ab.transpose(3, 2, 1, 0))
+    tmp = vvvv_contraction.vvvv_t2(H.chol.a.vv, H.chol.b.vv, L.ab.transpose(3, 2, 1, 0))
     LH.ab += tmp.transpose(3, 2, 1, 0)
 
     LH.ab += np.einsum("ejmb,aeim->abij", H.ab.voov, L.aa, optimize=True)
@@ -212,7 +212,7 @@ def build_LH_2C(L, LH, T, X, H):
     #         # <ab|ef> = <x|ae><x|bf>
     #         batch_ints = build_2index_batch_vvvv_bb_herm(a, b, H)
     #         LH.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, L.bb, optimize=True)
-    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(H.chol.b.vv, 0.5 * L.bb.transpose(3, 2, 1, 0))
+    tmp = vvvv_contraction.vvvv_t2_sym(H.chol.b.vv, 0.5 * L.bb.transpose(3, 2, 1, 0))
     LH.bb += tmp.transpose(3, 2, 1, 0)
 
     LH.bb += 0.5 * np.einsum("ejab,ei->abij", H.bb.vovv, L.b, optimize=True)
