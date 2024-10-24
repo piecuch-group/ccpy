@@ -18,6 +18,7 @@ python_sources = [
 'eomccsdta_star.py',
 'ipccp3.py',
 'ipeomccsdta_star.py',
+'dipeomccsdta_star.py',
 ]
 
 py3.install_sources(
