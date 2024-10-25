@@ -5,7 +5,7 @@ import numpy as np
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.hbar.hbar_cc4 import get_cc4_intermediates
-from ccpy.lib.core import cc_loops2, cc4_loops
+from ccpy.lib.core import cc_loops2
 
 def update(T, dT, H, X, shift, flag_RHF, system):
 

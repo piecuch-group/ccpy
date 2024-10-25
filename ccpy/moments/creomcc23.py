@@ -5,7 +5,6 @@ from ccpy.constants.constants import hartreetoeV
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
 from ccpy.lib.core import crcc_loops
 
-
 def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False):
     """
     Calculate the ground-state CR-EOMCC(2,3) correction to the EOMCCSD energy.
@@ -87,14 +86,6 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
         I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
-        (
-            chi2B_vvov,
-            chi2B_vooo,
-            chi2C_vvvo,
-            chi2C_vooo,
-            chi2B_vvvo,
-            chi2B_ovoo,
-        ) = calc_eomcc23c_intermediates(T, R, H)
         dA_abb, dB_abb, dC_abb, dD_abb, ddA_abb, ddB_abb, ddC_abb, ddD_abb = crcc_loops.creomcc23c_opt(
                                                                               omega, r0, T.ab, T.bb, R.ab, R.bb, L.a, L.b, L.ab, L.bb,
                                                                               I2B_vooo, I2C_vooo, I2B_ovoo, H.ab.vvov, H.bb.vvov,
