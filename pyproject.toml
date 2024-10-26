@@ -84,7 +84,7 @@ test-command = ""
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux2014"
 manylinux-aarch64-image = "manylinux2014"
-before-build = "bash {project}/devtools/wheels/cibw_before_build_linux.sh {project}"
+before-build = "bash {project}/devtools/ciwheels/cibw_before_build_linux.sh {project}"
 config-settings = "setup-args='-Dblas=cibuild'"
 
 [tool.cibuildwheel.linux.environment]
