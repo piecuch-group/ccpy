@@ -1,9 +1,0 @@
-numpy
-scipy
-setuptools
-h5py
-cclib
-psutil
-meson-python
-pkgconfig
-cmake

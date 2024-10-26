@@ -1,11 +1,17 @@
-bashlex==0.18
-bracex==2.5.post1
-certifi==2024.8.30
-cibuildwheel==2.21.3
-filelock==3.16.1
+cclib==1.8.1
+-e git+ssh://git@github.com/piecuch-group/ccpy.git@1c77eb46d42f85cf124c4f2e42a026d3939732ad#egg=coupled_cluster_py
+h5py==3.12.1
+iniconfig==2.0.0
 meson==1.6.0
 meson-python==0.17.1
 numpy==2.1.2
 packaging==24.1
-platformdirs==4.3.6
+periodictable==1.7.1
+pluggy==1.5.0
+psutil==6.1.0
+pyparsing==3.2.0
 pyproject-metadata==0.9.0
+pyscf==2.7.0
+pytest==8.3.3
+scipy==1.14.1
+setuptools==75.2.0
