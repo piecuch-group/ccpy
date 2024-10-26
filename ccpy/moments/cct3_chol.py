@@ -41,7 +41,7 @@ def calc_cct3(T, L, corr_energy, H, H0, system, use_RHF=False, num_active=1):
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    dA_aab, dB_aab, dC_aab, dD_aab = cct3_loops.cct3_loops.crcc23b_opt(
+    dA_aab, dB_aab, dC_aab, dD_aab = cct3_loops.crcc23b_opt(
         T.aa, T.ab, L.a, L.b, L.aa, L.ab,
         I2B_ovoo, I2B_vooo, I2A_vooo,
         H.ab.vvvo, H.ab.vvov, H.aa.vvov,
