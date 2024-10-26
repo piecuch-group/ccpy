@@ -7,6 +7,7 @@ if incdir_numpy == 'not-given'
       '-c',
       '''
 import numpy as np
+import os
 try:
   incdir = os.path.relpath(np.get_include())
 except Exception:
@@ -106,6 +107,7 @@ fortran_sources = [
   'fortran/ccsdt_p_loops.f90',
   'fortran/cct3_loops.f90',
   'fortran/clusteranalysis.f90',
+  'fortran/crcc24_loops.f90',
   'fortran/crcc24_opt_loops.f90',
   'fortran/crcc_loops.f90',
   'fortran/creacc_loops.f90',

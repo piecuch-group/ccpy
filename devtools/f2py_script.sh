@@ -24,7 +24,7 @@ done
 
 
 echo "Building PYF"
-$F2PY_EXE --quiet ${SOURCES[@]} -m _fortran -h _fortran.pyf --build-dir $BUILD_DIR
+$F2PY_EXE --quiet ${SOURCES[@]} -m _fortran -h _fortran.pyf --build-dir --overwrite-signature $BUILD_DIR
 
 echo "Building wrappers"
 $F2PY_EXE --quiet $BUILD_DIR/_fortran.pyf --build-dir $BUILD_DIR

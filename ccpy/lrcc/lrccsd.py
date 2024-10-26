@@ -168,8 +168,8 @@ def update_t2c(T1, dT, T, W, X, H, shift):
     dT.bb += 0.5 * np.einsum("be,aeij->abij", X.b.vv, T.bb, optimize=True)  # A(ab)
     dT.bb -= 0.5 * np.einsum("mj,abim->abij", X.b.oo, T.bb, optimize=True)  # A(ij)
     # < i~j~a~b~ | WBar | 0 >
-    I1B_oo = W.a.oo + np.einsum("me,ei->mi", W.b.ov, T.b, optimize=True)
-    I1B_vv = W.a.vv - np.einsum("me,am->ae", W.b.ov, T.b, optimize=True)
+    I1B_oo = W.b.oo + np.einsum("me,ei->mi", W.b.ov, T.b, optimize=True)
+    I1B_vv = W.b.vv - np.einsum("me,am->ae", W.b.ov, T.b, optimize=True)
     dT.bb -= 0.5 * np.einsum("mi,abmj->abij", I1B_oo, T.bb, optimize=True)
     dT.bb += 0.5 * np.einsum("ae,ebij->abij", I1B_vv, T.bb, optimize=True)
 

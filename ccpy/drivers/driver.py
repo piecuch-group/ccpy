@@ -31,7 +31,7 @@ from ccpy.utilities.printing import (
                 print_dea_amplitudes, deaeomcc_calculation_summary,
                 print_dip_amplitudes, dipeomcc_calculation_summary,
 )
-from ccpy.utilities.utilities import convert_excitations_c_to_f, reorder_triples_amplitudes
+from ccpy.utilities.utilities import convert_excitations_c_to_f
 from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
 from ccpy.interfaces.fcidump_tools import load_fcidump_integrals
@@ -383,7 +383,7 @@ class Driver:
         print("   CC(P) calculation ended on", get_timestamp())
 
     def run_lrcc(self, prop, method):
-        """Run the ground-state coupled-cluster (CC) calculation for a many-body system.
+        """Run the linear-response coupled-cluster (CC) calculation for a many-body system.
 
         Parameters
         ----------

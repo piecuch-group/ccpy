@@ -1,4 +1,5 @@
 python_sources = [
+  '__init__.py',
   'lrccsd_intermediates.py',
   'lrccsd.py',
 ]
