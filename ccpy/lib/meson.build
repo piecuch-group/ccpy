@@ -68,17 +68,35 @@ blas_name = get_option('blas')
 lapack_name = get_option('lapack')
 # pkg-config uses a lower-case name while CMake uses a capitalized name, so try
 # that too to make the fallback detection with CMake work
-if blas_name == 'openblas'
-  blas_name = ['openblas', 'OpenBLAS']
+
+if blas_name == 'cibuild'
+  openblas_inc = include_directories('/usr/include')
+  openblas_lib_dir = '/usr/lib64'
+
+  blas_dep = declare_dependency(
+    include_directories: openblas_inc,
+    link_args: [
+      '-L' + openblas_lib_dir,
+      '-lopenblas'
+    ]
+  )
+
+  lapack_dep = blas_dep
+
+  message('Using CI build openblas configuration')
+else
+  blas_dep = dependency(blas_name)
+
+  if 'mkl' in blas_dep.name() or blas_dep.name().to_lower() == 'accelerate'
+    # For these libraries we know that they contain LAPACK, and it's desirable to
+    # use that - no need to run the full detection twice.
+    lapack_dep = blas_dep
+  elif lapack_name == 'openblas'
+    lapack_dep = dependency('openblas')
+  else
+    lapack_dep = dependency(lapack_name)
+  endif
 endif
-
-if lapack_name == 'openblas'
-  lapack_name = ['openblas', 'OpenBLAS']
-endif
-
-blas_dep = dependency(blas_name)
-lapack_dep = dependency(lapack_name)
-
 
 # Build CCPY fortran
 sort_sources = [
