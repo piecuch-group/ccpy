@@ -1,12 +1,14 @@
 """ EOMCCSDT computation for the CH+ molecule at R = Re, where
 Re = 2.13713 bohr described using the Olsen basis set."""
 
+import pytest
 from pathlib import Path
 import numpy as np
 from ccpy import Driver
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
+@pytest.mark.short
 def test_lefteomccsdt_chplus():
 
     driver = Driver.from_gamess(

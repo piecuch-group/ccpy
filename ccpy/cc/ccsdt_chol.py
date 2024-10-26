@@ -4,7 +4,7 @@ and triples (CCSDT) calculation for a molecular system."""
 import numpy as np
 
 from ccpy.hbar.hbar_ccsd_chol import get_ccsd_intermediates
-from ccpy.utilities.updates import cc_loops2, vvvv_contraction
+from ccpy.lib.core import cc_loops2, vvvv_contraction
 
 def update(T, dT, H, X, shift, flag_RHF, system):
 

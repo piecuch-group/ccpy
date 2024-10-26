@@ -1,9 +1,9 @@
 import numpy as np
-from ccpy.utilities.updates import eaeom3_p_loops
+from ccpy.lib.core import eaeom3_p_loops
 from ccpy.eomcc.eaeom3_intermediates import get_eaeom3_p_intermediates
 
 def update(R, omega, H, RHF_symmetry, system, r3_excitations):
-    R.a, R.aa, R.ab, R.aaa, R.aab, R.abb = eaeom3_p_loops.eaeom3_p_loops.update_r(
+    R.a, R.aa, R.ab, R.aaa, R.aab, R.abb = eaeom3_p_loops.update_r(
         R.a,
         R.aa,
         R.ab,
@@ -56,7 +56,7 @@ def build_HR_1A(dR, R, r3_excitations, T, H):
     dR.a += np.einsum("anef,efn->a", H.ab.vovv, R.ab, optimize=True)
     dR.a += np.einsum("me,aem->a", H.a.ov, R.aa, optimize=True)
     dR.a += np.einsum("me,aem->a", H.b.ov, R.ab, optimize=True)
-    dR.a = eaeom3_p_loops.eaeom3_p_loops.build_hr_1a(
+    dR.a = eaeom3_p_loops.build_hr_1a(
             dR.a,
             R.aaa, r3_excitations["aaa"],
             R.aab, r3_excitations["aab"],
@@ -78,7 +78,7 @@ def build_HR_2A(dR, R, r3_excitations, T, H):
     dR.aa += np.einsum("ae,ebj->abj", H.a.vv, R.aa, optimize=True)
     dR.aa += np.einsum("bmje,aem->abj", H.aa.voov, R.aa, optimize=True)
     dR.aa += np.einsum("bmje,aem->abj", H.ab.voov, R.ab, optimize=True)
-    dR.aa = eaeom3_p_loops.eaeom3_p_loops.build_hr_2a(
+    dR.aa = eaeom3_p_loops.build_hr_2a(
             dR.aa,
             R.aaa, r3_excitations["aaa"],
             R.aab, r3_excitations["aab"],
@@ -102,7 +102,7 @@ def build_HR_2B(dR, R, r3_excitations, T, H):
         + np.einsum("mnef,efn->m", H.ab.oovv, R.ab, optimize=True)
     )
     dR.ab -= np.einsum("m,abmj->abj", I1, T.ab, optimize=True)
-    dR.ab = eaeom3_p_loops.eaeom3_p_loops.build_hr_2b(
+    dR.ab = eaeom3_p_loops.build_hr_2b(
             dR.ab,
             R.aab, r3_excitations["aab"],
             R.abb, r3_excitations["abb"],
@@ -115,7 +115,7 @@ def build_HR_2B(dR, R, r3_excitations, T, H):
 
 def build_HR_3A(dR, R, r3_excitations, T, X, H):
     """Calculate the projection <abcjk|[ (H_N e^(T1+T2))_C*(R1h+R2p1h+R3p2h) ]_C|0>."""
-    dR.aaa, R.aaa, r3_excitations["aaa"] = eaeom3_p_loops.eaeom3_p_loops.build_hr_3a(
+    dR.aaa, R.aaa, r3_excitations["aaa"] = eaeom3_p_loops.build_hr_3a(
             R.aa,
             R.aaa, r3_excitations["aaa"],
             R.aab, r3_excitations["aab"],
@@ -129,7 +129,7 @@ def build_HR_3A(dR, R, r3_excitations, T, X, H):
 
 def build_HR_3B(dR, R, r3_excitations, T, X, H):
     """Calculate the projection <abc~jk~|[ (H_N e^(T1+T2))_C*(R1h+R2p1h+R3p2h) ]_C|0>."""
-    dR.aab, R.aab, r3_excitations["aab"] = eaeom3_p_loops.eaeom3_p_loops.build_hr_3b(
+    dR.aab, R.aab, r3_excitations["aab"] = eaeom3_p_loops.build_hr_3b(
             R.aa, R.ab,
             R.aaa, r3_excitations["aaa"],
             R.aab, r3_excitations["aab"],
@@ -147,7 +147,7 @@ def build_HR_3B(dR, R, r3_excitations, T, X, H):
 
 def build_HR_3C(dR, R, r3_excitations, T, X, H):
     """Calculate the projection <ab~c~j~k~|[ (H_N e^(T1+T2))_C*(R1h+R2p1h+R3p2h) ]_C|0>."""
-    dR.abb, R.abb, r3_excitations["abb"] = eaeom3_p_loops.eaeom3_p_loops.build_hr_3c(
+    dR.abb, R.abb, r3_excitations["abb"] = eaeom3_p_loops.build_hr_3c(
             R.ab,
             R.aab, r3_excitations["aab"],
             R.abb, r3_excitations["abb"],

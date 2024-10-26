@@ -1,3 +1,9 @@
+# DEPRECATED FILE.
+#
+# This Makfile should be used only for compatibility reasons. Meson is the currently preferred
+# build system for ccpy. Please look at the README.md for more information on how to build
+# ccpy.
+
 # Build the ccq_py python module
 MODULES := cc_loops \
 		   cc_loops2 \
@@ -89,4 +95,4 @@ all: $(TARGETS)
 	f2py $(LIBS) --f90flags="$(FFLAGS)" -c $< -m $*
 
 clean:
-	rm $(TARGETS)
+	rm -f $(TARGETS)

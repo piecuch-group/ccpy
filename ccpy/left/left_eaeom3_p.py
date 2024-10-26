@@ -1,10 +1,10 @@
 import numpy as np
-from ccpy.utilities.updates import eaeom3_p_loops
-from ccpy.utilities.updates import lefteaeom3_p_loops
+from ccpy.lib.core import eaeom3_p_loops
+from ccpy.lib.core import lefteaeom3_p_loops
 from ccpy.left.left_eaeom_intermediates import get_lefteaeom3_p_intermediates
 
 def update_l(L, omega, H, RHF_symmetry, system, l3_excitations):
-    L.a, L.aa, L.ab, L.aaa, L.aab, L.abb = eaeom3_p_loops.eaeom3_p_loops.update_r(
+    L.a, L.aa, L.ab, L.aaa, L.aab, L.abb = eaeom3_p_loops.update_r(
         L.a,
         L.aa,
         L.ab,
@@ -77,7 +77,7 @@ def build_LH_2A(dL, L, l3_excitations, H, X):
     dL.aa -= np.einsum("aef,fjeb->abj", X["aa"]["vvv"], H.aa.vovv, optimize=True) #
     dL.aa -= np.einsum("aef,jfbe->abj", X["ab"]["vvv"], H.ab.ovvv, optimize=True) #
     dL.aa -= 0.5 * np.einsum("mej,emba->abj", X["aa"]["ovo"], H.aa.vovv, optimize=True)
-    dL.aa = lefteaeom3_p_loops.lefteaeom3_p_loops.build_lh_2a(
+    dL.aa = lefteaeom3_p_loops.build_lh_2a(
             dL.aa,
             L.aaa, l3_excitations["aaa"],
             L.aab, l3_excitations["aab"],
@@ -105,7 +105,7 @@ def build_LH_2B(dL, L, l3_excitations, H, X):
     dL.ab += np.einsum("efb,ejaf->abj", X["ab"]["vvv"], H.ab.vovv, optimize=True) # [IIab]
     dL.ab -= np.einsum("ejn,enab->abj", X["ab"]["voo"], H.ab.vovv, optimize=True) # [III]
     dL.ab -= np.einsum("nfj,nfab->abj", X["ab"]["ovo"], H.ab.ovvv, optimize=True) # [IV]
-    dL.ab = lefteaeom3_p_loops.lefteaeom3_p_loops.build_lh_2b(
+    dL.ab = lefteaeom3_p_loops.build_lh_2b(
             dL.ab,
             L.aab, l3_excitations["aab"],
             L.abb, l3_excitations["abb"],
@@ -116,7 +116,7 @@ def build_LH_2B(dL, L, l3_excitations, H, X):
     return dL
 
 def build_LH_3A(dL, L, l3_excitations, H, X):
-    dL.aaa, L.aaa, l3_excitations["aaa"] = lefteaeom3_p_loops.lefteaeom3_p_loops.build_lh_3a(
+    dL.aaa, L.aaa, l3_excitations["aaa"] = lefteaeom3_p_loops.build_lh_3a(
             L.a, L.aa,
             L.aaa, l3_excitations["aaa"],
             L.aab, l3_excitations["aab"],
@@ -128,7 +128,7 @@ def build_LH_3A(dL, L, l3_excitations, H, X):
     return dL, L, l3_excitations
 
 def build_LH_3B(dL, L, l3_excitations, H, X):
-    dL.aab, L.aab, l3_excitations["aab"] = lefteaeom3_p_loops.lefteaeom3_p_loops.build_lh_3b(
+    dL.aab, L.aab, l3_excitations["aab"] = lefteaeom3_p_loops.build_lh_3b(
             L.a, L.aa, L.ab,
             L.aaa, l3_excitations["aaa"],
             L.aab, l3_excitations["aab"],
@@ -144,7 +144,7 @@ def build_LH_3B(dL, L, l3_excitations, H, X):
     return dL, L, l3_excitations
 
 def build_LH_3C(dL, L, l3_excitations, H, X):
-    dL.abb, L.abb, l3_excitations["abb"] = lefteaeom3_p_loops.lefteaeom3_p_loops.build_lh_3c(
+    dL.abb, L.abb, l3_excitations["abb"] = lefteaeom3_p_loops.build_lh_3c(
             L.a, L.ab,
             L.aab, l3_excitations["aab"],
             L.abb, l3_excitations["abb"],

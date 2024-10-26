@@ -17,7 +17,7 @@ from ccpy.models.integrals import Integral
 # Modules for computation
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.hbar.hbar_cc3 import get_cc3_intermediates
-from ccpy.utilities.updates import cc3_loops
+from ccpy.lib.core import cc3_loops
 
 
 def update(T: ClusterOperator,
@@ -84,7 +84,7 @@ def update(T: ClusterOperator,
     # Update all T1 and T2 clusters together by computing T3 on-the-fly once
     # it would be nice if the T1-transformed X intermediates here were simply the
     # elements of the CCS-transformed hbar computed before T2 builds.
-    T.a, T.b, T.aa, T.ab, T.bb, dT.a, dT.b, dT.aa, dT.ab, dT.bb = cc3_loops.cc3_loops.update_t(
+    T.a, T.b, T.aa, T.ab, T.bb, dT.a, dT.b, dT.aa, dT.ab, dT.bb = cc3_loops.update_t(
         T.a, T.b, T.aa, T.ab, T.bb,
         dT.a, dT.b, dT.aa, dT.ab, dT.bb,
         H.a.oo, H.a.vv, H.b.oo, H.b.vv,

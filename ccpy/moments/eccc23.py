@@ -4,7 +4,7 @@ import time
 import numpy as np
 from ccpy.energy.cc_energy import get_cc_energy
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
-from ccpy.utilities.updates import ccp3_loops
+from ccpy.lib.core import ccp3_loops
 
 
 def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False):
@@ -26,7 +26,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False):
     #### aaa correction ####
     MM23A = build_M3A(T, H)
     L3A = build_L3A(L, H, flag_2ba=True)
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_loops.ccp3_loops.crcc23a_p_full(
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa = ccp3_loops.crcc23a_p_full(
         pspace[0]["aaa"],
         MM23A, L3A, 0.0,
         H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
@@ -38,7 +38,7 @@ def calc_ccp3(T, L, H, H0, system, pspace, use_RHF=False):
     #### aab correction ####
     MM23B = build_M3B(T, H)
     L3B = build_L3B(L, H, flag_2ba=True)
-    dA_aab, dB_aab, dC_aab, dD_aab = ccp3_loops.ccp3_loops.crcc23b_p_full(
+    dA_aab, dB_aab, dC_aab, dD_aab = ccp3_loops.crcc23b_p_full(
         pspace[0]["aab"],
         MM23B, L3B, 0.0,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,

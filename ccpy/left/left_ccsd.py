@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 from ccpy.left.left_cc_intermediates import build_left_ccsd_intermediates
 
 def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
@@ -31,11 +31,11 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
         LH.ab += np.transpose(H.ab.oovv, (2, 3, 0, 1))
         LH.bb += np.transpose(H.bb.oovv, (2, 3, 0, 1))
 
-    L.a, L.b, LH.a, LH.b = cc_loops2.cc_loops2.update_l1(L.a, L.b, LH.a, LH.b,
+    L.a, L.b, LH.a, LH.b = cc_loops2.update_l1(L.a, L.b, LH.a, LH.b,
                                                          omega,
                                                          H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                          shift)
-    L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb = cc_loops2.cc_loops2.update_l2(L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb,
+    L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb = cc_loops2.update_l2(L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb,
                                                          omega,
                                                          H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                          shift)
@@ -50,7 +50,7 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
 
 def update_l(L, omega, H, RHF_symmetry, system):
 
-    L.a, L.b, L.aa, L.ab, L.bb = cc_loops2.cc_loops2.update_r(
+    L.a, L.b, L.aa, L.ab, L.bb = cc_loops2.update_r(
         L.a,
         L.b,
         L.aa,

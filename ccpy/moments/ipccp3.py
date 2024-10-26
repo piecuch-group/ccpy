@@ -4,7 +4,7 @@ import numpy as np
 
 from ccpy.constants.constants import hartreetoeV
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
-from ccpy.utilities.updates import ipccp3_loops
+from ccpy.lib.core import ipccp3_loops
 from ccpy.eomcc.ipeom3_intermediates import get_ipeom3_p_intermediates
 from ccpy.left.left_ipeom_intermediates import get_leftipeom3_p_intermediates
 from ccpy.eomcc.ipeom3 import build_HR_3A, build_HR_3B, build_HR_3C
@@ -47,7 +47,7 @@ def calc_ipccp3_full(T, R, L, r3_excitations, omega, corr_energy, H, H0, system,
     M3A = build_HR_3A(R_unravel, T, X_right, H)
     L3A = build_LH_3A(L_unravel, H, X_left)
     # perform correction in-loop
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa = ipccp3_loops.ipccp3_loops.ipccp3a_full(
+    dA_aaa, dB_aaa, dC_aaa, dD_aaa = ipccp3_loops.ipccp3a_full(
        M3A, L3A, r3_excitations["aaa"],
        omega,
        H0.a.oo, H0.a.vv, H.a.oo, H.a.vv,
@@ -59,7 +59,7 @@ def calc_ipccp3_full(T, R, L, r3_excitations, omega, corr_energy, H, H0, system,
     M3B = build_HR_3B(R_unravel, T, X_right, H)
     L3B = build_LH_3B(L_unravel, H, X_left)
     # perform correction in-loop
-    dA_aab, dB_aab, dC_aab, dD_aab = ipccp3_loops.ipccp3_loops.ipccp3b_full(
+    dA_aab, dB_aab, dC_aab, dD_aab = ipccp3_loops.ipccp3b_full(
        M3B, L3B, r3_excitations["aab"],
        omega,
        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
@@ -73,7 +73,7 @@ def calc_ipccp3_full(T, R, L, r3_excitations, omega, corr_energy, H, H0, system,
     # moments and left vector
     M3C = build_HR_3C(R_unravel, T, X_right, H)
     L3C = build_LH_3C(L_unravel, H, X_left)
-    dA_abb, dB_abb, dC_abb, dD_abb = ipccp3_loops.ipccp3_loops.ipccp3c_full(
+    dA_abb, dB_abb, dC_abb, dD_abb = ipccp3_loops.ipccp3c_full(
         M3C, L3C, r3_excitations["abb"],
         omega,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,

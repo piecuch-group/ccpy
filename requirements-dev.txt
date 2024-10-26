@@ -1,21 +1,11 @@
-# Project requirements
--r requirements.txt
-
-# Docs
-mkdocs
-markdown
-mkdocs-exclude
-mkdocs-material
-markdown-include
-pygments
-ansi2html
-
-# QA
-pytest
-pytest-cov
-
-black
-autoflake
-pylint
-fprettify
-precommit
+bashlex==0.18
+bracex==2.5.post1
+certifi==2024.8.30
+cibuildwheel==2.21.3
+filelock==3.16.1
+meson==1.6.0
+meson-python==0.17.1
+numpy==2.1.2
+packaging==24.1
+platformdirs==4.3.6
+pyproject-metadata==0.9.0

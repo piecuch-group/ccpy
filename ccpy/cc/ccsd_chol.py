@@ -9,7 +9,7 @@ References:
     [4] P. Piecuch and J. Paldus, Int. J. Quantum Chem. 36, 429 (1989).
 """
 import numpy as np
-from ccpy.utilities.updates import cc_loops2, vvvv_contraction
+from ccpy.lib.core import cc_loops2, vvvv_contraction
 
 # @profile
 def update(T, dT, H, X, shift, flag_RHF, system):
@@ -140,7 +140,7 @@ def update_t1a(T, dT, X, H, shift):
     )
     dT.a += np.einsum("xae,xei->ai", H.chol.a.vv, b_vo, optimize=True)
     #
-    T.a, dT.a = cc_loops2.cc_loops2.update_t1a(
+    T.a, dT.a = cc_loops2.update_t1a(
         T.a, dT.a + H.a.vo, H.a.oo, H.a.vv, shift
     )
     return T, dT
@@ -166,7 +166,7 @@ def update_t1b(T, dT, X, H, shift):
     )
     dT.b += np.einsum("xae,xei->ai", H.chol.b.vv, b_vo, optimize=True)
     #
-    T.b, dT.b = cc_loops2.cc_loops2.update_t1b(
+    T.b, dT.b = cc_loops2.update_t1b(
         T.b, dT.b + H.b.vo, H.b.oo, H.b.vv, shift
     )
     return T, dT
@@ -207,9 +207,9 @@ def update_t2a(T, dT, X, H, shift):
     #        # <ab|ef> = <x|ae><x|bf>
     #        batch_ints = build_2index_batch_vvvv_aa(a, b, X)
     #        dT.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, T.aa, optimize=True)
-    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(X.chol.a.vv.transpose(0, 2, 1), 0.5 * T.aa.transpose(3, 2, 1, 0))
+    tmp = vvvv_contraction.vvvv_t2_sym(X.chol.a.vv.transpose(0, 2, 1), 0.5 * T.aa.transpose(3, 2, 1, 0))
     dT.aa += tmp.transpose(3, 2, 1, 0)
-    T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
+    T.aa, dT.aa = cc_loops2.update_t2a(
         T.aa, dT.aa, H.a.oo, H.a.vv, shift
     )
     return T, dT
@@ -270,10 +270,10 @@ def update_t2b(T, dT, X, H, shift):
     # for a in range(T.a.shape[0]):
     #     batch_ints = build_3index_batch_vvvv_ab(a, X)
     #     dT.ab[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, T.ab, optimize=True)
-    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2(X.chol.a.vv.transpose(0, 2, 1), X.chol.b.vv.transpose(0, 2, 1), T.ab.transpose(3, 2, 1, 0))
+    tmp = vvvv_contraction.vvvv_t2(X.chol.a.vv.transpose(0, 2, 1), X.chol.b.vv.transpose(0, 2, 1), T.ab.transpose(3, 2, 1, 0))
     dT.ab += tmp.transpose(3, 2, 1, 0)
     # dT.ab = _contract_vvvv_ab(dT.ab, T.ab, X.chol.a.vv, X.chol.b.vv)
-    T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
+    T.ab, dT.ab = cc_loops2.update_t2b(
         T.ab, dT.ab, H.a.oo, H.a.vv, H.b.oo, H.b.vv, shift
     )
     return T, dT
@@ -311,9 +311,9 @@ def update_t2c(T, dT, X, H, shift):
     #        # <ab|ef> = <x|ae><x|bf>
     #        batch_ints = build_2index_batch_vvvv_bb(a, b, X)
     #        dT.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, T.bb, optimize=True)
-    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(X.chol.b.vv.transpose(0, 2, 1), 0.5 * T.bb.transpose(3, 2, 1, 0))
+    tmp = vvvv_contraction.vvvv_t2_sym(X.chol.b.vv.transpose(0, 2, 1), 0.5 * T.bb.transpose(3, 2, 1, 0))
     dT.bb += tmp.transpose(3, 2, 1, 0)
-    T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
+    T.bb, dT.bb = cc_loops2.update_t2c(
         T.bb, dT.bb, H.b.oo, H.b.vv, shift
     )
     return T, dT

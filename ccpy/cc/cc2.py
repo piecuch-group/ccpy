@@ -6,7 +6,7 @@ perturbation theory, abbreviated as CC2.
 import numpy as np
 
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 def update(T, dT, H, X, shift, flag_RHF, system):
 
@@ -54,7 +54,7 @@ def update_t1a(T, dT, H, X, shift):
     dT.a -= np.einsum("mnif,afmn->ai", H.ab.ooov, T.ab, optimize=True)
     dT.a += 0.5 * np.einsum("anef,efin->ai", H.aa.vovv, T.aa, optimize=True)
     dT.a += np.einsum("anef,efin->ai", H.ab.vovv, T.ab, optimize=True)
-    T.a, dT.a = cc_loops2.cc_loops2.update_t1a(
+    T.a, dT.a = cc_loops2.update_t1a(
         T.a, dT.a + H.a.vo, H.a.oo, H.a.vv, shift
     )
     return T, dT
@@ -73,7 +73,7 @@ def update_t1b(T, dT, H, X, shift):
     dT.b -= np.einsum("nmfi,fanm->ai", H.ab.oovo, T.ab, optimize=True)
     dT.b += 0.5 * np.einsum("anef,efin->ai", H.bb.vovv, T.bb, optimize=True)
     dT.b += np.einsum("nafe,feni->ai", H.ab.ovvv, T.ab, optimize=True)
-    T.b, dT.b = cc_loops2.cc_loops2.update_t1b(
+    T.b, dT.b = cc_loops2.update_t1b(
         T.b, dT.b + H.b.vo, H.b.oo, H.b.vv, shift
     )
     return T, dT
@@ -87,7 +87,7 @@ def update_t2a(T, dT, H, H0, shift):
     # Need iterative Fock terms in this scheme
     dT.aa -= 0.5 * np.einsum("mi,abmj->abij", H0.a.oo, T.aa, optimize=True)
     dT.aa += 0.5 * np.einsum("ae,ebij->abij", H0.a.vv, T.aa, optimize=True)
-    T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
+    T.aa, dT.aa = cc_loops2.update_t2a(
         T.aa, dT.aa + 0.25 * H0.aa.vvoo, H0.a.oo, H0.a.vv, shift
     )
     return T, dT
@@ -105,7 +105,7 @@ def update_t2b(T, dT, H, H0, shift):
     dT.ab -= np.einsum("mj,abim->abij", H0.b.oo, T.ab, optimize=True)
     dT.ab += np.einsum("ae,ebij->abij", H0.a.vv, T.ab, optimize=True)
     dT.ab += np.einsum("be,aeij->abij", H0.b.vv, T.ab, optimize=True)
-    T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
+    T.ab, dT.ab = cc_loops2.update_t2b(
         T.ab, dT.ab + H0.ab.vvoo, H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv, shift
     )
     return T, dT
@@ -119,7 +119,7 @@ def update_t2c(T, dT, H, H0, shift):
     # Need iterative Fock terms in this scheme
     dT.bb -= 0.5 * np.einsum("mi,abmj->abij", H0.b.oo, T.bb, optimize=True)
     dT.bb += 0.5 * np.einsum("ae,ebij->abij", H0.b.vv, T.bb, optimize=True)
-    T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
+    T.bb, dT.bb = cc_loops2.update_t2c(
         T.bb, dT.bb + 0.25 * H0.bb.vvoo, H0.b.oo, H0.b.vv, shift
     )
     return T, dT

@@ -2,11 +2,11 @@
 energies and linear excitation amplitudes for excited states using
 the spin-flip equation-of-motion (EOM) CC with singles and doubles (SF-EOMCCSD)."""
 import numpy as np
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
 
-    R.b, R.ab, R.bb = cc_loops2.cc_loops2.update_r_sfccsd(
+    R.b, R.ab, R.bb = cc_loops2.update_r_sfccsd(
         R.b,
         R.ab,
         R.bb,

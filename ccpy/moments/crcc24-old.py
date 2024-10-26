@@ -26,7 +26,7 @@ def crcc24(cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys, flag_RHF=True, iroot=0):
     # MM24A correction
     MM24A = build_MM24A(cc_t, H2A, sys)
     L4A = build_L4A(cc_t, ints, sys, iroot=iroot)
-    dA_AAAA, dB_AAAA, dC_AAAA, dD_AAAA = crcc_loops.crcc_loops.crcc24a(
+    dA_AAAA, dB_AAAA, dC_AAAA, dD_AAAA = crcc_loops.crcc24a(
         MM24A,
         L4A,
         fA["oo"],
@@ -43,7 +43,7 @@ def crcc24(cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys, flag_RHF=True, iroot=0):
     # MM24B correction
     MM24B = build_MM24B(cc_t, H2A, H2B, sys)
     L4B = build_L4B(cc_t, ints, sys, iroot=iroot)
-    dA_AAAB, dB_AAAB, dC_AAAB, dD_AAAB = crcc_loops.crcc_loops.crcc24b(
+    dA_AAAB, dB_AAAB, dC_AAAB, dD_AAAB = crcc_loops.crcc24b(
         MM24B,
         L4B,
         fA["oo"],
@@ -73,7 +73,7 @@ def crcc24(cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys, flag_RHF=True, iroot=0):
     # MM24C correction
     MM24C = build_MM24C(cc_t, H2A, H2B, H2C, sys)
     L4C = build_L4C(cc_t, ints, sys, iroot=iroot)
-    dA_AABB, dB_AABB, dC_AABB, dD_AABB = crcc_loops.crcc_loops.crcc24c(
+    dA_AABB, dB_AABB, dC_AABB, dD_AABB = crcc_loops.crcc24c(
         MM24C,
         L4C,
         fA["oo"],

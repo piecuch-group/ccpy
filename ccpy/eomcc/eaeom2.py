@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 # R.a -> (nua) -> (a)
 # R.aa -> (nua,nua,noa) -> (abj)
@@ -7,7 +7,7 @@ from ccpy.utilities.updates import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
 
-    R.a, R.aa, R.ab = cc_loops2.cc_loops2.update_r_2p1h(
+    R.a, R.aa, R.ab = cc_loops2.update_r_2p1h(
         R.a,
         R.aa,
         R.ab,

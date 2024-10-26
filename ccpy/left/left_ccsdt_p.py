@@ -1,6 +1,6 @@
 import numpy as np
 from ccpy.left.left_cc_intermediates import build_left_ccsdt_p_intermediates
-from ccpy.utilities.updates import leftccsdt_p_loops, eomccsdt_p_loops
+from ccpy.lib.core import leftccsdt_p_loops, eomccsdt_p_loops
 
 def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system, t3_excitations, l3_excitations, pspace=None):
 
@@ -71,15 +71,15 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system, t3_excitation
         LH.bb += np.transpose(H.bb.oovv, (2, 3, 0, 1))
 
     # Update the L vector and LH residual measure
-    L.a, L.b, LH.a, LH.b = leftccsdt_p_loops.leftccsdt_p_loops.update_l1(L.a, L.b, LH.a, LH.b,
+    L.a, L.b, LH.a, LH.b = leftccsdt_p_loops.update_l1(L.a, L.b, LH.a, LH.b,
                                                                          omega,
                                                                          H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                                          shift)
-    L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb = leftccsdt_p_loops.leftccsdt_p_loops.update_l2(L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb,
+    L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb = leftccsdt_p_loops.update_l2(L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb,
                                                                                           omega,
                                                                                           H.a.oo, H.a.vv, H.b.oo, H.b.vv,
                                                                                           shift)
-    L.aaa, L.aab, L.abb, L.bbb, LH.aaa, LH.aab, LH.abb, LH.bbb = leftccsdt_p_loops.leftccsdt_p_loops.update_l3(
+    L.aaa, L.aab, L.abb, L.bbb, LH.aaa, LH.aab, LH.abb, LH.bbb = leftccsdt_p_loops.update_l3(
                                                          L.aaa, l3_excitations["aaa"],
                                                          L.aab, l3_excitations["aab"],
                                                          L.abb, l3_excitations["abb"],
@@ -107,7 +107,7 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system, t3_excitation
     return L, LH
 
 def update_l(L, omega, H, RHF_symmetry, system, l3_excitations):
-    L.a, L.b, L.aa, L.ab, L.bb, L.aaa, L.aab, L.abb, L.bbb = eomccsdt_p_loops.eomccsdt_p_loops.update_r(
+    L.a, L.b, L.aa, L.ab, L.bb, L.aaa, L.aab, L.abb, L.bbb = eomccsdt_p_loops.update_r(
         L.a,
         L.b,
         L.aa,
@@ -387,7 +387,7 @@ def build_LH_2A(L, LH, T, H, X, l3_excitations):
     LH.aa += 0.5 * np.einsum("ea,ijeb->abij", X.a.vv, H.aa.oovv, optimize=True) # 1
     LH.aa -= 0.5 * np.einsum("im,jmba->abij", X.a.oo, H.aa.oovv, optimize=True) # 2
     # Moment-like terms
-    LH.aa = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_2a(
+    LH.aa = leftccsdt_p_loops.build_lh_2a(
                                             LH.aa,
                                             L.aaa, l3_excitations["aaa"],
                                             L.aab, l3_excitations["aab"],
@@ -471,7 +471,7 @@ def build_LH_2B(L, LH, T, H, X, l3_excitations):
     LH.ab -= np.einsum("im,mjab->abij", X.a.oo, H.ab.oovv, optimize=True) # 3
     LH.ab -= np.einsum("jm,imab->abij", X.b.oo, H.ab.oovv, optimize=True) # 4
     # Moment-like terms
-    LH.ab = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_2b(
+    LH.ab = leftccsdt_p_loops.build_lh_2b(
                                             LH.ab,
                                             L.aab, l3_excitations["aab"],
                                             L.abb, l3_excitations["abb"],
@@ -518,7 +518,7 @@ def build_LH_2C(L, LH, T, H, X, l3_excitations):
     LH.bb += 0.5 * np.einsum("ea,ijeb->abij", X.b.vv, H.bb.oovv, optimize=True) # 1
     LH.bb -= 0.5 * np.einsum("im,jmba->abij", X.b.oo, H.bb.oovv, optimize=True) # 2
     # Moment-like terms
-    LH.bb = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_2c(
+    LH.bb = leftccsdt_p_loops.build_lh_2c(
                                             LH.bb,
                                             L.abb, l3_excitations["abb"],
                                             L.bbb, l3_excitations["bbb"],
@@ -527,7 +527,7 @@ def build_LH_2C(L, LH, T, H, X, l3_excitations):
     return LH
 
 def build_LH_3A(L, LH, H, X, l3_excitations):
-    LH.aaa, L.aaa, l3_excitations["aaa"] = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_3a(
+    LH.aaa, L.aaa, l3_excitations["aaa"] = leftccsdt_p_loops.build_lh_3a(
                                             L.a, L.aa,
                                             L.aaa, l3_excitations["aaa"],
                                             L.aab, l3_excitations["aab"],
@@ -540,7 +540,7 @@ def build_LH_3A(L, LH, H, X, l3_excitations):
     return LH, L, l3_excitations
 
 def build_LH_3B(L, LH, H, X, l3_excitations):
-    LH.aab, L.aab, l3_excitations["aab"] = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_3b(
+    LH.aab, L.aab, l3_excitations["aab"] = leftccsdt_p_loops.build_lh_3b(
                                             L.a, L.b, L.aa, L.ab,
                                             L.aaa, l3_excitations["aaa"],
                                             L.aab, l3_excitations["aab"],
@@ -560,7 +560,7 @@ def build_LH_3B(L, LH, H, X, l3_excitations):
     return LH, L, l3_excitations
 
 def build_LH_3C(L, LH, H, X, l3_excitations):
-    LH.abb, L.abb, l3_excitations["abb"] = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_3c(
+    LH.abb, L.abb, l3_excitations["abb"] = leftccsdt_p_loops.build_lh_3c(
                                             L.a, L.b, L.ab, L.bb,
                                             L.aab, l3_excitations["aab"],
                                             L.abb, l3_excitations["abb"],
@@ -580,7 +580,7 @@ def build_LH_3C(L, LH, H, X, l3_excitations):
     return LH, L, l3_excitations
 
 def build_LH_3D(L, LH, H, X, l3_excitations):
-    LH.bbb, L.bbb, l3_excitations["bbb"] = leftccsdt_p_loops.leftccsdt_p_loops.build_lh_3d(
+    LH.bbb, L.bbb, l3_excitations["bbb"] = leftccsdt_p_loops.build_lh_3d(
                                             L.b, L.bb,
                                             L.abb, l3_excitations["abb"],
                                             L.bbb, l3_excitations["bbb"],

@@ -1,10 +1,10 @@
 import numpy as np
 
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 from ccpy.left.left_eaeom_intermediates import get_lefteaeom3_intermediates
 
 def update_l(L, omega, H, RHF_symmetry, system):
-    L.a, L.aa, L.ab, L.aaa, L.aab, L.abb = cc_loops2.cc_loops2.update_r_3p2h(
+    L.a, L.aa, L.ab, L.aaa, L.aab, L.abb = cc_loops2.update_r_3p2h(
             L.a,
             L.aa,
             L.ab,

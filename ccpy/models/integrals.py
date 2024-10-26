@@ -335,7 +335,7 @@ def build_v(e2int):
 
 def build_f(e1int, v, system):
     """This function generates the Fock matrix using the formula
-    F = Z + G where G is \sum_{i} <pi|v|qi>_A split for different
+    F = Z + G where G is sum_{i} <pi|v|qi>_A split for different
     spin cases.
 
     Parameters
@@ -375,7 +375,7 @@ def build_f(e1int, v, system):
 
 def build_f_chol(e1int, R_chol, system):
     """This function generates the Fock matrix using the formula
-    F = Z + G where G is \sum_{i} <pi|v|qi>_A split for different
+    F = Z + G where G is sum_{i} <pi|v|qi>_A split for different
     spin cases.
 
     Parameters

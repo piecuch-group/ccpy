@@ -1,9 +1,11 @@
+import pytest
 import numpy as np
 from pathlib import Path
 from ccpy import Driver
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
+@pytest.mark.short
 def test_creom23_chplus():
     driver = Driver.from_gamess(
         logfile=TEST_DATA_DIR + "/chplus/chplus.log",

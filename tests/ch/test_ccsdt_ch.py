@@ -1,11 +1,13 @@
 """CCSDT computation on open-shell CH molecule."""
 
+import pytest
 from pathlib import Path
 import numpy as np
 from ccpy import Driver
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
+@pytest.mark.short
 def test_ccsdt_ch():
     driver = Driver.from_gamess(
         logfile=TEST_DATA_DIR + "/ch/ch.log",

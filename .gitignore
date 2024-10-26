@@ -15,7 +15,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -24,6 +23,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+wheelhouse/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -113,3 +113,9 @@ ENV/
 
 .vscode/
 .nfs*
+
+
+# Fortran
+*.mod
+*.o
+*.a

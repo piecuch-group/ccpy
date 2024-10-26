@@ -2,10 +2,10 @@
 energies and linear excitation amplitudes for doubly-attached states
 using the DEA-EOMCC approach with up to 2p excitations"""
 import numpy as np
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
-    R.ab = cc_loops2.cc_loops2.update_r_2p(
+    R.ab = cc_loops2.update_r_2p(
         R.ab,
         omega,
         H.a.vv,

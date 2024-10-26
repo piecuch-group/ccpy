@@ -5,7 +5,7 @@ triples, and quadruples (CCSDTQ) calculation for a molecular system.
 
 import numpy as np
 
-from ccpy.utilities.updates import cc_loops2, cc4_loops
+from ccpy.lib.core import cc_loops2, cc4_loops
 from ccpy.hbar.hbar_cc4 import get_cc4_intermediates
 #from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 #from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates

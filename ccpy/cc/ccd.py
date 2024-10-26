@@ -7,7 +7,7 @@ References:
 """
 import numpy as np
 
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 
 def update(T, dT, H, X, shift, flag_RHF, system):
@@ -61,7 +61,7 @@ def update_t2a(T, dT, H, shift):
     dT.aa += 0.125 * np.einsum("abef,efij->abij", H.aa.vvvv, T.aa, optimize=True)
     dT.aa += 0.125 * np.einsum("mnij,abmn->abij", I2A_oooo, T.aa, optimize=True)
 
-    T.aa, dT.aa = cc_loops2.cc_loops2.update_t2a(
+    T.aa, dT.aa = cc_loops2.update_t2a(
         T.aa, dT.aa + 0.25 * H.aa.vvoo, H.a.oo, H.a.vv, shift
     )
     return T, dT
@@ -124,7 +124,7 @@ def update_t2b(T, dT, H, shift):
     dT.ab += np.einsum("mnij,abmn->abij", I2B_oooo, T.ab, optimize=True)
     dT.ab += np.einsum("abef,efij->abij", H.ab.vvvv, T.ab, optimize=True)
 
-    T.ab, dT.ab = cc_loops2.cc_loops2.update_t2b(
+    T.ab, dT.ab = cc_loops2.update_t2b(
         T.ab, dT.ab + H.ab.vvoo, H.a.oo, H.a.vv, H.b.oo, H.b.vv, shift
     )
     return T, dT
@@ -167,7 +167,7 @@ def update_t2c(T, dT, H, shift):
     dT.bb += 0.125 * np.einsum("abef,efij->abij", H.bb.vvvv, T.bb, optimize=True)
     dT.bb += 0.125 * np.einsum("mnij,abmn->abij", I2C_oooo, T.bb, optimize=True)
 
-    T.bb, dT.bb = cc_loops2.cc_loops2.update_t2c(
+    T.bb, dT.bb = cc_loops2.update_t2c(
         T.bb, dT.bb + 0.25 * H.bb.vvoo, H.b.oo, H.b.vv, shift
     )
     return T, dT

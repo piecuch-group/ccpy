@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from ccpy.utilities.updates import reorder
+from ccpy.lib.core import reorder
 
 def convert_t3_from_pspace(driver, t3_excitations):
 
@@ -227,10 +227,10 @@ def reorder_triples_amplitudes(L, l3_excitations, t3_excitations):
     """Reorder the P-space triples amplitudes in L corresponding to
     the excitation array l3_excitations to the order provided by
     t3_excitations."""
-    L.aaa, _ = reorder.reorder.reorder_amplitudes(L.aaa, l3_excitations["aaa"].T, t3_excitations["aaa"].T)
-    L.aab, _ = reorder.reorder.reorder_amplitudes(L.aab, l3_excitations["aab"].T, t3_excitations["aab"].T)
-    L.abb, _ = reorder.reorder.reorder_amplitudes(L.abb, l3_excitations["abb"].T, t3_excitations["abb"].T)
-    L.bbb, _ = reorder.reorder.reorder_amplitudes(L.bbb, l3_excitations["bbb"].T, t3_excitations["bbb"].T)
+    L.aaa, _ = reorder.reorder_amplitudes(L.aaa, l3_excitations["aaa"].T, t3_excitations["aaa"].T)
+    L.aab, _ = reorder.reorder_amplitudes(L.aab, l3_excitations["aab"].T, t3_excitations["aab"].T)
+    L.abb, _ = reorder.reorder_amplitudes(L.abb, l3_excitations["abb"].T, t3_excitations["abb"].T)
+    L.bbb, _ = reorder.reorder_amplitudes(L.bbb, l3_excitations["bbb"].T, t3_excitations["bbb"].T)
     return L
 
 def zero_small_values(x, threshold):

@@ -1,6 +1,6 @@
 import numpy as np
 from ccpy.eomcc.ipeom3_intermediates import get_ipeomccsdt_intermediates, add_v_term
-from ccpy.utilities.updates import cc_loops2
+from ccpy.lib.core import cc_loops2
 
 # R.a -> (noa) -> (i)
 # R.aa -> (noa,nua,noa) -> (ibj)
@@ -11,7 +11,7 @@ from ccpy.utilities.updates import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
 
-    R.a, R.aa, R.ab, R.aaa, R.aab, R.abb = cc_loops2.cc_loops2.update_r_3h2p(
+    R.a, R.aa, R.ab, R.aaa, R.aab, R.abb = cc_loops2.update_r_3h2p(
         R.a,
         R.aa,
         R.ab,

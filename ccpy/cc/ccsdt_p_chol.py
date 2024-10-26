@@ -9,8 +9,8 @@ from ccpy.models.system import System
 from ccpy.models.integrals import Integral
 #
 from ccpy.hbar.hbar_ccsd_chol import get_ccsd_intermediates
-from ccpy.utilities.updates import vvvv_contraction
-from ccpy.utilities.updates import ccsdt_p_loops, ccsdt_p_chol_loops
+from ccpy.lib.core import vvvv_contraction
+from ccpy.lib.core import ccsdt_p_loops, ccsdt_p_chol_loops
 
 def update(T: ClusterOperator,
            dT: ClusterOperator,
@@ -198,7 +198,7 @@ def update_t1a(T, dT, H, X, shift, t3_excitations):
     )
     dT.a += np.einsum("xae,xei->ai", H.chol.a.vv, b_vo, optimize=True)
     #
-    T.a, dT.a = ccsdt_p_loops.ccsdt_p_loops.update_t1a(
+    T.a, dT.a = ccsdt_p_loops.update_t1a(
         T.a,
         dT.a,
         t3_excitations["aaa"], t3_excitations["aab"], t3_excitations["abb"],
@@ -229,7 +229,7 @@ def update_t1b(T, dT, H, X, shift, t3_excitations):
     )
     dT.b += np.einsum("xae,xei->ai", H.chol.b.vv, b_vo, optimize=True)
     #
-    T.b, dT.b = ccsdt_p_loops.ccsdt_p_loops.update_t1b(
+    T.b, dT.b = ccsdt_p_loops.update_t1b(
         T.b,
         dT.b,
         t3_excitations["aab"], t3_excitations["abb"], t3_excitations["bbb"],
@@ -290,10 +290,10 @@ def update_t2a(T, dT, X, H, shift, t3_excitations):
     #        # <ab|ef> = <x|ae><x|bf>
     #        batch_ints = build_2index_batch_vvvv_aa(a, b, X)
     #        dT.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, T.aa, optimize=True)
-    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(X.chol.a.vv.transpose(0, 2, 1), 0.5 * T.aa.transpose(3, 2, 1, 0))
+    tmp = vvvv_contraction.vvvv_t2_sym(X.chol.a.vv.transpose(0, 2, 1), 0.5 * T.aa.transpose(3, 2, 1, 0))
     dT.aa += tmp.transpose(3, 2, 1, 0)
     #
-    T.aa, dT.aa = ccsdt_p_loops.ccsdt_p_loops.update_t2a(
+    T.aa, dT.aa = ccsdt_p_loops.update_t2a(
         T.aa,
         dT.aa,
         t3_excitations["aaa"], t3_excitations["aab"],
@@ -369,10 +369,10 @@ def update_t2b(T, dT, X, H, shift, t3_excitations):
     # for a in range(T.a.shape[0]):
     #     batch_ints = build_3index_batch_vvvv_ab(a, X)
     #     dT.ab[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, T.ab, optimize=True)
-    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2(X.chol.a.vv.transpose(0, 2, 1), X.chol.b.vv.transpose(0, 2, 1), T.ab.transpose(3, 2, 1, 0))
+    tmp = vvvv_contraction.vvvv_t2(X.chol.a.vv.transpose(0, 2, 1), X.chol.b.vv.transpose(0, 2, 1), T.ab.transpose(3, 2, 1, 0))
     dT.ab += tmp.transpose(3, 2, 1, 0)
     #
-    T.ab, dT.ab = ccsdt_p_loops.ccsdt_p_loops.update_t2b(
+    T.ab, dT.ab = ccsdt_p_loops.update_t2b(
         T.ab,
         dT.ab,
         t3_excitations["aab"], t3_excitations["abb"],
@@ -419,10 +419,10 @@ def update_t2c(T, dT, X, H, shift, t3_excitations):
     #        # <ab|ef> = <x|ae><x|bf>
     #        batch_ints = build_2index_batch_vvvv_bb(a, b, X)
     #        dT.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, T.bb, optimize=True)
-    tmp = vvvv_contraction.vvvv_contraction.vvvv_t2_sym(X.chol.b.vv.transpose(0, 2, 1), 0.5 * T.bb.transpose(3, 2, 1, 0))
+    tmp = vvvv_contraction.vvvv_t2_sym(X.chol.b.vv.transpose(0, 2, 1), 0.5 * T.bb.transpose(3, 2, 1, 0))
     dT.bb += tmp.transpose(3, 2, 1, 0)
     #
-    T.bb, dT.bb = ccsdt_p_loops.ccsdt_p_loops.update_t2c(
+    T.bb, dT.bb = ccsdt_p_loops.update_t2c(
         T.bb,
         dT.bb,
         t3_excitations["abb"], t3_excitations["bbb"],
@@ -442,7 +442,7 @@ def update_t3a(T, dT, H, H0, shift, t3_excitations):
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
     I2A_vooo = I2A_vooo.transpose(1, 0, 2, 3)
 
-    dT.aaa, T.aaa, t3_excitations["aaa"] = ccsdt_p_chol_loops.ccsdt_p_chol_loops.update_t3a_p(
+    dT.aaa, T.aaa, t3_excitations["aaa"] = ccsdt_p_chol_loops.update_t3a_p(
         T.aaa, t3_excitations["aaa"],
         T.aab, t3_excitations["aab"],
         T.aa,
@@ -465,7 +465,7 @@ def update_t3b(T, dT, H, H0, shift, t3_excitations):
     I2A_vooo = I2A_vooo.transpose(1, 0, 2, 3)
     I2B_vooo = I2B_vooo.transpose(1, 0, 2, 3)
 
-    dT.aab, T.aab, t3_excitations["aab"] = ccsdt_p_chol_loops.ccsdt_p_chol_loops.update_t3b_p(
+    dT.aab, T.aab, t3_excitations["aab"] = ccsdt_p_chol_loops.update_t3b_p(
         T.aaa, t3_excitations["aaa"],
         T.aab, t3_excitations["aab"],
         T.abb, t3_excitations["abb"],
@@ -490,7 +490,7 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations):
     I2B_vooo = I2B_vooo.transpose(1, 0, 2, 3)
     I2C_vooo = I2C_vooo.transpose(1, 0, 2, 3)
 
-    dT.abb, T.abb, t3_excitations["abb"] = ccsdt_p_chol_loops.ccsdt_p_chol_loops.update_t3c_p(
+    dT.abb, T.abb, t3_excitations["abb"] = ccsdt_p_chol_loops.update_t3c_p(
         T.aab, t3_excitations["aab"],
         T.abb, t3_excitations["abb"],
         T.bbb, t3_excitations["bbb"],
@@ -512,7 +512,7 @@ def update_t3d(T, dT, H, H0, shift, t3_excitations):
     I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
     I2C_vooo = I2C_vooo.transpose(1, 0, 2, 3)
 
-    dT.bbb, T.bbb, t3_excitations["bbb"] = ccsdt_p_chol_loops.ccsdt_p_chol_loops.update_t3d_p(
+    dT.bbb, T.bbb, t3_excitations["bbb"] = ccsdt_p_chol_loops.update_t3d_p(
         T.abb, t3_excitations["abb"],
         T.bbb, t3_excitations["bbb"],
         T.bb,
