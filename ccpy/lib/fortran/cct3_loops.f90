@@ -1,4 +1,5 @@
 module cct3_loops
+  use reorder, only: reorder_stripe
 
       implicit none
 
@@ -76,9 +77,9 @@ module cct3_loops
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2A_vvov_1243(nua,nua,nua,noa), H2A_vovv_4312(nua,nua,nua,noa), H2A_ooov_4312(nua,noa,noa,noa)
 
-                        call reorder1243(I2A_vvov,I2A_vvov_1243)
-                        call reorder4312(H2A_vovv,H2A_vovv_4312)
-                        call reorder4312(H2A_ooov,H2A_ooov_4312)
+                        call reorder_stripe(4, shape(I2A_vvov), size(I2A_vvov), '1243', I2A_vvov, I2A_vvov_1243)
+                        call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+                        call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
@@ -250,17 +251,17 @@ module cct3_loops
                             H2A_ooov_4312(nua,noa,noa,noa), H2B_oovo_3412(nua,nob,noa,nob),&
                             l2b_1243(nua,nub,nob,noa)
 
-                        call reorder1243(t2a,t2a_1243)
-                        call reorder1243(H2B_vvov,H2B_vvov_1243)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder1243(H2A_vvov,H2A_vvov_1243)
-                        call reorder1342(H2B_vovv,H2B_vovv_1342)
-                        call reorder4312(H2A_vovv,H2A_vovv_4312)
-                        call reorder2341(H2B_ovvv,H2B_ovvv_2341)
-                        call reorder3412(H2B_ooov,H2B_ooov_3412)
-                        call reorder4312(H2A_ooov,H2A_ooov_4312)
-                        call reorder3412(H2B_oovo,H2B_oovo_3412)
-                        call reorder1243(l2b,l2b_1243)
+                        call reorder_stripe(4, shape(t2a), size(t2a), '1243', t2a, t2a_1243)
+                        call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '1243', H2B_vvov, H2B_vvov_1243)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(H2A_vvov), size(H2A_vvov), '1243', H2A_vvov, H2A_vvov_1243)
+                        call reorder_stripe(4, shape(H2B_vovv), size(H2B_vovv), '1342', H2B_vovv, H2B_vovv_1342)
+                        call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+                        call reorder_stripe(4, shape(H2B_ovvv), size(H2B_ovvv), '2341', H2B_ovvv, H2B_ovvv_2341)
+                        call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
+                        call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
+                        call reorder_stripe(4, shape(H2B_oovo), size(H2B_oovo), '3412', H2B_oovo, H2B_oovo_3412)
+                        call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
@@ -448,17 +449,17 @@ module cct3_loops
                         nuanub = nua*nub
                         nub2 = nub*nub
 
-                        call reorder1243(H2B_vvov,H2B_vvov_1243)
-                        call reorder4213(H2C_vvov,H2C_vvov_4213)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder2134(I2C_vooo,I2C_vooo_2134)
-                        call reorder3421(H2B_ovvv,H2B_ovvv_3421)
-                        call reorder1342(H2C_vovv,H2C_vovv_1342)
-                        call reorder3412(H2B_vovv,H2B_vovv_3412)
-                        call reorder3412(H2B_oovo,H2B_oovo_3412)
-                        call reorder3412(H2C_ooov,H2C_ooov_3412)
-                        call reorder1243(l2b,l2b_1243)
-                        call reorder3412(H2B_ooov,H2B_ooov_3412)
+                        call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '1243', H2B_vvov, H2B_vvov_1243)
+                        call reorder_stripe(4, shape(H2C_vvov), size(H2C_vvov), '4213', H2C_vvov, H2C_vvov_4213)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(I2C_vooo), size(I2C_vooo), '2134', I2C_vooo, I2C_vooo_2134)
+                        call reorder_stripe(4, shape(H2B_ovvv), size(H2B_ovvv), '3421', H2B_ovvv, H2B_ovvv_3421)
+                        call reorder_stripe(4, shape(H2C_vovv), size(H2C_vovv), '1342', H2C_vovv, H2C_vovv_1342)
+                        call reorder_stripe(4, shape(H2B_vovv), size(H2B_vovv), '3412', H2B_vovv, H2B_vovv_3412)
+                        call reorder_stripe(4, shape(H2B_oovo), size(H2B_oovo), '3412', H2B_oovo, H2B_oovo_3412)
+                        call reorder_stripe(4, shape(H2C_ooov), size(H2C_ooov), '3412', H2C_ooov, H2C_ooov_3412)
+                        call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
+                        call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
 
                         do i = 1 , noa
                             do j = 1, nob
@@ -592,9 +593,9 @@ module cct3_loops
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2C_vvov_1243(nub,nub,nub,nob), H2C_vovv_4312(nub,nub,nub,nob), H2C_ooov_4312(nub,nob,nob,nob)
 
-                        call reorder1243(I2C_vvov,I2C_vvov_1243)
-                        call reorder4312(H2C_vovv,H2C_vovv_4312)
-                        call reorder4312(H2C_ooov,H2C_ooov_4312)
+                        call reorder_stripe(4, shape(I2C_vvov), size(I2C_vvov), '1243', I2C_vvov, I2C_vvov_1243)
+                        call reorder_stripe(4, shape(H2C_vovv), size(H2C_vovv), '4312', H2C_vovv, H2C_vovv_4312)
+                        call reorder_stripe(4, shape(H2C_ooov), size(H2C_ooov), '4312', H2C_ooov, H2C_ooov_4312)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
@@ -745,11 +746,11 @@ module cct3_loops
                             H2A_ooov_4312(nua,noa,noa,noa), H2A_vvov_2143(nua,nua,nua,noa),&
                             H2A_vooo_2143(noa,nua,noa,noa)
 
-            call reorder1243(I2A_vvov,I2A_vvov_1243)
-            call reorder4312(H2A_vovv,H2A_vovv_4312)
-            call reorder4312(H2A_ooov,H2A_ooov_4312)
-            call reorder2143(H2A_vvov,H2A_vvov_2143)
-            call reorder2143(H2A_vooo,H2A_vooo_2143)
+            call reorder_stripe(4, shape(I2A_vvov), size(I2A_vvov), '1243', I2A_vvov, I2A_vvov_1243)
+            call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+            call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
+            call reorder_stripe(4, shape(H2A_vvov), size(H2A_vvov), '2143', H2A_vvov, H2A_vvov_2143)
+            call reorder_stripe(4, shape(H2A_vooo), size(H2A_vooo), '2143', H2A_vooo, H2A_vooo_2143)
 
             deltaA = 0.0d0
             deltaB = 0.0d0
@@ -965,21 +966,21 @@ module cct3_loops
                 chi2B_vvov_4123(nub,nua,nub,noa),H2B_vvov_4123(nub,nua,nub,noa),&
                 r2b_1243(nua,nub,nob,noa)
 
-            call reorder1243(t2a,t2a_1243)
-            call reorder1243(H2B_vvov,H2B_vvov_1243)
-            call reorder1243(t2b,t2b_1243)
-            call reorder1243(H2A_vvov,H2A_vvov_1243)
-            call reorder1342(H2B_vovv,H2B_vovv_1342)
-            call reorder4312(H2A_vovv,H2A_vovv_4312)
-            call reorder2341(H2B_ovvv,H2B_ovvv_2341)
-            call reorder3412(H2B_ooov,H2B_ooov_3412)
-            call reorder4312(H2A_ooov,H2A_ooov_4312)
-            call reorder3412(H2B_oovo,H2B_oovo_3412)
-            call reorder1243(l2b,l2b_1243)
-            call reorder2143(H2A_vvov,H2A_vvov_2143)
-            call reorder4123(chi2B_vvov,chi2B_vvov_4123)
-            call reorder4123(H2B_vvov,H2B_vvov_4123)
-            call reorder1243(r2b,r2b_1243)
+            call reorder_stripe(4, shape(t2a), size(t2a), '1243', t2a, t2a_1243)
+            call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '1243', H2B_vvov, H2B_vvov_1243)
+            call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+            call reorder_stripe(4, shape(H2A_vvov), size(H2A_vvov), '1243', H2A_vvov, H2A_vvov_1243)
+            call reorder_stripe(4, shape(H2B_vovv), size(H2B_vovv), '1342', H2B_vovv, H2B_vovv_1342)
+            call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+            call reorder_stripe(4, shape(H2B_ovvv), size(H2B_ovvv), '2341', H2B_ovvv, H2B_ovvv_2341)
+            call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
+            call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
+            call reorder_stripe(4, shape(H2B_oovo), size(H2B_oovo), '3412', H2B_oovo, H2B_oovo_3412)
+            call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
+            call reorder_stripe(4, shape(H2A_vvov), size(H2A_vvov), '2143', H2A_vvov, H2A_vvov_2143)
+            call reorder_stripe(4, shape(chi2B_vvov), size(chi2B_vvov), '4123', chi2B_vvov, chi2B_vvov_4123)
+            call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '4123', H2B_vvov, H2B_vvov_4123)
+            call reorder_stripe(4, shape(r2b), size(r2b), '1243', r2b, r2b_1243)
 
             deltaA = 0.0d0
             deltaB = 0.0d0
@@ -1233,27 +1234,27 @@ module cct3_loops
             ddeltaB = 0.0d0
             ddeltaC = 0.0d0
             ddeltaD = 0.0d0
-            
+
             nuanub = nua*nub
             nub2 = nub*nub
 
-            call reorder1243(H2B_vvov,H2B_vvov_1243)
-            call reorder4213(H2C_vvov,H2C_vvov_4213)
-            call reorder1243(t2b,t2b_1243)
-            call reorder2134(I2C_vooo,I2C_vooo_2134)
-            call reorder3421(H2B_ovvv,H2B_ovvv_3421)
-            call reorder1342(H2C_vovv,H2C_vovv_1342)
-            call reorder3412(H2B_vovv,H2B_vovv_3412)
-            call reorder3412(H2B_oovo,H2B_oovo_3412)
-            call reorder3412(H2C_ooov,H2C_ooov_3412)
-            call reorder1243(l2b,l2b_1243)
-            call reorder3412(H2B_ooov,H2B_ooov_3412)
-            call reorder1243(chi2B_vvov,chi2B_vvov_1243)
-            call reorder3214(chi2C_vvvo,chi2C_vvvo_3214)
-            call reorder4123(H2C_vvov,H2C_vvov_4123)
-            call reorder2134(chi2C_vooo,chi2C_vooo_2134)
-            call reorder1243(r2b,r2b_1243)
-            call reorder2134(H2C_vooo,H2C_vooo_2134)
+            call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '1243', H2B_vvov, H2B_vvov_1243)
+            call reorder_stripe(4, shape(H2C_vvov), size(H2C_vvov), '4213', H2C_vvov, H2C_vvov_4213)
+            call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+            call reorder_stripe(4, shape(I2C_vooo), size(I2C_vooo), '2134', I2C_vooo, I2C_vooo_2134)
+            call reorder_stripe(4, shape(H2B_ovvv), size(H2B_ovvv), '3421', H2B_ovvv, H2B_ovvv_3421)
+            call reorder_stripe(4, shape(H2C_vovv), size(H2C_vovv), '1342', H2C_vovv, H2C_vovv_1342)
+            call reorder_stripe(4, shape(H2B_vovv), size(H2B_vovv), '3412', H2B_vovv, H2B_vovv_3412)
+            call reorder_stripe(4, shape(H2B_oovo), size(H2B_oovo), '3412', H2B_oovo, H2B_oovo_3412)
+            call reorder_stripe(4, shape(H2C_ooov), size(H2C_ooov), '3412', H2C_ooov, H2C_ooov_3412)
+            call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
+            call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
+            call reorder_stripe(4, shape(chi2B_vvov), size(chi2B_vvov), '1243', chi2B_vvov, chi2B_vvov_1243)
+            call reorder_stripe(4, shape(chi2C_vvvo), size(chi2C_vvvo), '3214', chi2C_vvvo, chi2C_vvvo_3214)
+            call reorder_stripe(4, shape(H2C_vvov), size(H2C_vvov), '4123', H2C_vvov, H2C_vvov_4123)
+            call reorder_stripe(4, shape(chi2C_vooo), size(chi2C_vooo), '2134', chi2C_vooo, chi2C_vooo_2134)
+            call reorder_stripe(4, shape(r2b), size(r2b), '1243', r2b, r2b_1243)
+            call reorder_stripe(4, shape(H2C_vooo), size(H2C_vooo), '2134', H2C_vooo, H2C_vooo_2134)
 
             do i = 1 , noa
                 do j = 1, nob
@@ -1440,11 +1441,11 @@ module cct3_loops
                             H2C_ooov_4312(nub,nob,nob,nob), H2C_vvov_2143(nub,nub,nub,nob),&
                             H2C_vooo_2143(nob,nub,nob,nob)
 
-            call reorder1243(I2C_vvov,I2C_vvov_1243)
-            call reorder4312(H2C_vovv,H2C_vovv_4312)
-            call reorder4312(H2C_ooov,H2C_ooov_4312)
-            call reorder2143(H2C_vvov,H2C_vvov_2143)
-            call reorder2143(H2C_vooo,H2C_vooo_2143)
+            call reorder_stripe(4, shape(I2C_vvov), size(I2C_vvov), '1243', I2C_vvov, I2C_vvov_1243)
+            call reorder_stripe(4, shape(H2C_vovv), size(H2C_vovv), '4312', H2C_vovv, H2C_vovv_4312)
+            call reorder_stripe(4, shape(H2C_ooov), size(H2C_ooov), '4312', H2C_ooov, H2C_ooov_4312)
+            call reorder_stripe(4, shape(H2C_vvov), size(H2C_vvov), '2143', H2C_vvov, H2C_vvov_2143)
+            call reorder_stripe(4, shape(H2C_vooo), size(H2C_vooo), '2143', H2C_vooo, H2C_vooo_2143)
 
             deltaA = 0.0d0
             deltaB = 0.0d0

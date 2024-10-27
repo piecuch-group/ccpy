@@ -70,8 +70,8 @@ module crcc_loops
           call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_1243(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,X3A,nua2)
           !!!!! L3A !!!!!
           ! Diagram 1: A(i/jk)A(c/ab) H2A_vovv(e,i,b,a)*l2a(e,c,j,k)
-          call dgemm('n','n',nua2,nua,nua,0.5d0,H2A_vovv_4312(:,:,:,i),nua2,l2a(:,:,j,k),nua,1.0d0,L3A,nua2)                         
-          call dgemm('n','n',nua2,nua,nua,-0.5d0,H2A_vovv_4312(:,:,:,j),nua2,l2a(:,:,i,k),nua,1.0d0,L3A,nua2)                         
+          call dgemm('n','n',nua2,nua,nua,0.5d0,H2A_vovv_4312(:,:,:,i),nua2,l2a(:,:,j,k),nua,1.0d0,L3A,nua2)
+          call dgemm('n','n',nua2,nua,nua,-0.5d0,H2A_vovv_4312(:,:,:,j),nua2,l2a(:,:,i,k),nua,1.0d0,L3A,nua2)
           call dgemm('n','n',nua2,nua,nua,-0.5d0,H2A_vovv_4312(:,:,:,k),nua2,l2a(:,:,j,i),nua,1.0d0,L3A,nua2)
           ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
           call dgemm('n','t',nua,nua2,noa,-0.5d0,H2A_ooov_4312(:,:,j,i),nua,l2a(:,:,:,k),nua2,1.0d0,L3A,nua)
@@ -108,7 +108,7 @@ module crcc_loops
                 +H1A_ov(j,a)*l2a(c,b,i,k)&
                 +H1A_ov(j,b)*l2a(a,c,i,k)
 
-                LM = temp1*(temp2+temp3)                                        
+                LM = temp1*(temp2+temp3)
 
                 D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
                 - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
@@ -141,11 +141,11 @@ module crcc_loops
                 deltaD = deltaD + LM/D
 
               end do
-            end do 
-          end do 
+            end do
+          end do
 
-        end do 
-      end do 
+        end do
+      end do
     end do
 
   end subroutine crcc23A_opt
@@ -218,7 +218,7 @@ module crcc_loops
     integer :: i, j, k, a, b, c, nuanub, nua2
     real(p) :: D, temp1, temp2, temp3, LM, X3B(nua,nua,nub), L3B(nua,nua,nub)
 
-    ! arrays for reordering 
+    ! arrays for reordering
     real(p) :: t2a_1243(nua,nua,noa,noa), H2B_vvov_1243(nua,nub,nub,noa),&
     t2b_1243(nua,nub,nob,noa), H2A_vvov_1243(nua,nua,nua,noa),&
     H2B_vovv_1342(nua,nua,nub,nob), H2A_vovv_4312(nua,nua,nua,noa),&
@@ -336,10 +336,10 @@ module crcc_loops
                 deltaD = deltaD + LM/D
 
               end do
-            end do 
-          end do 
-        end do 
-      end do 
+            end do
+          end do
+        end do
+      end do
     end do
 
 
@@ -374,7 +374,7 @@ module crcc_loops
     H2C_vovv(nub,nob,nub,nub),H2B_oovo(noa,nob,nua,nob),&
     H2B_ooov(noa,nob,noa,nub),H2C_ooov(nob,nob,nob,nub),&
     H1A_ov(noa,nua),H1B_ov(nob,nub),&
-    vB_oovv(noa,nob,nua,nub),vC_oovv(nob,nob,nub,nub),& 
+    vB_oovv(noa,nob,nua,nub),vC_oovv(nob,nob,nub,nub),&
     fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
     fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
     H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
@@ -523,10 +523,10 @@ module crcc_loops
                 deltaD = deltaD + LM/D
 
               end do
-            end do 
-          end do 
-        end do 
-      end do 
+            end do
+          end do
+        end do
+      end do
     end do
 
   end subroutine crcc23C_opt
@@ -584,8 +584,8 @@ module crcc_loops
           call dgemm('n','n',nub2,nub,nub,-0.5d0,I2C_vvov_1243(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,X3D,nub2)
           !!!!! L3A !!!!!
           ! Diagram 1: A(i/jk)A(c/ab) H2C_vovv(e,i,b,a)*l2c(e,c,j,k)
-          call dgemm('n','n',nub2,nub,nub,0.5d0,H2C_vovv_4312(:,:,:,i),nub2,l2c(:,:,j,k),nub,1.0d0,L3D,nub2)                         
-          call dgemm('n','n',nub2,nub,nub,-0.5d0,H2C_vovv_4312(:,:,:,j),nub2,l2c(:,:,i,k),nub,1.0d0,L3D,nub2)                         
+          call dgemm('n','n',nub2,nub,nub,0.5d0,H2C_vovv_4312(:,:,:,i),nub2,l2c(:,:,j,k),nub,1.0d0,L3D,nub2)
+          call dgemm('n','n',nub2,nub,nub,-0.5d0,H2C_vovv_4312(:,:,:,j),nub2,l2c(:,:,i,k),nub,1.0d0,L3D,nub2)
           call dgemm('n','n',nub2,nub,nub,-0.5d0,H2C_vovv_4312(:,:,:,k),nub2,l2c(:,:,j,i),nub,1.0d0,L3D,nub2)
           ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
           call dgemm('n','t',nub,nub2,nob,-0.5d0,H2C_ooov_4312(:,:,j,i),nub,l2c(:,:,:,k),nub2,1.0d0,L3D,nub)
@@ -622,7 +622,7 @@ module crcc_loops
                 +H1B_ov(j,a)*l2c(c,b,i,k)&
                 +H1b_ov(j,b)*l2c(a,c,i,k)
 
-                LM = temp1*(temp2+temp3)                                        
+                LM = temp1*(temp2+temp3)
 
                 D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                 - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
@@ -655,11 +655,11 @@ module crcc_loops
                 deltaD = deltaD + LM/D
 
               end do
-            end do 
-          end do 
+            end do
+          end do
 
-        end do 
-      end do 
+        end do
+      end do
     end do
 
   end subroutine crcc23D_opt
@@ -756,8 +756,8 @@ module crcc_loops
           call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_1243(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,X3A,nua2)
           !!!!! L3A !!!!!
           ! Diagram 1: A(i/jk)A(c/ab) H2A_vovv(e,i,b,a)*l2a(e,c,j,k)
-          call dgemm('n','n',nua2,nua,nua,0.5d0,H2A_vovv_4312(:,:,:,i),nua2,l2a(:,:,j,k),nua,1.0d0,L3A,nua2)                         
-          call dgemm('n','n',nua2,nua,nua,-0.5d0,H2A_vovv_4312(:,:,:,j),nua2,l2a(:,:,i,k),nua,1.0d0,L3A,nua2)                         
+          call dgemm('n','n',nua2,nua,nua,0.5d0,H2A_vovv_4312(:,:,:,i),nua2,l2a(:,:,j,k),nua,1.0d0,L3A,nua2)
+          call dgemm('n','n',nua2,nua,nua,-0.5d0,H2A_vovv_4312(:,:,:,j),nua2,l2a(:,:,i,k),nua,1.0d0,L3A,nua2)
           call dgemm('n','n',nua2,nua,nua,-0.5d0,H2A_vovv_4312(:,:,:,k),nua2,l2a(:,:,j,i),nua,1.0d0,L3A,nua2)
           ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
           call dgemm('n','t',nua,nua2,noa,-0.5d0,H2A_ooov_4312(:,:,j,i),nua,l2a(:,:,:,k),nua2,1.0d0,L3A,nua)
@@ -834,10 +834,10 @@ module crcc_loops
                 deltaD = deltaD + LM/(omega+D)
                 ddeltaD = ddeltaD + LM1/(omega+D)
               end do
-            end do 
-          end do 
-        end do 
-      end do 
+            end do
+          end do
+        end do
+      end do
     end do
   end subroutine creomcc23A_opt
 
@@ -881,7 +881,7 @@ module crcc_loops
     chi2B_vvov(nua,nub,noa,nub),chi2B_vooo(nua,nob,noa,nob),&
     H2B_ovoo(noa,nub,noa,nob),H2A_vooo(nua,noa,noa,noa),H2B_vooo(nua,nob,noa,nob),&
     H1A_ov(noa,nua),H1B_ov(nob,nub),&
-    vA_oovv(noa,noa,nua,nua),vB_oovv(noa,nob,nua,nub),& 
+    vA_oovv(noa,noa,nua,nua),vB_oovv(noa,nob,nua,nub),&
     fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
     fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
     H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
@@ -908,7 +908,7 @@ module crcc_loops
     real(p) :: D, temp1, temp2, temp3, temp4, LM, LM1,&
     X3B(nua,nua,nub), L3B(nua,nua,nub), Y3B(nua,nua,nub)
 
-    ! arrays for reordering 
+    ! arrays for reordering
     real(p) :: t2a_1243(nua,nua,noa,noa), H2B_vvov_1243(nua,nub,nub,noa),&
     t2b_1243(nua,nub,nob,noa), H2A_vvov_1243(nua,nua,nua,noa),&
     H2B_vovv_1342(nua,nua,nub,nob), H2A_vovv_4312(nua,nua,nua,noa),&
@@ -1077,10 +1077,10 @@ module crcc_loops
                 deltaD = deltaD + LM/(omega+D)
                 ddeltaD = ddeltaD + LM1/(omega+D)
               end do
-            end do 
-          end do 
-        end do 
-      end do 
+            end do
+          end do
+        end do
+      end do
     end do
   end subroutine creomcc23B_opt
 
@@ -1124,7 +1124,7 @@ module crcc_loops
     chi2B_vvvo(nua,nub,nua,nob),chi2B_ovoo(noa,nub,noa,nob),&
     H2B_vooo(nua,nob,noa,nob),H2C_vooo(nub,nob,nob,nob),H2B_ovoo(noa,nub,noa,nob),&
     H1A_ov(noa,nua),H1B_ov(nob,nub),&
-    vB_oovv(noa,nob,nua,nub),vC_oovv(nob,nob,nub,nub),& 
+    vB_oovv(noa,nob,nua,nub),vC_oovv(nob,nob,nub,nub),&
     fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
     fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
     H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
@@ -1209,20 +1209,20 @@ module crcc_loops
           Y3C = 0.0_p
 
           !!!!! EOMMM(2,3)C !!!!!
-          ! Diagram 1a: A(bc) chi2B_vvov(a,b,i,e)*t2c(e,c,j,k) 
+          ! Diagram 1a: A(bc) chi2B_vvov(a,b,i,e)*t2c(e,c,j,k)
           call dgemm('n','n',nuanub,nub,nub,1.0d0,chi2B_vvov_1243(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,Y3C,nuanub)
-          ! Diagram 1b: A(bc) H2B_vvov(a,b,i,e)*r2c(e,c,j,k)  
+          ! Diagram 1b: A(bc) H2B_vvov(a,b,i,e)*r2c(e,c,j,k)
           call dgemm('n','n',nuanub,nub,nub,1.0d0,H2B_vvov_1243(:,:,:,i),nuanub,r2c(:,:,j,k),nub,1.0d0,Y3C,nuanub)
           ! Diagram 2a: -A(jk) chi2B_vooo(a,n,i,j)*t2c(b,c,n,k)
-          call dgemm('n','t',nua,nub2,nob,-0.5d0,chi2B_vooo(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,Y3C,nua) 
-          call dgemm('n','t',nua,nub2,nob,0.5d0,chi2B_vooo(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,Y3C,nua) 
-          ! Diagram 2b: -A(jk) H2B_vooo(a,n,i,j)*r2c(b,c,n,k) 
-          call dgemm('n','t',nua,nub2,nob,-0.5d0,H2B_vooo(:,:,i,j),nua,r2c(:,:,:,k),nub2,1.0d0,Y3C,nua) 
-          call dgemm('n','t',nua,nub2,nob,0.5d0,H2B_vooo(:,:,i,k),nua,r2c(:,:,:,j),nub2,1.0d0,Y3C,nua) 
+          call dgemm('n','t',nua,nub2,nob,-0.5d0,chi2B_vooo(:,:,i,j),nua,t2c(:,:,:,k),nub2,1.0d0,Y3C,nua)
+          call dgemm('n','t',nua,nub2,nob,0.5d0,chi2B_vooo(:,:,i,k),nua,t2c(:,:,:,j),nub2,1.0d0,Y3C,nua)
+          ! Diagram 2b: -A(jk) H2B_vooo(a,n,i,j)*r2c(b,c,n,k)
+          call dgemm('n','t',nua,nub2,nob,-0.5d0,H2B_vooo(:,:,i,j),nua,r2c(:,:,:,k),nub2,1.0d0,Y3C,nua)
+          call dgemm('n','t',nua,nub2,nob,0.5d0,H2B_vooo(:,:,i,k),nua,r2c(:,:,:,j),nub2,1.0d0,Y3C,nua)
           ! Diagram 3a: A(jk) chi2C_vvvo(c,b,e,j)*t2b(a,e,i,k)
           call dgemm('n','n',nua,nub2,nub,0.5d0,t2b(:,:,i,k),nua,chi2C_vvvo_3214(:,:,:,j),nub,1.0d0,Y3C,nua)
           call dgemm('n','n',nua,nub2,nub,-0.5d0,t2b(:,:,i,j),nua,chi2C_vvvo_3214(:,:,:,k),nub,1.0d0,Y3C,nua)
-          ! Diagram 3b: A(jk) H2C_vvov(b,c,j,e)*r2b(a,e,i,k) 
+          ! Diagram 3b: A(jk) H2C_vvov(b,c,j,e)*r2b(a,e,i,k)
           call dgemm('n','n',nua,nub2,nub,0.5d0,r2b(:,:,i,k),nua,H2C_vvov_4123(:,:,:,j),nub,1.0d0,Y3C,nua)
           call dgemm('n','n',nua,nub2,nub,-0.5d0,r2b(:,:,i,j),nua,H2C_vvov_4123(:,:,:,k),nub,1.0d0,Y3C,nua)
           ! Diagram 4a: -A(bc) chi2C_vooo(b,n,j,k)*t2b(a,c,i,n) -> -A(bc) t2b(a,b,i,n)*chi2C_vooo(c,n,k,j)
@@ -1230,11 +1230,11 @@ module crcc_loops
           ! Diagram 4b: -A(bc) H2C_vooo(b,n,j,k)*r2b(a,c,i,n) -> -A(bc) r2b(a,b,i,n)*H2C_vooo(c,n,k,j)
           call dgemm('n','n',nuanub,nub,nob,-1.0d0,r2b_1243(:,:,:,i),nuanub,H2C_vooo_2134(:,:,k,j),nob,1.0d0,Y3C,nuanub)
           ! Diagram 5a: A(jk)A(bc) chi2B_vvvo(a,b,e,j)*t2b(e,c,i,k)
-          call dgemm('n','n',nuanub,nub,nua,1.0d0,chi2B_vvvo(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,Y3C,nuanub) 
-          call dgemm('n','n',nuanub,nub,nua,-1.0d0,chi2B_vvvo(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,Y3C,nuanub) 
-          ! Diagram 5b: A(jk)A(bc) H2B_vvvo(a,b,e,j)*r2b(e,c,i,k) 
-          call dgemm('n','n',nuanub,nub,nua,1.0d0,H2B_vvvo(:,:,:,j),nuanub,r2b(:,:,i,k),nua,1.0d0,Y3C,nuanub) 
-          call dgemm('n','n',nuanub,nub,nua,-1.0d0,H2B_vvvo(:,:,:,k),nuanub,r2b(:,:,i,j),nua,1.0d0,Y3C,nuanub) 
+          call dgemm('n','n',nuanub,nub,nua,1.0d0,chi2B_vvvo(:,:,:,j),nuanub,t2b(:,:,i,k),nua,1.0d0,Y3C,nuanub)
+          call dgemm('n','n',nuanub,nub,nua,-1.0d0,chi2B_vvvo(:,:,:,k),nuanub,t2b(:,:,i,j),nua,1.0d0,Y3C,nuanub)
+          ! Diagram 5b: A(jk)A(bc) H2B_vvvo(a,b,e,j)*r2b(e,c,i,k)
+          call dgemm('n','n',nuanub,nub,nua,1.0d0,H2B_vvvo(:,:,:,j),nuanub,r2b(:,:,i,k),nua,1.0d0,Y3C,nuanub)
+          call dgemm('n','n',nuanub,nub,nua,-1.0d0,H2B_vvvo(:,:,:,k),nuanub,r2b(:,:,i,j),nua,1.0d0,Y3C,nuanub)
           ! Diagram 6a: -A(jk)A(bc) chi2B_ovoo(n,b,i,j)*t2b(a,c,n,k) -> -A(jk)A(bc) t2b(a,b,n,j)*chi2B_ovoo(n,c,i,k)
           call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,chi2B_ovoo(:,:,i,k),noa,1.0d0,Y3C,nuanub)
           call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,chi2B_ovoo(:,:,i,j),noa,1.0d0,Y3C,nuanub)
@@ -1333,10 +1333,10 @@ module crcc_loops
                 deltaD = deltaD + LM/(omega+D)
                 ddeltaD = ddeltaD + LM1/(omega+D)
               end do
-            end do 
-          end do 
-        end do 
-      end do 
+            end do
+          end do
+        end do
+      end do
     end do
   end subroutine creomcc23C_opt
 
@@ -1430,8 +1430,8 @@ module crcc_loops
           call dgemm('n','n',nub2,nub,nub,-0.5d0,I2C_vvov_1243(:,:,:,k),nub2,t2c(:,:,j,i),nub,1.0d0,X3D,nub2)
           !!!!! L3A !!!!!
           ! Diagram 1: A(i/jk)A(c/ab) H2C_vovv(e,i,b,a)*l2c(e,c,j,k)
-          call dgemm('n','n',nub2,nub,nub,0.5d0,H2C_vovv_4312(:,:,:,i),nub2,l2c(:,:,j,k),nub,1.0d0,L3D,nub2)                         
-          call dgemm('n','n',nub2,nub,nub,-0.5d0,H2C_vovv_4312(:,:,:,j),nub2,l2c(:,:,i,k),nub,1.0d0,L3D,nub2)                         
+          call dgemm('n','n',nub2,nub,nub,0.5d0,H2C_vovv_4312(:,:,:,i),nub2,l2c(:,:,j,k),nub,1.0d0,L3D,nub2)
+          call dgemm('n','n',nub2,nub,nub,-0.5d0,H2C_vovv_4312(:,:,:,j),nub2,l2c(:,:,i,k),nub,1.0d0,L3D,nub2)
           call dgemm('n','n',nub2,nub,nub,-0.5d0,H2C_vovv_4312(:,:,:,k),nub2,l2c(:,:,j,i),nub,1.0d0,L3D,nub2)
           ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
           call dgemm('n','t',nub,nub2,nob,-0.5d0,H2C_ooov_4312(:,:,j,i),nub,l2c(:,:,:,k),nub2,1.0d0,L3D,nub)
@@ -1508,10 +1508,10 @@ module crcc_loops
                 deltaD = deltaD + LM/(omega+D)
                 ddeltaD = ddeltaD + LM1/(omega+D)
               end do
-            end do 
+            end do
           end do
-        end do 
-      end do 
+        end do
+      end do
     end do
 
   end subroutine creomcc23D_opt
@@ -1584,10 +1584,10 @@ module crcc_loops
                 deltaD = deltaD + temp/(omega+D)
 
               end do
-            end do 
-          end do 
-        end do 
-      end do 
+            end do
+          end do
+        end do
+      end do
     end do
 
   end subroutine crcc23A
@@ -1673,10 +1673,10 @@ module crcc_loops
                 deltaD = deltaD + temp/(omega+D)
 
               end do
-            end do 
-          end do 
-        end do 
-      end do 
+            end do
+          end do
+        end do
+      end do
     end do
 
   end subroutine crcc23B
@@ -1761,10 +1761,10 @@ module crcc_loops
                 deltaD = deltaD + temp/(omega+D)
 
               end do
-            end do 
-          end do 
-        end do 
-      end do 
+            end do
+          end do
+        end do
+      end do
     end do
 
   end subroutine crcc23C
@@ -1834,10 +1834,10 @@ module crcc_loops
                 deltaD = deltaD + temp/(omega+D)
 
               end do
-            end do 
-          end do 
-        end do 
-      end do 
+            end do
+          end do
+        end do
+      end do
     end do
 
   end subroutine crcc23D

@@ -1,5 +1,7 @@
 module ccsdpt_loops
 
+  use reorder, only: reorder_stripe
+
       implicit none
 
       contains
@@ -23,9 +25,9 @@ module ccsdpt_loops
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2A_vvov_1243(nua,nua,nua,noa), vA_vovv_4312(nua,nua,nua,noa), vA_ooov_4312(nua,noa,noa,noa)
 
-                        call reorder1243(I2A_vvov,I2A_vvov_1243)
-                        call reorder4312(vA_vovv,vA_vovv_4312)
-                        call reorder4312(vA_ooov,vA_ooov_4312)
+                        call reorder_stripe(4, shape(I2A_vvov), size(I2A_vvov), '1243', I2A_vvov, I2A_vvov_1243)
+                        call reorder_stripe(4, shape(vA_vovv), size(vA_vovv), '4312', vA_vovv, vA_vovv_4312)
+                        call reorder_stripe(4, shape(vA_ooov), size(vA_ooov), '4312', vA_ooov, vA_ooov_4312)
 
                         deltaA = 0.0d0
 
@@ -138,16 +140,16 @@ module ccsdpt_loops
                             vB_ovvv_2341(nub,nua,nub,noa), vB_ooov_3412(noa,nub,noa,nob),&
                             vA_ooov_4312(nua,noa,noa,noa), vB_oovo_3412(nua,nob,noa,nob)
 
-                        call reorder1243(t2a,t2a_1243)
-                        call reorder1243(vB_vvov,vB_vvov_1243)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder1243(vA_vvov,vA_vvov_1243)
-                        call reorder1342(vB_vovv,vB_vovv_1342)
-                        call reorder4312(vA_vovv,vA_vovv_4312)
-                        call reorder2341(vB_ovvv,vB_ovvv_2341)
-                        call reorder3412(vB_ooov,vB_ooov_3412)
-                        call reorder4312(vA_ooov,vA_ooov_4312)
-                        call reorder3412(vB_oovo,vB_oovo_3412)
+                        call reorder_stripe(4, shape(t2a), size(t2a), '1243', t2a, t2a_1243)
+                        call reorder_stripe(4, shape(vB_vvov), size(vB_vvov), '1243', vB_vvov, vB_vvov_1243)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(vA_vvov), size(vA_vvov), '1243', vA_vvov, vA_vvov_1243)
+                        call reorder_stripe(4, shape(vB_vovv), size(vB_vovv), '1342', vB_vovv, vB_vovv_1342)
+                        call reorder_stripe(4, shape(vA_vovv), size(vA_vovv), '4312', vA_vovv, vA_vovv_4312)
+                        call reorder_stripe(4, shape(vB_ovvv), size(vB_ovvv), '2341', vB_ovvv, vB_ovvv_2341)
+                        call reorder_stripe(4, shape(vB_ooov), size(vB_ooov), '3412', vB_ooov, vB_ooov_3412)
+                        call reorder_stripe(4, shape(vA_ooov), size(vA_ooov), '4312', vA_ooov, vA_ooov_4312)
+                        call reorder_stripe(4, shape(vB_oovo), size(vB_oovo), '3412', vB_oovo, vB_oovo_3412)
 
                         deltaA = 0.0d0
 
@@ -273,16 +275,16 @@ module ccsdpt_loops
                         nuanub = nua*nub
                         nub2 = nub*nub
 
-                        call reorder1243(vB_vvov,vB_vvov_1243)
-                        call reorder4213(vC_vvov,vC_vvov_4213)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder2134(I2C_vooo,I2C_vooo_2134)
-                        call reorder3421(vB_ovvv,vB_ovvv_3421)
-                        call reorder1342(vC_vovv,vC_vovv_1342)
-                        call reorder3412(vB_vovv,vB_vovv_3412)
-                        call reorder3412(vB_oovo,vB_oovo_3412)
-                        call reorder3412(vC_ooov,vC_ooov_3412)
-                        call reorder3412(vB_ooov,vB_ooov_3412)
+                        call reorder_stripe(4, shape(vB_vvov), size(vB_vvov), '1243', vB_vvov, vB_vvov_1243)
+                        call reorder_stripe(4, shape(vC_vvov), size(vC_vvov), '4213', vC_vvov, vC_vvov_4213)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(I2C_vooo), size(I2C_vooo), '2134', I2C_vooo, I2C_vooo_2134)
+                        call reorder_stripe(4, shape(vB_ovvv), size(vB_ovvv), '3421', vB_ovvv, vB_ovvv_3421)
+                        call reorder_stripe(4, shape(vC_vovv), size(vC_vovv), '1342', vC_vovv, vC_vovv_1342)
+                        call reorder_stripe(4, shape(vB_vovv), size(vB_vovv), '3412', vB_vovv, vB_vovv_3412)
+                        call reorder_stripe(4, shape(vB_oovo), size(vB_oovo), '3412', vB_oovo, vB_oovo_3412)
+                        call reorder_stripe(4, shape(vC_ooov), size(vC_ooov), '3412', vC_ooov, vC_ooov_3412)
+                        call reorder_stripe(4, shape(vB_ooov), size(vB_ooov), '3412', vB_ooov, vB_ooov_3412)
 
                         do i = 1 , noa
                             do j = 1, nob
@@ -376,9 +378,9 @@ module ccsdpt_loops
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2C_vvov_1243(nub,nub,nub,nob), vC_vovv_4312(nub,nub,nub,nob), vC_ooov_4312(nub,nob,nob,nob)
 
-                        call reorder1243(I2C_vvov,I2C_vvov_1243)
-                        call reorder4312(vC_vovv,vC_vovv_4312)
-                        call reorder4312(vC_ooov,vC_ooov_4312)
+                        call reorder_stripe(4, shape(I2C_vvov), size(I2C_vvov), '1243', I2C_vvov, I2C_vvov_1243)
+                        call reorder_stripe(4, shape(vC_vovv), size(vC_vovv), '4312', vC_vovv, vC_vovv_4312)
+                        call reorder_stripe(4, shape(vC_ooov), size(vC_ooov), '4312', vC_ooov, vC_ooov_4312)
 
                         deltaA = 0.0d0
 
@@ -478,9 +480,9 @@ module ccsdpt_loops
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2A_vvov_1243(nua,nua,nua,noa), vA_vovv_4312(nua,nua,nua,noa), vA_ooov_4312(nua,noa,noa,noa)
 
-                        call reorder1243(I2A_vvov,I2A_vvov_1243)
-                        call reorder4312(vA_vovv,vA_vovv_4312)
-                        call reorder4312(vA_ooov,vA_ooov_4312)
+                        call reorder_stripe(4, shape(I2A_vvov), size(I2A_vvov), '1243', I2A_vvov, I2A_vvov_1243)
+                        call reorder_stripe(4, shape(vA_vovv), size(vA_vovv), '4312', vA_vovv, vA_vovv_4312)
+                        call reorder_stripe(4, shape(vA_ooov), size(vA_ooov), '4312', vA_ooov, vA_ooov_4312)
 
                         deltaA = 0.0d0
 
@@ -597,16 +599,16 @@ module ccsdpt_loops
                             vB_ovvv_2341(nub,nua,nub,noa), vB_ooov_3412(noa,nub,noa,nob),&
                             vA_ooov_4312(nua,noa,noa,noa), vB_oovo_3412(nua,nob,noa,nob)
 
-                        call reorder1243(t2a,t2a_1243)
-                        call reorder1243(vB_vvov,vB_vvov_1243)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder1243(vA_vvov,vA_vvov_1243)
-                        call reorder1342(vB_vovv,vB_vovv_1342)
-                        call reorder4312(vA_vovv,vA_vovv_4312)
-                        call reorder2341(vB_ovvv,vB_ovvv_2341)
-                        call reorder3412(vB_ooov,vB_ooov_3412)
-                        call reorder4312(vA_ooov,vA_ooov_4312)
-                        call reorder3412(vB_oovo,vB_oovo_3412)
+                        call reorder_stripe(4, shape(t2a), size(t2a), '1243', t2a, t2a_1243)
+                        call reorder_stripe(4, shape(vB_vvov), size(vB_vvov), '1243', vB_vvov, vB_vvov_1243)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(vA_vvov), size(vA_vvov), '1243', vA_vvov, vA_vvov_1243)
+                        call reorder_stripe(4, shape(vB_vovv), size(vB_vovv), '1342', vB_vovv, vB_vovv_1342)
+                        call reorder_stripe(4, shape(vA_vovv), size(vA_vovv), '4312', vA_vovv, vA_vovv_4312)
+                        call reorder_stripe(4, shape(vB_ovvv), size(vB_ovvv), '2341', vB_ovvv, vB_ovvv_2341)
+                        call reorder_stripe(4, shape(vB_ooov), size(vB_ooov), '3412', vB_ooov, vB_ooov_3412)
+                        call reorder_stripe(4, shape(vA_ooov), size(vA_ooov), '4312', vA_ooov, vA_ooov_4312)
+                        call reorder_stripe(4, shape(vB_oovo), size(vB_oovo), '3412', vB_oovo, vB_oovo_3412)
 
                         deltaA = 0.0d0
 
@@ -731,16 +733,16 @@ module ccsdpt_loops
                                 vC_ooov_3412(nob,nub,nob,nob),&
                                 vB_ooov_3412(noa,nub,noa,nob)
 
-                        call reorder1243(vB_vvov,vB_vvov_1243)
-                        call reorder4213(vC_vvov,vC_vvov_4213)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder2134(I2C_vooo,I2C_vooo_2134)
-                        call reorder3421(vB_ovvv,vB_ovvv_3421)
-                        call reorder1342(vC_vovv,vC_vovv_1342)
-                        call reorder3412(vB_vovv,vB_vovv_3412)
-                        call reorder3412(vB_oovo,vB_oovo_3412)
-                        call reorder3412(vC_ooov,vC_ooov_3412)
-                        call reorder3412(vB_ooov,vB_ooov_3412)
+                        call reorder_stripe(4, shape(vB_vvov), size(vB_vvov), '1243', vB_vvov, vB_vvov_1243)
+                        call reorder_stripe(4, shape(vC_vvov), size(vC_vvov), '4213', vC_vvov, vC_vvov_4213)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(I2C_vooo), size(I2C_vooo), '2134', I2C_vooo, I2C_vooo_2134)
+                        call reorder_stripe(4, shape(vB_ovvv), size(vB_ovvv), '3421', vB_ovvv, vB_ovvv_3421)
+                        call reorder_stripe(4, shape(vC_vovv), size(vC_vovv), '1342', vC_vovv, vC_vovv_1342)
+                        call reorder_stripe(4, shape(vB_vovv), size(vB_vovv), '3412', vB_vovv, vB_vovv_3412)
+                        call reorder_stripe(4, shape(vB_oovo), size(vB_oovo), '3412', vB_oovo, vB_oovo_3412)
+                        call reorder_stripe(4, shape(vC_ooov), size(vC_ooov), '3412', vC_ooov, vC_ooov_3412)
+                        call reorder_stripe(4, shape(vB_ooov), size(vB_ooov), '3412', vB_ooov, vB_ooov_3412)
 
                         deltaA = 0.0d0
 
@@ -842,9 +844,9 @@ module ccsdpt_loops
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2C_vvov_1243(nub,nub,nub,nob), vC_vovv_4312(nub,nub,nub,nob), vC_ooov_4312(nub,nob,nob,nob)
 
-                        call reorder1243(I2C_vvov,I2C_vvov_1243)
-                        call reorder4312(vC_vovv,vC_vovv_4312)
-                        call reorder4312(vC_ooov,vC_ooov_4312)
+                        call reorder_stripe(4, shape(I2C_vvov), size(I2C_vvov), '1243', I2C_vvov, I2C_vvov_1243)
+                        call reorder_stripe(4, shape(vC_vovv), size(vC_vovv), '4312', vC_vovv, vC_vovv_4312)
+                        call reorder_stripe(4, shape(vC_ooov), size(vC_ooov), '4312', vC_ooov, vC_ooov_4312)
 
                         deltaA = 0.0d0
 
@@ -951,9 +953,9 @@ module ccsdpt_loops
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2A_vvov_1243(nua,nua,nua,noa), vA_vovv_4312(nua,nua,nua,noa), vA_ooov_4312(nua,noa,noa,noa)
 
-                        call reorder1243(I2A_vvov,I2A_vvov_1243)
-                        call reorder4312(vA_vovv,vA_vovv_4312)
-                        call reorder4312(vA_ooov,vA_ooov_4312)
+                        call reorder_stripe(4, shape(I2A_vvov), size(I2A_vvov), '1243', I2A_vvov, I2A_vvov_1243)
+                        call reorder_stripe(4, shape(vA_vovv), size(vA_vovv), '4312', vA_vovv, vA_vovv_4312)
+                        call reorder_stripe(4, shape(vA_ooov), size(vA_ooov), '4312', vA_ooov, vA_ooov_4312)
 
                         deltaA = 0.0d0
                         idx_min = minloc(abs(moments), dim=1)
@@ -1083,16 +1085,16 @@ module ccsdpt_loops
                             vB_ovvv_2341(nub,nua,nub,noa), vB_ooov_3412(noa,nub,noa,nob),&
                             vA_ooov_4312(nua,noa,noa,noa), vB_oovo_3412(nua,nob,noa,nob)
 
-                        call reorder1243(t2a,t2a_1243)
-                        call reorder1243(vB_vvov,vB_vvov_1243)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder1243(vA_vvov,vA_vvov_1243)
-                        call reorder1342(vB_vovv,vB_vovv_1342)
-                        call reorder4312(vA_vovv,vA_vovv_4312)
-                        call reorder2341(vB_ovvv,vB_ovvv_2341)
-                        call reorder3412(vB_ooov,vB_ooov_3412)
-                        call reorder4312(vA_ooov,vA_ooov_4312)
-                        call reorder3412(vB_oovo,vB_oovo_3412)
+                        call reorder_stripe(4, shape(t2a), size(t2a), '1243', t2a, t2a_1243)
+                        call reorder_stripe(4, shape(vB_vvov), size(vB_vvov), '1243', vB_vvov, vB_vvov_1243)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(vA_vvov), size(vA_vvov), '1243', vA_vvov, vA_vvov_1243)
+                        call reorder_stripe(4, shape(vB_vovv), size(vB_vovv), '1342', vB_vovv, vB_vovv_1342)
+                        call reorder_stripe(4, shape(vA_vovv), size(vA_vovv), '4312', vA_vovv, vA_vovv_4312)
+                        call reorder_stripe(4, shape(vB_ovvv), size(vB_ovvv), '2341', vB_ovvv, vB_ovvv_2341)
+                        call reorder_stripe(4, shape(vB_ooov), size(vB_ooov), '3412', vB_ooov, vB_ooov_3412)
+                        call reorder_stripe(4, shape(vA_ooov), size(vA_ooov), '4312', vA_ooov, vA_ooov_4312)
+                        call reorder_stripe(4, shape(vB_oovo), size(vB_oovo), '3412', vB_oovo, vB_oovo_3412)
 
                         deltaA = 0.0d0
                         idx_min = minloc(abs(moments), dim=1)
@@ -1229,16 +1231,16 @@ module ccsdpt_loops
                                 vC_ooov_3412(nob,nub,nob,nob),&
                                 vB_ooov_3412(noa,nub,noa,nob)
 
-                        call reorder1243(vB_vvov,vB_vvov_1243)
-                        call reorder4213(vC_vvov,vC_vvov_4213)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder2134(I2C_vooo,I2C_vooo_2134)
-                        call reorder3421(vB_ovvv,vB_ovvv_3421)
-                        call reorder1342(vC_vovv,vC_vovv_1342)
-                        call reorder3412(vB_vovv,vB_vovv_3412)
-                        call reorder3412(vB_oovo,vB_oovo_3412)
-                        call reorder3412(vC_ooov,vC_ooov_3412)
-                        call reorder3412(vB_ooov,vB_ooov_3412)
+                        call reorder_stripe(4, shape(vB_vvov), size(vB_vvov), '1243', vB_vvov, vB_vvov_1243)
+                        call reorder_stripe(4, shape(vC_vvov), size(vC_vvov), '4213', vC_vvov, vC_vvov_4213)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(I2C_vooo), size(I2C_vooo), '2134', I2C_vooo, I2C_vooo_2134)
+                        call reorder_stripe(4, shape(vB_ovvv), size(vB_ovvv), '3421', vB_ovvv, vB_ovvv_3421)
+                        call reorder_stripe(4, shape(vC_vovv), size(vC_vovv), '1342', vC_vovv, vC_vovv_1342)
+                        call reorder_stripe(4, shape(vB_vovv), size(vB_vovv), '3412', vB_vovv, vB_vovv_3412)
+                        call reorder_stripe(4, shape(vB_oovo), size(vB_oovo), '3412', vB_oovo, vB_oovo_3412)
+                        call reorder_stripe(4, shape(vC_ooov), size(vC_ooov), '3412', vC_ooov, vC_ooov_3412)
+                        call reorder_stripe(4, shape(vB_ooov), size(vB_ooov), '3412', vB_ooov, vB_ooov_3412)
 
                         deltaA = 0.0d0
                         idx_min = minloc(abs(moments), dim=1)
@@ -1354,9 +1356,9 @@ module ccsdpt_loops
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2C_vvov_1243(nub,nub,nub,nob), vC_vovv_4312(nub,nub,nub,nob), vC_ooov_4312(nub,nob,nob,nob)
 
-                        call reorder1243(I2C_vvov,I2C_vvov_1243)
-                        call reorder4312(vC_vovv,vC_vovv_4312)
-                        call reorder4312(vC_ooov,vC_ooov_4312)
+                        call reorder_stripe(4, shape(I2C_vvov), size(I2C_vvov), '1243', I2C_vvov, I2C_vvov_1243)
+                        call reorder_stripe(4, shape(vC_vovv), size(vC_vovv), '4312', vC_vovv, vC_vovv_4312)
+                        call reorder_stripe(4, shape(vC_ooov), size(vC_ooov), '4312', vC_ooov, vC_ooov_4312)
 
                         deltaA = 0.0d0
                         idx_min = minloc(abs(moments), dim=1)
@@ -1465,9 +1467,9 @@ module ccsdpt_loops
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2A_vvov_1243(nua,nua,nua,noa), vA_vovv_4312(nua,nua,nua,noa), vA_ooov_4312(nua,noa,noa,noa)
 
-                        call reorder1243(I2A_vvov,I2A_vvov_1243)
-                        call reorder4312(vA_vovv,vA_vovv_4312)
-                        call reorder4312(vA_ooov,vA_ooov_4312)
+                        call reorder_stripe(4, shape(I2A_vvov), size(I2A_vvov), '1243', I2A_vvov, I2A_vvov_1243)
+                        call reorder_stripe(4, shape(vA_vovv), size(vA_vovv), '4312', vA_vovv, vA_vovv_4312)
+                        call reorder_stripe(4, shape(vA_ooov), size(vA_ooov), '4312', vA_ooov, vA_ooov_4312)
 
                         deltaA = 0.0d0
                         moments = 0.0d0
@@ -1587,16 +1589,16 @@ module ccsdpt_loops
                             vB_ovvv_2341(nub,nua,nub,noa), vB_ooov_3412(noa,nub,noa,nob),&
                             vA_ooov_4312(nua,noa,noa,noa), vB_oovo_3412(nua,nob,noa,nob)
 
-                        call reorder1243(t2a,t2a_1243)
-                        call reorder1243(vB_vvov,vB_vvov_1243)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder1243(vA_vvov,vA_vvov_1243)
-                        call reorder1342(vB_vovv,vB_vovv_1342)
-                        call reorder4312(vA_vovv,vA_vovv_4312)
-                        call reorder2341(vB_ovvv,vB_ovvv_2341)
-                        call reorder3412(vB_ooov,vB_ooov_3412)
-                        call reorder4312(vA_ooov,vA_ooov_4312)
-                        call reorder3412(vB_oovo,vB_oovo_3412)
+                        call reorder_stripe(4, shape(t2a), size(t2a), '1243', t2a, t2a_1243)
+                        call reorder_stripe(4, shape(vB_vvov), size(vB_vvov), '1243', vB_vvov, vB_vvov_1243)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(vA_vvov), size(vA_vvov), '1243', vA_vvov, vA_vvov_1243)
+                        call reorder_stripe(4, shape(vB_vovv), size(vB_vovv), '1342', vB_vovv, vB_vovv_1342)
+                        call reorder_stripe(4, shape(vA_vovv), size(vA_vovv), '4312', vA_vovv, vA_vovv_4312)
+                        call reorder_stripe(4, shape(vB_ovvv), size(vB_ovvv), '2341', vB_ovvv, vB_ovvv_2341)
+                        call reorder_stripe(4, shape(vB_ooov), size(vB_ooov), '3412', vB_ooov, vB_ooov_3412)
+                        call reorder_stripe(4, shape(vA_ooov), size(vA_ooov), '4312', vA_ooov, vA_ooov_4312)
+                        call reorder_stripe(4, shape(vB_oovo), size(vB_oovo), '3412', vB_oovo, vB_oovo_3412)
 
                         deltaA = 0.0d0
                         moments = 0.0d0
@@ -1725,16 +1727,16 @@ module ccsdpt_loops
                                 vC_ooov_3412(nob,nub,nob,nob),&
                                 vB_ooov_3412(noa,nub,noa,nob)
 
-                        call reorder1243(vB_vvov,vB_vvov_1243)
-                        call reorder4213(vC_vvov,vC_vvov_4213)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder2134(I2C_vooo,I2C_vooo_2134)
-                        call reorder3421(vB_ovvv,vB_ovvv_3421)
-                        call reorder1342(vC_vovv,vC_vovv_1342)
-                        call reorder3412(vB_vovv,vB_vovv_3412)
-                        call reorder3412(vB_oovo,vB_oovo_3412)
-                        call reorder3412(vC_ooov,vC_ooov_3412)
-                        call reorder3412(vB_ooov,vB_ooov_3412)
+                        call reorder_stripe(4, shape(vB_vvov), size(vB_vvov), '1243', vB_vvov, vB_vvov_1243)
+                        call reorder_stripe(4, shape(vC_vvov), size(vC_vvov), '4213', vC_vvov, vC_vvov_4213)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(I2C_vooo), size(I2C_vooo), '2134', I2C_vooo, I2C_vooo_2134)
+                        call reorder_stripe(4, shape(vB_ovvv), size(vB_ovvv), '3421', vB_ovvv, vB_ovvv_3421)
+                        call reorder_stripe(4, shape(vC_vovv), size(vC_vovv), '1342', vC_vovv, vC_vovv_1342)
+                        call reorder_stripe(4, shape(vB_vovv), size(vB_vovv), '3412', vB_vovv, vB_vovv_3412)
+                        call reorder_stripe(4, shape(vB_oovo), size(vB_oovo), '3412', vB_oovo, vB_oovo_3412)
+                        call reorder_stripe(4, shape(vC_ooov), size(vC_ooov), '3412', vC_ooov, vC_ooov_3412)
+                        call reorder_stripe(4, shape(vB_ooov), size(vB_ooov), '3412', vB_ooov, vB_ooov_3412)
 
                         deltaA = 0.0d0
                         moments = 0.0d0
@@ -1841,9 +1843,9 @@ module ccsdpt_loops
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2C_vvov_1243(nub,nub,nub,nob), vC_vovv_4312(nub,nub,nub,nob), vC_ooov_4312(nub,nob,nob,nob)
 
-                        call reorder1243(I2C_vvov,I2C_vvov_1243)
-                        call reorder4312(vC_vovv,vC_vovv_4312)
-                        call reorder4312(vC_ooov,vC_ooov_4312)
+                        call reorder_stripe(4, shape(I2C_vvov), size(I2C_vvov), '1243', I2C_vvov, I2C_vvov_1243)
+                        call reorder_stripe(4, shape(vC_vovv), size(vC_vovv), '4312', vC_vovv, vC_vovv_4312)
+                        call reorder_stripe(4, shape(vC_ooov), size(vC_ooov), '4312', vC_ooov, vC_ooov_4312)
 
                         deltaA = 0.0d0
                         moments = 0.0d0
