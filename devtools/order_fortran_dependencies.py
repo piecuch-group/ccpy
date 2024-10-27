@@ -129,13 +129,15 @@ class DependencyScan:
         while True:
             moved = False
             for file in self.input_files:
-                file_pos = output_order.index(str(file))
+                file_str = str(file)
+                file_pos = output_order.index(file_str)
 
-                for need in self.needs[str(file)]:
+                for need in self.needs[file_str]:
                     need_pos = output_order.index(need)
                     if need_pos > file_pos:
-                        output_order[need_pos] = str(file)
+                        output_order[need_pos] = file_str
                         output_order[file_pos] = need
+                        file_pos = need_pos
                         moved = True
 
             if not moved:
