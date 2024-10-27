@@ -1,9 +1,10 @@
 module cc3_loops
- 
+
     use omp_lib
- 
+  use reorder, only: reorder_stripe
+
     implicit none
-    
+
     contains
                subroutine update_t(t1a,t1b,t2a,t2b,t2c,&
                                    resid_a,resid_b,resid_aa,resid_ab,resid_bb,&
@@ -43,7 +44,7 @@ module cc3_loops
                                                   h2c_vooo(nub,nob,nob,nob),&
                                                   h2c_vvov(nub,nub,nob,nub)
                       real(kind=8), intent(in) :: shift
-                      
+
                       real(kind=8), intent(inout) :: t1a(1:nua,1:noa)
                       !f2py intent(in,out) :: t1a(0:nua-1,0:noa-1)
                       real(kind=8), intent(inout) :: t1b(1:nub,1:nob)
@@ -54,7 +55,7 @@ module cc3_loops
                       !f2py intent(in,out) :: t2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
                       real(kind=8), intent(inout) :: t2c(1:nub,1:nub,1:nob,1:nob)
                       !f2py intent(in,out) :: t2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
-                      
+
                       ! Upon entry, resid_* holds CCSD residual projections (not antisymmetrized yet)
                       real(kind=8), intent(inout) :: resid_a(1:nua,1:noa)
                       !f2py intent(in,out) :: resid_a(0:nua-1,0:noa-1)
@@ -72,7 +73,7 @@ module cc3_loops
                       real(kind=8) :: t3a_o, t3a_v, t3b_o, t3b_v, t3c_o, t3c_v, t3d_o, t3d_v
                       real(kind=8) :: t3a, t3b, t3c, t3d
                       real(kind=8) :: t3_denom
-                      
+
                       ! allocatable array to hold t3(abc) for a given (i,j,k) block
                       real(kind=8), allocatable :: temp(:,:,:), t(:,:,:), t_rs(:,:,:)
                       ! reordered arrays for the DGEMM operations
@@ -80,14 +81,14 @@ module cc3_loops
                       real(kind=8) :: H2B_vvov_1243(nua,nub,nub,noa), t2b_1243(nua,nub,nob,noa)
                       real(kind=8) :: H2C_vvov_4213(nub,nub,nub,noa), H2C_vooo_2134(nob,nub,nob,nob)
                       real(kind=8) :: H2C_vvov_1243(nub,nub,nub,nob)
-                      
+
                       ! Call reordering routines for arrays entering DGEMM
-                      call reorder4(h2a_vvov_1243, h2a_vvov, (/1,2,4,3/))
-                      call reorder4(h2b_vvov_1243, h2b_vvov, (/1,2,4,3/))
-                      call reorder4(t2b_1243, t2b, (/1,2,4,3/))
-                      call reorder4(h2c_vvov_4213, h2c_vvov, (/4,2,1,3/))
-                      call reorder4(h2c_vooo_2134, h2c_vooo, (/2,1,3,4/))
-                      call reorder4(h2c_vvov_1243, h2c_vvov, (/1,2,4,3/))
+                      call reorder_stripe(4, shape(h2a_vvov), size(h2a_vvov), '1243', h2a_vvov, h2a_vvov_1243)
+                      call reorder_stripe(4, shape(h2b_vvov), size(h2b_vvov), '1243', h2b_vvov, h2b_vvov_1243)
+                      call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                      call reorder_stripe(4, shape(h2c_vvov), size(h2c_vvov), '4213', h2c_vvov, h2c_vvov_4213)
+                      call reorder_stripe(4, shape(h2c_vooo), size(h2c_vooo), '2134', h2c_vooo, h2c_vooo_2134)
+                      call reorder_stripe(4, shape(h2c_vvov), size(h2c_vvov), '1243', h2c_vvov, h2c_vvov_1243)
 
                       ! contribution from t3a
                       allocate(temp(nua,nua,nua))
@@ -365,7 +366,7 @@ module cc3_loops
                         end do
                       end do
                       deallocate(temp)
-                      
+
                       ! update t1a
                       do i = 1,noa
                          do a = 1,nua
@@ -454,7 +455,7 @@ module cc3_loops
                          resid_bb(:,:,i,i) = 0.0d0
                       end do
                end subroutine update_t
-       
+
                subroutine build_HR(resid_a,resid_b,resid_aa,resid_ab,resid_bb,&
                                    t2a,t2b,t2c,r2a,r2b,r2c,&
                                    fA_oo,fA_vv,fB_oo,fB_vv,&
@@ -502,7 +503,7 @@ module cc3_loops
                       real(kind=8), intent(in) :: r2c(1:nub,1:nub,1:nob,1:nob)
                       ! Current eigenvalue omega (HR is a function of omega in folded eigenvalue problem!)
                       real(kind=8), intent(in) :: omega
-                      
+
                       ! Upon entry, resid_* holds HR projections of the EOMCCSD-like parts (not antisymmetrized yet)
                       real(kind=8), intent(inout) :: resid_a(1:nua,1:noa)
                       !f2py intent(in,out) :: resid_a(0:nua-1,0:noa-1)
@@ -523,7 +524,7 @@ module cc3_loops
                       real(kind=8) :: r3a_o, r3a_v, r3b_o, r3b_v, r3c_o, r3c_v, r3d_o, r3d_v
                       real(kind=8) :: r3a, r3b, r3c, r3d
                       real(kind=8) :: r3_denom
-                      
+
                       ! allocatable array to hold t3(abc) or r3(abc) for a given (i,j,k) block
                       real(kind=8), allocatable :: temp(:,:,:)
                       ! reordered arrays for the DGEMM operations
@@ -535,22 +536,22 @@ module cc3_loops
                       real(kind=8) :: X2B_vvov_1243(nua,nub,nub,noa), r2b_1243(nua,nub,nob,noa)
                       real(kind=8) :: X2C_vvov_4213(nub,nub,nub,noa), X2C_vooo_2134(nob,nub,nob,nob)
                       real(kind=8) :: X2C_vvov_1243(nub,nub,nub,nob)
-                      
+
                       ! Call reordering routines for arrays entering DGEMM
-                      call reorder4(h2a_vvov_1243, h2a_vvov, (/1,2,4,3/))
-                      call reorder4(h2b_vvov_1243, h2b_vvov, (/1,2,4,3/))
-                      call reorder4(t2b_1243, t2b, (/1,2,4,3/))
-                      call reorder4(h2c_vvov_4213, h2c_vvov, (/4,2,1,3/))
-                      call reorder4(h2c_vooo_2134, h2c_vooo, (/2,1,3,4/))
-                      call reorder4(h2c_vvov_1243, h2c_vvov, (/1,2,4,3/))
+                      call reorder_stripe(4, shape(h2a_vvov), size(h2a_vvov), '1243', h2a_vvov, h2a_vvov_1243)
+                      call reorder_stripe(4, shape(h2b_vvov), size(h2b_vvov), '1243', h2b_vvov, h2b_vvov_1243)
+                      call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                      call reorder_stripe(4, shape(h2c_vvov), size(h2c_vvov), '4213', h2c_vvov, h2c_vvov_4213)
+                      call reorder_stripe(4, shape(h2c_vooo), size(h2c_vooo), '2134', h2c_vooo, h2c_vooo_2134)
+                      call reorder_stripe(4, shape(h2c_vvov), size(h2c_vvov), '1243', h2c_vvov, h2c_vvov_1243)
                       ! Copy the above for contractions in EOM parts
-                      call reorder4(x2a_vvov_1243, x2a_vvov, (/1,2,4,3/))
-                      call reorder4(x2b_vvov_1243, x2b_vvov, (/1,2,4,3/))
-                      call reorder4(r2b_1243, r2b, (/1,2,4,3/))
-                      call reorder4(x2c_vvov_4213, x2c_vvov, (/4,2,1,3/))
-                      call reorder4(x2c_vooo_2134, x2c_vooo, (/2,1,3,4/))
-                      call reorder4(x2c_vvov_1243, x2c_vvov, (/1,2,4,3/))
-                      
+                      call reorder_stripe(4, shape(x2a_vvov), size(x2a_vvov), '1243', x2a_vvov, x2a_vvov_1243)
+                      call reorder_stripe(4, shape(x2b_vvov), size(x2b_vvov), '1243', x2b_vvov, x2b_vvov_1243)
+                      call reorder_stripe(4, shape(r2b), size(r2b), '1243', r2b, r2b_1243)
+                      call reorder_stripe(4, shape(x2c_vvov), size(x2c_vvov), '4213', x2c_vvov, x2c_vvov_4213)
+                      call reorder_stripe(4, shape(x2c_vooo), size(x2c_vooo), '2134', x2c_vooo, x2c_vooo_2134)
+                      call reorder_stripe(4, shape(x2c_vvov), size(x2c_vvov), '1243', x2c_vvov, x2c_vvov_1243)
+
                       ! contribution from t3a
                       allocate(temp(nua,nua,nua))
                       do i = 1,noa
@@ -1075,7 +1076,7 @@ module cc3_loops
                       end do
 
                end subroutine build_HR
-       
+
 !               subroutine build_LH(resid_a,resid_b,resid_aa,resid_ab,resid_bb,&
 !                                   t2a,t2b,t2c,l1a,l1b,l2a,l2b,l2c,&
 !                                   fA_oo,fA_vv,fB_oo,fB_vv,&
@@ -1455,12 +1456,12 @@ module cc3_loops
 !                      end do
 !
 !               end subroutine build_LH
-       
+
                subroutine update_R(r1a,r1b,r2a,r2b,r2c,&
                                    omega,&
                                    fA_oo,fA_vv,fB_oo,fB_vv,&
                                    noa,nua,nob,nub)
-                  
+
                        integer, intent(in) :: noa, nua, nob, nub
                        real(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua),&
                                                    fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub),&
@@ -1477,21 +1478,21 @@ module cc3_loops
                        !f2py intent(in,out) :: r2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
                        integer :: i, j, a, b
                        real(kind=8) :: denom
-         
+
                        do i = 1,noa
                          do a = 1,nua
                            denom = fA_vv(a,a) - fA_oo(i,i)
                            r1a(a,i) = r1a(a,i)/(omega-denom)
                          end do
                        end do
-         
+
                        do i = 1,nob
                          do a = 1,nub
                            denom = fB_vv(a,a) - fB_oo(i,i)
                            r1b(a,i) = r1b(a,i)/(omega-denom)
                          end do
                        end do
-         
+
                        do i = 1,noa
                          do j = 1,noa
                            do a = 1,nua
@@ -1502,7 +1503,7 @@ module cc3_loops
                            end do
                          end do
                        end do
-         
+
                        do j = 1,nob
                          do i = 1,noa
                            do b = 1,nub
@@ -1513,7 +1514,7 @@ module cc3_loops
                            end do
                          end do
                        end do
-         
+
                        do i = 1,nob
                          do j = 1,nob
                            do a = 1,nub
@@ -1524,30 +1525,30 @@ module cc3_loops
                            end do
                          end do
                        end do
-                  
+
                end subroutine update_r
-       
+
                subroutine compute_t3a(t3a,X3A,fA_oo,fA_vv,noa,nua)
-         
+
                        integer, intent(in) :: noa, nua
                        real(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                                    X3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
                        real(kind=8), intent(out) :: t3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
                        integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
                        real(kind=8) :: denom, val
-         
+
                        do ii = 1,noa
                            do jj = ii+1,noa
                                do kk = jj+1,noa
                                    do aa = 1,nua
                                        do bb = aa+1,nua
                                            do cc = bb+1,nua
-         
+
                                                A = cc; B = bb; C = aa;
                                                I = kk; J = jj; K = ii;
-                                               
+
                                                denom = fA_oo(I,I)+fA_oo(J,J)+fA_oo(K,K)-fA_vv(A,A)-fA_vv(B,B)-fA_vv(C,C)
-         
+
                                                val = X3A(a,b,c,i,j,k)&
                                                        -X3A(b,a,c,i,j,k)&
                                                        -X3A(a,c,b,i,j,k)&
@@ -1584,44 +1585,44 @@ module cc3_loops
                                                        +X3A(b,c,a,k,i,j)&
                                                        -X3A(c,b,a,k,i,j)&
                                                        +X3A(c,a,b,k,i,j)
-         
+
                                                val = val/denom
-         
+
                                                t3a(A,B,C,I,J,K) = val
                                                t3a(A,B,C,K,I,J) = t3a(A,B,C,I,J,K)
                                                t3a(A,B,C,J,K,I) = t3a(A,B,C,I,J,K)
                                                t3a(A,B,C,I,K,J) = -t3a(A,B,C,I,J,K)
                                                t3a(A,B,C,J,I,K) = -t3a(A,B,C,I,J,K)
                                                t3a(A,B,C,K,J,I) = -t3a(A,B,C,I,J,K)
-                                               
+
                                                t3a(B,A,C,I,J,K) = -t3a(A,B,C,I,J,K)
                                                t3a(B,A,C,K,I,J) = -t3a(A,B,C,I,J,K)
                                                t3a(B,A,C,J,K,I) = -t3a(A,B,C,I,J,K)
                                                t3a(B,A,C,I,K,J) = t3a(A,B,C,I,J,K)
                                                t3a(B,A,C,J,I,K) = t3a(A,B,C,I,J,K)
                                                t3a(B,A,C,K,J,I) = t3a(A,B,C,I,J,K)
-                                               
+
                                                t3a(A,C,B,I,J,K) = -t3a(A,B,C,I,J,K)
                                                t3a(A,C,B,K,I,J) = -t3a(A,B,C,I,J,K)
                                                t3a(A,C,B,J,K,I) = -t3a(A,B,C,I,J,K)
                                                t3a(A,C,B,I,K,J) = t3a(A,B,C,I,J,K)
                                                t3a(A,C,B,J,I,K) = t3a(A,B,C,I,J,K)
                                                t3a(A,C,B,K,J,I) = t3a(A,B,C,I,J,K)
-                                               
+
                                                t3a(C,B,A,I,J,K) = -t3a(A,B,C,I,J,K)
                                                t3a(C,B,A,K,I,J) = -t3a(A,B,C,I,J,K)
                                                t3a(C,B,A,J,K,I) = -t3a(A,B,C,I,J,K)
                                                t3a(C,B,A,I,K,J) = t3a(A,B,C,I,J,K)
                                                t3a(C,B,A,J,I,K) = t3a(A,B,C,I,J,K)
                                                t3a(C,B,A,K,J,I) = t3a(A,B,C,I,J,K)
-                                               
+
                                                t3a(B,C,A,I,J,K) = t3a(A,B,C,I,J,K)
                                                t3a(B,C,A,K,I,J) = t3a(A,B,C,I,J,K)
                                                t3a(B,C,A,J,K,I) = t3a(A,B,C,I,J,K)
                                                t3a(B,C,A,I,K,J) = -t3a(A,B,C,I,J,K)
                                                t3a(B,C,A,J,I,K) = -t3a(A,B,C,I,J,K)
                                                t3a(B,C,A,K,J,I) = -t3a(A,B,C,I,J,K)
-                                               
+
                                                t3a(C,A,B,I,J,K) = t3a(A,B,C,I,J,K)
                                                t3a(C,A,B,K,I,J) = t3a(A,B,C,I,J,K)
                                                t3a(C,A,B,J,K,I) = t3a(A,B,C,I,J,K)
@@ -1634,11 +1635,11 @@ module cc3_loops
                                end do
                            end do
                        end do
-         
+
                end subroutine compute_t3a
-               
+
                subroutine compute_t3b(t3b,X3B,fA_oo,fA_vv,fB_oo,fB_vv,noa,nua,nob,nub)
-         
+
                        integer, intent(in) :: noa, nua, nob, nub
                        real(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                                    fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
@@ -1646,17 +1647,17 @@ module cc3_loops
                        real(kind=8), intent(out) :: t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
                        integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
                        real(kind=8) :: denom, val
-         
+
                        do ii = 1,noa
                            do jj = ii+1,noa
                                do kk = 1,nob
                                    do aa = 1,nua
                                        do bb = aa+1,nua
                                            do cc = 1,nub
-                           
+
                                                a = bb; b = aa; c = cc;
                                                i = jj; j = ii; k = kk;
-         
+
                                                denom = fA_oo(i,i)+fA_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fA_vv(b,b)-fB_vv(c,c)
                                                val = X3B(a,b,c,i,j,k) - X3B(b,a,c,i,j,k) - X3B(a,b,c,j,i,k) + X3B(b,a,c,j,i,k)
                                                val = val/denom
@@ -1670,11 +1671,11 @@ module cc3_loops
                                end do
                            end do
                        end do
-         
+
                end subroutine compute_t3b
-         
+
                subroutine compute_t3c(t3c,X3C,fA_oo,fA_vv,fB_oo,fB_vv,noa,nua,nob,nub)
-         
+
                        integer, intent(in) :: noa, nua, nob, nub
                        real(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                                    fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
@@ -1682,17 +1683,17 @@ module cc3_loops
                        real(kind=8), intent(out) :: t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
                        integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
                        real(kind=8) :: denom, val
-         
+
                        do ii = 1,noa
                            do jj = 1,nob
                                do kk = jj+1,nob
                                    do aa = 1,nua
                                        do bb = 1,nub
                                            do cc = bb+1,nub
-                           
+
                                                a = aa; b = cc; c = bb;
                                                i = ii; j = kk; k = jj;
-         
+
                                                denom = fA_oo(i,i)+fB_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fB_vv(b,b)-fB_vv(c,c)
                                                val = X3C(a,b,c,i,j,k) - X3C(a,c,b,i,j,k) - X3C(a,b,c,i,k,j) + X3C(a,c,b,i,k,j)
                                                val = val/denom
@@ -1706,30 +1707,30 @@ module cc3_loops
                                end do
                            end do
                        end do
-         
+
                end subroutine compute_t3c
-         
+
                subroutine compute_t3d(t3d,X3D,fB_oo,fB_vv,nob,nub)
-         
+
                        integer, intent(in) :: nob, nub
                        real(kind=8), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
                                                    X3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
                        real(kind=8), intent(out) :: t3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
                        integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
                        real(kind=8) :: denom, val
-         
+
                        do ii = 1,nob
                            do jj = ii+1,nob
                                do kk = jj+1,nob
                                    do aa = 1,nub
                                        do bb = aa+1,nub
                                            do cc = bb+1,nub
-         
+
                                                A = cc; B = bb; C = aa;
                                                I = kk; J = jj; K = ii;
-                                               
+
                                                denom = fB_oo(I,I)+fB_oo(J,J)+fB_oo(K,K)-fB_vv(A,A)-fB_vv(B,B)-fB_vv(C,C)
-         
+
                                                val = X3D(a,b,c,i,j,k)&
                                                        -X3D(b,a,c,i,j,k)&
                                                        -X3D(a,c,b,i,j,k)&
@@ -1767,42 +1768,42 @@ module cc3_loops
                                                        -X3D(c,b,a,k,i,j)&
                                                        +X3D(c,a,b,k,i,j)
                                                val = val/denom
-         
+
                                                t3d(A,B,C,I,J,K) = val
                                                t3d(A,B,C,K,I,J) = t3d(A,B,C,I,J,K)
                                                t3d(A,B,C,J,K,I) = t3d(A,B,C,I,J,K)
                                                t3d(A,B,C,I,K,J) = -t3d(A,B,C,I,J,K)
                                                t3d(A,B,C,J,I,K) = -t3d(A,B,C,I,J,K)
                                                t3d(A,B,C,K,J,I) = -t3d(A,B,C,I,J,K)
-                                               
+
                                                t3d(B,A,C,I,J,K) = -t3d(A,B,C,I,J,K)
                                                t3d(B,A,C,K,I,J) = -t3d(A,B,C,I,J,K)
                                                t3d(B,A,C,J,K,I) = -t3d(A,B,C,I,J,K)
                                                t3d(B,A,C,I,K,J) = t3d(A,B,C,I,J,K)
                                                t3d(B,A,C,J,I,K) = t3d(A,B,C,I,J,K)
                                                t3d(B,A,C,K,J,I) = t3d(A,B,C,I,J,K)
-                                               
+
                                                t3d(A,C,B,I,J,K) = -t3d(A,B,C,I,J,K)
                                                t3d(A,C,B,K,I,J) = -t3d(A,B,C,I,J,K)
                                                t3d(A,C,B,J,K,I) = -t3d(A,B,C,I,J,K)
                                                t3d(A,C,B,I,K,J) = t3d(A,B,C,I,J,K)
                                                t3d(A,C,B,J,I,K) = t3d(A,B,C,I,J,K)
                                                t3d(A,C,B,K,J,I) = t3d(A,B,C,I,J,K)
-                                               
+
                                                t3d(C,B,A,I,J,K) = -t3d(A,B,C,I,J,K)
                                                t3d(C,B,A,K,I,J) = -t3d(A,B,C,I,J,K)
                                                t3d(C,B,A,J,K,I) = -t3d(A,B,C,I,J,K)
                                                t3d(C,B,A,I,K,J) = t3d(A,B,C,I,J,K)
                                                t3d(C,B,A,J,I,K) = t3d(A,B,C,I,J,K)
                                                t3d(C,B,A,K,J,I) = t3d(A,B,C,I,J,K)
-                                               
+
                                                t3d(B,C,A,I,J,K) = t3d(A,B,C,I,J,K)
                                                t3d(B,C,A,K,I,J) = t3d(A,B,C,I,J,K)
                                                t3d(B,C,A,J,K,I) = t3d(A,B,C,I,J,K)
                                                t3d(B,C,A,I,K,J) = -t3d(A,B,C,I,J,K)
                                                t3d(B,C,A,J,I,K) = -t3d(A,B,C,I,J,K)
                                                t3d(B,C,A,K,J,I) = -t3d(A,B,C,I,J,K)
-                                               
+
                                                t3d(C,A,B,I,J,K) = t3d(A,B,C,I,J,K)
                                                t3d(C,A,B,K,I,J) = t3d(A,B,C,I,J,K)
                                                t3d(C,A,B,J,K,I) = t3d(A,B,C,I,J,K)
@@ -1815,11 +1816,11 @@ module cc3_loops
                                end do
                            end do
                        end do
-         
+
                end subroutine compute_t3d
-       
+
                subroutine compute_r3a(r3a,X3A,omega,fA_oo,fA_vv,noa,nua)
-         
+
                        integer, intent(in) :: noa, nua
                        real(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                                    X3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
@@ -1827,19 +1828,19 @@ module cc3_loops
                        real(kind=8), intent(out) :: r3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
                        integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
                        real(kind=8) :: denom, val
-         
+
                        do ii = 1,noa
                            do jj = ii+1,noa
                                do kk = jj+1,noa
                                    do aa = 1,nua
                                        do bb = aa+1,nua
                                            do cc = bb+1,nua
-         
+
                                                A = cc; B = bb; C = aa;
                                                I = kk; J = jj; K = ii;
-                                               
+
                                                denom = omega+fA_oo(I,I)+fA_oo(J,J)+fA_oo(K,K)-fA_vv(A,A)-fA_vv(B,B)-fA_vv(C,C)
-         
+
                                                val = X3A(a,b,c,i,j,k)&
                                                        -X3A(b,a,c,i,j,k)&
                                                        -X3A(a,c,b,i,j,k)&
@@ -1876,44 +1877,44 @@ module cc3_loops
                                                        +X3A(b,c,a,k,i,j)&
                                                        -X3A(c,b,a,k,i,j)&
                                                        +X3A(c,a,b,k,i,j)
-         
+
                                                val = val/denom
-         
+
                                                r3a(A,B,C,I,J,K) = val
                                                r3a(A,B,C,K,I,J) = r3a(A,B,C,I,J,K)
                                                r3a(A,B,C,J,K,I) = r3a(A,B,C,I,J,K)
                                                r3a(A,B,C,I,K,J) = -r3a(A,B,C,I,J,K)
                                                r3a(A,B,C,J,I,K) = -r3a(A,B,C,I,J,K)
                                                r3a(A,B,C,K,J,I) = -r3a(A,B,C,I,J,K)
-                                               
+
                                                r3a(B,A,C,I,J,K) = -r3a(A,B,C,I,J,K)
                                                r3a(B,A,C,K,I,J) = -r3a(A,B,C,I,J,K)
                                                r3a(B,A,C,J,K,I) = -r3a(A,B,C,I,J,K)
                                                r3a(B,A,C,I,K,J) = r3a(A,B,C,I,J,K)
                                                r3a(B,A,C,J,I,K) = r3a(A,B,C,I,J,K)
                                                r3a(B,A,C,K,J,I) = r3a(A,B,C,I,J,K)
-                                               
+
                                                r3a(A,C,B,I,J,K) = -r3a(A,B,C,I,J,K)
                                                r3a(A,C,B,K,I,J) = -r3a(A,B,C,I,J,K)
                                                r3a(A,C,B,J,K,I) = -r3a(A,B,C,I,J,K)
                                                r3a(A,C,B,I,K,J) = r3a(A,B,C,I,J,K)
                                                r3a(A,C,B,J,I,K) = r3a(A,B,C,I,J,K)
                                                r3a(A,C,B,K,J,I) = r3a(A,B,C,I,J,K)
-                                               
+
                                                r3a(C,B,A,I,J,K) = -r3a(A,B,C,I,J,K)
                                                r3a(C,B,A,K,I,J) = -r3a(A,B,C,I,J,K)
                                                r3a(C,B,A,J,K,I) = -r3a(A,B,C,I,J,K)
                                                r3a(C,B,A,I,K,J) = r3a(A,B,C,I,J,K)
                                                r3a(C,B,A,J,I,K) = r3a(A,B,C,I,J,K)
                                                r3a(C,B,A,K,J,I) = r3a(A,B,C,I,J,K)
-                                               
+
                                                r3a(B,C,A,I,J,K) = r3a(A,B,C,I,J,K)
                                                r3a(B,C,A,K,I,J) = r3a(A,B,C,I,J,K)
                                                r3a(B,C,A,J,K,I) = r3a(A,B,C,I,J,K)
                                                r3a(B,C,A,I,K,J) = -r3a(A,B,C,I,J,K)
                                                r3a(B,C,A,J,I,K) = -r3a(A,B,C,I,J,K)
                                                r3a(B,C,A,K,J,I) = -r3a(A,B,C,I,J,K)
-                                               
+
                                                r3a(C,A,B,I,J,K) = r3a(A,B,C,I,J,K)
                                                r3a(C,A,B,K,I,J) = r3a(A,B,C,I,J,K)
                                                r3a(C,A,B,J,K,I) = r3a(A,B,C,I,J,K)
@@ -1926,11 +1927,11 @@ module cc3_loops
                                end do
                            end do
                        end do
-         
+
                end subroutine compute_r3a
-               
+
                subroutine compute_r3b(r3b,X3B,omega,fA_oo,fA_vv,fB_oo,fB_vv,noa,nua,nob,nub)
-         
+
                        integer, intent(in) :: noa, nua, nob, nub
                        real(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                                    fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
@@ -1939,17 +1940,17 @@ module cc3_loops
                        real(kind=8), intent(out) :: r3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
                        integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
                        real(kind=8) :: denom, val
-         
+
                        do ii = 1,noa
                            do jj = ii+1,noa
                                do kk = 1,nob
                                    do aa = 1,nua
                                        do bb = aa+1,nua
                                            do cc = 1,nub
-                           
+
                                                a = bb; b = aa; c = cc;
                                                i = jj; j = ii; k = kk;
-         
+
                                                denom = omega+fA_oo(i,i)+fA_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fA_vv(b,b)-fB_vv(c,c)
                                                val = X3B(a,b,c,i,j,k) - X3B(b,a,c,i,j,k) - X3B(a,b,c,j,i,k) + X3B(b,a,c,j,i,k)
                                                val = val/denom
@@ -1963,11 +1964,11 @@ module cc3_loops
                                end do
                            end do
                        end do
-         
+
                end subroutine compute_r3b
-         
+
                subroutine compute_r3c(r3c,X3C,omega,fA_oo,fA_vv,fB_oo,fB_vv,noa,nua,nob,nub)
-         
+
                        integer, intent(in) :: noa, nua, nob, nub
                        real(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                                    fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
@@ -1976,17 +1977,17 @@ module cc3_loops
                        real(kind=8), intent(out) :: r3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
                        integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
                        real(kind=8) :: denom, val
-         
+
                        do ii = 1,noa
                            do jj = 1,nob
                                do kk = jj+1,nob
                                    do aa = 1,nua
                                        do bb = 1,nub
                                            do cc = bb+1,nub
-                           
+
                                                a = aa; b = cc; c = bb;
                                                i = ii; j = kk; k = jj;
-         
+
                                                denom = omega+fA_oo(i,i)+fB_oo(j,j)+fB_oo(k,k)-fA_vv(a,a)-fB_vv(b,b)-fB_vv(c,c)
                                                val = X3C(a,b,c,i,j,k) - X3C(a,c,b,i,j,k) - X3C(a,b,c,i,k,j) + X3C(a,c,b,i,k,j)
                                                val = val/denom
@@ -2000,11 +2001,11 @@ module cc3_loops
                                end do
                            end do
                        end do
-         
+
                end subroutine compute_r3c
-         
+
                subroutine compute_r3d(r3d,X3D,omega,fB_oo,fB_vv,nob,nub)
-         
+
                        integer, intent(in) :: nob, nub
                        real(kind=8), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
                                                    X3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
@@ -2012,19 +2013,19 @@ module cc3_loops
                        real(kind=8), intent(out) :: r3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
                        integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
                        real(kind=8) :: denom, val
-         
+
                        do ii = 1,nob
                            do jj = ii+1,nob
                                do kk = jj+1,nob
                                    do aa = 1,nub
                                        do bb = aa+1,nub
                                            do cc = bb+1,nub
-         
+
                                                A = cc; B = bb; C = aa;
                                                I = kk; J = jj; K = ii;
-                                               
+
                                                denom = omega+fB_oo(I,I)+fB_oo(J,J)+fB_oo(K,K)-fB_vv(A,A)-fB_vv(B,B)-fB_vv(C,C)
-         
+
                                                val = X3D(a,b,c,i,j,k)&
                                                        -X3D(b,a,c,i,j,k)&
                                                        -X3D(a,c,b,i,j,k)&
@@ -2062,42 +2063,42 @@ module cc3_loops
                                                        -X3D(c,b,a,k,i,j)&
                                                        +X3D(c,a,b,k,i,j)
                                                val = val/denom
-         
+
                                                r3d(A,B,C,I,J,K) = val
                                                r3d(A,B,C,K,I,J) = r3d(A,B,C,I,J,K)
                                                r3d(A,B,C,J,K,I) = r3d(A,B,C,I,J,K)
                                                r3d(A,B,C,I,K,J) = -r3d(A,B,C,I,J,K)
                                                r3d(A,B,C,J,I,K) = -r3d(A,B,C,I,J,K)
                                                r3d(A,B,C,K,J,I) = -r3d(A,B,C,I,J,K)
-                                               
+
                                                r3d(B,A,C,I,J,K) = -r3d(A,B,C,I,J,K)
                                                r3d(B,A,C,K,I,J) = -r3d(A,B,C,I,J,K)
                                                r3d(B,A,C,J,K,I) = -r3d(A,B,C,I,J,K)
                                                r3d(B,A,C,I,K,J) = r3d(A,B,C,I,J,K)
                                                r3d(B,A,C,J,I,K) = r3d(A,B,C,I,J,K)
                                                r3d(B,A,C,K,J,I) = r3d(A,B,C,I,J,K)
-                                               
+
                                                r3d(A,C,B,I,J,K) = -r3d(A,B,C,I,J,K)
                                                r3d(A,C,B,K,I,J) = -r3d(A,B,C,I,J,K)
                                                r3d(A,C,B,J,K,I) = -r3d(A,B,C,I,J,K)
                                                r3d(A,C,B,I,K,J) = r3d(A,B,C,I,J,K)
                                                r3d(A,C,B,J,I,K) = r3d(A,B,C,I,J,K)
                                                r3d(A,C,B,K,J,I) = r3d(A,B,C,I,J,K)
-                                               
+
                                                r3d(C,B,A,I,J,K) = -r3d(A,B,C,I,J,K)
                                                r3d(C,B,A,K,I,J) = -r3d(A,B,C,I,J,K)
                                                r3d(C,B,A,J,K,I) = -r3d(A,B,C,I,J,K)
                                                r3d(C,B,A,I,K,J) = r3d(A,B,C,I,J,K)
                                                r3d(C,B,A,J,I,K) = r3d(A,B,C,I,J,K)
                                                r3d(C,B,A,K,J,I) = r3d(A,B,C,I,J,K)
-                                               
+
                                                r3d(B,C,A,I,J,K) = r3d(A,B,C,I,J,K)
                                                r3d(B,C,A,K,I,J) = r3d(A,B,C,I,J,K)
                                                r3d(B,C,A,J,K,I) = r3d(A,B,C,I,J,K)
                                                r3d(B,C,A,I,K,J) = -r3d(A,B,C,I,J,K)
                                                r3d(B,C,A,J,I,K) = -r3d(A,B,C,I,J,K)
                                                r3d(B,C,A,K,J,I) = -r3d(A,B,C,I,J,K)
-                                               
+
                                                r3d(C,A,B,I,J,K) = r3d(A,B,C,I,J,K)
                                                r3d(C,A,B,K,I,J) = r3d(A,B,C,I,J,K)
                                                r3d(C,A,B,J,K,I) = r3d(A,B,C,I,J,K)
@@ -2110,31 +2111,7 @@ module cc3_loops
                                end do
                            end do
                        end do
-         
+
                end subroutine compute_r3d
-
-               subroutine reorder4(y, x, iorder)
-
-                   integer, intent(in) :: iorder(4)
-                   real(kind=8), intent(in) :: x(:,:,:,:)
-
-                   real(kind=8), intent(out) :: y(:,:,:,:)
-
-                   integer :: i, j, k, l
-                   integer :: vec(4)
-
-                   y = 0.0d0
-                   do i = 1, size(x,1)
-                      do j = 1, size(x,2)
-                         do k = 1, size(x,3)
-                            do l = 1, size(x,4)
-                               vec = (/i,j,k,l/)
-                               y(vec(iorder(1)),vec(iorder(2)),vec(iorder(3)),vec(iorder(4))) = x(i,j,k,l)
-                            end do
-                         end do
-                      end do
-                   end do
-
-               end subroutine reorder4
 
 end module cc3_loops
