@@ -1,5 +1,7 @@
 module ccp3_opt_loops
 
+  use reorder, only: reorder_stripe
+
       implicit none
 
       contains
@@ -36,7 +38,7 @@ module ccp3_opt_loops
                         integer :: excits_buff(6,n3aaa)
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2A_vvov_1243(nua,nua,nua,noa), H2A_vovv_4312(nua,nua,nua,noa), H2A_ooov_4312(nua,noa,noa,noa)
-                        
+
                         ! reorder t3a into (i,j,k) order
                         excits_buff(:,:) = t3a_excits(:,:)
                         nloc = noa*(noa-1)*(noa-2)/6
@@ -45,15 +47,15 @@ module ccp3_opt_loops
                         call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), noa, noa, noa)
                         call sort3(excits_buff, loc_arr, idx_table, (/4,5,6/), noa, noa, noa, nloc, n3aaa)
                         ! reorder H for contractions
-                        call reorder1243(I2A_vvov,I2A_vvov_1243)
-                        call reorder4312(H2A_vovv,H2A_vovv_4312)
-                        call reorder4312(H2A_ooov,H2A_ooov_4312)
+                        call reorder_stripe(4, shape(I2A_vvov), size(I2A_vvov), '1243', I2A_vvov, I2A_vvov_1243)
+                        call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+                        call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
+
                         nua2 = nua*nua
                         do i = 1, noa
                             do j = i+1, noa
@@ -67,7 +69,7 @@ module ccp3_opt_loops
                                          qspace(a,b,c) = .false.
                                       end do
                                    end if
-                                   
+
                                    X3A = 0.0d0
                                    L3A = 0.0d0
                                    !!!!! MM(2,3)A !!!!!
@@ -159,7 +161,7 @@ module ccp3_opt_loops
                             end do
                         end do
                         deallocate(loc_arr,idx_table)
-                 
+
               end subroutine ccp3a_2ba
 
               subroutine ccp3b_2ba(deltaA,deltaB,deltaC,deltaD,&
@@ -226,7 +228,7 @@ module ccp3_opt_loops
                                         H2B_ovvv_2341(nub,nua,nub,noa), H2B_ooov_3412(noa,nub,noa,nob),&
                                         H2A_ooov_4312(nua,noa,noa,noa), H2B_oovo_3412(nua,nob,noa,nob),&
                                         l2b_1243(nua,nub,nob,noa)
-                        
+
                         ! reorder t3b into (i,j,k) order
                         excits_buff(:,:) = t3b_excits(:,:)
                         nloc = noa*(noa-1)/2*nob
@@ -235,17 +237,17 @@ module ccp3_opt_loops
                         call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), noa, noa, nob)
                         call sort3(excits_buff, loc_arr, idx_table, (/4,5,6/), noa, noa, nob, nloc, n3aab)
 
-                        call reorder1243(t2a,t2a_1243)
-                        call reorder1243(H2B_vvov,H2B_vvov_1243)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder1243(H2A_vvov,H2A_vvov_1243)
-                        call reorder1342(H2B_vovv,H2B_vovv_1342)
-                        call reorder4312(H2A_vovv,H2A_vovv_4312)
-                        call reorder2341(H2B_ovvv,H2B_ovvv_2341)
-                        call reorder3412(H2B_ooov,H2B_ooov_3412)
-                        call reorder4312(H2A_ooov,H2A_ooov_4312)
-                        call reorder3412(H2B_oovo,H2B_oovo_3412)
-                        call reorder1243(l2b,l2b_1243)
+                        call reorder_stripe(4, shape(t2a), size(t2a), '1243', t2a, t2a_1243)
+                        call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '1243', H2B_vvov, H2B_vvov_1243)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(H2A_vvov), size(H2A_vvov), '1243', H2A_vvov, H2A_vvov_1243)
+                        call reorder_stripe(4, shape(H2B_vovv), size(H2B_vovv), '1342', H2B_vovv, H2B_vovv_1342)
+                        call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+                        call reorder_stripe(4, shape(H2B_ovvv), size(H2B_ovvv), '2341', H2B_ovvv, H2B_ovvv_2341)
+                        call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
+                        call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
+                        call reorder_stripe(4, shape(H2B_oovo), size(H2B_oovo), '3412', H2B_oovo, H2B_oovo_3412)
+                        call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
@@ -266,7 +268,7 @@ module ccp3_opt_loops
                                           qspace(a,b,c) = .false.
                                        end do
                                     end if
-                                   
+
                                     X3B = 0.0d0
                                     L3B = 0.0d0
                                     !!!!! MM(2,3)B !!!!!
@@ -361,7 +363,7 @@ module ccp3_opt_loops
                             end do
                         end do
                         deallocate(loc_arr,idx_table)
-                 
+
               end subroutine ccp3b_2ba
 
               subroutine ccp3c_2ba(deltaA,deltaB,deltaC,deltaD,&
@@ -433,7 +435,7 @@ module ccp3_opt_loops
                                 H2C_ooov_3412(nob,nub,nob,nob),&
                                 l2b_1243(nua,nub,nob,noa),&
                                 H2B_ooov_3412(noa,nub,noa,nob)
-                        
+
                         ! reorder t3c into (j,k,i) order
                         excits_buff(:,:) = t3c_excits(:,:)
                         nloc = nob*(nob-1)/2*noa
@@ -442,23 +444,23 @@ module ccp3_opt_loops
                         call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), nob, nob, noa)
                         call sort3(excits_buff, loc_arr, idx_table, (/5,6,4/), nob, nob, noa, nloc, n3abb)
                         ! reorder integrals and T
-                        call reorder1243(H2B_vvov,H2B_vvov_1243)
-                        call reorder4213(H2C_vvov,H2C_vvov_4213)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder2134(I2C_vooo,I2C_vooo_2134)
-                        call reorder3421(H2B_ovvv,H2B_ovvv_3421)
-                        call reorder1342(H2C_vovv,H2C_vovv_1342)
-                        call reorder3412(H2B_vovv,H2B_vovv_3412)
-                        call reorder3412(H2B_oovo,H2B_oovo_3412)
-                        call reorder3412(H2C_ooov,H2C_ooov_3412)
-                        call reorder1243(l2b,l2b_1243)
-                        call reorder3412(H2B_ooov,H2B_ooov_3412)
-                        
+                        call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '1243', H2B_vvov, H2B_vvov_1243)
+                        call reorder_stripe(4, shape(H2C_vvov), size(H2C_vvov), '4213', H2C_vvov, H2C_vvov_4213)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(I2C_vooo), size(I2C_vooo), '2134', I2C_vooo, I2C_vooo_2134)
+                        call reorder_stripe(4, shape(H2B_ovvv), size(H2B_ovvv), '3421', H2B_ovvv, H2B_ovvv_3421)
+                        call reorder_stripe(4, shape(H2C_vovv), size(H2C_vovv), '1342', H2C_vovv, H2C_vovv_1342)
+                        call reorder_stripe(4, shape(H2B_vovv), size(H2B_vovv), '3412', H2B_vovv, H2B_vovv_3412)
+                        call reorder_stripe(4, shape(H2B_oovo), size(H2B_oovo), '3412', H2B_oovo, H2B_oovo_3412)
+                        call reorder_stripe(4, shape(H2C_ooov), size(H2C_ooov), '3412', H2C_ooov, H2C_ooov_3412)
+                        call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
+                        call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
+
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
+
                         nuanub = nua*nub
                         nub2 = nub*nub
                         do i = 1 , noa
@@ -473,10 +475,10 @@ module ccp3_opt_loops
                                           qspace(a,b,c) = .false.
                                        end do
                                     end if
-                                    
+
                                     X3C = 0.0d0
                                     L3C = 0.0d0
-   
+
                                     !!!!! MM(2,3)C !!!!!
                                     ! Diagram 1: A(bc) H2B_vvov(a,b,i,e)*t2c(e,c,j,k)
                                     call dgemm('n','n',nuanub,nub,nub,1.0d0,H2B_vvov_1243(:,:,:,i),nuanub,t2c(:,:,j,k),nub,1.0d0,X3C,nuanub)
@@ -494,7 +496,7 @@ module ccp3_opt_loops
                                     ! Diagram 6: -A(jk)A(bc) I2B_ovoo(m,b,i,j)*t2b(a,c,m,k) -> -A(jk)A(bc) I2B_ovoo(m,c,i,k)*t2b(a,b,m,j)
                                     call dgemm('n','n',nuanub,nub,noa,-1.0d0,t2b(:,:,:,j),nuanub,I2B_ovoo(:,:,i,k),noa,1.0d0,X3C,nuanub)
                                     call dgemm('n','n',nuanub,nub,noa,1.0d0,t2b(:,:,:,k),nuanub,I2B_ovoo(:,:,i,j),noa,1.0d0,X3C,nuanub)
-    
+
                                     !!!!! L3C !!!!!
                                     ! Diagram 1: A(bc) H2B_ovvv(i,e,a,b)*l2c(e,c,j,k)
                                     call dgemm('n','n',nuanub,nub,nub,1.0d0,H2B_ovvv_3421(:,:,:,i),nuanub,l2c(:,:,j,k),nub,1.0d0,L3C,nuanub)
@@ -512,7 +514,7 @@ module ccp3_opt_loops
                                     ! Diagram 6: -A(jk)A(bc) H2B_ooov(i,j,m,b)*l2b(a,c,m,k) -> -A(jk)A(bc) H2B_ooov(i,k,m,c)*l2b(a,b,m,j)
                                     call dgemm('n','n',nuanub,nub,noa,-1.0d0,l2b(:,:,:,j),nuanub,H2B_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
                                     call dgemm('n','n',nuanub,nub,noa,1.0d0,l2b(:,:,:,k),nuanub,H2B_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
-                                    
+
                                     do a = 1, nua
                                         do b = 1, nub
                                             do c = b+1, nub
@@ -568,7 +570,7 @@ module ccp3_opt_loops
                             end do
                         end do
                         deallocate(loc_arr,idx_table)
-                 
+
               end subroutine ccp3c_2ba
 
               subroutine ccp3d_2ba(deltaA,deltaB,deltaC,deltaD,&
@@ -611,9 +613,9 @@ module ccp3_opt_loops
                         call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), nob, nob, nob)
                         call sort3(excits_buff, loc_arr, idx_table, (/4,5,6/), nob, nob, nob, nloc, n3bbb)
                         ! reorder H arrays for contraction
-                        call reorder1243(I2C_vvov,I2C_vvov_1243)
-                        call reorder4312(H2C_vovv,H2C_vovv_4312)
-                        call reorder4312(H2C_ooov,H2C_ooov_4312)
+                        call reorder_stripe(4, shape(I2C_vvov), size(I2C_vvov), '1243', I2C_vvov, I2C_vvov_1243)
+                        call reorder_stripe(4, shape(H2C_vovv), size(H2C_vovv), '4312', H2C_vovv, H2C_vovv_4312)
+                        call reorder_stripe(4, shape(H2C_ooov), size(H2C_ooov), '4312', H2C_ooov, H2C_ooov_4312)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
@@ -633,7 +635,7 @@ module ccp3_opt_loops
                                           qspace(a,b,c) = .false.
                                        end do
                                     end if
-                                    
+
                                     X3D = 0.0d0
                                     L3D = 0.0d0
                                     !!!!! MM(2,3)D !!!!!
@@ -726,7 +728,7 @@ module ccp3_opt_loops
                         deallocate(idx_table,loc_arr)
 
               end subroutine ccp3d_2ba
-         
+
               subroutine ccp3a_full(deltaA,deltaB,deltaC,deltaD,&
                                     M3A,L3A,t3a_excits,&
                                     fA_oo,fA_vv,H1A_oo,H1A_vv,&
@@ -745,7 +747,7 @@ module ccp3_opt_loops
                                                     H2A_vvvv(1:nua,1:nua,1:nua,1:nua),&
                                                     D3A_O(1:nua,1:noa,1:noa),&
                                                     D3A_V(1:nua,1:noa,1:nua)
-                        
+
                         ! Low-memory looping variables
                         logical(kind=1) :: qspace(nua,nua,nua)
                         integer :: nloc, idet, idx
@@ -785,7 +787,7 @@ module ccp3_opt_loops
                                             do c = b+1, nua
 
                                                 if (.not. qspace(a,b,c)) cycle
-                                               
+
                                                 LM = M3A(a,b,c,i,j,k) * L3A(a,b,c,i,j,k)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
@@ -900,7 +902,7 @@ module ccp3_opt_loops
                                             do c = 1, nub
 
                                                 if (.not. qspace(a,b,c)) cycle
-                                               
+
                                                 LM = M3B(a,b,c,i,j,k) * L3B(a,b,c,i,j,k)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
@@ -975,7 +977,7 @@ module ccp3_opt_loops
                                                     D3C_V(1:nua,1:nob,1:nub),&
                                                     D3D_O(1:nub,1:nob,1:nob),&
                                                     D3D_V(1:nub,1:nob,1:nub)
-                        
+
                         ! Low-memory looping variables
                         logical(kind=1) :: qspace(nua,nub,nub)
                         integer :: nloc, idet, idx
@@ -1013,7 +1015,7 @@ module ccp3_opt_loops
                                     do a = 1, nua
                                         do b = 1, nub
                                             do c = b+1, nub
-                                               
+
                                                 if (.not. qspace(a,b,c)) cycle
 
                                                 temp = M3C(a,b,c,i,j,k) * L3C(a,b,c,i,j,k)
@@ -1113,7 +1115,7 @@ module ccp3_opt_loops
                                             do c = b+1, nub
 
                                                 if (.not. qspace(a,b,c)) cycle
-                                               
+
                                                 temp = M3D(a,b,c,i,j,k) * L3D(a,b,c,i,j,k)
 
                                                 D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
@@ -1153,7 +1155,7 @@ module ccp3_opt_loops
                         end do
 
               end subroutine ccp3d_full
-         
+
               subroutine eomccp3a_full(deltaA,deltaB,deltaC,deltaD,&
                                        ddeltaA,ddeltaB,ddeltaC,ddeltaD,&
                                        EOM3A,M3A,L3A,r3a_excits,&
@@ -1177,7 +1179,7 @@ module ccp3_opt_loops
                                                     D3A_O(1:nua,1:noa,1:noa),&
                                                     D3A_V(1:nua,1:noa,1:nua)
                         real(kind=8), intent(in) :: omega, r0
-                        
+
                         ! Low-memory looping variables
                         logical(kind=1) :: qspace(nua,nua,nua)
                         integer :: nloc, idet, idx
@@ -1199,7 +1201,7 @@ module ccp3_opt_loops
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
+
                         ddeltaA = 0.0d0
                         ddeltaB = 0.0d0
                         ddeltaC = 0.0d0
@@ -1222,7 +1224,7 @@ module ccp3_opt_loops
                                             do c = b+1, nua
 
                                                 if (.not. qspace(a,b,c)) cycle
-                                               
+
                                                 LM = (r0*M3A(a,b,c,i,j,k) + EOM3A(a,b,c,i,j,k)) * L3A(a,b,c,i,j,k)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
@@ -1324,7 +1326,7 @@ module ccp3_opt_loops
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
+
                         ddeltaA = 0.0d0
                         ddeltaB = 0.0d0
                         ddeltaC = 0.0d0
@@ -1347,7 +1349,7 @@ module ccp3_opt_loops
                                             do c = 1, nub
 
                                                 if (.not. qspace(a,b,c)) cycle
-                                               
+
                                                 LM = (r0*M3B(a,b,c,i,j,k) + EOM3B(a,b,c,i,j,k)) * L3B(a,b,c,i,j,k)
 
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
@@ -1427,7 +1429,7 @@ module ccp3_opt_loops
                                                     D3D_O(1:nub,1:nob,1:nob),&
                                                     D3D_V(1:nub,1:nob,1:nub)
                         real(kind=8), intent(in) :: omega, r0
-                        
+
                         ! Low-memory looping variables
                         logical(kind=1) :: qspace(nua,nub,nub)
                         integer :: nloc, idet, idx
@@ -1449,7 +1451,7 @@ module ccp3_opt_loops
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
+
                         ddeltaA = 0.0d0
                         ddeltaB = 0.0d0
                         ddeltaC = 0.0d0
@@ -1470,7 +1472,7 @@ module ccp3_opt_loops
                                     do a = 1, nua
                                         do b = 1, nub
                                             do c = b+1, nub
-                                               
+
                                                 if (.not. qspace(a,b,c)) cycle
 
                                                 temp = (r0*M3C(a,b,c,i,j,k) + EOM3C(a,b,c,i,j,k)) * L3C(a,b,c,i,j,k)
@@ -1557,7 +1559,7 @@ module ccp3_opt_loops
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
+
                         ddeltaA = 0.0d0
                         ddeltaB = 0.0d0
                         ddeltaC = 0.0d0
@@ -1580,7 +1582,7 @@ module ccp3_opt_loops
                                             do c = b+1, nub
 
                                                 if (.not. qspace(a,b,c)) cycle
-                                               
+
                                                 temp = (r0*M3D(a,b,c,i,j,k) + EOM3D(a,b,c,i,j,k)) * L3D(a,b,c,i,j,k)
 
                                                 D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
@@ -1620,17 +1622,17 @@ module ccp3_opt_loops
                         end do
 
               end subroutine eomccp3d_full
-         
+
               subroutine get_index_table(idx_table, rng1, rng2, rng3, n1, n2, n3)
 
                     integer, intent(in) :: n1, n2, n3
                     integer, intent(in) :: rng1(2), rng2(2), rng3(2)
-      
+
                     integer, intent(inout) :: idx_table(n1,n2,n3)
-      
+
                     integer :: kout
                     integer :: p, q, r
-      
+
                     idx_table = 0
                     if (rng1(1) > 0 .and. rng2(1) < 0 .and. rng3(1) < 0) then ! p < q < r
                        kout = 1
@@ -1681,16 +1683,16 @@ module ccp3_opt_loops
                     integer, intent(in) :: n1, n2, n3, nloc, n3p
                     integer, intent(in) :: idims(3)
                     integer, intent(in) :: idx_table(n1,n2,n3)
-      
+
                     integer, intent(inout) :: loc_arr(2,nloc)
                     integer, intent(inout) :: excits(6,n3p)
-      
+
                     integer :: idet
                     integer :: p, q, r
                     integer :: p1, q1, r1, p2, q2, r2
                     integer :: pqr1, pqr2
                     integer, allocatable :: temp(:), idx(:)
-      
+
                     allocate(temp(n3p),idx(n3p))
                     do idet = 1, n3p
                        p = excits(idims(1),idet); q = excits(idims(2),idet); r = excits(idims(3),idet);
@@ -1699,7 +1701,7 @@ module ccp3_opt_loops
                     call argsort(temp, idx)
                     excits = excits(:,idx)
                     deallocate(temp,idx)
-      
+
                     loc_arr(1,:) = 1; loc_arr(2,:) = 0;
                     !!! WARNING: THERE IS A MEMORY LEAK HERE! pqr2 is used below but is not set if n3p <= 1
                     !if (n3p <= 1) print*, "WARNING: potential memory leakage in sort3 function. pqr2 set to 0"
@@ -1723,20 +1725,20 @@ module ccp3_opt_loops
 
                     integer, intent(in), dimension(:) :: r
                     integer, intent(out), dimension(size(r)) :: d
-      
+
                     integer, dimension(size(r)) :: il
-      
+
                     integer :: stepsize
                     integer :: i, j, n, left, k, ksize
-      
+
                     n = size(r)
-      
+
                     do i=1,n
                        d(i)=i
                     end do
-      
+
                     if (n==1) return
-      
+
                     stepsize = 1
                     do while (stepsize < n)
                        do left = 1, n-stepsize,stepsize*2
@@ -1744,7 +1746,7 @@ module ccp3_opt_loops
                           j = left+stepsize
                           ksize = min(stepsize*2,n-left+1)
                           k=1
-      
+
                           do while (i < left+stepsize .and. j < left+ksize)
                              if (r(d(i)) < r(d(j))) then
                                 il(k) = d(i)
@@ -1756,7 +1758,7 @@ module ccp3_opt_loops
                                 k = k+1
                              endif
                           enddo
-      
+
                           if (i < left+stepsize) then
                              ! fill up remaining from left
                              il(k:ksize) = d(i:left+stepsize-1)
@@ -1770,215 +1772,5 @@ module ccp3_opt_loops
                     end do
 
               end subroutine argsort
-         
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! REORDER ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              subroutine reorder3412(x_in,x_out)
 
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i4,i1,i2) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder3412
-
-             subroutine reorder1342(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i1,i3,i4,i2) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder1342
-
-            subroutine reorder3421(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i4,i2,i1) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder3421
-
-             subroutine reorder2134(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i1,i3,i4) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2134
-
-            subroutine reorder1243(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i1,i2,i4,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder1243
-
-             subroutine reorder4213(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i2,i1,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4213
-
-             subroutine reorder4312(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i3,i1,i2) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4312
-
-             subroutine reorder2341(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i3,i4,i1) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2341
-
-             subroutine reorder2143(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i1,i4,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2143
-
-             subroutine reorder4123(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i1,i2,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4123
-
-             subroutine reorder3214(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i2,i1,i4) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder3214
-   
 end module ccp3_opt_loops

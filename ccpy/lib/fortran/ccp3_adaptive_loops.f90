@@ -1,4 +1,5 @@
 module ccp3_adaptive_loops
+  use reorder, only: reorder_stripe
 
     implicit none
 
@@ -48,7 +49,7 @@ module ccp3_adaptive_loops
                         integer :: excits_buff(6,n3aaa)
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2A_vvov_1243(nua,nua,nua,noa), H2A_vovv_4312(nua,nua,nua,noa), H2A_ooov_4312(nua,noa,noa,noa)
-                        
+
                         ! reorder t3a into (i,j,k) order
                         excits_buff(:,:) = t3a_excits(:,:)
                         nloc = noa*(noa-1)*(noa-2)/6
@@ -57,9 +58,9 @@ module ccp3_adaptive_loops
                         call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), noa, noa, noa)
                         call sort3(excits_buff, loc_arr, idx_table, (/4,5,6/), noa, noa, noa, nloc, n3aaa)
                         ! reorder arrays for DGEMMs
-                        call reorder1243(I2A_vvov,I2A_vvov_1243)
-                        call reorder4312(H2A_vovv,H2A_vovv_4312)
-                        call reorder4312(H2A_ooov,H2A_ooov_4312)
+                        call reorder_stripe(4, shape(I2A_vvov), size(I2A_vvov), '1243', I2A_vvov, I2A_vvov_1243)
+                        call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+                        call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
@@ -71,7 +72,7 @@ module ccp3_adaptive_loops
                         do i = 1 , noa
                             do j = i+1, noa
                                 do k = j+1, noa
-                                   
+
                                    ! Construct Q space for block (i,j,k)
                                    qspace = .true.
                                    idx = idx_table(i,j,k)
@@ -81,7 +82,7 @@ module ccp3_adaptive_loops
                                          qspace(a,b,c) = .false.
                                       end do
                                    end if
-                                   
+
                                    X3A = 0.0d0
                                    L3A = 0.0d0
                                    !!!!! MM(2,3)A !!!!!
@@ -107,7 +108,7 @@ module ccp3_adaptive_loops
                                     do a = 1, nua
                                         do b = a+1, nua
                                             do c = b+1, nua
-                                               
+
                                                 if (.not. qspace(a,b,c)) cycle
 
                                                 temp1 = X3A(a,b,c) + X3A(b,c,a) + X3A(c,a,b)&
@@ -169,7 +170,7 @@ module ccp3_adaptive_loops
 
                                                 ! simply skip over triples that contribute below min_thresh
                                                 if (abs(LM/D) <= min_thresh) cycle
-                                                
+
                                                 if (nfill <= buf_fact*num_add) then
                                                     if (abs(LM/D) >= minval) then
                                                         triples_list(nfill,:) = (/2*a-1, 2*b-1, 2*c-1, 2*i-1, 2*j-1, 2*k-1/)
@@ -192,7 +193,7 @@ module ccp3_adaptive_loops
                         deallocate(loc_arr,idx_table)
 
               end subroutine ccp3a_2ba_with_selection_opt
-              
+
               subroutine ccp3b_2ba_with_selection_opt(deltaA,deltaB,deltaC,deltaD,&
                               moments,&
                               triples_list,&
@@ -248,7 +249,7 @@ module ccp3_adaptive_loops
                         D3C_O(1:nub,1:noa,1:nob),&
                         D3C_V(1:nua,1:nob,1:nub)
                         real(kind=8), intent(in) :: min_thresh
-                        
+
                         real(kind=8), intent(inout) :: moments(buf_fact*num_add)
                         !f2py intent(in,out) :: moments(0:buf_fact*num_add-1)
                         integer, intent(inout) :: triples_list(buf_fact*num_add,6)
@@ -270,7 +271,7 @@ module ccp3_adaptive_loops
                             H2B_ovvv_2341(nub,nua,nub,noa), H2B_ooov_3412(noa,nub,noa,nob),&
                             H2A_ooov_4312(nua,noa,noa,noa), H2B_oovo_3412(nua,nob,noa,nob),&
                             l2b_1243(nua,nub,nob,noa)
-                        
+
                         ! reorder t3b into (i,j,k) order
                         excits_buff(:,:) = t3b_excits(:,:)
                         nloc = noa*(noa-1)/2*nob
@@ -279,17 +280,17 @@ module ccp3_adaptive_loops
                         call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), noa, noa, nob)
                         call sort3(excits_buff, loc_arr, idx_table, (/4,5,6/), noa, noa, nob, nloc, n3aab)
                         ! reorder arrays for DGEMMs
-                        call reorder1243(t2a,t2a_1243)
-                        call reorder1243(H2B_vvov,H2B_vvov_1243)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder1243(H2A_vvov,H2A_vvov_1243)
-                        call reorder1342(H2B_vovv,H2B_vovv_1342)
-                        call reorder4312(H2A_vovv,H2A_vovv_4312)
-                        call reorder2341(H2B_ovvv,H2B_ovvv_2341)
-                        call reorder3412(H2B_ooov,H2B_ooov_3412)
-                        call reorder4312(H2A_ooov,H2A_ooov_4312)
-                        call reorder3412(H2B_oovo,H2B_oovo_3412)
-                        call reorder1243(l2b,l2b_1243)
+                        call reorder_stripe(4, shape(t2a), size(t2a), '1243', t2a, t2a_1243)
+                        call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '1243', H2B_vvov, H2B_vvov_1243)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(H2A_vvov), size(H2A_vvov), '1243', H2A_vvov, H2A_vvov_1243)
+                        call reorder_stripe(4, shape(H2B_vovv), size(H2B_vovv), '1342', H2B_vovv, H2B_vovv_1342)
+                        call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+                        call reorder_stripe(4, shape(H2B_ovvv), size(H2B_ovvv), '2341', H2B_ovvv, H2B_ovvv_2341)
+                        call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
+                        call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
+                        call reorder_stripe(4, shape(H2B_oovo), size(H2B_oovo), '3412', H2B_oovo, H2B_oovo_3412)
+                        call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
@@ -302,7 +303,7 @@ module ccp3_adaptive_loops
                         do i = 1, noa
                             do j = i+1, noa
                                 do k = 1, nob
-                                   
+
                                     ! Construct Q space for block (i,j,k)
                                     qspace = .true.
                                     idx = idx_table(i,j,k)
@@ -312,7 +313,7 @@ module ccp3_adaptive_loops
                                           qspace(a,b,c) = .false.
                                        end do
                                     end if
-                                    
+
                                     X3B = 0.0d0
                                     L3B = 0.0d0
                                     !!!!! MM(2,3)B !!!!!
@@ -353,7 +354,7 @@ module ccp3_adaptive_loops
                                     do a = 1, nua
                                         do b = a+1, nua
                                             do c = 1, nub
-                                               
+
                                                 if (.not. qspace(a,b,c)) cycle
 
                                                 temp1 = X3B(a,b,c) - X3B(b,a,c)
@@ -525,23 +526,23 @@ module ccp3_adaptive_loops
                         call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), nob, nob, noa)
                         call sort3(excits_buff, loc_arr, idx_table, (/5,6,4/), nob, nob, noa, nloc, n3abb)
                         ! reorder arrays for DGEMMs
-                        call reorder1243(H2B_vvov,H2B_vvov_1243)
-                        call reorder4213(H2C_vvov,H2C_vvov_4213)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder2134(I2C_vooo,I2C_vooo_2134)
-                        call reorder3421(H2B_ovvv,H2B_ovvv_3421)
-                        call reorder1342(H2C_vovv,H2C_vovv_1342)
-                        call reorder3412(H2B_vovv,H2B_vovv_3412)
-                        call reorder3412(H2B_oovo,H2B_oovo_3412)
-                        call reorder3412(H2C_ooov,H2C_ooov_3412)
-                        call reorder1243(l2b,l2b_1243)
-                        call reorder3412(H2B_ooov,H2B_ooov_3412)
+                        call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '1243', H2B_vvov, H2B_vvov_1243)
+                        call reorder_stripe(4, shape(H2C_vvov), size(H2C_vvov), '4213', H2C_vvov, H2C_vvov_4213)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(I2C_vooo), size(I2C_vooo), '2134', I2C_vooo, I2C_vooo_2134)
+                        call reorder_stripe(4, shape(H2B_ovvv), size(H2B_ovvv), '3421', H2B_ovvv, H2B_ovvv_3421)
+                        call reorder_stripe(4, shape(H2C_vovv), size(H2C_vovv), '1342', H2C_vovv, H2C_vovv_1342)
+                        call reorder_stripe(4, shape(H2B_vovv), size(H2B_vovv), '3412', H2B_vovv, H2B_vovv_3412)
+                        call reorder_stripe(4, shape(H2B_oovo), size(H2B_oovo), '3412', H2B_oovo, H2B_oovo_3412)
+                        call reorder_stripe(4, shape(H2C_ooov), size(H2C_ooov), '3412', H2C_ooov, H2C_ooov_3412)
+                        call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
+                        call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
 
                         minval = abs(moments(num_add))
                         do i = 1 , noa
                             do j = 1, nob
                                 do k = j+1, nob
-                                   
+
                                     ! Construct Q space for block (i,j,k)
                                     qspace = .true.
                                     idx = idx_table(j,k,i)
@@ -551,7 +552,7 @@ module ccp3_adaptive_loops
                                           qspace(a,b,c) = .false.
                                        end do
                                     end if
-                                    
+
                                     X3C = 0.0d0
                                     L3C = 0.0d0
                                     !!!!! MM(2,3)C !!!!!
@@ -588,11 +589,11 @@ module ccp3_adaptive_loops
                                     ! Diagram 6: -A(jk)A(bc) H2B_ooov(i,j,m,b)*l2b(a,c,m,k) -> -A(jk)A(bc) H2B_ooov(i,k,m,c)*l2b(a,b,m,j)
                                     call dgemm('n','n',nuanub,nub,noa,-1.0d0,l2b(:,:,:,j),nuanub,H2B_ooov_3412(:,:,i,k),noa,1.0d0,L3C,nuanub)
                                     call dgemm('n','n',nuanub,nub,noa,1.0d0,l2b(:,:,:,k),nuanub,H2B_ooov_3412(:,:,i,j),noa,1.0d0,L3C,nuanub)
-                                    
+
                                     do a = 1, nua
                                         do b = 1, nub
                                             do c = b+1, nub
-                                               
+
                                                 if (.not. qspace(a,b,c)) cycle
 
                                                 temp1 = X3C(a,b,c) - X3C(a,c,b)
@@ -654,7 +655,7 @@ module ccp3_adaptive_loops
                                                    minval = abs(moments(num_add))
                                                    nfill = num_add + 1
                                                 end if
-                                               
+
                                             end do
                                         end do
                                     end do
@@ -709,7 +710,7 @@ module ccp3_adaptive_loops
                         integer :: excits_buff(6,n3bbb)
                         ! reordered arrays for DGEMMs
                         real(kind=8) :: I2C_vvov_1243(nub,nub,nub,nob), H2C_vovv_4312(nub,nub,nub,nob), H2C_ooov_4312(nub,nob,nob,nob)
-                        
+
                         ! reorder t3d into (i,j,k) order
                         excits_buff(:,:) = t3d_excits(:,:)
                         nloc = nob*(nob-1)*(nob-2)/6
@@ -718,21 +719,21 @@ module ccp3_adaptive_loops
                         call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), nob, nob, nob)
                         call sort3(excits_buff, loc_arr, idx_table, (/4,5,6/), nob, nob, nob, nloc, n3bbb)
                         ! reorder arrays for DGEMMs
-                        call reorder1243(I2C_vvov,I2C_vvov_1243)
-                        call reorder4312(H2C_vovv,H2C_vovv_4312)
-                        call reorder4312(H2C_ooov,H2C_ooov_4312)
+                        call reorder_stripe(4, shape(I2C_vvov), size(I2C_vvov), '1243', I2C_vvov, I2C_vvov_1243)
+                        call reorder_stripe(4, shape(H2C_vovv), size(H2C_vovv), '4312', H2C_vovv, H2C_vovv_4312)
+                        call reorder_stripe(4, shape(H2C_ooov), size(H2C_ooov), '4312', H2C_ooov, H2C_ooov_4312)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
+
                         minval = abs(moments(num_add))
                         nub2 = nub*nub
                         do i = 1 , nob
                             do j = i+1, nob
                                 do k = j+1, nob
-                                   
+
                                     ! Construct Q space for block (i,j,k)
                                     qspace = .true.
                                     idx = idx_table(i,j,k)
@@ -742,7 +743,7 @@ module ccp3_adaptive_loops
                                           qspace(a,b,c) = .false.
                                        end do
                                     end if
-                                    
+
                                     X3D = 0.0d0
                                     L3D = 0.0d0
                                     !!!!! MM(2,3)D !!!!!
@@ -767,7 +768,7 @@ module ccp3_adaptive_loops
                                     do a = 1, nub
                                         do b = a+1, nub
                                             do c = b+1, nub
-                                               
+
                                                 if (.not. qspace(a,b,c)) cycle
 
                                                 temp1 = X3D(a,b,c) + X3D(b,c,a) + X3D(c,a,b)&
@@ -883,7 +884,7 @@ module ccp3_adaptive_loops
                                                     D3A_O(1:nua,1:noa,1:noa),&
                                                     D3A_V(1:nua,1:noa,1:nua)
                         real(kind=8), intent(in) :: min_thresh
-        
+
                         ! Inout variables
                         real(kind=8), intent(inout) :: deltaA
                         !f2py intent(in,out) :: deltaA
@@ -908,7 +909,7 @@ module ccp3_adaptive_loops
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3aaa)
-                        
+
                         ! reorder t3a into (i,j,k) order
                         excits_buff(:,:) = t3a_excits(:,:)
                         nloc = noa*(noa-1)*(noa-2)/6
@@ -926,7 +927,7 @@ module ccp3_adaptive_loops
                            end do
                         end if
                         deallocate(loc_arr,idx_table)
-                        
+
                         minval = abs(moments(num_add))
                         do a = 1, nua
                            do b = a+1, nua
@@ -961,7 +962,7 @@ module ccp3_adaptive_loops
 
                                 ! simply skip over triples that contribute below min_thresh
                                 if (abs(LM/(omega+D)) <= min_thresh) cycle
-                                
+
                                 if (nfill <= buf_fact*num_add) then
                                     if (abs(LM/(omega+D)) >= minval) then
                                         triples_list(nfill,:) = (/2*a-1, 2*b-1, 2*c-1, 2*i-1, 2*j-1, 2*k-1/)
@@ -996,7 +997,7 @@ module ccp3_adaptive_loops
                               D3A_O,D3A_V,D3B_O,D3B_V,D3C_O,D3C_V,&
                               num_add,min_thresh,buf_fact,&
                               n3aab,noa,nua,nob,nub)
-        
+
                         ! input variables
                         integer, intent(in) :: noa, nua, nob, nub, n3aab, num_add, buf_fact
                         integer, intent(in) :: i, j, k
@@ -1023,7 +1024,7 @@ module ccp3_adaptive_loops
                                                     D3C_O(1:nub,1:noa,1:nob),&
                                                     D3C_V(1:nua,1:nob,1:nub)
                         real(kind=8), intent(in) :: min_thresh
-                        
+
                         ! Inout variables
                         real(kind=8), intent(inout) :: deltaA
                         !f2py intent(in,out) :: deltaA
@@ -1047,7 +1048,7 @@ module ccp3_adaptive_loops
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3aab)
-                        
+
                         ! reorder t3b into (i,j,k) order
                         excits_buff(:,:) = t3b_excits(:,:)
                         nloc = noa*(noa-1)/2*nob
@@ -1067,7 +1068,7 @@ module ccp3_adaptive_loops
                         deallocate(loc_arr,idx_table)
 
                         minval = abs(moments(num_add))
-                    
+
                         do a=1,nua; do b=a+1,nua; do c=1,nub;
                            if (.not. qspace(a,b,c)) cycle
                            LM = M3B(a,b,c)*L3B(a,b,c)
@@ -1115,7 +1116,7 @@ module ccp3_adaptive_loops
                            end if
                         end do; end do; end do;
               end subroutine ccp3b_ijk_with_selection_opt
-              
+
               subroutine ccp3c_ijk_with_selection_opt(deltaA,deltaB,deltaC,deltaD,&
                               moments,&
                               triples_list,&
@@ -1184,7 +1185,7 @@ module ccp3_adaptive_loops
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3abb)
-                        
+
                         ! reorder t3c into (i,j,k) order
                         excits_buff(:,:) = t3c_excits(:,:)
                         nloc = nob*(nob-1)/2*noa
@@ -1251,7 +1252,7 @@ module ccp3_adaptive_loops
                            end if
                         end do; end do; end do;
               end subroutine ccp3c_ijk_with_selection_opt
-              
+
               subroutine ccp3d_ijk_with_selection_opt(deltaA,deltaB,deltaC,deltaD,&
                               moments,&
                               triples_list,&
@@ -1297,7 +1298,7 @@ module ccp3_adaptive_loops
                         !f2py intent(in,out) triples_list(0:buf_fact*num_add-1,0:5)
                         integer, intent(inout) :: nfill
                         !f2py intent(in,out) :: nfill
-        
+
                         ! local variables
                         integer :: a, b, c, nub2, isort(buf_fact*num_add)
                         real(kind=8) :: D, LM, minval
@@ -1306,7 +1307,7 @@ module ccp3_adaptive_loops
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3bbb)
-                        
+
                         ! reorder t3d into (i,j,k) order
                         excits_buff(:,:) = t3d_excits(:,:)
                         nloc = nob*(nob-1)*(nob-2)/6
@@ -1324,7 +1325,7 @@ module ccp3_adaptive_loops
                            end do
                         end if
                         deallocate(loc_arr,idx_table)
-                        
+
                         minval = abs(moments(num_add))
 
                         do a=1,nub; do b=a+1,nub; do c=b+1,nub;
@@ -1375,227 +1376,16 @@ module ccp3_adaptive_loops
                         end do; end do; end do;
               end subroutine ccp3d_ijk_with_selection_opt
 
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! REORDER ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-              subroutine reorder3412(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i4,i1,i2) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder3412
-
-             subroutine reorder1342(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i1,i3,i4,i2) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder1342
-
-            subroutine reorder3421(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i4,i2,i1) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder3421
-
-             subroutine reorder2134(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i1,i3,i4) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2134
-
-            subroutine reorder1243(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i1,i2,i4,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder1243
-
-             subroutine reorder4213(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i2,i1,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4213
-
-             subroutine reorder4312(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i3,i1,i2) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4312
-
-             subroutine reorder2341(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i3,i4,i1) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2341
-
-             subroutine reorder2143(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i1,i4,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2143
-
-             subroutine reorder4123(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i1,i2,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4123
-
-             subroutine reorder3214(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i2,i1,i4) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder3214
-              
               subroutine get_index_table(idx_table, rng1, rng2, rng3, n1, n2, n3)
 
                     integer, intent(in) :: n1, n2, n3
                     integer, intent(in) :: rng1(2), rng2(2), rng3(2)
-      
+
                     integer, intent(inout) :: idx_table(n1,n2,n3)
-      
+
                     integer :: kout
                     integer :: p, q, r
-      
+
                     idx_table = 0
                     if (rng1(1) > 0 .and. rng2(1) < 0 .and. rng3(1) < 0) then ! p < q < r
                        kout = 1
@@ -1646,16 +1436,16 @@ module ccp3_adaptive_loops
                     integer, intent(in) :: n1, n2, n3, nloc, n3p
                     integer, intent(in) :: idims(3)
                     integer, intent(in) :: idx_table(n1,n2,n3)
-      
+
                     integer, intent(inout) :: loc_arr(2,nloc)
                     integer, intent(inout) :: excits(6,n3p)
-      
+
                     integer :: idet
                     integer :: p, q, r
                     integer :: p1, q1, r1, p2, q2, r2
                     integer :: pqr1, pqr2
                     integer, allocatable :: temp(:), idx(:)
-      
+
                     allocate(temp(n3p),idx(n3p))
                     do idet = 1, n3p
                        p = excits(idims(1),idet); q = excits(idims(2),idet); r = excits(idims(3),idet);
@@ -1687,20 +1477,20 @@ module ccp3_adaptive_loops
 
                     integer, intent(in), dimension(:) :: r
                     integer, intent(out), dimension(size(r)) :: d
-      
+
                     integer, dimension(size(r)) :: il
-      
+
                     integer :: stepsize
                     integer :: i, j, n, left, k, ksize
-      
+
                     n = size(r)
-      
+
                     do i=1,n
                        d(i)=i
                     end do
-      
+
                     if (n==1) return
-      
+
                     stepsize = 1
                     do while (stepsize < n)
                        do left = 1, n-stepsize,stepsize*2
@@ -1708,7 +1498,7 @@ module ccp3_adaptive_loops
                           j = left+stepsize
                           ksize = min(stepsize*2,n-left+1)
                           k=1
-      
+
                           do while (i < left+stepsize .and. j < left+ksize)
                              if (r(d(i)) < r(d(j))) then
                                 il(k) = d(i)
@@ -1720,7 +1510,7 @@ module ccp3_adaptive_loops
                                 k = k+1
                              endif
                           enddo
-      
+
                           if (i < left+stepsize) then
                              ! fill up remaining from left
                              il(k:ksize) = d(i:left+stepsize-1)
@@ -1734,25 +1524,25 @@ module ccp3_adaptive_loops
                     end do
 
               end subroutine argsort
-   
+
               subroutine argsort_r8_descend(r,d)
 
                     real(kind=8), intent(in), dimension(:) :: r
                     integer, intent(out), dimension(size(r)) :: d
-      
+
                     integer, dimension(size(r)) :: il
-      
+
                     integer :: stepsize
                     integer :: i, j, n, left, k, ksize
-      
+
                     n = size(r)
-      
+
                     do i=1,n
                        d(i)=i
                     end do
-      
+
                     if (n==1) return
-      
+
                     stepsize = 1
                     do while (stepsize < n)
                        do left = 1, n-stepsize,stepsize*2
@@ -1760,7 +1550,7 @@ module ccp3_adaptive_loops
                           j = left+stepsize
                           ksize = min(stepsize*2,n-left+1)
                           k=1
-      
+
                           do while (i < left+stepsize .and. j < left+ksize)
                              !if (r(d(i)) < r(d(j))) then ! sort in ascending
                              if (r(d(i)) > r(d(j))) then ! sort in descending
@@ -1773,7 +1563,7 @@ module ccp3_adaptive_loops
                                 k = k+1
                              endif
                           enddo
-      
+
                           if (i < left+stepsize) then
                              ! fill up remaining from left
                              il(k:ksize) = d(i:left+stepsize-1)
@@ -1787,5 +1577,5 @@ module ccp3_adaptive_loops
                     end do
 
               end subroutine argsort_r8_descend
-   
+
 end module ccp3_adaptive_loops

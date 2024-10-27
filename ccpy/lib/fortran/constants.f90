@@ -1,5 +1,6 @@
-module const
-implicit none
+module constants
+
+  implicit none
 
   ! 32-bit (4-byte) integer
   integer, parameter :: int_32 = selected_int_kind(6)
@@ -16,4 +17,4 @@ implicit none
   integer, parameter :: p = dp
 
 
-end module const
+end module constants

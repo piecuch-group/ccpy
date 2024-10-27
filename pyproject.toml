@@ -10,7 +10,7 @@ requires = [
     # Note that building against numpy 1.x works fine too - users and
     # redistributors can do this by installing the numpy version they like and
     # disabling build isolation.
-    "numpy>=2.0.0rc1",
+    "numpy>=2.0.0",
 ]
 
 [project]
@@ -32,7 +32,7 @@ maintainers = [
 #     https://scipy.github.io/devdocs/dev/core-dev/index.html#version-ranges-for-numpy-and-other-dependencies
 requires-python = ">=3.10"
 dependencies = [
-    "numpy>=1.23.5",
+    "numpy>=2.0",
     "pyscf",
     "cclib",
     "psutil",

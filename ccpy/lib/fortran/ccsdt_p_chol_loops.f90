@@ -64,9 +64,9 @@ module ccsdt_p_chol_loops
                   integer :: a_chol, b_chol
                   integer :: idx, nloc
                   integer :: ab_table(nua*(nua-1)/2,2)
-                  
+
                   ! Start the VT3 intermediates at Hbar (factor of 1/2 to compensate for antisymmetrization)
-                  I2A_vooo = 0.5d0 * H2A_vooo 
+                  I2A_vooo = 0.5d0 * H2A_vooo
                   I2A_vvov = 0.5d0 * H2A_vvov
                   call calc_I2A_vooo(I2A_vooo,&
                                H2A_oovv,H2B_oovv,&
@@ -82,7 +82,7 @@ module ccsdt_p_chol_loops
 
                   !!!! diagram 1: -A(i/jk) h1a(mi) * t3a(abcmjk)
                   !!!! diagram 3: 1/2 A(i/jk) h2a(mnij) * t3a(abcmnk)
-                  ! NOTE: WITHIN THESE LOOPS, H1A(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2  
+                  ! NOTE: WITHIN THESE LOOPS, H1A(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
                   ! allocate new sorting arrays
                   nloc = nua*(nua-1)*(nua-2)/6*noa
                   allocate(loc_arr(2,nloc))
@@ -102,8 +102,8 @@ module ccsdt_p_chol_loops
                         hmatel = h2a_oooo(m,l,j,i)
                         ! compute < ijkabc | h1a(oo) | lmkabc > = -A(ij)A(lm) h1a_oo(l,i) * delta(m,j)
                         hmatel1 = 0.0d0; hmatel2 = 0.0d0; hmatel3 = 0.0d0; hmatel4 = 0.0d0;
-                        if (m==j) hmatel1 = -h1a_oo(l,i) ! (1)      < ijkabc | h1a(oo) | ljkabc > 
-                        if (m==i) hmatel2 = h1a_oo(l,j) ! (ij)     < ijkabc | h1a(oo) | likabc > 
+                        if (m==j) hmatel1 = -h1a_oo(l,i) ! (1)      < ijkabc | h1a(oo) | ljkabc >
+                        if (m==i) hmatel2 = h1a_oo(l,j) ! (ij)     < ijkabc | h1a(oo) | likabc >
                         if (l==j) hmatel3 = h1a_oo(m,i) ! (lm)     < ijkabc | h1a(oo) | jmkabc >
                         if (l==i) hmatel4 = -h1a_oo(m,j) ! (ij)(lm) < ijkabc | h1a(oo) | imkabc >
                         hmatel = hmatel + 0.5d0*(hmatel1 + hmatel2 + hmatel3  + hmatel4)
@@ -268,7 +268,7 @@ module ccsdt_p_chol_loops
                   deallocate(loc_arr,idx_table)
 
                   !!!! diagram 2: A(a/bc) h1a(ae) * t3a(ebcijk)
-                  ! NOTE: WITHIN THESE LOOPS, H1A(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2  
+                  ! NOTE: WITHIN THESE LOOPS, H1A(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
                   ! allocate new sorting arrays
                   nloc = noa*(noa-1)*(noa-2)/6*nua
                   allocate(loc_arr(2,nloc))
@@ -371,7 +371,7 @@ module ccsdt_p_chol_loops
                         hmatel = 0.5d0*(hmatel1 + hmatel2 + hmatel3 + hmatel4)
                         resid(idet) = resid(idet) + hmatel*t3a_amps(jdet)
                      end do
-                     end if 
+                     end if
                   end do
                   !!! IJKC LOOP !!!
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
@@ -1506,7 +1506,7 @@ module ccsdt_p_chol_loops
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
-                  deallocate(t3_amps_buff,t3_excits_buff) 
+                  deallocate(t3_amps_buff,t3_excits_buff)
 
                   !
                   ! Moment contributions
@@ -1538,7 +1538,7 @@ module ccsdt_p_chol_loops
                       end do
                   end do
                   deallocate(xbuf)
-                  
+
                   do idet = 1, n3aaa
                       a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                       i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -1555,16 +1555,16 @@ module ccsdt_p_chol_loops
                           resid(idet) = resid(idet) + I2A_vvov(e,a,c,k) * t2a(e,b,j,i)
                       end do
                   end do
-                  
+
                   !!!! diagram 4: 1/2 A(c/ab) h2a(abef) * t3a(ebcijk)
-                  k1 = 1 
+                  k1 = 1
                   do a_chol=1,nua
                      do b_chol=a_chol+1,nua
                         ab_table(k1,1) = a_chol
                         ab_table(k1,2) = b_chol
                         k1 = k1 + 1
                      end do
-                  end do 
+                  end do
                   ! allocate new sorting arrays
                   nloc = noa*(noa-1)*(noa-2)/6*nua
                   allocate(loc_arr_copy1(2,nloc),loc_arr_copy2(2,nloc),loc_arr_copy3(2,nloc))
@@ -1586,7 +1586,7 @@ module ccsdt_p_chol_loops
                   !!! IJKC LOOP !!!
                   call get_index_table(idx_table_copy3, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
                   call sort4(t3a_excits_copy3, t3a_amps_copy3, loc_arr_copy3, idx_table_copy3, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa)
-                  !$omp parallel do reduction(+:resid) private(h2a_vvvv,a,b,c,i,j,k,l,m,n,d,e,f,a_chol,b_chol,idx,hmatel,idet,jdet) 
+                  !$omp parallel do reduction(+:resid) private(h2a_vvvv,a,b,c,i,j,k,l,m,n,d,e,f,a_chol,b_chol,idx,hmatel,idet,jdet)
                   do k1=1,nua*(nua-1)/2
                      a_chol = ab_table(k1,1); b_chol = ab_table(k1,2);
                         !
@@ -1609,7 +1609,7 @@ module ccsdt_p_chol_loops
                               end do
                               h2a_vvvv(f,e) = -h2a_vvvv(e,f)
                            end do
-                        end do  
+                        end do
                         do idet = 1, n3aaa ! master copy loop
                            a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                            i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -1756,7 +1756,7 @@ module ccsdt_p_chol_loops
 
               subroutine update_t3b_p(resid,&
                                       t3a_amps, t3a_excits,&
-                                      t3b_amps, t3b_excits,& 
+                                      t3b_amps, t3b_excits,&
                                       t3c_amps, t3c_excits,&
                                       t2a, t2b,&
                                       H1A_oo, H1A_vv, H1B_oo, H1B_vv,&
@@ -1850,7 +1850,7 @@ module ccsdt_p_chol_loops
                   integer :: ab_table(nua*(nua-1)/2,2)
 
                   ! compute VT3 intermediates
-                  I2A_vooo = 0.5d0 * H2A_vooo 
+                  I2A_vooo = 0.5d0 * H2A_vooo
                   call calc_I2A_vooo(I2A_vooo,&
                                H2A_oovv,H2B_oovv,&
                                t3a_excits,t3a_amps,t3b_excits,t3b_amps,&
@@ -1886,7 +1886,7 @@ module ccsdt_p_chol_loops
 
                   !!!! diagram 1: -A(ij) h1a(mi)*t3b(abcmjk)
                   !!!! diagram 5: A(ij) 1/2 h2a(mnij)*t3b(abcmnk)
-                  !!! ABCK LOOP !!! 
+                  !!! ABCK LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nua*(nua-1)/2*nub*nob
                   allocate(loc_arr(2,nloc))
@@ -1976,7 +1976,7 @@ module ccsdt_p_chol_loops
                            if (m==i) hmatel1 = h1b_oo(n,k)
                            resid(idet) = resid(idet) + (hmatel + hmatel1)*t3b_amps(jdet)
                         end do
-                     end if    
+                     end if
                   end do
                   !!! ABCJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/2,noa/), nua, nua, nub, noa)
@@ -2004,7 +2004,7 @@ module ccsdt_p_chol_loops
                      end if
                   end do
                   ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table) 
+                  deallocate(loc_arr,idx_table)
 
                   !!!! diagram 5: h1b(ce)*t3b(abeijm)
                   ! allocate new sorting arrays
@@ -2068,7 +2068,7 @@ module ccsdt_p_chol_loops
                            hmatel = -h2a_voov(l,d,b,i)
                            resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
                         end do
-                     end if 
+                     end if
                      ! (ij)
                      idx = idx_table(b,c,i,k)
                      if (idx/=0) then ! protect against case where i = 1 because j = 2, noa
@@ -2079,7 +2079,7 @@ module ccsdt_p_chol_loops
                            hmatel = -h2a_voov(l,d,a,j)
                            resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
                         end do
-                     end if 
+                     end if
                      ! (ij)(ab)
                      idx = idx_table(a,c,i,k)
                      if (idx/=0) then ! protect against case where a = 1 because b = 2, nua and i = 1 because j = 2, noa
@@ -2090,7 +2090,7 @@ module ccsdt_p_chol_loops
                            hmatel = h2a_voov(l,d,b,j)
                            resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
                         end do
-                     end if 
+                     end if
                   end do
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
@@ -2109,7 +2109,7 @@ module ccsdt_p_chol_loops
                      end do
                      ! (ij)
                      idx = idx_table(b,c,j,k)
-                     if (idx/=0) then ! protect against where j = noa because i = 1, noa-1 
+                     if (idx/=0) then ! protect against where j = noa because i = 1, noa-1
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            d = t3b_excits(jdet,1); l = t3b_excits(jdet,5);
                            ! compute < ijk~abc~ | h2a(voov) | jlk~dbc~ >
@@ -2268,7 +2268,7 @@ module ccsdt_p_chol_loops
                   !!!! diagram 11: -A(ij) h2b(mcie)*t3b(abemjk)
                   ! allocate sorting arrays
                   nloc = nua*(nua-1)/2*noa*nob
-                  allocate(loc_arr(2,nloc)) 
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(nua,nua,noa,nob))
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/1,nob/), nua, nua, noa, nob)
@@ -2326,11 +2326,11 @@ module ccsdt_p_chol_loops
                   end do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 12: -A(ab) h2b(amek)*t3b(ebcijm)
                   ! allocate sorting arrays
                   nloc = nua*nub*noa*(noa-1)/2
-                  allocate(loc_arr(2,nloc)) 
+                  allocate(loc_arr(2,nloc))
                   allocate(idx_table(noa,noa,nua,nub))
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/2,nua/), (/1,nub/), noa, noa, nua, nub)
@@ -2406,7 +2406,7 @@ module ccsdt_p_chol_loops
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
                      idx = idx_table(a,b,i,j)
-                     if (idx==0) cycle 
+                     if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = t3_excits_buff(jdet,3); n = t3_excits_buff(jdet,6);
                         ! compute < ijk~abc~ | h2b(ovvo) | ijnabf >
@@ -2421,7 +2421,7 @@ module ccsdt_p_chol_loops
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = t3_excits_buff(jdet,2); n = t3_excits_buff(jdet,6);
@@ -2437,7 +2437,7 @@ module ccsdt_p_chol_loops
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = t3_excits_buff(jdet,1); n = t3_excits_buff(jdet,6);
@@ -2453,7 +2453,7 @@ module ccsdt_p_chol_loops
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = t3_excits_buff(jdet,3); m = t3_excits_buff(jdet,5);
@@ -2469,7 +2469,7 @@ module ccsdt_p_chol_loops
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = t3_excits_buff(jdet,2); m = t3_excits_buff(jdet,5);
@@ -2485,7 +2485,7 @@ module ccsdt_p_chol_loops
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = t3_excits_buff(jdet,1); m = t3_excits_buff(jdet,5);
@@ -2501,7 +2501,7 @@ module ccsdt_p_chol_loops
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = t3_excits_buff(jdet,3); l = t3_excits_buff(jdet,4);
@@ -2517,7 +2517,7 @@ module ccsdt_p_chol_loops
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = t3_excits_buff(jdet,2); l = t3_excits_buff(jdet,4);
@@ -2533,7 +2533,7 @@ module ccsdt_p_chol_loops
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = t3_excits_buff(jdet,1); l = t3_excits_buff(jdet,4);
@@ -2565,7 +2565,7 @@ module ccsdt_p_chol_loops
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
                      ! (1)
-                     idx = idx_table(a,c,i,k) 
+                     idx = idx_table(a,c,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = t3_excits_buff(jdet,2); m = t3_excits_buff(jdet,5);
@@ -2576,7 +2576,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ab)
-                     idx = idx_table(b,c,i,k) 
+                     idx = idx_table(b,c,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = t3_excits_buff(jdet,2); m = t3_excits_buff(jdet,5);
@@ -2587,7 +2587,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ij)
-                     idx = idx_table(a,c,j,k) 
+                     idx = idx_table(a,c,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = t3_excits_buff(jdet,2); m = t3_excits_buff(jdet,5);
@@ -2598,7 +2598,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ab)(ij)
-                     idx = idx_table(b,c,j,k) 
+                     idx = idx_table(b,c,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = t3_excits_buff(jdet,2); m = t3_excits_buff(jdet,5);
@@ -2616,7 +2616,7 @@ module ccsdt_p_chol_loops
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
                      ! (1)
-                     idx = idx_table(a,c,i,k) 
+                     idx = idx_table(a,c,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = t3_excits_buff(jdet,3); m = t3_excits_buff(jdet,5);
@@ -2627,7 +2627,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ab)
-                     idx = idx_table(b,c,i,k) 
+                     idx = idx_table(b,c,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = t3_excits_buff(jdet,3); m = t3_excits_buff(jdet,5);
@@ -2638,7 +2638,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ij)
-                     idx = idx_table(a,c,j,k) 
+                     idx = idx_table(a,c,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = t3_excits_buff(jdet,3); m = t3_excits_buff(jdet,5);
@@ -2649,7 +2649,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ab)(ij)
-                     idx = idx_table(b,c,j,k) 
+                     idx = idx_table(b,c,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = t3_excits_buff(jdet,3); m = t3_excits_buff(jdet,5);
@@ -2667,7 +2667,7 @@ module ccsdt_p_chol_loops
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
                      ! (1)
-                     idx = idx_table(a,c,i,k) 
+                     idx = idx_table(a,c,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = t3_excits_buff(jdet,2); n = t3_excits_buff(jdet,6);
@@ -2678,7 +2678,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ab)
-                     idx = idx_table(b,c,i,k) 
+                     idx = idx_table(b,c,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = t3_excits_buff(jdet,2); n = t3_excits_buff(jdet,6);
@@ -2689,7 +2689,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ij)
-                     idx = idx_table(a,c,j,k) 
+                     idx = idx_table(a,c,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = t3_excits_buff(jdet,2); n = t3_excits_buff(jdet,6);
@@ -2700,7 +2700,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ab)(ij)
-                     idx = idx_table(b,c,j,k) 
+                     idx = idx_table(b,c,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            e = t3_excits_buff(jdet,2); n = t3_excits_buff(jdet,6);
@@ -2718,7 +2718,7 @@ module ccsdt_p_chol_loops
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
                      ! (1)
-                     idx = idx_table(a,c,i,k) 
+                     idx = idx_table(a,c,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = t3_excits_buff(jdet,3); n = t3_excits_buff(jdet,6);
@@ -2729,7 +2729,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ab)
-                     idx = idx_table(b,c,i,k) 
+                     idx = idx_table(b,c,i,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = t3_excits_buff(jdet,3); n = t3_excits_buff(jdet,6);
@@ -2740,7 +2740,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ij)
-                     idx = idx_table(a,c,j,k) 
+                     idx = idx_table(a,c,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = t3_excits_buff(jdet,3); n = t3_excits_buff(jdet,6);
@@ -2751,7 +2751,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                      ! (ab)(ij)
-                     idx = idx_table(b,c,j,k) 
+                     idx = idx_table(b,c,j,k)
                      if (idx/=0) then
                         do jdet = loc_arr(1,idx), loc_arr(2,idx)
                            f = t3_excits_buff(jdet,3); n = t3_excits_buff(jdet,6);
@@ -2768,14 +2768,14 @@ module ccsdt_p_chol_loops
                   deallocate(t3_amps_buff,t3_excits_buff)
 
                   !!!! diagram 6: A(ab) 1/2 h2a(abef)*t3b(ebcmjk)
-                  k1 = 1 
+                  k1 = 1
                   do a_chol=1,nua
                      do b_chol=a_chol+1,nua
                         ab_table(k1,1) = a_chol
                         ab_table(k1,2) = b_chol
                         k1 = k1 + 1
                      end do
-                  end do 
+                  end do
                   !!! CIJK LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nub*noa*(noa-1)/2*nob
@@ -2808,7 +2808,7 @@ module ccsdt_p_chol_loops
                         end do
                         h_vv(f,e) = -h_vv(e,f)
                      end do
-                  end do  
+                  end do
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2863,7 +2863,7 @@ module ccsdt_p_chol_loops
                              end do
                           end do
                        end do
-                    end do  
+                    end do
                     do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2931,7 +2931,7 @@ module ccsdt_p_chol_loops
                           resid(idet) = resid(idet) - I2B_vvvo(e,a,c,k) * t2a(e,b,j,i)
                       end do
                   end do
-                  
+
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2979,7 +2979,7 @@ module ccsdt_p_chol_loops
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
                       do m = 1, noa
-                          ! -A(ij) h2b(mcjk) * t2a(abim) 
+                          ! -A(ij) h2b(mcjk) * t2a(abim)
                           resid(idet) = resid(idet) - I2B_ovoo(m,c,j,k) * xbuf(m,i,b,a)
                           resid(idet) = resid(idet) + I2B_ovoo(m,c,i,k) * xbuf(m,j,b,a)
                       end do
@@ -3040,7 +3040,7 @@ module ccsdt_p_chol_loops
                   end do
 
               end subroutine update_t3b_p
-         
+
               subroutine update_t3c_p(resid,&
                                       t3b_amps, t3b_excits,&
                                       t3c_amps, t3c_excits,&
@@ -3527,7 +3527,7 @@ module ccsdt_p_chol_loops
                   end do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 10: h2a(amie)*t3c(ebcmjk)
                   ! allocate sorting arrays
                   nloc = nub*(nub-1)/2*nob*(nob-1)/2
@@ -3550,7 +3550,7 @@ module ccsdt_p_chol_loops
                   end do ! end loop over idet
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 11: -A(bc) h2b(mbie)*t3c(aecmjk)
                   ! allocate sorting arrays
                   nloc = nob*(nob-1)/2*nub*nua
@@ -3612,7 +3612,7 @@ module ccsdt_p_chol_loops
                   end do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 12: -A(bc) h2b(amej)*t3c(ebcimk)
                   ! allocate sorting arrays
                   nloc = nub*(nub-1)/2*noa*nob
@@ -3674,7 +3674,7 @@ module ccsdt_p_chol_loops
                   end do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 13: h2b(amie)*t3d(ebcmjk)
                   ! allocate and initialize the copy of t3d
                   allocate(t3_amps_buff(n3bbb))
@@ -3851,7 +3851,7 @@ module ccsdt_p_chol_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
                   deallocate(t3_amps_buff,t3_excits_buff)
-                  
+
                   !!!! diagram 14: A(bc)A(jk) h2b(mbej)*t3b(aecimk)
                   ! allocate and initialize the copy of t3b
                   allocate(t3_amps_buff(n3aab))
@@ -4070,16 +4070,16 @@ module ccsdt_p_chol_loops
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
                   deallocate(t3_amps_buff,t3_excits_buff)
-                  
+
                   !!!! diagram 6: A(bc) 1/2 h2c(bcef)*t3c(aefijk)
-                  k1 = 1 
+                  k1 = 1
                   do a_chol=1,nub
                      do b_chol=a_chol+1,nub
                         ab_table(k1,1) = a_chol
                         ab_table(k1,2) = b_chol
                         k1 = k1 + 1
                      end do
-                  end do 
+                  end do
                   !!! JKIA LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nua*nob*(nob-1)/2*noa
@@ -4106,7 +4106,7 @@ module ccsdt_p_chol_loops
                         end do
                         h_vv(f,e) = -h_vv(e,f)
                      end do
-                  end do  
+                  end do
                   do idet = 1, n3abb
                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -4124,7 +4124,7 @@ module ccsdt_p_chol_loops
                   !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table,h_vv)
-                  
+
                   !!!! diagram 8: A(bc) h2b(abef)*t3c(efcijk)
                   ! allocate new sorting arrays
                   nloc = nub*nob*(nob-1)/2*noa
@@ -4157,7 +4157,7 @@ module ccsdt_p_chol_loops
                            end do
                         end do
                      end do
-                  end do  
+                  end do
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -4217,7 +4217,7 @@ module ccsdt_p_chol_loops
                   deallocate(idx_table2)
                   deallocate(t3c_excits1,t3c_excits2)
                   deallocate(t3c_amps1,t3c_amps2)
-                  
+
                   !
                   ! Moment contributions
                   !
@@ -4232,7 +4232,7 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + I2B_vvvo(e,a,c,k) * t2b(e,b,i,j)
                      end do
                   end do
-                  
+
                    do idet = 1,n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -4352,7 +4352,7 @@ module ccsdt_p_chol_loops
                                       shift,&
                                       n3abb, n3bbb,&
                                       noa, nua, nob, nub, nchol)
-                  
+
                   integer, intent(in) :: noa, nua, nob, nub, n3abb, n3bbb, nchol
                   integer, intent(in) :: t3c_excits(n3abb,6)
                   real(kind=8), intent(in) :: t2c(nub,nub,nob,nob),&
@@ -4414,7 +4414,7 @@ module ccsdt_p_chol_loops
 
                   ! Zero the residual
                   resid = 0.0d0
-                  
+
                   !!!! diagram 1: -A(i/jk) h1b(mi) * t3d(abcmjk)
                   !!!! diagram 3: 1/2 A(i/jk) h2c(mnij) * t3d(abcmnk)
                   ! NOTE: WITHIN THESE LOOPS, H1B(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
@@ -4601,9 +4601,9 @@ module ccsdt_p_chol_loops
                   end do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 2: A(a/bc) h1b(ae) * t3d(ebcijk)
-                  ! NOTE: WITHIN THESE LOOPS, H1B(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2  
+                  ! NOTE: WITHIN THESE LOOPS, H1B(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
                   ! allocate new sorting arrays
                   nloc = nob*(nob-1)*(nob-2)/6*nub
                   allocate(loc_arr(2,nloc))
@@ -4706,7 +4706,7 @@ module ccsdt_p_chol_loops
                         hmatel = 0.5d0 * (hmatel1 + hmatel2 + hmatel3 + hmatel4)
                         resid(idet) = resid(idet) + hmatel * t3d_amps(jdet)
                      end do
-                     end if 
+                     end if
                   end do
                   !!! IJKC LOOP !!!
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/3,nub/), nob, nob, nob, nub)
@@ -5843,15 +5843,15 @@ module ccsdt_p_chol_loops
                  ! deallocate t3 buffer arrays
                  deallocate(t3_amps_buff,t3_excits_buff)
 
-                  !!!! diagram 4: 1/2 A(c/ab) h2c(abef) * t3d(ebcijk) 
-                  k1 = 1 
+                  !!!! diagram 4: 1/2 A(c/ab) h2c(abef) * t3d(ebcijk)
+                  k1 = 1
                   do a_chol=1,nub
                      do b_chol=a_chol+1,nub
                         ab_table(k1,1) = a_chol
                         ab_table(k1,2) = b_chol
                         k1 = k1 + 1
                      end do
-                  end do 
+                  end do
                   ! allocate new sorting arrays
                   nloc = nob*(nob-1)*(nob-2)/6*nub
                   allocate(loc_arr_copy1(2,nloc),loc_arr_copy2(2,nloc),loc_arr_copy3(2,nloc))
@@ -5892,7 +5892,7 @@ module ccsdt_p_chol_loops
                               end do
                               h2c_vvvv(f,e) = -h2c_vvvv(e,f)
                            end do
-                        end do  
+                        end do
                         do idet = 1, n3bbb ! master copy loop
                            a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                            i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -6049,7 +6049,7 @@ module ccsdt_p_chol_loops
                     end do
                  end do
                  deallocate(xbuf)
-                 
+
                  do idet = 1, n3bbb
                     a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                     i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -6093,7 +6093,7 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2A_vooo(noa,nua,noa,noa)
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
-                  real(kind=8) :: t_amp 
+                  real(kind=8) :: t_amp
 
                   do idet = 1, n3aaa
                       t_amp = t3a_amps(idet)
@@ -6239,7 +6239,7 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2C_vooo(nob,nub,nob,nob)
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
-                  real(kind=8) :: t_amp 
+                  real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
                   do idet = 1, n3bbb
@@ -6302,7 +6302,7 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2A_vvov(nua,nua,nua,noa) ! reordered
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
-                  real(kind=8) :: t_amp 
+                  real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
                   allocate(intbuf(nua,nua,noa,noa))
@@ -6502,7 +6502,7 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2C_vvov(nub,nub,nub,nob) ! reordered
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
-                  real(kind=8) :: t_amp 
+                  real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
                   allocate(intbuf(nub,nub,nob,nob))
@@ -6581,7 +6581,7 @@ module ccsdt_p_chol_loops
               idx_table = 0
               ! 5 possible cases. Always organize so that ordered indices appear first.
               if (rng1(1) < 0 .and. rng2(1) < 0 .and. rng3(1) < 0 .and. rng4(1) < 0) then ! p < q < r < s
-                 kout = 1 
+                 kout = 1
                  do p = rng1(1), rng1(2)
                     do q = p-rng2(1), rng2(2)
                        do r = q-rng3(1), rng3(2)
@@ -6593,7 +6593,7 @@ module ccsdt_p_chol_loops
                     end do
                  end do
               elseif (rng1(1) > 0 .and. rng2(1) < 0 .and. rng3(1) < 0 .and. rng4(1) > 0) then ! p < q < r, s
-                 kout = 1 
+                 kout = 1
                  do p = rng1(1), rng1(2)
                     do q = p-rng2(1), rng2(2)
                        do r = q-rng3(1), rng3(2)
@@ -6605,7 +6605,7 @@ module ccsdt_p_chol_loops
                     end do
                  end do
               elseif (rng1(1) > 0 .and. rng2(1) < 0 .and. rng3(1) > 0 .and. rng4(1) < 0) then ! p < q, r < s
-                 kout = 1 
+                 kout = 1
                  do p = rng1(1), rng1(2)
                     do q = p-rng2(1), rng2(2)
                        do r = rng3(1), rng3(2)
@@ -6617,7 +6617,7 @@ module ccsdt_p_chol_loops
                     end do
                  end do
               elseif (rng1(1) > 0 .and. rng2(1) < 0 .and. rng3(1) > 0 .and. rng4(1) > 0) then ! p < q, r, s
-                 kout = 1 
+                 kout = 1
                  do p = rng1(1), rng1(2)
                     do q = p-rng2(1), rng2(2)
                        do r = rng3(1), rng3(2)
@@ -6629,7 +6629,7 @@ module ccsdt_p_chol_loops
                     end do
                  end do
               else ! p, q, r, s
-                 kout = 1 
+                 kout = 1
                  do p = rng1(1), rng1(2)
                     do q = rng2(1), rng2(2)
                        do r = rng3(1), rng3(2)
@@ -6658,7 +6658,7 @@ module ccsdt_p_chol_loops
       !   amps: T3 amplitude vector (can be aaa, aab, abb, or bbb)
       !   resid (optional): T3 residual vector (can be aaa, aab, abb, or bbb)
       !   loc_arr: array providing the start- and end-point indices for each sorted block in t3 excitations
-          
+
               integer, intent(in) :: n1, n2, n3, n4, nloc, n3p
               integer, intent(in) :: idims(4)
               integer, intent(in) :: idx_table(n1,n2,n3,n4)
@@ -6695,7 +6695,7 @@ module ccsdt_p_chol_loops
                  if (excits(1,1)==1 .and. excits(1,2)==1 .and. excits(1,3)==1 .and. excits(1,4)==1 .and. excits(1,5)==1 .and. excits(1,6)==1) return
                  p2 = excits(n3p,idims(1)); q2 = excits(n3p,idims(2)); r2 = excits(n3p,idims(3)); s2 = excits(n3p,idims(4))
                  pqrs2 = idx_table(p2,q2,r2,s2)
-              else               
+              else
                  pqrs2 = -1
               end if
               do idet = 1, n3p-1
@@ -6767,38 +6767,14 @@ module ccsdt_p_chol_loops
               end do
 
       end subroutine argsort
-      
-      subroutine reorder4(y, x, iorder)
 
-          integer, intent(in) :: iorder(4)
-          real(kind=8), intent(in) :: x(:,:,:,:)
-
-          real(kind=8), intent(out) :: y(:,:,:,:)
-
-          integer :: i, j, k, l
-          integer :: vec(4)
-
-          y = 0.0d0
-          do i = 1, size(x,1)
-             do j = 1, size(x,2)
-                do k = 1, size(x,3)
-                   do l = 1, size(x,4)
-                      vec = (/i,j,k,l/)
-                      y(vec(iorder(1)),vec(iorder(2)),vec(iorder(3)),vec(iorder(4))) = x(i,j,k,l)
-                   end do
-                end do
-             end do
-          end do
-
-      end subroutine reorder4
-    
       subroutine sum4(x, y, iorder)
 
           integer, intent(in) :: iorder(4)
           real(kind=8), intent(in) :: y(:,:,:,:)
 
           real(kind=8), intent(inout) :: x(:,:,:,:)
-          
+
           integer :: i, j, k, l
           integer :: vec(4)
 

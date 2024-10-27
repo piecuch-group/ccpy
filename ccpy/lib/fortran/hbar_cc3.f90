@@ -1,5 +1,7 @@
 module hbar_cc3
 
+  use reorder, only: reorder_stripe
+
   implicit none
 
   contains
@@ -31,7 +33,7 @@ module hbar_cc3
                       real(kind=8), intent(in) :: t2a(1:nua,1:nua,1:noa,1:noa)
                       real(kind=8), intent(in) :: t2b(1:nua,1:nub,1:noa,1:nob)
                       real(kind=8), intent(in) :: t2c(1:nub,1:nub,1:nob,1:nob)
-                      
+
                       real(kind=8), intent(inout) :: h2a_vooo(nua,noa,noa,noa)
                       !f2py intent(in,out) :: h2a_vooo(0:nua-1,0:noa-1,0:noa-1,0:noa-1)
                       real(kind=8), intent(inout) :: h2a_vvov(nua,nua,noa,nua)
@@ -54,7 +56,7 @@ module hbar_cc3
                       real(kind=8) :: t3a_o, t3a_v, t3b_o, t3b_v, t3c_o, t3c_v, t3d_o, t3d_v
                       real(kind=8) :: t3a, t3b, t3c, t3d
                       real(kind=8) :: t3_denom
-                      
+
                       ! allocatable array to hold t3(abc) for a given (i,j,k) block
                       real(kind=8), allocatable :: temp(:,:,:)
                       ! reordered arrays for the DGEMM operations
@@ -62,15 +64,15 @@ module hbar_cc3
                       real(kind=8) :: X2B_vvov_1243(nua,nub,nub,noa), t2b_1243(nua,nub,nob,noa)
                       real(kind=8) :: X2C_vvov_4213(nub,nub,nub,noa), X2C_vooo_2134(nob,nub,nob,nob)
                       real(kind=8) :: X2C_vvov_1243(nub,nub,nub,nob)
-                      
+
                       ! Call reordering routines for arrays entering DGEMM
-                      call reorder4(x2a_vvov_1243, x2a_vvov, (/1,2,4,3/))
-                      call reorder4(x2b_vvov_1243, x2b_vvov, (/1,2,4,3/))
-                      call reorder4(t2b_1243, t2b, (/1,2,4,3/))
-                      call reorder4(x2c_vvov_4213, x2c_vvov, (/4,2,1,3/))
-                      call reorder4(x2c_vooo_2134, x2c_vooo, (/2,1,3,4/))
-                      call reorder4(x2c_vvov_1243, x2c_vvov, (/1,2,4,3/))
-                      
+                      call reorder_stripe(4, shape(x2a_vvov), size(x2a_vvov), '1243', x2a_vvov, x2a_vvov_1243)
+                      call reorder_stripe(4, shape(x2b_vvov), size(x2b_vvov), '1243', x2b_vvov, x2b_vvov_1243)
+                      call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                      call reorder_stripe(4, shape(x2c_vvov), size(x2c_vvov), '4213', x2c_vvov, x2c_vvov_4213)
+                      call reorder_stripe(4, shape(x2c_vooo), size(x2c_vooo), '2134', x2c_vooo, x2c_vooo_2134)
+                      call reorder_stripe(4, shape(x2c_vvov), size(x2c_vvov), '1243', x2c_vvov, x2c_vvov_1243)
+
                       ! Scale these terms by 1/2 to account for antisymmetrizer applied at the end
                       h2a_vooo = 0.5d0 * h2a_vooo
                       h2a_vvov = 0.5d0 * h2a_vvov
@@ -285,7 +287,7 @@ module hbar_cc3
                         end do
                       end do
                       deallocate(temp)
-                      
+
                       ! apply the common A(ij) antisymmetrizer
                       do i = 1, noa
                          do j = i+1, noa
@@ -351,29 +353,5 @@ module hbar_cc3
                          end do
                       end do
             end subroutine build_hbar
-
-            subroutine reorder4(y, x, iorder)
-
-                   integer, intent(in) :: iorder(4)
-                   real(kind=8), intent(in) :: x(:,:,:,:)
-
-                   real(kind=8), intent(out) :: y(:,:,:,:)
-
-                   integer :: i, j, k, l
-                   integer :: vec(4)
-
-                   y = 0.0d0
-                   do i = 1, size(x,1)
-                      do j = 1, size(x,2)
-                         do k = 1, size(x,3)
-                            do l = 1, size(x,4)
-                               vec = (/i,j,k,l/)
-                               y(vec(iorder(1)),vec(iorder(2)),vec(iorder(3)),vec(iorder(4))) = x(i,j,k,l)
-                            end do
-                         end do
-                      end do
-                   end do
-
-            end subroutine reorder4
 
 end module hbar_cc3

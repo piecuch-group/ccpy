@@ -1,6 +1,6 @@
 module antisymmetrizers
 
-  use const, only: p 
+  use constants, only: p
 
   implicit none
 
