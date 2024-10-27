@@ -1,5 +1,4 @@
 cclib==1.8.1
--e git+ssh://git@github.com/piecuch-group/ccpy.git@1c77eb46d42f85cf124c4f2e42a026d3939732ad#egg=coupled_cluster_py
 h5py==3.12.1
 iniconfig==2.0.0
 meson==1.6.0
