@@ -878,24 +878,4 @@ module eomccp3_adaptive_loops
 
               end subroutine creomcc23D_p_with_selection
 
-             subroutine reorder4213(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i2,i1,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4213
-
-
 end module eomccp3_adaptive_loops
