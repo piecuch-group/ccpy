@@ -3,37 +3,37 @@
 
 ## Overview
 <p align="justify">
-CCpy is a research-level Python package for performing non-relativistic electronic structure calculations for molecular systems 
+CCpy is a research-level Python package for performing non-relativistic electronic structure calculations for molecular systems
 using methods based on the ground-state coupled-cluster (CC) theory and its equation-of-motion (EOM) extension
 to electronic excited, attached, and ionized states. As a design philosophy, CCpy favors simplicity over efficiency, and this is reflected in the
-usage of computational routines that are transparent enough so that they can be easily used, modified, and extended, while 
+usage of computational routines that are transparent enough so that they can be easily used, modified, and extended, while
 still maintaining reasonable efficiency. To this end, CCpy employs a hybrid Python-Fortran programming approach made possible
 with the f2py package, which allows one to compile Fortran code into shared object libraries containing subroutines
-that are callable from Python and interoperable with Numpy arrays. 
+that are callable from Python and interoperable with Numpy arrays.
 </p>
 
 ## Available Computational Options
 <p align="justify">
-CCpy specializes in applying the CC(P;Q) and externally corrected (ec) CC methodologies developed in the Piecuch group at 
+CCpy specializes in applying the CC(P;Q) and externally corrected (ec) CC methodologies developed in the Piecuch group at
 Michigan State University. In CC(P;Q), the energetics obtained by solving the ground- or excited-state CC/EOMCC equations in
 one subspace of the many-electron Hilbert space, called the P space, are corrected for the missing many-electron correlation
 effects captured with the help of a complementary subspace called the Q space using the state-selective, non-iterative,
 and non-perturbative energy corrections based on the CC moment expansion formalism. Currently, CCpy offers implementations
-of several CC(P;Q) methods, the majority of which are aimed at converging the high-level CCSDT and EOMCCSDT energetics. 
-These include the completely-renormalized (CR) methods such as the CR-CC(2,3) and CR-CC(2,4) triples and quadruples 
-corrections to CCSD, the active-space CCSDt and CC(t;3) approaches, which are based on a user-defined selection of active orbitals, 
-and the black-box selected configuration interaction (CI) driven and adaptive CC(P;Q) methodologies, which construct the P and Q spaces 
-entering the CC(P;Q) computations using information extracted from selected CI wave functions or the adaptive CC(P;Q) moment 
+of several CC(P;Q) methods, the majority of which are aimed at converging the high-level CCSDT and EOMCCSDT energetics.
+These include the completely-renormalized (CR) methods such as the CR-CC(2,3) and CR-CC(2,4) triples and quadruples
+corrections to CCSD, the active-space CCSDt and CC(t;3) approaches, which are based on a user-defined selection of active orbitals,
+and the black-box selected configuration interaction (CI) driven and adaptive CC(P;Q) methodologies, which construct the P and Q spaces
+entering the CC(P;Q) computations using information extracted from selected CI wave functions or the adaptive CC(P;Q) moment
 expansions themselves, respectively. The ec-CC approaches on the other hand seek to converge the exact, full CI energetics
 directly by solving for the T<sub>1</sub> and T<sub>2</sub> clusters in the presence of the leading T<sub>3</sub> and T<sub>4</sub> clusters extracted from an
-external non-CC wave function. Current implementations of the ec-CC approaches in CCpy are designed to iterate T<sub>1</sub> and T<sub>2</sub> clusters 
+external non-CC wave function. Current implementations of the ec-CC approaches in CCpy are designed to iterate T<sub>1</sub> and T<sub>2</sub> clusters
 in the presence of T<sub>3</sub> and T<sub>4</sub> obtained from CI wave functions of the selected CI or multireference CI types, and correct the resulting
 energetics for the missing many-electron correlations using the generalized moment expansions of the ec-CC equations.
 </p>
 
 ### Møller-Plesset (MP) perturbation theory
-  - MP2 
-  - MP3 
+  - MP2
+  - MP3
 
 ### Ground-state CC methodologies
 <details>
@@ -43,10 +43,10 @@ energetics for the missing many-electron correlations using the generalized mome
 
 <p align="justify">
 The CC with doubles (CCD) method truncates the cluster operator as T = T<sub>2</sub>.
-It has iterative computational costs that scale as 
-n<sub>o</sub><sup>2</sup>n<sub>u</sub><sup>4</sup>, where n<sub>o</sub> is 
-the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
-correlated unoccupied orbitals. 
+It has iterative computational costs that scale as
+n<sub>o</sub><sup>2</sup>n<sub>u</sub><sup>4</sup>, where n<sub>o</sub> is
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of
+correlated unoccupied orbitals.
 Due to the importance of pair correlations in the many-electron problem, the
 CCD approximation was first introduced in Prof. Čížek's landmark 1966 paper
 under the name coupled-pair many-electron theory, or CPMET. Although CCD is
@@ -76,7 +76,7 @@ functions, as in Brückner CCD.
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -100,10 +100,10 @@ functions, as in Brückner CCD.
 <p align="justify">
 The CC with singles and doubles (CCSD) method approximates the cluster
 operator as T = T<sub>1</sub> + T<sub>2</sub>. It is the most commonly used truncation level
-in the CC hierarchy and often forms the starting point for more sophisticated 
-treatments of many-electron correlation effects. CCSD has iterative computational costs that 
-scale as n<sub>o</sub><sup>2</sup>n<sub>u</sub><sup>4</sup>, where n<sub>o</sub> is 
-the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
+in the CC hierarchy and often forms the starting point for more sophisticated
+treatments of many-electron correlation effects. CCSD has iterative computational costs that
+scale as n<sub>o</sub><sup>2</sup>n<sub>u</sub><sup>4</sup>, where n<sub>o</sub> is
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of
 correlated unoccupied orbitals.
 </p>
 
@@ -127,7 +127,7 @@ correlated unoccupied orbitals.
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -156,10 +156,10 @@ The CC with singles, doubles, and triples (CCSDT) method approximates the cluste
 operator as T = T<sub>1</sub> + T<sub>2</sub> + T<sub>3</sub>. CCSDT is a high-level
 method capable of providing nearly exact results for closed-shell molecules
 as well as chemically accurate energetics for single bond breaking and a variety
-of open-shell systems. CCSDT has iterative computational costs that scale as 
-n<sub>o</sub><sup>3</sup>n<sub>u</sub><sup>5</sup>, where n<sub>o</sub> is 
-the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
-correlated unoccupied orbitals. 
+of open-shell systems. CCSDT has iterative computational costs that scale as
+n<sub>o</sub><sup>3</sup>n<sub>u</sub><sup>5</sup>, where n<sub>o</sub> is
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of
+correlated unoccupied orbitals.
 </p>
 
 ### Sample Code
@@ -182,7 +182,7 @@ correlated unoccupied orbitals.
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -208,18 +208,18 @@ correlated unoccupied orbitals.
 
 ### Summary
 <p align="justify">
-The CC with singles, doubles, triples, and quadruples (CCSDTQ) method 
-approximates the cluster operator as 
-T = T<sub>1</sub> + T<sub>2</sub> + T<sub>3</sub> + T<sub>4</sub>. 
-CCSDTQ is a very high-level method and is often capable of providing 
+The CC with singles, doubles, triples, and quadruples (CCSDTQ) method
+approximates the cluster operator as
+T = T<sub>1</sub> + T<sub>2</sub> + T<sub>3</sub> + T<sub>4</sub>.
+CCSDTQ is a very high-level method and is often capable of providing
 near-exact energetics for most problems of chemical interest, as long
 as the number of strongly correlated electrons is not too large (for
 methods designed to treat genuine strong correlations, see the
 approximate coupled-pair, or ACP approaches).
-CCSDTQ has iterative computational costs that scale as 
-n<sub>o</sub><sup>4</sup>n<sub>u</sub><sup>6</sup>, where n<sub>o</sub> is 
-the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
-correlated unoccupied orbitals. 
+CCSDTQ has iterative computational costs that scale as
+n<sub>o</sub><sup>4</sup>n<sub>u</sub><sup>6</sup>, where n<sub>o</sub> is
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of
+correlated unoccupied orbitals.
 </p>
 
 ### Sample Code
@@ -242,7 +242,7 @@ correlated unoccupied orbitals.
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -271,13 +271,13 @@ correlated unoccupied orbitals.
 <p align="justify">
 The CCSD(T) method corrects the CCSD energy for the correlation effects
 due to T<sub>3</sub> clusters using formulas derived using many-body perturbation
-theory (MBPT). In particular, the CCSD(T) correction includes the leading 
+theory (MBPT). In particular, the CCSD(T) correction includes the leading
 4th-order energy correction for T<sub>3</sub> along with 5th-order contribution
 due to disconnected triples. The inclusion
 of the latter term distinguishes CCSD(T) from its CCSD[T] precedessor.
-CCSD(T) has noniterative computational costs that 
-scale as n<sub>o</sub><sup>3</sup>n<sub>4</sub><sup>4</sup>, where n<sub>o</sub> is 
-the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
+CCSD(T) has noniterative computational costs that
+scale as n<sub>o</sub><sup>3</sup>n<sub>4</sub><sup>4</sup>, where n<sub>o</sub> is
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of
 correlated unoccupied orbitals.
 </p>
 
@@ -301,7 +301,7 @@ correlated unoccupied orbitals.
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -333,26 +333,26 @@ The CR-CC(2,3) approach is a nonperturbative and noniterative correction to the
 CCSD energetics that accounts for the correlation effects due to T<sub>3</sub>
 clusters using formulas derived from the biorthogonal moment energy expansions of CC
 theory. In particular, CR-CC(2,3) represents the most robust scheme to noniteratively
-include the effects of connected triples on top of CCSD, and it is capable of providing an 
+include the effects of connected triples on top of CCSD, and it is capable of providing an
 accurate description of closed-shell molecules in addition to commonly encountered
-multireference problems, such as single bond breaking and open-shell radical 
-and diradical species, which are generally beyond the scope of perturbative 
+multireference problems, such as single bond breaking and open-shell radical
+and diradical species, which are generally beyond the scope of perturbative
 methods like CCSD(T). The CR-CC(2,3) triples correction uses noniterative steps
-that scale as n<sub>o</sub><sup>3</sup>n<sub>4</sub><sup>4</sup>, where n<sub>o</sub> is 
-the number of correlated occupied orbitals and n<sub>u</sub> is the number of 
-correlated unoccupied orbitals, however, due to the precise form of the 
+that scale as n<sub>o</sub><sup>3</sup>n<sub>4</sub><sup>4</sup>, where n<sub>o</sub> is
+the number of correlated occupied orbitals and n<sub>u</sub> is the number of
+correlated unoccupied orbitals, however, due to the precise form of the
 expressions defining the CR-CC(2,3) triples correction, it is approximately
-twice as expensive as its CCSD(T) counterpart. One must also solve the companion 
+twice as expensive as its CCSD(T) counterpart. One must also solve the companion
 left-CCSD system of linear equations (roughly as expensive as CCSD) prior
 to computing the CR-CC(2,3) correction.
 
-The CR-CC(2,3) calculation returns four distinct energetics, labelled as 
-CR-CC(2,3)<sub>X</sub>, for X = A, B, C, and D, where each variant A-D corresponds to 
-a different treatment of the energy denominators entering the formula for 
-the CR-CC(2,3) triples correction. The variant CR-CC(2,3)<sub>A</sub> uses the simplest 
-Møller-Plesset form of the energy denominator and is equivalent to the method 
-called CCSD(2)<sub>T</sub>. Meanwhile, the CR-CC(2,3)<sub>D</sub> result, which employs 
-the full Epstein-Nesbet energy denominator, is generally most accurate and often 
+The CR-CC(2,3) calculation returns four distinct energetics, labelled as
+CR-CC(2,3)<sub>X</sub>, for X = A, B, C, and D, where each variant A-D corresponds to
+a different treatment of the energy denominators entering the formula for
+the CR-CC(2,3) triples correction. The variant CR-CC(2,3)<sub>A</sub> uses the simplest
+Møller-Plesset form of the energy denominator and is equivalent to the method
+called CCSD(2)<sub>T</sub>. Meanwhile, the CR-CC(2,3)<sub>D</sub> result, which employs
+the full Epstein-Nesbet energy denominator, is generally most accurate and often
 reported as the CR-CC(2,3) energy (or by its former name, CR-CCSD(T)<sub>L</sub>).
 </p>
 
@@ -376,7 +376,7 @@ reported as the CR-CC(2,3) energy (or by its former name, CR-CCSD(T)<sub>L</sub>
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -439,7 +439,7 @@ reported as the CR-CC(2,3) energy (or by its former name, CR-CCSD(T)<sub>L</sub>
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -458,7 +458,7 @@ reported as the CR-CC(2,3) energy (or by its former name, CR-CCSD(T)<sub>L</sub>
 <details>
 <summary>CCSDt</summary>
 
-### Summary 
+### Summary
 The active-orbital-based CCSDt calculation
 
 ### Sample Code
@@ -480,7 +480,7 @@ The active-orbital-based CCSDt calculation
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -514,7 +514,7 @@ or
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -536,9 +536,9 @@ The latter CC(*P*)-based approach offers two advantages: (i) it can take advanta
 the Abelian point group symmetry of a molecule by restricting the CC calculation to
 include only those triply excited cluster amplitudes belonging to a particular irrep,
 as specified by the keyword `target_irrep` and (ii) it can be used to perform other
-types of active-orbital-based CCSDt calculations based on restricting `num_active` 
-occupied/unoccupied indices to the active set. The standard choice of 
-`num_active=1` results in the usual CCSDt method, however `num_active=2` and 
+types of active-orbital-based CCSDt calculations based on restricting `num_active`
+occupied/unoccupied indices to the active set. The standard choice of
+`num_active=1` results in the usual CCSDt method, however `num_active=2` and
 `num_active=3` result in the CCSDt(II) and CCSDt(III) approaches introduced in Ref. [X].
 
 ### References
@@ -569,7 +569,7 @@ occupied/unoccupied indices to the active set. The standard choice of
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -609,7 +609,7 @@ or
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -620,7 +620,7 @@ or
                                               driver.system.reference_symmetry)
     # set calculation parameters
     driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
-    driver.options["amp_convergence"] = 1.0e-07    
+    driver.options["amp_convergence"] = 1.0e-07
     driver.options["maximum_iterations"] = 80
 
     # Run CC(P) calculation equivalent to CCSDt
@@ -633,9 +633,9 @@ or
     driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations)
 ```
 As in the case of the CCSDt calculations, the general CC(*P*) approach allows one
-to perform alternative active-orbital-based truncation schemes of the CCSDt(II) 
+to perform alternative active-orbital-based truncation schemes of the CCSDt(II)
 and CCSDt(III) types in addition to the standard CCSDt method. The corresponding
-CC(*P*;*Q*) corrections result in the CC(t;3)(II), CC(t;3)(III), and CC(t;3) 
+CC(*P*;*Q*) corrections result in the CC(t;3)(II), CC(t;3)(III), and CC(t;3)
 approaches, respectively.
 
 ### References
@@ -673,8 +673,8 @@ def test_cipsi_ccpq_h2o():
     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_leftccp(method="left_ccsdt_p", t3_excitations=t3_excitations)
     driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
-```    
-    
+```
+
 ### References
 1. K. Gururangan, J. E. Deustua, J. Shen, and P. Piecuch, J. Chem. Phys. **155**, 174114 (2021) <br />
 (see https://doi.org/10.1063/5.0064400; cf. also https://doi.org/10.48550/arXiv.2107.10994) <br />
@@ -749,7 +749,7 @@ def test_adaptive_f2():
     )
     mf = scf.RHF(mol)
     mf.kernel()
-    
+
     # get the CCpy driver object using PySCF meanfield
     driver = Driver.from_pyscf(mf, nfrozen=1)
 
@@ -797,8 +797,8 @@ def test_eccc23_h2o():
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")
     driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
-```    
-    
+```
+
 ### References
 1. I. Magoulas, K. Gururangan, P. Piecuch, J. E. Deustua, and J. Shen, J. Chem. Theory Comput. **17**, 4006 (2021) <br />
 (see https://doi.org/10.1021/acs.jctc.1c00181; cf. also https://doi.org/10.48550/arXiv.2102.10143)
@@ -810,7 +810,7 @@ def test_eccc23_h2o():
   - ACCSDt
   - ACC(2,3)
   - ACC(t;3)
-  
+
 ### EOMCC approaches for ground, excited, attached, and ionized states
   - EOMCCSD
   - CR-EOMCC(2,3) and its size-intensive *δ*-CR-EOMCC(2,3) extension
@@ -840,20 +840,65 @@ def test_eccc23_h2o():
 <p align="justify">
 Because CCpy is primarily used for CC method development work, we use interfaces to GAMESS and PySCF to obtain the mean-field (typically Hartree-Fock)
 reference state and associated one- and two-electron integrals in the molecular orbital basis prior to performing the correlated CC calculations. All implementations
-in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references. 
+in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references.
 </p>
 
 ## Installation and Support
 <p align="justify">
-  
-Installation instructions are provided in the CCpy documentation page (https://piecuch-group.github.io/ccpy/). If you have any questions about CCpy or need additional information about its functionality,
-please e-mail gururang@msu.edu.
+
+CCpy is currently run and tested on Linux and Mac OS devices. Linux users (including WSL users)
+can choose to install a pre-compiled version of CCpy from the PyPI server (simplest option) or
+download the source code and install it manually. For now, Mac OS users must download and install
+the source code (wheels for Mac OS will be uploaded to PyPI in the near future).
+
+### Installing from PyPI
+For Linux machines, the
+latest version of CCpy available on PyPI is obtained by running
+
+```commandline
+pip install coupled-cluster-py
+```
+### Installing via Source Code
+
+Clone the CCpy repository and enter the `ccpy` directory:
+
+```commandline
+git clone https://piecuch-group/ccpy.git
+cd ccpy
+```
+We recommend creating a new environment for CCpy by running the following command
+
+```commandline
+conda create --name=ccpy_env python=3.12
+```
+and installing all of the dependencies listed in `requirements-dev.txt` via
+
+```commandline
+pip install -r requirements-dev.txt
+```
+Additionally, it is useful to install `cmake` and `pkgconfig` specific to your
+Conda environment by running
+
+```commandline
+    conda install pkgconfig cmake
+```
+
+Then, you can install CCpy using
+
+```commandline
+pip install --no-build-isolation --verbose --editable .
+```
+The Meson backend will automatically locate the needed libraries. If you are having
+issues finding `openblas`, make sure that the environment variable `PKG_CONFIG_PATH` points to
+the directory that includes the `openblas.pc` file. This should be located within `openblas/lib`,
+or something similar. After installing in editable mode (via `--editable`), the package will
+automatically update with any changes you make without additional installation steps.
 </p>
 
 ## CCpy Development Team
 
 Karthik Gururangan\
-Doctoral student, Department of Chemistry, Michigan State University  
+Doctoral student, Department of Chemistry, Michigan State University
 e-mail: gururang@msu.edu\
 (lead developer)
 
@@ -871,13 +916,13 @@ Additional contributors: Tiange Deng (doctoral student, Department of Chemistry,
 
 ## Acknowledgements
 
-We acknowledge support from the Chemical Sciences, Geosciences and Biosciences Division, Office of Basic Energy Sciences, Office of Science, U.S. Department of Energy 
+We acknowledge support from the Chemical Sciences, Geosciences and Biosciences Division, Office of Basic Energy Sciences, Office of Science, U.S. Department of Energy
 (Grant No. DE-FG02-01ER15228 to Piotr Piecuch).
 
 <p align="justify">
-  
+
 CCpy is an open-source code under the [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html) license
-developed and maintained by the [Piecuch Group](https://www2.chemistry.msu.edu/faculty/piecuch/) 
-at Michigan State University. 
+developed and maintained by the [Piecuch Group](https://www2.chemistry.msu.edu/faculty/piecuch/)
+at Michigan State University.
 
 </p>
