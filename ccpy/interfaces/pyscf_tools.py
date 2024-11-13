@@ -1,13 +1,47 @@
 import numpy as np
 from pyscf import ao2mo, symm
 
-from ccpy.models.integrals import getHamiltonian, getCholeskyHamiltonian, Integral
-from ccpy.models.system import System
+from ccpy.models.integrals import getHamiltonian, getUHFHamiltonian, getCholeskyHamiltonian, Integral
+from ccpy.models.system import System, UHFSystem
 from ccpy.utilities.dumping import dumpIntegralstoPGFiles
 
 from ccpy.cholesky.cholesky import cholesky_eri_from_pyscf
 from ccpy.energy.hf_energy import calc_hf_frozen_core_energy, calc_hf_energy, calc_hf_energy_chol
 
+def load_pyscf_uhf_integrals(
+        meanfield, nfrozen=0, ndelete=0,
+        num_act_holes_alpha=0, num_act_particles_alpha=0,
+        num_act_holes_beta=0, num_act_particles_beta=0,
+        use_cholesky=False, cholesky_tol=1.0e-09, cmax=10,
+        normal_ordered=True, dump_integrals=False, sorted=True
+    ):
+    molecule = meanfield.mol
+    nelectrons = molecule.nelectron
+    mo_coeff_a, mo_coeff_b = meanfield.mo_coeff
+    norbitals = mo_coeff_a.shape[1]
+    nuclear_repulsion = molecule.energy_nuc()
+    system = UHFSystem(
+        nelectrons,
+        norbitals,
+        molecule.spin + 1,  # PySCF mol.spin returns 2S, not S
+        nfrozen,
+        ndelete=ndelete,
+        point_group=molecule.symmetry,
+        orbital_symmetries = {"a": [x.upper() for x in symm.label_orb_symm(molecule, molecule.irrep_name, molecule.symm_orb, mo_coeff_a)],
+                              "b": [x.upper() for x in symm.label_orb_symm(molecule, molecule.irrep_name, molecule.symm_orb, mo_coeff_b)]},
+        charge=molecule.charge,
+        nuclear_repulsion=nuclear_repulsion,
+        mo_energies={"a": meanfield.mo_energy[0], "b": meanfield.mo_energy[1]},
+        mo_occupation={"a": meanfield.mo_occ[0], "b": meanfield.mo_occ[1]},
+    )
+    #
+    kinetic_aoints = molecule.intor_symmetric("int1e_kin")
+    nuclear_aoints = molecule.intor_symmetric("int1e_nuc")
+    #
+    v_ao = np.transpose(molecule.intor("int2e", aosym="s1"), (0, 2, 1, 3))
+    z_ao = kinetic_aoints + nuclear_aoints
+    system.reference_energy = meanfield.e_tot
+    return system, getUHFHamiltonian(mo_coeff_a, mo_coeff_b, z_ao, v_ao, system, normal_ordered, sorted)
 
 def load_pyscf_integrals(
         meanfield, nfrozen=0, ndelete=0,
@@ -31,6 +65,11 @@ def load_pyscf_integrals(
     molecule = meanfield.mol
     nelectrons = molecule.nelectron
     mo_coeff = meanfield.mo_coeff
+    #if len(meanfield.mo_coeff) > 1:
+    #    mo_coeff_a, mo_coeff_b = meanfield.mo_coeff
+    #else:
+    #    mo_coeff_a = meanfield.mo_coeff
+    #    mo_coeff_b = meanfield.mo_coeff
     norbitals = mo_coeff.shape[1]
     nuclear_repulsion = molecule.energy_nuc()
 
@@ -47,32 +86,29 @@ def load_pyscf_integrals(
         mo_energies=meanfield.mo_energy,
         mo_occupation=meanfield.mo_occ,
     )
-
     #
     #kinetic_aoints = molecule.intor_symmetric("int1e_kin")
     #nuclear_aoints = molecule.intor_symmetric("int1e_nuc")
-
     #
     #eri_aoints = np.transpose(molecule.intor("int2e", aosym="s1"), (0, 2, 1, 3))
     #overlap_aoints = molecule.intor_symmetric("int1e_ovlp")
     #evalS, U = np.linalg.eigh(overlap_aoints)
     #diagS_minushalf = np.diag(evalS**(-0.5))
     #X = np.dot(U, np.dot(diagS_minushalf, U.T))
-
+    #
     # Replace the MO coefficient solution by the eigenvectors of Z, not F
     #hcore = kinetic_aoints + nuclear_aoints
     #e_core, mo_coeff = np.linalg.eigh(np.dot(X.T, np.dot(hcore, X)))
     #idx = np.argsort(e_core)
     #e_core = e_core[idx]
     #mo_coeff = np.dot(X, mo_coeff[:, idx])
-
+    #
     # Perform AO-to-MO transformation (using mf.get_hcore() allows this to work with scalar 1e X2C models, for instance)
     e1int = np.einsum(
         "pi,pq,qj->ij", mo_coeff, meanfield.get_hcore(), mo_coeff, optimize=True
     )
     # put integrals into Fortran order
     e1int = np.asfortranarray(e1int)
-
     if use_cholesky:
         # Obtain AO Cholesky decomposition of ERIs
         R_chol = cholesky_eri_from_pyscf(molecule, tol=cholesky_tol, cmax=cmax)
@@ -86,7 +122,6 @@ def load_pyscf_integrals(
         system.cholesky = True
         #
         return system, getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted)
-
     else:
         e2int = np.transpose(
             np.reshape(ao2mo.kernel(molecule, mo_coeff, compact=False), 4 * (norbitals,)),
@@ -102,9 +137,6 @@ def load_pyscf_integrals(
 
         system.reference_energy = hf_energy
         system.frozen_energy = calc_hf_frozen_core_energy(e1int, e2int, system)
-
-        if dump_integrals:
-            dumpIntegralstoPGFiles(e1int, e2int, system)
 
         return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
 

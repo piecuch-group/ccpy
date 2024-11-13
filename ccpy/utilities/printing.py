@@ -705,3 +705,72 @@ class SystemPrinter:
         print(WHITESPACE, "Reference Energy =", self.system.reference_energy)
         print("")
         return
+
+class UHFSystemPrinter:
+    def __init__(self, system):
+        self.system = system
+
+    def header(self):
+
+        print(WHITESPACE, "UHF System Information:")
+        print(WHITESPACE, "----------------------------------------------------")
+        print(WHITESPACE, "  Number of correlated electrons =", self.system.nelectrons)
+        print(WHITESPACE, "  Number of correlated orbitals =", self.system.norbitals)
+        print(WHITESPACE, "  Number of frozen orbitals =", self.system.nfrozen)
+        print(
+            WHITESPACE,
+            "  Number of alpha occupied orbitals =",
+            self.system.noccupied_alpha,
+        )
+        print(
+            WHITESPACE,
+            "  Number of alpha unoccupied orbitals =",
+            self.system.nunoccupied_alpha,
+        )
+        print(
+            WHITESPACE,
+            "  Number of beta occupied orbitals =",
+            self.system.noccupied_beta,
+        )
+        print(
+            WHITESPACE,
+            "  Number of beta unoccupied orbitals =",
+            self.system.nunoccupied_beta,
+        )
+        print(WHITESPACE, "  Charge =", self.system.charge)
+        print(WHITESPACE, "  Point group =", self.system.point_group)
+        print(WHITESPACE, "  Symmetry of reference =", self.system.reference_symmetry)
+        print(
+            WHITESPACE, "  Spin multiplicity of reference =", self.system.multiplicity
+        )
+        print("")
+
+        HEADER_FMT = "{:>10} {:>20} {:>13} {:>13}"
+        MO_FMT = "{:>10} {:>20.6f} {:>13} {:>13.1f}"
+
+        header = HEADER_FMT.format("MO #", "Energy (a.u.)", "Symmetry", "Occupation")
+        print(header)
+        print(len(header) * "-")
+        for i in range(self.system.norbitals + self.system.nfrozen):
+            print(
+                MO_FMT.format(
+                    str(i + 1) + "a",
+                    self.system.mo_energies["a"][i],
+                    self.system.orbital_symmetries_all["a"][i],
+                    self.system.mo_occupation["a"][i],
+                )
+            )
+            print(
+                MO_FMT.format(
+                    str(i + 1) + "b",
+                    self.system.mo_energies["b"][i],
+                    self.system.orbital_symmetries_all["b"][i],
+                    self.system.mo_occupation["b"][i],
+                )
+            )
+        print("")
+        print(WHITESPACE, "Memory Usage =", get_memory_usage(), "MB")
+        print(WHITESPACE, "Nuclear Repulsion Energy =", self.system.nuclear_repulsion)
+        print(WHITESPACE, "Reference Energy =", self.system.reference_energy)
+        print("")
+        return

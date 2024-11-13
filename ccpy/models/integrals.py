@@ -115,14 +115,13 @@ class Integral:
     def from_none(cls, system, order):
         return cls(system, order, matrix=None, sorted=True, use_none=True)
 
-
 def getHamiltonian(e1int, e2int, system, normal_ordered, sorted=True):
 
     corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
 
     twobody = build_v(e2int)
     if normal_ordered:
-        onebody = build_f(e1int, twobody, system)
+        onebody = build_f({"a": e1int, "b": e1int}, twobody, system)
     else:
         onebody = {"a": e1int, "b": e1int}
     # Keep only correlated spatial orbitals in the one- and two-body matrices
@@ -132,6 +131,34 @@ def getHamiltonian(e1int, e2int, system, normal_ordered, sorted=True):
     twobody["ab"] = twobody["ab"][corr_slice, corr_slice, corr_slice, corr_slice]
     twobody["bb"] = twobody["bb"][corr_slice, corr_slice, corr_slice, corr_slice]
 
+    return Integral(system, 2, {**onebody, **twobody}, sorted=sorted)
+
+def getUHFHamiltonian(coeff_a, coeff_b, z_ao, v_ao, system, normal_ordered, sorted=True):
+    corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
+    # Transform 1-electron integrals
+    z_a = np.einsum("ij,ip,jq->pq", z_ao, coeff_a, coeff_a, optimize=True)
+    z_b = np.einsum("ij,ip,jq->pq", z_ao, coeff_b, coeff_b, optimize=True)
+    z = {"a": z_a, "b": z_b}
+    # Transform 2-electron integrals
+    v_aa = np.einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_a, coeff_a, coeff_a, coeff_a, optimize=True)
+    v_aa -= np.transpose(v_aa, (0, 1, 3, 2))
+    v_ab = np.einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_a, coeff_b, coeff_a, coeff_b, optimize=True)
+    v_bb = np.einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_b, coeff_b, coeff_b, coeff_b, optimize=True)
+    v_bb -= np.transpose(v_bb, (0, 1, 3, 2))
+    v = {"aa": v_aa, "ab": v_ab, "bb": v_bb}
+    # Build Fock matrix
+    if normal_ordered:
+        fock = build_f(z, v, system)
+    else:
+        fock = z
+    # Keep only correlated spatial orbitals in the one- and two-body matrices
+    onebody = {}
+    twobody = {}
+    onebody["a"] = fock["a"][corr_slice, corr_slice]
+    onebody["b"] = fock["b"][corr_slice, corr_slice]
+    twobody["aa"] = v["aa"][corr_slice, corr_slice, corr_slice, corr_slice]
+    twobody["ab"] = v["ab"][corr_slice, corr_slice, corr_slice, corr_slice]
+    twobody["bb"] = v["bb"][corr_slice, corr_slice, corr_slice, corr_slice]
     return Integral(system, 2, {**onebody, **twobody}, sorted=sorted)
 
 def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
@@ -333,15 +360,15 @@ def build_v(e2int):
     return v
 
 
-def build_f(e1int, v, system):
+def build_f(z, v, system):
     """This function generates the Fock matrix using the formula
     F = Z + G where G is sum_{i} <pi|v|qi>_A split for different
     spin cases.
 
     Parameters
     ----------
-    e1int : ndarray(dtype=float, shape=(norb,norb))
-        Onebody MO integrals
+    z : dict 
+        Onebody integral dictionary
     v : dict
         Twobody integral dictionary
     sys : dict
@@ -357,14 +384,14 @@ def build_f(e1int, v, system):
 
     # <p|f|q> = <p|z|q> + <pi|v|qi> + <pi~|v|qi~>
     f_a = (
-        e1int
+        z["a"]
         + np.einsum("piqi->pq", v["aa"][:, :Nocc_a, :, :Nocc_a])
         + np.einsum("piqi->pq", v["ab"][:, :Nocc_b, :, :Nocc_b])
     )
 
     # <p~|f|q~> = <p~|z|q~> + <p~i~|v|q~i~> + <ip~|v|iq~>
     f_b = (
-        e1int
+        z["b"]
         + np.einsum("piqi->pq", v["bb"][:, :Nocc_b, :, :Nocc_b])
         + np.einsum("ipiq->pq", v["ab"][:Nocc_a, :, :Nocc_a, :])
     )

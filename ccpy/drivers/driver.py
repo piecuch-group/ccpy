@@ -32,7 +32,7 @@ from ccpy.utilities.printing import (
                 print_dip_amplitudes, dipeomcc_calculation_summary,
 )
 from ccpy.utilities.utilities import convert_excitations_c_to_f
-from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
+from ccpy.interfaces.pyscf_tools import load_pyscf_integrals, load_pyscf_uhf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
 from ccpy.interfaces.fcidump_tools import load_fcidump_integrals
 
@@ -40,12 +40,19 @@ from ccpy.interfaces.fcidump_tools import load_fcidump_integrals
 class Driver:
 
     @classmethod
-    def from_pyscf(cls, meanfield, nfrozen, ndelete=0, normal_ordered=True, dump_integrals=False, sorted=True, use_cholesky=False, cholesky_tol=1.0e-09, cmax=10):
-        return cls(
-                    *load_pyscf_integrals(meanfield, nfrozen, ndelete, normal_ordered=normal_ordered, dump_integrals=dump_integrals, sorted=sorted,
-                                          use_cholesky=use_cholesky, cholesky_tol=cholesky_tol, cmax=cmax)
-                  )
-
+    def from_pyscf(cls, meanfield, nfrozen, ndelete=0, normal_ordered=True, dump_integrals=False, sorted=True, use_cholesky=False, cholesky_tol=1.0e-09, cmax=10, uhf=False):
+        if uhf:
+            if use_cholesky:
+                print("   Cholesky-based CC not currently supported for UHF references!")
+            return cls(
+                        *load_pyscf_uhf_integrals(meanfield, nfrozen, ndelete, normal_ordered=normal_ordered, dump_integrals=dump_integrals, sorted=sorted,
+                                              use_cholesky=use_cholesky, cholesky_tol=cholesky_tol, cmax=cmax)
+                      )
+        else:
+            return cls(
+                        *load_pyscf_integrals(meanfield, nfrozen, ndelete, normal_ordered=normal_ordered, dump_integrals=dump_integrals, sorted=sorted,
+                                              use_cholesky=use_cholesky, cholesky_tol=cholesky_tol, cmax=cmax)
+                      )
     @classmethod
     def from_gamess(cls, logfile, nfrozen, ndelete=0, multiplicity=None, fcidump=None, onebody=None, twobody=None, normal_ordered=True, sorted=True, data_type=np.float64):
         return cls(
