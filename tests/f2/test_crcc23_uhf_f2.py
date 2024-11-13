@@ -23,6 +23,8 @@ def test_crcc23_f2():
     mf.kernel()
 
     driver = Driver.from_pyscf(mf, nfrozen=2, uhf=True)
+    # Important: Set RHF flag to false manually for UHF references
+    driver.options["RHF_symmetry"] = False
     driver.system.print_info()
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
