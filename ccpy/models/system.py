@@ -166,8 +166,9 @@ class UHFSystem:
         self.reference_symmetry = self.point_group_number_to_irrep[sym]
 
         # once we've found the reference irrep, we don't need the frozen orbital irreps anymore.
-        self.orbital_symmetries = {"a": self.orbital_symmetries_all["a"][self.nfrozen:],
-                                   "b": self.orbital_symmetries_all["b"][self.nfrozen:]}
+        #self.orbital_symmetries = {"a": self.orbital_symmetries_all["a"][self.nfrozen:],
+        #                           "b": self.orbital_symmetries_all["b"][self.nfrozen:]}
+        self.orbital_symmetries = self.orbital_symmetries_all["a"][self.nfrozen:]
 
     def set_active_space(self, nact_occupied, nact_unoccupied):
         self.num_act_occupied_alpha = min(self.noccupied_alpha, (self.multiplicity - 1) + nact_occupied)
