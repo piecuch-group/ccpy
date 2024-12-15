@@ -21,12 +21,14 @@ def test_ccsdtq_h2o():
         cart=False,
         unit="Bohr",
     )
-    mf = scf.RHF(mol)
+    mf = scf.UHF(mol)
     mf.kernel()
 
-    driver = Driver.from_pyscf(mf, nfrozen=0)
+    driver = Driver.from_pyscf(mf, nfrozen=0, uhf=True)
     driver.system.print_info()
 
+    # Important: Set RHF flag to false manually for UHF references
+    driver.options["RHF_symmetry"] = False
     driver.run_cc(method="ccsdtq")
 
     # Check CCSDTQ correlation energy
