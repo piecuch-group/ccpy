@@ -196,7 +196,7 @@ class Driver:
             self.order = 3
             self.num_particles = 1
             self.num_holes = 3
-        elif method.lower() in ["dipeom4", "left_dipeom4", "dipeomccsdt"]:
+        elif method.lower() in ["dipeom4", "left_dipeom4", "dipeomccsdt", "dipeomccsdta"]:
             self.order = 4
             self.num_particles = 2
             self.num_holes = 4

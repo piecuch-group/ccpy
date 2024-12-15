@@ -8,6 +8,7 @@ python_sources = [
 'dipeom4.py',
 'dipeom4_intermediates.py',
 'dipeomccsdt.py',
+'dipeomccsdta.py',
 'eaeom2.py',
 'eaeom3.py',
 'eaeom3_intermediates.py',
