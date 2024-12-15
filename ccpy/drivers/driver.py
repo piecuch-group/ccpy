@@ -151,7 +151,7 @@ class Driver:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
-        elif method.lower() in ["ccsdtq", "ccsdtq-rev"]:
+        elif method.lower() in ["ccsdtq"]:
             self.operator_params["order"] = 4
             self.operator_params["number_particles"] = 4
             self.operator_params["number_holes"] = 4
@@ -170,7 +170,7 @@ class Driver:
             self.order = 2
             self.num_particles = 1
             self.num_holes = 2
-        elif method.lower() in ["ipeom3", "left_ipeom3", "ipeomccsdt"]:
+        elif method.lower() in ["ipeom3", "left_ipeom3", "ipeomccsdta", "ipeomccsdt"]:
             self.order = 3
             self.num_particles = 2
             self.num_holes = 3
@@ -183,7 +183,7 @@ class Driver:
             self.order = 2
             self.num_particles = 2
             self.num_holes = 1
-        elif method.lower() in ["eaeom3", "left_eaeom3", "eaeomccsdt"]:
+        elif method.lower() in ["eaeom3", "left_eaeom3", "eaeomccsdta", "eaeomccsdt"]:
             self.order = 3
             self.num_particles = 3
             self.num_holes = 2
