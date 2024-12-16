@@ -5,19 +5,22 @@
 <p align="justify">
 CCpy is a research-level Python package for performing nonrelativistic and spin-free scalar relativistic electronic structure calculations for molecular systems
 using methods based on the ground-state coupled-cluster (CC) theory and its equation-of-motion (EOM) extension
-to electronic excited, attached, and ionized states. As a design philosophy, CCpy favors simplicity over efficiency, and this is reflected in the
-usage of computational routines that are transparent enough so that they can be easily used, modified, and extended, while
-still maintaining reasonable efficiency. To this end, CCpy employs a hybrid Python-Fortran programming approach made possible
+to electronic excited, attached, and ionized states. CCpy employs a hybrid Python-Fortran programming approach made possible
 with the f2py package, which allows one to compile Fortran code into shared object libraries containing subroutines
 that are callable from Python and interoperable with Numpy arrays.
+
+CCpy provides interfaces to both PySCF and GAMESS to obtain the mean-field (typically Hartree-Fock) reference state and associated one- and two-electron integrals in 
+the molecular orbital basis prior to performing the correlated CC calculations. A general interface that can be used to initialize CCpy calculations using
+a reference state information provided by an FCIDUMP file is also included. 
+
+CCpy is also distributed as an official extension module of PySCF (see https://pyscf.org/install.html#extension-modules).
 </p>
 
 ## Available Computational Options
 <p align="justify">
-Below, we list the computational options that are currently available in CCpy (see the dropdown menus below along with `tests` for examples of input scripts).
-CCpy uses interfaces to GAMESS and PySCF to obtain the mean-field (typically Hartree-Fock) reference state and associated one- and two-electron integrals in 
-the molecular orbital basis prior to performing the correlated CC calculations. All implementations in CCpy are based on the spin-integrated spinorbital formulation
-and are compatible with RHF/ROHF and UHF references, unless otherwise indicated.
+Below, we list the computational options that are currently available in CCpy (see the dropdown menus below along with the
+`tests` directory for sample input scripts). All implementations in CCpy are based on the spin-integrated spinorbital 
+formulation and are compatible with RHF/ROHF and UHF references, unless otherwise indicated.
 </p>
 
 ### Møller-Plesset (MP) perturbation theory
@@ -901,7 +904,7 @@ def test_eccc23_h2o():
   - DIP-EOMCCSD(T)(a)(4h-2p)
   - DIP-EOMCCSDT(4h-2p)
 
-## Installation and Support
+## Installation
 <p align="justify">
 
 CCpy is currently run and tested on Linux and Mac OS devices. Linux users (including WSL users)
