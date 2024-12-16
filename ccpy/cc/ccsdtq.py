@@ -505,7 +505,9 @@ def update_t3d(T, dT, H, H0, shift):
     return T, dT
 
 def update_t4a(T, dT, H, H0, shift):
-
+    """
+    Update t4a amplitudes by calculating the projection <ijklabcd|(H_N e^(T1+T2+T3+T4))_C|0>.
+    """
     # <ijklabcd | H(2) | 0 >
     dT.aaaa = -(144.0 / 576.0) * np.einsum("amie,bcmk,edjl->abcdijkl", H.aa.voov, T.aa, T.aa, optimize=True)  # (jl/i/k)(bc/a/d) = 12 * 12 = 144
     dT.aaaa += (36.0 / 576.0) * np.einsum("mnij,adml,bcnk->abcdijkl", H.aa.oooo, T.aa, T.aa, optimize=True)   # (ij/kl)(bc/ad) = 6 * 6 = 36
@@ -574,7 +576,9 @@ def update_t4a(T, dT, H, H0, shift):
     return T, dT
 
 def update_t4b(T, dT, H, H0, shift):
-
+    """
+    Update t4b amplitudes by calculating the projection <ijkl~abcd~|(H_N e^(T1+T2+T3+T4))_C|0>.
+    """
     # <ijklabcd | H(2) | 0 >
     dT.aaab = -(9.0 / 36.0) * np.einsum("mdel,abim,ecjk->abcdijkl", H.ab.ovvo, T.aa, T.aa, optimize=True)    # (i/jk)(c/ab) = 9
     dT.aaab += (9.0 / 36.0) * np.einsum("mnij,bcnk,adml->abcdijkl", H.aa.oooo, T.aa, T.ab, optimize=True)    # (k/ij)(a/bc) = 9
@@ -750,7 +754,9 @@ def update_t4b(T, dT, H, H0, shift):
 
 
 def update_t4c(T, dT, H, H0, shift):
-
+    """
+    Update t4c amplitudes by calculating the projection <ijk~l~abc~d~|(H_N e^(T1+T2+T3+T4))_C|0>.
+    """
     # <ijklabcd | H(2) | 0 >
     dT.aabb = -np.einsum("cmke,adim,bejl->abcdijkl", H.bb.voov, T.ab, T.ab, optimize=True)          # (ij)(kl)(ab)(cd) = 16
     dT.aabb -= np.einsum("amie,bcmk,edjl->abcdijkl", H.aa.voov, T.ab, T.ab, optimize=True)          # (ij)(kl)(ab)(cd) = 16
@@ -996,6 +1002,9 @@ def update_t4c(T, dT, H, H0, shift):
     return T, dT
 
 def update_t4d(T, dT, H, H0, shift):
+    """
+    Update t4d amplitudes by calculating the projection <ij~k~l~ab~c~d~|(H_N e^(T1+T2+T3+T4))_C|0>.
+    """
     # <ijklabcd | H(2) | 0 >
     dT.abbb = -(9.0 / 36.0) * np.einsum("dmle,abim,ecjk->dcbalkji", H.ab.voov, T.bb, T.bb, optimize=True)    # (i/jk)(c/ab) = 9
     dT.abbb += (9.0 / 36.0) * np.einsum("mnij,bcnk,dalm->dcbalkji", H.bb.oooo, T.bb, T.ab, optimize=True)    # (k/ij)(a/bc) = 9
@@ -1169,6 +1178,9 @@ def update_t4d(T, dT, H, H0, shift):
     return T, dT
 
 def update_t4e(T, dT, H, H0, shift):
+    """
+    Update t4e amplitudes by calculating the projection <i~j~k~l~a~b~c~d~|(H_N e^(T1+T2+T3+T4))_C|0>.
+    """
     # <ijklabcd | H(2) | 0 >
     dT.bbbb = -(144.0 / 576.0) * np.einsum("amie,bcmk,edjl->abcdijkl", H.bb.voov, T.bb, T.bb, optimize=True)  # (jl/i/k)(bc/a/d) = 12 * 12 = 144
     dT.bbbb += (36.0 / 576.0) * np.einsum("mnij,adml,bcnk->abcdijkl", H.bb.oooo, T.bb, T.bb, optimize=True)  # (ij/kl)(bc/ad) = 6 * 6 = 36
