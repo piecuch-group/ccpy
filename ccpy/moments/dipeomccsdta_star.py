@@ -71,9 +71,9 @@ def calc_dipeomccsdta_star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=F
     print('   -------------------------------------------------')
     print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
     print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds")
-    print("   DIP-EOMCC(3h-1p)T(a) = {:>10.10f}    ω = {:>10.10f}     VEE = {:>10.5f} eV".format(system.reference_energy + corr_energy + omega, omega, hartreetoeV * omega))
+    print("   DIP-EOMCCSD(a) = {:>10.10f}    ω = {:>10.10f}     VEE = {:>10.5f} eV".format(system.reference_energy + corr_energy + omega, omega, hartreetoeV * omega))
     print(
-        "   DIP-EOMCC(4h-2p)T(a)* = {:>10.10f}     δ_A = {:>10.10f}     VEE = {:>10.5f} eV".format(
+        "   DIP-EOMCCSD(T)(a)* = {:>10.10f}     δ_A = {:>10.10f}     VEE = {:>10.5f} eV".format(
             total_energy_A, correction_A, (omega + correction_A) * hartreetoeV
         )
     )

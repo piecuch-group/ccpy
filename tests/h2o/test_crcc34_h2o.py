@@ -12,7 +12,6 @@ def test_crcc34_h2o():
     geometry = [["O", (0.0, 0.0, -0.0180)],
                 ["H", (0.0, 3.030526, -2.117796)],
                 ["H", (0.0, -3.030526, -2.117796)]]
-    # FCI = -75.951667
     mol = gto.M(
         atom=geometry,
         basis="cc-pvdz",
