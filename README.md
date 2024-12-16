@@ -918,49 +918,44 @@ pip install coupled-cluster-py
 ```
 ### Installing via Source Code
 
-Before you install CCpy from source, make sure that you have a working Fortran and C compiler
-along with Openblas installed. If you do not have these, they can be installed through Conda
-using
-
-```commandline
-conda install -c conda-forge gfortran
-conda install openblas
-```
-
-To begin, clone the CCpy repository and enter the `ccpy` directory:
-
-```commandline
-git clone https://github.com/piecuch-group/ccpy.git
-cd ccpy
-```
-We recommend creating a new environment for CCpy by running the following command
-
+#### Step 0: Set up the environment
+In order to install CCpy from source, we recommend creating a new environment for CCpy by running
 ```commandline
 conda create --name=ccpy_env python=3.12
 ```
-and installing all of the dependencies listed in `requirements-dev.txt` via
-
+You need reasonably up-to-date Fortran/C compilers as well as `openblas`, `cmake`, and `pkgconfig`.
+If you already have these packages installed, then you can skip this step. Otherwise, local copies 
+of these packages can be obtained within the Conda environment using
+```commandline
+conda install -c conda-forge gfortran
+conda install openblas
+conda install pkgconfig cmake
+```
+Now, we are ready to install CCpy.
+#### Step 1: Clone the CCpy repository
+```commandline
+git clone https://github.com/piecuch-group/ccpy.git
+```
+Next, enter the `ccpy` directory
+```commandline
+cd ccpy
+```
+#### Step 2: Install dependencies
+Dependencies are listed in `requirements-dev.txt`. You can install all of them via
 ```commandline
 pip install -r requirements-dev.txt
 ```
-Additionally, it is useful to install `cmake` and `pkgconfig` specific to your
-Conda environment by running
-
-```commandline
-conda install pkgconfig cmake
-```
-
-Then, you can install CCpy using
-
+#### Step 3: Build CCpy
+Run the following command to install CCpy in editable mode (via `--editable`). This way, the
+Meson backend will automatically update the package with any changes you make to either Python 
+or Fortran/C code without any additional compilation steps. Additional details about developing 
+within CCpy can be found on the online documentation page.
 ```commandline
 pip install --no-build-isolation --verbose --editable .
 ```
-The Meson backend will automatically locate the needed libraries. If you are having
-issues finding `openblas`, make sure that the environment variable `PKG_CONFIG_PATH` points to
-the directory that includes the `openblas.pc` file. This should be located within `openblas/lib`,
-or something similar. 
-After installing in editable mode (via `--editable`), the package will automatically update with 
-any changes you make without additional installation steps.
+Note: If Meson is having issues with finding `openblas`, make sure that the environment variable 
+`PKG_CONFIG_PATH` points to the directory that includes the `openblas.pc` file. This should be 
+located within `openblas/lib`, or something similar. 
 </p>
 
 ## CCpy Development Team
