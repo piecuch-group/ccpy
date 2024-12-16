@@ -3,7 +3,7 @@
 
 ## Overview
 <p align="justify">
-CCpy is a research-level Python package for performing non-relativistic electronic structure calculations for molecular systems
+CCpy is a research-level Python package for performing nonrelativistic and spin-free scalar relativistic electronic structure calculations for molecular systems
 using methods based on the ground-state coupled-cluster (CC) theory and its equation-of-motion (EOM) extension
 to electronic excited, attached, and ionized states. As a design philosophy, CCpy favors simplicity over efficiency, and this is reflected in the
 usage of computational routines that are transparent enough so that they can be easily used, modified, and extended, while
@@ -14,26 +14,87 @@ that are callable from Python and interoperable with Numpy arrays.
 
 ## Available Computational Options
 <p align="justify">
-CCpy specializes in applying the CC(P;Q) and externally corrected (ec) CC methodologies developed in the Piecuch group at
-Michigan State University. In CC(P;Q), the energetics obtained by solving the ground- or excited-state CC/EOMCC equations in
-one subspace of the many-electron Hilbert space, called the P space, are corrected for the missing many-electron correlation
-effects captured with the help of a complementary subspace called the Q space using the state-selective, non-iterative,
-and non-perturbative energy corrections based on the CC moment expansion formalism. Currently, CCpy offers implementations
-of several CC(P;Q) methods, the majority of which are aimed at converging the high-level CCSDT and EOMCCSDT energetics.
-These include the completely-renormalized (CR) methods such as the CR-CC(2,3) and CR-CC(2,4) triples and quadruples
-corrections to CCSD, the active-space CCSDt and CC(t;3) approaches, which are based on a user-defined selection of active orbitals,
-and the black-box selected configuration interaction (CI) driven and adaptive CC(P;Q) methodologies, which construct the P and Q spaces
-entering the CC(P;Q) computations using information extracted from selected CI wave functions or the adaptive CC(P;Q) moment
-expansions themselves, respectively. The ec-CC approaches on the other hand seek to converge the exact, full CI energetics
-directly by solving for the T<sub>1</sub> and T<sub>2</sub> clusters in the presence of the leading T<sub>3</sub> and T<sub>4</sub> clusters extracted from an
-external non-CC wave function. Current implementations of the ec-CC approaches in CCpy are designed to iterate T<sub>1</sub> and T<sub>2</sub> clusters
-in the presence of T<sub>3</sub> and T<sub>4</sub> obtained from CI wave functions of the selected CI or multireference CI types, and correct the resulting
-energetics for the missing many-electron correlations using the generalized moment expansions of the ec-CC equations.
+Below, we list the computational options that are currently available in CCpy (see the dropdown menus below along with `tests` for examples of input scripts).
+CCpy uses interfaces to GAMESS and PySCF to obtain the mean-field (typically Hartree-Fock) reference state and associated one- and two-electron integrals in 
+the molecular orbital basis prior to performing the correlated CC calculations. All implementations in CCpy are based on the spin-integrated spinorbital formulation
+and are compatible with RHF/ROHF and UHF references, unless otherwise indicated.
 </p>
 
 ### Møller-Plesset (MP) perturbation theory
-  - MP2
-  - MP3
+<details>
+<summary>MP2</summary>
+
+### Summary
+
+<p align="justify">
+Second-order MBPT energy correction. Compatible with RHF and UHF only.
+</p>
+
+### Example Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    geometry = [["O", (0.0, 0.0, -0.0180)],
+                ["H", (0.0, 3.030526, -2.117796)],
+                ["H", (0.0, -3.030526, -2.117796)]]
+    mol = gto.M(
+        atom=geometry,
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+    # Load CCpy driver from PySCF
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    # Run MP2 calculation
+    driver.run_mbpt(method="mp2")
+```
+### Reference
+</details>
+
+<details>
+<summary>MP3</summary>
+
+### Summary
+
+<p align="justify">
+Third-order MBPT energy correction. Compatible with RHF and UHF only.
+</p>
+
+### Example Code
+
+```python3
+    from pyscf import gto, scf
+    from ccpy.drivers.driver import Driver
+
+    geometry = [["O", (0.0, 0.0, -0.0180)],
+                ["H", (0.0, 3.030526, -2.117796)],
+                ["H", (0.0, -3.030526, -2.117796)]]
+    mol = gto.M(
+        atom=geometry,
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    # Load CCpy driver from PySCF
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    # Run MP3 calculation
+    driver.run_mbpt(method="mp3")
+```
+### Reference
+</details>
 
 ### Ground-state CC methodologies
 <details>
@@ -727,6 +788,7 @@ def test_adaptive_f2():
 
 ### Summary
 <p align="justify">
+Approximate CC method with quadruples. Currently compatible with RHF references only.
 </p>
 
 ### Sample Code
@@ -839,12 +901,6 @@ def test_eccc23_h2o():
   - DIP-EOMCCSD(T)(a)(4h-2p)
   - DIP-EOMCCSDT(4h-2p)
 
-<p align="justify">
-Because CCpy is primarily used for CC method development work, we use interfaces to GAMESS and PySCF to obtain the mean-field (typically Hartree-Fock)
-reference state and associated one- and two-electron integrals in the molecular orbital basis prior to performing the correlated CC calculations. All implementations
-in CCpy are based on the spin-integrated spinorbital formulation and are compatible with RHF and ROHF references.
-</p>
-
 ## Installation and Support
 <p align="justify">
 
@@ -862,7 +918,16 @@ pip install coupled-cluster-py
 ```
 ### Installing via Source Code
 
-Clone the CCpy repository and enter the `ccpy` directory:
+Before you install CCpy from source, make sure that you have a working Fortran and C compiler
+along with Openblas installed. If you do not have these, they can be installed through Conda
+using
+
+```commandline
+conda install -c conda-forge gfortran
+conda install openblas
+```
+
+To begin, clone the CCpy repository and enter the `ccpy` directory:
 
 ```commandline
 git clone https://github.com/piecuch-group/ccpy.git
@@ -882,7 +947,7 @@ Additionally, it is useful to install `cmake` and `pkgconfig` specific to your
 Conda environment by running
 
 ```commandline
-    conda install pkgconfig cmake
+conda install pkgconfig cmake
 ```
 
 Then, you can install CCpy using
@@ -893,8 +958,9 @@ pip install --no-build-isolation --verbose --editable .
 The Meson backend will automatically locate the needed libraries. If you are having
 issues finding `openblas`, make sure that the environment variable `PKG_CONFIG_PATH` points to
 the directory that includes the `openblas.pc` file. This should be located within `openblas/lib`,
-or something similar. After installing in editable mode (via `--editable`), the package will
-automatically update with any changes you make without additional installation steps.
+or something similar. 
+After installing in editable mode (via `--editable`), the package will automatically update with 
+any changes you make without additional installation steps.
 </p>
 
 ## CCpy Development Team
