@@ -18,6 +18,8 @@ def test_ccsdt_f2():
     mf.kernel()
     driver = Driver.from_pyscf(mf, nfrozen=2, uhf=True)
     driver.system.print_info()
+
+    driver.options["RHF_symmetry"] = False
     driver.run_cc(method="ccsdt")
 
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -199.058201, rtol=1.0e-07, atol=1.0e-07)

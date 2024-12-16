@@ -2238,6 +2238,13 @@ class Driver:
             # Perform ground-state correction
             _, self.deltap4[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
 
+        if method.lower() == "crcc34":
+            from ccpy.moments.crcc34 import calc_crcc34
+            # Ensure that HBar is set
+            assert self.flag_hbar
+            # perform ground-state correction
+            _, self.deltap4[0] = calc_crcc34(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+
         if method.lower() == "ccp4":
             from ccpy.moments.ccp4 import calc_ccp4
             # Ensure that HBar is set

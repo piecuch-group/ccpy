@@ -8,6 +8,7 @@ python_sources = [
 'crcc23.py',
 'crcc23_chol.py',
 'crcc24.py',
+'crcc34.py',
 'creacc23.py',
 'creomcc23.py',
 'creomcc23_chol.py',
