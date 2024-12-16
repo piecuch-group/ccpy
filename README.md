@@ -9,11 +9,11 @@ to electronic excited, attached, and ionized states. CCpy employs a hybrid Pytho
 with the f2py package, which allows one to compile Fortran code into shared object libraries containing subroutines
 that are callable from Python and interoperable with Numpy arrays.
 
-CCpy provides interfaces to both PySCF and GAMESS to obtain the mean-field (typically Hartree-Fock) reference state and associated one- and two-electron integrals in 
-the molecular orbital basis prior to performing the correlated CC calculations. A general interface that can be used to initialize CCpy calculations using
-a reference state information provided by an FCIDUMP file is also included. 
+CCpy provides easy-to-use interfaces to both PySCF and GAMESS for obtaining the mean-field (typically Hartree-Fock) reference state and associated transformed
+one- and two-electron integrals in the molecular orbital basis that are used to set up the correlated CC calculations. A general interface that can be used to 
+initialize CCpy calculations using reference state information and one- and two-electron integrals provided by an FCIDUMP file is also included. 
 
-CCpy is also distributed as an official extension module of PySCF (see https://pyscf.org/install.html#extension-modules).
+CCpy is distributed as an official extension module of PySCF (see https://pyscf.org/install.html#extension-modules).
 </p>
 
 ## Available Computational Options
