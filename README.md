@@ -865,7 +865,7 @@ pip install coupled-cluster-py
 Clone the CCpy repository and enter the `ccpy` directory:
 
 ```commandline
-git clone https://piecuch-group/ccpy.git
+git clone https://github.com/piecuch-group/ccpy.git
 cd ccpy
 ```
 We recommend creating a new environment for CCpy by running the following command
