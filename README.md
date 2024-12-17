@@ -897,12 +897,329 @@ def test_eccc23_h2o():
   - Active-space EA-EOMCCSD(3p-2h){N<sub>u</sub>} (also known as EA-EOMCCSDt)
   - EA-EOMCCSD(3p-2h)
   - EA-EOMCCSDT
-  - DEA-EOMCCSD(3p-1h)
-  - DEA-EOMCCSD(4p-2h)
-  - DIP-EOMCCSD(3h-1p)
-  - DIP-EOMCCSD(4h-2p)
-  - DIP-EOMCCSD(T)(a)(4h-2p)
-  - DIP-EOMCCSDT(4h-2p)
+<details>
+<summary>DEA-EOMCCSD(3p-1h) </summary>
+
+### Summary
+The DEA-EOMCCSD(3p-1h) approach obtains the ground and
+excited states of an (N+2)-electron target system by treating the 2p and 3p1h correlations
+on top the CCSD description of the underlying N-electron reference species.
+### Sample Code
+This example performs DEA-EOMCCSD(3p-1h) calculations to determine the triplet ground state
+and the lowest-lying singlet state of the methylene biradical.
+```python3
+from pyscf import gto, scf
+from ccpy.drivers.driver import Driver
+
+def test_deaeom3_ch2():
+    # Define the undelrying closed-shell methylene dication in PySCF
+    mol = gto.M(atom=[["C", (0.0, 0.0, 0.0)],
+                      ["H", (0.0, 1.644403, -1.32213)],
+                      ["H", (0.0, -1.644403, -1.32213)]],
+                basis="6-31g",
+                charge=2,
+                symmetry="C2V",
+                cart=True,
+                spin=0,
+                unit="Bohr")
+    # Run the RHF
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    driver.system.print_info()
+    
+    # Run CCSD calculation
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    # Locate the triplet ground state and lowest singlet excited state of methylene
+    # using a basic 2p (`deacis`) guess in an active space spanned by the 5 lowest
+    # unoccupied orbitals. The electronic states of methylene are labelled as follows:
+    # state_index 0 -> X ^{3}B1
+    # state_index 1 -> a ^{1}A1
+    driver.run_guess(method="deacis", multiplicity=-1, nact_unoccupied=5, roots_per_irrep={"A1": 6})
+    # Perform the DEA-EOMCCSD(3p-1h) calculation
+    driver.run_deaeomcc(method="deaeom3", state_index=[0, 1])
+```
+### References
+</details>
+
+<details>
+<summary>DEA-EOMCCSD(4p-2h) </summary>
+
+### Summary
+The DEA-EOMCCSD(4p-2h) approach obtains the ground and
+excited states of an (N+2)-electron target system by treating the 2p, 3p1h, and 4p2h correlations
+on top the CCSD description of the underlying N-electron reference species.
+### Sample Code
+This example performs DEA-EOMCCSD(4p-2h) calculations to determine the triplet ground state
+and the lowest-lying singlet state of the methylene biradical.
+```python3
+from pyscf import gto, scf
+from ccpy.drivers.driver import Driver
+
+def test_deaeom4_ch2():
+    # Define the undelrying closed-shell methylene dication in PySCF
+    mol = gto.M(atom=[["C", (0.0, 0.0, 0.0)],
+                      ["H", (0.0, 1.644403, -1.32213)],
+                      ["H", (0.0, -1.644403, -1.32213)]],
+                basis="6-31g",
+                charge=2,
+                symmetry="C2V",
+                cart=True,
+                spin=0,
+                unit="Bohr")
+    # Run the RHF
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    driver.system.print_info()
+    
+    # Run CCSD calculation
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    # Locate the triplet ground state and lowest singlet excited state of methylene
+    # using a basic 2p (`deacis`) guess in an active space spanned by the 5 lowest
+    # unoccupied orbitals. The electronic states of methylene are labelled as follows:
+    # state_index 0 -> X ^{3}B1
+    # state_index 1 -> a ^{1}A1
+    driver.run_guess(method="deacis", multiplicity=-1, nact_unoccupied=5, roots_per_irrep={"A1": 6})
+    # Perform the DEA-EOMCCSD(4p-2h) calculation
+    driver.run_deaeomcc(method="deaeom4", state_index=[0, 1])
+```
+### References
+1. A. O. Ajala, J. Shen, and P. Piecuch, J. Phys. Chem. A 121, 3469 (2017).
+2. J. Shen and P. Piecuch, J. Chem. Phys. 138, 194102 (2013).
+3. J. Shen and P. Piecuch, Mol. Phys. 112, 868 (2014).
+4. J. Shen and P. Piecuch, Mol. Phys. 119, e1966534 (2021)
+</details>
+
+<details>
+<summary>DIP-EOMCCSD(3h-1p) </summary>
+
+### Summary
+The DIP-EOMCCSD(3h-1p) approach, introduced in Refs. [1,2] below, obtains the ground and
+excited states of an (N-2)-electron target system by treating the 2h and 3h1p correlations
+on top the CCSD description of the underlying N-electron reference species.
+### Sample Code
+This example performs DIP-EOMCCSD(3h-1p) calculations to determine the DIPs of the chlorine
+molecule, as described using a cc-pVDZ basis set, corresponding to the states listed in Table III of the paper 
+K. Gururangan, A. K. Dutta, and P. Piecuch,
+"Double Ionization Potential Equation-of-Motion Coupled-Cluster Approach
+with Full Inclusion of 4-Hole–2-Particle Excitations and Three-Body Clusters", available at
+https://doi.org/10.48550/arXiv.2412.10688.
+```python3
+from pyscf import gto, scf
+from ccpy.drivers.driver import Driver
+
+def test_dipeom3_cl2():
+    
+    # Define the geometry [R(Cl-Cl) = 1.987 angstrom]
+    geom = [["Cl", (0.0, 0.0, 0.0)],
+            ["Cl", (0.0, 0.0, 1.987)]]
+    # Set up the RHF calculation using PySCF
+    mol = gto.M(atom=geom, basis="cc-pvdz", symmetry="D2H", unit="Angstrom", cart=False, charge=0)
+    mf = scf.RHF(mol)
+    mf = mf.x2c() # Use SFX2C-1e treatment of scalar relativity
+    mf.kernel()
+    # Create the CCpy driver out of PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=10)
+    driver.system.print_info()
+    # Run CCSD for neutral Cl2
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    # Locate selected states of (Cl2)^{2+} located using 2h (`dipcis`) guess
+    # The state indices correlate to electronic states of (Cl2)^{2+} as follows:
+    # state_index 0 -> X ^{3}Sigma_g-
+    # state_index 1 -> a ^{1}Delta_g
+    # state_index 2 -> b ^{1}Sigma_g+
+    # state_index 3 -> c ^{1}Sigma_u-
+    driver.run_guess(method="dipcis", 
+                     multiplicity=-1, 
+                     nact_occupied=driver.system.noccupied_alpha, 
+                     roots_per_irrep={"A1": 10}, 
+                     use_symmetry=False) 
+    # Run DIP-EOMCCSD(3h-1p) calculation for selected states
+    driver.run_dipeomcc(method="dipeom3", state_index=[0, 1, 3, 4])
+```
+### References
+1. M. Wladyslawski and M. Nooijen, in Low-Lying Potential Energy
+Surfaces, ACS Symposium Series, Vol. 828, edited by M. R. Hoffmann and K. G. Dyall (American Chemical Society, Washington,
+D.C., 2002) pp. 65–92.
+2. M. Nooijen, Int. J. Mol. Sci. 3, 656 (2002).
+3. M. Musia l, A. Perera, and R. J. Bartlett, J. Chem. Phys. 134,
+114108 (2011).
+4. T. Kuś and A. I. Krylov, J. Chem. Phys. 135, 084109 (2011).
+5. T. Kuś and A. I. Krylov, J. Chem. Phys. 136, 244109 (2012).
+6. J. Shen and P. Piecuch, J. Chem. Phys. 138, 194102 (2013).
+7. J. Shen and P. Piecuch, Mol. Phys. 112, 868 (2014).
+</details>
+
+<details>
+<summary>DIP-EOMCCSD(4h-2p) </summary>
+
+### Summary
+The DIP-EOMCCSD(4h-2p) approach, introduced in Refs. [1,2] below, obtains the ground and
+excited states of an (N-2)-electron target system by treating the 2h, 3h1p, and 4h2p correlations
+on top the CCSD description of the underlying N-electron reference species.
+### Sample Code
+This example performs DIP-EOMCCSD(4h-2p) calculations to determine the DIPs of the chlorine
+molecule, as described using a cc-pVDZ basis set, corresponding to the states listed in Table III of the paper 
+K. Gururangan, A. K. Dutta, and P. Piecuch,
+"Double Ionization Potential Equation-of-Motion Coupled-Cluster Approach
+with Full Inclusion of 4-Hole–2-Particle Excitations and Three-Body Clusters", available at
+https://doi.org/10.48550/arXiv.2412.10688.
+
+```python3
+from pyscf import gto, scf
+from ccpy.drivers.driver import Driver
+
+def test_dipeom4_cl2():
+    
+    # Define the geometry [R(Cl-Cl) = 1.987 angstrom]
+    geom = [["Cl", (0.0, 0.0, 0.0)],
+            ["Cl", (0.0, 0.0, 1.987)]]
+    # Set up the RHF calculation using PySCF
+    mol = gto.M(atom=geom, basis="cc-pvdz", symmetry="D2H", unit="Angstrom", cart=False, charge=0)
+    mf = scf.RHF(mol)
+    mf = mf.x2c() # Use SFX2C-1e treatment of scalar relativity
+    mf.kernel()
+    # Create the CCpy driver out of PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=10)
+    driver.system.print_info()
+    # Run CCSD for neutral Cl2
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    # Locate selected states of (Cl2)^{2+} located using 2h (`dipcis`) guess
+    # The state indices correlate to electronic states of (Cl2)^{2+} as follows:
+    # state_index 0 -> X ^{3}Sigma_g-
+    # state_index 1 -> a ^{1}Delta_g
+    # state_index 2 -> b ^{1}Sigma_g+
+    # state_index 3 -> c ^{1}Sigma_u-
+    driver.run_guess(method="dipcis", 
+                     multiplicity=-1, 
+                     nact_occupied=driver.system.noccupied_alpha, 
+                     roots_per_irrep={"A1": 10}, 
+                     use_symmetry=False) 
+    # Run DIP-EOMCCSD(4h-2p) calculation for selected states
+    driver.run_dipeomcc(method="dipeom4", state_index=[0, 1, 3, 4])
+```
+
+### References
+1. J. Shen and P. Piecuch, J. Chem. Phys. 138, 194102 (2013).
+2. J. Shen and P. Piecuch, Mol. Phys. 112, 868 (2014).
+</details>
+
+<details>
+<summary>DIP-EOMCCSD(T)(a)(4h-2p) </summary>
+
+### Summary
+The DIP-EOMCCSD(T)(a)(4h-2p) approach, introduced in Ref. [1] below, obtains the ground and
+excited states of an (N-2)-electron target system by treating the 2h, 3h1p, and 4h2p correlations
+on top the CCSD(T)(a) description of the underlying N-electron reference species. 
+### Sample Code
+This example performs DIP-EOMCCSD(T)(a)(4h-2p) calculations to determine the DIPs of the chlorine
+molecule, as described using a cc-pVDZ basis set, corresponding to the states listed in Table III of the paper 
+K. Gururangan, A. K. Dutta, and P. Piecuch,
+"Double Ionization Potential Equation-of-Motion Coupled-Cluster Approach
+with Full Inclusion of 4-Hole–2-Particle Excitations and Three-Body Clusters", available at
+https://doi.org/10.48550/arXiv.2412.10688.
+```python3
+from pyscf import gto, scf
+from ccpy.drivers.driver import Driver
+
+def test_dipeomccsdta_cl2():
+    
+    # Define the geometry [R(Cl-Cl) = 1.987 angstrom]
+    geom = [["Cl", (0.0, 0.0, 0.0)],
+            ["Cl", (0.0, 0.0, 1.987)]]
+    # Set up the RHF calculation using PySCF
+    mol = gto.M(atom=geom, basis="cc-pvdz", symmetry="D2H", unit="Angstrom", cart=False, charge=0)
+    mf = scf.RHF(mol)
+    mf = mf.x2c() # Use SFX2C-1e treatment of scalar relativity
+    mf.kernel()
+    # Create the CCpy driver out of PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=10)
+    driver.system.print_info()
+    # Run CCSD for neutral Cl2
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    # Locate selected states of (Cl2)^{2+} located using 2h (`dipcis`) guess
+    # The state indices correlate to electronic states of (Cl2)^{2+} as follows:
+    # state_index 0 -> X ^{3}Sigma_g-
+    # state_index 1 -> a ^{1}Delta_g
+    # state_index 2 -> b ^{1}Sigma_g+
+    # state_index 3 -> c ^{1}Sigma_u-
+    driver.run_guess(method="dipcis", 
+                     multiplicity=-1, 
+                     nact_occupied=driver.system.noccupied_alpha, 
+                     roots_per_irrep={"A1": 10}, 
+                     use_symmetry=False) 
+    # Run DIP-EOMCCSDT(T)(a)(4h-2p) calculation for selected states
+    driver.run_dipeomcc(method="dipeomccsdta", state_index=[0, 1, 3, 4])
+```
+### References
+1. K. Gururangan, A. K. Dutta, and P. Piecuch, “Double Ionization
+Potential Equation-of-Motion Coupled-Cluster Approach with
+Full Inclusion of 4-Hole-2-Particle Excitations and Three-Body Clusters,”
+(2024), arXiv:2412.10688.
+</details>
+
+<details>
+<summary>DIP-EOMCCSDT(4h-2p) </summary>
+
+### Summary
+The DIP-EOMCCSDT(4h-2p) approach, introduced in Ref. [1] below, obtains the ground and
+excited states of an (N-2)-electron target system by treating the 2h, 3h1p, and 4h2p correlations
+on top the CCSDT description of the underlying N-electron reference species.
+### Sample Code
+This example performs DIP-EOMCCSDT(4h-2p) calculations to determine the DIPs of the chlorine
+molecule, as described using a cc-pVDZ basis set, corresponding to the states listed in Table III of the paper 
+K. Gururangan, A. K. Dutta, and P. Piecuch,
+"Double Ionization Potential Equation-of-Motion Coupled-Cluster Approach
+with Full Inclusion of 4-Hole–2-Particle Excitations and Three-Body Clusters", available at
+https://doi.org/10.48550/arXiv.2412.10688.
+```python3
+from pyscf import gto, scf
+from ccpy.drivers.driver import Driver
+
+def test_dipeomccsdt_cl2():
+    
+    # Define the geometry [R(Cl-Cl) = 1.987 angstrom]
+    geom = [["Cl", (0.0, 0.0, 0.0)],
+            ["Cl", (0.0, 0.0, 1.987)]]
+    # Set up the RHF calculation using PySCF
+    mol = gto.M(atom=geom, basis="cc-pvdz", symmetry="D2H", unit="Angstrom", cart=False, charge=0)
+    mf = scf.RHF(mol)
+    mf = mf.x2c() # Use SFX2C-1e treatment of scalar relativity
+    mf.kernel()
+    # Create the CCpy driver out of PySCF meanfield
+    driver = Driver.from_pyscf(mf, nfrozen=10)
+    driver.system.print_info()
+    # Run CCSDT for neutral Cl2
+    driver.run_cc(method="ccsdt")
+    driver.run_hbar(method="ccsdt")
+    # Locate selected states of (Cl2)^{2+} located using 2h (`dipcis`) guess
+    # The state indices correlate to electronic states of (Cl2)^{2+} as follows:
+    # state_index 0 -> X ^{3}Sigma_g-
+    # state_index 1 -> a ^{1}Delta_g
+    # state_index 2 -> b ^{1}Sigma_g+
+    # state_index 3 -> c ^{1}Sigma_u-
+    driver.run_guess(method="dipcis", 
+                     multiplicity=-1, 
+                     nact_occupied=driver.system.noccupied_alpha, 
+                     roots_per_irrep={"A1": 10}, 
+                     use_symmetry=False) 
+    # Run DIP-EOMCCSDT(4h-2p) calculation for selected states
+    driver.run_dipeomcc(method="dipeomccsdt", state_index=[0, 1, 3, 4])
+```
+### References
+1. K. Gururangan, A. K. Dutta, and P. Piecuch, “Double Ionization
+Potential Equation-of-Motion Coupled-Cluster Approach with
+Full Inclusion of 4-Hole-2-Particle Excitations and Three-Body Clusters,”
+(2024), arXiv:2412.10688.
+</details>
 
 ## Installation
 <p align="justify">
