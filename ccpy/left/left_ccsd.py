@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.lib.core import cc_loops2
+from ccpy.lib.core import cc_loops2, cc_loops_cmplx
 from ccpy.left.left_cc_intermediates import build_left_ccsd_intermediates
 
 def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
@@ -31,14 +31,24 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
         LH.ab += np.transpose(H.ab.oovv, (2, 3, 0, 1))
         LH.bb += np.transpose(H.bb.oovv, (2, 3, 0, 1))
 
-    L.a, L.b, LH.a, LH.b = cc_loops2.update_l1(L.a, L.b, LH.a, LH.b,
-                                                         omega,
-                                                         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                                                         shift)
-    L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb = cc_loops2.update_l2(L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb,
-                                                         omega,
-                                                         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                                                         shift)
+    if np.iscomplexobj(L.a):
+        L.a, L.b, LH.a, LH.b = cc_loops_cmplx.update_l1(L.a, L.b, LH.a, LH.b,
+                                                        omega,
+                                                        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                        shift)
+        L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb = cc_loops_cmplx.update_l2(L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb,
+                                                                         omega,
+                                                                         H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                                         shift)
+    else:
+        L.a, L.b, LH.a, LH.b = cc_loops2.update_l1(L.a, L.b, LH.a, LH.b,
+                                                             omega,
+                                                             H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                             shift)
+        L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb = cc_loops2.update_l2(L.aa, L.ab, L.bb, LH.aa, LH.ab, LH.bb,
+                                                             omega,
+                                                             H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                                             shift)
 
     if flag_RHF:
         L.b = L.a.copy()

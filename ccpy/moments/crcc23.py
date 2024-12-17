@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
-from ccpy.lib.core import crcc_loops, ccsdpt_loops
+from ccpy.lib.core import crcc_loops, ccsdpt_loops, crcc_loops_cmplx
 
 def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
     """
@@ -39,36 +39,64 @@ def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
     # calculate intermediates
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa = crcc_loops.crcc23a_opt(
-                                        T.aa, L.a, L.aa,
-                                        H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
-                                        H.aa.vovv, H.aa.ooov, H0.a.oo, H0.a.vv,
-                                        H.a.oo, H.a.vv, H.aa.voov, H.aa.oooo,
-                                        h_aa_vvvv,
-                                        d3aaa_o, d3aaa_v,
-                                        system.noccupied_alpha, system.nunoccupied_alpha,
-    )
+    if np.iscomplexobj(T.a):
+        dA_aaa, dB_aaa, dC_aaa, dD_aaa = crcc_loops_cmplx.crcc23a_opt(
+                                            T.aa, L.a, L.aa,
+                                            H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
+                                            H.aa.vovv, H.aa.ooov, H0.a.oo, H0.a.vv,
+                                            H.a.oo, H.a.vv, H.aa.voov, H.aa.oooo,
+                                            h_aa_vvvv,
+                                            d3aaa_o, d3aaa_v,
+                                            system.noccupied_alpha, system.nunoccupied_alpha,
+        )
+    else:
+        dA_aaa, dB_aaa, dC_aaa, dD_aaa = crcc_loops.crcc23a_opt(
+                                            T.aa, L.a, L.aa,
+                                            H.aa.vooo, I2A_vvov, H.aa.oovv, H.a.ov,
+                                            H.aa.vovv, H.aa.ooov, H0.a.oo, H0.a.vv,
+                                            H.a.oo, H.a.vv, H.aa.voov, H.aa.oooo,
+                                            h_aa_vvvv,
+                                            d3aaa_o, d3aaa_v,
+                                            system.noccupied_alpha, system.nunoccupied_alpha,
+        )
 
     #### aab correction ####
     # calculate intermediates
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    dA_aab, dB_aab, dC_aab, dD_aab = crcc_loops.crcc23b_opt(
-                                        T.aa, T.ab, L.a, L.b, L.aa, L.ab,
-                                        I2B_ovoo, I2B_vooo, I2A_vooo,
-                                        H.ab.vvvo, H.ab.vvov, H.aa.vvov,
-                                        H.ab.vovv, H.ab.ovvv, H.aa.vovv,
-                                        H.ab.ooov, H.ab.oovo, H.aa.ooov,
-                                        H.a.ov, H.b.ov, H.aa.oovv, H.ab.oovv,
-                                        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-                                        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                                        H.aa.voov, H.aa.oooo, h_aa_vvvv, H.ab.ovov,
-                                        H.ab.vovo, H.ab.oooo, h_ab_vvvv, H.bb.voov,
-                                        d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
-                                        system.noccupied_alpha, system.nunoccupied_alpha,
-                                        system.noccupied_beta, system.nunoccupied_beta,
-    )
+    if np.iscomplexobj(T.a):
+        dA_aab, dB_aab, dC_aab, dD_aab = crcc_loops_cmplx.crcc23b_opt(
+                                            T.aa, T.ab, L.a, L.b, L.aa, L.ab,
+                                            I2B_ovoo, I2B_vooo, I2A_vooo,
+                                            H.ab.vvvo, H.ab.vvov, H.aa.vvov,
+                                            H.ab.vovv, H.ab.ovvv, H.aa.vovv,
+                                            H.ab.ooov, H.ab.oovo, H.aa.ooov,
+                                            H.a.ov, H.b.ov, H.aa.oovv, H.ab.oovv,
+                                            H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+                                            H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                            H.aa.voov, H.aa.oooo, h_aa_vvvv, H.ab.ovov,
+                                            H.ab.vovo, H.ab.oooo, h_ab_vvvv, H.bb.voov,
+                                            d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
+                                            system.noccupied_alpha, system.nunoccupied_alpha,
+                                            system.noccupied_beta, system.nunoccupied_beta,
+        )
+    else:
+        dA_aab, dB_aab, dC_aab, dD_aab = crcc_loops.crcc23b_opt(
+                                            T.aa, T.ab, L.a, L.b, L.aa, L.ab,
+                                            I2B_ovoo, I2B_vooo, I2A_vooo,
+                                            H.ab.vvvo, H.ab.vvov, H.aa.vvov,
+                                            H.ab.vovv, H.ab.ovvv, H.aa.vovv,
+                                            H.ab.ooov, H.ab.oovo, H.aa.ooov,
+                                            H.a.ov, H.b.ov, H.aa.oovv, H.ab.oovv,
+                                            H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+                                            H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                            H.aa.voov, H.aa.oooo, h_aa_vvvv, H.ab.ovov,
+                                            H.ab.vovo, H.ab.oooo, h_ab_vvvv, H.bb.voov,
+                                            d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
+                                            system.noccupied_alpha, system.nunoccupied_alpha,
+                                            system.noccupied_beta, system.nunoccupied_beta,
+        )
     
     if use_RHF:
         correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
@@ -79,32 +107,60 @@ def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
         I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
         I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
         I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
-        dA_abb, dB_abb, dC_abb, dD_abb = crcc_loops.crcc23c_opt(
-                                        T.ab, T.bb, L.a, L.b, L.ab, L.bb,
-                                        I2B_vooo, I2C_vooo, I2B_ovoo,
-                                        H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
-                                        H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
-                                        H.bb.ooov,
-                                        H.a.ov, H.b.ov,
-                                        H.ab.oovv, H.bb.oovv,
-                                        H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-                                        H.a.oo, H.a.vv, H.b.oo, H.b.vv,
-                                        H.aa.voov, H.ab.ovov, H.ab.vovo, H.ab.oooo,
-                                        h_ab_vvvv, H.bb.voov, H.bb.oooo, h_bb_vvvv,
-                                        d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
-                                        system.noccupied_alpha, system.nunoccupied_alpha,
-                                        system.noccupied_beta, system.nunoccupied_beta,
-        )
+        if np.iscomplexobj(T.a):
+            dA_abb, dB_abb, dC_abb, dD_abb = crcc_loops_cmplx.crcc23c_opt(
+                                            T.ab, T.bb, L.a, L.b, L.ab, L.bb,
+                                            I2B_vooo, I2C_vooo, I2B_ovoo,
+                                            H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
+                                            H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
+                                            H.bb.ooov,
+                                            H.a.ov, H.b.ov,
+                                            H.ab.oovv, H.bb.oovv,
+                                            H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+                                            H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                            H.aa.voov, H.ab.ovov, H.ab.vovo, H.ab.oooo,
+                                            h_ab_vvvv, H.bb.voov, H.bb.oooo, h_bb_vvvv,
+                                            d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
+                                            system.noccupied_alpha, system.nunoccupied_alpha,
+                                            system.noccupied_beta, system.nunoccupied_beta,
+            )
+        else:
+            dA_abb, dB_abb, dC_abb, dD_abb = crcc_loops.crcc23c_opt(
+                                            T.ab, T.bb, L.a, L.b, L.ab, L.bb,
+                                            I2B_vooo, I2C_vooo, I2B_ovoo,
+                                            H.ab.vvov, H.bb.vvov, H.ab.vvvo, H.ab.ovvv,
+                                            H.ab.vovv, H.bb.vovv, H.ab.oovo, H.ab.ooov,
+                                            H.bb.ooov,
+                                            H.a.ov, H.b.ov,
+                                            H.ab.oovv, H.bb.oovv,
+                                            H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
+                                            H.a.oo, H.a.vv, H.b.oo, H.b.vv,
+                                            H.aa.voov, H.ab.ovov, H.ab.vovo, H.ab.oooo,
+                                            h_ab_vvvv, H.bb.voov, H.bb.oooo, h_bb_vvvv,
+                                            d3aab_o, d3aab_v, d3abb_o, d3abb_v, d3bbb_o, d3bbb_v,
+                                            system.noccupied_alpha, system.nunoccupied_alpha,
+                                            system.noccupied_beta, system.nunoccupied_beta,
+            )
 
         I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
-        dA_bbb, dB_bbb, dC_bbb, dD_bbb = crcc_loops.crcc23d_opt(
-                                        T.bb, L.b, L.bb,
-                                        H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
-                                        H.bb.vovv, H.bb.ooov, H0.b.oo, H0.b.vv,
-                                        H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, h_bb_vvvv,
-                                        d3bbb_o, d3bbb_v,
-                                        system.noccupied_beta, system.nunoccupied_beta,
-        )
+        if np.iscomplexobj(T.a):
+            dA_bbb, dB_bbb, dC_bbb, dD_bbb = crcc_loops_cmplx.crcc23d_opt(
+                                            T.bb, L.b, L.bb,
+                                            H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
+                                            H.bb.vovv, H.bb.ooov, H0.b.oo, H0.b.vv,
+                                            H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, h_bb_vvvv,
+                                            d3bbb_o, d3bbb_v,
+                                            system.noccupied_beta, system.nunoccupied_beta,
+            )
+        else:
+            dA_bbb, dB_bbb, dC_bbb, dD_bbb = crcc_loops.crcc23d_opt(
+                                            T.bb, L.b, L.bb,
+                                            H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,
+                                            H.bb.vovv, H.bb.ooov, H0.b.oo, H0.b.vv,
+                                            H.b.oo, H.b.vv, H.bb.voov, H.bb.oooo, h_bb_vvvv,
+                                            d3bbb_o, d3bbb_v,
+                                            system.noccupied_beta, system.nunoccupied_beta,
+            )
 
         correction_A = dA_aaa + dA_aab + dA_abb + dA_bbb
         correction_B = dB_aaa + dB_aab + dB_abb + dB_bbb

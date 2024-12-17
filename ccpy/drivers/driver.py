@@ -284,12 +284,14 @@ class Driver:
             self.T = ClusterOperator(self.system,
                                      order=self.operator_params["order"],
                                      active_orders=self.operator_params["active_orders"],
-                                     num_active=self.operator_params["number_active_indices"])
+                                     num_active=self.operator_params["number_active_indices"],
+                                     data_type=self.hamiltonian.a.oo.dtype)
         # regardless of restart status, initialize residual anew
         dT = ClusterOperator(self.system,
                              order=self.operator_params["order"],
                              active_orders=self.operator_params["active_orders"],
-                             num_active=self.operator_params["number_active_indices"])
+                             num_active=self.operator_params["number_active_indices"],
+                             data_type=self.hamiltonian.a.oo.dtype)
         # Create the container for 1- and 2-body intermediates
         cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
         if self.system.cholesky:
@@ -360,7 +362,8 @@ class Driver:
             self.T = ClusterOperator(self.system,
                                      order=self.operator_params["order"],
                                      p_orders=self.operator_params["pspace_orders"],
-                                     pspace_sizes=excitation_count)
+                                     pspace_sizes=excitation_count,
+                                     data_type=self.hamiltonian.a.oo.dtype)
         else:
             # extend self.T to hold a longer T vector. It is assumed that the new amplitudes and corresponding
             # excitations are simply appended to the previous ones. This will break if this is not true.
@@ -370,7 +373,8 @@ class Driver:
         dT = ClusterOperator(self.system,
                              order=self.operator_params["order"],
                              p_orders=self.operator_params["pspace_orders"],
-                             pspace_sizes=excitation_count)
+                             pspace_sizes=excitation_count,
+                             data_type=self.hamiltonian.a.oo.dtype)
         # Create the container for 1- and 2-body intermediates
         cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
         if self.system.cholesky:
@@ -1384,7 +1388,8 @@ class Driver:
         LH = ClusterOperator(self.system,
                              order=self.operator_params["order"],
                              active_orders=self.operator_params["active_orders"],
-                             num_active=self.operator_params["number_active_indices"])
+                             num_active=self.operator_params["number_active_indices"],
+                             data_type=self.T.a.dtype)
 
         for i in state_index:
             print("   Left CC calculation for root %d started on" % i, get_timestamp())
@@ -1401,7 +1406,8 @@ class Driver:
                 self.L[i] = ClusterOperator(self.system,
                                             order=self.operator_params["order"],
                                             active_orders=self.operator_params["active_orders"],
-                                            num_active=self.operator_params["number_active_indices"])
+                                            num_active=self.operator_params["number_active_indices"],
+                                            data_type=self.T.a.dtype)
                 # set initial value based on ground- or excited-state
                 if ground_state:
                     self.L[i].unflatten(self.T.flatten()[:self.L[i].ndim])
