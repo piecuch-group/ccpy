@@ -554,7 +554,7 @@ def cc_jacobi(update_t, T, dT, H, X, system, options, t3_excitations=None, acpar
 
     # instantiate the DIIS accelerator object
     if do_diis:
-        diis_engine = DIIS(T, options["diis_size"], options["diis_out_of_core"])
+        diis_engine = DIIS(T, options["diis_size"], options["diis_out_of_core"], data_type=T.a.dtype)
 
     # Jacobi/DIIS iterations
     num_throw_away = 0
@@ -644,7 +644,7 @@ def left_cc_jacobi(update_l, L, LH, T, H, LR_function, omega, ground_state, syst
 
     # instantiate the DIIS accelerator object
     if do_diis:
-        diis_engine = DIIS(L, options["diis_size"], options["diis_out_of_core"])
+        diis_engine = DIIS(L, options["diis_size"], options["diis_out_of_core"], data_type=L.a.dtype)
 
     # Jacobi/DIIS iterations
     num_throw_away = 0 # keep this at 0 for now...

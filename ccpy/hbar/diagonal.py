@@ -30,8 +30,8 @@ def aaa_H3_aaa_diagonal(T, H, system):
     d3A_V = lambda a, i, b: -np.dot(H.aa.oovv[i, :, a, b].T, T.aa[a, b, i, :])
     d3A_O = lambda a, i, j: np.dot(H.aa.oovv[i, j, a, :].T, T.aa[a, :, i, j])
 
-    D3A_V = np.zeros((system.nunoccupied_alpha, system.noccupied_alpha, system.nunoccupied_alpha))
-    D3A_O = np.zeros((system.nunoccupied_alpha, system.noccupied_alpha, system.noccupied_alpha))
+    D3A_V = np.zeros((system.nunoccupied_alpha, system.noccupied_alpha, system.nunoccupied_alpha), dtype=T.a.dtype)
+    D3A_O = np.zeros((system.nunoccupied_alpha, system.noccupied_alpha, system.noccupied_alpha), dtype=T.a.dtype)
 
     # A diagonal
     for a in range(system.nunoccupied_alpha):
@@ -51,8 +51,8 @@ def aab_H3_aab_diagonal(T, H, system):
     d3B_V = lambda a, i, c: -np.dot(H.ab.oovv[i, :, a, c].T, T.ab[a, c, i, :])
     d3B_O = lambda a, i, k: np.dot(H.ab.oovv[i, k, a, :].T, T.ab[a, :, i, k])
 
-    D3B_V = np.zeros((system.nunoccupied_alpha, system.noccupied_alpha, system.nunoccupied_beta))
-    D3B_O = np.zeros((system.nunoccupied_alpha, system.noccupied_alpha, system.noccupied_beta))
+    D3B_V = np.zeros((system.nunoccupied_alpha, system.noccupied_alpha, system.nunoccupied_beta), dtype=T.a.dtype)
+    D3B_O = np.zeros((system.nunoccupied_alpha, system.noccupied_alpha, system.noccupied_beta), dtype=T.a.dtype)
 
     # B diagonal
     for a in range(system.nunoccupied_alpha):
@@ -72,8 +72,8 @@ def abb_H3_abb_diagonal(T, H, system):
     d3C_V = lambda a, k, c: -np.dot(H.ab.oovv[:, k, a, c].T, T.ab[a, c, :, k])
     d3C_O = lambda c, i, k: np.dot(H.ab.oovv[i, k, :, c].T, T.ab[:, c, i, k])
 
-    D3C_V = np.zeros((system.nunoccupied_alpha, system.noccupied_beta, system.nunoccupied_beta))
-    D3C_O = np.zeros((system.nunoccupied_beta, system.noccupied_alpha, system.noccupied_beta))
+    D3C_V = np.zeros((system.nunoccupied_alpha, system.noccupied_beta, system.nunoccupied_beta), dtype=T.a.dtype)
+    D3C_O = np.zeros((system.nunoccupied_beta, system.noccupied_alpha, system.noccupied_beta), dtype=T.a.dtype)
 
     # C diagonal
     for a in range(system.nunoccupied_alpha):
@@ -93,8 +93,8 @@ def bbb_H3_bbb_diagonal(T, H, system):
     d3D_V = lambda a, i, b: -np.dot(H.bb.oovv[i, :, a, b].T, T.bb[a, b, i, :])
     d3D_O = lambda a, i, j: np.dot(H.bb.oovv[i, j, a, :].T, T.bb[a, :, i, j])
 
-    D3D_V = np.zeros((system.nunoccupied_beta, system.noccupied_beta, system.nunoccupied_beta))
-    D3D_O = np.zeros((system.nunoccupied_beta, system.noccupied_beta, system.noccupied_beta))
+    D3D_V = np.zeros((system.nunoccupied_beta, system.noccupied_beta, system.nunoccupied_beta), dtype=T.a.dtype)
+    D3D_O = np.zeros((system.nunoccupied_beta, system.noccupied_beta, system.noccupied_beta), dtype=T.a.dtype)
 
     # D diagonal
     for a in range(system.nunoccupied_beta):

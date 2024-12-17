@@ -8,13 +8,13 @@ module cc_loops_cmplx
 
 
               integer, intent(in) :: noa, nua
-              complex(kind=16), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                   X1A(1:nua,1:noa), shift               
-              complex(kind=16), intent(inout) :: t1a(1:nua,1:noa)
+              complex(kind=8), intent(inout) :: t1a(1:nua,1:noa)
               !f2py intent(in,out) :: t1a(0:nua-1,0:noa-1)
-              complex(kind=16), intent(out) :: resid(1:nua,1:noa)
+              complex(kind=8), intent(out) :: resid(1:nua,1:noa)
               integer :: i, a
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               resid = 0.0d0
               do i = 1,noa
@@ -31,13 +31,13 @@ module cc_loops_cmplx
       subroutine update_t1b(t1b,resid,X1B,fB_oo,fB_vv,shift,nob,nub)
 
               integer, intent(in) :: nob, nub
-              complex(kind=16), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
+              complex(kind=8), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
                                   X1B(1:nub,1:nob), shift               
-              complex(kind=16), intent(inout) :: t1b(1:nub,1:nob)
+              complex(kind=8), intent(inout) :: t1b(1:nub,1:nob)
               !f2py intent(in,out) :: t1b(0:nub-1,0:nob-1)
-              complex(kind=16), intent(out) :: resid(1:nub,1:nob)
+              complex(kind=8), intent(out) :: resid(1:nub,1:nob)
               integer :: i, a
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               resid = 0.0d0
               do i = 1,nob
@@ -54,13 +54,13 @@ module cc_loops_cmplx
       subroutine update_t2a(t2a,resid,X2A,fA_oo,fA_vv,shift,noa,nua)
 
               integer, intent(in) :: noa, nua
-              complex(kind=16), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                   X2A(1:nua,1:nua,1:noa,1:noa), shift               
-              complex(kind=16), intent(inout) :: t2a(1:nua,1:nua,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: t2a(1:nua,1:nua,1:noa,1:noa)
               !f2py intent(in,out) :: t2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(out) :: resid(1:nua,1:nua,1:noa,1:noa)
+              complex(kind=8), intent(out) :: resid(1:nua,1:nua,1:noa,1:noa)
               integer :: i, j, a, b
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               resid = 0.0d0
               do i = 1,noa
@@ -88,14 +88,14 @@ module cc_loops_cmplx
       subroutine update_t2b(t2b,resid,X2B,fA_oo,fA_vv,fB_oo,fB_vv,shift,noa,nua,nob,nub)
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                   fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
                                   X2B(1:nua,1:nub,1:noa,1:nob), shift               
-              complex(kind=16), intent(inout) :: t2b(1:nua,1:nub,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: t2b(1:nua,1:nub,1:noa,1:nob)
               !f2py intent(in,out) :: t2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(out) :: resid(1:nua,1:nub,1:noa,1:nob)
+              complex(kind=8), intent(out) :: resid(1:nua,1:nub,1:noa,1:nob)
               integer :: i, j, a, b
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               resid = 0.0d0
               do j = 1,nob
@@ -116,13 +116,13 @@ module cc_loops_cmplx
       subroutine update_t2c(t2c,resid,X2C,fB_oo,fB_vv,shift,nob,nub)
 
               integer, intent(in) :: nob, nub
-              complex(kind=16), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
+              complex(kind=8), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
                                   X2C(1:nub,1:nub,1:nob,1:nob), shift               
-              complex(kind=16), intent(inout) :: t2c(1:nub,1:nub,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: t2c(1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in,out) :: t2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
-              complex(kind=16), intent(out) :: resid(1:nub,1:nub,1:nob,1:nob)
+              complex(kind=8), intent(out) :: resid(1:nub,1:nub,1:nob,1:nob)
               integer :: i, j, a, b
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               resid = 0.0d0
               do i = 1,nob
@@ -151,13 +151,13 @@ module cc_loops_cmplx
       subroutine update_t3a_v2(t3a,resid,X3A,fA_oo,fA_vv,shift,noa,nua)
 
               integer, intent(in) :: noa, nua
-              complex(kind=16), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                   X3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa), shift               
-              complex(kind=16), intent(inout) :: t3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: t3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
               !f2py intent(in,out) :: t3a(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(out) :: resid(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              complex(kind=8), intent(out) :: resid(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
               integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               resid = 0.0d0
               do ii = 1,noa
@@ -303,14 +303,14 @@ module cc_loops_cmplx
       subroutine update_t3b_v2(t3b,resid,X3B,fA_oo,fA_vv,fB_oo,fB_vv,shift,noa,nua,nob,nub)
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                   fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
                                   X3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob), shift               
-              complex(kind=16), intent(inout) :: t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: t3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
               !f2py intent(in,out) :: t3b(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(out) :: resid(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              complex(kind=8), intent(out) :: resid(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
               integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               resid = 0.0d0
               do ii = 1,noa
@@ -348,14 +348,14 @@ module cc_loops_cmplx
       subroutine update_t3c_v2(t3c,resid,X3C,fA_oo,fA_vv,fB_oo,fB_vv,shift,noa,nua,nob,nub)
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: fA_oo(1:noa,1:noa), fA_vv(1:nua,1:nua), &
                                   fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
                                   X3C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob), shift               
-              complex(kind=16), intent(inout) :: t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: t3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
               !f2py intent(in,out) :: t3c(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:nob-1)
-              complex(kind=16), intent(out) :: resid(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              complex(kind=8), intent(out) :: resid(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
               integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               resid = 0.0d0
               do ii = 1,noa
@@ -393,13 +393,13 @@ module cc_loops_cmplx
       subroutine update_t3d_v2(t3d,resid,X3D,fB_oo,fB_vv,shift,nob,nub)
 
               integer, intent(in) :: nob, nub
-              complex(kind=16), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
+              complex(kind=8), intent(in) :: fB_oo(1:nob,1:nob), fB_vv(1:nub,1:nub), &
                                   X3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob), shift               
-              complex(kind=16), intent(inout) :: t3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: t3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
               !f2py intent(in,out) :: t3d(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:nob-1)
-              complex(kind=16), intent(out) :: resid(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+              complex(kind=8), intent(out) :: resid(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
               integer :: i, j, k, a, b, c, ii, jj, kk, aa, bb, cc
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               resid = 0.0d0
               do ii = 1,nob
@@ -546,21 +546,21 @@ module cc_loops_cmplx
               implicit none
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
                                   H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
                                   omega  
-              complex(kind=16), intent(inout) :: r1a(1:nua,1:noa)
+              complex(kind=8), intent(inout) :: r1a(1:nua,1:noa)
               !f2py intent(in,out) :: r1a(0:nua-1,0:noa-1) 
-              complex(kind=16), intent(inout) :: r1b(1:nub,1:nob)
+              complex(kind=8), intent(inout) :: r1b(1:nub,1:nob)
               !f2py intent(in,out) :: r1b(0:nub-1,0:nob-1)   
-              complex(kind=16), intent(inout) :: r2a(1:nua,1:nua,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: r2a(1:nua,1:nua,1:noa,1:noa)
               !f2py intent(in,out) :: r2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)        
-              complex(kind=16), intent(inout) :: r2b(1:nua,1:nub,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: r2b(1:nua,1:nub,1:noa,1:nob)
               !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r2c(1:nub,1:nub,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: r2c(1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in,out) :: r2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
               integer :: i, j, a, b
-              complex(kind=16) :: denom
+              complex(kind=8) :: denom
 
               do i = 1,noa
                 do a = 1,nua
@@ -624,29 +624,29 @@ module cc_loops_cmplx
               implicit none
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
                                   H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
                                   omega  
-              complex(kind=16), intent(inout) :: r1a(1:nua,1:noa)
+              complex(kind=8), intent(inout) :: r1a(1:nua,1:noa)
               !f2py intent(in,out) :: r1a(0:nua-1,0:noa-1) 
-              complex(kind=16), intent(inout) :: r1b(1:nub,1:nob)
+              complex(kind=8), intent(inout) :: r1b(1:nub,1:nob)
               !f2py intent(in,out) :: r1b(0:nub-1,0:nob-1)   
-              complex(kind=16), intent(inout) :: r2a(1:nua,1:nua,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: r2a(1:nua,1:nua,1:noa,1:noa)
               !f2py intent(in,out) :: r2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)        
-              complex(kind=16), intent(inout) :: r2b(1:nua,1:nub,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: r2b(1:nua,1:nub,1:noa,1:nob)
               !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r2c(1:nub,1:nub,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: r2c(1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in,out) :: r2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: r3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
               !f2py intent(in,out) :: r3a(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: r3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
               !f2py intent(in,out) :: r3b(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
               !f2py intent(in,out) :: r3c(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: r3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
               !f2py intent(in,out) :: r3d(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:nob-1)
               integer :: i, j, k, a, b, c
-              complex(kind=16) :: denom
+              complex(kind=8) :: denom
 
               do i = 1,noa
                 do a = 1,nua
@@ -770,22 +770,22 @@ module cc_loops_cmplx
               implicit none
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua),&
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua),&
                                      H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub),&
                                      shift, omega
 
-              complex(kind=16), intent(inout) :: l1a(1:nua,1:noa)
+              complex(kind=8), intent(inout) :: l1a(1:nua,1:noa)
               !f2py intent(in,out) :: l1a(0:nua-1,0:noa-1)
-              complex(kind=16), intent(inout) :: l1b(1:nub,1:nob)
+              complex(kind=8), intent(inout) :: l1b(1:nub,1:nob)
               !f2py intent(in,out) :: l1b(0:nub-1,0:nob-1)
 
-              complex(kind=16), intent(inout) :: X1A(1:nua,1:noa)
+              complex(kind=8), intent(inout) :: X1A(1:nua,1:noa)
               !f2py intent(in,out) :: X1A(0:nua-1,0:noa-1)
-              complex(kind=16), intent(inout) :: X1B(1:nub,1:nob)
+              complex(kind=8), intent(inout) :: X1B(1:nub,1:nob)
               !f2py intent(in,out) :: X1B(0:nub-1,0:nob-1)
 
               integer :: i, a
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               do i = 1,noa
                 do a = 1,nua
@@ -816,25 +816,25 @@ module cc_loops_cmplx
               implicit none
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
                                      H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega
 
-              complex(kind=16), intent(inout) :: l2a(1:nua,1:nua,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: l2a(1:nua,1:nua,1:noa,1:noa)
               !f2py intent(in,out) :: l2a(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: l2b(1:nua,1:nub,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: l2b(1:nua,1:nub,1:noa,1:nob)
               !f2py intent(in,out) :: l2b(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: l2c(1:nub,1:nub,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: l2c(1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in,out) :: l2c(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
 
-              complex(kind=16), intent(inout) :: X2A(1:nua,1:nua,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: X2A(1:nua,1:nua,1:noa,1:noa)
               !f2py intent(in,out) :: X2A(0:nua-1,0:nua-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: X2B(1:nua,1:nub,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: X2B(1:nua,1:nub,1:noa,1:nob)
               !f2py intent(in,out) :: X2B(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: X2C(1:nub,1:nub,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: X2C(1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in,out) :: X2C(0:nub-1,0:nub-1,0:nob-1,0:nob-1)
 
               integer :: i, j, a, b
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               do i = 1, noa
                 do j = i+1, noa
@@ -906,29 +906,29 @@ module cc_loops_cmplx
               implicit none
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
                                      H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega
 
-              complex(kind=16), intent(inout) :: l3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: l3a(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
               !f2py intent(in,out) :: l3a(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: l3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: l3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
               !f2py intent(in,out) :: l3b(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: l3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: l3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
               !f2py intent(in,out) :: l3c(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:nob-1)
-              complex(kind=16), intent(inout) :: l3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: l3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
               !f2py intent(in,out) :: l3d(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:nob-1)
 
-              complex(kind=16), intent(inout) :: X3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: X3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa)
               !f2py intent(in,out) :: X3A(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: X3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: X3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob)
               !f2py intent(in,out) :: X3B(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: X3C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: X3C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob)
               !f2py intent(in,out) :: X3C(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:nob-1)
-              complex(kind=16), intent(inout) :: X3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: X3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob)
               !f2py intent(in,out) :: X3D(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:nob-1)
 
               integer :: i, j, k, a, b, c
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
 
               do i = 1,noa
@@ -1256,11 +1256,11 @@ module cc_loops_cmplx
               !f2py intent(in,out) :: r2a(0:noa-1,0:nua-1,0:noa-1)
               real(8), intent(inout) :: r2b(1:noa,1:nub,1:nob)
               !f2py intent(in,out) :: r2b(0:noa-1,0:nub-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r3a(1:noa,1:nua,1:nua,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: r3a(1:noa,1:nua,1:nua,1:noa,1:noa)
               !f2py intent(in,out) :: r3a(0:noa-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r3b(1:noa,1:nua,1:nub,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: r3b(1:noa,1:nua,1:nub,1:noa,1:nob)
               !f2py intent(in,out) :: r3b(0:noa-1,0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r3c(1:noa,1:nub,1:nub,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: r3c(1:noa,1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in,out) :: r3c(0:noa-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1)
               integer :: i, j, k, b, c
               real(8) :: denom
@@ -1399,20 +1399,20 @@ module cc_loops_cmplx
               real(8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua),&
                                      H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift,&
                                      omega
-              complex(kind=16), intent(inout) :: r1a(1:nua)
+              complex(kind=8), intent(inout) :: r1a(1:nua)
               !f2py intent(in,out) :: r1a(0:nua-1)
-              complex(kind=16), intent(inout) :: r2a(1:nua,1:nua,1:noa)
+              complex(kind=8), intent(inout) :: r2a(1:nua,1:nua,1:noa)
               !f2py intent(in,out) :: r2a(0:nua-1,0:nua-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r2b(1:nua,1:nub,1:nob)
+              complex(kind=8), intent(inout) :: r2b(1:nua,1:nub,1:nob)
               !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r3a(1:nua,1:nua,1:nua,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: r3a(1:nua,1:nua,1:nua,1:noa,1:noa)
               !f2py intent(in,out) :: r3a(0:nua-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r3b(1:nua,1:nua,1:nub,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: r3b(1:nua,1:nua,1:nub,1:noa,1:nob)
               !f2py intent(in,out) :: r3b(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in,out) :: r3c(0:nua-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1)
               integer :: j, k, a, b, c 
-              complex(kind=16) :: denom
+              complex(kind=8) :: denom
 
               do a = 1,nua
                   denom = omega - H1A_vv(a,a)
@@ -1497,25 +1497,25 @@ module cc_loops_cmplx
               implicit none
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
                                           H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, omega
 
-              complex(kind=16), intent(inout) :: l1a(1:noa)
+              complex(kind=8), intent(inout) :: l1a(1:noa)
               !f2py intent(in,out) :: l1a(0:noa-1)
-              complex(kind=16), intent(inout) :: l2a(1:noa,1:nua,1:noa)
+              complex(kind=8), intent(inout) :: l2a(1:noa,1:nua,1:noa)
               !f2py intent(in,out) :: l2a(0:noa-1,0:nua-1,0:noa-1)
-              complex(kind=16), intent(inout) :: l2b(1:noa,1:nub,1:nob)
+              complex(kind=8), intent(inout) :: l2b(1:noa,1:nub,1:nob)
               !f2py intent(in,out) :: l2b(0:noa-1,0:nub-1,0:nob-1)
 
-              complex(kind=16), intent(inout) :: X1A(1:noa)
+              complex(kind=8), intent(inout) :: X1A(1:noa)
               !f2py intent(in,out) :: X1A(0:noa-1)
-              complex(kind=16), intent(inout) :: X2A(1:noa,1:nua,1:noa)
+              complex(kind=8), intent(inout) :: X2A(1:noa,1:nua,1:noa)
               !f2py intent(in,out) :: X2A(0:noa-1,0:nua-1,0:noa-1)
-              complex(kind=16), intent(inout) :: X2B(1:noa,1:nub,1:nob)
+              complex(kind=8), intent(inout) :: X2B(1:noa,1:nub,1:nob)
               !f2py intent(in,out) :: X2B(0:noa-1,0:nub-1,0:nob-1)
 
               integer :: i, j, b
-              complex(kind=16) :: denom, val
+              complex(kind=8) :: denom, val
 
               do i = 1,noa
                   val = X1A(i)
@@ -1551,17 +1551,17 @@ module cc_loops_cmplx
       subroutine update_R_sfccsd(r1b,r2b,r2c,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
                                           H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
                                           omega
-              complex(kind=16), intent(inout) :: r1b(1:nub,1:noa)
+              complex(kind=8), intent(inout) :: r1b(1:nub,1:noa)
               !f2py intent(in,out) :: r1b(0:nub-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r2b(1:nua,1:nub,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: r2b(1:nua,1:nub,1:noa,1:noa)
               !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r2c(1:nub,1:nub,1:nob,1:noa)
+              complex(kind=8), intent(inout) :: r2c(1:nub,1:nub,1:nob,1:noa)
               !f2py intent(in,out) :: r2c(0:nub-1,0:nub-1,0:nob-1,0:noa-1)
               integer :: i, j, a, b
-              complex(kind=16) :: denom
+              complex(kind=8) :: denom
 
               do i = 1, noa
                  do a = 1, nub
@@ -1594,24 +1594,24 @@ module cc_loops_cmplx
       subroutine update_R_sfccsdt(r1b,r2b,r2c,r3b,r3c,r3d,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
                                           H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
                                           omega
-              complex(kind=16), intent(inout) :: r1b(1:nub,1:noa)
+              complex(kind=8), intent(inout) :: r1b(1:nub,1:noa)
               !f2py intent(in,out) :: r1b(0:nub-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r2b(1:nua,1:nub,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: r2b(1:nua,1:nub,1:noa,1:noa)
               !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r2c(1:nub,1:nub,1:nob,1:noa)
+              complex(kind=8), intent(inout) :: r2c(1:nub,1:nub,1:nob,1:noa)
               !f2py intent(in,out) :: r2c(0:nub-1,0:nub-1,0:nob-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: r3b(1:nua,1:nua,1:nub,1:noa,1:noa,1:noa)
               !f2py intent(in,out) :: r3b(0:nua-1,0:nua-1,0:nub-1,0:noa-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:noa)
+              complex(kind=8), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:noa,1:nob,1:noa)
               !f2py intent(in,out) :: r3c(0:nua-1,0:nub-1,0:nub-1,0:noa-1,0:nob-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:noa)
+              complex(kind=8), intent(inout) :: r3d(1:nub,1:nub,1:nub,1:nob,1:nob,1:noa)
               !f2py intent(in,out) :: r3d(0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1,0:noa-1)
               
               integer :: i, j, k, a, b, c
-              complex(kind=16) :: denom
+              complex(kind=8) :: denom
 
               do i = 1, noa
                  do a = 1, nub
@@ -1686,14 +1686,14 @@ module cc_loops_cmplx
       subroutine update_R_2p(r2b,omega,H1A_vv,H1B_vv,shift,nua,nub)
 
               integer, intent(in) :: nua, nub
-              complex(kind=16), intent(in) :: H1A_vv(1:nua,1:nua), H1B_vv(1:nub,1:nub), &
+              complex(kind=8), intent(in) :: H1A_vv(1:nua,1:nua), H1B_vv(1:nub,1:nub), &
                                           shift, &
                                           omega
-              complex(kind=16), intent(inout) :: r2b(1:nua,1:nub)
+              complex(kind=8), intent(inout) :: r2b(1:nua,1:nub)
               !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1)
 
               integer :: a, b, c, k
-              complex(kind=16) :: denom
+              complex(kind=8) :: denom
 
               do a = 1, nua; do b = 1, nub;
                   denom = H1A_vv(a,a) + H1B_vv(b,b)
@@ -1705,17 +1705,17 @@ module cc_loops_cmplx
       subroutine update_R_3p1h(r2b,r3b,r3c,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
                                           H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
                                           omega
-              complex(kind=16), intent(inout) :: r2b(1:nua,1:nub)
+              complex(kind=8), intent(inout) :: r2b(1:nua,1:nub)
               !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1)
-              complex(kind=16), intent(inout) :: r3b(1:nua,1:nub,1:nua,1:noa)
+              complex(kind=8), intent(inout) :: r3b(1:nua,1:nub,1:nua,1:noa)
               !f2py intent(in,out) :: r3b(0:nua-1,0:nub-1,0:nua-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:nob)
+              complex(kind=8), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:nob)
               !f2py intent(in,out) :: r3c(0:nua-1,0:nub-1,0:nub-1,0:nob-1)
               integer :: a, b, c, k
-              complex(kind=16) :: denom
+              complex(kind=8) :: denom
 
               do a = 1, nua; do b = 1, nub;
                   denom = H1A_vv(a,a) + H1B_vv(b,b)
@@ -1739,23 +1739,23 @@ module cc_loops_cmplx
       subroutine update_R_4p2h(r2b,r3b,r3c,r4b,r4c,r4d,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
                                           H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
                                           omega
-              complex(kind=16), intent(inout) :: r2b(1:nua,1:nub)
+              complex(kind=8), intent(inout) :: r2b(1:nua,1:nub)
               !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1)
-              complex(kind=16), intent(inout) :: r3b(1:nua,1:nub,1:nua,1:noa)
+              complex(kind=8), intent(inout) :: r3b(1:nua,1:nub,1:nua,1:noa)
               !f2py intent(in,out) :: r3b(0:nua-1,0:nub-1,0:nua-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:nob)
+              complex(kind=8), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:nob)
               !f2py intent(in,out) :: r3c(0:nua-1,0:nub-1,0:nub-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r4b(1:nua,1:nub,1:nua,1:nua,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: r4b(1:nua,1:nub,1:nua,1:nua,1:noa,1:noa)
               !f2py intent(in,out) :: r4b(0:nua-1,0:nub-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r4c(1:nua,1:nub,1:nua,1:nub,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: r4c(1:nua,1:nub,1:nua,1:nub,1:noa,1:nob)
               !f2py intent(in,out) :: r4c(0:nua-1,0:nub-1,0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r4d(1:nua,1:nub,1:nub,1:nub,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: r4d(1:nua,1:nub,1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in,out) :: r4d(0:nua-1,0:nub-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1)
               integer :: a, b, c, d, k, l
-              complex(kind=16) :: denom
+              complex(kind=8) :: denom
 
               do a = 1,nua; do b = 1,nub;
                   denom = H1A_vv(a,a) + H1B_vv(b,b)
@@ -1803,17 +1803,17 @@ module cc_loops_cmplx
       subroutine update_R_3h1p(r2b,r3b,r3c,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
                                           H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
                                           omega
-              complex(kind=16), intent(inout) :: r2b(1:noa,1:nob)
+              complex(kind=8), intent(inout) :: r2b(1:noa,1:nob)
               !f2py intent(in,out) :: r2b(0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r3b(1:noa,1:nob,1:nua,1:noa)
+              complex(kind=8), intent(inout) :: r3b(1:noa,1:nob,1:nua,1:noa)
               !f2py intent(in,out) :: r3b(0:noa-1,0:nob-1,0:nua-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r3c(1:noa,1:nob,1:nub,1:nob)
+              complex(kind=8), intent(inout) :: r3c(1:noa,1:nob,1:nub,1:nob)
               !f2py intent(in,out) :: r3c(0:noa-1,0:nob-1,0:nub-1,0:nob-1)
               integer :: i, j, k, c
-              complex(kind=16) :: denom
+              complex(kind=8) :: denom
 
               do i = 1, noa; do j = 1, nob;
                   denom = -H1A_oo(i,i) - H1B_oo(j,j)
@@ -1837,23 +1837,23 @@ module cc_loops_cmplx
       subroutine update_R_4h2p(r2b,r3b,r3c,r4b,r4c,r4d,omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,shift,noa,nua,nob,nub)
 
               integer, intent(in) :: noa, nua, nob, nub
-              complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
+              complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua), &
                                           H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub), shift, &
                                           omega
-              complex(kind=16), intent(inout) :: r2b(1:noa,1:nob)
+              complex(kind=8), intent(inout) :: r2b(1:noa,1:nob)
               !f2py intent(in,out) :: r2b(0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r3b(1:noa,1:nob,1:nua,1:noa)
+              complex(kind=8), intent(inout) :: r3b(1:noa,1:nob,1:nua,1:noa)
               !f2py intent(in,out) :: r3b(0:noa-1,0:nob-1,0:nua-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r3c(1:noa,1:nob,1:nub,1:nob)
+              complex(kind=8), intent(inout) :: r3c(1:noa,1:nob,1:nub,1:nob)
               !f2py intent(in,out) :: r3c(0:noa-1,0:nob-1,0:nub-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r4b(1:noa,1:nob,1:nua,1:nua,1:noa,1:noa)
+              complex(kind=8), intent(inout) :: r4b(1:noa,1:nob,1:nua,1:nua,1:noa,1:noa)
               !f2py intent(in,out) :: r4b(0:noa-1,0:nob-1,0:nua-1,0:nua-1,0:noa-1,0:noa-1)
-              complex(kind=16), intent(inout) :: r4c(1:noa,1:nob,1:nua,1:nub,1:noa,1:nob)
+              complex(kind=8), intent(inout) :: r4c(1:noa,1:nob,1:nua,1:nub,1:noa,1:nob)
               !f2py intent(in,out) :: r4c(0:noa-1,0:nob-1,0:nua-1,0:nub-1,0:noa-1,0:nob-1)
-              complex(kind=16), intent(inout) :: r4d(1:noa,1:nob,1:nub,1:nub,1:nob,1:nob)
+              complex(kind=8), intent(inout) :: r4d(1:noa,1:nob,1:nub,1:nub,1:nob,1:nob)
               !f2py intent(in,out) :: r4d(0:noa-1,0:nob-1,0:nub-1,0:nub-1,0:nob-1,0:nob-1)
               integer :: i, j, k, l, c, d
-              complex(kind=16) :: denom
+              complex(kind=8) :: denom
 
               do i = 1, noa; do j = 1, nob;
                   denom = -H1A_oo(i,i) - H1B_oo(j,j)

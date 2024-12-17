@@ -90,6 +90,7 @@ class Driver:
                         "davidson_max_subspace_size": 30,
                         "davidson_solver": "standard",
                         "davidson_selection_method": "overlap"}
+        self.dtype = self.hamiltonian.a.oo.dtype
 
         # Disable DIIS for small problems to avoid inherent singularity
         if self.system.noccupied_alpha * self.system.nunoccupied_beta <= 4:
@@ -120,7 +121,7 @@ class Driver:
         self.correlation_property = 0.0
 
         # Store alpha and beta fock matrices for later usage before HBar overwrites bare Hamiltonian
-        self.fock = Integral.from_empty(system, 1, data_type=self.hamiltonian.a.oo.dtype)
+        self.fock = Integral.from_empty(system, 1, data_type=self.dtype)
         self.fock.a.oo = self.hamiltonian.a.oo.copy()
         self.fock.b.oo = self.hamiltonian.b.oo.copy()
         self.fock.a.vv = self.hamiltonian.a.vv.copy()
@@ -306,7 +307,7 @@ class Driver:
                                                 self.options,
                                                 acparray=acparray,
                                                )
-        cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
+        # cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   CC calculation ended on", get_timestamp())
 
     def run_ccp(self, method, t3_excitations, acparray=None):
@@ -363,7 +364,7 @@ class Driver:
                                      order=self.operator_params["order"],
                                      p_orders=self.operator_params["pspace_orders"],
                                      pspace_sizes=excitation_count,
-                                     data_type=self.hamiltonian.a.oo.dtype)
+                                     data_type=self.dtype)
         else:
             # extend self.T to hold a longer T vector. It is assumed that the new amplitudes and corresponding
             # excitations are simply appended to the previous ones. This will break if this is not true.
@@ -374,11 +375,11 @@ class Driver:
                              order=self.operator_params["order"],
                              p_orders=self.operator_params["pspace_orders"],
                              pspace_sizes=excitation_count,
-                             data_type=self.hamiltonian.a.oo.dtype)
+                             data_type=self.dtype)
         # Create the container for 1- and 2-body intermediates
-        cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+        cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.dtype, use_none=True)
         if self.system.cholesky:
-            cc_intermediates.chol = Integral.from_empty(self.system, 1, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+            cc_intermediates.chol = Integral.from_empty(self.system, 1, data_type=self.dtype, use_none=True)
         # Run the CC(P) calculation
         # NOTE: It may not look like it, but t3_excitations is permuted and matches T at this point. It changes from its value at input!
         self.T, self.correlation_energy, _ = cc_jacobi(update_function,
@@ -437,9 +438,9 @@ class Driver:
                              active_orders=self.operator_params["active_orders"],
                              num_active=self.operator_params["number_active_indices"])
         # Create the container for 1- and 2-body intermediates
-        cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+        cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.dtype, use_none=True)
         if self.system.cholesky:
-            cc_intermediates.chol = Integral.from_empty(self.system, 1, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+            cc_intermediates.chol = Integral.from_empty(self.system, 1, data_type=self.dtype, use_none=True)
         # Run the CC calculation
         self.T1, self.correlation_property, _ = lrcc_jacobi(update_function,
                                                             self.T1,
@@ -478,6 +479,7 @@ class Driver:
         print("   HBar construction completed on", get_timestamp(), "\n")
         # Set flag indicating that hamiltonian is set to Hbar is now true
         self.flag_hbar = True
+
 
     def run_guess(self, method, multiplicity, roots_per_irrep, nact_occupied=-1, nact_unoccupied=-1, use_symmetry=True, debug=False):
         """Performs the initial guess for a subsequent EOMCC calculation."""
@@ -1389,8 +1391,7 @@ class Driver:
                              order=self.operator_params["order"],
                              active_orders=self.operator_params["active_orders"],
                              num_active=self.operator_params["number_active_indices"],
-                             data_type=self.T.a.dtype)
-
+                             data_type=self.dtype)
         for i in state_index:
             print("   Left CC calculation for root %d started on" % i, get_timestamp())
             # decide whether this is a ground-state calculation
@@ -1407,7 +1408,7 @@ class Driver:
                                             order=self.operator_params["order"],
                                             active_orders=self.operator_params["active_orders"],
                                             num_active=self.operator_params["number_active_indices"],
-                                            data_type=self.T.a.dtype)
+                                            data_type=self.dtype)
                 # set initial value based on ground- or excited-state
                 if ground_state:
                     self.L[i].unflatten(self.T.flatten()[:self.L[i].ndim])
@@ -1980,7 +1981,7 @@ class Driver:
                              active_orders=self.operator_params["active_orders"],
                              num_active=self.operator_params["number_active_indices"])
         # Create the container for 1- and 2-body intermediates
-        cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.hamiltonian.a.oo.dtype, use_none=True)
+        cc_intermediates = Integral.from_empty(self.system, 2, data_type=self.dtype, use_none=True)
         # Run the CC calculation
         self.T, self.correlation_energy, _ = eccc_jacobi(
                                                   update_function,
@@ -2006,7 +2007,7 @@ class Driver:
             for i in state_index:
                 # Perform ground-state correction
                 if i == 0:
-                    _, self.deltap3[i] = calc_crcc23(self.T, self.L[i], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+                    _, self.deltap3[i] = calc_crcc23(self.T, self.L[i], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"], data_type=self.dtype)
                 else:
                     # Perform excited-state corrections
                     _, self.deltap3[i], self.ddeltap3[i] = calc_creomcc23(self.T, self.R[i], self.L[i], self.r0[i],

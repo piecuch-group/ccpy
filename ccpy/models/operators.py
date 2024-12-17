@@ -94,6 +94,7 @@ class ClusterOperator:
         self.order = order
         self.spin_cases = []
         self.dimensions = []
+        self.dtype = data_type
 
         # [TODO]: think of a nicer way to handle the active order cases
         ndim = 0

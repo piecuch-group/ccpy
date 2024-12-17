@@ -13,32 +13,32 @@ module crcc_loops_cmplx
                               H2A_voov,H2A_oooo,H2A_vvvv,&
                               D3A_O,D3A_v,noa,nua)
 
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua
-                        complex(kind=16), intent(in) :: fA_oo(1:noa,1:noa)
-                        complex(kind=16), intent(in) :: fA_vv(1:nua,1:nua)
-                        complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa)
-                        complex(kind=16), intent(in) :: H1A_vv(1:nua,1:nua)
-                        complex(kind=16), intent(in) :: H2A_voov(1:nua,1:noa,1:noa,1:nua)
-                        complex(kind=16), intent(in) :: H2A_oooo(1:noa,1:noa,1:noa,1:noa)
-                        !complex(kind=16), intent(in) :: H2A_vvvv(1:nua,1:nua,1:nua,1:nua)
-                        complex(kind=16), intent(in) :: H2A_vvvv(1:nua,1:nua)
-                        complex(kind=16), intent(in) :: D3A_O(1:nua,1:noa,1:noa)
-                        complex(kind=16), intent(in) :: D3A_V(1:nua,1:noa,1:nua)
-                        complex(kind=16), intent(in) :: H2A_vooo(nua,noa,noa,noa)
-                        complex(kind=16), intent(in) :: I2A_vvov(nua,nua,noa,nua)
-                        complex(kind=16), intent(in) :: t2a(nua,nua,noa,noa)
-                        complex(kind=16), intent(in) :: l1a(nua,noa)
-                        complex(kind=16), intent(in) :: l2a(nua,nua,noa,noa)
-                        complex(kind=16), intent(in) :: vA_oovv(noa,noa,nua,nua)
-                        complex(kind=16), intent(in) :: H1A_ov(noa,nua)
-                        complex(kind=16), intent(in) :: H2A_vovv(nua,noa,nua,nua)
-                        complex(kind=16), intent(in) :: H2A_ooov(noa,noa,noa,nua)
+                        complex(kind=8), intent(in) :: fA_oo(1:noa,1:noa)
+                        complex(kind=8), intent(in) :: fA_vv(1:nua,1:nua)
+                        complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa)
+                        complex(kind=8), intent(in) :: H1A_vv(1:nua,1:nua)
+                        complex(kind=8), intent(in) :: H2A_voov(1:nua,1:noa,1:noa,1:nua)
+                        complex(kind=8), intent(in) :: H2A_oooo(1:noa,1:noa,1:noa,1:noa)
+                        !complex(kind=8), intent(in) :: H2A_vvvv(1:nua,1:nua,1:nua,1:nua)
+                        complex(kind=8), intent(in) :: H2A_vvvv(1:nua,1:nua)
+                        complex(kind=8), intent(in) :: D3A_O(1:nua,1:noa,1:noa)
+                        complex(kind=8), intent(in) :: D3A_V(1:nua,1:noa,1:nua)
+                        complex(kind=8), intent(in) :: H2A_vooo(nua,noa,noa,noa)
+                        complex(kind=8), intent(in) :: I2A_vvov(nua,nua,noa,nua)
+                        complex(kind=8), intent(in) :: t2a(nua,nua,noa,noa)
+                        complex(kind=8), intent(in) :: l1a(nua,noa)
+                        complex(kind=8), intent(in) :: l2a(nua,nua,noa,noa)
+                        complex(kind=8), intent(in) :: vA_oovv(noa,noa,nua,nua)
+                        complex(kind=8), intent(in) :: H1A_ov(noa,nua)
+                        complex(kind=8), intent(in) :: H2A_vovv(nua,noa,nua,nua)
+                        complex(kind=8), intent(in) :: H2A_ooov(noa,noa,noa,nua)
                         integer :: i, j, k, a, b, c, nua2
-                        complex(kind=16) :: D, temp1, temp2, temp3, LM, X3A(nua,nua,nua), L3A(nua,nua,nua)
+                        complex(kind=8) :: D, temp1, temp2, temp3, LM, X3A(nua,nua,nua), L3A(nua,nua,nua)
 
                         ! reordered arrays for DGEMMs
-                        complex(kind=16) :: I2A_vvov_1243(nua,nua,nua,noa), H2A_vovv_4312(nua,nua,nua,noa), H2A_ooov_4312(nua,noa,noa,noa)
+                        complex(kind=8) :: I2A_vvov_1243(nua,nua,nua,noa), H2A_vovv_4312(nua,nua,nua,noa), H2A_ooov_4312(nua,noa,noa,noa)
 
                         call reorder1243(I2A_vvov,I2A_vvov_1243)
                         call reorder4312(H2A_vovv,H2A_vovv_4312)
@@ -164,59 +164,59 @@ module crcc_loops_cmplx
                               D3A_O,D3A_V,D3B_O,D3B_V,D3C_O,D3C_V,&
                               noa,nua,nob,nub)
                         
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, nob, nub
-                        complex(kind=16), intent(in) :: H1A_ov(noa,nua)
-                        complex(kind=16), intent(in) :: H1B_ov(nob,nub)
-                        complex(kind=16), intent(in) :: vA_oovv(noa,noa,nua,nua)
-                        complex(kind=16), intent(in) :: vB_oovv(noa,nob,nua,nub)
-                        complex(kind=16), intent(in) :: fA_oo(1:noa,1:noa)
-                        complex(kind=16), intent(in) :: fA_vv(1:nua,1:nua)
-                        complex(kind=16), intent(in) :: fB_oo(1:nob,1:nob)
-                        complex(kind=16), intent(in) :: fB_vv(1:nub,1:nub)
-                        complex(kind=16), intent(in) :: H1A_oo(1:noa,1:noa)
-                        complex(kind=16), intent(in) :: H1A_vv(1:nua,1:nua)
-                        complex(kind=16), intent(in) :: H1B_oo(1:nob,1:nob)
-                        complex(kind=16), intent(in) :: H1B_vv(1:nub,1:nub)
-                        complex(kind=16), intent(in) :: t2a(nua,nua,noa,noa)
-                        complex(kind=16), intent(in) :: t2b(nua,nub,noa,nob)
-                        complex(kind=16), intent(in) :: l1a(nua,noa)
-                        complex(kind=16), intent(in) :: l1b(nub,nob)
-                        complex(kind=16), intent(in) :: l2a(nua,nua,noa,noa)
-                        complex(kind=16), intent(in) :: l2b(nua,nub,noa,nob)
-                        complex(kind=16), intent(in) :: I2B_ovoo(noa,nub,noa,nob)
-                        complex(kind=16), intent(in) :: I2B_vooo(nua,nob,noa,nob)
-                        complex(kind=16), intent(in) :: I2A_vooo(nua,noa,noa,noa)
-                        complex(kind=16), intent(in) :: H2B_vvvo(nua,nub,nua,nob)
-                        complex(kind=16), intent(in) :: H2B_vvov(nua,nub,noa,nub)
-                        complex(kind=16), intent(in) :: H2A_vvov(nua,nua,noa,nua)
-                        complex(kind=16), intent(in) :: H2B_vovv(nua,nob,nua,nub)
-                        complex(kind=16), intent(in) :: H2B_ovvv(noa,nub,nua,nub)
-                        complex(kind=16), intent(in) :: H2A_vovv(nua,noa,nua,nua)
-                        complex(kind=16), intent(in) :: H2B_ooov(noa,nob,noa,nub)
-                        complex(kind=16), intent(in) :: H2B_oovo(noa,nob,nua,nob)
-                        complex(kind=16), intent(in) :: H2A_ooov(noa,noa,noa,nua)
-                        complex(kind=16), intent(in) :: H2A_voov(1:nua,1:noa,1:noa,1:nua)
-                        complex(kind=16), intent(in) :: H2A_oooo(1:noa,1:noa,1:noa,1:noa)
-                        !complex(kind=16), intent(in) :: H2A_vvvv(1:nua,1:nua,1:nua,1:nua)
-                        complex(kind=16), intent(in) :: H2A_vvvv(1:nua,1:nua)
-                        complex(kind=16), intent(in) :: H2B_ovov(1:noa,1:nub,1:noa,1:nub)
-                        complex(kind=16), intent(in) :: H2B_vovo(1:nua,1:nob,1:nua,1:nob)
-                        complex(kind=16), intent(in) :: H2B_oooo(1:noa,1:nob,1:noa,1:nob)
-                        !complex(kind=16), intent(in) :: H2B_vvvv(1:nua,1:nub,1:nua,1:nub)
-                        complex(kind=16), intent(in) :: H2B_vvvv(1:nua,1:nub)
-                        complex(kind=16), intent(in) :: H2C_voov(1:nub,1:nob,1:nob,1:nub)
-                        complex(kind=16), intent(in) :: D3A_O(1:nua,1:noa,1:noa)
-                        complex(kind=16), intent(in) :: D3A_V(1:nua,1:noa,1:nua)
-                        complex(kind=16), intent(in) :: D3B_O(1:nua,1:noa,1:nob)
-                        complex(kind=16), intent(in) :: D3B_V(1:nua,1:noa,1:nub)
-                        complex(kind=16), intent(in) :: D3C_O(1:nub,1:noa,1:nob)
-                        complex(kind=16), intent(in) :: D3C_V(1:nua,1:nob,1:nub)
+                        complex(kind=8), intent(in) :: H1A_ov(noa,nua)
+                        complex(kind=8), intent(in) :: H1B_ov(nob,nub)
+                        complex(kind=8), intent(in) :: vA_oovv(noa,noa,nua,nua)
+                        complex(kind=8), intent(in) :: vB_oovv(noa,nob,nua,nub)
+                        complex(kind=8), intent(in) :: fA_oo(1:noa,1:noa)
+                        complex(kind=8), intent(in) :: fA_vv(1:nua,1:nua)
+                        complex(kind=8), intent(in) :: fB_oo(1:nob,1:nob)
+                        complex(kind=8), intent(in) :: fB_vv(1:nub,1:nub)
+                        complex(kind=8), intent(in) :: H1A_oo(1:noa,1:noa)
+                        complex(kind=8), intent(in) :: H1A_vv(1:nua,1:nua)
+                        complex(kind=8), intent(in) :: H1B_oo(1:nob,1:nob)
+                        complex(kind=8), intent(in) :: H1B_vv(1:nub,1:nub)
+                        complex(kind=8), intent(in) :: t2a(nua,nua,noa,noa)
+                        complex(kind=8), intent(in) :: t2b(nua,nub,noa,nob)
+                        complex(kind=8), intent(in) :: l1a(nua,noa)
+                        complex(kind=8), intent(in) :: l1b(nub,nob)
+                        complex(kind=8), intent(in) :: l2a(nua,nua,noa,noa)
+                        complex(kind=8), intent(in) :: l2b(nua,nub,noa,nob)
+                        complex(kind=8), intent(in) :: I2B_ovoo(noa,nub,noa,nob)
+                        complex(kind=8), intent(in) :: I2B_vooo(nua,nob,noa,nob)
+                        complex(kind=8), intent(in) :: I2A_vooo(nua,noa,noa,noa)
+                        complex(kind=8), intent(in) :: H2B_vvvo(nua,nub,nua,nob)
+                        complex(kind=8), intent(in) :: H2B_vvov(nua,nub,noa,nub)
+                        complex(kind=8), intent(in) :: H2A_vvov(nua,nua,noa,nua)
+                        complex(kind=8), intent(in) :: H2B_vovv(nua,nob,nua,nub)
+                        complex(kind=8), intent(in) :: H2B_ovvv(noa,nub,nua,nub)
+                        complex(kind=8), intent(in) :: H2A_vovv(nua,noa,nua,nua)
+                        complex(kind=8), intent(in) :: H2B_ooov(noa,nob,noa,nub)
+                        complex(kind=8), intent(in) :: H2B_oovo(noa,nob,nua,nob)
+                        complex(kind=8), intent(in) :: H2A_ooov(noa,noa,noa,nua)
+                        complex(kind=8), intent(in) :: H2A_voov(1:nua,1:noa,1:noa,1:nua)
+                        complex(kind=8), intent(in) :: H2A_oooo(1:noa,1:noa,1:noa,1:noa)
+                        !complex(kind=8), intent(in) :: H2A_vvvv(1:nua,1:nua,1:nua,1:nua)
+                        complex(kind=8), intent(in) :: H2A_vvvv(1:nua,1:nua)
+                        complex(kind=8), intent(in) :: H2B_ovov(1:noa,1:nub,1:noa,1:nub)
+                        complex(kind=8), intent(in) :: H2B_vovo(1:nua,1:nob,1:nua,1:nob)
+                        complex(kind=8), intent(in) :: H2B_oooo(1:noa,1:nob,1:noa,1:nob)
+                        !complex(kind=8), intent(in) :: H2B_vvvv(1:nua,1:nub,1:nua,1:nub)
+                        complex(kind=8), intent(in) :: H2B_vvvv(1:nua,1:nub)
+                        complex(kind=8), intent(in) :: H2C_voov(1:nub,1:nob,1:nob,1:nub)
+                        complex(kind=8), intent(in) :: D3A_O(1:nua,1:noa,1:noa)
+                        complex(kind=8), intent(in) :: D3A_V(1:nua,1:noa,1:nua)
+                        complex(kind=8), intent(in) :: D3B_O(1:nua,1:noa,1:nob)
+                        complex(kind=8), intent(in) :: D3B_V(1:nua,1:noa,1:nub)
+                        complex(kind=8), intent(in) :: D3C_O(1:nub,1:noa,1:nob)
+                        complex(kind=8), intent(in) :: D3C_V(1:nua,1:nob,1:nub)
                         integer :: i, j, k, a, b, c, nuanub, nua2
-                        complex(kind=16) :: D, temp1, temp2, temp3, LM, X3B(nua,nua,nub), L3B(nua,nua,nub)
+                        complex(kind=8) :: D, temp1, temp2, temp3, LM, X3B(nua,nua,nub), L3B(nua,nua,nub)
 
                         ! arrays for reordering 
-                        complex(kind=16) :: t2a_1243(nua,nua,noa,noa), H2B_vvov_1243(nua,nub,nub,noa),&
+                        complex(kind=8) :: t2a_1243(nua,nua,noa,noa), H2B_vvov_1243(nua,nub,nub,noa),&
                                         t2b_1243(nua,nub,nob,noa), H2A_vvov_1243(nua,nua,nua,noa),&
                                         H2B_vovv_1342(nua,nua,nub,nob), H2A_vovv_4312(nua,nua,nua,noa),&
                                         H2B_ovvv_2341(nub,nua,nub,noa), H2B_ooov_3412(noa,nub,noa,nob),&
@@ -359,9 +359,9 @@ module crcc_loops_cmplx
                               D3B_O,D3B_V,D3C_O,D3C_V,D3D_O,D3D_V,&
                               noa,nua,nob,nub)
                         
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, nob, nub
-                        complex(kind=16), intent(in) :: t2b(nua,nub,noa,nob),&
+                        complex(kind=8), intent(in) :: t2b(nua,nub,noa,nob),&
                         t2c(nub,nub,nob,nob),l1a(nua,noa),l1b(nub,nob),&
                         l2b(nua,nub,noa,nob),l2c(nub,nub,nob,nob),&
                         I2B_vooo(nua,nob,noa,nob),I2C_vooo(nub,nob,nob,nob),&
@@ -393,10 +393,10 @@ module crcc_loops_cmplx
                         D3D_O(1:nub,1:nob,1:nob),&
                         D3D_V(1:nub,1:nob,1:nub)
                         integer :: i, j, k, a, b, c, nuanub, nub2
-                        complex(kind=16) :: D, LM, temp1, temp2, temp3, X3C(nua,nub,nub), L3C(nua,nub,nub)
+                        complex(kind=8) :: D, LM, temp1, temp2, temp3, X3C(nua,nub,nub), L3C(nua,nub,nub)
 
                         ! arrays for reordering
-                        complex(kind=16) :: H2B_vvov_1243(nua,nub,nub,noa),&
+                        complex(kind=8) :: H2B_vvov_1243(nua,nub,nub,noa),&
                                 H2C_vvov_4213(nub,nub,nub,noa),&
                                 t2b_1243(nua,nub,nob,noa),&
                                 I2C_vooo_2134(nob,nub,nob,nob),&
@@ -535,9 +535,9 @@ module crcc_loops_cmplx
                               H2C_voov,H2C_oooo,H2C_vvvv,&
                               D3D_O,D3D_V,nob,nub)
 
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: nob, nub
-                        complex(kind=16), intent(in) :: fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
+                        complex(kind=8), intent(in) :: fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
                         H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                         H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
@@ -549,10 +549,10 @@ module crcc_loops_cmplx
                         l1b(nub,nob),l2c(nub,nub,nob,nob),vC_oovv(nob,nob,nub,nub),&
                         H1B_ov(nob,nub),H2C_vovv(nub,nob,nub,nub),H2C_ooov(nob,nob,nob,nub)
                         integer :: i, j, k, a, b, c, nub2
-                        complex(kind=16) :: D, temp1, temp2, temp3, LM, X3D(nub,nub,nub), L3D(nub,nub,nub)
+                        complex(kind=8) :: D, temp1, temp2, temp3, LM, X3D(nub,nub,nub), L3D(nub,nub,nub)
 
                         ! reordered arrays for DGEMMs
-                        complex(kind=16) :: I2C_vvov_1243(nub,nub,nub,nob), H2C_vovv_4312(nub,nub,nub,nob), H2C_ooov_4312(nub,nob,nob,nob)
+                        complex(kind=8) :: I2C_vvov_1243(nub,nub,nub,nob), H2C_vovv_4312(nub,nub,nub,nob), H2C_ooov_4312(nub,nob,nob,nob)
 
                         call reorder1243(I2C_vvov,I2C_vvov_1243)
                         call reorder4312(H2C_vovv,H2C_vovv_4312)
@@ -674,10 +674,10 @@ module crcc_loops_cmplx
                               H2A_voov,H2A_oooo,H2A_vvvv,&
                               D3A_O,D3A_v,noa,nua)
 
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
-                        complex(kind=16), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
                         integer, intent(in) :: noa, nua
-                        complex(kind=16), intent(in) :: fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
+                        complex(kind=8), intent(in) :: fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
                         H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
                         H2A_voov(1:nua,1:noa,1:noa,1:nua),&
                         H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
@@ -690,14 +690,14 @@ module crcc_loops_cmplx
                         H1A_ov(noa,nua),H2A_vovv(nua,noa,nua,nua),H2A_ooov(noa,noa,noa,nua),&
                         H2A_vvov(nua,nua,noa,nua),r2a(nua,nua,noa,noa),&
                         chi2A_vvvo(nua,nua,nua,noa),chi2A_ovoo(noa,nua,noa,noa)
-                        complex(kind=16), intent(in) :: r0, omega
+                        complex(kind=8), intent(in) :: r0, omega
 
                         integer :: i, j, k, a, b, c, nua2
-                        complex(kind=16) :: D, temp1, temp2, temp3, temp4, LM, LM1,&
+                        complex(kind=8) :: D, temp1, temp2, temp3, temp4, LM, LM1,&
                                 Y3A(nua,nua,nua), X3A(nua,nua,nua), L3A(nua,nua,nua)
 
                         ! reordered arrays for DGEMMs
-                        complex(kind=16) :: I2A_vvov_1243(nua,nua,nua,noa), H2A_vovv_4312(nua,nua,nua,noa),&
+                        complex(kind=8) :: I2A_vvov_1243(nua,nua,nua,noa), H2A_vovv_4312(nua,nua,nua,noa),&
                                         H2A_ooov_4312(nua,noa,noa,noa), H2A_vvov_2143(nua,nua,nua,noa),&
                                         H2A_vooo_2143(noa,nua,noa,noa)
 
@@ -860,10 +860,10 @@ module crcc_loops_cmplx
                               D3A_O,D3A_V,D3B_O,D3B_V,D3C_O,D3C_V,&
                               noa,nua,nob,nub)
                         
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
-                        complex(kind=16), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
                         integer, intent(in) :: noa, nua, nob, nub
-                        complex(kind=16), intent(in) :: t2a(nua,nua,noa,noa),t2b(nua,nub,noa,nob),&
+                        complex(kind=8), intent(in) :: t2a(nua,nua,noa,noa),t2b(nua,nub,noa,nob),&
                         l1a(nua,noa),l1b(nub,nob),&
                         l2a(nua,nua,noa,noa),l2b(nua,nub,noa,nob),&
                         r2a(nua,nua,noa,noa),r2b(nua,nub,noa,nob),&
@@ -899,14 +899,14 @@ module crcc_loops_cmplx
                         D3B_V(1:nua,1:noa,1:nub),&
                         D3C_O(1:nub,1:noa,1:nob),&
                         D3C_V(1:nua,1:nob,1:nub)
-                        complex(kind=16), intent(in) :: omega, r0
+                        complex(kind=8), intent(in) :: omega, r0
 
                         integer :: i, j, k, a, b, c, nuanub, nua2
-                        complex(kind=16) :: D, temp1, temp2, temp3, temp4, LM, LM1,&
+                        complex(kind=8) :: D, temp1, temp2, temp3, temp4, LM, LM1,&
                                 X3B(nua,nua,nub), L3B(nua,nua,nub), Y3B(nua,nua,nub)
 
                         ! arrays for reordering 
-                        complex(kind=16) :: t2a_1243(nua,nua,noa,noa), H2B_vvov_1243(nua,nub,nub,noa),&
+                        complex(kind=8) :: t2a_1243(nua,nua,noa,noa), H2B_vvov_1243(nua,nub,nub,noa),&
                             t2b_1243(nua,nub,nob,noa), H2A_vvov_1243(nua,nua,nua,noa),&
                             H2B_vovv_1342(nua,nua,nub,nob), H2A_vovv_4312(nua,nua,nua,noa),&
                             H2B_ovvv_2341(nub,nua,nub,noa), H2B_ooov_3412(noa,nub,noa,nob),&
@@ -1103,10 +1103,10 @@ module crcc_loops_cmplx
                               D3B_O,D3B_V,D3C_O,D3C_V,D3D_O,D3D_V,&
                               noa,nua,nob,nub)
                         
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
-                        complex(kind=16), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
                         integer, intent(in) :: noa, nua, nob, nub
-                        complex(kind=16), intent(in) :: t2b(nua,nub,noa,nob),&
+                        complex(kind=8), intent(in) :: t2b(nua,nub,noa,nob),&
                         t2c(nub,nub,nob,nob),r2b(nua,nub,noa,nob),r2c(nub,nub,nob,nob),&
                         l1a(nua,noa),l1b(nub,nob),&
                         l2b(nua,nub,noa,nob),l2c(nub,nub,nob,nob),&
@@ -1142,14 +1142,14 @@ module crcc_loops_cmplx
                         D3C_V(1:nua,1:nob,1:nub),&
                         D3D_O(1:nub,1:nob,1:nob),&
                         D3D_V(1:nub,1:nob,1:nub)
-                        complex(kind=16), intent(in) :: omega, r0
+                        complex(kind=8), intent(in) :: omega, r0
 
                         integer :: i, j, k, a, b, c, nuanub, nub2
-                        complex(kind=16) :: D, LM, LM1, temp1, temp2, temp3, temp4,&
+                        complex(kind=8) :: D, LM, LM1, temp1, temp2, temp3, temp4,&
                                 X3C(nua,nub,nub), L3C(nua,nub,nub), Y3C(nua,nub,nub)
 
                         ! arrays for reordering
-                        complex(kind=16) :: H2B_vvov_1243(nua,nub,nub,noa),&
+                        complex(kind=8) :: H2B_vvov_1243(nua,nub,nub,noa),&
                                 H2C_vvov_4213(nub,nub,nub,noa),&
                                 t2b_1243(nua,nub,nob,noa),&
                                 I2C_vooo_2134(nob,nub,nob,nob),&
@@ -1348,10 +1348,10 @@ module crcc_loops_cmplx
                               H2C_voov,H2C_oooo,H2C_vvvv,&
                               D3D_O,D3D_V,nob,nub)
 
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
-                        complex(kind=16), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: ddeltaA, ddeltaB, ddeltaC, ddeltaD
                         integer, intent(in) :: nob, nub
-                        complex(kind=16), intent(in) :: fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
+                        complex(kind=8), intent(in) :: fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
                         H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
                         H2C_voov(1:nub,1:nob,1:nob,1:nub),&
                         H2C_oooo(1:nob,1:nob,1:nob,1:nob),&
@@ -1364,14 +1364,14 @@ module crcc_loops_cmplx
                         H1B_ov(nob,nub),H2C_vovv(nub,nob,nub,nub),H2C_ooov(nob,nob,nob,nub),&
                         r2c(nub,nub,nob,nob),H2C_vvov(nub,nub,nob,nub),chi2C_vvvo(nub,nub,nub,nob),&
                         chi2C_ovoo(nob,nub,nob,nob)
-                        complex(kind=16), intent(in) :: omega, r0
+                        complex(kind=8), intent(in) :: omega, r0
 
                         integer :: i, j, k, a, b, c, nub2
-                        complex(kind=16) :: D, temp1, temp2, temp3, temp4, LM, LM1,&
+                        complex(kind=8) :: D, temp1, temp2, temp3, temp4, LM, LM1,&
                                 X3D(nub,nub,nub), L3D(nub,nub,nub), Y3D(nub,nub,nub)
 
                         ! reordered arrays for DGEMMs
-                        complex(kind=16) :: I2C_vvov_1243(nub,nub,nub,nob), H2C_vovv_4312(nub,nub,nub,nob),&
+                        complex(kind=8) :: I2C_vvov_1243(nub,nub,nub,nob), H2C_vovv_4312(nub,nub,nub,nob),&
                                         H2C_ooov_4312(nub,nob,nob,nob), H2C_vvov_2143(nub,nub,nub,nob),&
                                         H2C_vooo_2143(nob,nub,nob,nob)
 
@@ -1521,9 +1521,9 @@ module crcc_loops_cmplx
                               H2A_voov,H2A_oooo,H2A_vvvv,&
                               D3A_O,D3A_V,noa,nua)
                         
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua
-                        complex(kind=16), intent(in) :: MM23A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
+                        complex(kind=8), intent(in) :: MM23A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
                         L3A(1:nua,1:nua,1:nua,1:noa,1:noa,1:noa),&
                         fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
                         H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
@@ -1534,7 +1534,7 @@ module crcc_loops_cmplx
                         D3A_V(1:nua,1:noa,1:nua),&
                         omega
                         integer :: i, j, k, a, b, c
-                        complex(kind=16) :: D, temp
+                        complex(kind=8) :: D, temp
 
                         deltaA = 0.0
                         deltaB = 0.0
@@ -1600,9 +1600,9 @@ module crcc_loops_cmplx
                               D3A_O,D3A_V,D3B_O,D3B_V,D3C_O,D3C_V,&
                               noa,nua,nob,nub)
                         
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, nob, nub
-                        complex(kind=16), intent(in) :: MM23B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
+                        complex(kind=8), intent(in) :: MM23B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
                         L3B(1:nua,1:nua,1:nub,1:noa,1:noa,1:nob),&
                         fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
                         fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
@@ -1624,7 +1624,7 @@ module crcc_loops_cmplx
                         D3C_V(1:nua,1:nob,1:nub),&
                         omega
                         integer :: i, j, k, a, b, c
-                        complex(kind=16) :: D, temp
+                        complex(kind=8) :: D, temp
 
                         deltaA = 0.0
                         deltaB = 0.0
@@ -1689,9 +1689,9 @@ module crcc_loops_cmplx
                               D3B_O,D3B_V,D3C_O,D3C_V,D3D_O,D3D_V,&
                               noa,nua,nob,nub)
                         
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, nob, nub
-                        complex(kind=16), intent(in) :: MM23C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
+                        complex(kind=8), intent(in) :: MM23C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
                         L3C(1:nua,1:nub,1:nub,1:noa,1:nob,1:nob),&
                         fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
                         fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
@@ -1713,7 +1713,7 @@ module crcc_loops_cmplx
                         D3D_V(1:nub,1:nob,1:nub),&
                         omega
                         integer :: i, j, k, a, b, c
-                        complex(kind=16) :: D, temp
+                        complex(kind=8) :: D, temp
 
                         deltaA = 0.0
                         deltaB = 0.0
@@ -1772,9 +1772,9 @@ module crcc_loops_cmplx
                               H2C_voov,H2C_oooo,H2C_vvvv,&
                               D3D_O,D3D_V,nob,nub)
                         
-                        complex(kind=16), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        complex(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: nob, nub
-                        complex(kind=16), intent(in) :: MM23D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob),&
+                        complex(kind=8), intent(in) :: MM23D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob),&
                         L3D(1:nub,1:nub,1:nub,1:nob,1:nob,1:nob),&
                         fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
                         H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
@@ -1785,7 +1785,7 @@ module crcc_loops_cmplx
                         D3D_V(1:nub,1:nob,1:nub),&
                         omega
                         integer :: i, j, k, a, b, c
-                        complex(kind=16) :: D, temp
+                        complex(kind=8) :: D, temp
 
                         deltaA = 0.0
                         deltaB = 0.0
@@ -1845,9 +1845,9 @@ module crcc_loops_cmplx
 !               subroutine reorder4(y, x, iorder)
 !
 !                   integer, intent(in) :: iorder(4)
-!                   complex(kind=16), intent(in) :: x(:,:,:,:)
+!                   complex(kind=8), intent(in) :: x(:,:,:,:)
 !
-!                   complex(kind=16), intent(out) :: y(:,:,:,:)
+!                   complex(kind=8), intent(out) :: y(:,:,:,:)
 !
 !                   integer :: i, j, k, l
 !                   integer :: vec(4)
@@ -1868,8 +1868,8 @@ module crcc_loops_cmplx
 
               subroutine reorder3412(x_in,x_out)
 
-                      complex(kind=16), intent(in) :: x_in(:,:,:,:)
-                      complex(kind=16), intent(out) :: x_out(:,:,:,:)
+                      complex(kind=8), intent(in) :: x_in(:,:,:,:)
+                      complex(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
 
@@ -1887,8 +1887,8 @@ module crcc_loops_cmplx
 
              subroutine reorder1342(x_in,x_out)
 
-                      complex(kind=16), intent(in) :: x_in(:,:,:,:)
-                      complex(kind=16), intent(out) :: x_out(:,:,:,:)
+                      complex(kind=8), intent(in) :: x_in(:,:,:,:)
+                      complex(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
 
@@ -1906,8 +1906,8 @@ module crcc_loops_cmplx
 
             subroutine reorder3421(x_in,x_out)
 
-                      complex(kind=16), intent(in) :: x_in(:,:,:,:)
-                      complex(kind=16), intent(out) :: x_out(:,:,:,:)
+                      complex(kind=8), intent(in) :: x_in(:,:,:,:)
+                      complex(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
 
@@ -1925,8 +1925,8 @@ module crcc_loops_cmplx
 
              subroutine reorder2134(x_in,x_out)
 
-                      complex(kind=16), intent(in) :: x_in(:,:,:,:)
-                      complex(kind=16), intent(out) :: x_out(:,:,:,:)
+                      complex(kind=8), intent(in) :: x_in(:,:,:,:)
+                      complex(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
 
@@ -1944,8 +1944,8 @@ module crcc_loops_cmplx
 
             subroutine reorder1243(x_in,x_out)
 
-                      complex(kind=16), intent(in) :: x_in(:,:,:,:)
-                      complex(kind=16), intent(out) :: x_out(:,:,:,:)
+                      complex(kind=8), intent(in) :: x_in(:,:,:,:)
+                      complex(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
 
@@ -1963,8 +1963,8 @@ module crcc_loops_cmplx
 
              subroutine reorder4213(x_in,x_out)
 
-                      complex(kind=16), intent(in) :: x_in(:,:,:,:)
-                      complex(kind=16), intent(out) :: x_out(:,:,:,:)
+                      complex(kind=8), intent(in) :: x_in(:,:,:,:)
+                      complex(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
 
@@ -1982,8 +1982,8 @@ module crcc_loops_cmplx
 
              subroutine reorder4312(x_in,x_out)
 
-                      complex(kind=16), intent(in) :: x_in(:,:,:,:)
-                      complex(kind=16), intent(out) :: x_out(:,:,:,:)
+                      complex(kind=8), intent(in) :: x_in(:,:,:,:)
+                      complex(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
 
@@ -2001,8 +2001,8 @@ module crcc_loops_cmplx
 
              subroutine reorder2341(x_in,x_out)
 
-                      complex(kind=16), intent(in) :: x_in(:,:,:,:)
-                      complex(kind=16), intent(out) :: x_out(:,:,:,:)
+                      complex(kind=8), intent(in) :: x_in(:,:,:,:)
+                      complex(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
 
@@ -2020,8 +2020,8 @@ module crcc_loops_cmplx
 
              subroutine reorder2143(x_in,x_out)
 
-                      complex(kind=16), intent(in) :: x_in(:,:,:,:)
-                      complex(kind=16), intent(out) :: x_out(:,:,:,:)
+                      complex(kind=8), intent(in) :: x_in(:,:,:,:)
+                      complex(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
 
@@ -2039,8 +2039,8 @@ module crcc_loops_cmplx
 
              subroutine reorder4123(x_in,x_out)
 
-                      complex(kind=16), intent(in) :: x_in(:,:,:,:)
-                      complex(kind=16), intent(out) :: x_out(:,:,:,:)
+                      complex(kind=8), intent(in) :: x_in(:,:,:,:)
+                      complex(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
 
@@ -2058,8 +2058,8 @@ module crcc_loops_cmplx
 
              subroutine reorder3214(x_in,x_out)
 
-                      complex(kind=16), intent(in) :: x_in(:,:,:,:)
-                      complex(kind=16), intent(out) :: x_out(:,:,:,:)
+                      complex(kind=8), intent(in) :: x_in(:,:,:,:)
+                      complex(kind=8), intent(out) :: x_out(:,:,:,:)
 
                       integer :: i1, i2, i3, i4
 

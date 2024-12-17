@@ -5,7 +5,7 @@ import numpy as np
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
 from ccpy.lib.core import crcc_loops, ccsdpt_loops, crcc_loops_cmplx
 
-def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
+def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF, data_type=np.float64):
     """
     Calculate the ground-state CR-CC(2,3) correction to the CCSD energy.
     """
@@ -20,16 +20,16 @@ def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
 
     # form the diagonal part of the h(vvvv) elements
     nua, nub, noa, nob = T.ab.shape
-    h_aa_vvvv = np.zeros((nua, nua))
+    h_aa_vvvv = np.zeros((nua, nua), dtype=data_type)
     for a in range(nua):
         for b in range(a, nua):
             h_aa_vvvv[a, b] = H.aa.vvvv[a, b, a, b]
             h_aa_vvvv[b, a] = h_aa_vvvv[a, b]
-    h_ab_vvvv = np.zeros((nua, nub))
+    h_ab_vvvv = np.zeros((nua, nub), dtype=data_type)
     for a in range(nua):
         for b in range(nub):
             h_ab_vvvv[a, b] = H.ab.vvvv[a, b, a, b]
-    h_bb_vvvv = np.zeros((nub, nub))
+    h_bb_vvvv = np.zeros((nub, nub), dtype=data_type)
     for a in range(nub):
         for b in range(a, nub):
             h_bb_vvvv[a, b] = H.bb.vvvv[a, b, a, b]

@@ -30,7 +30,6 @@ def update(L, LH, T, H, omega, shift, is_ground, flag_RHF, system):
         LH.aa += np.transpose(H.aa.oovv, (2, 3, 0, 1))
         LH.ab += np.transpose(H.ab.oovv, (2, 3, 0, 1))
         LH.bb += np.transpose(H.bb.oovv, (2, 3, 0, 1))
-
     if np.iscomplexobj(L.a):
         L.a, L.b, LH.a, LH.b = cc_loops_cmplx.update_l1(L.a, L.b, LH.a, LH.b,
                                                         omega,
