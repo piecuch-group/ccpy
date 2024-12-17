@@ -894,9 +894,158 @@ def test_eccc23_h2o():
   - IP-EOMCCSDT
   - EA-EOMCCSD(2p-1h)
   - EA-EOMCCSD(T)(a)*
-  - Active-space EA-EOMCCSD(3p-2h){N<sub>u</sub>} (also known as EA-EOMCCSDt)
-  - EA-EOMCCSD(3p-2h)
-  - EA-EOMCCSDT
+
+<details>
+<summary>Active-space EA-EOMCCSD(3p-2h){N<sub>u</sub>} (also known as EA-EOMCCSDt) </summary>
+
+### Summary
+The active-space EA-EOMCCSDt approach obtains the ground and
+excited states of an (N+1)-electron target system using a full inclusion of 1p and 2p1h
+excitations and an active-orbital-based treatment of 3p2h correlations
+on top the CCSD description of the underlying N-electron reference species.
+### Sample Code
+This example performs EA-EOMCCSDt calculations with an active space spanned by 2
+unoccupied RHF orbitals to determine the C ^{2}Sigma+ state of
+the CH radical, as described with an aug-cc-pVDZ basis set, studied in Ref. [3].
+```python3
+from pyscf import gto, scf
+from ccpy import Driver, get_active_3p2h_pspace
+
+def test_eaeom3a_ch():
+    # Define CH geometry corresponding to the equilibrium in the C ^{2}Sigma+ state
+    mol = gto.M(atom='''C 0. 0. 0.
+                        H 0. 0. 1.1143''',
+                 basis="aug-cc-pvdz",
+                 symmetry="C2V",
+                 spin=0,
+                 charge=1,
+                 cart=False,
+                 unit="angstrom")
+    # Run RHF for closed-shell CH+
+    mf = scf.RHF(mol)
+    mf.kernel()
+    # Get CCPy driver from PySCF mf
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+    driver.system.print_info()
+    # Run CCSD
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    # Locate the C ^{2}Sigma+ state of CH using an 1p + active 2p1h guess, where the 2p1h
+    # space is spanned by the highest 3 occupied and lowest 3 unoccupied RHF orbitals
+    # The state indices correspond as follows:
+    # state_index 1 -> C ^{2}Sigma+
+    driver.run_guess(method="eacisd", 
+                     nact_occupied=3, 
+                     nact_unoccupied=3, 
+                     roots_per_irrep={"A1": 3}, 
+                     multiplicity=-1)
+    # Define the list of active 3p2h excitations |ijkAbc> obtained using 2 unoccupied active orbitals
+    driver.system.set_active_space(nact_occupied=0, nact_unoccupied=2)
+    r3_excitations = get_active_3p2h_pspace(driver.system, target_irrep="A1")
+    # Run the EA-EOMCCSDt calculation [via the general EA-EOMCC(P) solver]
+    driver.run_eaeomccp(method="eaeom3_p", state_index=1, r3_excitations=r3_excitations)
+```
+### References
+1. J. R. Gour, P. Piecuch, and M. Włoch, J. Chem. Phys. 123, 134113 (2005).
+2. J. R. Gour, P. Piecuch, and M. Włoch, Int. J. Quantum Chem. 106, 2854
+(2006).
+3. J. R. Gour and P. Piecuch, J. Chem. Phys. 125, 234107 (2006).
+</details>
+
+<details>
+<summary>EA-EOMCCSD(3p-2h) </summary>
+
+### Summary
+The EA-EOMCCSD(3p-2h) approach obtains the ground and
+excited states of an (N+1)-electron target system by treating the 1p, 2p1h, and 3p2h
+correlations on top the CCSD description of the underlying N-electron reference species.
+### Sample Code
+This example performs EA-EOMCCSD(3p-2h) calculations to determine the C ^{2}Sigma+ state of
+the CH radical, as described with an aug-cc-pVDZ basis set, studied in Ref. [3].
+```python3
+from pyscf import gto, scf
+from ccpy import Driver
+
+def test_eaeom3_ch():
+    # Define CH geometry corresponding to the equilibrium in the C ^{2}Sigma+ state
+    mol = gto.M(atom='''C 0. 0. 0.
+                        H 0. 0. 1.1143''',
+                 basis="aug-cc-pvdz",
+                 symmetry="C2V",
+                 spin=0,
+                 charge=1,
+                 cart=False,
+                 unit="angstrom")
+    # Run RHF for closed-shell CH+
+    mf = scf.RHF(mol)
+    mf.kernel()
+    # Get CCPy driver from PySCF mf
+    driver = Driver.from_pyscf(mf, nfrozen=1)
+    driver.system.print_info()
+    # Run CCSD
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    # Locate the C ^{2}Sigma+ state of CH using an 1p + active 2p1h guess, where the 2p1h
+    # space is spanned by the highest 3 occupied and lowest 3 unoccupied RHF orbitals
+    # The state indices correspond as follows:
+    # state_index 1 -> C ^{2}Sigma+
+    driver.run_guess(method="eacisd", 
+                     nact_occupied=3, 
+                     nact_unoccupied=3, 
+                     roots_per_irrep={"A1": 3}, 
+                     multiplicity=-1)
+    driver.run_eaeomcc(method="eaeom3", state_index=[1])
+```
+### References
+1. J. R. Gour, P. Piecuch, and M. Włoch, J. Chem. Phys. 123, 134113 (2005).
+2. J. R. Gour, P. Piecuch, and M. Włoch, Int. J. Quantum Chem. 106, 2854
+(2006).
+3. J. R. Gour and P. Piecuch, J. Chem. Phys. 125, 234107 (2006).
+</details>
+
+<details>
+<summary>EA-EOMCCSDT </summary>
+
+### Summary
+The EA-EOMCCSDT approach, introduced in Ref. [1], obtains the ground and
+excited states of an (N+1)-electron target system by treating the 1p, 2p1h, and 3p2h
+correlations on top the CCSDT description of the underlying N-electron reference species.
+### Sample Code
+This example performs EA-EOMCCSDT calculations to determine the electron attachment
+energies of the carbon dimer studied in Ref. [1].
+```python3
+from pyscf import gto, scf
+from ccpy import Driver
+
+def test_eaeomccsdt_c2():
+
+    geom = [["C",  (0.0,  0.0,  0.0)],
+            ["C",  (0.0,  0.0,  1.243)]]
+
+    mol = gto.M(atom=geom,
+                basis="cc-pvdz",
+                charge=0,
+                symmetry="D2H",
+                cart=False,
+                spin=0,
+                unit="Angstrom")
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=2)
+    driver.system.print_info()
+    #
+    driver.run_cc(method="ccsdt")
+    driver.run_hbar(method="ccsdt")
+    #
+    driver.run_guess(method="eacisd", nact_occupied=0, nact_unoccupied=0,
+                     multiplicity=-1, roots_per_irrep={"AG": 7}, use_symmetry=False)
+    driver.run_eaeomcc(method="eaeomccsdt", state_index=[0])
+```
+### References
+1. M. Musiał and R. J. Bartlett, J. Chem. Phys 119, 1901 (2003).
+</details>
+
 <details>
 <summary>DEA-EOMCCSD(3p-1h) </summary>
 
@@ -942,6 +1091,14 @@ def test_deaeom3_ch2():
     driver.run_deaeomcc(method="deaeom3", state_index=[0, 1])
 ```
 ### References
+1. M. Musiał, S. A. Kucharski, and R. J. Bartlett, J. Chem. Theory
+Comput. 7, 3088 (2011).
+2. A. O. Ajala, J. Shen, and P. Piecuch, J. Phys. Chem. A 121, 3469 (2017).
+3. J. Shen and P. Piecuch, J. Chem. Phys. 138, 194102 (2013).
+4. J. Shen and P. Piecuch, Mol. Phys. 112, 868 (2014).
+5. J. Shen and P. Piecuch, Mol. Phys. 119, e1966534 (2021).
+6. S. Gulania, E. F. Kjønstad, J. F. Stanton, H. Koch, and A. I.
+Krylov, J. Chem. Phys. 154, 114115 (2021).
 </details>
 
 <details>
@@ -1091,7 +1248,7 @@ def test_dipeom4_cl2():
     # Run CCSD for neutral Cl2
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
-    # Locate selected states of (Cl2)^{2+} located using 2h (`dipcis`) guess
+    # Locate selected states of (Cl2)^{2+} using 2h (`dipcis`) guess
     # The state indices correlate to electronic states of (Cl2)^{2+} as follows:
     # state_index 0 -> X ^{3}Sigma_g-
     # state_index 1 -> a ^{1}Delta_g
@@ -1120,11 +1277,7 @@ excited states of an (N-2)-electron target system by treating the 2h, 3h1p, and 
 on top the CCSD(T)(a) description of the underlying N-electron reference species. 
 ### Sample Code
 This example performs DIP-EOMCCSD(T)(a)(4h-2p) calculations to determine the DIPs of the chlorine
-molecule, as described using a cc-pVDZ basis set, corresponding to the states listed in Table III of the paper 
-K. Gururangan, A. K. Dutta, and P. Piecuch,
-"Double Ionization Potential Equation-of-Motion Coupled-Cluster Approach
-with Full Inclusion of 4-Hole–2-Particle Excitations and Three-Body Clusters", available at
-https://doi.org/10.48550/arXiv.2412.10688.
+molecule, as described using a cc-pVDZ basis set, corresponding to the states listed in Table III of Ref. [1].
 ```python3
 from pyscf import gto, scf
 from ccpy.drivers.driver import Driver
@@ -1145,7 +1298,7 @@ def test_dipeomccsdta_cl2():
     # Run CCSD for neutral Cl2
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
-    # Locate selected states of (Cl2)^{2+} located using 2h (`dipcis`) guess
+    # Locate selected states of (Cl2)^{2+} using 2h (`dipcis`) guess
     # The state indices correlate to electronic states of (Cl2)^{2+} as follows:
     # state_index 0 -> X ^{3}Sigma_g-
     # state_index 1 -> a ^{1}Delta_g
@@ -1175,11 +1328,7 @@ excited states of an (N-2)-electron target system by treating the 2h, 3h1p, and 
 on top the CCSDT description of the underlying N-electron reference species.
 ### Sample Code
 This example performs DIP-EOMCCSDT(4h-2p) calculations to determine the DIPs of the chlorine
-molecule, as described using a cc-pVDZ basis set, corresponding to the states listed in Table III of the paper 
-K. Gururangan, A. K. Dutta, and P. Piecuch,
-"Double Ionization Potential Equation-of-Motion Coupled-Cluster Approach
-with Full Inclusion of 4-Hole–2-Particle Excitations and Three-Body Clusters", available at
-https://doi.org/10.48550/arXiv.2412.10688.
+molecule, as described using a cc-pVDZ basis set, corresponding to the states listed in Table III Ref. [1].
 ```python3
 from pyscf import gto, scf
 from ccpy.drivers.driver import Driver
@@ -1200,7 +1349,7 @@ def test_dipeomccsdt_cl2():
     # Run CCSDT for neutral Cl2
     driver.run_cc(method="ccsdt")
     driver.run_hbar(method="ccsdt")
-    # Locate selected states of (Cl2)^{2+} located using 2h (`dipcis`) guess
+    # Locate selected states of (Cl2)^{2+} using 2h (`dipcis`) guess
     # The state indices correlate to electronic states of (Cl2)^{2+} as follows:
     # state_index 0 -> X ^{3}Sigma_g-
     # state_index 1 -> a ^{1}Delta_g
@@ -1230,12 +1379,18 @@ download the source code and install it manually. For now, Mac OS users must dow
 the source code (wheels for Mac OS will be uploaded to PyPI in the near future).
 
 ### Installing from PyPI
-For Linux machines, the
-latest version of CCpy available on PyPI is obtained by running
+For Linux machines, latest distribution copy of CCpy that is available on PyPI can be
+obtained by running
 
 ```commandline
 pip install coupled-cluster-py
 ```
+
+Note: The distribution version of CCpy on PyPI is **not** necessarily the latest version
+of CCpy. To have access to the latest version of CCpy, including the most recently
+developed methods [DIP-EOMCCSDT(4h-2p) and DIP-EOMCCSD(T)(a)(4h-2p)], you should download 
+and install CCpy via source code (see below). 
+
 ### Installing via Source Code
 
 #### Step 0: Set up the environment
