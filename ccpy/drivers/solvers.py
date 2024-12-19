@@ -123,15 +123,15 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
     restart_block = np.zeros((R.ndim, nrest + noffset))
 
     # Initial values
-    B[0, :] = B0
-    R.unflatten(B0)
+    B[0, :] = B0[:, 0]
+    R.unflatten(B0[:, 0])
     dR.unflatten(dR.flatten() * 0.0)
     if t3_excitations or r3_excitations:
         sigma[0, :] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
     else:
         sigma[0, :] = HR(dR, R, T, H, options["RHF_symmetry"], system)
     if noffset == 1:
-        restart_block[:, 0] = B0
+        restart_block[:, 0] = B0[:, 0]
 
     is_converged = False
     curr_size = 1

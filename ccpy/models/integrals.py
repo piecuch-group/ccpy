@@ -1,47 +1,6 @@
-from itertools import combinations
-
 import numpy as np
-
+from itertools import combinations
 from ccpy.models.operators import get_operator_name
-
-# Example: Alternative constructor that avoids using parent __init__
-#
-# class MyClass(set):
-#
-#     def __init__(self, filename):
-#         self._value = load_from_file(filename)
-#
-#     @classmethod
-#     def from_somewhere(cls, somename):
-#         obj = cls.__new__(cls)  # Does not call __init__
-#         super(MyClass, obj).__init__()  # Don't forget to call any polymorphic base class initializers
-#         obj._value = load_from_somewhere(somename)
-#         return obj
-#
-# class UnsortedIntegralArray(np.ndarray):
-#
-#     def __new__(cls, input_array):
-#         # Input array is an already formed ndarray instance
-#         # We first cast to be our class type
-#         obj = np.asarray(input_array).view(cls)
-#         # Finally, we must return the newly created object:
-#         return obj
-#
-#     def __getitem__(self, item):
-#         #if isinstance(item, np.ndarray):
-#         #print(np.ix_(*item))
-#         # print(item)
-#         # print(*item)
-#         #print(item)
-#         return super().__getitem__(self, np.ix_(item))
-#         #return super().__getitem__(np.ix_(*item))
-#         #return super().__getitem__(item)
-#
-#     def __array_finalize__(self, obj):
-#         # see InfoArray.__array_finalize__ for comments
-#         if obj is None: return
-#         self.info = getattr(obj, 'info', None)
-
 
 class SortedIntegral:
     def __init__(self, system, name, matrix, use_none=False):
@@ -100,16 +59,6 @@ class Integral:
                 else:
                     matrices[name] = np.zeros(dimension, dtype=data_type, order="F")
         return cls(system, order, matrices, sorted=True, use_none=use_none)
-
-    # @classmethod
-    # def from_none(cls, system, order):
-    #     matrices = {}
-    #     for i in range(1, order + 1):  # Loop over many-body ranks
-    #         for j in range(i + 1):  # Loop over distinct spin cases per rank
-    #             name = get_operator_name(i, j)
-    #             dimension = [system.norbitals] * (2 * order)
-    #             matrices[name] = None
-    #     return cls(system, order, matrices, use_none=True)
 
     @classmethod
     def from_none(cls, system, order):
