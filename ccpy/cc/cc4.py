@@ -7,9 +7,9 @@ from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.hbar.hbar_cc4 import get_cc4_intermediates
 from ccpy.lib.core import cc_loops2
 
-def update(T, dT, H, X, shift, flag_RHF, system):
+def update(T, dT, H, X, shift, flag_RHF):
 
-    X = get_pre_ccs_intermediates(X, T, H, system, flag_RHF)
+    X = get_pre_ccs_intermediates(X, T, H, flag_RHF)
 
     # update T1
     T, dT = update_t1a(T, dT, H, X, shift)
@@ -20,7 +20,7 @@ def update(T, dT, H, X, shift, flag_RHF, system):
         T, dT = update_t1b(T, dT, H, X, shift)
 
     # CCS intermediates
-    X = get_ccs_intermediates_opt(X, T, H, system, flag_RHF)
+    X = get_ccs_intermediates_opt(X, T, H, flag_RHF)
 
     # Get T1-transformed intermediates for CC4
     HT1 = get_cc4_intermediates(T, H)

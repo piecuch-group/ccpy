@@ -5,9 +5,9 @@ from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.cc.ccsdt1_updates import *
 
-def update(T, dT, H, hbar, shift, flag_RHF, system):
+def update(T, dT, H, hbar, shift, flag_RHF):
 
-    hbar = get_pre_ccs_intermediates(hbar, T, H, system, flag_RHF)
+    hbar = get_pre_ccs_intermediates(hbar, T, H, flag_RHF)
 
     ####### T1 updates #######
     # t1a update
@@ -33,7 +33,7 @@ def update(T, dT, H, hbar, shift, flag_RHF, system):
         T, dT = update_t1b.update(T, dT, H, shift)
 
     # CCS intermediates
-    hbar = get_ccs_intermediates_opt(hbar, T, H, system, flag_RHF)
+    hbar = get_ccs_intermediates_opt(hbar, T, H, flag_RHF)
 
     # CCSD base t2 updates
     x2a = update_t2a.build_ccsd(T, hbar, H)   # base CCSD part (separately antisymmetrized)

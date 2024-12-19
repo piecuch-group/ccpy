@@ -545,7 +545,7 @@ def eccc_jacobi(update_t, T, dT, H, X, T_ext, VT_ext, system, options):
 
     return T, energy, is_converged
 
-def cc_jacobi(update_t, T, dT, H, X, system, options, t3_excitations=None, acparray=None):
+def cc_jacobi(update_t, T, dT, H, X, options, t3_excitations=None, acparray=None):
     from ccpy.energy.cc_energy import get_cc_energy
 
     # check whether DIIS is being used
@@ -576,14 +576,14 @@ def cc_jacobi(update_t, T, dT, H, X, system, options, t3_excitations=None, acpar
         # Update the T vector
         if t3_excitations: # CC(P) update
             if acparray:
-                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system, t3_excitations, acparray)
+                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], t3_excitations, acparray)
             else:
-                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system, t3_excitations)
+                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], t3_excitations)
         else: # regular update
             if acparray:
-                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system, acparray)
+                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], acparray)
             else:
-                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system)
+                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"])
 
         # CC correlation energy
         energy = get_cc_energy(T, H)

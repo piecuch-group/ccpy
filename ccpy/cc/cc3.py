@@ -25,8 +25,7 @@ def update(T: ClusterOperator,
            H: Integral,
            hbar: Integral,
            shift: float,
-           flag_RHF: bool,
-           system: System) -> Tuple[ClusterOperator, ClusterOperator]:
+           flag_RHF: bool) -> Tuple[ClusterOperator, ClusterOperator]:
     """
 
     Parameters
@@ -44,7 +43,7 @@ def update(T: ClusterOperator,
 
     """
     # pre-CCS intermediates
-    hbar = get_pre_ccs_intermediates(hbar, T, H, system, flag_RHF)
+    hbar = get_pre_ccs_intermediates(hbar, T, H, flag_RHF)
 
     # update T1
     dT = build_t1a(T, dT, H, hbar)
@@ -54,7 +53,7 @@ def update(T: ClusterOperator,
         dT = build_t1b(T, dT, H, hbar)
 
     # CCS intermediates
-    hbar = get_ccs_intermediates_opt(hbar, T, H, system, flag_RHF)
+    hbar = get_ccs_intermediates_opt(hbar, T, H, flag_RHF)
 
     # update T2
     dT = build_t2a(T, dT, hbar, H)

@@ -18,7 +18,6 @@ def update(T: ClusterOperator,
            X: Integral,
            shift: float,
            flag_RHF: bool,
-           system: System,
            acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
     """
     Performs one update of the CC amplitude equations for the ACCD method.

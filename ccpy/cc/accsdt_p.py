@@ -21,7 +21,6 @@ def update(T: ClusterOperator,
            X: Integral,
            shift: float,
            flag_RHF: bool,
-           system: System,
            t3_excitations: Dict[str, np.ndarray],
            acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
     """
@@ -73,7 +72,7 @@ def update(T: ClusterOperator,
         do_t3["bbb"] = False
     build_hbar = do_t3["aaa"] or do_t3["aab"] or do_t3["abb"] or do_t3["bbb"]
 
-    X = get_pre_ccs_intermediates(X, T, H, system, flag_RHF)
+    X = get_pre_ccs_intermediates(X, T, H, flag_RHF)
 
     # update T1
     T, dT = update_t1a(T, dT, H, X, shift, t3_excitations)
@@ -84,7 +83,7 @@ def update(T: ClusterOperator,
         T, dT = update_t1b(T, dT, H, X, shift, t3_excitations)
 
     # CCS intermediates
-    X = get_ccs_intermediates_opt(X, T, H, system, flag_RHF)
+    X = get_ccs_intermediates_opt(X, T, H, flag_RHF)
     # Remove T2 parts from X.a.oo/X.b.oo and X.a.vv/X.b.vv
     X.a.vv += (
             + 0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, T.aa, optimize=True)

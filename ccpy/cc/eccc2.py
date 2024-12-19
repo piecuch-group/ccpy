@@ -6,10 +6,10 @@ import numpy as np
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.lib.core import cc_loops2
 
-def update(T, dT, H, X, shift, flag_RHF, system, T_ext, VT_ext):
+def update(T, dT, H, X, shift, flag_RHF, T_ext, VT_ext):
 
     # pre-CCS intermediates
-    X = get_pre_ccs_intermediates(X, T, H, system, flag_RHF)
+    X = get_pre_ccs_intermediates(X, T, H, flag_RHF)
 
     # update T1
     T, dT = update_t1a(T, dT, H, X, VT_ext, shift)
@@ -20,7 +20,7 @@ def update(T, dT, H, X, shift, flag_RHF, system, T_ext, VT_ext):
         T, dT = update_t1b(T, dT, H, X, VT_ext, shift)
 
     # CCS intermediates
-    X = get_ccs_intermediates_opt(X, T, H, system, flag_RHF)
+    X = get_ccs_intermediates_opt(X, T, H, flag_RHF)
 
     # update T2
     T, dT = update_t2a(T, dT, X, H, VT_ext, shift, T_ext)

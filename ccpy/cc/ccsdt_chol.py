@@ -6,7 +6,7 @@ import numpy as np
 from ccpy.hbar.hbar_ccsd_chol import get_ccsd_intermediates
 from ccpy.lib.core import cc_loops2, vvvv_contraction
 
-def update(T, dT, H, X, shift, flag_RHF, system):
+def update(T, dT, H, X, shift, flag_RHF):
 
     # pre-CCS intermediates
     X.a.ov = H.a.ov + (

@@ -18,7 +18,6 @@ def update(T: ClusterOperator,
            X: Integral,
            shift: float,
            flag_RHF: bool,
-           system: System,
            t3_excitations: Dict[str, np.ndarray]) -> Tuple[ClusterOperator, ClusterOperator]:
 
     # Check for empty spincases in t3 list. Remember that [1., 1., 1., 1., 1., 1.]

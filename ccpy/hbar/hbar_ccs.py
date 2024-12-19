@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_ccs_intermediates_opt(X, T, H, system, flag_RHF):
+def get_ccs_intermediates_opt(X, T, H, flag_RHF):
     """
     Calculate the CCS-like similarity-transformed HBar intermediates (H_N e^T1)_C.
     """
@@ -104,7 +104,7 @@ def get_ccs_intermediates_opt(X, T, H, system, flag_RHF):
 
     return X
 
-def get_pre_ccs_intermediates(X, T, H, system, flag_RHF):
+def get_pre_ccs_intermediates(X, T, H, flag_RHF):
     X.a.ov = H.a.ov + (
             np.einsum("mnef,fn->me", H.aa.oovv, T.a, optimize=True)
             + np.einsum("mnef,fn->me", H.ab.oovv, T.b, optimize=True)

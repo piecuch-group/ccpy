@@ -12,7 +12,7 @@ import numpy as np
 from ccpy.lib.core import cc_loops2, vvvv_contraction
 
 # @profile
-def update(T, dT, H, X, shift, flag_RHF, system):
+def update(T, dT, H, X, shift, flag_RHF):
 
     # pre-CCS intermediates
     X.a.ov = H.a.ov + (

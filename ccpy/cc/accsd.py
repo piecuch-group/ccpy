@@ -19,7 +19,6 @@ def update(T: ClusterOperator,
            X: Integral,
            shift: float,
            flag_RHF: bool,
-           system: System,
            acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
     """
     Performs one update of the CC amplitude equations for the ACCSD method.
@@ -52,7 +51,7 @@ def update(T: ClusterOperator,
     """
 
     # pre-CCS intermediates
-    X = get_pre_ccs_intermediates(X, T, H, system, flag_RHF)
+    X = get_pre_ccs_intermediates(X, T, H, flag_RHF)
 
     # update T1
     T, dT = update_t1a(T, dT, X, H, shift)
@@ -63,7 +62,7 @@ def update(T: ClusterOperator,
         T, dT = update_t1b(T, dT, X, H, shift)
 
     # CCS intermediates
-    X = get_ccs_intermediates_opt(X, T, H, system, flag_RHF)
+    X = get_ccs_intermediates_opt(X, T, H, flag_RHF)
     # Remove T2 parts from X.a.oo/X.b.oo and X.a.vv/X.b.vv as these will be treated with ACP weighting later on
     X.a.vv += (
             + 0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, T.aa, optimize=True)

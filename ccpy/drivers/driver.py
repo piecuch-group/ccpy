@@ -382,7 +382,6 @@ class Driver:
                                                        dT,
                                                        self.hamiltonian,
                                                        cc_intermediates,
-                                                       self.system,
                                                        self.options,
                                                        t3_excitations,
                                                        acparray=acparray)

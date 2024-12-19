@@ -10,7 +10,7 @@ import numpy as np
 from ccpy.lib.core import cc_loops2
 
 
-def update(T, dT, H, X, shift, flag_RHF, system):
+def update(T, dT, H, X, shift, flag_RHF):
 
     # update T2
     T, dT = update_t2a(T, dT, H, shift)
