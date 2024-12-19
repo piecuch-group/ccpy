@@ -123,6 +123,8 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
     restart_block = np.zeros((R.ndim, nrest + noffset))
 
     # Initial values
+    if len(B0.shape) < 2:
+        B0 = B0[:, np.newaxis]
     B[0, :] = B0[:, 0]
     R.unflatten(B0[:, 0])
     dR.unflatten(dR.flatten() * 0.0)
