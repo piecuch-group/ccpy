@@ -112,7 +112,6 @@ sort_lib = static_library('sort',
 
 fortran_sources = [
   'fortran/cc3_loops.f90',
-  'fortran/cc_active_loops.f90',
   'fortran/cc_loops2.f90',
   'fortran/cc_loops_t4.f90',
   'fortran/ccp3_adaptive_loops.f90',

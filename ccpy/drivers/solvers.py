@@ -470,7 +470,7 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
 
     return R, omega, is_converged
 
-def eccc_jacobi(update_t, T, dT, H, X, T_ext, VT_ext, system, options):
+def eccc_jacobi(update_t, T, dT, H, X, T_ext, VT_ext, options):
     from ccpy.energy.cc_energy import get_cc_energy
 
     # check whether DIIS is being used
@@ -499,7 +499,7 @@ def eccc_jacobi(update_t, T, dT, H, X, T_ext, VT_ext, system, options):
         t1 = time.perf_counter()
 
         # Update the T vector
-        T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system, T_ext, VT_ext)
+        T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], T_ext, VT_ext)
 
         # CC correlation energy
         energy = get_cc_energy(T, H)

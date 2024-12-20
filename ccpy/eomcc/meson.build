@@ -21,8 +21,6 @@ python_sources = [
 'eomccsd_chol.py',
 'eomccsd_intermediates.py',
 'eomccsdt.py',
-'eomccsdt1.py',
-'eomccsdt1_intermediates.py',
 'eomccsdt_intermediates.py',
 'eomccsdt_p.py',
 'ipeom2.py',
@@ -40,5 +38,3 @@ py3.install_sources(
     python_sources,
     subdir: 'ccpy/eomcc'
 )
-
-subdir('eomccsdt1_updates')

@@ -530,39 +530,6 @@ The active-orbital-based CCSDt calculation
 ```python3
     from pyscf import gto, scf
     from ccpy.drivers.driver import Driver
-
-    # build molecule using PySCF and run SCF calculation
-    mol = gto.M(
-        atom=[["F", (0.0, 0.0, -2.66816)],
-              ["F", (0.0, 0.0, 2.66816)]],
-        basis="cc-pvdz",
-        charge=0,
-        spin=0,
-        symmetry="D2H",
-        cart=True,
-        unit="Bohr",
-    )
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    # get the CCpy driver object using PySCF meanfield
-    driver = Driver.from_pyscf(mf, nfrozen=1)
-
-    # set the active space
-    driver.set_active_space(nact_occupied=5, nact_unoccupied=8)
-
-    # set calculation parameters
-    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
-    driver.options["amp_convergence"] = 1.0e-07
-    driver.options["maximum_iterations"] = 80
-
-    # run CCSDt calculation
-    driver.run_cc(method="ccsdt1")
-```
-or
-```python3
-    from pyscf import gto, scf
-    from ccpy.drivers.driver import Driver
     from ccpy.utilities.pspace import get_active_triples_pspace
 
     # build molecule using PySCF and run SCF calculation
@@ -596,7 +563,7 @@ or
     # Run CC(P) calculation equivalent to CCSDt
     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
 ```
-The latter CC(*P*)-based approach offers two advantages: (i) it can take advantage of
+The above CC(*P*)-based approach offers two advantages: (i) it can take advantage of
 the Abelian point group symmetry of a molecule by restricting the CC calculation to
 include only those triply excited cluster amplitudes belonging to a particular irrep,
 as specified by the keyword `target_irrep` and (ii) it can be used to perform other
@@ -616,45 +583,6 @@ occupied/unoccupied indices to the active set. The standard choice of
 
 ### Sample Code
 
-```python3
-    from pyscf import gto, scf
-    from ccpy.drivers.driver import Driver
-
-    # build molecule using PySCF and run SCF calculation
-    mol = gto.M(
-        atom=[["F", (0.0, 0.0, -2.66816)],
-              ["F", (0.0, 0.0, 2.66816)]],
-        basis="cc-pvdz",
-        charge=0,
-        spin=0,
-        symmetry="D2H",
-        cart=True,
-        unit="Bohr",
-    )
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    # get the CCpy driver object using PySCF meanfield
-    driver = Driver.from_pyscf(mf, nfrozen=1)
-
-    # set the active space
-    driver.set_active_space(nact_occupied=5, nact_unoccupied=8)
-
-    # set calculation parameters
-    driver.options["energy_convergence"] = 1.0e-07 # (in hartree)
-    driver.options["amp_convergence"] = 1.0e-07
-    driver.options["maximum_iterations"] = 80
-
-    # run CCSDt calculation
-    driver.run_cc(method="ccsdt1")
-    # build CCSD-like similarity-transformed Hamiltonian (this overwrites original MO integrals)
-    driver.run_hbar(method="ccsd")
-    # run companion left-CCSD-like calculation
-    driver.run_leftcc(method="left_ccsd")
-    # run CC(t;3) triples correction
-    driver.run_ccp3(method="cct3")
-```
-or
 ```python3
     from pyscf import gto, scf
     from ccpy.drivers.driver import Driver
