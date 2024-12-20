@@ -1243,6 +1243,8 @@ class Driver:
                                                                                                    self.hamiltonian,
                                                                                                    self.system,
                                                                                                    self.options)
+            # Keep the computed root in the starting guess space for subsequent roots
+            B_prev.append(self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()))
             # compute the relative excitation level (REL) metric
             self.relative_excitation_level[istate] = get_rel_ea(self.R[istate])
             eaeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
