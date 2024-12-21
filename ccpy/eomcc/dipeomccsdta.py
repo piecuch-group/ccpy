@@ -1,6 +1,8 @@
-"""Module containing functions to calculate the vertical excitation
-energies and linear excitation amplitudes for doubly-attached states
-using the DIP-EOMCCSDT approach with up to 4h-2p excitations"""
+'''
+Quasi-Perturbative Double Ionization Potential Equation-of-Motion Coupled-Cluster
+Method with 2h, 3h-1p, and 4h-2p Excitations on top of CCSD(T)(a) [DIP-EOMCCSD(T)(a)(4h-2p)]
+'''
+
 import numpy as np
 from ccpy.eomcc.dipeom4_intermediates import get_dipeomccsdta_intermediates, add_ov_intermediates
 from ccpy.lib.core import cc_loops2

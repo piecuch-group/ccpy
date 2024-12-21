@@ -1,6 +1,7 @@
-"""Module with functions that perform the CC with singles, doubles,
-triples, and quadruples (CCSDTQ) calculation for a molecular system.
-"""
+'''
+Coupled-Cluster Method with Singles, Doubles, Triples, and Quadruples (CCSDTQ)
+'''
+
 import numpy as np
 
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt

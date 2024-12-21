@@ -1,5 +1,7 @@
-"""Module with functions that perform the CC with singles, doubles,
-and triples (CCSDT) calculation for a molecular system."""
+'''
+Coupled-Cluster Method with Singles, Doubles, and Triples (CCSDT)
+[This version uses Cholesky decomposition of the two-electron integrals]
+'''
 
 import numpy as np
 

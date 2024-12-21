@@ -1,7 +1,7 @@
-"""
-Module with functions that help perform the approximate coupled-pair (ACP) coupled-cluster (CC)
-approach with singles and doubles, abbreviated as ACCSD.
-"""
+'''
+Approximate Coupled-Pair Method with Singles and Doubles (ACCSD)
+'''
+
 import numpy as np
 # Modules for type checking
 from typing import List, Tuple
@@ -11,7 +11,6 @@ from ccpy.models.integrals import Integral
 # Modules for computation
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.lib.core import cc_loops2
-
 
 def update(T: ClusterOperator,
            dT: ClusterOperator,

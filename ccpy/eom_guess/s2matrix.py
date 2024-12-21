@@ -1,3 +1,7 @@
+'''
+Total Spin S^2 Matrix in Determinantal Basis for Initial Guesses
+'''
+
 import numpy as np
 import math
 

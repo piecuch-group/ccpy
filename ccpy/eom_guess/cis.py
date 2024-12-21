@@ -1,3 +1,7 @@
+'''
+CIS Guess Routine for EOMCC
+'''
+
 import numpy as np
 import time
 from ccpy.eom_guess.s2matrix import spin_adapt_guess

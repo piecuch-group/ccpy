@@ -1,8 +1,7 @@
-"""
-Module with functions that help perform the approximate coupled-cluster (CC) method
-with singles and doubles, where the T2 operator is correct through 1st order of 
-perturbation theory, abbreviated as CC2.
-"""
+'''
+Approximate Coupled-Cluster Method with Singles and Doubles (CC2)
+'''
+
 import numpy as np
 
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt

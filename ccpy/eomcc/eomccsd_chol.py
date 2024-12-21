@@ -1,8 +1,8 @@
-"""
-Module containing functions to calculate the vertical excitation
-energies and linear excitation amplitudes for excited states using
-the equation-of-motion (EOM) CC with singles and doubles (EOMCCSD).
-"""
+'''
+Equation-of-Motion Coupled-Cluster Method with Singles and Doubles (EOMCCSD)
+[This version uses Cholesky decomposition of the two-electron integrals]
+'''
+
 import numpy as np
 from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa, build_3index_batch_vvvv_ab, build_2index_batch_vvvv_bb
 from ccpy.eomcc.eomccsd_intermediates import get_eomccsd_chol_intermediates

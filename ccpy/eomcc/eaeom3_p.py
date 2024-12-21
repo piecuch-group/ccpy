@@ -1,3 +1,9 @@
+'''
+Electron Attachment Equation-of-Motion Coupled-Cluster
+Method with 1p, 2p-1h, and an Arbitrary List of 3p-2h Excitations
+on top of CCSD [EA-EOMCCSD(P)]
+'''
+
 import numpy as np
 from ccpy.lib.core import eaeom3_p_loops
 from ccpy.eomcc.eaeom3_intermediates import get_eaeom3_p_intermediates

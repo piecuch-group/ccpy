@@ -1,8 +1,7 @@
-"""
-Module with functions that help perform the approximate coupled-pair (ACP) coupled-cluster (CC)
-approach with singles, doubles, and the subset of triples belonging to the P-space, abbreviated
-as ACCSDT(P).
-"""
+'''
+Approximate Coupled-Pair Method with Singles, Doubles, and Arbitrary Subset of Triples [ACC(P)]
+'''
+
 import numpy as np
 # Modules for type checking
 from typing import List, Tuple, Dict
@@ -14,7 +13,6 @@ from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.lib.core import ccsdt_p_loops
 
-
 def update(T: ClusterOperator,
            dT: ClusterOperator,
            H: Integral,
@@ -24,7 +22,7 @@ def update(T: ClusterOperator,
            t3_excitations: Dict[str, np.ndarray],
            acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
     """
-    Performs one update of the CC amplitude equations for the ACCSDT(P) method.
+    Performs one update of the CC amplitude equations for the ACC(P) method.
 
     Parameters
     ----------

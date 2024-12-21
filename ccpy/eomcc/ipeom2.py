@@ -1,3 +1,5 @@
+"""Ionization Potential Equation-of-Motion Coupled-Cluster
+Method with 1h and 2h-1p Excitations on top of CCSD [IP-EOMCCSD(2h-1p)]"""
 import numpy as np
 from ccpy.lib.core import cc_loops2
 

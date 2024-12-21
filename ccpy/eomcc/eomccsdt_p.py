@@ -1,3 +1,7 @@
+'''
+Equation-of-Motion Coupled-Cluster Method with Singles, Doubles, and an Arbitrary Subset
+of Triples Excitations [EOMCC(P)]
+'''
 import numpy as np
 from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eomccsdt_intermediates, add_R3_p_terms
 from ccpy.lib.core import eomccsdt_p_loops

@@ -1,6 +1,7 @@
-"""Module containing functions to calculate the vertical excitation
-energies and linear excitation amplitudes for excited states using
-the spin-flip equation-of-motion (EOM) CC with singles and doubles (SF-EOMCCSD)."""
+'''
+Spin-Flip Equation-of-Motion Coupled-Cluster Method with Singles and Doubles [SF-EOMCCSD]
+'''
+
 import numpy as np
 from ccpy.lib.core import cc_loops2
 

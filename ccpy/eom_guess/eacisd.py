@@ -1,3 +1,7 @@
+'''
+EA-EOMCCSd(2p-1h) Guess Routine for EA-EOMCC
+'''
+
 import numpy as np
 import time
 from ccpy.eom_guess.s2matrix import spin_adapt_guess

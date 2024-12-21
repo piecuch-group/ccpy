@@ -1,10 +1,7 @@
-"""
-Module with functions to perform the coupled-cluster (CC) approach with doubles, 
-abbreviated as CCD (originally known as coupled-pair many-electron theory, or CPMET).
+'''
+Coupled-Cluster Method with Doubles (CCD)
+'''
 
-References:
-    [1] J. Cizek, J. Chem. Phys. 45, 4256 (1966).
-"""
 import numpy as np
 
 from ccpy.lib.core import cc_loops2

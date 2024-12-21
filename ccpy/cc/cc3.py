@@ -1,13 +1,7 @@
-"""
-Module with functions to perform the approximate coupled-cluster (CC) method with
-singles, doubles, and triples, abbrevated as CC3, where the T3 operator is correct
-through 2st order of perturbation theory and T1 clusters are treated as 0th order.
+'''
+Approximate Coupled-Cluster Method with Singles, Doubles, and Triples (CC3)
+'''
 
-References:
-    [1] J. Chem. Phys. 106, 1808 (1997); doi: 10.1063/1.473322 [CC3 method]
-    [2] J. Chem. Phys. 103, 7429–7441 (1995); doi: 10.1063/1.470315 [CC3 response & excited states]
-    [3] J. Chem. Phys. 122, 054110 (2005); doi: 10.1063/1.1835953 [CC3 for open shells]
-"""
 import numpy as np
 # Modules for type checking
 from typing import List, Tuple
@@ -18,7 +12,6 @@ from ccpy.models.integrals import Integral
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.hbar.hbar_cc3 import get_cc3_intermediates
 from ccpy.lib.core import cc3_loops
-
 
 def update(T: ClusterOperator,
            dT: ClusterOperator,

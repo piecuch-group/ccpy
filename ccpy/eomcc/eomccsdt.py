@@ -1,6 +1,7 @@
-"""Module containing functions to calculate the vertical excitation
-energies and linear excitation amplitudes for excited states using
-the equation-of-motion (EOM) CC with singles, doubles, and triples (EOMCCSDT)."""
+'''
+Equation-of-Motion Coupled-Cluster Method with Singles, Doubles, and Triples (EOMCCSDT)
+'''
+
 import numpy as np
 from ccpy.lib.core import cc_loops2
 from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eomccsdt_intermediates, add_R3_terms

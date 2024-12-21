@@ -1,5 +1,7 @@
-"""Module with functions that perform the approximate CC method
-with singles, doubles, triples and quadruples (CC4)."""
+'''
+Approximate Coupled-Cluster Method with Singles, Doubles, Triples, and Quadruples (CC4)
+'''
+
 import numpy as np
 
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt

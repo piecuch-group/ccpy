@@ -1,13 +1,7 @@
-"""
-Module with functions to perform the coupled-cluster (CC) approach with singles, doubles,
-and the subset of triples belonging to the P-space, abbreviated as CCSDT(P).
+'''
+Coupled-Cluster Method with Singles, Doubles, and an Arbitrary Subset of Triples [CC(P)]
+'''
 
-References:
-    [1] J. Shen and P. Piecuch, Chem. Phys.; J. Chem. Phys.; J. Chem. Theory Comput.; (2012)
-    [2] J.E. Deustua, J. Shen, and P. Piecuch, Phys. Rev. Lett.; J. Chem. Phys.
-    [3] K. Gururangan, J.E. Deustua, J. Shen, and P. Piecuch, J. Chem. Phys.
-    [4] K. Gururangan and P. Piecuch, J. Chem. Phys.
-"""
 import numpy as np
 # Modules for type checking
 from typing import List, Tuple, Dict

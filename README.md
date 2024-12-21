@@ -516,7 +516,9 @@ reported as the CR-CC(2,3) energy (or by its former name, CR-CCSD(T)<sub>L</sub>
     driver.run_cc(method="cc3")
 ```
 ### References
-
+1. J. Chem. Phys. 106, 1808 (1997); doi: 10.1063/1.473322
+2. J. Chem. Phys. 103, 7429–7441 (1995); doi: 10.1063/1.470315
+3. J. Chem. Phys. 122, 054110 (2005); doi: 10.1063/1.1835953
 </details>
 
 <details>

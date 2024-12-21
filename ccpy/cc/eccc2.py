@@ -1,6 +1,7 @@
-"""Module with functions that help perform the externally corrected (ec)
-CC (ec-CC) computations that solve for T1 and T2 in the presence of T3
-and T4 extracted from an external non-CC source."""
+'''
+Externally Corrected Coupled-Cluster Method with Singles and Doubles Iterated
+in the Presence of Triples and Quadruples, with Disconnected Components Removed (ec-CC-II)
+'''
 
 import numpy as np
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt

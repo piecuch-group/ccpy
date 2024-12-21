@@ -1,9 +1,10 @@
+'''
+Electron Attachment Equation-of-Motion Coupled-Cluster
+Method with 1p and 2p-1h Excitations on top of CCSD [EA-EOMCCSD(2p-1h)]
+'''
+
 import numpy as np
 from ccpy.lib.core import cc_loops2
-
-# R.a -> (nua) -> (a)
-# R.aa -> (nua,nua,noa) -> (abj)
-# R.ab -> (nua,nub,nob) -> (ab~j~)
 
 def update(R, omega, H, RHF_symmetry, system):
 
