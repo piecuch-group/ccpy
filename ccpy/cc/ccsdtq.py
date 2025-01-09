@@ -1144,7 +1144,7 @@ def update_t4d(T, dT, H, H0, shift):
     dT.abbb += (1.0 / 12.0) * np.einsum("abcejk,deli->dcbalkji", I3D_vvvvoo, T.ab, optimize=True)  # (i/jk) = 3
 
     I3C_vvvvoo = (
-        - np.einsum("nmfe,dfbamnji->dbaeji", H0.ab.oovv, T.abbb, optimize=True)
+        - np.einsum("mnef,dfbamnji->dbaeji", H0.ab.oovv, T.abbb, optimize=True)
         - 0.5 * np.einsum("nmfe,dfbamnji->dbaeji", H0.aa.oovv, T.aabb, optimize=True)
     )
     dT.abbb += (9.0 / 36.0) * np.einsum("dbaeji,eclk->dcbalkji", I3C_vvvvoo, T.ab, optimize=True)  # (c/ab)(k/ij) = 9
@@ -1163,7 +1163,7 @@ def update_t4d(T, dT, H, H0, shift):
 
     I3C_ovvooo = (
         np.einsum("mnef,efcblnkj->mcblkj", H0.ab.oovv, T.abbb, optimize=True)
-        + 0.5 * np.einsum("nmfe,efcblnkj->mcblkj", H0.bb.oovv, T.aabb, optimize=True)
+        + 0.5 * np.einsum("nmfe,efcblnkj->mcblkj", H0.aa.oovv, T.aabb, optimize=True)
     )
     dT.abbb -= (9.0 / 36.0) * np.einsum("mcblkj,dami->dcbalkji", I3C_ovvooo, T.ab, optimize=True)  # (a/bc)(i/jk) = 9
 
