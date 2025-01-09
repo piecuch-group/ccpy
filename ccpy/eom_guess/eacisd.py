@@ -298,8 +298,8 @@ def build_eacisd_hamiltonian(H, nacto, nactu, idx_a, idx_aa, idx_ab, system):
          ), axis=0
     )
 
-def get_sz2(system, Ms):
-    Ns = float((system.noccupied_alpha + Ms) - (system.noccupied_beta - Ms))
+def get_sz2(system, n_ea):
+    Ns = float((system.noccupied_alpha + n_ea) - (system.noccupied_beta))
     sz = Ns / 2.0
     sz2 = (sz + 1.0) * sz
     return sz2
@@ -318,19 +318,76 @@ def build_s2matrix(system, nacto, nactu, idx_a, idx_aa, idx_ab):
     nactu_a = min(nactu, system.nunoccupied_alpha)
     nactu_b = min(nactu + (system.multiplicity - 1), system.nunoccupied_beta)
 
-    def chi_beta(p):
-        if p >= 0 and p < system.noccupied_beta:
-            return 1.0
-        else:
-            return 0.0
+    # guess space dimensions
+    n1a = nua
+    n2a = int(nactu_a * (nactu_a - 1)/2 * nacto_a)
+    n2b = nactu_a * nacto_b * nactu_b
 
-    def pi_alpha(p):
-        if p >= system.noccupied_alpha and p < system.nunoccupied_alpha + system.noccupied_alpha:
-            return 1.0
-        else:
-            return 0.0
+    # sz(sz + 1)
+    sz2 = get_sz2(system, n_ea=1)
 
-    return -1
+    # < a | S2 | b >
+    a_S_a = np.zeros((n1a, n1a))
+    for a in range(nua):
+        idet = idx_a[a]
+        if idet == 0: continue
+        ind1 = abs(idet) - 1
+        a_S_a[ind1, ind1] = sz2
+
+    # < a | S2 | bck >
+    a_S_aa = np.zeros((n1a, n2a))
+
+    # < a | S2 | bc~k~ >
+    a_S_ab = np.zeros((n1a, n2b))
+
+    aa_S_aa = np.zeros((n2a, n2a))
+    aa_S_ab = np.zeros((n2a, n2b))
+    for a in range(nactu_a):
+        for b in range(a + 1, nactu_a):
+            for j in range(noa - nacto_a, noa):
+                idet = idx_aa[a, b, j]
+                if idet == 0: continue
+                ind1 = abs(idet) - 1
+                # < abj | S2 | cdl > [includes Ia ->.-> Ia term]
+                aa_S_aa[ind1, ind1] = sz2 + 1
+                # < abj | S2 | cd~l~ >
+                for c in range(nactu_b):
+                    for d in range(nactu_b):
+                        for l in range(nob - nacto_b, nob):
+                            jdet = idx_ab[c, d, l]
+                            if jdet != 0:
+                                ind2 = abs(jdet) - 1
+                                # -A(ab) d(j,l) d(b,d) d(a,c)
+                                aa_S_ab[ind1, ind2] += (
+                                                           -(j == l) * (b == d) * (a == c)
+                                                           +(j == l) * (a == d) * (b == c)
+                                )
+
+    # < ab~j~ | S2 | cd~l~ >
+    ab_S_ab = np.zeros((n2b, n2b))
+    for a in range(nactu_a):
+        for b in range(nactu_b):
+            for j in range(nob - nacto_b, nob):
+                idet = idx_ab[a, b, j]
+                if idet == 0: continue
+                ind1 = abs(idet) - 1
+                #  [includes Ab <-.<- Ab terms]
+                ab_S_ab[ind1, ind1] = sz2 + 1
+                for c in range(nactu_a):
+                    for d in range(nactu_b):
+                        for l in range(nob - nacto_b, nob):
+                            jdet = idx_ab[c, d, l]
+                            if jdet != 0:
+                                ind2 = abs(jdet) - 1
+                                # d(a,d) d(b,c) d(j,l)
+                                ab_S_ab[ind1, ind2] -= (a == d) * (b == c) * (j == l)
+
+    S2mat = np.concatenate(
+        (np.concatenate((a_S_a, a_S_aa, a_S_ab), axis=1),
+         np.concatenate((a_S_aa.T, aa_S_aa, aa_S_ab), axis=1),
+         np.concatenate((a_S_ab.T, aa_S_ab.T, ab_S_ab), axis=1),
+         ), axis=0)
+    return S2mat
 
 def get_index_arrays(nacto, nactu, system, target_irrep):
 

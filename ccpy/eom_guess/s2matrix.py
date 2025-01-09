@@ -8,7 +8,7 @@ import math
 def spin_adapt_guess(S2, H, multiplicity, debug=False):
 
     def _get_multiplicity(s2):
-        s = -0.5 + math.sqrt(0.25 + s2)
+        s = -0.5 + math.sqrt(abs(0.25 + s2))
         return 2.0 * s + 1.0
 
     # if multiplicity = -1, then just diagonalize H and return
