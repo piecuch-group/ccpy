@@ -36,9 +36,6 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
         t1 = time.time()
         # Compute the active-space 2p-1h Hamiltonian
         Hmat = build_ipcisd_hamiltonian(H, nacto, nactu, idx_a, idx_aa, idx_ab, system)
-
-        #
-        #
         # Compute the S2 matrix in the same projection subspace
         S2mat = build_s2matrix(system, nacto, nactu, idx_a, idx_aa, idx_ab)
         # Project H onto the spin subspace with the specified multiplicity
@@ -54,28 +51,7 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
             if kout == nroot:
                 break
 
-        #
-        #
-        # omega, V_act = np.linalg.eig(Hmat)
-        # idx = np.argsort(omega)
-        # omega = omega[idx]
-        # V_act = V_act[:, idx]
-        #
-        # nroot = min(nroot, V_act.shape[1])
-        # kout = 0
-        # for i in range(len(omega)):
-        #     if omega[i] == 0.0: continue
-        #     V2, guess_mult = scatter_with_spin(V_act[:, i], nacto, nactu, system)
-        #     print("I AM IN:", omega[i], "GUESS MULT:", guess_mult)
-        #     if guess_mult == multiplicity or multiplicity == -1:
-        #         V[:, n_found] = V2
-        #         omega_guess[n_found] = omega[i]
-        #         n_found += 1
-        #         kout += 1
-        #     if kout == nroot:
-        #         break
         elapsed_time = time.time() - t1
-
         print("   -----------------------------------")
         print("   Target symmetry irrep = ", irrep, f"({system.point_group})")
         print("   Dimension of eigenvalue problem = ", ndim_irrep)
