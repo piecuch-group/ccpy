@@ -100,8 +100,8 @@ def build_s2matrix_2h(system, nacto):
             for k in range(noa - nacto_a, noa):
                 for l in range(nob - nacto_b, nob):
                     Sab[ct1, ct2] = (
-                          (i == k) * (j == l)
-                        + (i == l) * (j == k)
+                           (i == k) * (j == l)
+                         - (i == l) * (j == k)
                     )
                     ct2 += 1
             ct1 += 1

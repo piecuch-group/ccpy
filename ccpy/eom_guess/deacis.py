@@ -113,7 +113,7 @@ def build_s2matrix_2p(system, nactu):
             for c in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
                 for d in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
                     Sab[ct1, ct2] += (sz2 + 1.0 * pi_alpha(a)) * (a == c) * (b == d)
-                    Sab[ct1, ct2] -= (b == c) * (a == d) # why is this a minus sign??
+                    Sab[ct1, ct2] -= (b == c) * (a == d) # why is this a minus sign, you ask... "ghost loop" rule
                     ct2 += 1
             ct1 += 1
     return Sab
