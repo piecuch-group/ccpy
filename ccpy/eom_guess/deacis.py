@@ -44,7 +44,7 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
         kout = 0
         for i in range(len(omega)):
             if omega[i] == 0.0: continue
-            V[:, n_found] = scatter(V_act[:, i], nacto, system)
+            V[:, n_found] = scatter(V_act[:, i], nactu, system)
             omega_guess[n_found] = omega[i]
             n_found += 1
             kout += 1
@@ -136,12 +136,12 @@ def build_s2matrix_2p(system, nactu, idx_ab):
     Sab = np.zeros((n2b, n2b))
     for a in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
         for b in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
-            idet = idx_ab[a, b]
+            idet = idx_ab[a - noa, b - nob]
             if idet == 0: continue
             ind1 = abs(idet) - 1
             for c in range(system.noccupied_alpha, system.noccupied_alpha + nactu_a):
                 for d in range(system.noccupied_beta, system.noccupied_beta + nactu_b):
-                    jdet = idx_ab[c, d]
+                    jdet = idx_ab[c - noa, d - nob]
                     if jdet != 0:
                         ind2 = abs(jdet) - 1
                         Sab[ind1, ind2] += (sz2 + 1.0 * pi_alpha(a)) * (a == c) * (b == d)

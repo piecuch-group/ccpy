@@ -21,7 +21,7 @@ def test_dipeom4star_ch2():
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsdta")
-    driver.run_guess(method="dipcis", multiplicity=-1, nact_occupied=driver.system.noccupied_alpha, roots_per_irrep={"A1": 6})
+    driver.run_guess(method="dipcis", multiplicity=-1, nact_occupied=driver.system.noccupied_alpha, roots_per_irrep={"A1": 6}, use_symmetry=False)
     driver.run_dipeomcc(method="dipeom3", state_index=[0, 1])
     driver.run_dipccp4(method="dipeomccsdta_star", state_index=[0, 1])
 

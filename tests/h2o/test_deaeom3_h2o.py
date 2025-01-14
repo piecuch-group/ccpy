@@ -26,7 +26,7 @@ def test_deaeom3_h2o():
     assert np.allclose(-74.7347458944, driver.correlation_energy + driver.system.reference_energy, atol=1.0e-07)
 
     driver.run_hbar(method="ccsd")
-    driver.run_guess(method="deacis", roots_per_irrep={"A1": 5, "B1": 0, "B2": 0, "A2": 0}, multiplicity=1, nact_unoccupied=4)
+    driver.run_guess(method="deacis", roots_per_irrep={"A1": 5, "B1": 0, "B2": 0, "A2": 0}, multiplicity=1, nact_unoccupied=4, use_symmetry=False)
     driver.run_deaeomcc(method="deaeom3", state_index=[0, 1, 2, 3, 4])
 
     expected_ea_energy = [-1.0587336648, -1.1435694430, -1.1147055248, -0.7502349476, -0.7505287522]

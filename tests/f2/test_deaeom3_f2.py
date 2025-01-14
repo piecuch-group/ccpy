@@ -23,7 +23,7 @@ def test_deaeom3_f2():
     driver = Driver.from_pyscf(mf, nfrozen=2)
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
-    driver.run_guess(method="deacis", nact_unoccupied=4, roots_per_irrep={"Ag": 5}, multiplicity=1)
+    driver.run_guess(method="deacis", nact_unoccupied=4, roots_per_irrep={"AG": 3}, multiplicity=1, use_symmetry=False)
     driver.run_deaeomcc(method="deaeom3", state_index=[0, 1, 2])
 
     expected_vee = [-1.42489070,
