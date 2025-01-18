@@ -130,6 +130,7 @@ fortran_sources = [
   'fortran/creacc_loops.f90',
   'fortran/cripcc_loops.f90',
   'fortran/deaeom4_p_loops.f90',
+  'fortran/deaeom4_p_intermediates.f90',
   'fortran/eaccp3_correction.f90',
   'fortran/eaccp3_loops.f90',
   'fortran/eaeom3_p_intermediates.f90',

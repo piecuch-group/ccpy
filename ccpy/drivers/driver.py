@@ -206,6 +206,11 @@ class Driver:
             self.order = 4
             self.num_particles = 4
             self.num_holes = 2
+        elif method.lower() in ["deaeom4_p", "left_deaeom4_p"]:
+            self.operator_params["order"] = 4
+            self.operator_params["number_particles"] = 4
+            self.operator_params["number_holes"] = 2
+            self.operator_params["pspace_orders"] = [2]
         elif method.lower() in ["sfeomccsd"]:
             self.order = 2
             self.Ms = -1
@@ -902,6 +907,73 @@ class Driver:
             B_prev.append(self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()))
             deaeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, is_converged, self.system, self.options["amp_print_threshold"])
             print("   DEA-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
+
+    def run_deaeomccp(self, method, state_index, r3_excitations, t3_excitations=None):
+        """Performs the particle-nonconserving DEA-EOMCC(P) calculation specified by the user in the input."""
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.eomcc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build R
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert (self.flag_hbar)
+
+        # import the specific EOMCC method module and get its update function
+        eom_module = import_module("ccpy.eomcc." + method.lower())
+        HR_function = getattr(eom_module, 'HR')
+        update_function = getattr(eom_module, 'update')
+
+        # Convert excitations array to Fortran continuous
+        r3_excitations = convert_excitations_c_to_f(r3_excitations)
+
+        # Get dimensions of R3 spincases in P space
+        n4abaa_r = r3_excitations["abaa"].shape[0]
+        n4abab_r = r3_excitations["abab"].shape[0]
+        n4abbb_r = r3_excitations["abbb"].shape[0]
+        excitation_count = [[n4abaa_r, n4abab_r, n4abbb_r]]
+
+        if self.R[state_index] is None:
+            self.R[state_index] = FockOperator(self.system,
+                                               self.operator_params["number_particles"],
+                                               self.operator_params["number_holes"],
+                                               p_orders=self.operator_params["pspace_orders"],
+                                               pspace_sizes=excitation_count)
+            self.R[state_index].unflatten(self.guess_vectors[:, state_index], order=self.guess_order)
+            self.vertical_excitation_energy[state_index] = self.guess_energy[state_index]
+
+        # Print the options as a header
+        self.print_options()
+
+        # Create the residual R that is re-used for each root
+        dR = FockOperator(self.system,
+                          self.operator_params["number_particles"],
+                          self.operator_params["number_holes"],
+                          p_orders=self.operator_params["pspace_orders"],
+                          pspace_sizes=excitation_count)
+
+        print("   DEA-EOMCC(P) calculation for root %d started on" % state_index, get_timestamp())
+        print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[state_index]))
+        print_dea_amplitudes(self.R[state_index], self.system, self.R[state_index].order, self.options["amp_print_threshold"])
+        self.R[state_index], self.vertical_excitation_energy[state_index], is_converged = eomcc_davidson(HR_function,
+                                                                                               update_function,
+                                                                                               self.R[state_index].flatten() / np.linalg.norm(self.R[state_index].flatten()),
+                                                                                               self.R[state_index],
+                                                                                               dR,
+                                                                                               self.vertical_excitation_energy[state_index],
+                                                                                               self.T,
+                                                                                               self.hamiltonian,
+                                                                                               self.system,
+                                                                                               self.options,
+                                                                                               t3_excitations,
+                                                                                               r3_excitations)
+        # compute the relative excitation level (REL) metric
+        deaeomcc_calculation_summary(self.R[state_index], self.vertical_excitation_energy[state_index], self.correlation_energy, is_converged, self.system, self.options["amp_print_threshold"])
+        print("   DEA-EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
+
 
     def run_dipeomcc(self, method, state_index):
         """Performs the particle-nonconserving DIP-EOMCC calculation specified by the user in the input."""

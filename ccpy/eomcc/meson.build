@@ -3,6 +3,7 @@ python_sources = [
 'deaeom2.py',
 'deaeom3.py',
 'deaeom4.py',
+'deaeom4_p.py',
 'deaeom4_intermediates.py',
 'dipeom3.py',
 'dipeom4.py',
