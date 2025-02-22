@@ -771,8 +771,7 @@ Approximate CC method with quadruples. Currently compatible with RHF references 
 ```python3
 from pathlib import Path
 import numpy as np
-from ccpy.drivers.driver import Driver
-from ccpy.utilities.pspace import get_pspace_from_cipsi
+from ccpy import Driver, get_triples_pspace_from_cipsi
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
@@ -785,19 +784,77 @@ def test_eccc23_h2o():
         nfrozen=0,
     )
 
+    # CI vector file from CIPSI
     civecs = TEST_DATA_DIR + "/h2o/civecs-10k.dat"
-    _, t3_excitations, _ = get_pspace_from_cipsi(civecs, driver.system, nexcit=3)
+    # Extract T3 excitations in CIPSI
+    t3_excitations, _ = get_triples_pspace_from_cipsi(civecs, driver.system)
 
+    # Run ec-CC-II calculation (solve T1 & T2 in presence of T3/T4 from CIPSI)
     driver.run_eccc(method="eccc2", ci_vectors_file=civecs)
+    # Compute CCSD-like HBar using T1 & T2 from ec-CC-II
     driver.run_hbar(method="ccsd")
+    # Perform left-CCSD-like calculation to obtain L1 & L2
     driver.run_leftcc(method="left_ccsd")
+    # Evaluate ec-CC-II_{3} triples correction to ec-CC-II energies
     driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
+    # Total ec-CC-II energy
+    total_energy_CC = driver.system.reference_energy + driver.correlation_energy
+    # ec-CC-II_{3} energy
+    total_energy_3 = total_energy_CC + driver.deltap3[0]["D"]
 ```
 
 ### References
 1. I. Magoulas, K. Gururangan, P. Piecuch, J. E. Deustua, and J. Shen, J. Chem. Theory Comput. **17**, 4006 (2021) <br />
 (see https://doi.org/10.1021/acs.jctc.1c00181; cf. also https://doi.org/10.48550/arXiv.2102.10143)
 </details>
+
+<details>
+<summary>CIPSI-driven ec-CC-II<sub>3,4</sub> </summary>
+
+### Summary
+
+### Sample Code
+
+```python3
+from pathlib import Path
+import numpy as np
+from ccpy.drivers.driver import Driver
+from ccpy import Driver, get_triples_pspace_from_cipsi, get_quadruples_pspace_from_cipsi
+
+TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
+
+def test_eccc34_h2o():
+
+    driver = Driver.from_gamess(
+        logfile=TEST_DATA_DIR + "/h2o/h2o-Re.log",
+        onebody=TEST_DATA_DIR + "/h2o/onebody.inp",
+        twobody=TEST_DATA_DIR + "/h2o/twobody.inp",
+        nfrozen=0,
+    )
+
+    civecs = TEST_DATA_DIR + "/h2o/civecs-10k.dat"
+    t3_excitations, _ = get_triples_pspace_from_cipsi(civecs, driver.system)
+    t3_excitations, _ = get_quadruples_pspace_from_cipsi(civecs, driver.system)
+
+    # Run ec-CC-II calculation (solve T1 & T2 in presence of T3/T4 from CIPSI)
+    driver.run_eccc(method="eccc2", ci_vectors_file=civecs)
+    # Compute CCSD-like HBar using T1 & T2 from ec-CC-II
+    driver.run_hbar(method="ccsd")
+    # Perform left-CCSD-like calculation to obtain L1 & L2
+    driver.run_leftcc(method="left_ccsd")
+    # Evaluate ec-CC-II_{3} triples correction to ec-CC-II energies
+    driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
+    # Evaluate ec-CC-II_{4} quadruples correction to ec-CC-II energies
+    driver.run_ccp4(method="ccp4", state_index=0, t4_excitations=t4_excitations)
+    # Total ec-CC-II energy
+    total_energy_CC = driver.system.reference_energy + driver.correlation_energy
+    # ec-CC-II_{3A,4A} energy
+    total_energy_AA = total_energy_CC + driver.deltap3[0]["A"] + driver.deltap4[0]["A"]
+    # ec-CC-II_{3D,4A} energy
+    total_energy_DA = total_energy_CC + driver.deltap3[0]["D"] + driver.deltap4[0]["A"]    
+```
+</details>
+
 
 #### Approximate Coupled-Pair (ACP) Approaches
   - ACCD
