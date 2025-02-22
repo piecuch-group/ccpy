@@ -765,6 +765,14 @@ Approximate CC method with quadruples. Currently compatible with RHF references 
 <summary>CIPSI-driven ec-CC-II and ec-CC-II<sub>3</sub> </summary>
 
 ### Summary
+The CIPSI-driven ec-CC-II approach, introduced in Ref. [1], solves the CCSD-like equations
+for one- and two-body clusters in the presence of their three- and four-body counterparts
+extracted from the CIPSI wave functions computed with Quantum Package. In the ec-CC-II
+calculations, cluster analysis of the CI state is carried out so that three- and
+four-body cluster amplitudes corresponding to triply and quadruply excited determinants
+that do not exist in the underlying CI expansion are discarded. The ec-CC-II_{3} methodology
+corrects the ec-CC-II energetics for the effects of three-body correlation effects missing
+from the underlying CI state.
 
 ### Sample Code
 
@@ -812,6 +820,8 @@ def test_eccc23_h2o():
 <summary>CIPSI-driven ec-CC-II<sub>3,4</sub> </summary>
 
 ### Summary
+The CIPSI-driven ec-CC-II_{3,4} approach corrects the ec-CC-II energetics for the effects
+of three- and four-body correlation effects missing from the underlying CI state.
 
 ### Sample Code
 
