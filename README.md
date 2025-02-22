@@ -828,7 +828,6 @@ three- and four-body correlation effects missing from the underlying CI state.
 ```python3
 from pathlib import Path
 import numpy as np
-from ccpy.drivers.driver import Driver
 from ccpy import Driver, get_triples_pspace_from_cipsi, get_quadruples_pspace_from_cipsi
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
