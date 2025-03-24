@@ -67,13 +67,15 @@ class Driver:
 
     def __init__(self, system, hamiltonian, max_number_states=50):
         """
-
         Parameters
         ----------
         system : System
         hamiltonian : Integral
         max_number_states : int
         """
+        # Print the commit ID
+        self.print_commit_id()
+        #
         self.system = system
         self.hamiltonian = hamiltonian
         self.flag_hbar = False
@@ -131,9 +133,12 @@ class Driver:
         # the intermediates used in R3 equation.
         self.cc3_intermediates = None
 
+    def print_commit_id(self):
+        from ccpy.utilities.utilities import get_git_commit_id
+        print(f"CCpy git commit ID cd {get_git_commit_id()}")
+
     def set_operator_params(self, method):
         """
-
         Parameters
         ----------
         method :
