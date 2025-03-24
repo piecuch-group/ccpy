@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from ccpy.lib.core import reorder
+import subprocess
 
 def convert_t3_from_pspace(driver, t3_excitations):
 
@@ -294,6 +295,13 @@ def remove_file(filePath):
     except OSError:
         pass
     return
+
+def get_git_commit_id():
+    try:
+        commit_id = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).strip().decode('utf-8')
+        return commit_id
+    except subprocess.CalledProcessError:
+        return "N/A"
 
 def read_amplitudes_from_jun(amlitude_file, system, order, amp_type='T', iroot=0):
     from scipy.io import FortranFile
