@@ -28,11 +28,13 @@ python_sources = [
 'ipeom3.py',
 'ipeom3_intermediates.py',
 'ipeom3_p.py',
+'ipeomccsdt_p.py',
 'ipeomccsdt.py',
 'ipeomccsdta.py',
 'sfeomcc23.py',
 'sfeomcc23_intermediates.py',
 'sfeomccsd.py',
+'teaeom2.py',
 ]
 
 py3.install_sources(
