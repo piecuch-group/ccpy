@@ -4,7 +4,7 @@ on top of CC(P) with an Arbitrary List of T3 Excitations [IP-EOMCCSDT(P)]"""
 import numpy as np
 from ccpy.lib.core import ipeom3_p_loops
 from ccpy.lib.core import ipeomt_p_loops
-from ccpy.eomcc.ipeom3_intermediates import get_ipeomt_p_intermediates
+from ccpy.eomcc.ipeom3_intermediates import get_ipeomt_p_intermediates, add_v_term
 
 def update(R, omega, H, RHF_symmetry, system, r3_excitations):
     R.a, R.aa, R.ab, R.aaa, R.aab, R.abb = ipeom3_p_loops.update_r(
@@ -42,9 +42,10 @@ def HR(dR, R, T, H, flag_RHF, system, t3_excitations, r3_excitations):
     # update R1
     dR = build_HR_1A(dR, R, r3_excitations, T, H)
     # update R2
-    dR = build_HR_2A(dR, R, r3_excitations, T, H)
-    dR = build_HR_2B(dR, R, r3_excitations, T, H)
+    dR = build_HR_2A(dR, R, r3_excitations, T, X, H)
+    dR = build_HR_2B(dR, R, r3_excitations, T, X, H)
     # update R3
+    X = add_v_term(X, H, R)
     if do_r3["aaa"]:
         dR, R, r3_excitations = build_HR_3A(dR, R, r3_excitations, T, t3_excitations, X, H)
     if do_r3["aab"]:
@@ -69,16 +70,12 @@ def build_HR_1A(dR, R, r3_excitations, T, H):
     )
     return dR
 
-def build_HR_2A(dR, R, r3_excitations, T, H):
+def build_HR_2A(dR, R, r3_excitations, T, X, H):
     """Calculate the projection <ijb|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>."""
     dR.aa = -0.5 * np.einsum("bmji,m->ibj", H.aa.vooo, R.a, optimize=True)
     dR.aa += 0.5 * np.einsum("be,iej->ibj", H.a.vv, R.aa, optimize=True)
     dR.aa += 0.25 * np.einsum("mnij,mbn->ibj", H.aa.oooo, R.aa, optimize=True)
-    I1 = (
-        -0.5 * np.einsum("mnef,mfn->e", H.aa.oovv, R.aa, optimize=True)
-        - np.einsum("mnef,mfn->e", H.ab.oovv, R.ab, optimize=True)
-    )
-    dR.aa += 0.5 * np.einsum("e,ebij->ibj", I1, T.aa, optimize=True)
+    dR.aa += 0.5 * np.einsum("e,ebij->ibj", X["a"]["v"], T.aa, optimize=True)
     dR.aa -= np.einsum("mi,mbj->ibj", H.a.oo, R.aa, optimize=True)
     dR.aa += np.einsum("bmje,iem->ibj", H.aa.voov, R.aa, optimize=True)
     dR.aa += np.einsum("bmje,iem->ibj", H.ab.voov, R.ab, optimize=True)
@@ -91,7 +88,7 @@ def build_HR_2A(dR, R, r3_excitations, T, H):
     )
     return dR
 
-def build_HR_2B(dR, R, r3_excitations, T, H):
+def build_HR_2B(dR, R, r3_excitations, T, X, H):
     """Calculate the projection <ij~b~|[ (H_N e^(T1+T2))_C*(R1h+R2h1p) ]_C|0>."""
     dR.ab = -1.0 * np.einsum("mbij,m->ibj", H.ab.ovoo, R.a, optimize=True)
     dR.ab -= np.einsum("mi,mbj->ibj", H.a.oo, R.ab, optimize=True)
@@ -101,11 +98,7 @@ def build_HR_2B(dR, R, r3_excitations, T, H):
     dR.ab += np.einsum("mbej,iem->ibj", H.ab.ovvo, R.aa, optimize=True)
     dR.ab += np.einsum("bmje,iem->ibj", H.bb.voov, R.ab, optimize=True)
     dR.ab -= np.einsum("mbie,mej->ibj", H.ab.ovov, R.ab, optimize=True)
-    I1 = (
-        -0.5 * np.einsum("mnef,mfn->e", H.aa.oovv, R.aa, optimize=True)
-        - np.einsum("mnef,mfn->e", H.ab.oovv, R.ab, optimize=True)
-    )
-    dR.ab += np.einsum("e,ebij->ibj", I1, T.ab, optimize=True)
+    dR.ab += np.einsum("e,ebij->ibj", X["a"]["v"], T.ab, optimize=True)
     dR.ab = ipeom3_p_loops.build_hr_2b(
             dR.ab,
             R.aab, r3_excitations["aab"],
