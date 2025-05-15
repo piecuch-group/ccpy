@@ -1,3 +1,5 @@
+"""Ionization Potential Equation-of-Motion Coupled-Cluster
+Method with 1h, 2h-1p, and 3h-2p Excitations on top of CCSDT [IP-EOMCCSDT(3h-2p)]"""
 import numpy as np
 from ccpy.eomcc.ipeom3_intermediates import get_ipeomccsdt_intermediates, add_v_term
 from ccpy.lib.core import cc_loops2

@@ -1,10 +1,28 @@
 """
-Calculate the triples diagonal <ijkabc|H3|ijkabc>, where H3
-is the 3-body component of (H_N e^(T1+T2))_C corresponding to
-(V_N*T2)_C diagrams.
+Calculate the triples diagonal blocks of the 1-, 2-, and 3-body
+components of the similarity-transformed Hamiltonian.
 """
-
 import numpy as np
+
+def virt_denom_aaaa_H1_aaaa(H):
+    eps_a = np.diagonal(H.a.vv)
+    n = np.newaxis
+    e_abcd = eps_a[:, n, n, n] + eps_a[n, :, n, n] + eps_a[n, n, :, n] + eps_a[n, n, n, :]
+    return e_abcd
+
+def virt_denom_aaab_H1_aaab(H):
+    eps_a = np.diagonal(H.a.vv)
+    eps_b = np.diagonal(H.b.vv)
+    n = np.newaxis
+    e_abcd = eps_a[:, n, n, n] + eps_a[n, :, n, n] + eps_a[n, n, :, n] + eps_b[n, n, n, :]
+    return e_abcd
+
+def virt_denom_aabb_H1_aabb(H):
+    eps_a = np.diagonal(H.a.vv)
+    eps_b = np.diagonal(H.b.vv)
+    n = np.newaxis
+    e_abcd = eps_a[:, n, n, n] + eps_a[n, :, n, n] + eps_b[n, n, :, n] + eps_b[n, n, n, :]
+    return e_abcd
 
 def aaa_H3_aaa_diagonal(T, H, system):
     """< ijkabc | (V_V*T2)_C | ijkabc > diagonal"""

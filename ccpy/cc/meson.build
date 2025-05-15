@@ -12,7 +12,6 @@ python_sources = [
   'ccsdt_p_chol.py',
   'ccsdt_p.py',
   'ccsdt.py',
-  'ccsdt1.py',
   'ccsdtq.py',
   'eccc2.py',
 ]
@@ -21,6 +20,3 @@ py3.install_sources(
     python_sources,
     subdir: 'ccpy/cc'
 )
-
-subdir('ccsdt1_updates')
-subdir('ccsdtq1_updates')

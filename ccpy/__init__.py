@@ -7,6 +7,7 @@ from ccpy.drivers.adaptive import AdaptDriver, AdaptEOMDriver, AdaptEOMDriverSS
 from ccpy.utilities.pspace import (get_active_triples_pspace,
                                    get_active_3h2p_pspace,
                                    get_active_3p2h_pspace,
+                                   get_active_4p2h_pspace,
                                    get_pspace_from_qmc,
                                    get_triples_pspace_from_cipsi,
                                    get_quadruples_pspace_from_cipsi,

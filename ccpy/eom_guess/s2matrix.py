@@ -1,10 +1,14 @@
+'''
+Total Spin S^2 Matrix in Determinantal Basis for Initial Guesses
+'''
+
 import numpy as np
 import math
 
 def spin_adapt_guess(S2, H, multiplicity, debug=False):
 
     def _get_multiplicity(s2):
-        s = -0.5 + math.sqrt(0.25 + s2)
+        s = -0.5 + math.sqrt(abs(0.25 + s2))
         return 2.0 * s + 1.0
 
     # if multiplicity = -1, then just diagonalize H and return
@@ -430,26 +434,3 @@ def build_s2matrix_1p(system):
             ct2 += 1
         ct1 += 1
     return Sa
-
-def build_s2matrix_2p(system, nactu):
-
-    def pi_alpha(p):
-        if p >= system.noccupied_alpha and p < system.nunoccupied_alpha + system.noccupied_alpha:
-            return 1.0
-        else:
-            return 0.0
-
-    n2b = nactu**2
-    sz2 = get_sz2(system, Ms=0) # this needs to be modified potentially
-    Sab = np.zeros((n2b, n2b))
-    ct1 = 0
-    for a in range(system.noccupied_alpha, system.noccupied_alpha + nactu):
-        for b in range(system.noccupied_beta, system.noccupied_beta + nactu):
-            ct2 = 0
-            for c in range(system.noccupied_alpha, system.noccupied_alpha + nactu):
-                for d in range(system.noccupied_beta, system.noccupied_beta + nactu):
-                    Sab[ct1, ct2] += (sz2 + 1.0 * pi_alpha(a)) * (a == c) * (b == d)
-                    Sab[ct1, ct2] -= (b == c) * (a == d) # why is this a minus sign??
-                    ct2 += 1
-            ct1 += 1
-    return Sab

@@ -112,7 +112,6 @@ sort_lib = static_library('sort',
 
 fortran_sources = [
   'fortran/cc3_loops.f90',
-  'fortran/cc_active_loops.f90',
   'fortran/cc_loops2.f90',
   'fortran/cc_loops_t4.f90',
   'fortran/ccp3_adaptive_loops.f90',
@@ -133,6 +132,7 @@ fortran_sources = [
   'fortran/creacc_loops.f90',
   'fortran/cripcc_loops.f90',
   'fortran/deaeom4_p_loops.f90',
+  'fortran/deaeom4_p_intermediates.f90',
   'fortran/eaccp3_correction.f90',
   'fortran/eaccp3_loops.f90',
   'fortran/eaeom3_p_intermediates.f90',
@@ -145,6 +145,7 @@ fortran_sources = [
   'fortran/ipccp3_loops.f90',
   'fortran/ipeom3_p_intermediates.f90',
   'fortran/ipeom3_p_loops.f90',
+  'fortran/ipeomt_p_loops.f90',
   'fortran/leftccsdt_p_intermediates.f90',
   'fortran/leftccsdt_p_loops.f90',
   'fortran/lefteaeom3_p_intermediates.f90',

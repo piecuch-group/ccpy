@@ -1,47 +1,6 @@
-from itertools import combinations
-
 import numpy as np
-
+from itertools import combinations
 from ccpy.models.operators import get_operator_name
-
-# Example: Alternative constructor that avoids using parent __init__
-#
-# class MyClass(set):
-#
-#     def __init__(self, filename):
-#         self._value = load_from_file(filename)
-#
-#     @classmethod
-#     def from_somewhere(cls, somename):
-#         obj = cls.__new__(cls)  # Does not call __init__
-#         super(MyClass, obj).__init__()  # Don't forget to call any polymorphic base class initializers
-#         obj._value = load_from_somewhere(somename)
-#         return obj
-#
-# class UnsortedIntegralArray(np.ndarray):
-#
-#     def __new__(cls, input_array):
-#         # Input array is an already formed ndarray instance
-#         # We first cast to be our class type
-#         obj = np.asarray(input_array).view(cls)
-#         # Finally, we must return the newly created object:
-#         return obj
-#
-#     def __getitem__(self, item):
-#         #if isinstance(item, np.ndarray):
-#         #print(np.ix_(*item))
-#         # print(item)
-#         # print(*item)
-#         #print(item)
-#         return super().__getitem__(self, np.ix_(item))
-#         #return super().__getitem__(np.ix_(*item))
-#         #return super().__getitem__(item)
-#
-#     def __array_finalize__(self, obj):
-#         # see InfoArray.__array_finalize__ for comments
-#         if obj is None: return
-#         self.info = getattr(obj, 'info', None)
-
 
 class SortedIntegral:
     def __init__(self, system, name, matrix, use_none=False):
@@ -101,20 +60,9 @@ class Integral:
                     matrices[name] = np.zeros(dimension, dtype=data_type, order="F")
         return cls(system, order, matrices, sorted=True, use_none=use_none)
 
-    # @classmethod
-    # def from_none(cls, system, order):
-    #     matrices = {}
-    #     for i in range(1, order + 1):  # Loop over many-body ranks
-    #         for j in range(i + 1):  # Loop over distinct spin cases per rank
-    #             name = get_operator_name(i, j)
-    #             dimension = [system.norbitals] * (2 * order)
-    #             matrices[name] = None
-    #     return cls(system, order, matrices, use_none=True)
-
     @classmethod
     def from_none(cls, system, order):
         return cls(system, order, matrix=None, sorted=True, use_none=True)
-
 
 def getHamiltonian(e1int, e2int, system, normal_ordered, sorted=True):
 
@@ -122,7 +70,7 @@ def getHamiltonian(e1int, e2int, system, normal_ordered, sorted=True):
 
     twobody = build_v(e2int)
     if normal_ordered:
-        onebody = build_f(e1int, twobody, system)
+        onebody = build_f({"a": e1int, "b": e1int}, twobody, system)
     else:
         onebody = {"a": e1int, "b": e1int}
     # Keep only correlated spatial orbitals in the one- and two-body matrices
@@ -132,6 +80,34 @@ def getHamiltonian(e1int, e2int, system, normal_ordered, sorted=True):
     twobody["ab"] = twobody["ab"][corr_slice, corr_slice, corr_slice, corr_slice]
     twobody["bb"] = twobody["bb"][corr_slice, corr_slice, corr_slice, corr_slice]
 
+    return Integral(system, 2, {**onebody, **twobody}, sorted=sorted)
+
+def getUHFHamiltonian(coeff_a, coeff_b, z_ao, v_ao, system, normal_ordered, sorted=True):
+    corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
+    # Transform 1-electron integrals
+    z_a = np.einsum("ij,ip,jq->pq", z_ao, coeff_a, coeff_a, optimize=True)
+    z_b = np.einsum("ij,ip,jq->pq", z_ao, coeff_b, coeff_b, optimize=True)
+    z = {"a": z_a, "b": z_b}
+    # Transform 2-electron integrals
+    v_aa = np.einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_a, coeff_a, coeff_a, coeff_a, optimize=True)
+    v_aa -= np.transpose(v_aa, (0, 1, 3, 2))
+    v_ab = np.einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_a, coeff_b, coeff_a, coeff_b, optimize=True)
+    v_bb = np.einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_b, coeff_b, coeff_b, coeff_b, optimize=True)
+    v_bb -= np.transpose(v_bb, (0, 1, 3, 2))
+    v = {"aa": v_aa, "ab": v_ab, "bb": v_bb}
+    # Build Fock matrix
+    if normal_ordered:
+        fock = build_f(z, v, system)
+    else:
+        fock = z
+    # Keep only correlated spatial orbitals in the one- and two-body matrices
+    onebody = {}
+    twobody = {}
+    onebody["a"] = fock["a"][corr_slice, corr_slice]
+    onebody["b"] = fock["b"][corr_slice, corr_slice]
+    twobody["aa"] = v["aa"][corr_slice, corr_slice, corr_slice, corr_slice]
+    twobody["ab"] = v["ab"][corr_slice, corr_slice, corr_slice, corr_slice]
+    twobody["bb"] = v["bb"][corr_slice, corr_slice, corr_slice, corr_slice]
     return Integral(system, 2, {**onebody, **twobody}, sorted=sorted)
 
 def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
@@ -333,15 +309,15 @@ def build_v(e2int):
     return v
 
 
-def build_f(e1int, v, system):
+def build_f(z, v, system):
     """This function generates the Fock matrix using the formula
     F = Z + G where G is sum_{i} <pi|v|qi>_A split for different
     spin cases.
 
     Parameters
     ----------
-    e1int : ndarray(dtype=float, shape=(norb,norb))
-        Onebody MO integrals
+    z : dict 
+        Onebody integral dictionary
     v : dict
         Twobody integral dictionary
     sys : dict
@@ -357,14 +333,14 @@ def build_f(e1int, v, system):
 
     # <p|f|q> = <p|z|q> + <pi|v|qi> + <pi~|v|qi~>
     f_a = (
-        e1int
+        z["a"]
         + np.einsum("piqi->pq", v["aa"][:, :Nocc_a, :, :Nocc_a])
         + np.einsum("piqi->pq", v["ab"][:, :Nocc_b, :, :Nocc_b])
     )
 
     # <p~|f|q~> = <p~|z|q~> + <p~i~|v|q~i~> + <ip~|v|iq~>
     f_b = (
-        e1int
+        z["b"]
         + np.einsum("piqi->pq", v["bb"][:, :Nocc_b, :, :Nocc_b])
         + np.einsum("ipiq->pq", v["ab"][:Nocc_a, :, :Nocc_a, :])
     )

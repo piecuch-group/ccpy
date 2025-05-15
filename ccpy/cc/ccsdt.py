@@ -1,5 +1,6 @@
-"""Module with functions that perform the CC with singles, doubles,
-and triples (CCSDT) calculation for a molecular system."""
+'''
+Coupled-Cluster Method with Singles, Doubles, and Triples (CCSDT)
+'''
 
 import numpy as np
 
@@ -7,9 +8,9 @@ from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.lib.core import cc_loops2
 
-def update(T, dT, H, X, shift, flag_RHF, system):
+def update(T, dT, H, X, shift, flag_RHF):
 
-    X = get_pre_ccs_intermediates(X, T, H, system, flag_RHF)
+    X = get_pre_ccs_intermediates(X, T, H, flag_RHF)
 
     # update T1
     T, dT = update_t1a(T, dT, H, X, shift)
@@ -20,7 +21,7 @@ def update(T, dT, H, X, shift, flag_RHF, system):
         T, dT = update_t1b(T, dT, H, X, shift)
 
     # CCS intermediates
-    X = get_ccs_intermediates_opt(X, T, H, system, flag_RHF)
+    X = get_ccs_intermediates_opt(X, T, H, flag_RHF)
 
     # update T2
     T, dT = update_t2a(T, dT, X, H, shift)

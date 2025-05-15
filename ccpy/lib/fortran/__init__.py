@@ -17,6 +17,7 @@ from .leftccsdt_p_intermediates import *
 from .eaeom3_p_loops import *
 from .eaeom3_p_intermediates import *
 from .ipeom3_p_loops import *
+from .ipeomt_p_loops import *
 from .ipeom3_p_intermediates import *
 from .lefteaeom3_p_loops import *
 from .lefteaeom3_p_intermediates import *

@@ -1,5 +1,7 @@
-"""Module with functions that perform the CC with singles, doubles,
-and triples (CCSDT) calculation for a molecular system."""
+'''
+Coupled-Cluster Method with Singles, Doubles, and an Arbitrary Subset of Triples [CC(P)]
+[This version uses Cholesky decomposition of the two-electron integrals]
+'''
 
 import numpy as np
 # Modules for type checking
@@ -18,7 +20,6 @@ def update(T: ClusterOperator,
            X: Integral,
            shift: float,
            flag_RHF: bool,
-           system: System,
            t3_excitations: Dict[str, np.ndarray]) -> Tuple[ClusterOperator, ClusterOperator]:
 
     # Check for empty spincases in t3 list. Remember that [1., 1., 1., 1., 1., 1.]

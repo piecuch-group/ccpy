@@ -1,7 +1,7 @@
-"""Module containing functions to calculate the vertical excitation
-energies and linear excitation amplitudes for excited states using
-the spin-flip equation-of-motion (EOM) CC with singles and doubles
-diagonalized in the space of singles, doubles, and triples [SF-EOMCC(2,3)]."""
+'''
+Spin-Flip Equation-of-Motion Coupled-Cluster Method with Singles and Doubles
+in the Reference System and Triple Excitations in the Diagonalization [SF-EOMCC(2,3)]
+'''
 
 import numpy as np
 from ccpy.eomcc.sfeomcc23_intermediates import get_sfeomcc23_intermediates

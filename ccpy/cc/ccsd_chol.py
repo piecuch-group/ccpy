@@ -1,18 +1,13 @@
-"""
-Module with functions to perform the coupled-cluster (CC) approach with singles and 
-doubles, abbreviated as CCSD.
+'''
+Coupled-Cluster Method with Singles and Doubles (CCSD)
+[This version uses Cholesky decomposition of the two-electron integrals]
+'''
 
-References:
-    [1] G. D. Purvis and R. J. Bartlett, J. Chem. Phys. 76, 1910 (1982). 
-    [2] J. M. Cullen and M. C. Zerner, J. Chem. Phys. 77, 4088 (1982).
-    [3] G. E. Scuseria, A. C. Scheiner, T. J. Lee, J. E. Rice, and H. F. Schaefer, J. Chem. Phys. 86, 2881 (1987). 
-    [4] P. Piecuch and J. Paldus, Int. J. Quantum Chem. 36, 429 (1989).
-"""
 import numpy as np
 from ccpy.lib.core import cc_loops2, vvvv_contraction
 
 # @profile
-def update(T, dT, H, X, shift, flag_RHF, system):
+def update(T, dT, H, X, shift, flag_RHF):
 
     # pre-CCS intermediates
     X.a.ov = H.a.ov + (

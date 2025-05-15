@@ -1,8 +1,7 @@
-"""
-Module with functions that help perform the approximate coupled-pair (ACP) coupled-cluster (CC)
-approach with singles, doubles, and the subset of triples belonging to the P-space, abbreviated
-as ACCSDT(P).
-"""
+'''
+Approximate Coupled-Pair Method with Singles, Doubles, and Arbitrary Subset of Triples [ACC(P)]
+'''
+
 import numpy as np
 # Modules for type checking
 from typing import List, Tuple, Dict
@@ -14,18 +13,16 @@ from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.lib.core import ccsdt_p_loops
 
-
 def update(T: ClusterOperator,
            dT: ClusterOperator,
            H: Integral,
            X: Integral,
            shift: float,
            flag_RHF: bool,
-           system: System,
            t3_excitations: Dict[str, np.ndarray],
            acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
     """
-    Performs one update of the CC amplitude equations for the ACCSDT(P) method.
+    Performs one update of the CC amplitude equations for the ACC(P) method.
 
     Parameters
     ----------
@@ -73,7 +70,7 @@ def update(T: ClusterOperator,
         do_t3["bbb"] = False
     build_hbar = do_t3["aaa"] or do_t3["aab"] or do_t3["abb"] or do_t3["bbb"]
 
-    X = get_pre_ccs_intermediates(X, T, H, system, flag_RHF)
+    X = get_pre_ccs_intermediates(X, T, H, flag_RHF)
 
     # update T1
     T, dT = update_t1a(T, dT, H, X, shift, t3_excitations)
@@ -84,7 +81,7 @@ def update(T: ClusterOperator,
         T, dT = update_t1b(T, dT, H, X, shift, t3_excitations)
 
     # CCS intermediates
-    X = get_ccs_intermediates_opt(X, T, H, system, flag_RHF)
+    X = get_ccs_intermediates_opt(X, T, H, flag_RHF)
     # Remove T2 parts from X.a.oo/X.b.oo and X.a.vv/X.b.vv
     X.a.vv += (
             + 0.5 * np.einsum("mnef,afmn->ae", H.aa.oovv, T.aa, optimize=True)

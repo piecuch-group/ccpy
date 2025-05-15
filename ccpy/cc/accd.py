@@ -1,7 +1,7 @@
-"""
-Module with functions that help perform the approximate coupled-pair (ACP) coupled-cluster (CC)
-approach with doubles, abbreviated as ACCD.
-"""
+'''
+Approximate Coupled-Pair Method with Doubles (ACCD)
+'''
+
 import numpy as np
 # Modules for type checking
 from typing import List, Tuple
@@ -11,14 +11,12 @@ from ccpy.models.integrals import Integral
 # Modules for computation
 from ccpy.lib.core import cc_loops2
 
-
 def update(T: ClusterOperator,
            dT: ClusterOperator,
            H: Integral,
            X: Integral,
            shift: float,
            flag_RHF: bool,
-           system: System,
            acparray: List[float]) -> Tuple[ClusterOperator, ClusterOperator]:
     """
     Performs one update of the CC amplitude equations for the ACCD method.

@@ -32,7 +32,7 @@ from ccpy.utilities.printing import (
                 print_dip_amplitudes, dipeomcc_calculation_summary,
 )
 from ccpy.utilities.utilities import convert_excitations_c_to_f
-from ccpy.interfaces.pyscf_tools import load_pyscf_integrals
+from ccpy.interfaces.pyscf_tools import load_pyscf_integrals, load_pyscf_uhf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
 from ccpy.interfaces.fcidump_tools import load_fcidump_integrals
 
@@ -40,12 +40,19 @@ from ccpy.interfaces.fcidump_tools import load_fcidump_integrals
 class Driver:
 
     @classmethod
-    def from_pyscf(cls, meanfield, nfrozen, ndelete=0, normal_ordered=True, dump_integrals=False, sorted=True, use_cholesky=False, cholesky_tol=1.0e-09, cmax=10):
-        return cls(
-                    *load_pyscf_integrals(meanfield, nfrozen, ndelete, normal_ordered=normal_ordered, dump_integrals=dump_integrals, sorted=sorted,
-                                          use_cholesky=use_cholesky, cholesky_tol=cholesky_tol, cmax=cmax)
-                  )
-
+    def from_pyscf(cls, meanfield, nfrozen, ndelete=0, normal_ordered=True, dump_integrals=False, sorted=True, use_cholesky=False, cholesky_tol=1.0e-09, cmax=10, uhf=False):
+        if uhf:
+            if use_cholesky:
+                print("   Cholesky-based CC not currently supported for UHF references!")
+            return cls(
+                        *load_pyscf_uhf_integrals(meanfield, nfrozen, ndelete, normal_ordered=normal_ordered, dump_integrals=dump_integrals, sorted=sorted,
+                                              use_cholesky=use_cholesky, cholesky_tol=cholesky_tol, cmax=cmax)
+                      )
+        else:
+            return cls(
+                        *load_pyscf_integrals(meanfield, nfrozen, ndelete, normal_ordered=normal_ordered, dump_integrals=dump_integrals, sorted=sorted,
+                                              use_cholesky=use_cholesky, cholesky_tol=cholesky_tol, cmax=cmax)
+                      )
     @classmethod
     def from_gamess(cls, logfile, nfrozen, ndelete=0, multiplicity=None, fcidump=None, onebody=None, twobody=None, normal_ordered=True, sorted=True, data_type=np.float64):
         return cls(
@@ -60,13 +67,15 @@ class Driver:
 
     def __init__(self, system, hamiltonian, max_number_states=50):
         """
-
         Parameters
         ----------
         system : System
         hamiltonian : Integral
         max_number_states : int
         """
+        # Print the commit ID
+        self.print_commit_id()
+        #
         self.system = system
         self.hamiltonian = hamiltonian
         self.flag_hbar = False
@@ -124,9 +133,12 @@ class Driver:
         # the intermediates used in R3 equation.
         self.cc3_intermediates = None
 
+    def print_commit_id(self):
+        from ccpy.utilities.utilities import get_git_commit_id
+        print(f"CCpy git commit ID cd {get_git_commit_id()}")
+
     def set_operator_params(self, method):
         """
-
         Parameters
         ----------
         method :
@@ -144,16 +156,10 @@ class Driver:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
-        elif method.lower() in ["ccsdtq", "ccsdtq-rev"]:
+        elif method.lower() in ["ccsdtq"]:
             self.operator_params["order"] = 4
             self.operator_params["number_particles"] = 4
             self.operator_params["number_holes"] = 4
-        elif method.lower() in ["ccsdt1", "eomccsdt1"]:
-            self.operator_params["order"] = 3
-            self.operator_params["number_particles"] = 3
-            self.operator_params["number_holes"] = 3
-            self.operator_params["active_orders"] = [3]
-            self.operator_params["number_active_indices"] = [1]
         elif method.lower() in ["ccsdt_p", "ccsdt_p_chol", "accsdt_p", "eomccsdt_p", "left_ccsdt_p", "lrccsdt_p"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 3
@@ -163,11 +169,11 @@ class Driver:
             self.order = 2
             self.num_particles = 1
             self.num_holes = 2
-        elif method.lower() in ["ipeom3", "left_ipeom3", "ipeomccsdt"]:
+        elif method.lower() in ["ipeom3", "left_ipeom3", "ipeomccsdta", "ipeomccsdt"]:
             self.order = 3
             self.num_particles = 2
             self.num_holes = 3
-        elif method.lower() in ["ipeom3_p", "left_ipeom3_p"]:
+        elif method.lower() in ["ipeom3_p", "left_ipeom3_p", "ipeomccsdt_p"]:
             self.operator_params["order"] = 3
             self.operator_params["number_particles"] = 2
             self.operator_params["number_holes"] = 3
@@ -176,7 +182,7 @@ class Driver:
             self.order = 2
             self.num_particles = 2
             self.num_holes = 1
-        elif method.lower() in ["eaeom3", "left_eaeom3", "eaeomccsdt"]:
+        elif method.lower() in ["eaeom3", "left_eaeom3", "eaeomccsdta", "eaeomccsdt"]:
             self.order = 3
             self.num_particles = 3
             self.num_holes = 2
@@ -189,7 +195,7 @@ class Driver:
             self.order = 3
             self.num_particles = 1
             self.num_holes = 3
-        elif method.lower() in ["dipeom4", "left_dipeom4", "dipeomccsdt"]:
+        elif method.lower() in ["dipeom4", "left_dipeom4", "dipeomccsdt", "dipeomccsdta"]:
             self.order = 4
             self.num_particles = 2
             self.num_holes = 4
@@ -205,6 +211,11 @@ class Driver:
             self.order = 4
             self.num_particles = 4
             self.num_holes = 2
+        elif method.lower() in ["deaeom4_p", "left_deaeom4_p"]:
+            self.operator_params["order"] = 4
+            self.operator_params["number_particles"] = 4
+            self.operator_params["number_holes"] = 2
+            self.operator_params["pspace_orders"] = [2]
         elif method.lower() in ["sfeomccsd"]:
             self.order = 2
             self.Ms = -1
@@ -293,7 +304,6 @@ class Driver:
                                                 dT,
                                                 self.hamiltonian,
                                                 cc_intermediates,
-                                                self.system,
                                                 self.options,
                                                 acparray=acparray,
                                                )
@@ -375,7 +385,6 @@ class Driver:
                                                        dT,
                                                        self.hamiltonian,
                                                        cc_intermediates,
-                                                       self.system,
                                                        self.options,
                                                        t3_excitations,
                                                        acparray=acparray)
@@ -759,14 +768,21 @@ class Driver:
                 eomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.r0[istate], self.relative_excitation_level[istate], is_converged, istate, self.system, self.options["amp_print_threshold"])
                 print("   EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
         else:
+            B_prev = []
             for j, istate in enumerate(state_index):
                 print("   EOMCC calculation for root %d started on" % istate, get_timestamp())
                 print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
                 print_ee_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+                if j > 0:
+                    B = np.hstack((self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten()), np.asarray(B_prev).T))
+                else:
+                    B = self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten())
                 self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function, update_function,
-                                                                                                       self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
+                                                                                                       B,
                                                                                                        self.R[istate], dR, self.vertical_excitation_energy[istate],
                                                                                                        self.T, self.hamiltonian, self.system, self.options)
+                # Keep the computed root in the starting guess space for subsequent roots
+                B_prev.append(self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()))
                 # Compute r0 a posteriori
                 self.r0[istate] = get_r0(self.R[istate], self.hamiltonian, self.vertical_excitation_energy[istate])
                 # compute the relative excitation level (REL) metric
@@ -812,20 +828,26 @@ class Driver:
                               Ms=-1,
                               order=self.operator_params["order"])
 
+        B_prev = []
         for j, istate in enumerate(state_index):
             print("   SF-EOMCC calculation for root %d started on" % istate, get_timestamp())
             print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
             print_sf_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+            if j > 0:
+                B = np.hstack((self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten()), np.asarray(B_prev).T))
+            else:
+                B = self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten())
             self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
                                                                                          update_function,
-                                                                                         #B0[:, j],
-                                                                                         self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
+                                                                                         B,
                                                                                          self.R[istate], dR,
                                                                                          self.vertical_excitation_energy[istate],
                                                                                          self.T,
                                                                                          self.hamiltonian,
                                                                                          self.system,
                                                                                          self.options)
+            # Keep the computed root in the starting guess space for subsequent roots
+            B_prev.append(self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()))
             sfeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, is_converged, self.system, self.options["amp_print_threshold"])
             print("   SF-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
 
@@ -867,14 +889,18 @@ class Driver:
                           self.num_particles,
                           self.num_holes)
 
+        B_prev = []
         for j, istate in enumerate(state_index):
             print("   DEA-EOMCC calculation for root %d started on" % istate, get_timestamp())
             print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
             print_dea_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+            if j > 0:
+                B = np.hstack((self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten()), np.asarray(B_prev).T))
+            else:
+                B = self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten())
             self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
                                                                                                    update_function,
-                                                                                                   #B0[:, j],
-                                                                                                   self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
+                                                                                                   B,
                                                                                                    self.R[istate],
                                                                                                    dR,
                                                                                                    self.vertical_excitation_energy[istate],
@@ -882,8 +908,77 @@ class Driver:
                                                                                                    self.hamiltonian,
                                                                                                    self.system,
                                                                                                    self.options)
+            # Keep the computed root in the starting guess space for subsequent roots
+            B_prev.append(self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()))
             deaeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, is_converged, self.system, self.options["amp_print_threshold"])
             print("   DEA-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
+
+    def run_deaeomccp(self, method, state_index, r3_excitations, t3_excitations=None):
+        """Performs the particle-nonconserving DEA-EOMCC(P) calculation specified by the user in the input."""
+        # check if requested CC calculation is implemented in modules
+        if method.lower() not in ccpy.eomcc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(method.lower())
+            )
+        # Set operator parameters needed to build R
+        self.set_operator_params(method)
+        self.options["method"] = method.upper()
+
+        # Ensure that Hbar is set upon entry
+        assert (self.flag_hbar)
+
+        # import the specific EOMCC method module and get its update function
+        eom_module = import_module("ccpy.eomcc." + method.lower())
+        HR_function = getattr(eom_module, 'HR')
+        update_function = getattr(eom_module, 'update')
+
+        # Convert excitations array to Fortran continuous
+        r3_excitations = convert_excitations_c_to_f(r3_excitations)
+
+        # Get dimensions of R3 spincases in P space
+        n4abaa_r = r3_excitations["abaa"].shape[0]
+        n4abab_r = r3_excitations["abab"].shape[0]
+        n4abbb_r = r3_excitations["abbb"].shape[0]
+        excitation_count = [[n4abaa_r, n4abab_r, n4abbb_r]]
+
+        if self.R[state_index] is None:
+            self.R[state_index] = FockOperator(self.system,
+                                               self.operator_params["number_particles"],
+                                               self.operator_params["number_holes"],
+                                               p_orders=self.operator_params["pspace_orders"],
+                                               pspace_sizes=excitation_count)
+            self.R[state_index].unflatten(self.guess_vectors[:, state_index], order=self.guess_order)
+            self.vertical_excitation_energy[state_index] = self.guess_energy[state_index]
+
+        # Print the options as a header
+        self.print_options()
+
+        # Create the residual R that is re-used for each root
+        dR = FockOperator(self.system,
+                          self.operator_params["number_particles"],
+                          self.operator_params["number_holes"],
+                          p_orders=self.operator_params["pspace_orders"],
+                          pspace_sizes=excitation_count)
+
+        print("   DEA-EOMCC(P) calculation for root %d started on" % state_index, get_timestamp())
+        print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[state_index]))
+        print_dea_amplitudes(self.R[state_index], self.system, self.R[state_index].order, self.options["amp_print_threshold"])
+        self.R[state_index], self.vertical_excitation_energy[state_index], is_converged = eomcc_davidson(HR_function,
+                                                                                               update_function,
+                                                                                               self.R[state_index].flatten() / np.linalg.norm(self.R[state_index].flatten()),
+                                                                                               self.R[state_index],
+                                                                                               dR,
+                                                                                               self.vertical_excitation_energy[state_index],
+                                                                                               self.T,
+                                                                                               self.hamiltonian,
+                                                                                               self.system,
+                                                                                               self.options,
+                                                                                               t3_excitations,
+                                                                                               r3_excitations)
+        # compute the relative excitation level (REL) metric
+        deaeomcc_calculation_summary(self.R[state_index], self.vertical_excitation_energy[state_index], self.correlation_energy, is_converged, self.system, self.options["amp_print_threshold"])
+        print("   DEA-EOMCC(P) calculation for root %d ended on" % state_index, get_timestamp(), "\n")
+
 
     def run_dipeomcc(self, method, state_index):
         """Performs the particle-nonconserving DIP-EOMCC calculation specified by the user in the input."""
@@ -922,14 +1017,19 @@ class Driver:
         dR = FockOperator(self.system,
                           self.num_particles,
                           self.num_holes)
+
+        B_prev = []
         for j, istate in enumerate(state_index):
             print("   DIP-EOMCC calculation for root %d started on" % istate, get_timestamp())
             print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
             print_dip_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+            if j > 0:
+                B = np.hstack((self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten()), np.asarray(B_prev).T))
+            else:
+                B = self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten())
             self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
                                                                                                    update_function,
-                                                                                                   #B0[:, j],
-                                                                                                   self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
+                                                                                                   B,
                                                                                                    self.R[istate],
                                                                                                    dR,
                                                                                                    self.vertical_excitation_energy[istate],
@@ -937,6 +1037,8 @@ class Driver:
                                                                                                    self.hamiltonian,
                                                                                                    self.system,
                                                                                                    self.options)
+            # Keep the computed root in the starting guess space for subsequent roots
+            B_prev.append(self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()))
             dipeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, is_converged, self.system, self.options["amp_print_threshold"])
             print("   DIP-EOMCC calculation for root %d ended on" % istate, get_timestamp(), "\n")
 
@@ -997,14 +1099,18 @@ class Driver:
                 ipeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
             print("   Multiroot EOMCC calculation ended on", get_timestamp(), "\n")
         else:
+            B_prev = []
             for j, istate in enumerate(state_index):
                 print("   IP-EOMCC calculation for root %d started on" % istate, get_timestamp())
                 print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
                 print_ip_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+                if j > 0:
+                    B = np.hstack((self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten()), np.asarray(B_prev).T))
+                else:
+                    B = self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten())
                 self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
                                                                                                        update_function,
-                                                                                                       #B0[:, j],
-                                                                                                       self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
+                                                                                                       B,
                                                                                                        self.R[istate],
                                                                                                        dR,
                                                                                                        self.vertical_excitation_energy[istate],
@@ -1012,6 +1118,8 @@ class Driver:
                                                                                                        self.hamiltonian,
                                                                                                        self.system,
                                                                                                        self.options)
+                # Keep the computed root in the starting guess space for subsequent roots
+                B_prev.append(self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()))
                 # compute the relative excitation level (REL) metric
                 self.relative_excitation_level[istate] = get_rel_ip(self.R[istate])
                 ipeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
@@ -1069,7 +1177,7 @@ class Driver:
         print_ip_amplitudes(self.R[state_index], self.system, self.R[state_index].order, self.options["amp_print_threshold"])
         self.R[state_index], self.vertical_excitation_energy[state_index], is_converged = eomcc_davidson(HR_function,
                                                                                                update_function,
-                                                                                               self.R[state_index].flatten() / np.linalg.norm(self.R[state_index].flatten()),
+                                                                                               self.R[state_index].flatten()[:, np.newaxis] / np.linalg.norm(self.R[state_index].flatten()),
                                                                                                self.R[state_index],
                                                                                                dR,
                                                                                                self.vertical_excitation_energy[state_index],
@@ -1193,14 +1301,18 @@ class Driver:
                           self.num_particles,
                           self.num_holes)
 
+        B_prev = []
         for j, istate in enumerate(state_index):
             print("   EA-EOMCC calculation for root %d started on" % istate, get_timestamp())
             print("\n   Energy of initial guess = {:>10.10f}".format(self.vertical_excitation_energy[istate]))
             print_ea_amplitudes(self.R[istate], self.system, self.R[istate].order, self.options["amp_print_threshold"])
+            if j > 0:
+                B = np.hstack((self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten()), np.asarray(B_prev).T))
+            else:
+                B = self.R[istate].flatten()[:, np.newaxis] / np.linalg.norm(self.R[istate].flatten())
             self.R[istate], self.vertical_excitation_energy[istate], is_converged = eomcc_davidson(HR_function,
                                                                                                    update_function,
-                                                                                                   #B0[:, j],
-                                                                                                   self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()),
+                                                                                                   B,
                                                                                                    self.R[istate],
                                                                                                    dR,
                                                                                                    self.vertical_excitation_energy[istate],
@@ -1208,6 +1320,8 @@ class Driver:
                                                                                                    self.hamiltonian,
                                                                                                    self.system,
                                                                                                    self.options)
+            # Keep the computed root in the starting guess space for subsequent roots
+            B_prev.append(self.R[istate].flatten() / np.linalg.norm(self.R[istate].flatten()))
             # compute the relative excitation level (REL) metric
             self.relative_excitation_level[istate] = get_rel_ea(self.R[istate])
             eaeomcc_calculation_summary(self.R[istate], self.vertical_excitation_energy[istate], self.correlation_energy, self.relative_excitation_level[istate], is_converged, self.system, self.options["amp_print_threshold"])
@@ -1976,7 +2090,6 @@ class Driver:
                                                   self.hamiltonian,
                                                   cc_intermediates,
                                                   T_ext, VT_ext,
-                                                  self.system,
                                                   self.options,
                                                )
 
@@ -2230,6 +2343,13 @@ class Driver:
             assert self.flag_hbar
             # Perform ground-state correction
             _, self.deltap4[0] = calc_crcc24(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
+
+        if method.lower() == "crcc34":
+            from ccpy.moments.crcc34 import calc_crcc34
+            # Ensure that HBar is set
+            assert self.flag_hbar
+            # perform ground-state correction
+            _, self.deltap4[0] = calc_crcc34(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system, self.options["RHF_symmetry"])
 
         if method.lower() == "ccp4":
             from ccpy.moments.ccp4 import calc_ccp4

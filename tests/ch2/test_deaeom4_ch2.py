@@ -22,7 +22,7 @@ def test_deaeom4_ch2():
     driver.options["davidson_out_of_core"] = True
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
-    driver.run_guess(method="deacis", multiplicity=-1, nact_unoccupied=5, roots_per_irrep={"A1": 6})
+    driver.run_guess(method="deacis", multiplicity=-1, nact_unoccupied=5, roots_per_irrep={"A1": 6}, use_symmetry=False)
     driver.run_deaeomcc(method="deaeom4", state_index=[0, 1, 2, 3, 4, 5])
 
     expected_vee = [-1.20632891, -1.22803218, -1.14348083, -1.04281182, -0.91190576, -0.88424966]

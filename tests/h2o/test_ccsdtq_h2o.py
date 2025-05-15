@@ -25,6 +25,8 @@ def test_ccsdtq_h2o():
     mf.kernel()
 
     driver = Driver.from_pyscf(mf, nfrozen=0)
+    driver.system.print_info()
+
     driver.run_cc(method="ccsdtq")
 
     # Check CCSDTQ correlation energy

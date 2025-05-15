@@ -3,7 +3,7 @@
 import pytest
 from pathlib import Path
 import numpy as np
-from ccpy import Driver
+from ccpy import Driver, get_active_triples_pspace
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
@@ -17,7 +17,8 @@ def test_cct3_ch():
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=2)
     driver.system.print_info()
 
-    driver.run_cc(method="ccsdt1")
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep="B2")
+    driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")
     driver.run_ccp3(method="cct3")

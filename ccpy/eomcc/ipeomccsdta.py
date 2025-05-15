@@ -1,5 +1,5 @@
 import numpy as np
-from ccpy.eomcc.ipeom3_intermediates import get_ipeom3_intermediates
+from ccpy.eomcc.ipeom3_intermediates import get_ipeomccsdta_intermediates
 from ccpy.lib.core import cc_loops2
 
 # R.a -> (noa) -> (i)
@@ -29,13 +29,14 @@ def update(R, omega, H, RHF_symmetry, system):
 
 def HR(dR, R, T, H, flag_RHF, system):
     # Get intermediates
-    X = get_ipeom3_intermediates(H, R)
+    X = get_ipeomccsdta_intermediates(H, R, T)
     # update R1
     dR.a = build_HR_1A(R, T, H)
     # update R2
     dR.aa = build_HR_2A(R, T, H)
     dR.ab = build_HR_2B(R, T, H)
     # update R3
+    # X = add_v_term(X, H, R) # this contribution is 0 for canonical orbitals, since F_N = 0
     dR.aaa = build_HR_3A(R, T, X, H)
     dR.aab = build_HR_3B(R, T, X, H)
     dR.abb = build_HR_3C(R, T, X, H)
@@ -118,6 +119,11 @@ def build_HR_3A(R, T, X, H):
     # 3-body Hbar terms factorized using intermediates
     X3A -= (3.0 / 12.0) * np.einsum("imj,bcmk->ibcjk", X["aa"]["ooo"], T.aa, optimize=True)
     X3A += (6.0 / 12.0) * np.einsum("ibe,ecjk->ibcjk", X["aa"]["ovv"], T.aa, optimize=True)
+    # parts with T3 (these should be all bare integrals)
+    X3A += (3.0 / 12.0) * np.einsum("iem,ebcmjk->ibcjk", X["aa"]["ovo"], T.aaa, optimize=True) # [1]
+    X3A += (3.0 / 12.0) * np.einsum("iem,bcejkm->ibcjk", X["ab"]["ovo"], T.aab, optimize=True) # [2]
+    X3A += (2.0 / 24.0) * np.einsum("bef,fecijk->ibcjk", X["aa"]["vvv"], T.aaa, optimize=True) # [3]
+    X3A += (1.0 / 12.0) * np.einsum("e,ebcijk->ibcjk", X["a"]["v"], T.aaa, optimize=True)      # [4]
     X3A -= np.transpose(X3A, (3, 1, 2, 0, 4)) + np.transpose(X3A, (4, 1, 2, 3, 0)) # antisymmetrize A(i/jk)
     X3A -= np.transpose(X3A, (0, 1, 2, 4, 3)) # antisymmetrize A(jk)
     X3A -= np.transpose(X3A, (0, 2, 1, 3, 4)) # antisymmetrize A(bc)
@@ -150,6 +156,13 @@ def build_HR_3B(R, T, X, H):
     X3B -= np.einsum("imk,bcjm->ibcjk", X["ab"]["ooo"], T.ab, optimize=True) # (21)
     X3B += np.einsum("ice,bejk->ibcjk", X["ab"]["ovv"], T.ab, optimize=True) # (22)
     X3B += np.einsum("ibe,ecjk->ibcjk", X["aa"]["ovv"], T.ab, optimize=True) # (23)
+    # parts with T3 (these should be all bare integrals)
+    X3B += np.einsum("iem,ebcmjk->ibcjk", X["aa"]["ovo"], T.aab, optimize=True) # [1]
+    X3B += np.einsum("iem,becjmk->ibcjk", X["ab"]["ovo"], T.abb, optimize=True) # [2]
+    X3B -= (1.0 / 2.0) * np.einsum("emk,ebcijm->ibcjk", X["ab"]["voo"], T.aab, optimize=True) # [3]
+    X3B += (1.0 / 4.0) * np.einsum("bfe,efcijk->ibcjk", X["aa"]["vvv"], T.aab, optimize=True) # [4]
+    X3B += (1.0 / 2.0) * np.einsum("ecf,ebfijk->ibcjk", X["ab"]["vvv"], T.aab, optimize=True) # [5]
+    X3B += (1.0 / 2.0) * np.einsum("e,ebcijk->ibcjk", X["a"]["v"], T.aab, optimize=True)      # [6]
     X3B -= np.transpose(X3B, (3, 1, 2, 0, 4)) # antisymmetrize (ij)
     return X3B
 
@@ -172,6 +185,12 @@ def build_HR_3C(R, T, X, H):
     X3C -= (2.0 / 4.0) * np.einsum("imj,bcmk->ibcjk", X["ab"]["ooo"], T.bb, optimize=True) # (13)
     X3C += (2.0 / 4.0) * np.einsum("ibe,ecjk->ibcjk", X["ab"]["ovv"], T.bb, optimize=True) # (14)
     X3C += np.einsum("ebj,ecik->ibcjk", X["ab"]["vvo"], T.ab, optimize=True) # (15)
+    # parts with T3 (these should be all bare integrals)
+    X3C += (1.0 / 4.0) * np.einsum("iem,ebcmjk->ibcjk", X["aa"]["ovo"], T.abb, optimize=True) # [1]
+    X3C += (1.0 / 4.0) * np.einsum("iem,ebcmjk->ibcjk", X["ab"]["ovo"], T.bbb, optimize=True) # [2]
+    X3C -= (2.0 / 4.0) * np.einsum("emj,ebcimk->ibcjk", X["ab"]["voo"], T.abb, optimize=True) # [3]
+    X3C += (2.0 / 4.0) * np.einsum("ebf,efcijk->ibcjk", X["ab"]["vvv"], T.abb, optimize=True) # [4]
+    X3C += (1.0 / 4.0) * np.einsum("e,ebcijk->ibcjk", X["a"]["v"], T.abb, optimize=True)      # [5]
     X3C -= np.transpose(X3C, (0, 2, 1, 3, 4)) # antisymmetrize A(bc)
     X3C -= np.transpose(X3C, (0, 1, 2, 4, 3)) # antisymmetrize A(jk)
     return X3C

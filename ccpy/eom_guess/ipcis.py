@@ -1,5 +1,8 @@
-import numpy as np
+'''
+IP-EOMCCSD(1h) Guess Routine for IP-EOMCC
+'''
 
+import numpy as np
 from ccpy.eom_guess.s2matrix import build_s2matrix_1h, spin_adapt_guess
 
 def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, debug=False, use_symmetry=False):

@@ -1,3 +1,8 @@
+'''
+CISd Guess Routine for EOMCC
+[This version uses Cholesky decomposition of the two-electron integrals]
+'''
+
 import numpy as np
 import time
 from ccpy.eom_guess.s2matrix import spin_adapt_guess

@@ -58,13 +58,13 @@ def calc_eomccsdta_star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=Fals
     total_energy_A = system.reference_energy + energy_A
 
     print("")
-    print('   EOMCCSDT(a)* Calculation Summary')
+    print('   EOMCCSD(T)(a)* Calculation Summary')
     print('   -------------------------------------------------')
     print("   Total wall time: {:0.2f}m  {:0.2f}s".format(minutes, seconds))
     print(f"   Total CPU time: {t_cpu_end - t_cpu_start} seconds")
-    print("   EOMCCSD(T)(a) = {:>10.10f}    ω = {:>10.10f}     VEE = {:>10.5f} eV".format(system.reference_energy + corr_energy + omega, omega, hartreetoeV * omega))
+    print("   EOMCCSD(a) = {:>10.10f}    ω = {:>10.10f}     VEE = {:>10.5f} eV".format(system.reference_energy + corr_energy + omega, omega, hartreetoeV * omega))
     print(
-        "   EOMCCSDT(a)* = {:>10.10f}     δ_A = {:>10.10f}     VEE = {:>10.5f} eV".format(
+        "   EOMCCSD(T)(a)* = {:>10.10f}     δ_A = {:>10.10f}     VEE = {:>10.5f} eV".format(
             total_energy_A, correction_A, (omega + correction_A) * hartreetoeV
         )
     )

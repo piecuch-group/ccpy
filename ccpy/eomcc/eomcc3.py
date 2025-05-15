@@ -1,15 +1,7 @@
-"""
-Module with functions to perform the excited-state CC3 calculation to obtain 
-right eigenvectors and corresponding eigenvalues, representing the vertical 
-excitation energies, by diagonalization of the CC3 Jacobian using the 
-equation-of-motion (EOM) formalism. This approach is equivalent to the 
-traditional linear response framework for excitation energies.
+'''
+Approximate Equation-of-Motion Coupled-Cluster Method with Triple Excitations (CC3)
+'''
 
-References:
-    [1] J. Chem. Phys. 106, 1808 (1997); doi: 10.1063/1.473322 [CC3 method]
-    [2] J. Chem. Phys. 103, 7429–7441 (1995); doi: 10.1063/1.470315 [CC3 response & excited states]
-    [3] J. Chem. Phys. 122, 054110 (2005); doi: 10.1063/1.1835953 [CC3 for open shells]
-"""
 import numpy as np
 from ccpy.eomcc.eomcc3_intermediates import get_HR1_intermediates, get_eomccsd_intermediates
 from ccpy.lib.core import cc3_loops

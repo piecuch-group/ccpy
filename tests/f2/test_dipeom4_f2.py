@@ -19,7 +19,7 @@ def test_dipeom4_f2():
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
-    driver.run_guess(method="dipcis", multiplicity=-1, nact_occupied=driver.system.noccupied_alpha, roots_per_irrep={"AG": 5})
+    driver.run_guess(method="dipcis", multiplicity=-1, nact_occupied=driver.system.noccupied_alpha, roots_per_irrep={"AG": 5}, use_symmetry=False)
 
     driver.options["davidson_out_of_core"] = True
     driver.run_dipeomcc(method="dipeom4", state_index=[0, 1])

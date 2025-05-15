@@ -1,3 +1,7 @@
+'''
+IP-EOMCCSd(2h-1p) Guess Routine for IP-EOMCC
+'''
+
 import numpy as np
 import time
 from ccpy.eom_guess.s2matrix import spin_adapt_guess
@@ -35,7 +39,7 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
         # Compute the S2 matrix in the same projection subspace
         S2mat = build_s2matrix(system, nacto, nactu, idx_a, idx_aa, idx_ab)
         # Project H onto the spin subspace with the specified multiplicity
-        omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=True)
+        omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=False)
         nroot = min(nroot, V_act.shape[1])
         kout = 0
         for i in range(len(omega)):
@@ -46,26 +50,8 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
             kout += 1
             if kout == nroot:
                 break
-        # omega, V_act = np.linalg.eig(Hmat)
-        # idx = np.argsort(omega)
-        # omega = omega[idx]
-        # V_act = V_act[:, idx]
-        #
-        # nroot = min(nroot, V_act.shape[1])
-        # kout = 0
-        # for i in range(len(omega)):
-        #     if omega[i] == 0.0: continue
-        #     V2, guess_mult = scatter_with_spin(V_act[:, i], nacto, nactu, system)
-        #     print("I AM IN:", omega[i], "GUESS MULT:", guess_mult)
-        #     if guess_mult == multiplicity or multiplicity == -1:
-        #         V[:, n_found] = V2
-        #         omega_guess[n_found] = omega[i]
-        #         n_found += 1
-        #         kout += 1
-        #     if kout == nroot:
-        #         break
-        elapsed_time = time.time() - t1
 
+        elapsed_time = time.time() - t1
         print("   -----------------------------------")
         print("   Target symmetry irrep = ", irrep, f"({system.point_group})")
         print("   Dimension of eigenvalue problem = ", ndim_irrep)
@@ -369,11 +355,8 @@ def build_ipcisd_hamiltonian(H, nacto, nactu, idx_a, idx_aa, idx_ab, system):
          ), axis=0
     )
 
-def get_sz2(system, Ms):
-    # Ns = float((system.noccupied_alpha + Ms) - (system.noccupied_beta - Ms))
-    # sz = Ns / 2.0
-    # sz2 = (sz + 1.0) * sz
-    Ns = float((system.noccupied_alpha - 1) - (system.noccupied_beta))
+def get_sz2(system, n_ip):
+    Ns = float((system.noccupied_alpha - n_ip) - (system.noccupied_beta))
     sz = Ns / 2.0
     sz2 = (sz + 1.0) * sz
     return sz2
@@ -392,24 +375,13 @@ def build_s2matrix(system, nacto, nactu, idx_a, idx_aa, idx_ab):
     nactu_a = min(nactu, system.nunoccupied_alpha)
     nactu_b = min(nactu + (system.multiplicity - 1), system.nunoccupied_beta)
 
-    #
+    # guess space dimensions
     n1a = noa
-    n2a = int(noa * (noa - 1)/2 * nua)
-    n2b = noa * nob * nub
+    n2a = int(nacto_a * (nacto_a - 1)/2 * nactu_a)
+    n2b = nacto_a * nacto_b * nactu_b
 
-    def chi_beta(p):
-        if p >= 0 and p < system.noccupied_beta:
-            return 1.0
-        else:
-            return 0.0
-
-    def pi_alpha(p):
-        if p >= system.noccupied_alpha and p < system.nunoccupied_alpha + system.noccupied_alpha:
-            return 1.0
-        else:
-            return 0.0
-
-    sz2 = get_sz2(system, Ms=0)
+    # sz(sz + 1) for sz = -0.5 (1 beta electron unpaired)
+    sz2 = get_sz2(system, n_ip=1)
 
     # < i | S2 | j >
     a_S_a = np.zeros((n1a, n1a))
@@ -417,12 +389,7 @@ def build_s2matrix(system, nacto, nactu, idx_a, idx_aa, idx_ab):
         idet = idx_a[i]
         if idet == 0: continue
         ind1 = abs(idet) - 1
-        for j in range(noa):
-            jdet = idx_a[j]
-            if jdet != 0:
-                ind2 = abs(jdet) - 1
-                # < Ia | S2 | Ja > = Sz*(Sz + 1)
-                a_S_a[ind1, ind2] = 0.75 * (i == j)
+        a_S_a[ind1, ind1] = 1 + sz2
 
     # < i | S2 | jck >
     a_S_aa = np.zeros((n1a, n2a))
@@ -434,42 +401,43 @@ def build_s2matrix(system, nacto, nactu, idx_a, idx_aa, idx_ab):
     aa_S_ab = np.zeros((n2a, n2b))
     for i in range(noa - nacto_a, noa):
         for j in range(i + 1, noa):
-            for b in range(nacto_a):
+            for b in range(nactu_a):
                 idet = idx_aa[i, b, j]
                 if idet == 0: continue
                 ind1 = abs(idet) - 1
-                # < ibj | S2 | kdl >
-                aa_S_aa[ind1, ind1] = 0.75
+                # < ibj | S2 | kdl > [includes Ia ->.-> Ia term + nonzero antisymmetrizers]
+                aa_S_aa[ind1, ind1] = sz2 + 2
                 # < ibj | S2 | kd~l~ >
                 for k in range(noa - nacto_a, noa):
                     for l in range(nob - nacto_b, nob):
-                        for d in range(nacto_b):
-                            jdet = idx_ab[i, b, j]
+                        for d in range(nactu_b):
+                            jdet = idx_ab[k, d, l]
                             if jdet != 0:
                                 ind2 = abs(jdet) - 1
-                                aa_S_ab[ind1, ind2] = (
-                                                        (j == l) * (b == d) * (i == k)
-                                                        - (i == l) * (b == d) * (j == k)
+                                # -A(ij) d(j,k) d(i,l) d(b,d)
+                                aa_S_ab[ind1, ind2] += (
+                                                           -(j == l) * (b == d) * (i == k)
+                                                           +(i == l) * (b == d) * (j == k)
                                 )
 
     # < ib~j~ | S2 | kd~l~ >
     ab_S_ab = np.zeros((n2b, n2b))
     for i in range(noa - nacto_a, noa):
         for j in range(nob - nacto_b, nob):
-            for b in range(nacto_b):
+            for b in range(nactu_b):
                 idet = idx_ab[i, b, j]
                 if idet == 0: continue
                 ind1 = abs(idet) - 1
-
-                ab_S_ab[ind1, ind1] = 0.75
-
+                #  [includes Ia ->.-> Ia and Ab <-.<- Ab terms]
+                ab_S_ab[ind1, ind1] = sz2 + 2
                 for k in range(noa - nacto_a, noa):
                     for l in range(nob - nacto_b, nob):
-                        for d in range(nacto_b):
-                            jdet = idx_ab[i, b, j]
+                        for d in range(nactu_b):
+                            jdet = idx_ab[k, d, l]
                             if jdet != 0:
                                 ind2 = abs(jdet) - 1
-                                ab_S_ab[ind1, ind2] = (i == l) * (j == k) * (b == d)
+                                # -d(b,d) d(i,l) d(j,k)
+                                ab_S_ab[ind1, ind2] -= (i == l) * (j == k) * (b == d)
 
     S2mat = np.concatenate(
         (np.concatenate((a_S_a, a_S_aa, a_S_ab), axis=1),

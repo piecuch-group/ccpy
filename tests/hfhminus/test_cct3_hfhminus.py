@@ -6,7 +6,7 @@ Reference: J. Chem. Theory Comput. 8, 4968 (2012)
 
 from pathlib import Path
 import numpy as np
-from ccpy import Driver
+from ccpy import Driver, get_active_triples_pspace
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
@@ -19,10 +19,11 @@ def test_cct3_hfhminus():
     driver.system.set_active_space(nact_unoccupied=2, nact_occupied=2)
     driver.system.print_info()
 
-    driver.run_cc(method="ccsdt1")
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=None)
+    driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")
-    driver.run_ccp3(method="cct3", state_index=[0])
+    driver.run_ccp3(method="cct3")
 
     # Check reference energy
     assert np.allclose(driver.system.reference_energy, -100.3591573557, atol=1.0e-07)

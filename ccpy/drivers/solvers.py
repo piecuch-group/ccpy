@@ -3,7 +3,7 @@ import time
 import numpy as np
 import h5py
 import signal
-import os
+import tempfile
 import sys
 
 from ccpy.utilities.printing import (
@@ -15,16 +15,16 @@ from ccpy.utilities.printing import (
 from ccpy.drivers.diis import DIIS
 from ccpy.utilities.utilities import remove_file
 
-# Define a signal handler function to handle SIGINT
-def signal_handler(sig, frame):
-    print("\nCtrl+C detected. Cleaning up...", end=" ")
-    remove_file("eomcc-vectors.hdf5")
-    remove_file("cc-diis-vectors.hdf5")
-    print("Cleanup complete.")
-    sys.exit(0)
-
-# Register the signal handler for SIGINT
-signal.signal(signal.SIGINT, signal_handler)
+# # Define a signal handler function to handle SIGINT
+# def signal_handler(sig, frame):
+#     print("\nCtrl+C detected. Cleaning up...", end=" ")
+#     remove_file("eomcc-vectors.hdf5")
+#     remove_file("cc-diis-vectors.hdf5")
+#     print("Cleanup complete.")
+#     sys.exit(0)
+#
+# # Register the signal handler for SIGINT
+# signal.signal(signal.SIGINT, signal_handler)
 
 # [TODO]: Add biorthogonal L and R single-root Davidson solver (non-Hermitian Hirao-Nakatsuji algorithm)
 def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, options):
@@ -101,9 +101,10 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
     print_eomcc_iteration_header()
 
     # Create new HDF5 file by first checking if one exists and if so, remove it
-    remove_file("eomcc-vectors.hdf5")
+    # remove_file("eomcc-vectors.hdf5")
+    ftmp = tempfile.NamedTemporaryFile()
     if options["davidson_out_of_core"]:
-        f = h5py.File("eomcc-vectors.hdf5", "w")
+        f = h5py.File(ftmp.name, "w")
 
     # Maximum subspace size
     nrest = 1   # number of previous vectors used to restart (>1 does not work, why?)
@@ -122,15 +123,17 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
     restart_block = np.zeros((R.ndim, nrest + noffset))
 
     # Initial values
-    B[0, :] = B0
-    R.unflatten(B0)
+    if len(B0.shape) < 2:
+        B0 = B0[:, np.newaxis]
+    B[0, :] = B0[:, 0]
+    R.unflatten(B0[:, 0])
     dR.unflatten(dR.flatten() * 0.0)
     if t3_excitations or r3_excitations:
         sigma[0, :] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
     else:
         sigma[0, :] = HR(dR, R, T, H, options["RHF_symmetry"], system)
     if noffset == 1:
-        restart_block[:, 0] = B0
+        restart_block[:, 0] = B0[:, 0]
 
     is_converged = False
     curr_size = 1
@@ -219,7 +222,7 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
     # store the actual root you've solved for
     R.unflatten(r)
     # remove HDF5 file
-    remove_file("eomcc-vectors.hdf5")
+    remove_file(ftmp.name)
     # print the time taken for the root
     minutes, seconds = divmod(time.perf_counter() - t_root_start, 60)
     print(f"   Completed in {minutes:.1f}m {seconds:.1f}s")
@@ -467,7 +470,7 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
 
     return R, omega, is_converged
 
-def eccc_jacobi(update_t, T, dT, H, X, T_ext, VT_ext, system, options):
+def eccc_jacobi(update_t, T, dT, H, X, T_ext, VT_ext, options):
     from ccpy.energy.cc_energy import get_cc_energy
 
     # check whether DIIS is being used
@@ -496,7 +499,7 @@ def eccc_jacobi(update_t, T, dT, H, X, T_ext, VT_ext, system, options):
         t1 = time.perf_counter()
 
         # Update the T vector
-        T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system, T_ext, VT_ext)
+        T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], T_ext, VT_ext)
 
         # CC correlation energy
         energy = get_cc_energy(T, H)
@@ -544,7 +547,7 @@ def eccc_jacobi(update_t, T, dT, H, X, T_ext, VT_ext, system, options):
 
     return T, energy, is_converged
 
-def cc_jacobi(update_t, T, dT, H, X, system, options, t3_excitations=None, acparray=None):
+def cc_jacobi(update_t, T, dT, H, X, options, t3_excitations=None, acparray=None):
     from ccpy.energy.cc_energy import get_cc_energy
 
     # check whether DIIS is being used
@@ -575,14 +578,14 @@ def cc_jacobi(update_t, T, dT, H, X, system, options, t3_excitations=None, acpar
         # Update the T vector
         if t3_excitations: # CC(P) update
             if acparray:
-                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system, t3_excitations, acparray)
+                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], t3_excitations, acparray)
             else:
-                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system, t3_excitations)
+                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], t3_excitations)
         else: # regular update
             if acparray:
-                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system, acparray)
+                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], acparray)
             else:
-                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], system)
+                T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"])
 
         # CC correlation energy
         energy = get_cc_energy(T, H)

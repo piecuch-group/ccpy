@@ -8,7 +8,7 @@ Reference: J. Chem. Phys. 115, 643 (2001)."""
 import pytest
 from pathlib import Path
 import numpy as np
-from ccpy import Driver
+from ccpy import Driver, get_active_triples_pspace
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
@@ -22,12 +22,15 @@ def test_eomccsdt1_chplus():
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=3)
 
-    driver.run_cc(method="ccsdt1")
-    driver.run_hbar(method="ccsdt1")
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep="A1")
+    driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
+    driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
     driver.run_guess(method="cisd", multiplicity=1, roots_per_irrep={"A1": 4, "B1": 2, "B2": 0, "A2": 2},  nact_occupied=3, nact_unoccupied=7)
 
     driver.options["davidson_max_subspace_size"] = 50
-    driver.run_eomcc(method="eomccsdt1", state_index=[2, 3, 4, 5, 6, 7, 8])
+    r3_excitations = get_active_triples_pspace(driver.system, target_irrep=None)
+    for istate in [2, 3, 4, 5, 6, 7, 8]:
+        driver.run_eomccp(method="eomccsdt_p", state_index=istate, r3_excitations=r3_excitations, t3_excitations=t3_excitations)
 
     expected_vee = [0.0, 0.0, 0.31753748, 0.49704224, 0.63315928,  # sigma states
                     0.11879449, 0.52261185,  # pi states
@@ -38,7 +41,7 @@ def test_eomccsdt1_chplus():
     assert np.allclose(driver.system.reference_energy, -37.9027681837, atol=1.0e-07)
     for n in [0, 1, 2, 3, 4, 5, 6, 7, 8]:
         if n == 0:
-            # Check CCSD energy
+            # Check CCSDt energy
             assert np.allclose(driver.correlation_energy, -0.11627295, atol=1.0e-07)
             assert np.allclose(
                 driver.system.reference_energy + driver.correlation_energy, -38.01904114, atol=1.0e-07

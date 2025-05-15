@@ -1,13 +1,17 @@
 import numpy as np
+import time
 from ccpy.energy.cc_energy import get_cc_energy
 from ccpy.lib.core import hbar_cc3, cc3_loops
 from ccpy.models.integrals import Integral
+from ccpy.models.operators import ClusterOperator
 
 def build_hbar_ccsdta(T, H0, RHF_symmetry, system, *args):
     """Calculate the one- and two-body components of the CCSD(T)(a) similarity-transformed
      Hamiltonian (H_N e^(T1+T2))_C + Delta, where T3 = <ijkabc|(V_N*T2)_C|0>/-D_MP, where
      D_MP = e_a+e_b+e_c-e_i-e_j-e_k."""
     from copy import deepcopy
+
+    save_t3 = True
 
     nua, noa = T.a.shape
     nub, nob = T.b.shape
@@ -33,6 +37,71 @@ def build_hbar_ccsdta(T, H0, RHF_symmetry, system, *args):
             H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
             H0.aa.oovv, H0.ab.oovv, H0.bb.oovv,
     )
+
+    # It is sometimes useful to store T3 for future use
+    if save_t3:
+        t_start = time.perf_counter()
+        print("   >> Constructing and storing T3[2] = R3 (V_N*T2)_C |0> <<")
+        # Prepare MP denominatores
+        n = np.newaxis
+        eps_o_a = np.diagonal(H0.a.oo); eps_v_a = np.diagonal(H0.a.vv);
+        eps_o_b = np.diagonal(H0.b.oo); eps_v_b = np.diagonal(H0.b.vv);
+        #
+        e3_aaa = (eps_o_a[n, n, n, :, n, n] + eps_o_a[n, n, n, n, :, n] + eps_o_a[n, n, n, n, n, :]
+                 -eps_v_a[:, n, n, n, n, n] - eps_v_a[n, :, n ,n, n, n] - eps_v_a[n, n, :, n, n, n])
+        e3_aab = (eps_o_a[n, n, n, :, n, n] + eps_o_a[n, n, n, n, :, n] + eps_o_b[n, n, n, n, n, :]
+                 -eps_v_a[:, n, n, n, n, n] - eps_v_a[n, :, n ,n, n, n] - eps_v_b[n, n, :, n, n, n])
+        e3_abb = (eps_o_a[n, n, n, :, n, n] + eps_o_b[n, n, n, n, :, n] + eps_o_b[n, n, n, n, n, :]
+                 -eps_v_a[:, n, n, n, n, n] - eps_v_b[n, :, n ,n, n, n] - eps_v_b[n, n, :, n, n, n])
+        e3_bbb = (eps_o_b[n, n, n, :, n, n] + eps_o_b[n, n, n, n, :, n] + eps_o_b[n, n, n, n, n, :]
+                 -eps_v_b[:, n, n, n, n, n] - eps_v_b[n, :, n ,n, n, n] - eps_v_b[n, n, :, n, n, n])
+        # Prepare new cluster operator
+        T_new = ClusterOperator(system, order=3)
+        T_new.a = T.a.copy()
+        T_new.b = T.b.copy()
+        T_new.aa = T.aa.copy()
+        T_new.ab = T.ab.copy()
+        T_new.bb = T.bb.copy()
+        # t(aaa)
+        T_new.aaa = -0.25 * np.einsum("amij,bcmk->abcijk", H0.aa.vooo, T.aa, optimize=True)
+        T_new.aaa += 0.25 * np.einsum("abie,ecjk->abcijk", H0.aa.vvov, T.aa, optimize=True)
+        T_new.aaa /= e3_aaa
+        T_new.aaa -= np.transpose(T_new.aaa, (0, 1, 2, 3, 5, 4)) # (jk)
+        T_new.aaa -= np.transpose(T_new.aaa, (0, 1, 2, 4, 3, 5)) + np.transpose(T_new.aaa, (0, 1, 2, 5, 4, 3)) # (i/jk)
+        T_new.aaa -= np.transpose(T_new.aaa, (0, 2, 1, 3, 4, 5)) # (bc)
+        T_new.aaa -= np.transpose(T_new.aaa, (2, 1, 0, 3, 4, 5)) + np.transpose(T_new.aaa, (1, 0, 2, 3, 4, 5)) # (a/bc)
+        # t(aab)
+        T_new.aab = 0.5 * np.einsum("bcek,aeij->abcijk", H0.ab.vvvo, T.aa, optimize=True)
+        T_new.aab -= 0.5 * np.einsum("mcjk,abim->abcijk", H0.ab.ovoo, T.aa, optimize=True)
+        T_new.aab += np.einsum("acie,bejk->abcijk", H0.ab.vvov, T.ab, optimize=True)
+        T_new.aab -= np.einsum("amik,bcjm->abcijk", H0.ab.vooo, T.ab, optimize=True)
+        T_new.aab += 0.5 * np.einsum("abie,ecjk->abcijk", H0.aa.vvov, T.ab, optimize=True)
+        T_new.aab -= 0.5 * np.einsum("amij,bcmk->abcijk", H0.aa.vooo, T.ab, optimize=True)
+        T_new.aab /= e3_aab
+        T_new.aab -= np.transpose(T_new.aab, (1, 0, 2, 3, 4, 5))
+        T_new.aab -= np.transpose(T_new.aab, (0, 1, 2, 4, 3, 5))
+        # t(abb)
+        T_new.abb = 0.5 * np.einsum("abie,ecjk->abcijk", H0.ab.vvov, T.bb, optimize=True)
+        T_new.abb -= 0.5 * np.einsum("amij,bcmk->abcijk", H0.ab.vooo, T.bb, optimize=True)
+        T_new.abb += 0.5 * np.einsum("cbke,aeij->abcijk", H0.bb.vvov, T.ab, optimize=True)
+        T_new.abb -= 0.5 * np.einsum("cmkj,abim->abcijk", H0.bb.vooo, T.ab, optimize=True)
+        T_new.abb += np.einsum("abej,ecik->abcijk", H0.ab.vvvo, T.ab, optimize=True)
+        T_new.abb -= np.einsum("mbij,acmk->abcijk", H0.ab.ovoo, T.ab, optimize=True)
+        T_new.abb /= e3_abb
+        T_new.abb -= np.transpose(T_new.abb, (0, 2, 1, 3, 4, 5))
+        T_new.abb -= np.transpose(T_new.abb, (0, 1, 2, 3, 5, 4))
+        # t(bbb)
+        T_new.bbb = -0.25 * np.einsum("amij,bcmk->abcijk", H0.bb.vooo, T.bb, optimize=True)
+        T_new.bbb += 0.25 * np.einsum("abie,ecjk->abcijk", H0.bb.vvov, T.bb, optimize=True)
+        T_new.bbb /= e3_bbb
+        T_new.bbb -= np.transpose(T_new.bbb, (0, 1, 2, 3, 5, 4)) # (jk)
+        T_new.bbb -= np.transpose(T_new.bbb, (0, 1, 2, 4, 3, 5)) + np.transpose(T_new.bbb, (0, 1, 2, 5, 4, 3)) # (i/jk)
+        T_new.bbb -= np.transpose(T_new.bbb, (0, 2, 1, 3, 4, 5)) # (bc)
+        T_new.bbb -= np.transpose(T_new.bbb, (2, 1, 0, 3, 4, 5)) + np.transpose(T_new.bbb, (1, 0, 2, 3, 4, 5)) # (a/bc)
+        # replace T
+        T = T_new
+        t_end = time.perf_counter()
+        print(f"   Completed in {t_end - t_start} seconds")
 
     # Update T1/T2 with T3[2]
     T.a, T.b, T.aa, T.ab, T.bb, _, _, _, _, _ = cc3_loops.update_t(

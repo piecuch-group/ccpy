@@ -1,6 +1,8 @@
-"""Module containing functions to calculate the vertical excitation
-energies and linear excitation amplitudes for doubly-attached states
-using the DEA-EOMCC approach with up to 3p-1h excitations"""
+'''
+Double Electron Attachment Equation-of-Motion Coupled-Cluster
+Method with 2p and 3p-1h Excitations on top of CCSD [DEA-EOMCCSD(3p-1h)]
+'''
+
 import numpy as np
 from ccpy.lib.core import cc_loops2
 

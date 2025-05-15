@@ -6,6 +6,294 @@ module deaeom4_p_loops
 
       contains
 
+              subroutine build_hr_2b(sigma_2b,&
+                                     r4b_amps,r4b_excits,&
+                                     r4c_amps,r4c_excits,&
+                                     r4d_amps,r4d_excits,&
+                                     h2a_oovv,h2b_oovv,h2c_oovv,&
+                                     n4abaa,n4abab,n4abbb,&
+                                     noa,nua,nob,nub)
+
+                  ! Input dimension variables
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n4abaa, n4abab, n4abbb
+                  ! Input R and T arrays
+                  integer, intent(in) :: r4b_excits(n4abaa,6)
+                  integer, intent(in) :: r4c_excits(n4abab,6)
+                  integer, intent(in) :: r4d_excits(n4abbb,6)
+                  real(kind=8), intent(in) :: r4b_amps(n4abaa)
+                  real(kind=8), intent(in) :: r4c_amps(n4abab)
+                  real(kind=8), intent(in) :: r4d_amps(n4abbb)
+                  ! Input H  and X arrays
+                  real(kind=8), intent(in) :: h2a_oovv(noa,noa,nua,nua)
+                  real(kind=8), intent(in) :: h2b_oovv(noa,nob,nua,nub)
+                  real(kind=8), intent(in) :: h2c_oovv(nob,nob,nub,nub)
+                  ! Output and Inout variables
+                  real(kind=8), intent(inout) :: sigma_2b(nua,nub)
+                  !f2py intent(in,out) :: sigma_2b(0:nua-1,0:nub-1)
+                  ! Local variables
+                  real(kind=8) :: r_amp, val
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  do idet = 1,n4abaa
+                     r_amp = r4b_amps(idet)
+                     ! x2b(a,b) <- A(a/ef) v(mnef)*r4b(ab~efmn)
+                     a = r4b_excits(idet,1); b = r4b_excits(idet,2); e = r4b_excits(idet,3); f = r4b_excits(idet,4)
+                     m = r4b_excits(idet,5); n = r4b_excits(idet,6);
+                     sigma_2b(a,b) = sigma_2b(a,b) + h2a_oovv(m,n,e,f)*r_amp ! (1)
+                     sigma_2b(e,b) = sigma_2b(e,b) - h2a_oovv(m,n,a,f)*r_amp ! (ae)
+                     sigma_2b(f,b) = sigma_2b(f,b) - h2a_oovv(m,n,e,a)*r_amp ! (af)
+                  end do
+                  do idet = 1,n4abab
+                     r_amp = r4c_amps(idet)
+                     ! x2b(a,b) <- A(ae)A(bf) v(mn~ef~)*r4c(ab~ef~mn~)
+                     a = r4c_excits(idet,1); b = r4c_excits(idet,2); e = r4c_excits(idet,3); f = r4c_excits(idet,4)
+                     m = r4c_excits(idet,5); n = r4c_excits(idet,6);
+                     sigma_2b(a,b) = sigma_2b(a,b) + h2b_oovv(m,n,e,f)*r_amp ! (1)
+                     sigma_2b(e,b) = sigma_2b(e,b) - h2b_oovv(m,n,a,f)*r_amp ! (ae)
+                     sigma_2b(a,f) = sigma_2b(a,f) - h2b_oovv(m,n,e,b)*r_amp ! (bf)
+                     sigma_2b(e,f) = sigma_2b(e,f) + h2b_oovv(m,n,a,b)*r_amp ! (ae)(bf)
+                  end do
+                  do idet = 1,n4abbb
+                     r_amp = r4d_amps(idet)
+                     ! x2b(a,b) <- A(b/ef) v(m~n~e~f~)*r4d(ab~e~f~m~n~)
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); e = r4d_excits(idet,3); f = r4d_excits(idet,4)
+                     m = r4d_excits(idet,5); n = r4d_excits(idet,6);
+                     sigma_2b(a,b) = sigma_2b(a,b) + h2c_oovv(m,n,e,f)*r_amp ! (1)
+                     sigma_2b(a,e) = sigma_2b(a,e) - h2c_oovv(m,n,b,f)*r_amp ! (be)
+                     sigma_2b(a,f) = sigma_2b(a,f) - h2c_oovv(m,n,e,b)*r_amp ! (bf)
+                  end do
+
+              end subroutine build_hr_2b
+
+              subroutine build_hr_3b(sigma_3b,&
+                                     r4b_amps,r4b_excits,&
+                                     r4c_amps,r4c_excits,&
+                                     h1a_ov,h1b_ov,&
+                                     h2a_ooov,h2a_vovv,&
+                                     h2b_ooov,h2b_vovv,h2b_ovvv,&
+                                     h2c_vovv,&
+                                     n4abaa,n4abab,&
+                                     noa,nua,nob,nub)
+
+                  ! Input dimension variables
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n4abaa, n4abab
+                  ! Input R and T arrays
+                  integer, intent(in) :: r4b_excits(n4abaa,6)
+                  integer, intent(in) :: r4c_excits(n4abab,6)
+                  real(kind=8), intent(in) :: r4b_amps(n4abaa)
+                  real(kind=8), intent(in) :: r4c_amps(n4abab)
+                  ! Input H and X arrays
+                  real(kind=8), intent(in) :: h1a_ov(noa,nua)
+                  real(kind=8), intent(in) :: h1b_ov(nob,nub)
+                  real(kind=8), intent(in) :: h2a_ooov(noa,noa,noa,nua)
+                  real(kind=8), intent(in) :: h2a_vovv(nua,noa,nua,nua)
+                  real(kind=8), intent(in) :: h2b_ooov(noa,nob,noa,nub)
+                  real(kind=8), intent(in) :: h2b_vovv(nua,nob,nua,nub)
+                  real(kind=8), intent(in) :: h2b_ovvv(noa,nub,nua,nub)
+                  real(kind=8), intent(in) :: h2c_vovv(nub,nob,nub,nub)
+                  ! Output and Inout variables
+                  real(kind=8), intent(inout) :: sigma_3b(nua,nub,nua,noa)
+                  !f2py intent(in,out) :: sigma_3b(0:nua-1,0:nub-1,0:nua-1,0:noa-1)
+                  ! Local variables
+                  real(kind=8) :: r_amp, val
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  do idet=1,n4abaa
+                     r_amp = r4b_amps(idet)
+                     ! x3b(a,b,c,k) <- A(ac)[ A(e/ac)A(km) h1a(me)*r4b(ab~cekm) ]
+                     a = r4b_excits(idet,1); b = r4b_excits(idet,2); c = r4b_excits(idet,3); e = r4b_excits(idet,4);
+                     k = r4b_excits(idet,5); m = r4b_excits(idet,6);
+                     sigma_3b(a,b,c,k) = sigma_3b(a,b,c,k) + h1a_ov(m,e)*r_amp ! (1)
+                     sigma_3b(c,b,e,k) = sigma_3b(c,b,e,k) + h1a_ov(m,a)*r_amp ! (ae)
+                     sigma_3b(a,b,e,k) = sigma_3b(a,b,e,k) - h1a_ov(m,c)*r_amp ! (ce)
+                     sigma_3b(a,b,c,m) = sigma_3b(a,b,c,m) - h1a_ov(k,e)*r_amp ! (km)
+                     sigma_3b(c,b,e,m) = sigma_3b(c,b,e,m) - h1a_ov(k,a)*r_amp ! (ae)(km)
+                     sigma_3b(a,b,e,m) = sigma_3b(a,b,e,m) + h1a_ov(k,c)*r_amp ! (ce)(km)
+                     ! x3b(a,b,c,k) <- A(ac)[ A(f/ac) -h2a(mnkf)*r4b(ab~cfmn)]
+                     a = r4b_excits(idet,1); b = r4b_excits(idet,2); c = r4b_excits(idet,3); f = r4b_excits(idet,4);
+                     m = r4b_excits(idet,5); n = r4b_excits(idet,6);
+                     sigma_3b(a,b,c,:) = sigma_3b(a,b,c,:) - h2a_ooov(m,n,:,f)*r_amp ! (1)
+                     sigma_3b(c,b,f,:) = sigma_3b(c,b,f,:) - h2a_ooov(m,n,:,a)*r_amp ! (af)
+                     sigma_3b(a,b,f,:) = sigma_3b(a,b,f,:) + h2a_ooov(m,n,:,c)*r_amp ! (cf)
+                     ! x3b(a,b,c,k) <- A(ac)[ A(a/ef)A(kn) h2a(cnef)*r4b(ab~efkn) ]
+                     a = r4b_excits(idet,1); b = r4b_excits(idet,2); e = r4b_excits(idet,3); f = r4b_excits(idet,4);
+                     k = r4b_excits(idet,5); n = r4b_excits(idet,6);
+                     sigma_3b(a,b,:,k) = sigma_3b(a,b,:,k) + h2a_vovv(:,n,e,f)*r_amp ! (1)
+                     sigma_3b(e,b,:,k) = sigma_3b(e,b,:,k) - h2a_vovv(:,n,a,f)*r_amp ! (ae)
+                     sigma_3b(f,b,:,k) = sigma_3b(f,b,:,k) - h2a_vovv(:,n,e,a)*r_amp ! (af)
+                     sigma_3b(a,b,:,n) = sigma_3b(a,b,:,n) - h2a_vovv(:,k,e,f)*r_amp ! (kn)
+                     sigma_3b(e,b,:,n) = sigma_3b(e,b,:,n) + h2a_vovv(:,k,a,f)*r_amp ! (ae)(kn)
+                     sigma_3b(f,b,:,n) = sigma_3b(f,b,:,n) + h2a_vovv(:,k,e,a)*r_amp ! (af)(kn)
+                     ! x3b(a,b,c,k) <- A(ac)[ A(f/ac)A(kn) h2b(nbfe)*r4b(ae~cfkn) ]
+                     a = r4b_excits(idet,1); e = r4b_excits(idet,2); c = r4b_excits(idet,3); f = r4b_excits(idet,4);
+                     k = r4b_excits(idet,5); n = r4b_excits(idet,6);
+                     sigma_3b(a,:,c,k) = sigma_3b(a,:,c,k) + h2b_ovvv(n,:,f,e)*r_amp ! (1)
+                     sigma_3b(c,:,f,k) = sigma_3b(c,:,f,k) + h2b_ovvv(n,:,a,e)*r_amp ! (af)
+                     sigma_3b(a,:,f,k) = sigma_3b(a,:,f,k) - h2b_ovvv(n,:,c,e)*r_amp ! (cf)
+                     sigma_3b(a,:,c,n) = sigma_3b(a,:,c,n) - h2b_ovvv(k,:,f,e)*r_amp ! (kn)
+                     sigma_3b(c,:,f,n) = sigma_3b(c,:,f,n) - h2b_ovvv(k,:,a,e)*r_amp ! (af)(kn)
+                     sigma_3b(a,:,f,n) = sigma_3b(a,:,f,n) + h2b_ovvv(k,:,c,e)*r_amp ! (cf)(kn)
+                  end do
+                  do idet=1,n4abab
+                     r_amp = r4c_amps(idet)
+                     ! x3b(a,b,c,k) <- A(ac)[ A(be) h1b(me)*r4c(ab~ce~km~) ] 
+                     a = r4c_excits(idet,1); b = r4c_excits(idet,2); c = r4c_excits(idet,3); e = r4c_excits(idet,4);
+                     k = r4c_excits(idet,5); m = r4c_excits(idet,6);
+                     sigma_3b(a,b,c,k) = sigma_3b(a,b,c,k) + h1b_ov(m,e)*r_amp ! (1)
+                     sigma_3b(a,e,c,k) = sigma_3b(a,e,c,k) - h1b_ov(m,b)*r_amp ! (be)
+                     ! x3b(a,b,c,k) <- A(ac)[ -A(bf) h2b(mnkf)*r4c(ab~cf~mn~) ]
+                     a = r4c_excits(idet,1); b = r4c_excits(idet,2); c = r4c_excits(idet,3); f = r4c_excits(idet,4);
+                     m = r4c_excits(idet,5); n = r4c_excits(idet,6);
+                     sigma_3b(a,b,c,:) = sigma_3b(a,b,c,:) - h2b_ooov(m,n,:,f)*r_amp ! (1) 
+                     sigma_3b(a,f,c,:) = sigma_3b(a,f,c,:) + h2b_ooov(m,n,:,b)*r_amp ! (bf) 
+                     ! x3b(a,b,c,k) <- A(ae)A(bf) h2b(cnef)*r4c(ab~ef~kn~)
+                     a = r4c_excits(idet,1); b = r4c_excits(idet,2); e = r4c_excits(idet,3); f = r4c_excits(idet,4);
+                     k = r4c_excits(idet,5); n = r4c_excits(idet,6);
+                     sigma_3b(a,b,:,k) = sigma_3b(a,b,:,k) + h2b_vovv(:,n,e,f)*r_amp ! (1)
+                     sigma_3b(e,b,:,k) = sigma_3b(e,b,:,k) - h2b_vovv(:,n,a,f)*r_amp ! (ae)
+                     sigma_3b(a,f,:,k) = sigma_3b(a,f,:,k) - h2b_vovv(:,n,e,b)*r_amp ! (bf)
+                     sigma_3b(e,f,:,k) = sigma_3b(e,f,:,k) + h2b_vovv(:,n,a,b)*r_amp ! (ae)(bf)
+                     ! x3b(a,b,c,k) <- A(ac)[ h2c(bnef)*r4c(ae~cf~kn~) ]
+                     a = r4c_excits(idet,1); e = r4c_excits(idet,2); c = r4c_excits(idet,3); f = r4c_excits(idet,4);
+                     k = r4c_excits(idet,5); n = r4c_excits(idet,6);
+                     sigma_3b(a,:,c,k) = sigma_3b(a,:,c,k) + h2c_vovv(:,n,e,f)*r_amp ! (1)
+                  end do
+
+                  ! antisymmetrize (this replaces the x2a -= np.transpose(x2a, (...)) stuff in vector update
+                  do k = 1, noa
+                     do a = 1, nua
+                        do b = 1, nub
+                           do c = a+1, nua
+                              val = sigma_3b(a,b,c,k) - sigma_3b(c,b,a,k)
+                              sigma_3b(a,b,c,k) =  val
+                              sigma_3b(c,b,a,k) = -val
+                           end do
+                        end do
+                     end do
+                  end do
+                  ! (H(2) * T3)_C terms are vectorized and generally broadcast to diagonal elements, which should
+                  ! be 0. Set them to 0 manually (you need to do this).
+                  do a = 1,nua
+                     sigma_3b(a,:,a,:) = 0.0d0
+                  end do
+              end subroutine build_hr_3b
+
+              subroutine build_hr_3c(sigma_3c,&
+                                     r4c_amps,r4c_excits,&
+                                     r4d_amps,r4d_excits,&
+                                     h1a_ov,h1b_ov,&
+                                     h2a_vovv,&
+                                     h2b_oovo,h2b_vovv,h2b_ovvv,&
+                                     h2c_ooov,h2c_vovv,&
+                                     n4abab,n4abbb,&
+                                     noa,nua,nob,nub)
+
+                  ! Input dimension variables
+                  integer, intent(in) :: noa, nua, nob, nub
+                  integer, intent(in) :: n4abab, n4abbb
+                  ! Input R and T arrays
+                  integer, intent(in) :: r4c_excits(n4abab,6)
+                  integer, intent(in) :: r4d_excits(n4abbb,6)
+                  real(kind=8), intent(in) :: r4c_amps(n4abab)
+                  real(kind=8), intent(in) :: r4d_amps(n4abbb)
+                  ! Input H and X arrays
+                  real(kind=8), intent(in) :: h1a_ov(noa,nua)
+                  real(kind=8), intent(in) :: h1b_ov(nob,nub)
+                  real(kind=8), intent(in) :: h2a_vovv(nua,noa,nua,nua)
+                  real(kind=8), intent(in) :: h2b_oovo(noa,nob,nua,nob)
+                  real(kind=8), intent(in) :: h2b_vovv(nua,nob,nua,nub)
+                  real(kind=8), intent(in) :: h2b_ovvv(noa,nub,nua,nub)
+                  real(kind=8), intent(in) :: h2c_ooov(nob,nob,nob,nub)
+                  real(kind=8), intent(in) :: h2c_vovv(nub,nob,nub,nub)
+                  ! Output and Inout variables
+                  real(kind=8), intent(inout) :: sigma_3c(nua,nub,nub,nob)
+                  !f2py intent(in,out) :: sigma_3c(0:nua-1,0:nub-1,0:nub-1,0:nob-1)
+                  ! Local variables
+                  real(kind=8) :: r_amp, val
+                  integer :: a, b, c, d, i, j, k, l, m, n, e, f, idet
+
+                  do idet=1,n4abab
+                     r_amp = r4c_amps(idet)
+                     ! x3c(a,b,c,k) <- A(bc)[ A(ae) h1a(me)*r4c(abecmk)
+                     a = r4c_excits(idet,1); b = r4c_excits(idet,2); e = r4c_excits(idet,3); c = r4c_excits(idet,4);
+                     m = r4c_excits(idet,5); k = r4c_excits(idet,6);
+                     sigma_3c(a,b,c,k) = sigma_3c(a,b,c,k) + h1a_ov(m,e)*r_amp ! (1)
+                     sigma_3c(e,b,c,k) = sigma_3c(e,b,c,k) - h1a_ov(m,a)*r_amp ! (ae)
+                     ! x3c(a,b,c,k) <- A(bc)[ -A(af) h2b(nmfk)*r4c(abfcnm) ]
+                     a = r4c_excits(idet,1); b = r4c_excits(idet,2); f = r4c_excits(idet,3); c = r4c_excits(idet,4);
+                     n = r4c_excits(idet,5); m = r4c_excits(idet,6);
+                     sigma_3c(a,b,c,:) = sigma_3c(a,b,c,:) - h2b_oovo(n,m,f,:)*r_amp ! (1)
+                     sigma_3c(f,b,c,:) = sigma_3c(f,b,c,:) + h2b_oovo(n,m,a,:)*r_amp ! (af)
+                     ! x3c(a,b,c,k) <- A(af)A(be) h2b(ncfe)*r4c(abfenk)
+                     a = r4c_excits(idet,1); b = r4c_excits(idet,2); f = r4c_excits(idet,3); e = r4c_excits(idet,4);
+                     n = r4c_excits(idet,5); k = r4c_excits(idet,6);
+                     sigma_3c(a,b,:,k) = sigma_3c(a,b,:,k) + h2b_ovvv(n,:,f,e)*r_amp ! (1)
+                     sigma_3c(f,b,:,k) = sigma_3c(f,b,:,k) - h2b_ovvv(n,:,a,e)*r_amp ! (af)
+                     sigma_3c(a,e,:,k) = sigma_3c(a,e,:,k) - h2b_ovvv(n,:,f,b)*r_amp ! (be)
+                     sigma_3c(f,e,:,k) = sigma_3c(f,e,:,k) + h2b_ovvv(n,:,a,b)*r_amp ! (af)(be)
+                     ! x3c(a,b,c,k) <- A(bc)[ h2a(anef)*r4c(ebfcnk) ]
+                     e = r4c_excits(idet,1); b = r4c_excits(idet,2); f = r4c_excits(idet,3); c = r4c_excits(idet,4);
+                     n = r4c_excits(idet,5); k = r4c_excits(idet,6);
+                     sigma_3c(:,b,c,k) = sigma_3c(:,b,c,k) + h2a_vovv(:,n,e,f)*r_amp ! (1)
+                  end do
+                  do idet=1,n4abbb
+                     r_amp = r4d_amps(idet)
+                     ! x3c(a,b,c,k) <- A(e/bc)A(mk) h1b(me)*r4d(abecmk)
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); e = r4d_excits(idet,3); c = r4d_excits(idet,4);
+                     m = r4d_excits(idet,5); k = r4d_excits(idet,6);
+                     sigma_3c(a,b,c,k) = sigma_3c(a,b,c,k) + h1b_ov(m,e)*r_amp ! (1)
+                     sigma_3c(a,e,c,k) = sigma_3c(a,e,c,k) - h1b_ov(m,b)*r_amp ! (be)
+                     sigma_3c(a,b,e,k) = sigma_3c(a,b,e,k) - h1b_ov(m,c)*r_amp ! (ce)
+                     sigma_3c(a,b,c,m) = sigma_3c(a,b,c,m) - h1b_ov(k,e)*r_amp ! (mk)
+                     sigma_3c(a,e,c,m) = sigma_3c(a,e,c,m) + h1b_ov(k,b)*r_amp ! (be)(mk)
+                     sigma_3c(a,b,e,m) = sigma_3c(a,b,e,m) + h1b_ov(k,c)*r_amp ! (ce)(mk)
+                     ! x3c(a,b,c,k) <- -A(f/bc) h2c(mnkf)*r4d(abcfmn)
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); f = r4d_excits(idet,4);
+                     m = r4d_excits(idet,5); n = r4d_excits(idet,6);
+                     sigma_3c(a,b,c,:) = sigma_3c(a,b,c,:) - h2c_ooov(m,n,:,f)*r_amp ! (1)
+                     sigma_3c(a,c,f,:) = sigma_3c(a,c,f,:) - h2c_ooov(m,n,:,b)*r_amp ! (bf)
+                     sigma_3c(a,b,f,:) = sigma_3c(a,b,f,:) + h2c_ooov(m,n,:,c)*r_amp ! (cf)
+                     ! x3c(a,b,c,k) <- A(b/ef)A(kn) h2c(cnef)*r4d(abefkn)
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); e = r4d_excits(idet,3); f = r4d_excits(idet,4);
+                     k = r4d_excits(idet,5); n = r4d_excits(idet,6);
+                     sigma_3c(a,b,:,k) = sigma_3c(a,b,:,k) + h2c_vovv(:,n,e,f)*r_amp ! (1)
+                     sigma_3c(a,e,:,k) = sigma_3c(a,e,:,k) - h2c_vovv(:,n,b,f)*r_amp ! (be)
+                     sigma_3c(a,f,:,k) = sigma_3c(a,f,:,k) - h2c_vovv(:,n,e,b)*r_amp ! (bf)
+                     sigma_3c(a,b,:,n) = sigma_3c(a,b,:,n) - h2c_vovv(:,k,e,f)*r_amp ! (kn)
+                     sigma_3c(a,e,:,n) = sigma_3c(a,e,:,n) + h2c_vovv(:,k,b,f)*r_amp ! (be)(kn)
+                     sigma_3c(a,f,:,n) = sigma_3c(a,f,:,n) + h2c_vovv(:,k,e,b)*r_amp ! (bf)(kn)
+                     ! x3c(a,b,c,k) <- A(f/bc)A(kn) h2b(anef)*r4d(ebfcnk)
+                     e = r4d_excits(idet,1); b = r4d_excits(idet,2); f = r4d_excits(idet,3); c = r4d_excits(idet,4);
+                     n = r4d_excits(idet,5); k = r4d_excits(idet,6);
+                     sigma_3c(:,b,c,k) = sigma_3c(:,b,c,k) + h2b_vovv(:,n,e,f)*r_amp ! (1)
+                     sigma_3c(:,f,c,k) = sigma_3c(:,f,c,k) - h2b_vovv(:,n,e,b)*r_amp ! (bf)
+                     sigma_3c(:,b,f,k) = sigma_3c(:,b,f,k) - h2b_vovv(:,n,e,c)*r_amp ! (cf)
+                     sigma_3c(:,b,c,n) = sigma_3c(:,b,c,n) - h2b_vovv(:,k,e,f)*r_amp ! (kn)
+                     sigma_3c(:,f,c,n) = sigma_3c(:,f,c,n) + h2b_vovv(:,k,e,b)*r_amp ! (bf)(kn)
+                     sigma_3c(:,b,f,n) = sigma_3c(:,b,f,n) + h2b_vovv(:,k,e,c)*r_amp ! (cf)(kn)
+                  end do
+
+                  ! antisymmetrize (this replaces the x2a -= np.transpose(x2a, (...)) stuff in vector update
+                  do k = 1, nob
+                     do a = 1, nua
+                        do b = 1, nub
+                           do c = b+1, nub
+                              val = sigma_3c(a,b,c,k) - sigma_3c(a,c,b,k)
+                              sigma_3c(a,b,c,k) =  val
+                              sigma_3c(a,c,b,k) = -val
+                           end do
+                        end do
+                     end do
+                  end do
+                  ! (H(2) * T3)_C terms are vectorized and generally broadcast to diagonal elements, which should
+                  ! be 0. Set them to 0 manually (you need to do this).
+                  do a = 1,nub
+                     sigma_3c(:,a,a,:) = 0.0d0
+                  end do
+              end subroutine build_hr_3c
+
               subroutine build_hr_4b(resid,&
                                      r3b,&
                                      r4b_amps, r4b_excits,&
@@ -13,8 +301,9 @@ module deaeom4_p_loops
                                      t2a, t2b,&
                                      h1a_oo, h1a_vv, h1b_vv,&
                                      h2a_vvvv, h2a_oooo, h2a_voov, h2a_vooo, h2a_vvov,&
-                                     h2b_vvvv, h2b_voov, h2b_ovov,&
-                                     x3b_vvoo, x3b_vvvv, x3b_vovo, x2b_oo,&
+                                     h2b_vvvv, h2b_voov, h2b_ovov, h2b_vvov,&
+                                     x3b_vvoo, x3b_vvvv, x3b_vovo,&
+                                     x2b_oo,&
                                      n4abaa, n4abab,&
                                      noa, nua, nob, nub)
                   ! Input dimension variables
@@ -38,6 +327,7 @@ module deaeom4_p_loops
                   real(kind=8), intent(in) :: h2b_vvvv(nua,nub,nua,nub)
                   real(kind=8), intent(in) :: h2b_voov(nua,nob,noa,nub)
                   real(kind=8), intent(in) :: h2b_ovov(noa,nub,noa,nub)
+                  real(kind=8), intent(in) :: h2b_vvov(nua,nub,noa,nub)
                   real(kind=8), intent(in) :: x3b_vvoo(nua,nub,noa,noa)
                   real(kind=8), intent(in) :: x3b_vvvv(nua,nub,nua,nua)
                   real(kind=8), intent(in) :: x3b_vovo(nua,nob,nua,nob)
@@ -1025,8 +1315,72 @@ module deaeom4_p_loops
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
-                  !do idet=1,n4abaa
-                  !end do
+                  !
+                  ! Moment contributions
+                  !
+                  do idet=1,n4abaa
+                     a = r4b_excits(idet,1); b = r4b_excits(idet,2); c = r4b_excits(idet,3); d = r4b_excits(idet,4)
+                     k = r4b_excits(idet,5); l = r4b_excits(idet,6);
+                     res_mm23 = 0.0d0
+                     do e=1,nua
+                        ! A(a/cd)A(kl) h2a(cdke)*r3b(ab~el)
+                        res_mm23 = res_mm23 + h2a_vvov(c,d,k,e)*r3b(a,b,e,l) ! (1)
+                        res_mm23 = res_mm23 - h2a_vvov(a,d,k,e)*r3b(c,b,e,l) ! (ac)
+                        res_mm23 = res_mm23 - h2a_vvov(c,a,k,e)*r3b(d,b,e,l) ! (ad)
+                        res_mm23 = res_mm23 - h2a_vvov(c,d,l,e)*r3b(a,b,e,k) ! (kl)
+                        res_mm23 = res_mm23 + h2a_vvov(a,d,l,e)*r3b(c,b,e,k) ! (ac)(kl)
+                        res_mm23 = res_mm23 + h2a_vvov(c,a,l,e)*r3b(d,b,e,k) ! (ad)(kl)
+                        ! A(c/ad) x3b(ab~de)*t2a(cekl)
+                        res_mm23 = res_mm23 + x3b_vvvv(a,b,d,e)*t2a(c,e,k,l) ! (1)
+                        res_mm23 = res_mm23 - x3b_vvvv(c,b,d,e)*t2a(a,e,k,l) ! (ac)
+                        res_mm23 = res_mm23 - x3b_vvvv(a,b,c,e)*t2a(d,e,k,l) ! (cd)
+                     end do
+                     do e=1,nub
+                        ! A(c/ad)A(kl) h2b(cbke)*r3b(ae~dl)
+                        res_mm23 = res_mm23 + h2b_vvov(c,b,k,e)*r3b(a,e,d,l) ! (1)
+                        res_mm23 = res_mm23 - h2b_vvov(a,b,k,e)*r3b(c,e,d,l) ! (ac)
+                        res_mm23 = res_mm23 - h2b_vvov(d,b,k,e)*r3b(a,e,c,l) ! (cd)
+                        res_mm23 = res_mm23 - h2b_vvov(c,b,l,e)*r3b(a,e,d,k) ! (kl)
+                        res_mm23 = res_mm23 + h2b_vvov(a,b,l,e)*r3b(c,e,d,k) ! (ac)(kl)
+                        res_mm23 = res_mm23 + h2b_vvov(d,b,l,e)*r3b(a,e,c,k) ! (cd)(kl)
+                     end do
+                     ! include this here:
+                     !X4B += (6.0 / 12.0) * np.einsum("mn,adml,cbkn->abcdkl", X["ab"]["oo"], T.aa, T.ab, optimize=True)
+                     do m=1,noa
+                        ! -A(c/ad) h2a(cmkl)*r3b(ab~dm)
+                        res_mm23 = res_mm23 - h2a_vooo(c,m,k,l)*r3b(a,b,d,m) ! (1)
+                        res_mm23 = res_mm23 + h2a_vooo(a,m,k,l)*r3b(c,b,d,m) ! (ac)
+                        res_mm23 = res_mm23 + h2a_vooo(d,m,k,l)*r3b(a,b,c,m) ! (cd)
+                        ! -A(a/cd)A(kl) x3b(ab~ml)*t2a(cdkm)
+                        res_mm23 = res_mm23 - x3b_vvoo(a,b,m,l)*t2a(c,d,k,m) ! (1)
+                        res_mm23 = res_mm23 + x3b_vvoo(c,b,m,l)*t2a(a,d,k,m) ! (ac)
+                        res_mm23 = res_mm23 + x3b_vvoo(d,b,m,l)*t2a(c,a,k,m) ! (ad)
+                        res_mm23 = res_mm23 + x3b_vvoo(a,b,m,k)*t2a(c,d,l,m) ! (kl)
+                        res_mm23 = res_mm23 - x3b_vvoo(c,b,m,k)*t2a(a,d,l,m) ! (ac)(kl)
+                        res_mm23 = res_mm23 - x3b_vvoo(d,b,m,k)*t2a(c,a,l,m) ! (ad)(kl)
+                     end do
+                     do m=1,nob
+                        ! -A(d/ac)A(kl) x3b(am~ck)*t2b(dblm)
+                        res_mm23 = res_mm23 - x3b_vovo(a,m,c,k)*t2b(d,b,l,m) ! (1) 
+                        res_mm23 = res_mm23 + x3b_vovo(d,m,c,k)*t2b(a,b,l,m) ! (ad) 
+                        res_mm23 = res_mm23 + x3b_vovo(a,m,d,k)*t2b(c,b,l,m) ! (cd) 
+                        res_mm23 = res_mm23 + x3b_vovo(a,m,c,l)*t2b(d,b,k,m) ! (kl) 
+                        res_mm23 = res_mm23 - x3b_vovo(d,m,c,l)*t2b(a,b,k,m) ! (ad)(kl) 
+                        res_mm23 = res_mm23 - x3b_vovo(a,m,d,l)*t2b(c,b,k,m) ! (cd) (kl)
+                     end do
+                     do m=1,noa
+                        do n=1,nob
+                           ! A(c/ad)A(kl) x2b(mn~)*t2a(adml)*t2b(cbkn)
+                           res_mm23 = res_mm23 + x2b_oo(m,n)*t2a(a,d,m,l)*t2b(c,b,k,n) ! (1)
+                           res_mm23 = res_mm23 - x2b_oo(m,n)*t2a(c,d,m,l)*t2b(a,b,k,n) ! (ac)
+                           res_mm23 = res_mm23 - x2b_oo(m,n)*t2a(a,c,m,l)*t2b(d,b,k,n) ! (cd)
+                           res_mm23 = res_mm23 - x2b_oo(m,n)*t2a(a,d,m,k)*t2b(c,b,l,n) ! (kl)
+                           res_mm23 = res_mm23 + x2b_oo(m,n)*t2a(c,d,m,k)*t2b(a,b,l,n) ! (ac)(kl)
+                           res_mm23 = res_mm23 + x2b_oo(m,n)*t2a(a,c,m,k)*t2b(d,b,l,n) ! (cd)(kl(
+                        end do
+                     end do
+                     resid(idet) = resid(idet) + res_mm23
+                  end do
                   
               end subroutine build_hr_4b
 
@@ -1041,7 +1395,7 @@ module deaeom4_p_loops
                                      h2b_vvvv, h2b_oooo, h2b_voov, h2b_ovvo, h2b_ovov, h2b_vovo,&
                                      h2b_vvov, h2b_vvvo, h2b_vooo, h2b_ovoo,&
                                      h2c_vvvv, h2c_voov, h2c_vvov,&
-                                     x3b_vvvv, x3b_vovo, x3c_vvvv, x3c_ovvo,&
+                                     x3b_vvvv, x3b_vvoo, x3b_vovo, x3c_vvvv, x3c_vvoo, x3c_ovvo,&
                                      x2b_oo,&
                                      n4abaa, n4abab, n4abbb,&
                                      noa, nua, nob, nub)
@@ -1079,8 +1433,10 @@ module deaeom4_p_loops
                   real(kind=8), intent(in) :: h2c_vvov(nub,nub,nob,nub)
                   !
                   real(kind=8), intent(in) :: x3b_vvvv(nua,nub,nua,nua)
+                  real(kind=8), intent(in) :: x3b_vvoo(nua,nub,noa,noa)
                   real(kind=8), intent(in) :: x3b_vovo(nua,nob,nua,nob)
                   real(kind=8), intent(in) :: x3c_vvvv(nua,nub,nub,nub)
+                  real(kind=8), intent(in) :: x3c_vvoo(nua,nub,nob,nob)
                   real(kind=8), intent(in) :: x3c_ovvo(noa,nub,nub,nob)
                   real(kind=8), intent(in) :: x2b_oo(noa,nob)
                   ! Output and Inout variables
@@ -1968,6 +2324,76 @@ module deaeom4_p_loops
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
+                  !
+                  ! Moment contributions
+                  !
+                  do idet=1,n4abab
+                     a = r4c_excits(idet,1); b = r4c_excits(idet,2); c = r4c_excits(idet,3); d = r4c_excits(idet,4)
+                     k = r4c_excits(idet,5); l = r4c_excits(idet,6);
+
+                     res_mm23 = 0.0d0
+                     do e=1,nua
+                        ! A(ac)A(bd) h2b(cdel)*r3b(ab~ek)
+                        res_mm23 = res_mm23 + h2b_vvvo(c,d,e,l)*r3b(a,b,e,k) ! (1)
+                        res_mm23 = res_mm23 - h2b_vvvo(a,d,e,l)*r3b(c,b,e,k) ! (ac)
+                        res_mm23 = res_mm23 - h2b_vvvo(c,b,e,l)*r3b(a,d,e,k) ! (bd)
+                        res_mm23 = res_mm23 + h2b_vvvo(a,b,e,l)*r3b(c,d,e,k) ! (ac)(bd)
+                        ! h2a(cake)*r3c(eb~d~l~)
+                        res_mm23 = res_mm23 + h2a_vvov(c,a,k,e)*r3c(e,b,d,l) ! (1)
+                        ! A(bd) x3b(ab~ce)*t2b(edkl)
+                        res_mm23 = res_mm23 + x3b_vvvv(a,b,c,e)*t2b(e,d,k,l) ! (1)
+                        res_mm23 = res_mm23 - x3b_vvvv(a,d,c,e)*t2b(e,b,k,l) ! (bd)
+                     end do
+                     do e=1,nub
+                        ! A(ac)A(bd) h2b(cdke)*r3c(ab~e~l~)
+                        res_mm23 = res_mm23 + h2b_vvov(c,d,k,e)*r3c(a,b,e,l) ! (1)
+                        res_mm23 = res_mm23 - h2b_vvov(a,d,k,e)*r3c(c,b,e,l) ! (ac)
+                        res_mm23 = res_mm23 - h2b_vvov(c,b,k,e)*r3c(a,d,e,l) ! (bd)
+                        res_mm23 = res_mm23 + h2b_vvov(a,b,k,e)*r3c(c,d,e,l) ! (ac)(bd)
+                        ! h2c(dble)*r3b(ae~ck)
+                        res_mm23 = res_mm23 + h2c_vvov(d,b,l,e)*r3b(a,e,c,k) ! (1)
+                        ! A(ac) x3c(ab~d~e~)*t2b(cekl)
+                        res_mm23 = res_mm23 + x3c_vvvv(a,b,d,e)*t2b(c,e,k,l) ! (1)
+                        res_mm23 = res_mm23 - x3c_vvvv(c,b,d,e)*t2b(a,e,k,l) ! (ac)
+                     end do
+                     do m=1,noa
+                        ! -A(bd) h2b(mdkl)*r3b(ab~cm)
+                        res_mm23 = res_mm23 - h2b_ovoo(m,d,k,l)*r3b(a,b,c,m) ! (1)
+                        res_mm23 = res_mm23 + h2b_ovoo(m,b,k,l)*r3b(a,d,c,m) ! (bd)
+                        ! -A(ac)A(bd) x3b(ab~mk)*t2b(cdml)
+                        res_mm23 = res_mm23 - x3b_vvoo(a,b,m,k)*t2b(c,d,m,l) ! (1)
+                        res_mm23 = res_mm23 + x3b_vvoo(c,b,m,k)*t2b(a,d,m,l) ! (ac)
+                        res_mm23 = res_mm23 + x3b_vvoo(a,d,m,k)*t2b(c,b,m,l) ! (bd)
+                        res_mm23 = res_mm23 - x3b_vvoo(c,d,m,k)*t2b(a,b,m,l) ! (ac)(bd)
+                        ! -x3c(mb~d~l~)*t2a(acmk)
+                        res_mm23 = res_mm23 - x3c_ovvo(m,b,d,l)*t2a(a,c,m,k) ! (1)
+                     end do
+                     do m=1,nob
+                        ! -A(ac) h2b(cmkl)*r3c(ab~d~m~)
+                        res_mm23 = res_mm23 - h2b_vooo(c,m,k,l)*r3c(a,b,d,m) ! (1)
+                        res_mm23 = res_mm23 + h2b_vooo(a,m,k,l)*r3c(c,b,d,m) ! (ac)
+                        ! -A(ac)A(bd) x3c(ab~m~l~)*t2b(cdkm)
+                        res_mm23 = res_mm23 - x3c_vvoo(a,b,m,l)*t2b(c,d,k,m) ! (1)
+                        res_mm23 = res_mm23 + x3c_vvoo(c,b,m,l)*t2b(a,d,k,m) ! (ac)
+                        res_mm23 = res_mm23 + x3c_vvoo(a,d,m,l)*t2b(c,b,k,m) ! (bd)
+                        res_mm23 = res_mm23 - x3c_vvoo(c,d,m,l)*t2b(a,b,k,m) ! (ac)(bd)
+                        ! -x3b(am~ck)*t2c(bdml)
+                        res_mm23 = res_mm23 - x3b_vovo(a,m,c,k)*t2c(b,d,m,l) ! (1)
+                     end do
+                     do m=1,noa
+                        do n=1,nob
+                           ! x2b(mn~)*t2a(acmk)*t2c(b~d~n~l~)
+                           res_mm23 = res_mm23 + x2b_oo(m,n)*t2a(a,c,m,k)*t2c(b,d,n,l) ! (1)
+                           ! A(ac)A(bd) x2b(mn~)*t2b(ad~ml~)*t2b(cb~kn~)
+                           res_mm23 = res_mm23 + x2b_oo(m,n)*t2b(a,d,m,l)*t2b(c,b,k,n) ! (1)
+                           res_mm23 = res_mm23 - x2b_oo(m,n)*t2b(c,d,m,l)*t2b(a,b,k,n) ! (ac)
+                           res_mm23 = res_mm23 - x2b_oo(m,n)*t2b(a,b,m,l)*t2b(c,d,k,n) ! (bd)
+                           res_mm23 = res_mm23 + x2b_oo(m,n)*t2b(c,b,m,l)*t2b(a,d,k,n) ! (ac)(bd)
+                        end do
+                     end do
+                     resid(idet) = resid(idet) + res_mm23
+                  end do
+
               end subroutine build_hr_4c
 
               subroutine build_hr_4d(resid,&
@@ -1978,7 +2404,8 @@ module deaeom4_p_loops
                                      h1b_oo, h1a_vv, h1b_vv,&
                                      h2b_vvvv, h2b_ovvo, h2b_vovo, h2b_vvvo,&
                                      h2c_vvvv, h2c_oooo, h2c_voov, h2c_vvov, h2c_vooo,&
-                                     x3c_vvvv, x3c_ovvo, x3c_vvoo, x2b_oo,&
+                                     x3c_vvvv, x3c_ovvo, x3c_vvoo,&
+                                     x2b_oo,&
                                      n4abab, n4abbb,&
                                      noa, nua, nob, nub)
                   ! Input dimension variables
@@ -2025,8 +2452,1105 @@ module deaeom4_p_loops
                   
                   ! Zero the container that holds H*R
                   resid = 0.0d0
-         
+
+                  !!!! diagram 1: A(d/ac) h1b(d~e~) r4d(ab~c~e~k~l~)
+                  !!!! diagram 2: 1/2 A(b/cd) h2c(c~d~e~f~) r4d(ab~e~f~k~l~)
+                  ! NOTE: WITHIN THESE LOOPS, H1B(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
+                  ! allocate new sorting arrays
+                  nloc = nob*(nob-1)/2*(nub-2)*nua
+                  allocate(loc_arr(2,nloc))
+                  allocate(idx_table(nob,nob,nua,nub))
+                  !!! SB: (5,6,1,2) !!!
+                  call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/1,nub-2/), nob, nob, nua, nub)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/5,6,1,2/), nob, nob, nua, nub, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(k,l,a,b)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); f = r4d_excits(jdet,4);
+                        ! compute < ab~c~d~k~l~ | h2c(vvvv) | ab~e~f~k~l~ >
+                        hmatel = h2c_vvvv(c,d,e,f)
+                        ! compute < klab~cd | h1b(vv) | klab~ef > = A(cd)A(ef) h1b(ce) delta(d,f)
+                        hmatel1 = 0.0d0
+                        if (d==f) hmatel1 = hmatel1 + h1b_vv(c,e) ! (1)
+                        if (c==f) hmatel1 = hmatel1 - h1b_vv(d,e) ! (cd)
+                        if (d==e) hmatel1 = hmatel1 - h1b_vv(c,f) ! (ef)
+                        if (c==e) hmatel1 = hmatel1 + h1b_vv(d,f) ! (cd)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (bc)
+                     idx = idx_table(k,l,a,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); f = r4d_excits(jdet,4);
+                        ! compute < ab~c~d~k~l~ | h2c(vvvv) | ac~e~f~k~l~ >
+                        hmatel = -h2c_vvvv(b,d,e,f)
+                        ! compute < klab~cd | h1b(vv) | klcb~ef > = -A(ad)A(ef) h1b(ae) delta(d,f)
+                        hmatel1 = 0.0d0
+                        if (d==f) hmatel1 = hmatel1 - h1b_vv(b,e) ! (1)
+                        if (b==f) hmatel1 = hmatel1 + h1b_vv(d,e) ! (ad)
+                        if (d==e) hmatel1 = hmatel1 + h1b_vv(b,f) ! (ef)
+                        if (b==e) hmatel1 = hmatel1 - h1b_vv(d,f) ! (ad)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (bd)
+                     idx = idx_table(k,l,a,d)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); f = r4d_excits(jdet,4);
+                        ! compute < ab~c~d~k~l~ | h2c(vvvv) | ad~e~f~k~l~ >
+                        hmatel = -h2c_vvvv(c,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | kldb~ef > = A(ac)A(ef) h1b(ce) delta(a,f)
+                        hmatel1 = 0.0d0
+                        if (b==f) hmatel1 = hmatel1 - h1b_vv(c,e) ! (1)
+                        if (c==f) hmatel1 = hmatel1 + h1b_vv(b,e) ! (cd)
+                        if (b==e) hmatel1 = hmatel1 + h1b_vv(c,f) ! (ef)
+                        if (c==e) hmatel1 = hmatel1 - h1b_vv(b,f) ! (cd)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (5,6,1,3) !!!
+                  call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/2,nub-1/), nob, nob, nua, nub)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/5,6,1,3/), nob, nob, nua, nub, nloc, n4abbb, resid)
+                  do idet = 1, n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(k,l,a,c)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); f = r4d_excits(jdet,4);
+                        ! compute < ab~c~d~k~l~ | h2c(vvvv) | ae~c~f~k~l~ >
+                        hmatel = h2c_vvvv(b,d,e,f)
+                        hmatel1 = 0.0d0
+                        if (b==e) hmatel1 = hmatel1 + h1b_vv(d,f) ! (1)
+                        if (b==f) hmatel1 = hmatel1 - h1b_vv(d,e) ! (ad)
+                        if (d==e) hmatel1 = hmatel1 - h1b_vv(b,f) ! (ef)
+                        if (d==f) hmatel1 = hmatel1 + h1b_vv(b,e) ! (ad)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (bc)
+                     idx = idx_table(k,l,a,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); f = r4d_excits(jdet,4);
+                        ! compute < ab~c~d~k~l~ | h2c(vvvv) | ae~c~f~k~l~ >
+                        hmatel = -h2c_vvvv(c,d,e,f)
+                        hmatel1 = 0.0d0
+                        if (c==e) hmatel1 = hmatel1 - h1b_vv(d,f) ! (1)
+                        if (c==f) hmatel1 = hmatel1 + h1b_vv(d,e) ! (ad)
+                        if (d==e) hmatel1 = hmatel1 + h1b_vv(c,f) ! (ef)
+                        if (d==f) hmatel1 = hmatel1 - h1b_vv(c,e) ! (ad)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(k,l,a,d)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); f = r4d_excits(jdet,4);
+                        ! compute < ab~c~d~k~l~ | h2c(vvvv) | ae~c~f~k~l~ >
+                        hmatel = -h2c_vvvv(b,c,e,f)
+                        hmatel1 = 0.0d0
+                        if (b==e) hmatel1 = hmatel1 - h1b_vv(c,f) ! (1)
+                        if (b==f) hmatel1 = hmatel1 + h1b_vv(c,e) ! (ad)
+                        if (c==e) hmatel1 = hmatel1 + h1b_vv(b,f) ! (ef)
+                        if (c==f) hmatel1 = hmatel1 - h1b_vv(b,e) ! (ad)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (5,6,1,4) !!!
+                  call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/3,nub/), nob, nob, nua, nub)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/5,6,1,4/), nob, nob, nua, nub, nloc, n4abbb, resid)
+                  do idet = 1, n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(k,l,a,d)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); f = r4d_excits(jdet,3);
+                        ! compute < klab~cd | h2c(vvvv) | kleb~fd >
+                        hmatel = h2c_vvvv(b,c,e,f)
+                        hmatel1 = 0.0d0
+                        if (b==e) hmatel1 = hmatel1 + h1b_vv(c,f) ! (1)
+                        if (b==f) hmatel1 = hmatel1 - h1b_vv(c,e) ! (ac)
+                        if (c==e) hmatel1 = hmatel1 - h1b_vv(b,f) ! (ef)
+                        if (c==f) hmatel1 = hmatel1 + h1b_vv(b,e) ! (ac)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (bd)
+                     idx = idx_table(k,l,a,b)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); f = r4d_excits(jdet,3);
+                        ! compute < klab~cd | h2c(vvvv) | kleb~fd >
+                        hmatel = -h2c_vvvv(d,c,e,f)
+                        hmatel1 = 0.0d0
+                        if (d==e) hmatel1 = hmatel1 - h1b_vv(c,f) ! (1)
+                        if (d==f) hmatel1 = hmatel1 + h1b_vv(c,e) ! (ac)
+                        if (c==e) hmatel1 = hmatel1 + h1b_vv(d,f) ! (ef)
+                        if (c==f) hmatel1 = hmatel1 - h1b_vv(d,e) ! (ac)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(k,l,a,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); f = r4d_excits(jdet,3);
+                        ! compute < klab~cd | h2c(vvvv) | kleb~fd >
+                        hmatel = -h2c_vvvv(b,d,e,f)
+                        hmatel1 = 0.0d0
+                        if (b==e) hmatel1 = hmatel1 - h1b_vv(d,f) ! (1)
+                        if (b==f) hmatel1 = hmatel1 + h1b_vv(d,e) ! (ac)
+                        if (d==e) hmatel1 = hmatel1 + h1b_vv(b,f) ! (ef)
+                        if (d==f) hmatel1 = hmatel1 - h1b_vv(b,e) ! (ac)(ef)
+                        hmatel = hmatel + 0.5d0 * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+                  
+                  !!!! diagram 3: A(kl) h1b(m~l~) r4d(ab~c~d~k~m~)
+                  !!!! diagram 4: 1/2 h2c(m~n~k~l~) r4d(ab~c~d~m~n~)
+                  ! allocate new sorting arrays
+                  nloc = nub*(nub-1)*(nub-2)/6 * nua
+                  allocate(loc_arr(2,nloc))
+                  allocate(idx_table(nub,nub,nub,nua))
+                  !!! SB: (2,3,4,1) !!!
+                  call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/1,nua/), nub, nub, nub, nua)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/2,3,4,1/), nub, nub, nub, nua, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(b,c,d,a)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        m = r4d_excits(jdet,5); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2a(oooo) | mnab~cd >
+                        hmatel = h2c_oooo(m,n,k,l)
+                        ! compute < klab~cd | h1a(oo) | mnab~cd > = A(kl)A(mn) -delta(m,k) * h1a_oo(n,l)
+                        hmatel1 = 0.0d0
+                        if (m==k) hmatel1 = hmatel1  - h1b_oo(n,l) ! (1)
+                        if (m==l) hmatel1 = hmatel1  + h1b_oo(n,k) ! (kl)
+                        if (n==k) hmatel1 = hmatel1  + h1b_oo(m,l) ! (mn)
+                        if (n==l) hmatel1 = hmatel1  - h1b_oo(m,k) ! (kl)(mn)
+                        hmatel = hmatel + hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                  end do
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+                 
+                  !!!! diagram 3: h1a(ae) * r4d(ab~c~d~k~l~)
+                  !!!! diagram 4: A(b/cd) h2b(ab~ef~) * r4d(ef~c~d~k~l~)
+                  ff = 1.0d0 / 3.0d0
+                  ! allocate new sorting arrays
+                  nloc = nob*(nob-1)/2*(nub-1)*(nub-2)/2
+                  allocate(loc_arr(2,nloc))
+                  allocate(idx_table(nob,nob,nub,nub))
+                  !!! SB: (5,6,3,4) !!!
+                  call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/2,nub-1/), (/-1,nub/), nob, nob, nub, nub)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/5,6,3,4/), nob, nob, nub, nub, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(k,l,c,d)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,1); f = r4d_excits(jdet,2);
+                        ! compute < k~l~ab~c~d~ | h2b(vvvv) | k~l~ef~c~d~ >
+                        hmatel = h2b_vvvv(a,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(a,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (b==f) hmatel1 = hmatel1 + h1a_vv(a,e)
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (bc)
+                     idx = idx_table(k,l,b,d)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,1); f = r4d_excits(jdet,2);
+                        ! compute < klab~cd | h2b(vvvv) | klef~ad >
+                        hmatel = -h2b_vvvv(a,c,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(c,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 - h1a_vv(a,e)
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (bd), -
+                     idx = idx_table(k,l,b,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,1); f = r4d_excits(jdet,2);
+                        ! compute < ab~c~d~ | h2b(vvvv) | ef~b~c~ >
+                        hmatel = h2b_vvvv(a,d,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(d,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (d==f) hmatel1 = hmatel1 + h1a_vv(a,e)
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (5,6,2,3) !!!
+                  call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nub-2/), (/-1,nub-1/), nob, nob, nub, nub)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/5,6,2,3/), nob, nob, nub, nub, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(k,l,b,c)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,1); f = r4d_excits(jdet,4);
+                        ! compute < k~l~ab~c~d~ | h2b(vvvv) | k~l~ef~c~d~ >
+                        hmatel = h2b_vvvv(a,d,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(a,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (d==f) hmatel1 = hmatel1 + h1a_vv(a,e)
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (bd), -
+                     idx = idx_table(k,l,c,d)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,1); f = r4d_excits(jdet,4);
+                        ! compute < klab~cd | h2b(vvvv) | klef~ad >
+                        hmatel = h2b_vvvv(a,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(c,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (b==f) hmatel1 = hmatel1 + h1a_vv(a,e)
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(k,l,b,d)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,1); f = r4d_excits(jdet,4);
+                        ! compute < ab~c~d~ | h2b(vvvv) | ef~b~c~ >
+                        hmatel = -h2b_vvvv(a,c,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(d,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 - h1a_vv(a,e)
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (5,6,2,4) !!!
+                  call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nub-2/), (/-2,nub/), nob, nob, nub, nub)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/5,6,2,4/), nob, nob, nub, nub, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(k,l,b,d)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,1); f = r4d_excits(jdet,3);
+                        ! compute < k~l~ab~c~d~ | h2b(vvvv) | k~l~ef~c~d~ >
+                        hmatel = h2b_vvvv(a,c,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(a,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (c==f) hmatel1 = hmatel1 + h1a_vv(a,e)
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (bc)
+                     idx = idx_table(k,l,c,d)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,1); f = r4d_excits(jdet,3);
+                        ! compute < k~l~ab~c~d~ | h2b(vvvv) | k~l~ef~c~d~ >
+                        hmatel = -h2b_vvvv(a,b,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(a,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (b==f) hmatel1 = hmatel1 - h1a_vv(a,e)
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(k,l,b,c)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,1); f = r4d_excits(jdet,3);
+                        ! compute < k~l~ab~c~d~ | h2b(vvvv) | k~l~ef~c~d~ >
+                        hmatel = -h2b_vvvv(a,d,e,f)
+                        ! compute < klab~cd | h1b(vv) | klef~cd > = delta(a,e) * h1b(b~f~)
+                        hmatel1 = 0.0d0
+                        if (d==f) hmatel1 = hmatel1 - h1a_vv(a,e)
+                        hmatel = hmatel + ff * hmatel1
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+
+                  !!! diagram 6: A(d/ac)A(kl) h2c(d~m~l~e~) * r4d(ab~c~e~k~m~)
+                  ! allocate new sorting arrays
+                  nloc = (nub-1)*(nub-2)/2 * (nob-1) * nua 
+                  allocate(loc_arr(2,nloc))
+                  allocate(idx_table(nub,nub,nob,nua))
+                  !!! SB: (2,3,5,1) !!!
+                  call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-1/), (/1,nua/), nub, nub, nob, nua)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/2,3,5,1/), nub, nub, nob, nua, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(b,c,k,a)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | knab~cf >
+                        hmatel = h2c_voov(d,n,l,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (ad), -
+                     idx = idx_table(c,d,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | kndb~cf >
+                        hmatel = h2c_voov(b,n,l,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(b,d,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | knab~df >
+                        hmatel = -h2c_voov(c,n,l,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (kl)
+                     idx = idx_table(b,c,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | lnab~cf >
+                        hmatel = -h2c_voov(d,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (ad)(kl), -
+                     idx = idx_table(c,d,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | lndb~cf >
+                        hmatel = -h2c_voov(b,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)(kl)
+                     idx = idx_table(b,d,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | lnab~df >
+                        hmatel = h2c_voov(c,n,k,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (2,4,5,1) !!!
+                  call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-1/), (/1,nua/), nub, nub, nob, nua)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/2,4,5,1/), nub, nub, nob, nua, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(b,d,k,a)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | knab~ed >
+                        hmatel = h2c_voov(c,n,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (ac)
+                     idx = idx_table(c,d,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | kncb~ed >
+                        hmatel = -h2c_voov(b,n,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(b,c,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | knab~ec >
+                        hmatel = -h2c_voov(d,n,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (kl)
+                     idx = idx_table(b,d,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | lnab~ed >
+                        hmatel = -h2c_voov(c,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(kl)
+                     idx = idx_table(c,d,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | lncb~ed >
+                        hmatel = h2c_voov(b,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)(kl)
+                     idx = idx_table(b,c,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | lnab~ec >
+                        hmatel = h2c_voov(d,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (3,4,5,1) !!!
+                  call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-1/), (/1,nua/), nub, nub, nob, nua)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/3,4,5,1/), nub, nub, nob, nua, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(c,d,k,a)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | kneb~cd >
+                        hmatel = h2c_voov(b,n,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (ac)
+                     idx = idx_table(b,d,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | kneb~ad >
+                        hmatel = -h2c_voov(c,n,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (ad), -
+                     idx = idx_table(b,c,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | kneb~ac >
+                        hmatel = h2c_voov(d,n,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (kl)
+                     idx = idx_table(c,d,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | lneb~cd >
+                        hmatel = -h2c_voov(b,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(kl)
+                     idx = idx_table(b,d,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | lneb~ad >
+                        hmatel = h2c_voov(c,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (ad)(kl), -
+                     idx = idx_table(b,c,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); n = r4d_excits(jdet,6);
+                        ! compute < klab~cd | h2c(voov) | lneb~ac >
+                        hmatel = -h2c_voov(d,n,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (2,3,6,1) !!!
+                  call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob/), (/1,nua/), nub, nub, nob, nua)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/2,3,6,1/), nub, nub, nob, nua, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(b,c,l,a)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mlab~cf >
+                        hmatel = h2c_voov(d,m,k,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (ad), -
+                     idx = idx_table(c,d,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mldb~cf >
+                        hmatel = h2c_voov(b,m,k,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(b,d,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mlab~df >
+                        hmatel = -h2c_voov(c,m,k,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (kl)
+                     idx = idx_table(b,c,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mkab~cf >
+                        hmatel = -h2c_voov(d,m,l,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (ad)(kl), -
+                     idx = idx_table(c,d,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mkdb~cf >
+                        hmatel = -h2c_voov(b,m,l,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)(kl)
+                     idx = idx_table(b,d,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,4); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mkab~df >
+                        hmatel = h2c_voov(c,m,l,f)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (2,4,6,1) !!!
+                  call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob/), (/1,nua/), nub, nub, nob, nua)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/2,4,6,1/), nub, nub, nob, nua, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(b,d,l,a)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mlab~ed >
+                        hmatel = h2c_voov(c,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (ac)
+                     idx = idx_table(c,d,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mlcb~ed >
+                        hmatel = -h2c_voov(b,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(b,c,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mlab~ec >
+                        hmatel = -h2c_voov(d,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (kl)
+                     idx = idx_table(b,d,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mkab~ed >
+                        hmatel = -h2c_voov(c,m,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(kl)
+                     idx = idx_table(c,d,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mkcb~ed >
+                        hmatel = h2c_voov(b,m,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (cd)(kl)
+                     idx = idx_table(b,c,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,3); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mkab~ec >
+                        hmatel = h2c_voov(d,m,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (3,4,6,1) !!!
+                  call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob/), (/1,nua/), nub, nub, nob, nua)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/3,4,6,1/), nub, nub, nob, nua, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(c,d,l,a)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mleb~cd >
+                        hmatel = h2c_voov(b,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (ac)
+                     idx = idx_table(b,d,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mleb~ad >
+                        hmatel = -h2c_voov(c,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (ad), -
+                     idx = idx_table(b,c,l,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mleb~ac >
+                        hmatel = h2c_voov(d,m,k,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (kl)
+                     idx = idx_table(c,d,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mkeb~cd >
+                        hmatel = -h2c_voov(b,m,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (ac)(kl)
+                     idx = idx_table(b,d,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mkeb~ad >
+                        hmatel = h2c_voov(c,m,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                     ! (ad)(kl), -
+                     idx = idx_table(b,c,k,a)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        e = r4d_excits(jdet,2); m = r4d_excits(jdet,5);
+                        ! compute < klab~cd | h2c(voov) | mkeb~ac >
+                        hmatel = -h2c_voov(d,m,l,e)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+
+                  !!! diagram 7: A(d/bc)A(kl) h2b(md~el~) * r4c(ab~ec~mk~)
+                  ! copy over excitations
+                  allocate(excits_buff(n4abab,6),amps_buff(n4abab))
+                  excits_buff(:,:) = r4c_excits(:,:)
+                  amps_buff(:) = r4c_amps(:)
+                  ! allocate new sorting arrays
+                  nloc = nub*(nub-1)/2 * (nua-1) * nob 
+                  allocate(loc_arr(2,nloc))
+                  allocate(idx_table(nub,nub,nua,nob))
+                  !!! SB: (2,4,1,6) !!!
+                  call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua-1/), (/1,nob/), nub, nub, nua, nob)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,4,1,6/), nub, nub, nua, nob, nloc, n4abab)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(b,c,a,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,5);
+                        ! compute < ab~c~d~k~l~ | h2b(voov) | ab~fd~nl~ >
+                        hmatel = h2b_ovvo(n,d,f,l)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bd), -
+                     idx = idx_table(c,d,a,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,5);
+                        ! compute < klab~cd | h2b(voov) | kn~ab~cf~ >
+                        hmatel = h2b_ovvo(n,b,f,l)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(b,d,a,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,5);
+                        ! compute < klab~cd | h2b(voov) | kn~ab~cf~ >
+                        hmatel = -h2b_ovvo(n,c,f,l)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (kl)
+                     idx = idx_table(b,c,a,l)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,5);
+                        ! compute < klab~cd | h2b(voov) | kn~ab~cf~ >
+                        hmatel = -h2b_ovvo(n,d,f,k)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bd)(kl),-
+                     idx = idx_table(c,d,a,l)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,5);
+                        ! compute < klab~cd | h2b(voov) | kn~ab~cf~ >
+                        hmatel = -h2b_ovvo(n,b,f,k)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (cd)(kl)
+                     idx = idx_table(b,d,a,l)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,3); n = excits_buff(jdet,5);
+                        ! compute < klab~cd | h2b(voov) | kn~ab~cf~ >
+                        hmatel = h2b_ovvo(n,c,f,k)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (2,4,3,6) !!!
+                  !!! THIS SB IS IDENTICAL TO THE ABOVE ON EXCEPT ALL SIGNS ARE REVERSED !!!
+                  call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/2,nua/), (/1,nob/), nub, nub, nua, nob)
+                  call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,4,3,6/), nub, nub, nua, nob, nloc, n4abab)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(b,c,a,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,1); n = excits_buff(jdet,5);
+                        ! compute < ab~c~d~k~l~ | h2b(voov) | ab~fd~nl~ >
+                        hmatel = -h2b_ovvo(n,d,f,l)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bd), -
+                     idx = idx_table(c,d,a,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,1); n = excits_buff(jdet,5);
+                        ! compute < klab~cd | h2b(voov) | kn~ab~cf~ >
+                        hmatel = -h2b_ovvo(n,b,f,l)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (cd)
+                     idx = idx_table(b,d,a,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,1); n = excits_buff(jdet,5);
+                        ! compute < klab~cd | h2b(voov) | kn~ab~cf~ >
+                        hmatel = h2b_ovvo(n,c,f,l)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (kl)
+                     idx = idx_table(b,c,a,l)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,1); n = excits_buff(jdet,5);
+                        ! compute < klab~cd | h2b(voov) | kn~ab~cf~ >
+                        hmatel = h2b_ovvo(n,d,f,k)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (bd)(kl),-
+                     idx = idx_table(c,d,a,l)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,1); n = excits_buff(jdet,5);
+                        ! compute < klab~cd | h2b(voov) | kn~ab~cf~ >
+                        hmatel = h2b_ovvo(n,b,f,k)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                     ! (cd)(kl)
+                     idx = idx_table(b,d,a,l)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = excits_buff(jdet,1); n = excits_buff(jdet,5);
+                        ! compute < klab~cd | h2b(voov) | kn~ab~cf~ >
+                        hmatel = -h2b_ovvo(n,c,f,k)
+                        resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
+                     end do
+                     end if
+                  end do
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+                  ! deallocate buffer arrays
+                  deallocate(excits_buff,amps_buff)
+
+                  !!! diagram 8: A(kl) -h2b(am~el~) * r4d(eb~c~d~k~m~)
+                  ! allocate new sorting arrays
+                  nloc = nub*(nub-1)*(nub-2)/6 * (nob-1) 
+                  allocate(loc_arr(2,nloc))
+                  allocate(idx_table(nub,nub,nub,nob))
+                  !!! SB: (2,3,4,5) !!!
+                  call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/1,nob-1/), nub, nub, nub, nob)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nub, nob, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(b,c,d,k)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,1); n = r4d_excits(jdet,6);
+                        ! compute < ab~cdkl | h2b(vovo) | af~cdkn >
+                        hmatel = -h2b_vovo(a,n,f,l)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (kl)
+                     idx = idx_table(b,c,d,l)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,1); n = r4d_excits(jdet,6);
+                        ! compute < ab~cdkl | h2b(vovo) | af~cdln >
+                        hmatel = h2b_vovo(a,n,f,k)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  !!! SB: (2,3,4,6) !!!
+                  call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/2,nob/), nub, nub, nub, nob)
+                  call sort4(r4d_excits, r4d_amps, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nub, nob, nloc, n4abbb, resid)
+                  do idet = 1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     ! (1)
+                     idx = idx_table(b,c,d,l)
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,1); m = r4d_excits(jdet,5);
+                        ! compute < ab~cdkl | h2b(vovo) | af~cdml >
+                        hmatel = -h2b_vovo(a,m,f,k)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     ! (kl)
+                     idx = idx_table(b,c,d,k)
+                     if (idx/=0) then
+                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                        f = r4d_excits(jdet,1); m = r4d_excits(jdet,5);
+                        ! compute < ab~cdkl | h2b(vovo) | af~cdmk >
+                        hmatel = h2b_vovo(a,m,f,l)
+                        resid(idet) = resid(idet) + hmatel * r4d_amps(jdet)
+                     end do
+                     end if
+                  end do
+                  ! deallocate sorting arrays
+                  deallocate(loc_arr,idx_table)
+
+                  !
+                  ! Moment contributions
+                  !
+                  do idet=1,n4abbb
+                     a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                     k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+                     res_mm23 = 0.0d0
+                     do e=1,nua
+                        ! A(c/bd)A(kl) h2b(acek)*r3c(eb~d~l~)
+                        res_mm23 = res_mm23 + h2b_vvvo(a,c,e,k)*r3c(e,b,d,l) ! (1)
+                        res_mm23 = res_mm23 - h2b_vvvo(a,b,e,k)*r3c(e,c,d,l) ! (bc)
+                        res_mm23 = res_mm23 - h2b_vvvo(a,d,e,k)*r3c(e,b,c,l) ! (cd)
+                        res_mm23 = res_mm23 - h2b_vvvo(a,c,e,l)*r3c(e,b,d,k) ! (kl)
+                        res_mm23 = res_mm23 + h2b_vvvo(a,b,e,l)*r3c(e,c,d,k) ! (bc)(kl)
+                        res_mm23 = res_mm23 + h2b_vvvo(a,d,e,l)*r3c(e,b,c,k) ! (cd)(kl)
+                     end do
+                     do e=1,nub
+                        ! A(b/cd)A(kl) h2c(cdke)*r3c(ab~e~l~)
+                        res_mm23 = res_mm23 + h2c_vvov(c,d,k,e)*r3c(a,b,e,l) ! (1)
+                        res_mm23 = res_mm23 - h2c_vvov(b,d,k,e)*r3c(a,c,e,l) ! (bc)
+                        res_mm23 = res_mm23 - h2c_vvov(c,b,k,e)*r3c(a,d,e,l) ! (bd)
+                        res_mm23 = res_mm23 - h2c_vvov(c,d,l,e)*r3c(a,b,e,k) ! (kl)
+                        res_mm23 = res_mm23 + h2c_vvov(b,d,l,e)*r3c(a,c,e,k) ! (bc)(kl)
+                        res_mm23 = res_mm23 + h2c_vvov(c,b,l,e)*r3c(a,d,e,k) ! (bd)(kl)
+                        ! A(c/bd) x3c(ab~d~e~)*t2c(cekl)
+                        res_mm23 = res_mm23 + x3c_vvvv(a,b,d,e)*t2c(c,e,k,l) ! (1)
+                        res_mm23 = res_mm23 - x3c_vvvv(a,c,d,e)*t2c(b,e,k,l) ! (bc)
+                        res_mm23 = res_mm23 - x3c_vvvv(a,b,c,e)*t2c(d,e,k,l) ! (cd)
+                     end do
+                     do m=1,noa
+                        ! -A(d/bc)A(kl) x3c(mb~c~k~)*t2b(adml)
+                        res_mm23 = res_mm23 - x3c_ovvo(m,b,c,k)*t2b(a,d,m,l) ! (1)
+                        res_mm23 = res_mm23 + x3c_ovvo(m,b,d,k)*t2b(a,c,m,l) ! (cd)
+                        res_mm23 = res_mm23 + x3c_ovvo(m,d,c,k)*t2b(a,b,m,l) ! (bd)
+                        res_mm23 = res_mm23 + x3c_ovvo(m,b,c,l)*t2b(a,d,m,k) ! (kl)
+                        res_mm23 = res_mm23 - x3c_ovvo(m,b,d,l)*t2b(a,c,m,k) ! (cd)(kl)
+                        res_mm23 = res_mm23 - x3c_ovvo(m,d,c,l)*t2b(a,b,m,k) ! (bd)(kl)
+                     end do
+                     do m=1,nob
+                        ! -A(c/bd) h2c(cmkl)*r3c(ab~d~m~)
+                        res_mm23 = res_mm23 - h2c_vooo(c,m,k,l)*r3c(a,b,d,m) ! (1)
+                        res_mm23 = res_mm23 + h2c_vooo(b,m,k,l)*r3c(a,c,d,m) ! (bc)
+                        res_mm23 = res_mm23 + h2c_vooo(d,m,k,l)*r3c(a,b,c,m) ! (cd)
+                        ! -A(b/cd)A(kl) x3c(ab~m~l~)*t2c(cdkm)
+                        res_mm23 = res_mm23 - x3c_vvoo(a,b,m,l)*t2c(c,d,k,m) ! (1)
+                        res_mm23 = res_mm23 + x3c_vvoo(a,c,m,l)*t2c(b,d,k,m) ! (bc)
+                        res_mm23 = res_mm23 + x3c_vvoo(a,d,m,l)*t2c(c,b,k,m) ! (bd)
+                        res_mm23 = res_mm23 + x3c_vvoo(a,b,m,k)*t2c(c,d,l,m) ! (kl)
+                        res_mm23 = res_mm23 - x3c_vvoo(a,c,m,k)*t2c(b,d,l,m) ! (bc)(kl)
+                        res_mm23 = res_mm23 - x3c_vvoo(a,d,m,k)*t2c(c,b,l,m) ! (bd)(kl)
+                     end do
+                     do m=1,noa
+                        do n=1,nob
+                           ! A(d/bc)A(kl) x2b(mn~)*t2b(ad~ml~)*t2c(b~c~n~k~)
+                           res_mm23 = res_mm23 + x2b_oo(m,n)*t2b(a,d,m,l)*t2c(b,c,n,k) ! (1)
+                           res_mm23 = res_mm23 - x2b_oo(m,n)*t2b(a,b,m,l)*t2c(d,c,n,k) ! (bd)
+                           res_mm23 = res_mm23 - x2b_oo(m,n)*t2b(a,c,m,l)*t2c(b,d,n,k) ! (cd)
+                           res_mm23 = res_mm23 - x2b_oo(m,n)*t2b(a,d,m,k)*t2c(b,c,n,l) ! (kl)
+                           res_mm23 = res_mm23 + x2b_oo(m,n)*t2b(a,b,m,k)*t2c(d,c,n,l) ! (bd)(kl)
+                           res_mm23 = res_mm23 + x2b_oo(m,n)*t2b(a,c,m,k)*t2c(b,d,n,l) ! (cd)(kl)
+                        end do
+                     end do
+                     resid(idet) = resid(idet) + res_mm23
+                  end do
               end subroutine build_hr_4d
+
+      subroutine update_r(r2b,&
+                          r3b,r3c,&
+                          r4b_amps,r4b_excits,&
+                          r4c_amps,r4c_excits,&
+                          r4d_amps,r4d_excits,&
+                          omega,H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                          n4abaa,n4abab,n4abbb,noa,nua,nob,nub)
+
+              integer, intent(in) :: noa, nua, nob, nub, n4abaa, n4abab, n4abbb
+              real(kind=8), intent(in) :: H1A_oo(1:noa,1:noa), H1A_vv(1:nua,1:nua),&
+                                          H1B_oo(1:nob,1:nob), H1B_vv(1:nub,1:nub),&
+                                          omega
+              integer, intent(in) :: r4b_excits(n4abaa,6)
+              integer, intent(in) :: r4c_excits(n4abab,6)
+              integer, intent(in) :: r4d_excits(n4abbb,6)
+              real(kind=8), intent(inout) :: r2b(1:nua,1:nub)
+              !f2py intent(in,out) :: r2b(0:nua-1,0:nub-1)
+              real(kind=8), intent(inout) :: r3b(1:nua,1:nub,1:nua,1:noa)
+              !f2py intent(in,out) :: r3b(0:nua-1,0:nub-1,0:nua-1,0:noa-1)
+              real(kind=8), intent(inout) :: r3c(1:nua,1:nub,1:nub,1:nob)
+              !f2py intent(in,out) :: r3c(0:nua-1,0:nub-1,0:nub-1,0:nob-1)
+              real(kind=8), intent(inout) :: r4b_amps(1:n4abaa)
+              !f2py intent(in,out) :: r4b_amps(0:n4abaa-1)
+              real(kind=8), intent(inout) :: r4c_amps(1:n4abab)
+              !f2py intent(in,out) :: r4c_amps(0:n4abab-1)
+              real(kind=8), intent(inout) :: r4d_amps(1:n4abbb)
+              !f2py intent(in,out) :: r4d_amps(0:n4abbb-1)
+
+              integer :: idet, a, b, c, d, k, l
+              real(kind=8) :: denom
+
+              do a = 1,nua; do b = 1,nub;
+                  denom = H1A_vv(a,a) + H1B_vv(b,b)
+                  r2b(a,b) = r2b(a,b)/(omega - denom)
+              end do; end do;
+
+              do a = 1,nua; do b = 1,nub; do c = 1,nua; do k = 1,noa;
+                  if (a==c) cycle
+                  denom = H1A_vv(a,a) + H1B_vv(b,b) + H1A_vv(c,c) - H1A_oo(k,k)
+                  r3b(a,b,c,k) = r3b(a,b,c,k)/(omega - denom)
+              end do; end do; end do; end do;
+
+              do a = 1,nua; do b = 1,nub; do c = 1,nub; do k = 1,nob;
+                  if (b==c) cycle
+                  denom = H1A_vv(a,a) + H1B_vv(b,b) + H1B_vv(c,c) - H1B_oo(k,k)
+                  r3c(a,b,c,k) = r3c(a,b,c,k)/(omega - denom)
+              end do; end do; end do; end do;
+              
+              do idet=1,n4abaa 
+                 a = r4b_excits(idet,1); b = r4b_excits(idet,2); c = r4b_excits(idet,3); d = r4b_excits(idet,4)
+                 k = r4b_excits(idet,5); l = r4b_excits(idet,6);
+
+                 denom = H1A_vv(a,a) + H1B_vv(b,b) + H1A_vv(c,c) + H1A_vv(d,d) - H1A_oo(k,k) - H1A_oo(l,l)
+                 r4b_amps(idet) = r4b_amps(idet)/(omega - denom)
+               end do
+           
+              do idet=1,n4abab
+                 a = r4c_excits(idet,1); b = r4c_excits(idet,2); c = r4c_excits(idet,3); d = r4c_excits(idet,4)
+                 k = r4c_excits(idet,5); l = r4c_excits(idet,6);
+
+                 denom = H1A_vv(a,a) + H1B_vv(b,b) + H1A_vv(c,c) + H1B_vv(d,d) - H1A_oo(k,k) - H1B_oo(l,l)
+                 r4c_amps(idet) = r4c_amps(idet)/(omega - denom)
+              end do
+              
+              do idet=1,n4abbb
+                 a = r4d_excits(idet,1); b = r4d_excits(idet,2); c = r4d_excits(idet,3); d = r4d_excits(idet,4)
+                 k = r4d_excits(idet,5); l = r4d_excits(idet,6);
+
+                 denom = H1A_vv(a,a) + H1B_vv(b,b) + H1B_vv(c,c) + H1B_vv(d,d) - H1B_oo(k,k) - H1B_oo(l,l)
+                 r4d_amps(idet) = r4d_amps(idet)/(omega - denom)
+              end do
+
+      end subroutine update_r
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SORTING FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!

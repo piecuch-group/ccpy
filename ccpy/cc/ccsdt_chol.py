@@ -1,12 +1,14 @@
-"""Module with functions that perform the CC with singles, doubles,
-and triples (CCSDT) calculation for a molecular system."""
+'''
+Coupled-Cluster Method with Singles, Doubles, and Triples (CCSDT)
+[This version uses Cholesky decomposition of the two-electron integrals]
+'''
 
 import numpy as np
 
 from ccpy.hbar.hbar_ccsd_chol import get_ccsd_intermediates
 from ccpy.lib.core import cc_loops2, vvvv_contraction
 
-def update(T, dT, H, X, shift, flag_RHF, system):
+def update(T, dT, H, X, shift, flag_RHF):
 
     # pre-CCS intermediates
     X.a.ov = H.a.ov + (
