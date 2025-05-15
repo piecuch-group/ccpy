@@ -1,6 +1,7 @@
 project(
   'ccpy',
-  'c', 'fortran',
+  'c',
+  'fortran',
   version: '0.0.5',
   license: 'GPL-3',
   meson_version: '>= 1.1.0',
@@ -17,7 +18,7 @@ py3_dep = py3.dependency()
 
 f2py_script = find_program('devtools/f2py_script.sh')
 
-min_numpy_version = '1.23.5'  # keep in sync with pyproject.toml
+min_numpy_version = '2.0.0'  # keep in sync with pyproject.toml
 
 add_languages('fortran', native: false)
 ff = meson.get_compiler('fortran')

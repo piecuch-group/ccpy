@@ -5,7 +5,7 @@ module ccp3_full_correction_high_mem
       implicit none
 
       contains
-         
+
               subroutine ccp3a(deltaA,deltaB,deltaC,deltaD,&
                                     qspace,omega,&
                                     M3A,L3A,t3a_excits,&
@@ -38,11 +38,11 @@ module ccp3_full_correction_high_mem
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
-                        deltaD = 0.0d0 
+                        deltaD = 0.0d0
                         do idet=1,num_q
                             a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                             i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-                                   
+
                             LM = M3A(idet) * L3A(idet)
 
                             D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
@@ -75,7 +75,7 @@ module ccp3_full_correction_high_mem
                             deltaD = deltaD + LM/(omega+D)
                         end do
               end subroutine ccp3a
-         
+
               subroutine ccp3b(deltaA,deltaB,deltaC,deltaD,&
                                     qspace,omega,&
                                     M3B,L3B,t3b_excits,&
@@ -124,13 +124,13 @@ module ccp3_full_correction_high_mem
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
-                        deltaD = 0.0d0 
+                        deltaD = 0.0d0
                         do idet=1,num_q
                             a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                             i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-                           
+
                             LM = M3B(idet) * L3B(idet)
-                            
+
                             D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
                             - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
 
@@ -161,7 +161,7 @@ module ccp3_full_correction_high_mem
                             deltaD = deltaD + LM/(omega+D)
                         end do
               end subroutine ccp3b
-         
+
               subroutine ccp3c(deltaA,deltaB,deltaC,deltaD,&
                                     qspace,omega,&
                                     M3C,L3C,t3c_excits,&
@@ -206,11 +206,11 @@ module ccp3_full_correction_high_mem
                         ! local variables
                         integer :: i, j, k, a, b, c, idet
                         real(kind=8) :: D, LM
-                        
+
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
-                        deltaD = 0.0d0 
+                        deltaD = 0.0d0
                         do idet=1,num_q
                             a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                             i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
@@ -233,9 +233,9 @@ module ccp3_full_correction_high_mem
                             +H2B_vovo(a,k,a,k)-H2C_voov(b,k,k,b)-H2C_voov(c,k,k,c)&
                             -H2B_oooo(i,j,i,j)-H2B_oooo(i,k,i,k)-H2C_oooo(k,j,k,j)&
                             -H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
-                            
+
                             deltaC = deltaC + LM/(omega+D)
-                            
+
                             D = D &
                             +D3B_O(a,i,j)+D3B_O(a,i,k)&
                             +D3C_O(b,i,j)+D3C_O(b,i,k)+D3D_O(b,j,k)&
@@ -247,7 +247,7 @@ module ccp3_full_correction_high_mem
                             deltaD = deltaD + LM/(omega+D)
                         end do
               end subroutine ccp3c
-         
+
               subroutine ccp3d(deltaA,deltaB,deltaC,deltaD,&
                                    qspace,omega,&
                                    M3D,L3D,t3d_excits,&
@@ -276,15 +276,15 @@ module ccp3_full_correction_high_mem
                         ! local variables
                         integer :: i, j, k, a, b, c, idet
                         real(kind=8) :: D, LM
-                        
+
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
-                        deltaD = 0.0d0 
+                        deltaD = 0.0d0
                         do idet=1,num_q
                             a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                             i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-                                   
+
                             LM = M3D(idet) * L3D(idet)
 
                             D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
@@ -317,7 +317,7 @@ module ccp3_full_correction_high_mem
                             deltaD = deltaD + LM/(omega+D)
                         end do
               end subroutine ccp3d
-         
+
               subroutine build_moments3a(resid, qspace,&
                                              t3a_amps, t3a_excits,&
                                              t3b_amps, t3b_excits,&
@@ -343,7 +343,7 @@ module ccp3_full_correction_high_mem
                                               H2A_voov(noa,nua,nua,noa),& ! reordered
                                               H2A_vvvv(nua,nua,nua,nua),&
                                               H2B_voov(nob,nub,nua,noa)   ! reordered
-                  
+
                   real(kind=8), intent(out) :: resid(num_q)
 
                   integer, allocatable :: idx_table(:,:,:,:), idx_table3(:,:,:)
@@ -351,7 +351,7 @@ module ccp3_full_correction_high_mem
 
                   real(kind=8), allocatable :: amps_buff(:), t3a_amps_copy(:), xbuf(:,:,:,:)
                   integer, allocatable :: excits_buff(:,:), t3a_excits_copy(:,:)
-                  
+
                   real(kind=8) :: hmatel, hmatel1, hmatel2, hmatel3, hmatel4
                   integer :: i, j, k, ii, jj, kk, a, b, c, d, l, e, f, m, n, jdet, idet
                   integer :: idx, nloc
@@ -4069,7 +4069,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 10: h2a(amie)*t3c(ebcmjk)
                   ! allocate sorting arrays
                   nloc = nub*(nub-1)/2*nob*(nob-1)/2
@@ -4104,7 +4104,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 11: -A(bc) h2b(mbie)*t3c(aecmjk)
                   ! allocate sorting arrays
                   nloc = nob*(nob-1)/2*nub*nua
@@ -4188,7 +4188,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 12: -A(bc) h2b(amej)*t3c(ebcimk)
                   ! allocate sorting arrays
                   nloc = nub*(nub-1)/2*noa*nob
@@ -4272,7 +4272,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 13: h2b(amie)*t3d(ebcmjk)
                   ! allocate and initialize the copy of t3d
                   allocate(amps_buff(n3bbb))
@@ -4548,7 +4548,7 @@ module ccp3_full_correction_high_mem
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
                   deallocate(amps_buff,excits_buff)
-                  
+
                   !!!! diagram 14: A(bc)A(jk) h2b(mbej)*t3b(aecimk)
                   ! allocate and initialize the copy of t3b
                   allocate(amps_buff(n3aab))
@@ -4811,7 +4811,7 @@ module ccp3_full_correction_high_mem
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
                   deallocate(amps_buff,excits_buff)
-                  
+
                   !
                   ! Moment contributions
                   !
@@ -4962,7 +4962,7 @@ module ccp3_full_correction_high_mem
                                       H2B_oovv, H2B_ovvo,&
                                       n3abb, n3bbb, num_q,&
                                       noa, nua, nob, nub)
-                  ! input variables 
+                  ! input variables
                   integer, intent(in) :: noa, nua, nob, nub, n3abb, n3bbb
                   integer, intent(in) :: num_q
                   integer, intent(in) :: qspace(num_q,6)
@@ -5217,10 +5217,10 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 2: A(a/bc) h1b(ae) * t3d(ebcijk)
-                  !!!! diagram 4: 1/2 A(c/ab) h2c(abef) * t3d(ebcijk) 
-                  ! NOTE: WITHIN THESE LOOPS, H1B(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2  
+                  !!!! diagram 4: 1/2 A(c/ab) h2c(abef) * t3d(ebcijk)
+                  ! NOTE: WITHIN THESE LOOPS, H1B(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
                   ! allocate new sorting arrays
                   nloc = nob*(nob-1)*(nob-2)/6*nub
                   allocate(loc_arr(2,nloc))
@@ -5366,7 +5366,7 @@ module ccp3_full_correction_high_mem
                         hmatel = hmatel + 0.5d0 * (hmatel1 + hmatel2 + hmatel3 + hmatel4)
                         resid(idet) = resid(idet) + hmatel * t3d_amps_copy(jdet)
                      end do
-                     end if 
+                     end if
                   end do
                   !$omp end do
                   !$omp end parallel
@@ -7175,7 +7175,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 5: A(i/jk)A(a/bc) h2a(eima) * l3a(ebcmjk)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = (nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2
@@ -8155,7 +8155,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                 
+
                   !!!! diagram 6: A(i/jk)A(a/bc) h2b(ieam) * l3b(bcejkm)
                   ! allocate and copy over l3b arrays
                   allocate(amps_buff(n3aab),excits_buff(n3aab,6))
@@ -8277,7 +8277,7 @@ module ccp3_full_correction_high_mem
                   deallocate(loc_arr,idx_table)
                   ! deallocate l3 buffer arrays
                   deallocate(amps_buff,excits_buff)
-                  
+
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp l3a_excits_copy,&
@@ -8452,7 +8452,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                 
+
                   !!!! diagram 2: A(ab) h1a(ea)*l3b(ebcmjk)
                   !!!! diagram 6: A(ab) 1/2 h2a(efab)*l3b(ebcmjk)
                   !!! SB: (4,5,6,3) LOOP !!!
@@ -8492,7 +8492,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                 
+
                   !!!! diagram 3: -h1b(km)*l3b(abcijm)
                   !!!! diagram 7: A(ij) h2b(jkmn)*l3b(abcimn)
                   !!! SB: (1,2,3,4) LOOP !!!
@@ -8577,7 +8577,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECITON !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                 
+
                   !!!! diagram 5: h1b(ec)*l3b(abeijm)
                   !!!! diagram 8: A(ab) h2b(efbc)*l3b(aefijk)
                   ! allocate new sorting arrays
@@ -8658,7 +8658,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                 
+
                   !!!! diagram 9: A(ij)A(ab) h2a(eima)*l3b(ebcmjk)
                   ! allocate new sorting arrays
                   nloc = nua*nub*noa*nob
@@ -8890,7 +8890,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                 
+
                   !!!! diagram 10: h2c(ekmc)*l3b(abeijm)
                   ! allocate sorting arrays
                   nloc = nua*(nua-1)/2*noa*(noa-1)/2
@@ -9085,7 +9085,7 @@ module ccp3_full_correction_high_mem
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   !end if
-                 
+
                   !!!! diagram 13: h2b(ekmc)*l3a(abeijm) !!!!
                   !if (n3aaa/=0) then
                   ! allocate and initialize the copy of l3a
@@ -9112,7 +9112,7 @@ module ccp3_full_correction_high_mem
                      a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                      i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
                      idx = idx_table(a,b,i,j)
-                     if (idx==0) cycle 
+                     if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                         ! compute < ijnabf | h2b(voov) | ijk~abc~ >
@@ -9137,7 +9137,7 @@ module ccp3_full_correction_high_mem
                   do idet=1,num_q
                      a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                      i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(jdet,2); n = excits_buff(jdet,6);
@@ -9145,7 +9145,7 @@ module ccp3_full_correction_high_mem
                         hmatel = -h2b_voov(e,k,n,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do 
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9163,7 +9163,7 @@ module ccp3_full_correction_high_mem
                   do idet=1,num_q
                      a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                      i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(jdet,1); n = excits_buff(jdet,6);
@@ -9171,7 +9171,7 @@ module ccp3_full_correction_high_mem
                         hmatel = h2b_voov(d,k,n,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do 
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9189,7 +9189,7 @@ module ccp3_full_correction_high_mem
                   do idet=1,num_q
                      a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                      i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(jdet,3); m = excits_buff(jdet,5);
@@ -9197,7 +9197,7 @@ module ccp3_full_correction_high_mem
                         hmatel = -h2b_voov(f,k,m,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do 
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9215,7 +9215,7 @@ module ccp3_full_correction_high_mem
                   do idet=1,num_q
                      a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                      i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(jdet,2); m = excits_buff(jdet,5);
@@ -9223,7 +9223,7 @@ module ccp3_full_correction_high_mem
                         hmatel = h2b_voov(e,k,m,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do 
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9241,7 +9241,7 @@ module ccp3_full_correction_high_mem
                   do idet=1,num_q
                      a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                      i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(jdet,1); m = excits_buff(jdet,5);
@@ -9249,7 +9249,7 @@ module ccp3_full_correction_high_mem
                         hmatel = -h2b_voov(d,k,m,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do 
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9267,7 +9267,7 @@ module ccp3_full_correction_high_mem
                   do idet=1,num_q
                      a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                      i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         f = excits_buff(jdet,3); l = excits_buff(jdet,4);
@@ -9275,7 +9275,7 @@ module ccp3_full_correction_high_mem
                         hmatel = h2b_voov(f,k,l,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do 
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9293,7 +9293,7 @@ module ccp3_full_correction_high_mem
                   do idet=1,num_q
                      a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                      i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         e = excits_buff(jdet,2); l = excits_buff(jdet,4);
@@ -9301,7 +9301,7 @@ module ccp3_full_correction_high_mem
                         hmatel = -h2b_voov(e,k,l,c)
                         resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                      end do
-                  end do 
+                  end do
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
@@ -9319,7 +9319,7 @@ module ccp3_full_correction_high_mem
                   do idet=1,num_q
                      a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
                      i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-                     idx = idx_table(a,b,i,j) 
+                     idx = idx_table(a,b,i,j)
                      if (idx==0) cycle
                      do jdet = loc_arr(1,idx), loc_arr(2,idx)
                         d = excits_buff(jdet,1); l = excits_buff(jdet,4);
@@ -9335,7 +9335,7 @@ module ccp3_full_correction_high_mem
                   deallocate(loc_arr,idx_table)
                   ! deallocate l3 buffer arrays
                   deallocate(amps_buff,excits_buff)
-                 
+
                   !!!! diagram 14: A(ab)A(ij) h2b(jebm)*l3c(aecimk)
                   !if (n3abb/=0) then
                   ! allocate and initialize the copy of l3c
@@ -9583,7 +9583,7 @@ module ccp3_full_correction_high_mem
                   deallocate(loc_arr,idx_table)
                   ! deallocate l3 buffer arrays
                   deallocate(amps_buff,excits_buff)
-                  
+
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp l3b_excits_copy,&
@@ -9650,7 +9650,7 @@ module ccp3_full_correction_high_mem
                   end do
                   !$omp end do
                   !$omp end parallel
-                  !!!! END OMP PARALLEL SECTION !!!!                 
+                  !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate copies of l3b amplitude and excitation arrays
                   deallocate(l3b_amps_copy,l3b_excits_copy)
         end subroutine build_leftamps3b
@@ -9753,7 +9753,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-           
+
                   !!!! diagram 2: A(bc) h1b(ec)*l3c(abeijk)
                   !!!! diagram 6: A(bc) 1/2 h2c(efbc)*l3c(aefijk)
                   !!! SB: (5,6,4,1) LOOP !!!
@@ -9791,8 +9791,8 @@ module ccp3_full_correction_high_mem
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table)    
-                  
+                  deallocate(loc_arr,idx_table)
+
                   !!!! diagram 3: -h1a(im)*l3c(abcmjk)
                   !!!! diagram 7: A(jk) h2b(ijmn)*l3c(abcmnk)
                   !!! SB: (2,3,1,6) LOOP !!!
@@ -9877,7 +9877,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECITON !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 5: h1a(ea)*l3c(ebcijk)
                   !!!! diagram 8: A(bc) h2b(efab)*l3c(efcijk)
                   ! allocate new sorting arrays
@@ -9959,7 +9959,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 9: A(jk)A(bc) h2c(ekmc)*l3c(abeijm)
                   ! allocate new sorting arrays
                   nloc = nub*nua*nob*noa
@@ -10191,7 +10191,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-           
+
                   !!!! diagram 10: h2a(amie)*t3c(ebcmjk)
                   ! allocate sorting arrays
                   nloc = nub*(nub-1)/2*nob*(nob-1)/2
@@ -10225,7 +10225,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-           
+
                   !!!! diagram 11: -A(bc) h2b(iemb)*l3c(aecmjk)
                   ! allocate sorting arrays
                   nloc = nob*(nob-1)/2*nub*nua
@@ -10305,7 +10305,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 12: -A(bc) h2b(ejam)*l3c(ebcimk)
                   ! allocate sorting arrays
                   nloc = nub*(nub-1)/2*noa*nob
@@ -11244,8 +11244,8 @@ module ccp3_full_correction_high_mem
                   deallocate(loc_arr,idx_table)
 
                   !!!! diagram 2: A(a/bc) h1b(ea) * l3d(ebcijk)
-                  !!!! diagram 4: 1/2 A(c/ab) h2c(efab) * l3d(ebcijk) 
-                  ! NOTE: WITHIN THESE LOOPS, H1B(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2  
+                  !!!! diagram 4: 1/2 A(c/ab) h2c(efab) * l3d(ebcijk)
+                  ! NOTE: WITHIN THESE LOOPS, H1B(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
                   ! allocate new sorting arrays
                   nloc = nob*(nob-1)*(nob-2)/6*nub
                   allocate(loc_arr(2,nloc))
@@ -11379,7 +11379,7 @@ module ccp3_full_correction_high_mem
                         hmatel = hmatel + 0.5d0 * hmatel1
                         resid(idet) = resid(idet) + hmatel * l3d_amps_copy(jdet)
                      end do
-                     end if 
+                     end if
                   end do
                   !$omp end do
                   !$omp end parallel
@@ -11453,7 +11453,7 @@ module ccp3_full_correction_high_mem
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
-                  
+
                   !!!! diagram 5: A(i/jk)A(a/bc) h2c(eima) * l3c(ebcmjk)
                   ! allocate sorting arrays (can be reused for each permutation)
                   nloc = (nub-1)*(nub-2)/2*(nob-1)*(nob-2)/2
@@ -12434,7 +12434,7 @@ module ccp3_full_correction_high_mem
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   !end if
-                  
+
                   !!!! diagram 6: A(i/jk)A(a/bc) h2b(eima) * l3c(ebcmjk)
                   !if (n3abb/=0) then
                   ! allocate and copy over t3c arrays
@@ -12557,7 +12557,7 @@ module ccp3_full_correction_high_mem
                  deallocate(loc_arr,idx_table)
                  ! deallocate l3 buffer arrays
                  deallocate(amps_buff,excits_buff)
-           
+
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
                   !$omp l3d_excits_copy,&
@@ -12630,7 +12630,7 @@ module ccp3_full_correction_high_mem
                   !$omp end do
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
-          
+
                   ! deallocate l3d array copies
                   deallocate(l3d_excits_copy,l3d_amps_copy)
         end subroutine build_leftamps3d
@@ -12661,7 +12661,7 @@ module ccp3_full_correction_high_mem
           ! Input R and T arrays
           real(kind=8), intent(in) :: r2a(nua,nua,noa,noa), t2a(nua,nua,noa,noa)
           integer, intent(in) :: r3a_excits(n3aaa_r,6), r3b_excits(n3aab_r,6), t3b_excits(n3aab_t,6)
-          integer, intent(in) :: t3a_excits(n3aaa_t,6) 
+          integer, intent(in) :: t3a_excits(n3aaa_t,6)
           real(kind=8), intent(in) :: r3a_amps(n3aaa_r), r3b_amps(n3aab_r), t3b_amps(n3aab_t)
           real(kind=8), intent(in) :: t3a_amps(n3aaa_t)
           ! Input H and X arrays
@@ -12910,7 +12910,7 @@ module ccp3_full_correction_high_mem
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
-          
+
           !!!! diagram 2a: A(a/bc) h1a(ae) * r3a(ebcijk)
           !!!! diagram 4a: 1/2 A(c/ab) h2a(abef) * r3a(ebcijk)
           ! NOTE: WITHIN THESE LOOPS, H1A(VV) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
@@ -13130,7 +13130,7 @@ module ccp3_full_correction_high_mem
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
-          
+
           !!!! diagram 5a: A(i/jk)A(a/bc) h2a(amie) * r3a(ebcmjk)
           ! allocate sorting arrays (can be reused for each permutation)
           nloc = (nua-1)*(nua-2)/2*(noa-1)*(noa-2)/2
@@ -14305,15 +14305,15 @@ module ccp3_full_correction_high_mem
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
              end if
-          end do   
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
           ! deallocate buffer arrays
-          deallocate(amps_buff,excits_buff) 
-          
+          deallocate(amps_buff,excits_buff)
+
           !!!! diagram 1b: -A(i/jk) x1a(mi) * t3a(abcmjk)
           !!!! diagram 3b: 1/2 A(i/jk) x2a(mnij) * t3a(abcmnk)
           ! NOTE: WITHIN THESE LOOPS, X1A(OO) TERMS ARE DOUBLE-COUNTED SO COMPENSATE BY FACTOR OF 1/2
@@ -15854,14 +15854,14 @@ module ccp3_full_correction_high_mem
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
              end if
-          end do   
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
           ! deallocate buffer arrays
-          deallocate(amps_buff,excits_buff) 
+          deallocate(amps_buff,excits_buff)
 
           !!!! BEGIN OMP PARALLEL SECTION !!!!
           !$omp parallel shared(resid,&
@@ -15959,7 +15959,7 @@ module ccp3_full_correction_high_mem
                              noa, nua, nob, nub)
           ! Input dimension variables
           integer, intent(in) :: noa, nua, nob, nub
-          integer, intent(in) :: n3aaa_r, n3aaa_t, num_q 
+          integer, intent(in) :: n3aaa_r, n3aaa_t, num_q
           integer, intent(in) :: n3aab_r, n3aab_t
           integer, intent(in) :: n3abb_r, n3abb_t
           integer, intent(in) :: qspace(num_q,6)
@@ -16035,7 +16035,7 @@ module ccp3_full_correction_high_mem
           r3b_excits_copy(:,:) = r3b_excits(:,:)
           !!!! diagram 1a: -A(ij) h1a(mi)*r3b(abcmjk)
           !!!! diagram 5a: A(ij) 1/2 h2a(mnij)*r3b(abcmnk)
-          !!! ABCK LOOP !!! 
+          !!! ABCK LOOP !!!
           ! allocate new sorting arrays
           nloc = nua*(nua-1)/2*nub*nob
           allocate(loc_arr(2,nloc))
@@ -16077,7 +16077,7 @@ module ccp3_full_correction_high_mem
           ! allocate temporary arrays
           allocate(excits_buff(n3aab_t,6),amps_buff(n3aab_t))
           excits_buff(:,:) = t3b_excits(:,:)
-          amps_buff(:) = t3b_amps(:) 
+          amps_buff(:) = t3b_amps(:)
           ! allocate new sorting arrays
           nloc = nua*(nua-1)/2*nub*nob
           allocate(loc_arr(2,nloc))
@@ -16162,7 +16162,7 @@ module ccp3_full_correction_high_mem
           ! allocate temporary arrays
           allocate(excits_buff(n3aab_t,6),amps_buff(n3aab_t))
           excits_buff(:,:) = t3b_excits(:,:)
-          amps_buff(:) = t3b_amps(:) 
+          amps_buff(:) = t3b_amps(:)
           ! allocate new sorting arrays
           nloc = nub*noa*(noa-1)/2*nob
           allocate(loc_arr(2,nloc))
@@ -16245,7 +16245,7 @@ module ccp3_full_correction_high_mem
                    if (m==i) hmatel = hmatel + h1b_oo(n,k)
                    resid(idet) = resid(idet) + hmatel * r3b_amps_copy(jdet)
                 end do
-             end if    
+             end if
           end do
           !$omp end do
           !$omp end parallel
@@ -16287,14 +16287,14 @@ module ccp3_full_correction_high_mem
           !$omp end parallel
           !!!! END OMP PARALLEL SECITON !!!!
           ! deallocate sorting arrays
-          deallocate(loc_arr,idx_table) 
+          deallocate(loc_arr,idx_table)
           !!!! diagram 3b: -h1b(mk)*t3b(abcijm)
           !!!! diagram 7b: A(ij) h2b(mnjk)*t3b(abcimn)
           !!! ABCI LOOP !!!
           ! allocate temporary arrays
           allocate(excits_buff(n3aab_t,6),amps_buff(n3aab_t))
           excits_buff(:,:) = t3b_excits(:,:)
-          amps_buff(:) = t3b_amps(:) 
+          amps_buff(:) = t3b_amps(:)
           ! allocate new sorting arrays
           nloc = nua*(nua-1)/2*nub*noa
           allocate(loc_arr(2,nloc))
@@ -16333,7 +16333,7 @@ module ccp3_full_correction_high_mem
                    if (m==i) hmatel = hmatel + x1b_oo(n,k)
                    resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                 end do
-             end if    
+             end if
           end do
           !$omp end do
           !$omp end parallel
@@ -16375,7 +16375,7 @@ module ccp3_full_correction_high_mem
           !$omp end parallel
           !!!! END OMP PARALLEL SECITON !!!!
           ! deallocate sorting arrays
-          deallocate(loc_arr,idx_table) 
+          deallocate(loc_arr,idx_table)
           ! deallocate temporary arrays
           deallocate(excits_buff,amps_buff)
 
@@ -16602,7 +16602,7 @@ module ccp3_full_correction_high_mem
                    hmatel = -h2a_voov(l,d,b,i)
                    resid(idet) = resid(idet) + hmatel * r3b_amps_copy(jdet)
                 end do
-             end if 
+             end if
              ! (ij)
              idx = idx_table(b,c,i,k)
              if (idx/=0) then ! protect against case where i = 1 because j = 2, noa
@@ -16613,7 +16613,7 @@ module ccp3_full_correction_high_mem
                    hmatel = -h2a_voov(l,d,a,j)
                    resid(idet) = resid(idet) + hmatel * r3b_amps_copy(jdet)
                 end do
-             end if 
+             end if
              ! (ij)(ab)
              idx = idx_table(a,c,i,k)
              if (idx/=0) then ! protect against case where a = 1 because b = 2, nua and i = 1 because j = 2, noa
@@ -16624,7 +16624,7 @@ module ccp3_full_correction_high_mem
                    hmatel = h2a_voov(l,d,b,j)
                    resid(idet) = resid(idet) + hmatel * r3b_amps_copy(jdet)
                 end do
-             end if 
+             end if
           end do
           !$omp end do
           !$omp end parallel
@@ -16654,7 +16654,7 @@ module ccp3_full_correction_high_mem
              end do
              ! (ij)
              idx = idx_table(b,c,j,k)
-             if (idx/=0) then ! protect against where j = noa because i = 1, noa-1 
+             if (idx/=0) then ! protect against where j = noa because i = 1, noa-1
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    d = r3b_excits_copy(jdet,1); l = r3b_excits_copy(jdet,5);
                    ! compute < ijk~abc~ | h2a(voov) | jlk~dbc~ >
@@ -16815,7 +16815,7 @@ module ccp3_full_correction_high_mem
           ! allocate temporary arrays
           allocate(excits_buff(n3aab_t,6),amps_buff(n3aab_t))
           excits_buff(:,:) = t3b_excits(:,:)
-          amps_buff(:) = t3b_amps(:) 
+          amps_buff(:) = t3b_amps(:)
           ! allocate new sorting arrays
           nloc = nua*nub*noa*nob
           allocate(loc_arr(2,nloc))
@@ -16853,7 +16853,7 @@ module ccp3_full_correction_high_mem
                    hmatel = -x2a_voov(l,d,b,i)
                    resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                 end do
-             end if 
+             end if
              ! (ij)
              idx = idx_table(b,c,i,k)
              if (idx/=0) then ! protect against case where i = 1 because j = 2, noa
@@ -16864,7 +16864,7 @@ module ccp3_full_correction_high_mem
                    hmatel = -x2a_voov(l,d,a,j)
                    resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                 end do
-             end if 
+             end if
              ! (ij)(ab)
              idx = idx_table(a,c,i,k)
              if (idx/=0) then ! protect against case where a = 1 because b = 2, nua and i = 1 because j = 2, noa
@@ -16875,7 +16875,7 @@ module ccp3_full_correction_high_mem
                    hmatel = x2a_voov(l,d,b,j)
                    resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                 end do
-             end if 
+             end if
           end do
           !$omp end do
           !$omp end parallel
@@ -16905,7 +16905,7 @@ module ccp3_full_correction_high_mem
              end do
              ! (ij)
              idx = idx_table(b,c,j,k)
-             if (idx/=0) then ! protect against where j = noa because i = 1, noa-1 
+             if (idx/=0) then ! protect against where j = noa because i = 1, noa-1
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    d = excits_buff(jdet,1); l = excits_buff(jdet,5);
                    ! compute < ijk~abc~ | h2a(voov) | jlk~dbc~ >
@@ -17106,7 +17106,7 @@ module ccp3_full_correction_high_mem
           ! allocate temporary arrays
           allocate(excits_buff(n3aab_t,6),amps_buff(n3aab_t))
           excits_buff(:,:) = t3b_excits(:,:)
-          amps_buff(:) = t3b_amps(:) 
+          amps_buff(:) = t3b_amps(:)
           ! allocate sorting arrays
           nloc = nua*(nua-1)/2*noa*(noa-1)/2
           allocate(loc_arr(2,nloc))
@@ -17149,7 +17149,7 @@ module ccp3_full_correction_high_mem
           !!!! diagram 11a: -A(ij) h2b(mcie)*r3b(abemjk)
           ! allocate sorting arrays
           nloc = nua*(nua-1)/2*noa*nob
-          allocate(loc_arr(2,nloc)) 
+          allocate(loc_arr(2,nloc))
           allocate(idx_table(nua,nua,noa,nob))
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/1,nob/), nua, nua, noa, nob)
@@ -17185,7 +17185,7 @@ module ccp3_full_correction_high_mem
                    resid(idet) = resid(idet) + hmatel * r3b_amps_copy(jdet)
                 end do
              end if
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17223,7 +17223,7 @@ module ccp3_full_correction_high_mem
                    resid(idet) = resid(idet) + hmatel * r3b_amps_copy(jdet)
                 end do
              end if
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17233,10 +17233,10 @@ module ccp3_full_correction_high_mem
           ! allocate temporary arrays
           allocate(excits_buff(n3aab_t,6),amps_buff(n3aab_t))
           excits_buff(:,:) = t3b_excits(:,:)
-          amps_buff(:) = t3b_amps(:) 
+          amps_buff(:) = t3b_amps(:)
           ! allocate sorting arrays
           nloc = nua*(nua-1)/2*noa*nob
-          allocate(loc_arr(2,nloc)) 
+          allocate(loc_arr(2,nloc))
           allocate(idx_table(nua,nua,noa,nob))
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/1,nob/), nua, nua, noa, nob)
@@ -17272,7 +17272,7 @@ module ccp3_full_correction_high_mem
                    resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                 end do
              end if
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17310,7 +17310,7 @@ module ccp3_full_correction_high_mem
                    resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                 end do
              end if
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17320,12 +17320,12 @@ module ccp3_full_correction_high_mem
           deallocate(excits_buff,amps_buff)
           !call cpu_time(toc)
           !print*, "R3B - diagram 11 = ", toc - tic
-          
+
           !call cpu_time(tic)
           !!!! diagram 12a: -A(ab) h2b(amek)*r3b(ebcijm)
           ! allocate sorting arrays
           nloc = nua*nub*noa*(noa-1)/2
-          allocate(loc_arr(2,nloc)) 
+          allocate(loc_arr(2,nloc))
           allocate(idx_table(noa,noa,nua,nub))
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/2,nua/), (/1,nub/), noa, noa, nua, nub)
@@ -17361,7 +17361,7 @@ module ccp3_full_correction_high_mem
                    resid(idet) = resid(idet) + hmatel * r3b_amps_copy(jdet)
                 end do
              end if
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17399,7 +17399,7 @@ module ccp3_full_correction_high_mem
                    resid(idet) = resid(idet) + hmatel * r3b_amps_copy(jdet)
                 end do
              end if
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17409,10 +17409,10 @@ module ccp3_full_correction_high_mem
           ! allocate temporary arrays
           allocate(excits_buff(n3aab_t,6),amps_buff(n3aab_t))
           excits_buff(:,:) = t3b_excits(:,:)
-          amps_buff(:) = t3b_amps(:) 
+          amps_buff(:) = t3b_amps(:)
           ! allocate sorting arrays
           nloc = nua*nub*noa*(noa-1)/2
-          allocate(loc_arr(2,nloc)) 
+          allocate(loc_arr(2,nloc))
           allocate(idx_table(noa,noa,nua,nub))
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/2,nua/), (/1,nub/), noa, noa, nua, nub)
@@ -17448,7 +17448,7 @@ module ccp3_full_correction_high_mem
                    resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                 end do
              end if
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17486,7 +17486,7 @@ module ccp3_full_correction_high_mem
                    resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
                 end do
              end if
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17523,7 +17523,7 @@ module ccp3_full_correction_high_mem
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
              idx = idx_table(a,b,i,j)
-             if (idx==0) cycle 
+             if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                 ! compute < ijk~abc~ | h2b(ovvo) | ijnabf >
@@ -17531,7 +17531,7 @@ module ccp3_full_correction_high_mem
                 hmatel = h2b_ovvo(n,f,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17549,7 +17549,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 e = excits_buff(jdet,2); n = excits_buff(jdet,6);
@@ -17558,7 +17558,7 @@ module ccp3_full_correction_high_mem
                 hmatel = -h2b_ovvo(n,e,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17576,7 +17576,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 d = excits_buff(jdet,1); n = excits_buff(jdet,6);
@@ -17585,7 +17585,7 @@ module ccp3_full_correction_high_mem
                 hmatel = h2b_ovvo(n,d,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17603,7 +17603,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 f = excits_buff(jdet,3); m = excits_buff(jdet,5);
@@ -17612,7 +17612,7 @@ module ccp3_full_correction_high_mem
                 hmatel = -h2b_ovvo(m,f,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17630,7 +17630,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 e = excits_buff(jdet,2); m = excits_buff(jdet,5);
@@ -17639,7 +17639,7 @@ module ccp3_full_correction_high_mem
                 hmatel = h2b_ovvo(m,e,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17657,7 +17657,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 d = excits_buff(jdet,1); m = excits_buff(jdet,5);
@@ -17666,7 +17666,7 @@ module ccp3_full_correction_high_mem
                 hmatel = -h2b_ovvo(m,d,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17684,7 +17684,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 f = excits_buff(jdet,3); l = excits_buff(jdet,4);
@@ -17693,7 +17693,7 @@ module ccp3_full_correction_high_mem
                 hmatel = h2b_ovvo(l,f,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17711,7 +17711,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 e = excits_buff(jdet,2); l = excits_buff(jdet,4);
@@ -17720,7 +17720,7 @@ module ccp3_full_correction_high_mem
                 hmatel = -h2b_ovvo(l,e,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17738,7 +17738,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 d = excits_buff(jdet,1); l = excits_buff(jdet,4);
@@ -17754,7 +17754,7 @@ module ccp3_full_correction_high_mem
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
           ! deallocate temporary arrays
-          deallocate(amps_buff,excits_buff) 
+          deallocate(amps_buff,excits_buff)
           !!!! diagram 13b: x2b(mcek)*t3a(abeijm) !!!!
           ! allocate and initialize the copy of t3a
           allocate(amps_buff(n3aaa_t))
@@ -17780,7 +17780,7 @@ module ccp3_full_correction_high_mem
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
              idx = idx_table(a,b,i,j)
-             if (idx==0) cycle 
+             if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 f = excits_buff(jdet,3); n = excits_buff(jdet,6);
                 ! compute < ijk~abc~ | h2b(ovvo) | ijnabf >
@@ -17788,7 +17788,7 @@ module ccp3_full_correction_high_mem
                 hmatel = x2b_ovvo(n,f,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17806,7 +17806,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 e = excits_buff(jdet,2); n = excits_buff(jdet,6);
@@ -17815,7 +17815,7 @@ module ccp3_full_correction_high_mem
                 hmatel = -x2b_ovvo(n,e,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17833,7 +17833,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 d = excits_buff(jdet,1); n = excits_buff(jdet,6);
@@ -17842,7 +17842,7 @@ module ccp3_full_correction_high_mem
                 hmatel = x2b_ovvo(n,d,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17860,7 +17860,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 f = excits_buff(jdet,3); m = excits_buff(jdet,5);
@@ -17869,7 +17869,7 @@ module ccp3_full_correction_high_mem
                 hmatel = -x2b_ovvo(m,f,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17887,7 +17887,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 e = excits_buff(jdet,2); m = excits_buff(jdet,5);
@@ -17896,7 +17896,7 @@ module ccp3_full_correction_high_mem
                 hmatel = x2b_ovvo(m,e,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17914,7 +17914,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 d = excits_buff(jdet,1); m = excits_buff(jdet,5);
@@ -17923,7 +17923,7 @@ module ccp3_full_correction_high_mem
                 hmatel = -x2b_ovvo(m,d,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17941,7 +17941,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 f = excits_buff(jdet,3); l = excits_buff(jdet,4);
@@ -17950,7 +17950,7 @@ module ccp3_full_correction_high_mem
                 hmatel = x2b_ovvo(l,f,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17968,7 +17968,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 e = excits_buff(jdet,2); l = excits_buff(jdet,4);
@@ -17977,7 +17977,7 @@ module ccp3_full_correction_high_mem
                 hmatel = -x2b_ovvo(l,e,c,k)
                 resid(idet) = resid(idet) + hmatel * amps_buff(jdet)
              end do
-          end do 
+          end do
           !$omp end do
           !$omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
@@ -17995,7 +17995,7 @@ module ccp3_full_correction_high_mem
           do idet=1,num_q
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
-             idx = idx_table(a,b,i,j) 
+             idx = idx_table(a,b,i,j)
              if (idx==0) cycle
              do jdet = loc_arr(1,idx), loc_arr(2,idx)
                 d = excits_buff(jdet,1); l = excits_buff(jdet,4);
@@ -18041,7 +18041,7 @@ module ccp3_full_correction_high_mem
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
              ! (1)
-             idx = idx_table(a,c,i,k) 
+             idx = idx_table(a,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); m = excits_buff(jdet,5);
@@ -18052,7 +18052,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)
-             idx = idx_table(b,c,i,k) 
+             idx = idx_table(b,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); m = excits_buff(jdet,5);
@@ -18063,7 +18063,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ij)
-             idx = idx_table(a,c,j,k) 
+             idx = idx_table(a,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); m = excits_buff(jdet,5);
@@ -18074,7 +18074,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)(ij)
-             idx = idx_table(b,c,j,k) 
+             idx = idx_table(b,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); m = excits_buff(jdet,5);
@@ -18103,7 +18103,7 @@ module ccp3_full_correction_high_mem
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
              ! (1)
-             idx = idx_table(a,c,i,k) 
+             idx = idx_table(a,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); m = excits_buff(jdet,5);
@@ -18114,7 +18114,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)
-             idx = idx_table(b,c,i,k) 
+             idx = idx_table(b,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); m = excits_buff(jdet,5);
@@ -18125,7 +18125,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ij)
-             idx = idx_table(a,c,j,k) 
+             idx = idx_table(a,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); m = excits_buff(jdet,5);
@@ -18136,7 +18136,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)(ij)
-             idx = idx_table(b,c,j,k) 
+             idx = idx_table(b,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); m = excits_buff(jdet,5);
@@ -18165,7 +18165,7 @@ module ccp3_full_correction_high_mem
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
              ! (1)
-             idx = idx_table(a,c,i,k) 
+             idx = idx_table(a,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); n = excits_buff(jdet,6);
@@ -18176,7 +18176,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)
-             idx = idx_table(b,c,i,k) 
+             idx = idx_table(b,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); n = excits_buff(jdet,6);
@@ -18187,7 +18187,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ij)
-             idx = idx_table(a,c,j,k) 
+             idx = idx_table(a,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); n = excits_buff(jdet,6);
@@ -18198,7 +18198,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)(ij)
-             idx = idx_table(b,c,j,k) 
+             idx = idx_table(b,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); n = excits_buff(jdet,6);
@@ -18227,7 +18227,7 @@ module ccp3_full_correction_high_mem
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
              ! (1)
-             idx = idx_table(a,c,i,k) 
+             idx = idx_table(a,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); n = excits_buff(jdet,6);
@@ -18238,7 +18238,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)
-             idx = idx_table(b,c,i,k) 
+             idx = idx_table(b,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); n = excits_buff(jdet,6);
@@ -18249,7 +18249,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ij)
-             idx = idx_table(a,c,j,k) 
+             idx = idx_table(a,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); n = excits_buff(jdet,6);
@@ -18260,7 +18260,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)(ij)
-             idx = idx_table(b,c,j,k) 
+             idx = idx_table(b,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); n = excits_buff(jdet,6);
@@ -18277,7 +18277,7 @@ module ccp3_full_correction_high_mem
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
           ! deallocate temporary arrays
-          deallocate(amps_buff,excits_buff) 
+          deallocate(amps_buff,excits_buff)
           !!!! diagram 14b: A(ab)A(ij) x2b(bmje)*t3c(aecimk)
           ! allocate and initialize the copy of t3c
           allocate(amps_buff(n3abb_t))
@@ -18303,7 +18303,7 @@ module ccp3_full_correction_high_mem
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
              ! (1)
-             idx = idx_table(a,c,i,k) 
+             idx = idx_table(a,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); m = excits_buff(jdet,5);
@@ -18314,7 +18314,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)
-             idx = idx_table(b,c,i,k) 
+             idx = idx_table(b,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); m = excits_buff(jdet,5);
@@ -18325,7 +18325,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ij)
-             idx = idx_table(a,c,j,k) 
+             idx = idx_table(a,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); m = excits_buff(jdet,5);
@@ -18336,7 +18336,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)(ij)
-             idx = idx_table(b,c,j,k) 
+             idx = idx_table(b,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); m = excits_buff(jdet,5);
@@ -18365,7 +18365,7 @@ module ccp3_full_correction_high_mem
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
              ! (1)
-             idx = idx_table(a,c,i,k) 
+             idx = idx_table(a,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); m = excits_buff(jdet,5);
@@ -18376,7 +18376,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)
-             idx = idx_table(b,c,i,k) 
+             idx = idx_table(b,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); m = excits_buff(jdet,5);
@@ -18387,7 +18387,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ij)
-             idx = idx_table(a,c,j,k) 
+             idx = idx_table(a,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); m = excits_buff(jdet,5);
@@ -18398,7 +18398,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)(ij)
-             idx = idx_table(b,c,j,k) 
+             idx = idx_table(b,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); m = excits_buff(jdet,5);
@@ -18427,7 +18427,7 @@ module ccp3_full_correction_high_mem
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
              ! (1)
-             idx = idx_table(a,c,i,k) 
+             idx = idx_table(a,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); n = excits_buff(jdet,6);
@@ -18438,7 +18438,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)
-             idx = idx_table(b,c,i,k) 
+             idx = idx_table(b,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); n = excits_buff(jdet,6);
@@ -18449,7 +18449,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ij)
-             idx = idx_table(a,c,j,k) 
+             idx = idx_table(a,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); n = excits_buff(jdet,6);
@@ -18460,7 +18460,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)(ij)
-             idx = idx_table(b,c,j,k) 
+             idx = idx_table(b,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    e = excits_buff(jdet,2); n = excits_buff(jdet,6);
@@ -18489,7 +18489,7 @@ module ccp3_full_correction_high_mem
              a = qspace(idet,1); b = qspace(idet,2); c = qspace(idet,3);
              i = qspace(idet,4); j = qspace(idet,5); k = qspace(idet,6);
              ! (1)
-             idx = idx_table(a,c,i,k) 
+             idx = idx_table(a,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); n = excits_buff(jdet,6);
@@ -18500,7 +18500,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)
-             idx = idx_table(b,c,i,k) 
+             idx = idx_table(b,c,i,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); n = excits_buff(jdet,6);
@@ -18511,7 +18511,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ij)
-             idx = idx_table(a,c,j,k) 
+             idx = idx_table(a,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); n = excits_buff(jdet,6);
@@ -18522,7 +18522,7 @@ module ccp3_full_correction_high_mem
                 end do
              end if
              ! (ab)(ij)
-             idx = idx_table(b,c,j,k) 
+             idx = idx_table(b,c,j,k)
              if (idx/=0) then
                 do jdet = loc_arr(1,idx), loc_arr(2,idx)
                    f = excits_buff(jdet,3); n = excits_buff(jdet,6);
@@ -18539,7 +18539,7 @@ module ccp3_full_correction_high_mem
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
           ! deallocate temporary arrays
-          deallocate(amps_buff,excits_buff) 
+          deallocate(amps_buff,excits_buff)
 
           !!!! BEGIN OMP PARALLEL SECTION !!!!
           !$omp parallel shared(resid,&
@@ -18580,13 +18580,13 @@ module ccp3_full_correction_high_mem
                   res_mm23 = res_mm23 + x2b_vvov(e,b,c,j) * t2b(a,e,i,k)
               end do
               do m = 1, noa
-                  ! -A(ij) h2b(mcjk) * r2a(abim) 
+                  ! -A(ij) h2b(mcjk) * r2a(abim)
                   res_mm23 = res_mm23 - h2b_ovoo(m,c,j,k) * r2a(a,b,i,m)
                   res_mm23 = res_mm23 + h2b_ovoo(m,c,i,k) * r2a(a,b,j,m)
                   ! -A(ab) h2a(amij) * r2b(bcmk)
                   res_mm23 = res_mm23 - h2a_vooo(a,m,i,j) * r2b(b,c,m,k)
                   res_mm23 = res_mm23 + h2a_vooo(b,m,i,j) * r2b(a,c,m,k)
-                  ! -A(ij) x2b(mcjk) * t2a(abim) 
+                  ! -A(ij) x2b(mcjk) * t2a(abim)
                   res_mm23 = res_mm23 - x2b_ovoo(m,c,j,k) * t2a(a,b,i,m)
                   res_mm23 = res_mm23 + x2b_ovoo(m,c,i,k) * t2a(a,b,j,m)
                   ! -A(ab) x2a(amij) * t2b(bcmk)
@@ -18645,7 +18645,7 @@ module ccp3_full_correction_high_mem
                              noa, nua, nob, nub)
           ! Input dimension variables
           integer, intent(in) :: noa, nua, nob, nub
-          integer, intent(in) :: n3aab_r, n3aab_t, num_q 
+          integer, intent(in) :: n3aab_r, n3aab_t, num_q
           integer, intent(in) :: n3abb_r, n3abb_t
           integer, intent(in) :: n3bbb_r, n3bbb_t
           integer, intent(in) :: qspace(num_q,6)
@@ -19947,7 +19947,7 @@ module ccp3_full_correction_high_mem
           deallocate(loc_arr,idx_table)
           ! deallocate temporary arrays
           deallocate(excits_buff,amps_buff)
-          
+
           !!!! diagram 12a: -A(bc) h2b(amej)*r3c(ebcimk)
           ! allocate sorting arrays
           nloc = nub*(nub-1)/2*noa*nob
@@ -21238,7 +21238,7 @@ module ccp3_full_correction_high_mem
           ! Input R and T arrays
           real(kind=8), intent(in) :: r2c(nub,nub,nob,nob), t2c(nub,nub,nob,nob)
           integer, intent(in) :: r3c_excits(n3abb_r,6), t3c_excits(n3abb_t,6)
-          integer, intent(in) :: r3d_excits(n3bbb_r,6), t3d_excits(n3bbb_t,6) 
+          integer, intent(in) :: r3d_excits(n3bbb_r,6), t3d_excits(n3bbb_t,6)
           real(kind=8), intent(in) :: r3c_amps(n3abb_r), t3c_amps(n3abb_t)
           real(kind=8), intent(in) :: r3d_amps(n3bbb_r), t3d_amps(n3bbb_t)
           ! Input H and X arrays
@@ -24234,7 +24234,7 @@ module ccp3_full_correction_high_mem
          ! deallocate sorting arrays
          deallocate(loc_arr,idx_table)
          ! deallocate temporary arrays
-         deallocate(amps_buff,excits_buff) 
+         deallocate(amps_buff,excits_buff)
           !!!! diagram 6b: A(i/jk)A(a/bc) x2b(maei) * t3c(ebcmjk)
           ! allocate and copy over t3c arrays
           allocate(amps_buff(n3abb_t),excits_buff(n3abb_t,6))
@@ -24355,7 +24355,7 @@ module ccp3_full_correction_high_mem
          ! deallocate sorting arrays
          deallocate(loc_arr,idx_table)
          ! deallocate temporary arrays
-         deallocate(amps_buff,excits_buff) 
+         deallocate(amps_buff,excits_buff)
 
           !!!! BEGIN OMP PARALLEL SECTION !!!!
           !$omp parallel shared(resid,&
@@ -24421,11 +24421,11 @@ module ccp3_full_correction_high_mem
           ! deallocate copied r3d arrays
           deallocate(r3d_amps_copy,r3d_excits_copy)
       end subroutine build_eom_moments3d
-         
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SORTING FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
+
       subroutine get_index_table3(idx_table, rng1, rng2, rng3, n1, n2, n3)
 
            integer, intent(in) :: n1, n2, n3
@@ -24624,7 +24624,7 @@ module ccp3_full_correction_high_mem
       !   amps: T3 amplitude vector (can be aaa, aab, abb, or bbb)
       !   resid (optional): T3 residual vector (can be aaa, aab, abb, or bbb)
       !   loc_arr: array providing the start- and end-point indices for each sorted block in t3 excitations
-          
+
               integer, intent(in) :: n1, n2, n3, n4, nloc, n3p
               integer, intent(in) :: idims(4)
               integer, intent(in) :: idx_table(n1,n2,n3,n4)
@@ -24733,38 +24733,14 @@ module ccp3_full_correction_high_mem
               end do
 
       end subroutine argsort
-      
-      subroutine reorder4(y, x, iorder)
 
-          integer, intent(in) :: iorder(4)
-          real(kind=8), intent(in) :: x(:,:,:,:)
-
-          real(kind=8), intent(out) :: y(:,:,:,:)
-
-          integer :: i, j, k, l
-          integer :: vec(4)
-
-          y = 0.0d0
-          do i = 1, size(x,1)
-             do j = 1, size(x,2)
-                do k = 1, size(x,3)
-                   do l = 1, size(x,4)
-                      vec = (/i,j,k,l/)
-                      y(vec(iorder(1)),vec(iorder(2)),vec(iorder(3)),vec(iorder(4))) = x(i,j,k,l)
-                   end do
-                end do
-             end do
-          end do
-
-      end subroutine reorder4
-    
       subroutine sum4(x, y, iorder)
 
           integer, intent(in) :: iorder(4)
           real(kind=8), intent(in) :: y(:,:,:,:)
 
           real(kind=8), intent(inout) :: x(:,:,:,:)
-          
+
           integer :: i, j, k, l
           integer :: vec(4)
 
