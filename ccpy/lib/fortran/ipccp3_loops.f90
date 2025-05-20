@@ -138,7 +138,7 @@ module ipccp3_loops
                         ! Local variables
                         integer :: i, j, k, b, c
                         real(kind=8) :: D, temp
-                        
+
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
@@ -307,12 +307,12 @@ module ipccp3_loops
 
                     integer, intent(in) :: n1, n2, n3
                     integer, intent(in) :: rng1(2), rng2(2), rng3(2)
-      
+
                     integer, intent(inout) :: idx_table(n1,n2,n3)
-      
+
                     integer :: kout
                     integer :: p, q, r
-      
+
                     idx_table = 0
                     if (rng1(1) > 0 .and. rng2(1) < 0 .and. rng3(1) < 0) then ! p < q < r
                        kout = 1
@@ -363,16 +363,16 @@ module ipccp3_loops
                     integer, intent(in) :: n1, n2, n3, nloc, n3p
                     integer, intent(in) :: idims(3)
                     integer, intent(in) :: idx_table(n1,n2,n3)
-      
+
                     integer, intent(inout) :: loc_arr(2,nloc)
                     integer, intent(inout) :: excits(n3p,5)
-      
+
                     integer :: idet
                     integer :: p, q, r
                     integer :: p1, q1, r1, p2, q2, r2
                     integer :: pqr1, pqr2
                     integer, allocatable :: temp(:), idx(:)
-      
+
                     allocate(temp(n3p),idx(n3p))
                     do idet = 1, n3p
                        p = excits(idet,idims(1)); q = excits(idet,idims(2)); r = excits(idet,idims(3));
@@ -381,7 +381,7 @@ module ipccp3_loops
                     call argsort(temp, idx)
                     excits = excits(idx,:)
                     deallocate(temp,idx)
-      
+
                     loc_arr(1,:) = 1; loc_arr(2,:) = 0;
                     !!! WARNING: THERE IS A MEMORY LEAK HERE! pqrs2 is used below but is not set if n3p <= 1
                     !if (n3p <= 1) print*, "eomccsdt_p_loops >> WARNING: potential memory leakage in sort4 function. pqrs2 set to -1"
@@ -389,7 +389,7 @@ module ipccp3_loops
                        if (excits(1,1)==1 .and. excits(1,2)==1 .and. excits(1,3)==1 .and. excits(1,4)==1 .and. excits(1,5)==1) return
                        p2 = excits(n3p,idims(1)); q2 = excits(n3p,idims(2)); r2 = excits(n3p,idims(3));
                        pqr2 = idx_table(p2,q2,r2)
-                    else               
+                    else
                        pqr2 = -1
                     end if
                     do idet = 1, n3p-1
@@ -411,20 +411,20 @@ module ipccp3_loops
 
                     integer, intent(in), dimension(:) :: r
                     integer, intent(out), dimension(size(r)) :: d
-      
+
                     integer, dimension(size(r)) :: il
-      
+
                     integer :: stepsize
                     integer :: i, j, n, left, k, ksize
-      
+
                     n = size(r)
-      
+
                     do i=1,n
                        d(i)=i
                     end do
-      
+
                     if (n==1) return
-      
+
                     stepsize = 1
                     do while (stepsize < n)
                        do left = 1, n-stepsize,stepsize*2
@@ -432,7 +432,7 @@ module ipccp3_loops
                           j = left+stepsize
                           ksize = min(stepsize*2,n-left+1)
                           k=1
-      
+
                           do while (i < left+stepsize .and. j < left+ksize)
                              if (r(d(i)) < r(d(j))) then
                                 il(k) = d(i)
@@ -444,7 +444,7 @@ module ipccp3_loops
                                 k = k+1
                              endif
                           enddo
-      
+
                           if (i < left+stepsize) then
                              ! fill up remaining from left
                              il(k:ksize) = d(i:left+stepsize-1)
@@ -458,240 +458,5 @@ module ipccp3_loops
                     end do
 
               end subroutine argsort
-
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! REORDER ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         
-!               subroutine reorder4(y, x, iorder)
-!
-!                   integer, intent(in) :: iorder(4)
-!                   real(kind=8), intent(in) :: x(:,:,:,:)
-!
-!                   real(kind=8), intent(out) :: y(:,:,:,:)
-!
-!                   integer :: i, j, k, l
-!                   integer :: vec(4)
-!
-!                   y = 0.0d0
-!                   do i = 1, size(x,1)
-!                      do j = 1, size(x,2)
-!                         do k = 1, size(x,3)
-!                            do l = 1, size(x,4)
-!                               vec = (/i,j,k,l/)
-!                               y(vec(iorder(1)),vec(iorder(2)),vec(iorder(3)),vec(iorder(4))) = x(i,j,k,l)
-!                            end do
-!                         end do
-!                      end do
-!                   end do
-!
-!               end subroutine reorder4
-
-              subroutine reorder3412(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i4,i1,i2) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder3412
-
-             subroutine reorder1342(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i1,i3,i4,i2) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder1342
-
-            subroutine reorder3421(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i4,i2,i1) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder3421
-
-             subroutine reorder2134(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i1,i3,i4) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2134
-
-            subroutine reorder1243(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i1,i2,i4,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder1243
-
-             subroutine reorder4213(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i2,i1,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4213
-
-             subroutine reorder4312(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i3,i1,i2) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4312
-
-             subroutine reorder2341(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i3,i4,i1) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2341
-
-             subroutine reorder2143(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i2,i1,i4,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder2143
-
-             subroutine reorder4123(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i1,i2,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4123
-
-             subroutine reorder3214(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i3,i2,i1,i4) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder3214
 
 end module ipccp3_loops

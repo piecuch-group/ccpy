@@ -1,5 +1,7 @@
 module eomccp3_adaptive_loops
-   
+
+  use reorder, only: reorder_stripe
+
     implicit none
 
     contains
@@ -34,7 +36,7 @@ module eomccp3_adaptive_loops
                         H2A_vvov(nua,nua,noa,nua),r2a(nua,nua,noa,noa),&
                         chi2A_vvvo(nua,nua,nua,noa),chi2A_ovoo(noa,nua,noa,noa)
                         real(kind=8), intent(in) :: r0, omega
-                        
+
                         real(kind=8), intent(inout) :: moments(num_add)
                         !f2py intent(in,out) :: moments(0:num_add-1)
                         integer, intent(inout) :: triples_list(num_add,6)
@@ -49,17 +51,17 @@ module eomccp3_adaptive_loops
                                         H2A_ooov_4312(nua,noa,noa,noa), H2A_vvov_2143(nua,nua,nua,noa),&
                                         H2A_vooo_2143(noa,nua,noa,noa)
 
-                        call reorder1243(I2A_vvov,I2A_vvov_1243)
-                        call reorder4312(H2A_vovv,H2A_vovv_4312)
-                        call reorder4312(H2A_ooov,H2A_ooov_4312)
-                        call reorder2143(H2A_vvov,H2A_vvov_2143)
-                        call reorder2143(H2A_vooo,H2A_vooo_2143)
+                        call reorder_stripe(4, shape(I2A_vvov), size(I2A_vvov), '1243', I2A_vvov, I2A_vvov_1243)
+                        call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+                        call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
+                        call reorder_stripe(4, shape(H2A_vvov), size(H2A_vvov), '2143', H2A_vvov, H2A_vvov_2143)
+                        call reorder_stripe(4, shape(H2A_vooo), size(H2A_vooo), '2143', H2A_vooo, H2A_vooo_2143)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
+
                         idx_min = minloc(abs(moments), dim=1)
 
                         nua2 = nua*nua
@@ -141,7 +143,7 @@ module eomccp3_adaptive_loops
                                                 - Y3A(a,c,b) - Y3A(b,a,c) - Y3A(c,b,a)
 
                                                 LM = (r0*temp1+temp4)*(temp2+temp3)
-        
+
                                                 D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
                                                 - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
 
@@ -170,7 +172,7 @@ module eomccp3_adaptive_loops
                                                 -D3A_V(a,k,b)-D3A_V(a,k,c)-D3A_V(b,k,c)
 
                                                 deltaD = deltaD + LM/(omega+D)
-                                                
+
                                                 if (abs(LM/(omega + D)) == 0.0d0) cycle
 
                                                 if ( abs(LM/(omega + D)) > abs(moments(idx_min)) ) then
@@ -209,7 +211,7 @@ module eomccp3_adaptive_loops
                               H2C_voov,&
                               D3A_O,D3A_V,D3B_O,D3B_V,D3C_O,D3C_V,&
                               noa,nua,nob,nub,num_add)
-                        
+
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, nob, nub, num_add
                         logical(kind=1), intent(in) :: pspace(nua,nua,nub,noa,noa,nob)
@@ -248,7 +250,7 @@ module eomccp3_adaptive_loops
                         D3C_O(1:nub,1:noa,1:nob),&
                         D3C_V(1:nua,1:nob,1:nub)
                         real(kind=8), intent(in) :: omega, r0
-                        
+
                         real(kind=8), intent(inout) :: moments(num_add)
                         !f2py intent(in,out) :: moments(0:num_add-1)
                         integer, intent(inout) :: triples_list(num_add,6)
@@ -268,29 +270,29 @@ module eomccp3_adaptive_loops
                             chi2B_vvov_4123(nub,nua,nub,noa),H2B_vvov_4123(nub,nua,nub,noa),&
                             r2b_1243(nua,nub,nob,noa)
 
-                        call reorder1243(t2a,t2a_1243)
-                        call reorder1243(H2B_vvov,H2B_vvov_1243)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder1243(H2A_vvov,H2A_vvov_1243)
-                        call reorder1342(H2B_vovv,H2B_vovv_1342)
-                        call reorder4312(H2A_vovv,H2A_vovv_4312)
-                        call reorder2341(H2B_ovvv,H2B_ovvv_2341)
-                        call reorder3412(H2B_ooov,H2B_ooov_3412)
-                        call reorder4312(H2A_ooov,H2A_ooov_4312)
-                        call reorder3412(H2B_oovo,H2B_oovo_3412)
-                        call reorder1243(l2b,l2b_1243)
-                        call reorder2143(H2A_vvov,H2A_vvov_2143)
-                        call reorder4123(chi2B_vvov,chi2B_vvov_4123)
-                        call reorder4123(H2B_vvov,H2B_vvov_4123)
-                        call reorder1243(r2b,r2b_1243)
+                        call reorder_stripe(4, shape(t2a), size(t2a), '1243', t2a, t2a_1243)
+                        call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '1243', H2B_vvov, H2B_vvov_1243)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(H2A_vvov), size(H2A_vvov), '1243', H2A_vvov, H2A_vvov_1243)
+                        call reorder_stripe(4, shape(H2B_vovv), size(H2B_vovv), '1342', H2B_vovv, H2B_vovv_1342)
+                        call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+                        call reorder_stripe(4, shape(H2B_ovvv), size(H2B_ovvv), '2341', H2B_ovvv, H2B_ovvv_2341)
+                        call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
+                        call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
+                        call reorder_stripe(4, shape(H2B_oovo), size(H2B_oovo), '3412', H2B_oovo, H2B_oovo_3412)
+                        call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
+                        call reorder_stripe(4, shape(H2A_vvov), size(H2A_vvov), '2143', H2A_vvov, H2A_vvov_2143)
+                        call reorder_stripe(4, shape(chi2B_vvov), size(chi2B_vvov), '4123', chi2B_vvov, chi2B_vvov_4123)
+                        call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '4123', H2B_vvov, H2B_vvov_4123)
+                        call reorder_stripe(4, shape(r2b), size(r2b), '1243', r2b, r2b_1243)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
+
                         idx_min = minloc(abs(moments), dim=1)
-                        
+
                         nuanub = nua*nub
                         nua2 = nua*nua
                         do i = 1, noa
@@ -406,7 +408,7 @@ module eomccp3_adaptive_loops
                                                 +H2B_vovo(a,k,a,k)+H2B_vovo(b,k,b,k)-H2C_voov(c,k,k,c)&
                                                 -H2A_oooo(j,i,j,i)-H2B_oooo(i,k,i,k)-H2B_oooo(j,k,j,k)&
                                                 -H2A_vvvv(b,a,b,a)-H2B_vvvv(a,c,a,c)-H2B_vvvv(b,c,b,c)
-     
+
                                                 deltaC = deltaC + LM/(omega+D)
 
                                                 D = D &
@@ -418,7 +420,7 @@ module eomccp3_adaptive_loops
                                                 -D3C_V(a,k,c)-D3C_V(b,k,c)
 
                                                 deltaD = deltaD + LM/(omega+D)
-                                                
+
                                                 if (abs(LM/(omega + D)) == 0.0d0) cycle
 
                                                 if ( abs(LM/(omega + D)) > abs(moments(idx_min)) ) then
@@ -457,7 +459,7 @@ module eomccp3_adaptive_loops
                               H2C_voov,H2C_oooo,H2C_vvvv,&
                               D3B_O,D3B_V,D3C_O,D3C_V,D3D_O,D3D_V,&
                               noa,nua,nob,nub,num_add)
-                        
+
                         real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
                         integer, intent(in) :: noa, nua, nob, nub, num_add
                         logical(kind=1), intent(in) :: pspace(nua,nub,nub,noa,nob,nob)
@@ -496,7 +498,7 @@ module eomccp3_adaptive_loops
                         D3D_O(1:nub,1:nob,1:nob),&
                         D3D_V(1:nub,1:nob,1:nub)
                         real(kind=8), intent(in) :: omega, r0
-                        
+
                         real(kind=8), intent(inout) :: moments(num_add)
                         !f2py intent(in,out) :: moments(0:num_add-1)
                         integer, intent(inout) :: triples_list(num_add,6)
@@ -529,25 +531,25 @@ module eomccp3_adaptive_loops
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
-                        call reorder1243(H2B_vvov,H2B_vvov_1243)
-                        call reorder4213(H2C_vvov,H2C_vvov_4213)
-                        call reorder1243(t2b,t2b_1243)
-                        call reorder2134(I2C_vooo,I2C_vooo_2134)
-                        call reorder3421(H2B_ovvv,H2B_ovvv_3421)
-                        call reorder1342(H2C_vovv,H2C_vovv_1342)
-                        call reorder3412(H2B_vovv,H2B_vovv_3412)
-                        call reorder3412(H2B_oovo,H2B_oovo_3412)
-                        call reorder3412(H2C_ooov,H2C_ooov_3412)
-                        call reorder1243(l2b,l2b_1243)
-                        call reorder3412(H2B_ooov,H2B_ooov_3412)
-                        call reorder1243(chi2B_vvov,chi2B_vvov_1243)
-                        call reorder3214(chi2C_vvvo,chi2C_vvvo_3214)
-                        call reorder4123(H2C_vvov,H2C_vvov_4123)
-                        call reorder2134(chi2C_vooo,chi2C_vooo_2134)
-                        call reorder1243(r2b,r2b_1243)
-                        call reorder2134(H2C_vooo,H2C_vooo_2134)
-                        
+
+                        call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '1243', H2B_vvov, H2B_vvov_1243)
+                        call reorder_stripe(4, shape(H2C_vvov), size(H2C_vvov), '4213', H2C_vvov, H2C_vvov_4213)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(I2C_vooo), size(I2C_vooo), '2134', I2C_vooo, I2C_vooo_2134)
+                        call reorder_stripe(4, shape(H2B_ovvv), size(H2B_ovvv), '3421', H2B_ovvv, H2B_ovvv_3421)
+                        call reorder_stripe(4, shape(H2C_vovv), size(H2C_vovv), '1342', H2C_vovv, H2C_vovv_1342)
+                        call reorder_stripe(4, shape(H2B_vovv), size(H2B_vovv), '3412', H2B_vovv, H2B_vovv_3412)
+                        call reorder_stripe(4, shape(H2B_oovo), size(H2B_oovo), '3412', H2B_oovo, H2B_oovo_3412)
+                        call reorder_stripe(4, shape(H2C_ooov), size(H2C_ooov), '3412', H2C_ooov, H2C_ooov_3412)
+                        call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
+                        call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
+                        call reorder_stripe(4, shape(chi2B_vvov), size(chi2B_vvov), '1243', chi2B_vvov, chi2B_vvov_1243)
+                        call reorder_stripe(4, shape(chi2C_vvvo), size(chi2C_vvvo), '3214', chi2C_vvvo, chi2C_vvvo_3214)
+                        call reorder_stripe(4, shape(H2C_vvov), size(H2C_vvov), '4123', H2C_vvov, H2C_vvov_4123)
+                        call reorder_stripe(4, shape(chi2C_vooo), size(chi2C_vooo), '2134', chi2C_vooo, chi2C_vooo_2134)
+                        call reorder_stripe(4, shape(r2b), size(r2b), '1243', r2b, r2b_1243)
+                        call reorder_stripe(4, shape(H2C_vooo), size(H2C_vooo), '2134', H2C_vooo, H2C_vooo_2134)
+
                         idx_min = minloc(abs(moments), dim=1)
 
                         nuanub = nua*nub
@@ -666,7 +668,7 @@ module eomccp3_adaptive_loops
                                                 +H2B_vovo(a,k,a,k)-H2C_voov(b,k,k,b)-H2C_voov(c,k,k,c)&
                                                 -H2B_oooo(i,j,i,j)-H2B_oooo(i,k,i,k)-H2C_oooo(k,j,k,j)&
                                                 -H2B_vvvv(a,b,a,b)-H2B_vvvv(a,c,a,c)-H2C_vvvv(c,b,c,b)
-     
+
                                                 deltaC = deltaC + LM/(omega+D)
 
                                                 D = D &
@@ -678,7 +680,7 @@ module eomccp3_adaptive_loops
                                                 -D3C_V(a,k,b)-D3C_V(a,k,c)-D3D_V(b,k,c)
 
                                                 deltaD = deltaD + LM/(omega+D)
-                                                
+
                                                 if (abs(LM/(omega + D)) == 0.0d0) cycle
 
                                                 if ( abs(LM/(omega + D)) > abs(moments(idx_min)) ) then
@@ -723,7 +725,7 @@ module eomccp3_adaptive_loops
                         r2c(nub,nub,nob,nob),H2C_vvov(nub,nub,nob,nub),chi2C_vvvo(nub,nub,nub,nob),&
                         chi2C_ovoo(nob,nub,nob,nob)
                         real(kind=8), intent(in) :: omega, r0
-                        
+
                         real(kind=8), intent(inout) :: moments(num_add)
                         !f2py intent(in,out) :: moments(0:num_add-1)
                         integer, intent(inout) :: triples_list(num_add,6)
@@ -738,17 +740,17 @@ module eomccp3_adaptive_loops
                                         H2C_ooov_4312(nub,nob,nob,nob), H2C_vvov_2143(nub,nub,nub,nob),&
                                         H2C_vooo_2143(nob,nub,nob,nob)
 
-                        call reorder1243(I2C_vvov,I2C_vvov_1243)
-                        call reorder4312(H2C_vovv,H2C_vovv_4312)
-                        call reorder4312(H2C_ooov,H2C_ooov_4312)
-                        call reorder2143(H2C_vvov,H2C_vvov_2143)
-                        call reorder2143(H2C_vooo,H2C_vooo_2143)
+                        call reorder_stripe(4, shape(I2C_vvov), size(I2C_vvov), '1243', I2C_vvov, I2C_vvov_1243)
+                        call reorder_stripe(4, shape(H2C_vovv), size(H2C_vovv), '4312', H2C_vovv, H2C_vovv_4312)
+                        call reorder_stripe(4, shape(H2C_ooov), size(H2C_ooov), '4312', H2C_ooov, H2C_ooov_4312)
+                        call reorder_stripe(4, shape(H2C_vvov), size(H2C_vvov), '2143', H2C_vvov, H2C_vvov_2143)
+                        call reorder_stripe(4, shape(H2C_vooo), size(H2C_vooo), '2143', H2C_vooo, H2C_vooo_2143)
 
                         deltaA = 0.0d0
                         deltaB = 0.0d0
                         deltaC = 0.0d0
                         deltaD = 0.0d0
-                        
+
                         idx_min = minloc(abs(moments), dim=1)
 
                         nub2 = nub*nub
@@ -830,7 +832,7 @@ module eomccp3_adaptive_loops
                                                 - Y3D(a,c,b) - Y3D(b,a,c) - Y3D(c,b,a)
 
                                                 LM = (r0*temp1+temp4)*(temp2+temp3)
-        
+
                                                 D = fB_oo(i,i) + fB_oo(j,j) + fB_oo(k,k)&
                                                 - fB_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
 
@@ -859,7 +861,7 @@ module eomccp3_adaptive_loops
                                                 -D3D_V(a,k,b)-D3D_V(a,k,c)-D3D_V(b,k,c)
 
                                                 deltaD = deltaD + LM/(omega+D)
-                                               
+
                                                 if (abs(LM/(omega + D)) == 0.0d0) cycle
 
                                                 if ( abs(LM/(omega + D)) > abs(moments(idx_min)) ) then
@@ -875,25 +877,5 @@ module eomccp3_adaptive_loops
                         end do
 
               end subroutine creomcc23D_p_with_selection
-
-             subroutine reorder4213(x_in,x_out)
-
-                      real(kind=8), intent(in) :: x_in(:,:,:,:)
-                      real(kind=8), intent(out) :: x_out(:,:,:,:)
-
-                      integer :: i1, i2, i3, i4
-
-                      do i1 = 1,size(x_in,1)
-                         do i2 = 1,size(x_in,2)
-                            do i3 = 1,size(x_in,3)
-                               do i4= 1,size(x_in,4)
-                                  x_out(i4,i2,i1,i3) = x_in(i1,i2,i3,i4)
-                               end do
-                            end do
-                         end do
-                      end do
-
-             end subroutine reorder4213
-            
 
 end module eomccp3_adaptive_loops
