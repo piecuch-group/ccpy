@@ -16,8 +16,7 @@ jobs:
     strategy:
       matrix:
         # macos-13 is an intel runner, macos-14 is apple silicon
-        #os: [ubuntu-latest, windows-latest, macos-13, macos-14]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-13]
 
     steps:
       - uses: actions/checkout@v4
@@ -28,14 +27,7 @@ jobs:
           pip install twine
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.21.3
-        # env:
-        #   CIBW_SOME_OPTION: value
-        #    ...
-        # with:
-        #   package-dir: .
-        #   output-dir: wheelhouse
-        #   config-file: "{package}/pyproject.toml"
+        uses: pypa/cibuildwheel@v2.23.3
 
       - name: Publish PyPI
         env:
