@@ -1,6 +1,8 @@
 
 # CCpy: A coupled-cluster package written in Python.
 
+[![Build Status](https://github.com/piecuch-group/ccpy/actions/workflows/tests.yml/badge.svg)](https://github.com/piecuch-group/ccpy/actions/workflows/tests.yml)
+
 ## Overview
 <p align="justify">
 CCpy is a research-level Python package for performing nonrelativistic and spin-free scalar relativistic electronic structure calculations for molecular systems
