@@ -1,0 +1,436 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Computational Options &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Specific Walkthroughs" href="walkthrough.html" />
+    <link rel="prev" title="Getting Started" href="getting_started.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Computational Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ccd">CCD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ccsd">CCSD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ccsd-t">CCSD(T)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cc3">CC3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ccsdt">CCSDt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id1">CCSDT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cc4">CC4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ccsdtq">CCSDTQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#eomccsd">EOMCCSD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#eom-cc3">EOM-CC3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#eomccsdt-a">EOMCCSDT(a)*</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#eomccsdt">EOMCCSDt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">EOMCCSDT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ip-eomccsd-2h-1p">IP-EOMCCSD(2h-1p)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ip-eomccsd-3h-2p">IP-EOMCCSD(3h-2p)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ip-eomccsdt-a">IP-EOMCCSDT(a)*</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ea-eomccsd-2p-1h">EA-EOMCCSD(2p-1h)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ea-eomccsd-3p-2h">EA-EOMCCSD(3p-2h)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ea-eomccsdt-a">EA-EOMCCSDT(a)*</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dea-eomccsd-2p">DEA-EOMCCSD(2p)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dea-eomccsd-3p-1h">DEA-EOMCCSD(3p-1h)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dea-eomccsd-4p-2h">DEA-EOMCCSD(4p-2h)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sf-eomccsd">SF-EOMCCSD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cr-cc-2-3">CR-CC(2,3)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cr-cc-2-4">CR-CC(2,4)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cc-t-3">CC(t;3)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cipsi-driven-cc-p-q-aimed-at-converging-ccsdt">CIPSI-driven CC(<em>P</em> ;<em>Q</em>) aimed at converging CCSDT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adaptive-cc-p-q-aimed-at-converging-ccsdt">Adaptive CC(<em>P</em> ;<em>Q</em>) aimed at converging CCSDT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cr-eomcc-2-3-and-delta-cr-eomcc-2-3">CR-EOMCC(2,3) and <span class="math notranslate nohighlight">\(\delta\)</span>-CR-EOMCC(2,3)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ec-cc-ii">ec-CC-II</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ec-cc-ii3">ec-CC-II<sub>3</sub></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ec-cc-ii3-4">ec-CC-II<sub>3,4</sub></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="walkthrough.html">Specific Walkthroughs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Computational Options</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/computational_options.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="computational-options">
+<h1>Computational Options<a class="headerlink" href="#computational-options" title="Link to this heading"></a></h1>
+<p>Here, we provide sample code to get started with running any of the computational options
+available in CCpy. Before executing any correlated CC/EOMCC steps, the Hartree-Fock
+mean field solution and transformed one- and two-electron integrals must be provided via
+an external source. Currently, this can be done in one of three ways:</p>
+<ol class="arabic simple">
+<li><p>PySCF</p></li>
+</ol>
+<p>CCpy is fully interfaced with PySCF and can build the Driver object out of a PySCF mean field. This
+approach is arguably the most convenient one since the Hartree-Fock calculation can be run using PySCF
+within the same script.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pyscf</span><span class="w"> </span><span class="kn">import</span> <span class="n">gto</span><span class="p">,</span> <span class="n">scf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+
+<span class="c1"># Set up geometry for symmetrically stretched H2O</span>
+<span class="n">WATER</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;O&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.0180</span><span class="p">)],</span>
+         <span class="p">[</span><span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">3.030526</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.117796</span><span class="p">)],</span>
+         <span class="p">[</span><span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.030526</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.117796</span><span class="p">)]]</span>
+<span class="c1"># Create PySCF molecule object</span>
+<span class="n">mol</span> <span class="o">=</span> <span class="n">gto</span><span class="o">.</span><span class="n">M</span><span class="p">(</span>
+    <span class="n">atom</span><span class="o">=</span><span class="n">WATER</span><span class="p">,</span>
+    <span class="n">basis</span><span class="o">=</span><span class="s2">&quot;cc-pvdz&quot;</span><span class="p">,</span>
+    <span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">spin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">symmetry</span><span class="o">=</span><span class="s2">&quot;C2V&quot;</span><span class="p">,</span>
+    <span class="n">cart</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;Bohr&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1"># Create PySCF RHF mean field object</span>
+<span class="n">mf</span> <span class="o">=</span> <span class="n">scf</span><span class="o">.</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+<span class="c1"># Run RHF</span>
+<span class="n">mf</span><span class="o">.</span><span class="n">kernel</span><span class="p">()</span>
+
+<span class="c1"># Now set up the CCpy driver object using the PySCF mean field</span>
+<span class="n">driver</span> <span class="o">=</span> <span class="n">Driver</span><span class="o">.</span><span class="n">from_pyscf</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1"># Print the system information</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">print_info</span><span class="p">()</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>GAMESS</p></li>
+</ol>
+<p>CCpy can read system information and extract transformed one- and two-electron integrals from a completed
+GAMESS calculation by passing in the locations of the GAMESS output logfile (<code class="docutils literal notranslate"><span class="pre">gms_logfile</span></code>) and
+companion FCIDUMP (<code class="docutils literal notranslate"><span class="pre">gms_fcidump</span></code>). GAMESS can be used to generate FCIDUMP files for RHF and ROHF
+calculations using the <code class="docutils literal notranslate"><span class="pre">runtyp=fcidump</span></code> option.</p>
+<p><cite>Important Note: The FCIDUMP option in GAMESS has a bug for high-spin ROHF references. The number of
+electrons (NELEC) and number of unpaired electrons (MS2) will have incorrect values upon output. Therefore,
+to use FCIDUMP files corresponding to ROHF references, one should manually change the NELEC and MS2
+fields to their proper values.</cite></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+<span class="c1"># Set up CCpy driver object using GAMESS logfile (gms_logfile) and FCIDUMP (gms_fcidump)</span>
+<span class="n">driver</span> <span class="o">=</span> <span class="n">Driver</span><span class="o">.</span><span class="n">from_gamess</span><span class="p">(</span><span class="n">gms_logfile</span><span class="p">,</span>
+                            <span class="n">gms_fcidump</span><span class="p">,</span>
+                            <span class="n">nfrozen</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="c1"># Print the system information</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">print_info</span><span class="p">()</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>FCIDUMP</p></li>
+</ol>
+<p>The most general way to pass in information about a mean field is through a single FCIDUMP file. For ROHF
+references, it is a good idea to specify the appropriate canonicalization scheme so that the molecular orbital
+energies are output correctly (the ROHF single-particle energies are not actually used in correlated computations,
+so in practice, this is optional). If no canonicalization is provided, CCpy will default to using <code class="docutils literal notranslate"><span class="pre">Guest-Saunders</span></code>,
+which is most common, but this is not always the correct choice. For example, when using ROHF FCIDUMP files generated
+with GAMESS under default settings, the correct canonicalization scheme is <code class="docutils literal notranslate"><span class="pre">Roothaan</span></code>.</p>
+<p><cite>Important Note: Currently, CCpy does not use the spatial point group symmetry information contained in the FCIDUMP file. This
+will be changed soon.</cite></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+<span class="c1"># Set up CCpy driver object using an FCIDUMP file</span>
+<span class="n">driver</span> <span class="o">=</span> <span class="n">Driver</span><span class="o">.</span><span class="n">from_fcidump</span><span class="p">(</span><span class="n">fcidump</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rohf_canonicalization</span><span class="o">=</span><span class="s2">&quot;Roothaan&quot;</span><span class="p">)</span>
+<span class="c1"># Print the system information</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">print_info</span><span class="p">()</span>
+</pre></div>
+</div>
+<section id="ccd">
+<h2>CCD<a class="headerlink" href="#ccd" title="Link to this heading"></a></h2>
+<p>Sample code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+
+<span class="c1"># Run CCD calculation</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccd&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="ccsd">
+<h2>CCSD<a class="headerlink" href="#ccsd" title="Link to this heading"></a></h2>
+<p>Sample code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+
+<span class="c1"># Run CCSD calculation</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsd&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="ccsd-t">
+<h2>CCSD(T)<a class="headerlink" href="#ccsd-t" title="Link to this heading"></a></h2>
+<p>Sample code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+
+<span class="c1"># Run CCSD calculation</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsd&quot;</span><span class="p">)</span>
+<span class="c1"># Run CCSD(T) triples correction to CCSD energetics</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_ccp3</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsdpt&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="cc3">
+<h2>CC3<a class="headerlink" href="#cc3" title="Link to this heading"></a></h2>
+<p>Sample code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+
+<span class="c1"># Run CC3 calculation</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;cc3&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="ccsdt">
+<h2>CCSDt<a class="headerlink" href="#ccsdt" title="Link to this heading"></a></h2>
+<p>Sample code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span><span class="p">,</span> <span class="n">get_active_triples_space</span>
+
+<span class="c1"># Choose the active space for the problem. Here, we are using (2,2).</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">set_active_space</span><span class="p">(</span><span class="n">nact_occupied</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nact_unoccupied</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="c1"># Obtain the list of triples excitations corresponding to the CCSDt truncation (ground-state symmetry adapted)</span>
+<span class="n">t3_excitations</span> <span class="o">=</span> <span class="n">get_active_triples_space</span><span class="p">(</span><span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="p">,</span> <span class="n">target_irrep</span><span class="o">=</span><span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">reference_symmetry</span><span class="p">)</span>
+
+<span class="c1"># Run active-space CCSDt calculation via general CC(P) solver</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_ccp</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsdt_p&quot;</span><span class="p">,</span> <span class="n">t3_excitations</span><span class="o">=</span><span class="n">t3_excitations</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h2>CCSDT<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>Sample code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+
+<span class="c1"># Run CCSDT calculation</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsdt&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Alternatively, full CCSDT calculations are also available by running active-orbital-based CCSDt with full active space.
+The advantage of this approach is that it allows for point group symmetry-adapted CCSDT runs.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span><span class="p">,</span> <span class="n">get_active_triples_space</span>
+
+<span class="c1"># Choose the active space for the problem. Here, we are using a full active space.</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">set_active_space</span><span class="p">(</span><span class="n">nact_occupied</span><span class="o">=</span><span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">noccupied_alpha</span><span class="p">,</span> <span class="n">nact_unoccupied</span><span class="o">=</span><span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">nunoccupied_beta</span><span class="p">)</span>
+<span class="c1"># Obtain the list of triples excitations corresponding to the CCSDt truncation (ground-state symmetry adapted)</span>
+<span class="n">t3_excitations</span> <span class="o">=</span> <span class="n">get_active_triples_space</span><span class="p">(</span><span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="p">,</span> <span class="n">target_irrep</span><span class="o">=</span><span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">reference_symmetry</span><span class="p">)</span>
+
+<span class="c1"># Run full CCSDT calculation via general CC(P) solver</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_ccp</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsdt_p&quot;</span><span class="p">,</span> <span class="n">t3_excitations</span><span class="o">=</span><span class="n">t3_excitations</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="cc4">
+<h2>CC4<a class="headerlink" href="#cc4" title="Link to this heading"></a></h2>
+<p><cite>Note: CC4 is available for closed-shell references only!</cite></p>
+<p>Sample code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+
+<span class="c1"># Run CC4 calculation</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;cc4&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="ccsdtq">
+<h2>CCSDTQ<a class="headerlink" href="#ccsdtq" title="Link to this heading"></a></h2>
+<p><cite>Note: CCSDTQ is available for closed-shell references only!</cite></p>
+<p>Sample code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+
+<span class="c1"># Run CCSDTQ calculation</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsdtq&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="eomccsd">
+<h2>EOMCCSD<a class="headerlink" href="#eomccsd" title="Link to this heading"></a></h2>
+<p>Sample code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run the ground-state CCSD calculation</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsd&quot;</span><span class="p">)</span>
+<span class="c1"># Compute and store the CCSD similarity-transformed Hamiltonian (this will overwrite the bare integrals in driver.hamiltonian)</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_hbar</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsd&quot;</span><span class="p">)</span>
+<span class="c1"># Perform an initial CI-like diagonalization to obtain guess vectors</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;cis&quot;</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;A1&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;B1&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;B2&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;A2&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+<span class="c1"># Run the EOMCCSD calculation for the specified states. The values `state_index` map one-to-one</span>
+<span class="c1"># with the guess vectors, so in this example,</span>
+<span class="c1"># states 1, 2, 3 -&gt; A1</span>
+<span class="c1"># states 4, 5 -&gt; B1</span>
+<span class="c1"># states 6, 7 -&gt; B2</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_eomcc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;eomccsd&quot;</span><span class="p">,</span> <span class="n">state_index</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="eom-cc3">
+<h2>EOM-CC3<a class="headerlink" href="#eom-cc3" title="Link to this heading"></a></h2>
+<p>Sample code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;cc3&quot;</span><span class="p">)</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_hbar</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;cc3&quot;</span><span class="p">)</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;cisd&quot;</span><span class="p">,</span> <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;A1&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;B1&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;B2&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;A2&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">nact_occupied</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nact_unoccupied</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_eomcc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;eomcc3&quot;</span><span class="p">,</span> <span class="n">state_index</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="eomccsdt-a">
+<h2>EOMCCSDT(a)*<a class="headerlink" href="#eomccsdt-a" title="Link to this heading"></a></h2>
+<p>Sample code</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run ground-state CC calculation</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsd&quot;</span><span class="p">)</span>
+<span class="c1"># Obtain the CCSD(T)(a) similarity-transformed Hamiltonian</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_hbar</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsdta&quot;</span><span class="p">)</span>
+<span class="c1"># Run EOMCCSD-like calculation using CCSD(T)(a) HBar</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;cisd&quot;</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;A1&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;B1&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;B2&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;A2&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>  <span class="n">nact_occupied</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">nact_unoccupied</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_eomcc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;eomccsd&quot;</span><span class="p">,</span> <span class="n">state_index</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+<span class="c1"># Obtain the left eigenstates for each EOMCC root</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_lefteomcc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;left_ccsd&quot;</span><span class="p">,</span> <span class="n">state_index</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+<span class="c1"># Compute EOMCCSDT(a)* excited-state corrections</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">run_ccp3</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;eomccsdta_star&quot;</span><span class="p">,</span> <span class="n">state_index</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="eomccsdt">
+<h2>EOMCCSDt<a class="headerlink" href="#eomccsdt" title="Link to this heading"></a></h2>
+</section>
+<section id="id2">
+<h2>EOMCCSDT<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+</section>
+<section id="ip-eomccsd-2h-1p">
+<h2>IP-EOMCCSD(2h-1p)<a class="headerlink" href="#ip-eomccsd-2h-1p" title="Link to this heading"></a></h2>
+</section>
+<section id="ip-eomccsd-3h-2p">
+<h2>IP-EOMCCSD(3h-2p)<a class="headerlink" href="#ip-eomccsd-3h-2p" title="Link to this heading"></a></h2>
+</section>
+<section id="ip-eomccsdt-a">
+<h2>IP-EOMCCSDT(a)*<a class="headerlink" href="#ip-eomccsdt-a" title="Link to this heading"></a></h2>
+</section>
+<section id="ea-eomccsd-2p-1h">
+<h2>EA-EOMCCSD(2p-1h)<a class="headerlink" href="#ea-eomccsd-2p-1h" title="Link to this heading"></a></h2>
+</section>
+<section id="ea-eomccsd-3p-2h">
+<h2>EA-EOMCCSD(3p-2h)<a class="headerlink" href="#ea-eomccsd-3p-2h" title="Link to this heading"></a></h2>
+</section>
+<section id="ea-eomccsdt-a">
+<h2>EA-EOMCCSDT(a)*<a class="headerlink" href="#ea-eomccsdt-a" title="Link to this heading"></a></h2>
+</section>
+<section id="dea-eomccsd-2p">
+<h2>DEA-EOMCCSD(2p)<a class="headerlink" href="#dea-eomccsd-2p" title="Link to this heading"></a></h2>
+</section>
+<section id="dea-eomccsd-3p-1h">
+<h2>DEA-EOMCCSD(3p-1h)<a class="headerlink" href="#dea-eomccsd-3p-1h" title="Link to this heading"></a></h2>
+</section>
+<section id="dea-eomccsd-4p-2h">
+<h2>DEA-EOMCCSD(4p-2h)<a class="headerlink" href="#dea-eomccsd-4p-2h" title="Link to this heading"></a></h2>
+</section>
+<section id="sf-eomccsd">
+<h2>SF-EOMCCSD<a class="headerlink" href="#sf-eomccsd" title="Link to this heading"></a></h2>
+</section>
+<section id="cr-cc-2-3">
+<h2>CR-CC(2,3)<a class="headerlink" href="#cr-cc-2-3" title="Link to this heading"></a></h2>
+</section>
+<section id="cr-cc-2-4">
+<h2>CR-CC(2,4)<a class="headerlink" href="#cr-cc-2-4" title="Link to this heading"></a></h2>
+</section>
+<section id="cc-t-3">
+<h2>CC(t;3)<a class="headerlink" href="#cc-t-3" title="Link to this heading"></a></h2>
+</section>
+<section id="cipsi-driven-cc-p-q-aimed-at-converging-ccsdt">
+<h2>CIPSI-driven CC(<em>P</em> ;<em>Q</em>) aimed at converging CCSDT<a class="headerlink" href="#cipsi-driven-cc-p-q-aimed-at-converging-ccsdt" title="Link to this heading"></a></h2>
+</section>
+<section id="adaptive-cc-p-q-aimed-at-converging-ccsdt">
+<h2>Adaptive CC(<em>P</em> ;<em>Q</em>) aimed at converging CCSDT<a class="headerlink" href="#adaptive-cc-p-q-aimed-at-converging-ccsdt" title="Link to this heading"></a></h2>
+</section>
+<section id="cr-eomcc-2-3-and-delta-cr-eomcc-2-3">
+<h2>CR-EOMCC(2,3) and <span class="math notranslate nohighlight">\(\delta\)</span>-CR-EOMCC(2,3)<a class="headerlink" href="#cr-eomcc-2-3-and-delta-cr-eomcc-2-3" title="Link to this heading"></a></h2>
+</section>
+<section id="ec-cc-ii">
+<h2>ec-CC-II<a class="headerlink" href="#ec-cc-ii" title="Link to this heading"></a></h2>
+</section>
+<section id="ec-cc-ii3">
+<h2>ec-CC-II<sub>3</sub><a class="headerlink" href="#ec-cc-ii3" title="Link to this heading"></a></h2>
+</section>
+<section id="ec-cc-ii3-4">
+<h2>ec-CC-II<sub>3,4</sub><a class="headerlink" href="#ec-cc-ii3-4" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="getting_started.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="walkthrough.html" class="btn btn-neutral float-right" title="Specific Walkthroughs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,232 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting Started &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Computational Options" href="computational_options.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#using-the-pyscf-interface">Using the PySCF Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-the-gamess-interface">Using the GAMESS Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="computational_options.html">Computational Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="walkthrough.html">Specific Walkthroughs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Getting Started</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/getting_started.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h1>
+<section id="using-the-pyscf-interface">
+<h2>Using the PySCF Interface<a class="headerlink" href="#using-the-pyscf-interface" title="Link to this heading"></a></h2>
+<p>Let’s build a simple example showing how we can run a ground-state
+CCSD calculation for the water molecule described with the cc-pVDZ basis
+set using the interface to PySCF. For this example, we will use the
+symmetrically stretched geometry from
+J. Olsen, P. Jørgensen, H. Koch, A. Balkova, and R. J. Bartlett, <em>J. Chem. Phys.</em> <strong>104</strong>, 8007 (1996).</p>
+<p>First, we need to import the relevant modules from PySCF and prepare a RHF
+calculation. This is done by first specifying the nuclear
+geometry and building the <code class="code docutils literal notranslate"><span class="pre">Molecule</span></code> object. Next, an RHF-type <code class="code docutils literal notranslate"><span class="pre">MeanField</span></code>
+object is constructed, which accepts <code class="code docutils literal notranslate"><span class="pre">Molecule</span></code> as an input in order to
+execute an RHF calculation. This is all accomplished using the code below</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import relevant SCF modules from PySCF</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyscf</span><span class="w"> </span><span class="kn">import</span> <span class="n">scf</span><span class="p">,</span> <span class="n">gto</span>
+<span class="c1"># Specify the molecular geometry</span>
+<span class="n">geometry</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;O  0.0   0.0       -0.0180</span>
+<span class="s1">              H  0.0   3.030526  -2.117796</span>
+<span class="s1">              H  0.0  -3.030526  -2.117796&#39;&#39;&#39;</span>
+<span class="c1"># Construct the PySCF Molecule object described within a specified basis set</span>
+<span class="n">mol</span> <span class="o">=</span> <span class="n">gto</span><span class="o">.</span><span class="n">M</span><span class="p">(</span>
+        <span class="n">atom</span><span class="o">=</span><span class="n">geometry</span><span class="p">,</span>
+        <span class="n">basis</span><span class="o">=</span><span class="s2">&quot;cc-pvdz&quot;</span><span class="p">,</span>
+        <span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">spin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">symmetry</span><span class="o">=</span><span class="s2">&quot;C2V&quot;</span><span class="p">,</span>
+        <span class="n">cart</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;Bohr&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1"># Construct the RHF MeanField object</span>
+<span class="n">mf</span> <span class="o">=</span> <span class="n">scf</span><span class="o">.</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+<span class="c1"># Run the RHF calculation</span>
+<span class="n">mf</span><span class="o">.</span><span class="n">kernel</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>In order to run CC calculations on top of this mean-field state using CCpy,
+we must import the main calculation driver class, called <code class="code docutils literal notranslate"><span class="pre">Driver</span></code>,
+using the following command</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.drivers.driver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+</pre></div>
+</div>
+<p>The <code class="code docutils literal notranslate"><span class="pre">Driver</span></code> object can be instantiated using the PySCF mean-field object
+as an input along with the number of frozen spatial orbitals, which
+should correspond to the chemical core of the molecule. For water, we
+will freeze the 1s orbital of the oxygen atom. The <code class="code docutils literal notranslate"><span class="pre">Driver.from_pyscf()</span></code>
+constructor not processes the PySCF <code class="code docutils literal notranslate"><span class="pre">MeanField</span></code> object to obtain and store
+important information about the system needed for correlated calculations,
+but also performs AO-to-MO integral transformation and sorting steps, storing the
+resulting integrals as part of the <code class="code docutils literal notranslate"><span class="pre">Driver</span></code> object.
+We can execute this driver instantiation step through the PySCF interface as follows</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">driver</span> <span class="o">=</span> <span class="n">Driver</span><span class="o">.</span><span class="n">from_pyscf</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">print_info</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The above code will create the <code class="code docutils literal notranslate"><span class="pre">Driver</span></code> object out of the PySCF <code class="code docutils literal notranslate"><span class="pre">MeanField</span></code>
+object and print an output of the system information. We are now ready to use the
+<code class="code docutils literal notranslate"><span class="pre">Driver</span></code> object to run correlated CC calculations. For example, a basic CCSD
+calculation is performed using</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsd&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="using-the-gamess-interface">
+<h2>Using the GAMESS Interface<a class="headerlink" href="#using-the-gamess-interface" title="Link to this heading"></a></h2>
+<p>Let’s now run the same example using the interface to GAMESS. This is
+slightly more complicated because we need to run GAMESS separately
+to obtain the output log file as well as an FCIDUMP file
+containing the molecular orbital integrals. To accomplish this, we should
+have a working installation of GAMESS and prepare an input script
+to run the RHF calculation and produce the associated FCIDUMP. This is
+done using the following GAMESS input, called <code class="code docutils literal notranslate"><span class="pre">h2o-ccpvdz.inp</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> $contrl scftyp=rhf runtyp=fcidump units=bohr ispher=+1 $end
+ $system mwords=1 $end
+ $basis gbasis=ccd $end
+ $guess guess=huckel $end
+ $data
+H2O molecule / cc-pvdz
+cnv 2
+O  8.0   0.000000   0.000000   -0.018000
+H  1.0   0.000000   3.030526   -2.117796
+ $end
+</pre></div>
+</div>
+<p>Now, we should run this input using whatever configuration of GAMESS
+is convenient for your machine, for example, using the <code class="code docutils literal notranslate"><span class="pre">rungms</span></code>
+script included in the GAMESS package distribution. The following execution
+of the GAMESS program</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rungms</span> <span class="n">h2o</span><span class="o">-</span><span class="n">ccpvdz</span><span class="o">.</span><span class="n">inp</span> <span class="o">|</span> <span class="n">tee</span> <span class="n">h2o</span><span class="o">-</span><span class="n">ccpvdz</span><span class="o">.</span><span class="n">log</span>
+</pre></div>
+</div>
+<p>will produce the output file <code class="code docutils literal notranslate"><span class="pre">h2o-ccpvdz.log</span></code> as well as the FCIDUMP file
+<code class="code docutils literal notranslate"><span class="pre">h2o-ccpvdz.FCIDUMP</span></code> located in the same directory. Now, to use the GAMESS
+interface of CCpy to begin the CC calculations, we will need to again instantiate
+the <code class="code docutils literal notranslate"><span class="pre">Driver</span></code> class using mean-field information contained within the GAMESS log
+file and FCIDUMP. This can be done using the <code class="code docutils literal notranslate"><span class="pre">Driver.from_gamess()</span></code> constructor
+as follows</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.drivers.driver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span>
+
+<span class="n">driver</span> <span class="o">=</span> <span class="n">Driver</span><span class="o">.</span><span class="n">from_gamess</span><span class="p">(</span><span class="n">logfile</span><span class="o">=</span><span class="s2">&quot;h2o-ccpvdz.log&quot;</span><span class="p">,</span>
+                            <span class="n">fcidump</span><span class="o">=</span><span class="s2">&quot;h2o-ccpvdz.FCIDUMP&quot;</span><span class="p">,</span>
+                            <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">print_info</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>which again loads the <code class="code docutils literal notranslate"><span class="pre">Driver</span></code> object with the information about the RHF solution
+computed with GAMESS, freezing the core 1s oxygen orbital for further correlated calculations.
+In this case, GAMESS has already executed the AO-to-MO transformation and written the unique
+integrals in Mulliken notation within the FCIDUMP file, so this construction simply reads in
+the integrals from the FCIDUMP file and sorts and stores them within the <code class="code docutils literal notranslate"><span class="pre">Driver</span></code> object
+as before. Once we have the <code class="code docutils literal notranslate"><span class="pre">Driver</span></code> object instantiated, we can use it to run CC
+calculations. Again, a CCSD calculation is performed with</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">driver</span><span class="o">.</span><span class="n">run_cc</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ccsd&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="computational_options.html" class="btn btn-neutral float-right" title="Computational Options" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
