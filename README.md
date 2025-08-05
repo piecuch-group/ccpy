@@ -1433,9 +1433,9 @@ located within `openblas/lib`, or something similar.
 
 ## CCpy Development Team
 
-Karthik Gururangan\
-Doctoral student, Department of Chemistry, Michigan State University
-e-mail: gururang@msu.edu\
+Dr. Karthik Gururangan\
+Postdoctoral Fellow, Emory University
+e-mail: kgururangan@gmail.com\
 (lead developer)
 
 Dr. J. Emiliano Deustua\
@@ -1447,8 +1447,6 @@ University Distinguished Professor and MSU Research Foundation Professor, Depart
 Adjunct Professor, Department of Physics and Astronomy, Michigan State University\
 e-mail: piecuch@chemistry.msu.edu\
 (co-developer and principal investigator)
-
-Additional contributors: Tiange Deng (doctoral student, Department of Chemistry, Michigan State University; ACCD and ACCSD options).
 
 ## Acknowledgements
 
