@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from ccpy.lib.core import deaeom4_p_loops
 from ccpy.eomcc.deaeom4_intermediates import get_deaeom4_p_intermediates
 
@@ -51,15 +52,15 @@ def HR(dR, R, T, H, flag_RHF, system, t3_excitations, r3_excitations):
 
 def build_HR_2B(dR, R, r3_excitations, T, H):
     """Calculate the projection <ab~|[ (H_N e^(T1+T2))_C*(R2p+R3p1h+R4p2h) ]_C|0>."""
-    dR.ab = np.einsum("ae,eb->ab", H.a.vv, R.ab, optimize=True)
-    dR.ab += np.einsum("be,ae->ab", H.b.vv, R.ab, optimize=True)
-    dR.ab += np.einsum("abef,ef->ab", H.ab.vvvv, R.ab, optimize=True)
-    dR.ab += np.einsum("me,abem->ab", H.a.ov, R.aba, optimize=True)
-    dR.ab += np.einsum("me,abem->ab", H.b.ov, R.abb, optimize=True)
-    dR.ab += np.einsum("nbfe,aefn->ab", H.ab.ovvv, R.aba, optimize=True)
-    dR.ab += 0.5 * np.einsum("anef,ebfn->ab", H.aa.vovv, R.aba, optimize=True)
-    dR.ab += 0.5 * np.einsum("bnef,aefn->ab", H.bb.vovv, R.abb, optimize=True)
-    dR.ab += np.einsum("anef,ebfn->ab", H.ab.vovv, R.abb, optimize=True)
+    dR.ab = ccpy_einsum("ae,eb->ab", H.a.vv, R.ab)
+    dR.ab += ccpy_einsum("be,ae->ab", H.b.vv, R.ab)
+    dR.ab += ccpy_einsum("abef,ef->ab", H.ab.vvvv, R.ab)
+    dR.ab += ccpy_einsum("me,abem->ab", H.a.ov, R.aba)
+    dR.ab += ccpy_einsum("me,abem->ab", H.b.ov, R.abb)
+    dR.ab += ccpy_einsum("nbfe,aefn->ab", H.ab.ovvv, R.aba)
+    dR.ab += 0.5 * ccpy_einsum("anef,ebfn->ab", H.aa.vovv, R.aba)
+    dR.ab += 0.5 * ccpy_einsum("bnef,aefn->ab", H.bb.vovv, R.abb)
+    dR.ab += ccpy_einsum("anef,ebfn->ab", H.ab.vovv, R.abb)
     dR.ab = deaeom4_p_loops.build_hr_2b(
             dR.ab,
             R.abaa, r3_excitations["abaa"],
@@ -71,18 +72,18 @@ def build_HR_2B(dR, R, r3_excitations, T, H):
 
 def build_HR_3B(dR, R, r3_excitations, T, X, H):
     """Calculate the projection <ab~ck|[ (H_N e^(T1+T2))_C*(R2p+R3p1h+R4p2h) ]_C|0>."""
-    dR.aba = 0.5 * np.einsum("cake,eb->abck", H.aa.vvov, R.ab, optimize=True)
-    dR.aba += np.einsum("cbke,ae->abck", H.ab.vvov, R.ab, optimize=True)
-    dR.aba += np.einsum("ae,ebck->abck", H.a.vv, R.aba, optimize=True)
-    dR.aba += 0.5 * np.einsum("be,aeck->abck", H.b.vv, R.aba, optimize=True)
-    dR.aba += np.einsum("abef,efck->abck", H.ab.vvvv, R.aba, optimize=True)
-    dR.aba += 0.25 * np.einsum("acef,ebfk->abck", H.aa.vvvv, R.aba, optimize=True)
-    dR.aba += np.einsum("cmke,abem->abck", H.aa.voov, R.aba, optimize=True)
-    dR.aba += np.einsum("cmke,abem->abck", H.ab.voov, R.abb, optimize=True)
-    dR.aba -= 0.5 * np.einsum("mbke,aecm->abck", H.ab.ovov, R.aba, optimize=True)
-    dR.aba -= 0.5 * np.einsum("mb,acmk->abck", X["ab"]["ov"], T.aa, optimize=True)
-    dR.aba -= np.einsum("am,cbkm->abck", X["ab"]["vo"], T.ab, optimize=True)
-    dR.aba -= 0.5 * np.einsum("mk,abcm->abck", H.a.oo, R.aba, optimize=True)
+    dR.aba = 0.5 * ccpy_einsum("cake,eb->abck", H.aa.vvov, R.ab)
+    dR.aba += ccpy_einsum("cbke,ae->abck", H.ab.vvov, R.ab)
+    dR.aba += ccpy_einsum("ae,ebck->abck", H.a.vv, R.aba)
+    dR.aba += 0.5 * ccpy_einsum("be,aeck->abck", H.b.vv, R.aba)
+    dR.aba += ccpy_einsum("abef,efck->abck", H.ab.vvvv, R.aba)
+    dR.aba += 0.25 * ccpy_einsum("acef,ebfk->abck", H.aa.vvvv, R.aba)
+    dR.aba += ccpy_einsum("cmke,abem->abck", H.aa.voov, R.aba)
+    dR.aba += ccpy_einsum("cmke,abem->abck", H.ab.voov, R.abb)
+    dR.aba -= 0.5 * ccpy_einsum("mbke,aecm->abck", H.ab.ovov, R.aba)
+    dR.aba -= 0.5 * ccpy_einsum("mb,acmk->abck", X["ab"]["ov"], T.aa)
+    dR.aba -= ccpy_einsum("am,cbkm->abck", X["ab"]["vo"], T.ab)
+    dR.aba -= 0.5 * ccpy_einsum("mk,abcm->abck", H.a.oo, R.aba)
     dR.aba = deaeom4_p_loops.build_hr_3b(
              dR.aba,
              R.abaa, r3_excitations["abaa"],
@@ -96,18 +97,18 @@ def build_HR_3B(dR, R, r3_excitations, T, X, H):
 
 def build_HR_3C(dR, R, r3_excitations, T, X, H):
     """Calculate the projection <ab~c~k~|[ (H_N e^(T1+T2))_C*(R2p+R3p1h+R4p2h) ]_C|0>."""
-    dR.abb = np.einsum("acek,eb->abck", H.ab.vvvo, R.ab, optimize=True)
-    dR.abb += 0.5 * np.einsum("cbke,ae->abck", H.bb.vvov, R.ab, optimize=True)
-    dR.abb += 0.5 * np.einsum("ae,ebck->abck", H.a.vv, R.abb, optimize=True)
-    dR.abb += np.einsum("be,aeck->abck", H.b.vv, R.abb, optimize=True)
-    dR.abb += np.einsum("abef,efck->abck", H.ab.vvvv, R.abb, optimize=True)
-    dR.abb += 0.25 * np.einsum("bcef,aefk->abck", H.bb.vvvv, R.abb, optimize=True)
-    dR.abb += np.einsum("mcek,abem->abck", H.ab.ovvo, R.aba, optimize=True)
-    dR.abb += np.einsum("cmke,abem->abck", H.bb.voov, R.abb, optimize=True)
-    dR.abb -= 0.5 * np.einsum("amek,ebcm->abck", H.ab.vovo, R.abb, optimize=True)
-    dR.abb -= np.einsum("mb,acmk->abck", X["ab"]["ov"], T.ab, optimize=True)
-    dR.abb -= 0.5 * np.einsum("am,bcmk->abck", X["ab"]["vo"], T.bb, optimize=True)
-    dR.abb -= 0.5 * np.einsum("mk,abcm->abck", H.b.oo, R.abb, optimize=True)
+    dR.abb = ccpy_einsum("acek,eb->abck", H.ab.vvvo, R.ab)
+    dR.abb += 0.5 * ccpy_einsum("cbke,ae->abck", H.bb.vvov, R.ab)
+    dR.abb += 0.5 * ccpy_einsum("ae,ebck->abck", H.a.vv, R.abb)
+    dR.abb += ccpy_einsum("be,aeck->abck", H.b.vv, R.abb)
+    dR.abb += ccpy_einsum("abef,efck->abck", H.ab.vvvv, R.abb)
+    dR.abb += 0.25 * ccpy_einsum("bcef,aefk->abck", H.bb.vvvv, R.abb)
+    dR.abb += ccpy_einsum("mcek,abem->abck", H.ab.ovvo, R.aba)
+    dR.abb += ccpy_einsum("cmke,abem->abck", H.bb.voov, R.abb)
+    dR.abb -= 0.5 * ccpy_einsum("amek,ebcm->abck", H.ab.vovo, R.abb)
+    dR.abb -= ccpy_einsum("mb,acmk->abck", X["ab"]["ov"], T.ab)
+    dR.abb -= 0.5 * ccpy_einsum("am,bcmk->abck", X["ab"]["vo"], T.bb)
+    dR.abb -= 0.5 * ccpy_einsum("mk,abcm->abck", H.b.oo, R.abb)
     dR.abb = deaeom4_p_loops.build_hr_3c(
              dR.abb,
              R.abab, r3_excitations["abab"],

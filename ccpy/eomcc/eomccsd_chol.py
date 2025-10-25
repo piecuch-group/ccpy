@@ -4,6 +4,7 @@ Equation-of-Motion Coupled-Cluster Method with Singles and Doubles (EOMCCSD)
 '''
 
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from ccpy.cholesky.cholesky_builders import build_2index_batch_vvvv_aa, build_3index_batch_vvvv_ab, build_2index_batch_vvvv_bb
 from ccpy.eomcc.eomccsd_intermediates import get_eomccsd_chol_intermediates
 from ccpy.lib.core import cc_loops2, vvvv_contraction
@@ -51,114 +52,114 @@ def HR(dR, R, T, H, flag_RHF, system):
 
 def build_HR_1A(R, H):
     # < ia | [H(2)*(R1+R2)]_C | 0 >
-    X1A = -np.einsum("mi,am->ai", H.a.oo, R.a, optimize=True)
-    X1A += np.einsum("ae,ei->ai", H.a.vv, R.a, optimize=True)
-    X1A += np.einsum("amie,em->ai", H.aa.voov, R.a, optimize=True)
-    X1A += np.einsum("amie,em->ai", H.ab.voov, R.b, optimize=True)
-    X1A -= 0.5 * np.einsum("mnif,afmn->ai", H.aa.ooov, R.aa, optimize=True)
-    X1A -= np.einsum("mnif,afmn->ai", H.ab.ooov, R.ab, optimize=True)
-    X1A += 0.5 * np.einsum("anef,efin->ai", H.aa.vovv, R.aa, optimize=True)
-    X1A += np.einsum("anef,efin->ai", H.ab.vovv, R.ab, optimize=True)
-    X1A += np.einsum("me,aeim->ai", H.a.ov, R.aa, optimize=True)
-    X1A += np.einsum("me,aeim->ai", H.b.ov, R.ab, optimize=True)
+    X1A = -ccpy_einsum("mi,am->ai", H.a.oo, R.a)
+    X1A += ccpy_einsum("ae,ei->ai", H.a.vv, R.a)
+    X1A += ccpy_einsum("amie,em->ai", H.aa.voov, R.a)
+    X1A += ccpy_einsum("amie,em->ai", H.ab.voov, R.b)
+    X1A -= 0.5 * ccpy_einsum("mnif,afmn->ai", H.aa.ooov, R.aa)
+    X1A -= ccpy_einsum("mnif,afmn->ai", H.ab.ooov, R.ab)
+    X1A += 0.5 * ccpy_einsum("anef,efin->ai", H.aa.vovv, R.aa)
+    X1A += ccpy_einsum("anef,efin->ai", H.ab.vovv, R.ab)
+    X1A += ccpy_einsum("me,aeim->ai", H.a.ov, R.aa)
+    X1A += ccpy_einsum("me,aeim->ai", H.b.ov, R.ab)
     return X1A
 
 def build_HR_1B(R, H):
     # < i~a~ | [H(2)*(R1+R2)]_C | 0 >
-    X1B = -np.einsum("mi,am->ai", H.b.oo, R.b, optimize=True)
-    X1B += np.einsum("ae,ei->ai", H.b.vv, R.b, optimize=True)
-    X1B += np.einsum("maei,em->ai", H.ab.ovvo, R.a, optimize=True)
-    X1B += np.einsum("amie,em->ai", H.bb.voov, R.b, optimize=True)
-    X1B -= np.einsum("nmfi,fanm->ai", H.ab.oovo, R.ab, optimize=True)
-    X1B -= 0.5 * np.einsum("mnif,afmn->ai", H.bb.ooov, R.bb, optimize=True)
-    X1B += np.einsum("nafe,feni->ai", H.ab.ovvv, R.ab, optimize=True)
-    X1B += 0.5 * np.einsum("anef,efin->ai", H.bb.vovv, R.bb, optimize=True)
-    X1B += np.einsum("me,eami->ai", H.a.ov, R.ab, optimize=True)
-    X1B += np.einsum("me,aeim->ai", H.b.ov, R.bb, optimize=True)
+    X1B = -ccpy_einsum("mi,am->ai", H.b.oo, R.b)
+    X1B += ccpy_einsum("ae,ei->ai", H.b.vv, R.b)
+    X1B += ccpy_einsum("maei,em->ai", H.ab.ovvo, R.a)
+    X1B += ccpy_einsum("amie,em->ai", H.bb.voov, R.b)
+    X1B -= ccpy_einsum("nmfi,fanm->ai", H.ab.oovo, R.ab)
+    X1B -= 0.5 * ccpy_einsum("mnif,afmn->ai", H.bb.ooov, R.bb)
+    X1B += ccpy_einsum("nafe,feni->ai", H.ab.ovvv, R.ab)
+    X1B += 0.5 * ccpy_einsum("anef,efin->ai", H.bb.vovv, R.bb)
+    X1B += ccpy_einsum("me,eami->ai", H.a.ov, R.ab)
+    X1B += ccpy_einsum("me,aeim->ai", H.b.ov, R.bb)
     return X1B
 
 def build_HR_2A(R, T, X, H):
 
     # < ijab | [H(2)*(R1+R2)]_C | 0 >
-    X2A = -0.5 * np.einsum("mi,abmj->abij", H.a.oo, R.aa, optimize=True)  # A(ij)
-    X2A += 0.5 * np.einsum("ae,ebij->abij", H.a.vv, R.aa, optimize=True)  # A(ab)
-    X2A += 0.125 * np.einsum("mnij,abmn->abij", H.aa.oooo, R.aa, optimize=True)
+    X2A = -0.5 * ccpy_einsum("mi,abmj->abij", H.a.oo, R.aa)  # A(ij)
+    X2A += 0.5 * ccpy_einsum("ae,ebij->abij", H.a.vv, R.aa)  # A(ab)
+    X2A += 0.125 * ccpy_einsum("mnij,abmn->abij", H.aa.oooo, R.aa)
 
-    X2A += 0.125 * np.einsum("mnij,abmn->abij", X.aa.oooo, T.aa, optimize=True)
+    X2A += 0.125 * ccpy_einsum("mnij,abmn->abij", X.aa.oooo, T.aa)
     # deal with the bare (vvvv) term using Cholesky
     # for a in range(R.a.shape[0]):
     #     for b in range(a + 1, R.a.shape[0]):
     #         # <ab|ef> = <x|ae><x|bf>
     #         batch_ints = build_2index_batch_vvvv_aa(a, b, H)
-    #         X2A[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, R.aa, optimize=True)
+    #         X2A[a, b, :, :] += 0.25 * ccpy_einsum("ef,efij->ij", batch_ints, R.aa)
     tmp = vvvv_contraction.vvvv_t2_sym(H.chol.a.vv.transpose(0, 2, 1), 0.5 * R.aa.transpose(3, 2, 1, 0))
     X2A += tmp.transpose(3, 2, 1, 0)
 
-    X2A += np.einsum("amie,ebmj->abij", H.aa.voov, R.aa, optimize=True)  # A(ij)A(ab)
-    X2A += np.einsum("amie,bejm->abij", H.ab.voov, R.ab, optimize=True)  # A(ij)A(ab)
-    X2A -= 0.5 * np.einsum("bmji,am->abij", H.aa.vooo, R.a, optimize=True)  # A(ab)
-    X2A += 0.5 * np.einsum("baje,ei->abij", H.aa.vvov, R.a, optimize=True)  # A(ij)
-    X2A += 0.5 * np.einsum("be,aeij->abij", X.a.vv, T.aa, optimize=True)  # A(ab)
-    X2A -= 0.5 * np.einsum("mj,abim->abij", X.a.oo, T.aa, optimize=True)  # A(ij)
+    X2A += ccpy_einsum("amie,ebmj->abij", H.aa.voov, R.aa)  # A(ij)A(ab)
+    X2A += ccpy_einsum("amie,bejm->abij", H.ab.voov, R.ab)  # A(ij)A(ab)
+    X2A -= 0.5 * ccpy_einsum("bmji,am->abij", H.aa.vooo, R.a)  # A(ab)
+    X2A += 0.5 * ccpy_einsum("baje,ei->abij", H.aa.vvov, R.a)  # A(ij)
+    X2A += 0.5 * ccpy_einsum("be,aeij->abij", X.a.vv, T.aa)  # A(ab)
+    X2A -= 0.5 * ccpy_einsum("mj,abim->abij", X.a.oo, T.aa)  # A(ij)
     X2A -= np.transpose(X2A, (1, 0, 2, 3)) # antisymmetrize (ab)
     X2A -= np.transpose(X2A, (0, 1, 3, 2)) # antisymmetrize (ij)
     return X2A
 
 def build_HR_2B(R, T, X, H):
 
-    X2B = np.einsum("ae,ebij->abij", H.a.vv, R.ab, optimize=True)
-    X2B += np.einsum("be,aeij->abij", H.b.vv, R.ab, optimize=True)
-    X2B -= np.einsum("mi,abmj->abij", H.a.oo, R.ab, optimize=True)
-    X2B -= np.einsum("mj,abim->abij", H.b.oo, R.ab, optimize=True)
-    X2B += np.einsum("mnij,abmn->abij", H.ab.oooo, R.ab, optimize=True)
+    X2B = ccpy_einsum("ae,ebij->abij", H.a.vv, R.ab)
+    X2B += ccpy_einsum("be,aeij->abij", H.b.vv, R.ab)
+    X2B -= ccpy_einsum("mi,abmj->abij", H.a.oo, R.ab)
+    X2B -= ccpy_einsum("mj,abim->abij", H.b.oo, R.ab)
+    X2B += ccpy_einsum("mnij,abmn->abij", H.ab.oooo, R.ab)
 
-    X2B += np.einsum("mnij,abmn->abij", X.ab.oooo, T.ab, optimize=True)
+    X2B += ccpy_einsum("mnij,abmn->abij", X.ab.oooo, T.ab)
     # deal with the bare (vvvv) term using Cholesky
     # for a in range(R.a.shape[0]):
     #     # <ab|ef> = <x|ae><x|bf>
     #     batch_ints = build_3index_batch_vvvv_ab(a, H)
-    #     X2B[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, R.ab, optimize=True)
+    #     X2B[a, :, :, :] += ccpy_einsum("bef,efij->bij", batch_ints, R.ab)
     tmp = vvvv_contraction.vvvv_t2(H.chol.a.vv.transpose(0, 2, 1), H.chol.b.vv.transpose(0, 2, 1), R.ab.transpose(3, 2, 1, 0))
     X2B += tmp.transpose(3, 2, 1, 0)
 
-    X2B += np.einsum("amie,ebmj->abij", H.aa.voov, R.ab, optimize=True)
-    X2B += np.einsum("amie,ebmj->abij", H.ab.voov, R.bb, optimize=True)
-    X2B += np.einsum("mbej,aeim->abij", H.ab.ovvo, R.aa, optimize=True)
-    X2B += np.einsum("bmje,aeim->abij", H.bb.voov, R.ab, optimize=True)
-    X2B -= np.einsum("mbie,aemj->abij", H.ab.ovov, R.ab, optimize=True)
-    X2B -= np.einsum("amej,ebim->abij", H.ab.vovo, R.ab, optimize=True)
-    X2B += np.einsum("abej,ei->abij", H.ab.vvvo, R.a, optimize=True)
-    X2B += np.einsum("abie,ej->abij", H.ab.vvov, R.b, optimize=True)
-    X2B -= np.einsum("mbij,am->abij", H.ab.ovoo, R.a, optimize=True)
-    X2B -= np.einsum("amij,bm->abij", H.ab.vooo, R.b, optimize=True)
-    X2B += np.einsum("ae,ebij->abij", X.a.vv, T.ab, optimize=True)
-    X2B -= np.einsum("mi,abmj->abij", X.a.oo, T.ab, optimize=True)
-    X2B += np.einsum("be,aeij->abij", X.b.vv, T.ab, optimize=True)
-    X2B -= np.einsum("mj,abim->abij", X.b.oo, T.ab, optimize=True)
+    X2B += ccpy_einsum("amie,ebmj->abij", H.aa.voov, R.ab)
+    X2B += ccpy_einsum("amie,ebmj->abij", H.ab.voov, R.bb)
+    X2B += ccpy_einsum("mbej,aeim->abij", H.ab.ovvo, R.aa)
+    X2B += ccpy_einsum("bmje,aeim->abij", H.bb.voov, R.ab)
+    X2B -= ccpy_einsum("mbie,aemj->abij", H.ab.ovov, R.ab)
+    X2B -= ccpy_einsum("amej,ebim->abij", H.ab.vovo, R.ab)
+    X2B += ccpy_einsum("abej,ei->abij", H.ab.vvvo, R.a)
+    X2B += ccpy_einsum("abie,ej->abij", H.ab.vvov, R.b)
+    X2B -= ccpy_einsum("mbij,am->abij", H.ab.ovoo, R.a)
+    X2B -= ccpy_einsum("amij,bm->abij", H.ab.vooo, R.b)
+    X2B += ccpy_einsum("ae,ebij->abij", X.a.vv, T.ab)
+    X2B -= ccpy_einsum("mi,abmj->abij", X.a.oo, T.ab)
+    X2B += ccpy_einsum("be,aeij->abij", X.b.vv, T.ab)
+    X2B -= ccpy_einsum("mj,abim->abij", X.b.oo, T.ab)
     return X2B
 
 def build_HR_2C(R, T, X, H):
 
-    X2C = -0.5 * np.einsum("mi,abmj->abij", H.b.oo, R.bb, optimize=True)  # A(ij)
-    X2C += 0.5 * np.einsum("ae,ebij->abij", H.b.vv, R.bb, optimize=True)  # A(ab)
-    X2C += 0.125 * np.einsum("mnij,abmn->abij", H.bb.oooo, R.bb, optimize=True)
+    X2C = -0.5 * ccpy_einsum("mi,abmj->abij", H.b.oo, R.bb)  # A(ij)
+    X2C += 0.5 * ccpy_einsum("ae,ebij->abij", H.b.vv, R.bb)  # A(ab)
+    X2C += 0.125 * ccpy_einsum("mnij,abmn->abij", H.bb.oooo, R.bb)
 
-    X2C += 0.125 * np.einsum("mnij,abmn->abij", X.bb.oooo, T.bb, optimize=True)
+    X2C += 0.125 * ccpy_einsum("mnij,abmn->abij", X.bb.oooo, T.bb)
     # deal with the bare (vvvv) term using Cholesky
     # for a in range(R.b.shape[0]):
     #     for b in range(a + 1, R.b.shape[0]):
     #         # <ab|ef> = <x|ae><x|bf>
     #         batch_ints = build_2index_batch_vvvv_bb(a, b, H)
-    #         X2C[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, R.bb, optimize=True)
+    #         X2C[a, b, :, :] += 0.25 * ccpy_einsum("ef,efij->ij", batch_ints, R.bb)
     tmp = vvvv_contraction.vvvv_t2_sym(H.chol.b.vv.transpose(0, 2, 1), 0.5 * R.bb.transpose(3, 2, 1, 0))
     X2C += tmp.transpose(3, 2, 1, 0)
 
-    X2C += np.einsum("amie,ebmj->abij", H.bb.voov, R.bb, optimize=True)  # A(ij)A(ab)
-    X2C += np.einsum("maei,ebmj->abij", H.ab.ovvo, R.ab, optimize=True)  # A(ij)A(ab)
-    X2C -= 0.5 * np.einsum("bmji,am->abij", H.bb.vooo, R.b, optimize=True)  # A(ab)
-    X2C += 0.5 * np.einsum("baje,ei->abij", H.bb.vvov, R.b, optimize=True)  # A(ij)
-    X2C += 0.5 * np.einsum("be,aeij->abij", X.b.vv, T.bb, optimize=True)  # A(ab)
-    X2C -= 0.5 * np.einsum("mj,abim->abij", X.b.oo, T.bb, optimize=True)  # A(ij)
+    X2C += ccpy_einsum("amie,ebmj->abij", H.bb.voov, R.bb)  # A(ij)A(ab)
+    X2C += ccpy_einsum("maei,ebmj->abij", H.ab.ovvo, R.ab)  # A(ij)A(ab)
+    X2C -= 0.5 * ccpy_einsum("bmji,am->abij", H.bb.vooo, R.b)  # A(ab)
+    X2C += 0.5 * ccpy_einsum("baje,ei->abij", H.bb.vvov, R.b)  # A(ij)
+    X2C += 0.5 * ccpy_einsum("be,aeij->abij", X.b.vv, T.bb)  # A(ab)
+    X2C -= 0.5 * ccpy_einsum("mj,abim->abij", X.b.oo, T.bb)  # A(ij)
     X2C -= np.transpose(X2C, (1, 0, 2, 3)) # antisymmetrize (ab)
     X2C -= np.transpose(X2C, (0, 1, 3, 2)) # antisymmetrize (ij)
     return X2C

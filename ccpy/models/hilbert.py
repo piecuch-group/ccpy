@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from ccpy.energy.hf_energy import calc_hf_energy_unsorted
 
 
@@ -231,18 +232,18 @@ def slater_eval(H, idet, jdet, system):
     elif exc.degree == 1:
         if exc.spincase == 'a':
             val = H.a[exc.to_alpha[0], exc.from_alpha[0]]
-            val += np.einsum("ii->", np.squeeze(H.aa[np.ix_(np.array([exc.to_alpha[0]]), jdet.occ_a, np.array([exc.from_alpha[0]]), jdet.occ_a)]))
-            val += np.einsum("ii->", np.squeeze(H.ab[np.ix_(np.array([exc.to_alpha[0]]), jdet.occ_b, np.array([exc.from_alpha[0]]), jdet.occ_b)]))
+            val += ccpy_einsum("ii->", np.squeeze(H.aa[np.ix_(np.array([exc.to_alpha[0]]), jdet.occ_a, np.array([exc.from_alpha[0]]), jdet.occ_a)]))
+            val += ccpy_einsum("ii->", np.squeeze(H.ab[np.ix_(np.array([exc.to_alpha[0]]), jdet.occ_b, np.array([exc.from_alpha[0]]), jdet.occ_b)]))
         elif exc.spincase == 'b':
             val = H.b[exc.to_beta[0], exc.from_beta[0]]
-            val += np.einsum("ii->", np.squeeze(H.bb[np.ix_(np.array([exc.to_beta[0]]), jdet.occ_b, np.array([exc.from_beta[0]]), jdet.occ_b)]))
-            val += np.einsum("ii->", np.squeeze(H.ab[np.ix_(jdet.occ_a, np.array([exc.to_beta[0]]), jdet.occ_a, np.array([exc.from_beta[0]]))]))
+            val += ccpy_einsum("ii->", np.squeeze(H.bb[np.ix_(np.array([exc.to_beta[0]]), jdet.occ_b, np.array([exc.from_beta[0]]), jdet.occ_b)]))
+            val += ccpy_einsum("ii->", np.squeeze(H.ab[np.ix_(jdet.occ_a, np.array([exc.to_beta[0]]), jdet.occ_a, np.array([exc.from_beta[0]]))]))
     else:
-        val = np.einsum("ii->", H.a[np.ix_(jdet.occ_a, jdet.occ_a)])
-        val += np.einsum("ii->", H.b[np.ix_(jdet.occ_b, jdet.occ_b)])
-        val += 0.5 * np.einsum("ijij->", H.aa[np.ix_(jdet.occ_a, jdet.occ_a, jdet.occ_a, jdet.occ_a)])
-        val += np.einsum("ijij->", H.ab[np.ix_(jdet.occ_a, jdet.occ_b, jdet.occ_a, jdet.occ_b)])
-        val += 0.5 * np.einsum("ijij->", H.bb[np.ix_(jdet.occ_b, jdet.occ_b, jdet.occ_b, jdet.occ_b)])
+        val = ccpy_einsum("ii->", H.a[np.ix_(jdet.occ_a, jdet.occ_a)])
+        val += ccpy_einsum("ii->", H.b[np.ix_(jdet.occ_b, jdet.occ_b)])
+        val += 0.5 * ccpy_einsum("ijij->", H.aa[np.ix_(jdet.occ_a, jdet.occ_a, jdet.occ_a, jdet.occ_a)])
+        val += ccpy_einsum("ijij->", H.ab[np.ix_(jdet.occ_a, jdet.occ_b, jdet.occ_a, jdet.occ_b)])
+        val += 0.5 * ccpy_einsum("ijij->", H.bb[np.ix_(jdet.occ_b, jdet.occ_b, jdet.occ_b, jdet.occ_b)])
 
     return val * exc.phase
 

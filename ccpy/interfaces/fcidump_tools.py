@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 
 def load_fcidump_integrals(
     fcidump_file,
@@ -129,14 +130,14 @@ def build_rohf_fock(e1int, e2int, system, canonicalization):
     ob = slice(system.noccupied_beta + system.nfrozen)
 
     fock_a = (e1int
-              + np.einsum("pjqj->pq", e2int[:, oa, :, oa], optimize=True)
-              - np.einsum("pjjq->pq", e2int[:, oa, oa, :], optimize=True)
-              + np.einsum("pjqj->pq", e2int[:, ob, :, ob], optimize=True)
+              + ccpy_einsum("pjqj->pq", e2int[:, oa, :, oa])
+              - ccpy_einsum("pjjq->pq", e2int[:, oa, oa, :])
+              + ccpy_einsum("pjqj->pq", e2int[:, ob, :, ob])
     )
     fock_b = (e1int
-              + np.einsum("pjqj->pq", e2int[:, ob, :, ob], optimize=True)
-              - np.einsum("pjjq->pq", e2int[:, ob, ob, :], optimize=True)
-              + np.einsum("jpjq->pq", e2int[oa, :, oa, :], optimize=True)
+              + ccpy_einsum("pjqj->pq", e2int[:, ob, :, ob])
+              - ccpy_einsum("pjjq->pq", e2int[:, ob, ob, :])
+              + ccpy_einsum("jpjq->pq", e2int[oa, :, oa, :])
     )
 
     # ROHF Canonicalization

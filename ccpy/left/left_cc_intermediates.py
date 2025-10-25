@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from ccpy.models.integrals import Integral
 from ccpy.lib.core import leftccsdt_p_intermediates
 
@@ -9,20 +10,20 @@ def build_left_ccsd_intermediates(L, T, system):
 
     # (L2 * T2)_C
     X.a.vv = (
-                0.5 * np.einsum("efmn,fgnm->ge", L.aa, T.aa, optimize=True)
-                + np.einsum("abij,fbij->fa", L.ab, T.ab, optimize=True)
+                0.5 * ccpy_einsum("efmn,fgnm->ge", L.aa, T.aa)
+                + ccpy_einsum("abij,fbij->fa", L.ab, T.ab)
     )
     X.a.oo = (
-                -0.5 * np.einsum("efmo,efno->mn", L.aa, T.aa, optimize=True)
-                - np.einsum("abij,abnj->in", L.ab, T.ab, optimize=True)
+                -0.5 * ccpy_einsum("efmo,efno->mn", L.aa, T.aa)
+                - ccpy_einsum("abij,abnj->in", L.ab, T.ab)
     )
     X.b.vv = (
-                0.5 * np.einsum("abij,fbij->fa", L.bb, T.bb, optimize=True)
-                + np.einsum("abij,afij->fb", L.ab, T.ab, optimize=True)
+                0.5 * ccpy_einsum("abij,fbij->fa", L.bb, T.bb)
+                + ccpy_einsum("abij,afij->fb", L.ab, T.ab)
     )
     X.b.oo = (
-                -0.5 * np.einsum("abij,abnj->in", L.bb, T.bb, optimize=True)
-                - np.einsum("abij,abin->jn", L.ab, T.ab, optimize=True)
+                -0.5 * ccpy_einsum("abij,abnj->in", L.bb, T.bb)
+                - ccpy_einsum("abij,abin->jn", L.ab, T.ab)
     )
     return X
 
@@ -33,30 +34,30 @@ def build_left_ccsd_chol_intermediates(L, T, system):
 
     # (L2 * T2)_C
     X.a.vv = (
-                0.5 * np.einsum("efmn,fgnm->ge", L.aa, T.aa, optimize=True)
-                + np.einsum("abij,fbij->fa", L.ab, T.ab, optimize=True)
+                0.5 * ccpy_einsum("efmn,fgnm->ge", L.aa, T.aa)
+                + ccpy_einsum("abij,fbij->fa", L.ab, T.ab)
     )
     X.a.oo = (
-                -0.5 * np.einsum("efmo,efno->mn", L.aa, T.aa, optimize=True)
-                - np.einsum("abij,abnj->in", L.ab, T.ab, optimize=True)
+                -0.5 * ccpy_einsum("efmo,efno->mn", L.aa, T.aa)
+                - ccpy_einsum("abij,abnj->in", L.ab, T.ab)
     )
     X.b.vv = (
-                0.5 * np.einsum("abij,fbij->fa", L.bb, T.bb, optimize=True)
-                + np.einsum("abij,afij->fb", L.ab, T.ab, optimize=True)
+                0.5 * ccpy_einsum("abij,fbij->fa", L.bb, T.bb)
+                + ccpy_einsum("abij,afij->fb", L.ab, T.ab)
     )
     X.b.oo = (
-                -0.5 * np.einsum("abij,abnj->in", L.bb, T.bb, optimize=True)
-                - np.einsum("abij,abin->jn", L.ab, T.ab, optimize=True)
+                -0.5 * ccpy_einsum("abij,abnj->in", L.bb, T.bb)
+                - ccpy_einsum("abij,abin->jn", L.ab, T.ab)
     )
-    X.aa.oooo = 0.5 * np.einsum("efij,efmn->ijmn", L.aa, T.aa, optimize=True)
-    X.ab.oooo = np.einsum("efij,efmn->ijmn", L.ab, T.ab, optimize=True)
-    X.bb.oooo = 0.5 * np.einsum("efij,efmn->ijmn", L.bb, T.bb, optimize=True)
+    X.aa.oooo = 0.5 * ccpy_einsum("efij,efmn->ijmn", L.aa, T.aa)
+    X.ab.oooo = ccpy_einsum("efij,efmn->ijmn", L.ab, T.ab)
+    X.bb.oooo = 0.5 * ccpy_einsum("efij,efmn->ijmn", L.bb, T.bb)
 
     # (L2 * T1)_C
-    X.aa.ooov = np.einsum("feji,fn->jine", L.aa, T.a, optimize=True)
-    X.ab.ooov = np.einsum("efij,em->ijmf", L.ab, T.a, optimize=True)
-    X.ab.oovo = np.einsum("efij,fn->ijen", L.ab, T.b, optimize=True)
-    X.bb.ooov = np.einsum("feji,fn->jine", L.bb, T.b, optimize=True)
+    X.aa.ooov = ccpy_einsum("feji,fn->jine", L.aa, T.a)
+    X.ab.ooov = ccpy_einsum("efij,em->ijmf", L.ab, T.a)
+    X.ab.oovo = ccpy_einsum("efij,fn->ijen", L.ab, T.b)
+    X.bb.ooov = ccpy_einsum("feji,fn->jine", L.bb, T.b)
 
     return X
 
@@ -69,136 +70,136 @@ def build_left_ccsdt_intermediates(L, T, system):
 
     # (L2 * T3)_C
     X.a.vo = (
-               0.25 * np.einsum("efmn,aefimn->ai", L.aa, T.aaa, optimize=True)
-             + np.einsum("efmn,aefimn->ai", L.ab, T.aab, optimize=True)
-             + 0.25 * np.einsum("efmn,aefimn->ai", L.bb, T.abb, optimize=True)
+               0.25 * ccpy_einsum("efmn,aefimn->ai", L.aa, T.aaa)
+             + ccpy_einsum("efmn,aefimn->ai", L.ab, T.aab)
+             + 0.25 * ccpy_einsum("efmn,aefimn->ai", L.bb, T.abb)
     )
 
     X.b.vo = (
-               0.25 * np.einsum("efmn,efamni->ai", L.aa, T.aab, optimize=True)
-               + np.einsum("efmn,efamni->ai", L.ab, T.abb, optimize=True)
-               + 0.25 * np.einsum("efmn,efamni->ai", L.bb, T.bbb, optimize=True)
+               0.25 * ccpy_einsum("efmn,efamni->ai", L.aa, T.aab)
+               + ccpy_einsum("efmn,efamni->ai", L.ab, T.abb)
+               + 0.25 * ccpy_einsum("efmn,efamni->ai", L.bb, T.bbb)
     )
 
     # (L3 * T2)_C
     X.aa.ooov = (
-                0.5 * np.einsum('aefijn,efmn->jima', L.aaa, T.aa, optimize=True)
-                + np.einsum('aefijn,efmn->jima', L.aab, T.ab, optimize=True)
+                0.5 * ccpy_einsum('aefijn,efmn->jima', L.aaa, T.aa)
+                + ccpy_einsum('aefijn,efmn->jima', L.aab, T.ab)
     )
 
     X.ab.oovo = (
-                np.einsum('afeinj,fenm->ijam', L.aab, T.ab, optimize=True)
-               + 0.5 * np.einsum('afeinj,fenm->ijam', L.abb, T.bb, optimize=True)
+                ccpy_einsum('afeinj,fenm->ijam', L.aab, T.ab)
+               + 0.5 * ccpy_einsum('afeinj,fenm->ijam', L.abb, T.bb)
     )
 
     X.ab.ooov = (
-                0.5 * np.einsum('efajni,efmn->jima', L.aab, T.aa, optimize=True)
-              + np.einsum('efajni,efmn->jima', L.abb, T.ab, optimize=True)
+                0.5 * ccpy_einsum('efajni,efmn->jima', L.aab, T.aa)
+              + ccpy_einsum('efajni,efmn->jima', L.abb, T.ab)
     )
 
     X.bb.ooov = (
-                0.5 * np.einsum('aefijn,efmn->jima', L.bbb, T.bb, optimize=True)
-                + np.einsum('feanji,fenm->jima', L.abb, T.ab, optimize=True)
+                0.5 * ccpy_einsum('aefijn,efmn->jima', L.bbb, T.bb)
+                + ccpy_einsum('feanji,fenm->jima', L.abb, T.ab)
     )
 
     X.aa.vovv = (
-                -0.5 * np.einsum('abfimn,efmn->eiba', L.aaa, T.aa, optimize=True)
-                - np.einsum('abfimn,efmn->eiba', L.aab, T.ab, optimize=True)
+                -0.5 * ccpy_einsum('abfimn,efmn->eiba', L.aaa, T.aa)
+                - ccpy_einsum('abfimn,efmn->eiba', L.aab, T.ab)
     )
 
     X.ab.vovv = (
-                -0.5 * np.einsum('bfamni,efmn->eiba', L.aab, T.aa, optimize=True)
-                - np.einsum('bfamni,efmn->eiba', L.abb, T.ab, optimize=True)
+                -0.5 * ccpy_einsum('bfamni,efmn->eiba', L.aab, T.aa)
+                - ccpy_einsum('bfamni,efmn->eiba', L.abb, T.ab)
     )
 
     X.ab.ovvv = (
-                -np.einsum('afbinm,fenm->ieab', L.aab, T.ab, optimize=True)
-                -0.5 * np.einsum('afbinm,fenm->ieab', L.abb, T.bb, optimize=True)
+                -ccpy_einsum('afbinm,fenm->ieab', L.aab, T.ab)
+                -0.5 * ccpy_einsum('afbinm,fenm->ieab', L.abb, T.bb)
     )
 
     X.bb.vovv = (
-                -0.5 * np.einsum('abfimn,efmn->eiba', L.bbb, T.bb, optimize=True)
-                - np.einsum('fbanmi,fenm->eiba', L.abb, T.ab, optimize=True)
+                -0.5 * ccpy_einsum('abfimn,efmn->eiba', L.bbb, T.bb)
+                - ccpy_einsum('fbanmi,fenm->eiba', L.abb, T.ab)
     )
 
     # (L3 * T3)_C
     # l = 3, h = 4 -> s = -1
     X.a.oo = (
-              (1.0 / 12.0) * np.einsum("efgmno,efgino->mi", L.aaa, T.aaa, optimize=True)
-              + 0.5 * np.einsum("efgmno,efgino->mi", L.aab, T.aab, optimize=True)
-              + 0.25 * np.einsum("efgmno,efgino->mi", L.abb, T.abb, optimize=True)
+              (1.0 / 12.0) * ccpy_einsum("efgmno,efgino->mi", L.aaa, T.aaa)
+              + 0.5 * ccpy_einsum("efgmno,efgino->mi", L.aab, T.aab)
+              + 0.25 * ccpy_einsum("efgmno,efgino->mi", L.abb, T.abb)
     )
     X.b.oo = (
-              (1.0 / 12.0) * np.einsum("efgmno,efgino->mi", L.bbb, T.bbb, optimize=True)
-              + 0.5 * np.einsum("gfeonm,gfeoni->mi", L.abb, T.abb, optimize=True)
-              + 0.25 * np.einsum("gfeonm,gfeoni->mi", L.aab, T.aab, optimize=True)
+              (1.0 / 12.0) * ccpy_einsum("efgmno,efgino->mi", L.bbb, T.bbb)
+              + 0.5 * ccpy_einsum("gfeonm,gfeoni->mi", L.abb, T.abb)
+              + 0.25 * ccpy_einsum("gfeonm,gfeoni->mi", L.aab, T.aab)
     )
 
     # l = 3, h = 3 -> s = +1
     X.a.vv = (
-            -(1.0 / 12.0) * np.einsum("efgmno,afgmno->ae", L.aaa, T.aaa, optimize=True)
-            - 0.5 * np.einsum("efgmno,afgmno->ae", L.aab, T.aab, optimize=True)
-            - 0.25 * np.einsum("efgmno,afgmno->ae", L.abb, T.abb, optimize=True)
+            -(1.0 / 12.0) * ccpy_einsum("efgmno,afgmno->ae", L.aaa, T.aaa)
+            - 0.5 * ccpy_einsum("efgmno,afgmno->ae", L.aab, T.aab)
+            - 0.25 * ccpy_einsum("efgmno,afgmno->ae", L.abb, T.abb)
     )
     X.b.vv = (
-            -(1.0 / 12.0) * np.einsum("efgmno,afgmno->ae", L.bbb, T.bbb, optimize=True)
-            - 0.5 * np.einsum("gfeonm,gfaonm->ae", L.abb, T.abb, optimize=True)
-            - 0.25 * np.einsum("gfeonm,gfaonm->ae", L.aab, T.aab, optimize=True)
+            -(1.0 / 12.0) * ccpy_einsum("efgmno,afgmno->ae", L.bbb, T.bbb)
+            - 0.5 * ccpy_einsum("gfeonm,gfaonm->ae", L.abb, T.abb)
+            - 0.25 * ccpy_einsum("gfeonm,gfaonm->ae", L.aab, T.aab)
     )
 
     X.aa.oooo = (
-                (1.0 / 6.0) * np.einsum("efgmno,efgijo->mnij", L.aaa, T.aaa, optimize=True)
-                + 0.5 * np.einsum("efgmno,efgijo->mnij", L.aab, T.aab, optimize=True)
+                (1.0 / 6.0) * ccpy_einsum("efgmno,efgijo->mnij", L.aaa, T.aaa)
+                + 0.5 * ccpy_einsum("efgmno,efgijo->mnij", L.aab, T.aab)
     )
     X.ab.oooo = (
-                0.5 * np.einsum("egfmon,egfioj->mnij", L.aab, T.aab, optimize=True)
-              + 0.5 * np.einsum("egfmon,egfioj->mnij", L.abb, T.abb, optimize=True)
+                0.5 * ccpy_einsum("egfmon,egfioj->mnij", L.aab, T.aab)
+              + 0.5 * ccpy_einsum("egfmon,egfioj->mnij", L.abb, T.abb)
     )
     X.bb.oooo = (
-                (1.0 / 6.0) * np.einsum("efgmno,efgijo->mnij", L.bbb, T.bbb, optimize=True)
-                + 0.5 * np.einsum("gfeonm,gfeoji->mnij", L.abb, T.abb, optimize=True)
+                (1.0 / 6.0) * ccpy_einsum("efgmno,efgijo->mnij", L.bbb, T.bbb)
+                + 0.5 * ccpy_einsum("gfeonm,gfeoji->mnij", L.abb, T.abb)
     )
 
     X.aa.vvvv = (
-            (1.0 / 6.0) * np.einsum("efgmno,abgmno->abef", L.aaa, T.aaa, optimize=True)
-            + 0.5 * np.einsum("efgmno,abgmno->abef", L.aab, T.aab, optimize=True)
+            (1.0 / 6.0) * ccpy_einsum("efgmno,abgmno->abef", L.aaa, T.aaa)
+            + 0.5 * ccpy_einsum("efgmno,abgmno->abef", L.aab, T.aab)
     )
     X.ab.vvvv = (
-            0.5 * np.einsum("egfmon,agbmon->abef", L.aab, T.aab, optimize=True)
-            + 0.5 * np.einsum("egfmon,agbmon->abef", L.abb, T.abb, optimize=True)
+            0.5 * ccpy_einsum("egfmon,agbmon->abef", L.aab, T.aab)
+            + 0.5 * ccpy_einsum("egfmon,agbmon->abef", L.abb, T.abb)
     )
     X.bb.vvvv = (
-            (1.0 / 6.0) * np.einsum("efgmno,abgmno->abef", L.bbb, T.bbb, optimize=True)
-            + 0.5 * np.einsum("gfeonm,gbaonm->abef", L.abb, T.abb, optimize=True)
+            (1.0 / 6.0) * ccpy_einsum("efgmno,abgmno->abef", L.bbb, T.bbb)
+            + 0.5 * ccpy_einsum("gfeonm,gbaonm->abef", L.abb, T.abb)
     )
 
     X.aa.voov = (
-            0.25 * np.einsum("efgmno,afgino->amie", L.aaa, T.aaa, optimize=True)
-            + np.einsum("efgmno,afgino->amie", L.aab, T.aab, optimize=True)
-            + 0.25 * np.einsum("efgmno,afgino->amie", L.abb, T.abb, optimize=True)
+            0.25 * ccpy_einsum("efgmno,afgino->amie", L.aaa, T.aaa)
+            + ccpy_einsum("efgmno,afgino->amie", L.aab, T.aab)
+            + 0.25 * ccpy_einsum("efgmno,afgino->amie", L.abb, T.abb)
     )
     X.ab.voov = (
-            0.25 * np.einsum("fgenom,afgino->amie", L.aab, T.aaa, optimize=True)
-            + np.einsum("fgenom,afgino->amie", L.abb, T.aab, optimize=True)
-            + 0.25 * np.einsum("efgmno,afgino->amie", L.bbb, T.abb, optimize=True)
+            0.25 * ccpy_einsum("fgenom,afgino->amie", L.aab, T.aaa)
+            + ccpy_einsum("fgenom,afgino->amie", L.abb, T.aab)
+            + 0.25 * ccpy_einsum("efgmno,afgino->amie", L.bbb, T.abb)
     )
     X.ab.vovo = (
-            -0.5 * np.einsum("gefonm,agfnoi->amei", L.aab, T.aab, optimize=True)
-            -0.5 * np.einsum("egfnom,agfnoi->amei", L.abb, T.abb, optimize=True)
+            -0.5 * ccpy_einsum("gefonm,agfnoi->amei", L.aab, T.aab)
+            -0.5 * ccpy_einsum("egfnom,agfnoi->amei", L.abb, T.abb)
     )
     X.ab.ovov = (
-            -0.5 * np.einsum("fgemon,fgaion->maie", L.aab, T.aab, optimize=True)
-            -0.5 * np.einsum("fgemon,fgaion->maie", L.abb, T.abb, optimize=True)
+            -0.5 * ccpy_einsum("fgemon,fgaion->maie", L.aab, T.aab)
+            -0.5 * ccpy_einsum("fgemon,fgaion->maie", L.abb, T.abb)
     )
     X.ab.ovvo = (
-            0.25 * np.einsum("efgmno,fganoi->maei", L.aaa, T.aab, optimize=True)
-            + np.einsum("efgmno,fganoi->maei", L.aab, T.abb, optimize=True)
-            + 0.25 * np.einsum("efgmno,fganoi->maei", L.abb, T.bbb, optimize=True)
+            0.25 * ccpy_einsum("efgmno,fganoi->maei", L.aaa, T.aab)
+            + ccpy_einsum("efgmno,fganoi->maei", L.aab, T.abb)
+            + 0.25 * ccpy_einsum("efgmno,fganoi->maei", L.abb, T.bbb)
     )
     X.bb.voov = (
-            0.25 * np.einsum("efgmno,afgino->amie", L.bbb, T.bbb, optimize=True)
-            + np.einsum("gfeonm,gfaoni->amie", L.abb, T.abb, optimize=True)
-            + 0.25 * np.einsum("gfeonm,gfaoni->amie", L.aab, T.aab, optimize=True)
+            0.25 * ccpy_einsum("efgmno,afgino->amie", L.bbb, T.bbb)
+            + ccpy_einsum("gfeonm,gfaoni->amie", L.abb, T.abb)
+            + 0.25 * ccpy_einsum("gfeonm,gfaoni->amie", L.aab, T.aab)
     )
 
     return X

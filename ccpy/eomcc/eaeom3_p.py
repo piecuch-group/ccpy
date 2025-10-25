@@ -5,6 +5,7 @@ on top of CCSD [EA-EOMCCSD(P)]
 '''
 
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from ccpy.lib.core import eaeom3_p_loops
 from ccpy.eomcc.eaeom3_intermediates import get_eaeom3_p_intermediates
 
@@ -57,11 +58,11 @@ def HR(dR, R, T, H, flag_RHF, system, t3_excitations, r3_excitations):
 
 def build_HR_1A(dR, R, r3_excitations, T, H):
     """Calculate the projection <a|[ (H_N e^(T1+T2))_C*(R1h+R2p1h+R3p2h) ]_C|0>."""
-    dR.a = np.einsum("ae,e->a", H.a.vv, R.a, optimize=True)
-    dR.a += 0.5 * np.einsum("anef,efn->a", H.aa.vovv, R.aa, optimize=True)
-    dR.a += np.einsum("anef,efn->a", H.ab.vovv, R.ab, optimize=True)
-    dR.a += np.einsum("me,aem->a", H.a.ov, R.aa, optimize=True)
-    dR.a += np.einsum("me,aem->a", H.b.ov, R.ab, optimize=True)
+    dR.a = ccpy_einsum("ae,e->a", H.a.vv, R.a)
+    dR.a += 0.5 * ccpy_einsum("anef,efn->a", H.aa.vovv, R.aa)
+    dR.a += ccpy_einsum("anef,efn->a", H.ab.vovv, R.ab)
+    dR.a += ccpy_einsum("me,aem->a", H.a.ov, R.aa)
+    dR.a += ccpy_einsum("me,aem->a", H.b.ov, R.ab)
     dR.a = eaeom3_p_loops.build_hr_1a(
             dR.a,
             R.aaa, r3_excitations["aaa"],
@@ -73,17 +74,17 @@ def build_HR_1A(dR, R, r3_excitations, T, H):
 
 def build_HR_2A(dR, R, r3_excitations, T, H):
     """Calculate the projection <ajb|[ (H_N e^(T1+T2))_C*(R1h+R2p1h+R3p2h) ]_C|0>."""
-    dR.aa = 0.5 * np.einsum("baje,e->abj", H.aa.vvov, R.a, optimize=True)
-    dR.aa -= 0.5 * np.einsum("mj,abm->abj", H.a.oo, R.aa, optimize=True)
-    dR.aa += 0.25 * np.einsum("abef,efj->abj", H.aa.vvvv, R.aa, optimize=True)
+    dR.aa = 0.5 * ccpy_einsum("baje,e->abj", H.aa.vvov, R.a)
+    dR.aa -= 0.5 * ccpy_einsum("mj,abm->abj", H.a.oo, R.aa)
+    dR.aa += 0.25 * ccpy_einsum("abef,efj->abj", H.aa.vvvv, R.aa)
     I1 = (
-        0.5 * np.einsum("mnef,efn->m", H.aa.oovv, R.aa, optimize=True)
-        + np.einsum("mnef,efn->m", H.ab.oovv, R.ab, optimize=True)
+        0.5 * ccpy_einsum("mnef,efn->m", H.aa.oovv, R.aa)
+        + ccpy_einsum("mnef,efn->m", H.ab.oovv, R.ab)
     )
-    dR.aa -= 0.5 * np.einsum("m,abmj->abj", I1, T.aa, optimize=True)
-    dR.aa += np.einsum("ae,ebj->abj", H.a.vv, R.aa, optimize=True)
-    dR.aa += np.einsum("bmje,aem->abj", H.aa.voov, R.aa, optimize=True)
-    dR.aa += np.einsum("bmje,aem->abj", H.ab.voov, R.ab, optimize=True)
+    dR.aa -= 0.5 * ccpy_einsum("m,abmj->abj", I1, T.aa)
+    dR.aa += ccpy_einsum("ae,ebj->abj", H.a.vv, R.aa)
+    dR.aa += ccpy_einsum("bmje,aem->abj", H.aa.voov, R.aa)
+    dR.aa += ccpy_einsum("bmje,aem->abj", H.ab.voov, R.ab)
     dR.aa = eaeom3_p_loops.build_hr_2a(
             dR.aa,
             R.aaa, r3_excitations["aaa"],
@@ -95,19 +96,19 @@ def build_HR_2A(dR, R, r3_excitations, T, H):
 
 def build_HR_2B(dR, R, r3_excitations, T, H):
     """Calculate the projection <aj~b~|[ (H_N e^(T1+T2))_C*(R1h+R2p1h+R3p2h) ]_C|0>."""
-    dR.ab = np.einsum("abej,e->abj", H.ab.vvvo, R.a, optimize=True)
-    dR.ab += np.einsum("ae,ebj->abj", H.a.vv, R.ab, optimize=True)
-    dR.ab += np.einsum("be,aej->abj", H.b.vv, R.ab, optimize=True)
-    dR.ab -= np.einsum("mj,abm->abj", H.b.oo, R.ab, optimize=True)
-    dR.ab += np.einsum("mbej,aem->abj", H.ab.ovvo, R.aa, optimize=True)
-    dR.ab += np.einsum("bmje,aem->abj", H.bb.voov, R.ab, optimize=True)
-    dR.ab -= np.einsum("amej,ebm->abj", H.ab.vovo, R.ab, optimize=True)
-    dR.ab += np.einsum("abef,efj->abj", H.ab.vvvv, R.ab, optimize=True)
+    dR.ab = ccpy_einsum("abej,e->abj", H.ab.vvvo, R.a)
+    dR.ab += ccpy_einsum("ae,ebj->abj", H.a.vv, R.ab)
+    dR.ab += ccpy_einsum("be,aej->abj", H.b.vv, R.ab)
+    dR.ab -= ccpy_einsum("mj,abm->abj", H.b.oo, R.ab)
+    dR.ab += ccpy_einsum("mbej,aem->abj", H.ab.ovvo, R.aa)
+    dR.ab += ccpy_einsum("bmje,aem->abj", H.bb.voov, R.ab)
+    dR.ab -= ccpy_einsum("amej,ebm->abj", H.ab.vovo, R.ab)
+    dR.ab += ccpy_einsum("abef,efj->abj", H.ab.vvvv, R.ab)
     I1 = (
-        0.5 * np.einsum("mnef,efn->m", H.aa.oovv, R.aa, optimize=True)
-        + np.einsum("mnef,efn->m", H.ab.oovv, R.ab, optimize=True)
+        0.5 * ccpy_einsum("mnef,efn->m", H.aa.oovv, R.aa)
+        + ccpy_einsum("mnef,efn->m", H.ab.oovv, R.ab)
     )
-    dR.ab -= np.einsum("m,abmj->abj", I1, T.ab, optimize=True)
+    dR.ab -= ccpy_einsum("m,abmj->abj", I1, T.ab)
     dR.ab = eaeom3_p_loops.build_hr_2b(
             dR.ab,
             R.aab, r3_excitations["aab"],

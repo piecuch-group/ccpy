@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from scipy.linalg import eig
 
 from ccpy.energy.hf_energy import calc_g_matrix, calc_hf_energy
@@ -99,7 +100,7 @@ def transform_to_natorbs(rdm1, H, system, dump_integrals=False, print_diagnostic
     temp[slice_table["a"]["v"], slice_table["b"]["o"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.vovv
     temp[slice_table["a"]["o"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.ovvv
     temp[slice_table["a"]["v"], slice_table["b"]["v"], slice_table["a"]["v"], slice_table["b"]["v"]] = H.ab.vvvv
-    e2int_no = np.einsum("ip,jq,ijkl,kr,ls->pqrs", L.conj(), L.conj(), temp, R, R, optimize=True)
+    e2int_no = ccpy_einsum("ip,jq,ijkl,kr,ls->pqrs", L.conj(), L.conj(), temp, R, R, optimize=True)
     e2int_no = np.pad(e2int_no, ((system.nfrozen, 0), (system.nfrozen, 0), (system.nfrozen, 0), (system.nfrozen, 0)))
 
     # transform onebody integrals
@@ -108,7 +109,7 @@ def transform_to_natorbs(rdm1, H, system, dump_integrals=False, print_diagnostic
     temp[slice_table["a"]["o"], slice_table["a"]["v"]] = H.a.ov - G.a.ov
     temp[slice_table["a"]["v"], slice_table["a"]["o"]] = H.a.vo - G.a.vo
     temp[slice_table["a"]["v"], slice_table["a"]["v"]] = H.a.vv - G.a.vv
-    e1int_no = np.einsum("ip,ij,jq->pq", L.conj(), temp, R)
+    e1int_no = ccpy_einsum("ip,ij,jq->pq", L.conj(), temp, R)
     e1int_no = np.pad(e1int_no, ((system.nfrozen, 0), (system.nfrozen, 0)))
 
     if dump_integrals:

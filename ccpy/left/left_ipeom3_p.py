@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from ccpy.lib.core import ipeom3_p_loops
 from ccpy.lib.core import leftipeom3_p_loops
 from ccpy.left.left_ipeom_intermediates import get_leftipeom3_p_intermediates
@@ -51,30 +52,30 @@ def LH_fun(dL, L, T, H, flag_RHF, system, t3_excitations, l3_excitations):
     return dL.flatten()
 
 def build_LH_1A(dL, L, l3_excitations, H, X):
-    dL.a = -1.0 * np.einsum("m,im->i", L.a, H.a.oo, optimize=True)
-    dL.a -= 0.5 * np.einsum("mfn,finm->i", L.aa, H.aa.vooo, optimize=True)
-    dL.a -= np.einsum("mfn,ifmn->i", L.ab, H.ab.ovoo, optimize=True)
-    dL.a += np.einsum("ibaj,abj->i", H.ab.ovvo, X["ab"]["vvo"], optimize=True)
-    dL.a += np.einsum("bija,abj->i", H.aa.voov, X["aa"]["vvo"], optimize=True)
-    dL.a += 0.5 * np.einsum("ljk,iklj->i", X["aa"]["ooo"], H.aa.oooo, optimize=True)
-    dL.a += np.einsum("jcb,ibjc->i", X["ab"]["ovv"], H.ab.ovov, optimize=True)
-    dL.a += np.einsum("ljk,iklj->i", X["ab"]["ooo"], H.ab.oooo, optimize=True)
+    dL.a = -1.0 * ccpy_einsum("m,im->i", L.a, H.a.oo)
+    dL.a -= 0.5 * ccpy_einsum("mfn,finm->i", L.aa, H.aa.vooo)
+    dL.a -= ccpy_einsum("mfn,ifmn->i", L.ab, H.ab.ovoo)
+    dL.a += ccpy_einsum("ibaj,abj->i", H.ab.ovvo, X["ab"]["vvo"])
+    dL.a += ccpy_einsum("bija,abj->i", H.aa.voov, X["aa"]["vvo"])
+    dL.a += 0.5 * ccpy_einsum("ljk,iklj->i", X["aa"]["ooo"], H.aa.oooo)
+    dL.a += ccpy_einsum("jcb,ibjc->i", X["ab"]["ovv"], H.ab.ovov)
+    dL.a += ccpy_einsum("ljk,iklj->i", X["ab"]["ooo"], H.ab.oooo)
     return dL
 
 def build_LH_2A(dL, L, l3_excitations, H, X):
-    dL.aa = np.einsum("i,jb->ibj", L.a, H.a.ov, optimize=True)
-    dL.aa -= 0.5 * np.einsum("m,ijmb->ibj", L.a, H.aa.ooov, optimize=True)
-    dL.aa += 0.5 * np.einsum("iej,eb->ibj", L.aa, H.a.vv, optimize=True)
-    dL.aa -= np.einsum("ibm,jm->ibj", L.aa, H.a.oo, optimize=True)
-    dL.aa += 0.25 * np.einsum("mbn,ijmn->ibj", L.aa, H.aa.oooo, optimize=True)
-    dL.aa += np.einsum("iem,ejmb->ibj", L.aa, H.aa.voov, optimize=True)
-    dL.aa += np.einsum("iem,jebm->ibj", L.ab, H.ab.ovvo, optimize=True)
-    dL.aa += 0.5 * np.einsum("e,ijeb->ibj", X["a"]["v"], H.aa.oovv, optimize=True)
-    dL.aa += np.einsum("fej,eibf->ibj", X["aa"]["vvo"], H.aa.vovv, optimize=True)
-    dL.aa -= 0.5 * np.einsum("fbm,jimf->ibj", X["aa"]["vvo"], H.aa.ooov, optimize=True)
-    dL.aa -= np.einsum("imn,njmb->ibj", X["aa"]["ooo"], H.aa.ooov, optimize=True)
-    dL.aa -= np.einsum("imn,jnbm->ibj", X["ab"]["ooo"], H.ab.oovo, optimize=True)
-    dL.aa -= np.einsum("ife,jebf->ibj", X["ab"]["ovv"], H.ab.ovvv, optimize=True)
+    dL.aa = ccpy_einsum("i,jb->ibj", L.a, H.a.ov)
+    dL.aa -= 0.5 * ccpy_einsum("m,ijmb->ibj", L.a, H.aa.ooov)
+    dL.aa += 0.5 * ccpy_einsum("iej,eb->ibj", L.aa, H.a.vv)
+    dL.aa -= ccpy_einsum("ibm,jm->ibj", L.aa, H.a.oo)
+    dL.aa += 0.25 * ccpy_einsum("mbn,ijmn->ibj", L.aa, H.aa.oooo)
+    dL.aa += ccpy_einsum("iem,ejmb->ibj", L.aa, H.aa.voov)
+    dL.aa += ccpy_einsum("iem,jebm->ibj", L.ab, H.ab.ovvo)
+    dL.aa += 0.5 * ccpy_einsum("e,ijeb->ibj", X["a"]["v"], H.aa.oovv)
+    dL.aa += ccpy_einsum("fej,eibf->ibj", X["aa"]["vvo"], H.aa.vovv)
+    dL.aa -= 0.5 * ccpy_einsum("fbm,jimf->ibj", X["aa"]["vvo"], H.aa.ooov)
+    dL.aa -= ccpy_einsum("imn,njmb->ibj", X["aa"]["ooo"], H.aa.ooov)
+    dL.aa -= ccpy_einsum("imn,jnbm->ibj", X["ab"]["ooo"], H.ab.oovo)
+    dL.aa -= ccpy_einsum("ife,jebf->ibj", X["ab"]["ovv"], H.ab.ovvv)
     dL.aa = leftipeom3_p_loops.build_lh_2a(
             dL.aa,
             L.aaa, l3_excitations["aaa"],
@@ -84,24 +85,24 @@ def build_LH_2A(dL, L, l3_excitations, H, X):
     return dL
 
 def build_LH_2B(dL, L, l3_excitations, H, X):
-    dL.ab = np.einsum("i,jb->ibj", L.a, H.b.ov, optimize=True)
-    dL.ab -= np.einsum("m,ijmb->ibj", L.a, H.ab.ooov, optimize=True)
-    dL.ab -= np.einsum("ibm,jm->ibj", L.ab, H.b.oo, optimize=True)
-    dL.ab -= np.einsum("mbj,im->ibj", L.ab, H.a.oo, optimize=True)
-    dL.ab += np.einsum("iej,eb->ibj", L.ab, H.b.vv, optimize=True)
-    dL.ab += np.einsum("mbn,ijmn->ibj", L.ab, H.ab.oooo, optimize=True)
-    dL.ab += np.einsum("iem,ejmb->ibj", L.aa, H.ab.voov, optimize=True)
-    dL.ab += np.einsum("iem,ejmb->ibj", L.ab, H.bb.voov, optimize=True)
-    dL.ab -= np.einsum("mej,iemb->ibj", L.ab, H.ab.ovov, optimize=True)
-    dL.ab += np.einsum("e,ijeb->ibj", X["a"]["v"], H.ab.oovv, optimize=True)
-    dL.ab += np.einsum("fei,ejfb->ibj", X["aa"]["vvo"], H.ab.vovv, optimize=True)
-    dL.ab -= np.einsum("ife,ejfb->ibj", X["ab"]["ovv"], H.bb.vovv, optimize=True)
-    dL.ab -= np.einsum("ebm,ijem->ibj", X["ab"]["vvo"], H.ab.oovo, optimize=True)
-    dL.ab += np.einsum("fej,iefb->ibj", X["ab"]["vvo"], H.ab.ovvv, optimize=True)
-    dL.ab -= np.einsum("imn,njmb->ibj", X["aa"]["ooo"], H.ab.ooov, optimize=True)
-    dL.ab -= np.einsum("imn,njmb->ibj", X["ab"]["ooo"], H.bb.ooov, optimize=True)
-    dL.ab += np.einsum("njm,imnb->ibj", X["ab"]["ooo"], H.ab.ooov, optimize=True)
-    dL.ab -= np.einsum("meb,ijme->ibj", X["ab"]["ovv"], H.ab.ooov, optimize=True)
+    dL.ab = ccpy_einsum("i,jb->ibj", L.a, H.b.ov)
+    dL.ab -= ccpy_einsum("m,ijmb->ibj", L.a, H.ab.ooov)
+    dL.ab -= ccpy_einsum("ibm,jm->ibj", L.ab, H.b.oo)
+    dL.ab -= ccpy_einsum("mbj,im->ibj", L.ab, H.a.oo)
+    dL.ab += ccpy_einsum("iej,eb->ibj", L.ab, H.b.vv)
+    dL.ab += ccpy_einsum("mbn,ijmn->ibj", L.ab, H.ab.oooo)
+    dL.ab += ccpy_einsum("iem,ejmb->ibj", L.aa, H.ab.voov)
+    dL.ab += ccpy_einsum("iem,ejmb->ibj", L.ab, H.bb.voov)
+    dL.ab -= ccpy_einsum("mej,iemb->ibj", L.ab, H.ab.ovov)
+    dL.ab += ccpy_einsum("e,ijeb->ibj", X["a"]["v"], H.ab.oovv)
+    dL.ab += ccpy_einsum("fei,ejfb->ibj", X["aa"]["vvo"], H.ab.vovv)
+    dL.ab -= ccpy_einsum("ife,ejfb->ibj", X["ab"]["ovv"], H.bb.vovv)
+    dL.ab -= ccpy_einsum("ebm,ijem->ibj", X["ab"]["vvo"], H.ab.oovo)
+    dL.ab += ccpy_einsum("fej,iefb->ibj", X["ab"]["vvo"], H.ab.ovvv)
+    dL.ab -= ccpy_einsum("imn,njmb->ibj", X["aa"]["ooo"], H.ab.ooov)
+    dL.ab -= ccpy_einsum("imn,njmb->ibj", X["ab"]["ooo"], H.bb.ooov)
+    dL.ab += ccpy_einsum("njm,imnb->ibj", X["ab"]["ooo"], H.ab.ooov)
+    dL.ab -= ccpy_einsum("meb,ijme->ibj", X["ab"]["ovv"], H.ab.ooov)
     dL.ab = leftipeom3_p_loops.build_lh_2b(
             dL.ab,
             L.aab, l3_excitations["aab"],

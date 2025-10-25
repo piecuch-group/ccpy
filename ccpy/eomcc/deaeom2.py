@@ -4,6 +4,7 @@ Method with 2p Excitations on top of CCSD [DEA-EOMCCSD(2p)]
 '''
 
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from ccpy.lib.core import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
@@ -23,8 +24,8 @@ def HR(dR, R, T, H, flag_RHF, system):
     return dR.flatten()
 
 def build_HR_2B(R, T, H):
-    x2b = np.einsum("ae,eb->ab", H.a.vv, R.ab, optimize=True)
-    x2b += np.einsum("be,ae->ab", H.b.vv, R.ab, optimize=True)
-    x2b += np.einsum("abef,ef->ab", H.ab.vvvv, R.ab, optimize=True)
+    x2b = ccpy_einsum("ae,eb->ab", H.a.vv, R.ab)
+    x2b += ccpy_einsum("be,ae->ab", H.b.vv, R.ab)
+    x2b += ccpy_einsum("abef,ef->ab", H.ab.vvvv, R.ab)
     return x2b
 

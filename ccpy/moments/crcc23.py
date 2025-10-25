@@ -1,5 +1,6 @@
 """Functions to calculate the ground-state CR-CC(2,3) triples correction to CCSD."""
 import time
+from ccpy.utilities.linear_algebra import ccpy_einsum
 
 import numpy as np
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
@@ -37,7 +38,7 @@ def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
 
     #### aaa correction ####
     # calculate intermediates
-    I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
+    I2A_vvov = H.aa.vvov + ccpy_einsum("me,abim->abie", H.a.ov, T.aa)
     # perform correction in-loop
     dA_aaa, dB_aaa, dC_aaa, dD_aaa = crcc_loops.crcc23a_opt(
                                         T.aa, L.a, L.aa,
@@ -51,9 +52,9 @@ def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
 
     #### aab correction ####
     # calculate intermediates
-    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
-    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+    I2B_ovoo = H.ab.ovoo - ccpy_einsum("me,ecjk->mcjk", H.a.ov, T.ab)
+    I2B_vooo = H.ab.vooo - ccpy_einsum("me,aeik->amik", H.b.ov, T.ab)
+    I2A_vooo = H.aa.vooo - ccpy_einsum("me,aeij->amij", H.a.ov, T.aa)
     dA_aab, dB_aab, dC_aab, dD_aab = crcc_loops.crcc23b_opt(
                                         T.aa, T.ab, L.a, L.b, L.aa, L.ab,
                                         I2B_ovoo, I2B_vooo, I2A_vooo,
@@ -76,9 +77,9 @@ def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
         correction_C = 2.0 * dC_aaa + 2.0 * dC_aab
         correction_D = 2.0 * dD_aaa + 2.0 * dD_aab
     else:
-        I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
-        I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
-        I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+        I2B_vooo = H.ab.vooo - ccpy_einsum("me,aeij->amij", H.b.ov, T.ab)
+        I2C_vooo = H.bb.vooo - ccpy_einsum("me,cekj->cmkj", H.b.ov, T.bb)
+        I2B_ovoo = H.ab.ovoo - ccpy_einsum("me,ebij->mbij", H.a.ov, T.ab)
         dA_abb, dB_abb, dC_abb, dD_abb = crcc_loops.crcc23c_opt(
                                         T.ab, T.bb, L.a, L.b, L.ab, L.bb,
                                         I2B_vooo, I2C_vooo, I2B_ovoo,
@@ -96,7 +97,7 @@ def calc_crcc23(T, L, corr_energy, H, H0, system, use_RHF):
                                         system.noccupied_beta, system.nunoccupied_beta,
         )
 
-        I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
+        I2C_vvov = H.bb.vvov + ccpy_einsum("me,abim->abie", H.b.ov, T.bb)
         dA_bbb, dB_bbb, dC_bbb, dD_bbb = crcc_loops.crcc23d_opt(
                                         T.bb, L.b, L.bb,
                                         H.bb.vooo, I2C_vvov, H.bb.oovv, H.b.ov,

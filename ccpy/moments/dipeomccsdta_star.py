@@ -2,6 +2,7 @@
 energies and linear excitation amplitudes for doubly-attached states
 using the DIP-EOMCC approach with up to 4h-2p excitations"""
 import time
+from ccpy.utilities.linear_algebra import ccpy_einsum
 import numpy as np
 from ccpy.constants.constants import hartreetoeV
 
@@ -34,11 +35,11 @@ def calc_dipeomccsdta_star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=F
     # update R4
     M4B = build_HR_4B(R, T, H0, X)
     L4B = M4B/(omega + e4_abaa)
-    dA_abaa = (1.0 / 12.0) * np.einsum("ijcdkl,ijcdkl->", L4B, M4B, optimize=True)
+    dA_abaa = (1.0 / 12.0) * ccpy_einsum("ijcdkl,ijcdkl->", L4B, M4B)
 
     M4C = build_HR_4C(R, T, H0, X)
     L4C = M4C/(omega + e4_abab)
-    dA_abab = (1.0 / 4.0) * np.einsum("ijcdkl,ijcdkl->", L4C, M4C, optimize=True)
+    dA_abab = (1.0 / 4.0) * ccpy_einsum("ijcdkl,ijcdkl->", L4C, M4C)
 
     if use_RHF:
         correction_A = 2.0 * dA_abaa + dA_abab
@@ -49,14 +50,14 @@ def calc_dipeomccsdta_star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=F
 
         M4D = build_HR_4D(R, T, H0, X)
         L4D = M4D/(omega + e4_abbb)
-        dA_abbb = (1.0 / 12.0) * np.einsum("ijcdkl,ijcdkl->", L4D, M4D, optimize=True)
+        dA_abbb = (1.0 / 12.0) * ccpy_einsum("ijcdkl,ijcdkl->", L4D, M4D)
 
         correction_A = dA_abaa + dA_abab + dA_abbb
 
     # divide by norm of R vector as a mimic to <L|R> = 1
-    rnorm = np.einsum("ij,ij->", R.ab, R.ab, optimize=True)
-    rnorm += 0.5 * np.einsum("ijck,ijck->", R.aba, R.aba, optimize=True)
-    rnorm += 0.5 * np.einsum("ijck,ijck->", R.abb, R.abb, optimize=True)
+    rnorm = ccpy_einsum("ij,ij->", R.ab, R.ab)
+    rnorm += 0.5 * ccpy_einsum("ijck,ijck->", R.aba, R.aba)
+    rnorm += 0.5 * ccpy_einsum("ijck,ijck->", R.abb, R.abb)
     correction_A /= rnorm
 
     t_end = time.perf_counter()
@@ -84,12 +85,12 @@ def calc_dipeomccsdta_star(T, R, L, omega, corr_energy, H, H0, system, use_RHF=F
 
 def build_HR_4B(R, T, H0, X):
     ### Moment-like terms < ij~klcd | (H(2)[R(2h) + R(3h-1p)])_C | 0 > ###
-    x4b = -(6.0 / 12.0) * np.einsum("cmkl,ijdm->ijcdkl", H0.aa.vooo, R.aba, optimize=True)
-    x4b -= (6.0 / 12.0) * np.einsum("cmkj,imdl->ijcdkl", H0.ab.vooo, R.aba, optimize=True)
-    x4b += (3.0 / 12.0) * np.einsum("cdke,ijel->ijcdkl", H0.aa.vvov, R.aba, optimize=True)
-    x4b += (6.0 / 12.0) * np.einsum("ijde,cekl->ijcdkl", X["aba"]["oovv"], T.aa, optimize=True)
-    x4b -= (3.0 / 12.0) * np.einsum("ijml,cdkm->ijcdkl", X["aba"]["oooo"], T.aa, optimize=True)
-    x4b += (6.0 / 12.0) * np.einsum("ieck,delj->ijcdkl", X["aba"]["ovvo"], T.ab, optimize=True)
+    x4b = -(6.0 / 12.0) * ccpy_einsum("cmkl,ijdm->ijcdkl", H0.aa.vooo, R.aba)
+    x4b -= (6.0 / 12.0) * ccpy_einsum("cmkj,imdl->ijcdkl", H0.ab.vooo, R.aba)
+    x4b += (3.0 / 12.0) * ccpy_einsum("cdke,ijel->ijcdkl", H0.aa.vvov, R.aba)
+    x4b += (6.0 / 12.0) * ccpy_einsum("ijde,cekl->ijcdkl", X["aba"]["oovv"], T.aa)
+    x4b -= (3.0 / 12.0) * ccpy_einsum("ijml,cdkm->ijcdkl", X["aba"]["oooo"], T.aa)
+    x4b += (6.0 / 12.0) * ccpy_einsum("ieck,delj->ijcdkl", X["aba"]["ovvo"], T.ab)
     # antisymmetrize A(ikl)A(cd)
     x4b -= np.transpose(x4b, (0, 1, 3, 2, 4, 5)) # A(cd)
     x4b -= np.transpose(x4b, (0, 1, 2, 3, 5, 4)) # A(kl)
@@ -98,18 +99,18 @@ def build_HR_4B(R, T, H0, X):
 
 def build_HR_4C(R, T, H0, X):
     ### Moment-like terms < ij~kl~cd~ | (H(2)[R(2h) + R(3h-1p)])_C | 0 > ###
-    x4c = -np.einsum("mdkl,ijcm->ijcdkl", H0.ab.ovoo, R.aba, optimize=True)
-    x4c -= np.einsum("cmkl,ijdm->ijcdkl", H0.ab.vooo, R.abb, optimize=True)
-    x4c += (2.0 / 4.0) * np.einsum("cdel,ijek->ijcdkl", H0.ab.vvvo, R.aba, optimize=True)
-    x4c += (2.0 / 4.0) * np.einsum("cdke,ijel->ijcdkl", H0.ab.vvov, R.abb, optimize=True)
-    x4c -= (1.0 / 4.0) * np.einsum("cmki,mjdl->ijcdkl", H0.aa.vooo, R.abb, optimize=True)
-    x4c -= (1.0 / 4.0) * np.einsum("dmlj,imck->ijcdkl", H0.bb.vooo, R.aba, optimize=True)
-    x4c -= (2.0 / 4.0) * np.einsum("ijml,cdkm->ijcdkl", X["abb"]["oooo"], T.ab, optimize=True)
-    x4c -= (2.0 / 4.0) * np.einsum("ijmk,cdml->ijcdkl", X["aba"]["oooo"], T.ab, optimize=True)
-    x4c += np.einsum("ijce,edkl->ijcdkl", X["aba"]["oovv"], T.ab, optimize=True)
-    x4c += np.einsum("ijde,cekl->ijcdkl", X["abb"]["oovv"], T.ab, optimize=True)
-    x4c += (1.0 / 4.0) * np.einsum("ieck,edjl->ijcdkl", X["aba"]["ovvo"], T.bb, optimize=True)
-    x4c += (1.0 / 4.0) * np.einsum("ejdl,ecik->ijcdkl", X["abb"]["vovo"], T.aa, optimize=True)
+    x4c = -ccpy_einsum("mdkl,ijcm->ijcdkl", H0.ab.ovoo, R.aba)
+    x4c -= ccpy_einsum("cmkl,ijdm->ijcdkl", H0.ab.vooo, R.abb)
+    x4c += (2.0 / 4.0) * ccpy_einsum("cdel,ijek->ijcdkl", H0.ab.vvvo, R.aba)
+    x4c += (2.0 / 4.0) * ccpy_einsum("cdke,ijel->ijcdkl", H0.ab.vvov, R.abb)
+    x4c -= (1.0 / 4.0) * ccpy_einsum("cmki,mjdl->ijcdkl", H0.aa.vooo, R.abb)
+    x4c -= (1.0 / 4.0) * ccpy_einsum("dmlj,imck->ijcdkl", H0.bb.vooo, R.aba)
+    x4c -= (2.0 / 4.0) * ccpy_einsum("ijml,cdkm->ijcdkl", X["abb"]["oooo"], T.ab)
+    x4c -= (2.0 / 4.0) * ccpy_einsum("ijmk,cdml->ijcdkl", X["aba"]["oooo"], T.ab)
+    x4c += ccpy_einsum("ijce,edkl->ijcdkl", X["aba"]["oovv"], T.ab)
+    x4c += ccpy_einsum("ijde,cekl->ijcdkl", X["abb"]["oovv"], T.ab)
+    x4c += (1.0 / 4.0) * ccpy_einsum("ieck,edjl->ijcdkl", X["aba"]["ovvo"], T.bb)
+    x4c += (1.0 / 4.0) * ccpy_einsum("ejdl,ecik->ijcdkl", X["abb"]["vovo"], T.aa)
     # antisymmetrize A(ik)A(jl)
     x4c -= np.transpose(x4c, (4, 1, 2, 3, 0, 5)) # A(ik)
     x4c -= np.transpose(x4c, (0, 5, 2, 3, 4, 1)) # A(jl)
@@ -117,12 +118,12 @@ def build_HR_4C(R, T, H0, X):
 
 def build_HR_4D(R, T, H0, X):
     ### Moment-like terms < ij~k~l~c~d~ | (H(2)[R(2h) + R(3h-1p)])_C | 0 > ###
-    x4d = -(6.0 / 12.0) * np.einsum("cmkl,ijdm->ijcdkl", H0.bb.vooo, R.abb, optimize=True)
-    x4d -= (6.0 / 12.0) * np.einsum("mcik,mjdl->ijcdkl", H0.ab.ovoo, R.abb, optimize=True)
-    x4d += (3.0 / 12.0) * np.einsum("cdke,ijel->ijcdkl", H0.bb.vvov, R.abb, optimize=True)
-    x4d -= (3.0 / 12.0) * np.einsum("ijml,cdkm->ijcdkl", X["abb"]["oooo"], T.bb, optimize=True)
-    x4d += (6.0 / 12.0) * np.einsum("ijde,cekl->ijcdkl", X["abb"]["oovv"], T.bb, optimize=True)
-    x4d += (6.0 / 12.0) * np.einsum("ejck,edil->ijcdkl", X["abb"]["vovo"], T.ab, optimize=True)
+    x4d = -(6.0 / 12.0) * ccpy_einsum("cmkl,ijdm->ijcdkl", H0.bb.vooo, R.abb)
+    x4d -= (6.0 / 12.0) * ccpy_einsum("mcik,mjdl->ijcdkl", H0.ab.ovoo, R.abb)
+    x4d += (3.0 / 12.0) * ccpy_einsum("cdke,ijel->ijcdkl", H0.bb.vvov, R.abb)
+    x4d -= (3.0 / 12.0) * ccpy_einsum("ijml,cdkm->ijcdkl", X["abb"]["oooo"], T.bb)
+    x4d += (6.0 / 12.0) * ccpy_einsum("ijde,cekl->ijcdkl", X["abb"]["oovv"], T.bb)
+    x4d += (6.0 / 12.0) * ccpy_einsum("ejck,edil->ijcdkl", X["abb"]["vovo"], T.ab)
     # antisymmetrize A(jkl)A(cd)
     x4d -= np.transpose(x4d, (0, 1, 3, 2, 4, 5)) # A(cd)
     x4d -= np.transpose(x4d, (0, 1, 2, 3, 5, 4)) # A(kl)
@@ -139,60 +140,60 @@ def get_dipeom4_intermediates(H, R):
     ### two-body intermediates ###
     # x(ij~ce) [1]
     X["aba"]["oovv"] = (
-            # np.einsum("cnef,ijfn->ijce", H.aa.vovv, R.aba, optimize=True)
-            # + np.einsum("cnef,ijfn->ijce", H.ab.vovv, R.abb, optimize=True)
-            + np.einsum("cmie,mj->ijce", H.aa.voov, R.ab, optimize=True) # flip sign, h2a(vovo) -> -h2a(voov)
-            # + np.einsum("mnej,incm->ijce", H.ab.oovo, R.aba, optimize=True)
-            # + 0.5 * np.einsum("mnie,mjcn->ijce", H.aa.ooov, R.aba, optimize=True)
-            - np.einsum("cmej,im->ijce", H.ab.vovo, R.ab, optimize=True)
+            # ccpy_einsum("cnef,ijfn->ijce", H.aa.vovv, R.aba)
+            # + ccpy_einsum("cnef,ijfn->ijce", H.ab.vovv, R.abb)
+            + ccpy_einsum("cmie,mj->ijce", H.aa.voov, R.ab) # flip sign, h2a(vovo) -> -h2a(voov)
+            # + ccpy_einsum("mnej,incm->ijce", H.ab.oovo, R.aba)
+            # + 0.5 * ccpy_einsum("mnie,mjcn->ijce", H.aa.ooov, R.aba)
+            - ccpy_einsum("cmej,im->ijce", H.ab.vovo, R.ab)
     )
 
     # x(ij~mk) [2]
     X["aba"]["oooo"] = (
-            # np.einsum("mnkf,ijfn->ijmk", H.aa.ooov, R.aba, optimize=True)
-            # + np.einsum("mnkf,ijfn->ijmk", H.ab.ooov, R.abb, optimize=True)
-            # - 0.5 * np.einsum("mnej,inek->ijmk", H.ab.oovo, R.aba, optimize=True)
-            - 0.5 * np.einsum("nmik,nj->ijmk", H.aa.oooo, R.ab, optimize=True)
-            - np.einsum("mnkj,in->ijmk", H.ab.oooo, R.ab, optimize=True)
+            # ccpy_einsum("mnkf,ijfn->ijmk", H.aa.ooov, R.aba)
+            # + ccpy_einsum("mnkf,ijfn->ijmk", H.ab.ooov, R.abb)
+            # - 0.5 * ccpy_einsum("mnej,inek->ijmk", H.ab.oovo, R.aba)
+            - 0.5 * ccpy_einsum("nmik,nj->ijmk", H.aa.oooo, R.ab)
+            - ccpy_einsum("mnkj,in->ijmk", H.ab.oooo, R.ab)
     )
     # antisymmetrize A(ik)
     X["aba"]["oooo"] -= np.transpose(X["aba"]["oooo"], (3, 1, 2, 0))
 
     # x(ieck) [3]
     X["aba"]["ovvo"] = (
-            # np.einsum("nmie,nmck->ieck", H.ab.ooov, R.aba, optimize=True)
-            # - 0.5 * np.einsum("cmfe,imfk->ieck", H.ab.vovv, R.aba, optimize=True)
-            - np.einsum("cmke,im->ieck", H.ab.voov, R.ab, optimize=True)
+            # ccpy_einsum("nmie,nmck->ieck", H.ab.ooov, R.aba)
+            # - 0.5 * ccpy_einsum("cmfe,imfk->ieck", H.ab.vovv, R.aba)
+            - ccpy_einsum("cmke,im->ieck", H.ab.voov, R.ab)
     )
     # antisymmetrize A(ik)
     X["aba"]["ovvo"] -= np.transpose(X["aba"]["ovvo"], (3, 1, 2, 0))
 
     # x(ijde) [4]
     X["abb"]["oovv"] = (
-            # np.einsum("ndfe,ijfn->ijde", H.ab.ovvv, R.aba, optimize=True)
-            # + np.einsum("dnef,ijfn->ijde", H.bb.vovv, R.abb, optimize=True)
-            + np.einsum("dmje,im->ijde", H.bb.voov, R.ab, optimize=True) # flip sign, h2c(vovo) -> -h2c(voov)
-            # + 0.5 * np.einsum("mnje,imdn->ijde", H.bb.ooov, R.abb, optimize=True)
-            # + np.einsum("nmie,njdm->ijde", H.ab.ooov, R.abb, optimize=True)
-            - np.einsum("mdie,mj->ijde", H.ab.ovov, R.ab, optimize=True)
+            # ccpy_einsum("ndfe,ijfn->ijde", H.ab.ovvv, R.aba)
+            # + ccpy_einsum("dnef,ijfn->ijde", H.bb.vovv, R.abb)
+            + ccpy_einsum("dmje,im->ijde", H.bb.voov, R.ab) # flip sign, h2c(vovo) -> -h2c(voov)
+            # + 0.5 * ccpy_einsum("mnje,imdn->ijde", H.bb.ooov, R.abb)
+            # + ccpy_einsum("nmie,njdm->ijde", H.ab.ooov, R.abb)
+            - ccpy_einsum("mdie,mj->ijde", H.ab.ovov, R.ab)
     )
 
     # x(ij~m~k~) [5]
     X["abb"]["oooo"] = (
-            # np.einsum("nmfk,ijfn->ijmk", H.ab.oovo, R.aba, optimize=True)
-            # + np.einsum("mnkf,ijfn->ijmk", H.bb.ooov, R.abb, optimize=True)
-            - np.einsum("nmik,nj->ijmk", H.ab.oooo, R.ab, optimize=True)
-            # - 0.5 * np.einsum("nmie,njek->ijmk", H.ab.ooov, R.abb, optimize=True)
-            - 0.5 * np.einsum("nmjk,in->ijmk", H.bb.oooo, R.ab, optimize=True)
+            # ccpy_einsum("nmfk,ijfn->ijmk", H.ab.oovo, R.aba)
+            # + ccpy_einsum("mnkf,ijfn->ijmk", H.bb.ooov, R.abb)
+            - ccpy_einsum("nmik,nj->ijmk", H.ab.oooo, R.ab)
+            # - 0.5 * ccpy_einsum("nmie,njek->ijmk", H.ab.ooov, R.abb)
+            - 0.5 * ccpy_einsum("nmjk,in->ijmk", H.bb.oooo, R.ab)
     )
     # antisymmetrize A(jk)
     X["abb"]["oooo"] -= np.transpose(X["abb"]["oooo"], (0, 3, 2, 1))
 
     # x(ejdl) [6]
     X["abb"]["vovo"] = (
-            # - 0.5 * np.einsum("mdef,mjfl->ejdl", H.ab.ovvv, R.abb, optimize=True)
-            # + np.einsum("mnej,mndl->ejdl", H.ab.oovo, R.abb, optimize=True)
-            - np.einsum("mdel,mj->ejdl", H.ab.ovvo, R.ab, optimize=True)
+            # - 0.5 * ccpy_einsum("mdef,mjfl->ejdl", H.ab.ovvv, R.abb)
+            # + ccpy_einsum("mnej,mndl->ejdl", H.ab.oovo, R.abb)
+            - ccpy_einsum("mdel,mj->ejdl", H.ab.ovvo, R.ab)
     )
     # antisymmetrize A(jl)
     X["abb"]["vovo"] -= np.transpose(X["abb"]["vovo"], (0, 3, 2, 1))

@@ -1,4 +1,5 @@
 import time
+from ccpy.utilities.linear_algebra import ccpy_einsum
 import numpy as np
 
 from ccpy.constants.constants import hartreetoeV
@@ -116,49 +117,49 @@ def get_eaeom23_intermediates(H, R):
 
     # x2a(amj)
     X["aa"]["voo"] = (
-                    +np.einsum("mnjf,afn->amj", H.aa.ooov, R.aa, optimize=True)
-                    +np.einsum("mnjf,afn->amj", H.ab.ooov, R.ab, optimize=True)
-                    +0.5*np.einsum("amef,efj->amj", H.aa.vovv, R.aa, optimize=True)
-                    -np.einsum("amje,e->amj", H.aa.voov, R.a, optimize=True) # CAREFUL: this is a minus sign
+                    +ccpy_einsum("mnjf,afn->amj", H.aa.ooov, R.aa)
+                    +ccpy_einsum("mnjf,afn->amj", H.ab.ooov, R.ab)
+                    +0.5*ccpy_einsum("amef,efj->amj", H.aa.vovv, R.aa)
+                    -ccpy_einsum("amje,e->amj", H.aa.voov, R.a) # CAREFUL: this is a minus sign
     )
     # x2b(mb~j~)
     X["ab"]["ovo"] = (
-                    -np.einsum("mnej,ebn->mbj", H.ab.oovo, R.ab, optimize=True)
-                    +np.einsum("mbef,efj->mbj", H.ab.ovvv, R.ab, optimize=True)
-                    +np.einsum("mbfj,f->mbj", H.ab.ovvo, R.a, optimize=True)
+                    -ccpy_einsum("mnej,ebn->mbj", H.ab.oovo, R.ab)
+                    +ccpy_einsum("mbef,efj->mbj", H.ab.ovvv, R.ab)
+                    +ccpy_einsum("mbfj,f->mbj", H.ab.ovvo, R.a)
     )
     # x2b(am~j~)
     X["ab"]["voo"] = (
-                    +np.einsum("nmfj,afn->amj", H.ab.oovo, R.aa, optimize=True)
-                    +np.einsum("mnjf,afn->amj", H.bb.ooov, R.ab, optimize=True)
-                    +np.einsum("amef,efj->amj", H.ab.vovv, R.ab, optimize=True)
-                    +np.einsum("amej,e->amj", H.ab.vovo, R.a, optimize=True)
+                    +ccpy_einsum("nmfj,afn->amj", H.ab.oovo, R.aa)
+                    +ccpy_einsum("mnjf,afn->amj", H.bb.ooov, R.ab)
+                    +ccpy_einsum("amef,efj->amj", H.ab.vovv, R.ab)
+                    +ccpy_einsum("amej,e->amj", H.ab.vovo, R.a)
     )
 
     # x2a(abe)
     X["aa"]["vvv"] = (
-                    +np.einsum("bnef,afn->abe", H.aa.vovv, R.aa, optimize=True)
-                    +np.einsum("bnef,afn->abe", H.ab.vovv, R.ab, optimize=True)
-                    +0.5*np.einsum("abfe,f->abe", H.aa.vvvv, R.a, optimize=True)
+                    +ccpy_einsum("bnef,afn->abe", H.aa.vovv, R.aa)
+                    +ccpy_einsum("bnef,afn->abe", H.ab.vovv, R.ab)
+                    +0.5*ccpy_einsum("abfe,f->abe", H.aa.vvvv, R.a)
     )
     X["aa"]["vvv"] -= np.transpose(X["aa"]["vvv"], (1, 0, 2))
     # x2b(ab~e~)
     X["ab"]["vvv"] = (
-                    +np.einsum("nbfe,afn->abe", H.ab.ovvv, R.aa, optimize=True)
-                    +np.einsum("bnef,afn->abe", H.bb.vovv, R.ab, optimize=True)
-                    -np.einsum("amfe,fbm->abe", H.ab.vovv, R.ab, optimize=True)
-                    +np.einsum("abfe,f->abe", H.ab.vvvv, R.a, optimize=True)
+                    +ccpy_einsum("nbfe,afn->abe", H.ab.ovvv, R.aa)
+                    +ccpy_einsum("bnef,afn->abe", H.bb.vovv, R.ab)
+                    -ccpy_einsum("amfe,fbm->abe", H.ab.vovv, R.ab)
+                    +ccpy_einsum("abfe,f->abe", H.ab.vvvv, R.a)
     )
     return X
 
 def build_HR_3A(R, T, X, H):
     """Calculate the projection <jkabc|[ (H_N e^(T1+T2))_C*(R1p+R2p1h) ]_C|0>."""
     # moment-like terms
-    X3A = -(3.0 / 12.0) * np.einsum("cmkj,abm->abcjk", H.aa.vooo, R.aa, optimize=True)     # (7)
-    X3A += (6.0 / 12.0) * np.einsum("cbke,aej->abcjk", H.aa.vvov, R.aa, optimize=True)     # (8)
+    X3A = -(3.0 / 12.0) * ccpy_einsum("cmkj,abm->abcjk", H.aa.vooo, R.aa)     # (7)
+    X3A += (6.0 / 12.0) * ccpy_einsum("cbke,aej->abcjk", H.aa.vvov, R.aa)     # (8)
     # 3-body Hbar terms factorized using intermediates
-    X3A -= (6.0 / 12.0) * np.einsum("amj,bcmk->abcjk", X["aa"]["voo"], T.aa, optimize=True) # (9)
-    X3A += (3.0 / 12.0) * np.einsum("abe,ecjk->abcjk", X["aa"]["vvv"], T.aa, optimize=True) # (10)
+    X3A -= (6.0 / 12.0) * ccpy_einsum("amj,bcmk->abcjk", X["aa"]["voo"], T.aa) # (9)
+    X3A += (3.0 / 12.0) * ccpy_einsum("abe,ecjk->abcjk", X["aa"]["vvv"], T.aa) # (10)
     X3A -= np.transpose(X3A, (1, 0, 2, 3, 4)) + np.transpose(X3A, (2, 1, 0, 3, 4)) # antisymmetrize A(a/bc)
     X3A -= np.transpose(X3A, (0, 2, 1, 3, 4)) # antisymmetrize A(bc)
     X3A -= np.transpose(X3A, (0, 1, 2, 4, 3)) # antisymmetrize A(jk)
@@ -167,40 +168,40 @@ def build_HR_3A(R, T, X, H):
 def build_HR_3B(R, T, X, H):
     """Calculate the projection <jk~abc~|[ (H_N e^(T1+T2))_C*(R1p+R2p1h) ]_C|0>."""
     # moment-like terms
-    X3B = -(1.0 / 2.0) * np.einsum("mcjk,abm->abcjk", H.ab.ovoo, R.aa, optimize=True) # (14)
-    X3B -= np.einsum("bmjk,acm->abcjk", H.ab.vooo, R.ab, optimize=True) # (15)
-    X3B += np.einsum("bcek,aej->abcjk", H.ab.vvvo, R.aa, optimize=True) # (16)
-    X3B += np.einsum("bcje,aek->abcjk", H.ab.vvov, R.ab, optimize=True) # (17)
-    X3B += (1.0 / 2.0) * np.einsum("baje,eck->abcjk", H.aa.vvov, R.ab, optimize=True) # (23)
+    X3B = -(1.0 / 2.0) * ccpy_einsum("mcjk,abm->abcjk", H.ab.ovoo, R.aa) # (14)
+    X3B -= ccpy_einsum("bmjk,acm->abcjk", H.ab.vooo, R.ab) # (15)
+    X3B += ccpy_einsum("bcek,aej->abcjk", H.ab.vvvo, R.aa) # (16)
+    X3B += ccpy_einsum("bcje,aek->abcjk", H.ab.vvov, R.ab) # (17)
+    X3B += (1.0 / 2.0) * ccpy_einsum("baje,eck->abcjk", H.aa.vvov, R.ab) # (23)
     # 3-body Hbar terms factorized using intermediates
-    X3B -= (1.0 / 2.0) * np.einsum("mck,abmj->abcjk", X["ab"]["ovo"], T.aa, optimize=True) # (18)
-    X3B -= np.einsum("amj,bcmk->abcjk", X["aa"]["voo"], T.ab, optimize=True) # (19)
-    X3B -= np.einsum("amk,bcjm->abcjk", X["ab"]["voo"], T.ab, optimize=True) # (20)
-    X3B += (1.0 / 2.0) * np.einsum("abe,ecjk->abcjk", X["aa"]["vvv"], T.ab, optimize=True) # (21)
-    X3B += np.einsum("ace,bejk->abcjk", X["ab"]["vvv"], T.ab, optimize=True) # (22)
+    X3B -= (1.0 / 2.0) * ccpy_einsum("mck,abmj->abcjk", X["ab"]["ovo"], T.aa) # (18)
+    X3B -= ccpy_einsum("amj,bcmk->abcjk", X["aa"]["voo"], T.ab) # (19)
+    X3B -= ccpy_einsum("amk,bcjm->abcjk", X["ab"]["voo"], T.ab) # (20)
+    X3B += (1.0 / 2.0) * ccpy_einsum("abe,ecjk->abcjk", X["aa"]["vvv"], T.ab) # (21)
+    X3B += ccpy_einsum("ace,bejk->abcjk", X["ab"]["vvv"], T.ab) # (22)
     X3B -= np.transpose(X3B, (1, 0, 2, 3, 4)) # antisymmetrize A(ab)
     return X3B
 
 def build_HR_3C(R, T, X, H):
     """Calculate the projection <j~k~ab~c~|[ (H_N e^(T1+T2))_C*(R1p+R2p1h) ]_C|0>."""
     # moment-like terms
-    X3C = -(2.0 / 4.0) * np.einsum("cmkj,abm->abcjk", H.bb.vooo, R.ab, optimize=True) # (10)
-    X3C += (2.0 / 4.0) * np.einsum("cbke,aej->abcjk", H.bb.vvov, R.ab, optimize=True) # (11)
-    X3C += np.einsum("acek,ebj->abcjk", H.ab.vvvo, R.ab, optimize=True) # (12)
+    X3C = -(2.0 / 4.0) * ccpy_einsum("cmkj,abm->abcjk", H.bb.vooo, R.ab) # (10)
+    X3C += (2.0 / 4.0) * ccpy_einsum("cbke,aej->abcjk", H.bb.vvov, R.ab) # (11)
+    X3C += ccpy_einsum("acek,ebj->abcjk", H.ab.vvvo, R.ab) # (12)
     # 3-body Hbar terms factorized using intermediates
-    X3C -= (2.0 / 4.0) * np.einsum("amj,bcmk->abcjk", X["ab"]["voo"], T.bb, optimize=True) # (13)
-    X3C -= np.einsum("mck,abmj->abcjk", X["ab"]["ovo"], T.ab, optimize=True) # (14)
-    X3C += (2.0 / 4.0) * np.einsum("abe,ecjk->abcjk", X["ab"]["vvv"], T.bb, optimize=True) # (15)
+    X3C -= (2.0 / 4.0) * ccpy_einsum("amj,bcmk->abcjk", X["ab"]["voo"], T.bb) # (13)
+    X3C -= ccpy_einsum("mck,abmj->abcjk", X["ab"]["ovo"], T.ab) # (14)
+    X3C += (2.0 / 4.0) * ccpy_einsum("abe,ecjk->abcjk", X["ab"]["vvv"], T.bb) # (15)
     X3C -= np.transpose(X3C, (0, 2, 1, 3, 4)) # antisymmetrize A(bc)
     X3C -= np.transpose(X3C, (0, 1, 2, 4, 3)) # antisymmetrize A(jk)
     return X3C
 
 def build_LH_3A(L, T, H):
     """Calculate the projection <0| (L1p+L2p1h)(H_N e^(T1+T2))_C |jkabc>."""
-    X3A = (3.0 / 12.0) * np.einsum("a,jkbc->abcjk", L.a, H.aa.oovv, optimize=True)
-    X3A += (6.0 / 12.0) * np.einsum("abj,kc->abcjk", L.aa, H.a.ov, optimize=True)
-    X3A -= (3.0 / 12.0) * np.einsum("abm,jkmc->abcjk", L.aa, H.aa.ooov, optimize=True)
-    X3A += (6.0 / 12.0) * np.einsum("eck,ejab->abcjk", L.aa, H.aa.vovv, optimize=True)
+    X3A = (3.0 / 12.0) * ccpy_einsum("a,jkbc->abcjk", L.a, H.aa.oovv)
+    X3A += (6.0 / 12.0) * ccpy_einsum("abj,kc->abcjk", L.aa, H.a.ov)
+    X3A -= (3.0 / 12.0) * ccpy_einsum("abm,jkmc->abcjk", L.aa, H.aa.ooov)
+    X3A += (6.0 / 12.0) * ccpy_einsum("eck,ejab->abcjk", L.aa, H.aa.vovv)
     X3A -= np.transpose(X3A, (1, 0, 2, 3, 4)) + np.transpose(X3A, (2, 1, 0, 3, 4)) # antisymmetrize A(a/bc)
     X3A -= np.transpose(X3A, (0, 2, 1, 3, 4)) # antisymmetrize A(bc)
     X3A -= np.transpose(X3A, (0, 1, 2, 4, 3)) # antisymmetrize A(jk)
@@ -208,24 +209,24 @@ def build_LH_3A(L, T, H):
 
 def build_LH_3B(L, T, H):
     """Calculate the projection <0| (L1p+L2p1h)(H_N e^(T1+T2))_C |jk~abc~>."""
-    X3B = np.einsum("a,jkbc->abcjk", L.a, H.ab.oovv, optimize=True)
-    X3B += (1.0 / 2.0) * np.einsum("abj,kc->abcjk", L.aa, H.b.ov, optimize=True)
-    X3B += np.einsum("ack,jb->abcjk", L.ab, H.a.ov, optimize=True)
-    X3B -= (1.0 / 2.0) * np.einsum("abm,jkmc->abcjk", L.aa, H.ab.ooov, optimize=True)
-    X3B -= np.einsum("acm,jkbm->abcjk", L.ab, H.ab.oovo, optimize=True)
-    X3B += np.einsum("aej,ekbc->abcjk", L.aa, H.ab.vovv, optimize=True)
-    X3B += np.einsum("aek,jebc->abcjk", L.ab, H.ab.ovvv, optimize=True)
-    X3B += (1.0 / 2.0) * np.einsum("eck,ejab->abcjk", L.ab, H.aa.vovv, optimize=True)
+    X3B = ccpy_einsum("a,jkbc->abcjk", L.a, H.ab.oovv)
+    X3B += (1.0 / 2.0) * ccpy_einsum("abj,kc->abcjk", L.aa, H.b.ov)
+    X3B += ccpy_einsum("ack,jb->abcjk", L.ab, H.a.ov)
+    X3B -= (1.0 / 2.0) * ccpy_einsum("abm,jkmc->abcjk", L.aa, H.ab.ooov)
+    X3B -= ccpy_einsum("acm,jkbm->abcjk", L.ab, H.ab.oovo)
+    X3B += ccpy_einsum("aej,ekbc->abcjk", L.aa, H.ab.vovv)
+    X3B += ccpy_einsum("aek,jebc->abcjk", L.ab, H.ab.ovvv)
+    X3B += (1.0 / 2.0) * ccpy_einsum("eck,ejab->abcjk", L.ab, H.aa.vovv)
     X3B -= np.transpose(X3B, (1, 0, 2, 3, 4)) # antisymmetrize A(ab)
     return X3B
 
 def build_LH_3C(L, T, H):
     """Calculate the projection <0| (L1p+L2p1h)(H_N e^(T1+T2))_C |j~k~ab~c~>."""
-    X3C = (1.0 / 4.0) * np.einsum("a,jkbc->abcjk", L.a, H.bb.oovv, optimize=True)
-    X3C += np.einsum("abj,kc->abcjk", L.ab, H.b.ov, optimize=True)
-    X3C -= (2.0 / 4.0) * np.einsum("abm,jkmc->abcjk", L.ab, H.bb.ooov, optimize=True)
-    X3C += (2.0 / 4.0) * np.einsum("aej,ekbc->abcjk", L.ab, H.bb.vovv, optimize=True)
-    X3C += np.einsum("eck,ejab->abcjk", L.ab, H.ab.vovv, optimize=True)
+    X3C = (1.0 / 4.0) * ccpy_einsum("a,jkbc->abcjk", L.a, H.bb.oovv)
+    X3C += ccpy_einsum("abj,kc->abcjk", L.ab, H.b.ov)
+    X3C -= (2.0 / 4.0) * ccpy_einsum("abm,jkmc->abcjk", L.ab, H.bb.ooov)
+    X3C += (2.0 / 4.0) * ccpy_einsum("aej,ekbc->abcjk", L.ab, H.bb.vovv)
+    X3C += ccpy_einsum("eck,ejab->abcjk", L.ab, H.ab.vovv)
     X3C -= np.transpose(X3C, (0, 2, 1, 3, 4)) # antisymmetrize A(bc)
     X3C -= np.transpose(X3C, (0, 1, 2, 4, 3)) # antisymmetrize A(jk)
     return X3C

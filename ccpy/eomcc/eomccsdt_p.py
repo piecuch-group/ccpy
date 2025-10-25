@@ -3,6 +3,7 @@ Equation-of-Motion Coupled-Cluster Method with Singles, Doubles, and an Arbitrar
 of Triples Excitations [EOMCC(P)]
 '''
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from ccpy.eomcc.eomccsdt_intermediates import get_eomccsd_intermediates, get_eomccsdt_intermediates, add_R3_p_terms
 from ccpy.lib.core import eomccsdt_p_loops
 
@@ -87,16 +88,16 @@ def HR(dR, R, T, H, flag_RHF, system, t3_excitations, r3_excitations):
 
 def build_HR_1A(dR, R, r3_excitations, H):
     """< ia | [H(2)*(R1+R2+R3)]_C | 0 >"""
-    dR.a = -np.einsum("mi,am->ai", H.a.oo, R.a, optimize=True)
-    dR.a += np.einsum("ae,ei->ai", H.a.vv, R.a, optimize=True)
-    dR.a += np.einsum("amie,em->ai", H.aa.voov, R.a, optimize=True)
-    dR.a += np.einsum("amie,em->ai", H.ab.voov, R.b, optimize=True)
-    dR.a -= 0.5 * np.einsum("mnif,afmn->ai", H.aa.ooov, R.aa, optimize=True)
-    dR.a -= np.einsum("mnif,afmn->ai", H.ab.ooov, R.ab, optimize=True)
-    dR.a += 0.5 * np.einsum("anef,efin->ai", H.aa.vovv, R.aa, optimize=True)
-    dR.a += np.einsum("anef,efin->ai", H.ab.vovv, R.ab, optimize=True)
-    dR.a += np.einsum("me,aeim->ai", H.a.ov, R.aa, optimize=True)
-    dR.a += np.einsum("me,aeim->ai", H.b.ov, R.ab, optimize=True)
+    dR.a = -ccpy_einsum("mi,am->ai", H.a.oo, R.a)
+    dR.a += ccpy_einsum("ae,ei->ai", H.a.vv, R.a)
+    dR.a += ccpy_einsum("amie,em->ai", H.aa.voov, R.a)
+    dR.a += ccpy_einsum("amie,em->ai", H.ab.voov, R.b)
+    dR.a -= 0.5 * ccpy_einsum("mnif,afmn->ai", H.aa.ooov, R.aa)
+    dR.a -= ccpy_einsum("mnif,afmn->ai", H.ab.ooov, R.ab)
+    dR.a += 0.5 * ccpy_einsum("anef,efin->ai", H.aa.vovv, R.aa)
+    dR.a += ccpy_einsum("anef,efin->ai", H.ab.vovv, R.ab)
+    dR.a += ccpy_einsum("me,aeim->ai", H.a.ov, R.aa)
+    dR.a += ccpy_einsum("me,aeim->ai", H.b.ov, R.ab)
     # Parts contracted with R3
     dR.a = eomccsdt_p_loops.build_hr_1a(
                                             dR.a,
@@ -109,16 +110,16 @@ def build_HR_1A(dR, R, r3_excitations, H):
 
 def build_HR_1B(dR, R, r3_excitations, H):
     """< i~a~ | [H(2)*(R1+R2+R3)]_C | 0 >"""
-    dR.b = -np.einsum("mi,am->ai", H.b.oo, R.b, optimize=True)
-    dR.b += np.einsum("ae,ei->ai", H.b.vv, R.b, optimize=True)
-    dR.b += np.einsum("maei,em->ai", H.ab.ovvo, R.a, optimize=True)
-    dR.b += np.einsum("amie,em->ai", H.bb.voov, R.b, optimize=True)
-    dR.b -= np.einsum("nmfi,fanm->ai", H.ab.oovo, R.ab, optimize=True)
-    dR.b -= 0.5 * np.einsum("mnif,afmn->ai", H.bb.ooov, R.bb, optimize=True)
-    dR.b += np.einsum("nafe,feni->ai", H.ab.ovvv, R.ab, optimize=True)
-    dR.b += 0.5 * np.einsum("anef,efin->ai", H.bb.vovv, R.bb, optimize=True)
-    dR.b += np.einsum("me,eami->ai", H.a.ov, R.ab, optimize=True)
-    dR.b += np.einsum("me,aeim->ai", H.b.ov, R.bb, optimize=True)
+    dR.b = -ccpy_einsum("mi,am->ai", H.b.oo, R.b)
+    dR.b += ccpy_einsum("ae,ei->ai", H.b.vv, R.b)
+    dR.b += ccpy_einsum("maei,em->ai", H.ab.ovvo, R.a)
+    dR.b += ccpy_einsum("amie,em->ai", H.bb.voov, R.b)
+    dR.b -= ccpy_einsum("nmfi,fanm->ai", H.ab.oovo, R.ab)
+    dR.b -= 0.5 * ccpy_einsum("mnif,afmn->ai", H.bb.ooov, R.bb)
+    dR.b += ccpy_einsum("nafe,feni->ai", H.ab.ovvv, R.ab)
+    dR.b += 0.5 * ccpy_einsum("anef,efin->ai", H.bb.vovv, R.bb)
+    dR.b += ccpy_einsum("me,eami->ai", H.a.ov, R.ab)
+    dR.b += ccpy_einsum("me,aeim->ai", H.b.ov, R.bb)
     # Parts contracted with R3
     dR.b = eomccsdt_p_loops.build_hr_1b(
                                             dR.b,
@@ -131,16 +132,16 @@ def build_HR_1B(dR, R, r3_excitations, H):
 
 def build_HR_2A(dR, R, r3_excitations, T, t3_excitations, H, X):
     """ < ijab | [H(2)*(R1+R2+R3)]_C | 0 > """
-    dR.aa = -0.5 * np.einsum("mi,abmj->abij", H.a.oo, R.aa, optimize=True)  # A(ij)
-    dR.aa += 0.5 * np.einsum("ae,ebij->abij", H.a.vv, R.aa, optimize=True)  # A(ab)
-    dR.aa += 0.125 * np.einsum("mnij,abmn->abij", H.aa.oooo, R.aa, optimize=True)
-    dR.aa += 0.125 * np.einsum("abef,efij->abij", H.aa.vvvv, R.aa, optimize=True)
-    dR.aa += np.einsum("amie,ebmj->abij", H.aa.voov, R.aa, optimize=True)  # A(ij)A(ab)
-    dR.aa += np.einsum("amie,bejm->abij", H.ab.voov, R.ab, optimize=True)  # A(ij)A(ab)
-    dR.aa -= 0.5 * np.einsum("bmji,am->abij", H.aa.vooo, R.a, optimize=True)  # A(ab)
-    dR.aa += 0.5 * np.einsum("baje,ei->abij", H.aa.vvov, R.a, optimize=True)  # A(ij)
-    dR.aa += 0.5 * np.einsum("be,aeij->abij", X.a.vv, T.aa, optimize=True)  # A(ab)
-    dR.aa -= 0.5 * np.einsum("mj,abim->abij", X.a.oo, T.aa, optimize=True)  # A(ij)
+    dR.aa = -0.5 * ccpy_einsum("mi,abmj->abij", H.a.oo, R.aa)  # A(ij)
+    dR.aa += 0.5 * ccpy_einsum("ae,ebij->abij", H.a.vv, R.aa)  # A(ab)
+    dR.aa += 0.125 * ccpy_einsum("mnij,abmn->abij", H.aa.oooo, R.aa)
+    dR.aa += 0.125 * ccpy_einsum("abef,efij->abij", H.aa.vvvv, R.aa)
+    dR.aa += ccpy_einsum("amie,ebmj->abij", H.aa.voov, R.aa)  # A(ij)A(ab)
+    dR.aa += ccpy_einsum("amie,bejm->abij", H.ab.voov, R.ab)  # A(ij)A(ab)
+    dR.aa -= 0.5 * ccpy_einsum("bmji,am->abij", H.aa.vooo, R.a)  # A(ab)
+    dR.aa += 0.5 * ccpy_einsum("baje,ei->abij", H.aa.vvov, R.a)  # A(ij)
+    dR.aa += 0.5 * ccpy_einsum("be,aeij->abij", X.a.vv, T.aa)  # A(ab)
+    dR.aa -= 0.5 * ccpy_einsum("mj,abim->abij", X.a.oo, T.aa)  # A(ij)
     # Parts contracted with T3 and R3; antisymmetrization included
     dR.aa = eomccsdt_p_loops.build_hr_2a(
                                             dR.aa,
@@ -157,26 +158,26 @@ def build_HR_2A(dR, R, r3_excitations, T, t3_excitations, H, X):
 
 def build_HR_2B(dR, R, r3_excitations, T, t3_excitations, H, X):
     """< ij~ab~ | [H(2)*(R1+R2+R3)]_C | 0 >"""
-    dR.ab = np.einsum("ae,ebij->abij", H.a.vv, R.ab, optimize=True)
-    dR.ab += np.einsum("be,aeij->abij", H.b.vv, R.ab, optimize=True)
-    dR.ab -= np.einsum("mi,abmj->abij", H.a.oo, R.ab, optimize=True)
-    dR.ab -= np.einsum("mj,abim->abij", H.b.oo, R.ab, optimize=True)
-    dR.ab += np.einsum("mnij,abmn->abij", H.ab.oooo, R.ab, optimize=True)
-    dR.ab += np.einsum("abef,efij->abij", H.ab.vvvv, R.ab, optimize=True)
-    dR.ab += np.einsum("amie,ebmj->abij", H.aa.voov, R.ab, optimize=True)
-    dR.ab += np.einsum("amie,ebmj->abij", H.ab.voov, R.bb, optimize=True)
-    dR.ab += np.einsum("mbej,aeim->abij", H.ab.ovvo, R.aa, optimize=True)
-    dR.ab += np.einsum("bmje,aeim->abij", H.bb.voov, R.ab, optimize=True)
-    dR.ab -= np.einsum("mbie,aemj->abij", H.ab.ovov, R.ab, optimize=True)
-    dR.ab -= np.einsum("amej,ebim->abij", H.ab.vovo, R.ab, optimize=True)
-    dR.ab += np.einsum("abej,ei->abij", H.ab.vvvo, R.a, optimize=True)
-    dR.ab += np.einsum("abie,ej->abij", H.ab.vvov, R.b, optimize=True)
-    dR.ab -= np.einsum("mbij,am->abij", H.ab.ovoo, R.a, optimize=True)
-    dR.ab -= np.einsum("amij,bm->abij", H.ab.vooo, R.b, optimize=True)
-    dR.ab += np.einsum("ae,ebij->abij", X.a.vv, T.ab, optimize=True)
-    dR.ab -= np.einsum("mi,abmj->abij", X.a.oo, T.ab, optimize=True)
-    dR.ab += np.einsum("be,aeij->abij", X.b.vv, T.ab, optimize=True)
-    dR.ab -= np.einsum("mj,abim->abij", X.b.oo, T.ab, optimize=True)
+    dR.ab = ccpy_einsum("ae,ebij->abij", H.a.vv, R.ab)
+    dR.ab += ccpy_einsum("be,aeij->abij", H.b.vv, R.ab)
+    dR.ab -= ccpy_einsum("mi,abmj->abij", H.a.oo, R.ab)
+    dR.ab -= ccpy_einsum("mj,abim->abij", H.b.oo, R.ab)
+    dR.ab += ccpy_einsum("mnij,abmn->abij", H.ab.oooo, R.ab)
+    dR.ab += ccpy_einsum("abef,efij->abij", H.ab.vvvv, R.ab)
+    dR.ab += ccpy_einsum("amie,ebmj->abij", H.aa.voov, R.ab)
+    dR.ab += ccpy_einsum("amie,ebmj->abij", H.ab.voov, R.bb)
+    dR.ab += ccpy_einsum("mbej,aeim->abij", H.ab.ovvo, R.aa)
+    dR.ab += ccpy_einsum("bmje,aeim->abij", H.bb.voov, R.ab)
+    dR.ab -= ccpy_einsum("mbie,aemj->abij", H.ab.ovov, R.ab)
+    dR.ab -= ccpy_einsum("amej,ebim->abij", H.ab.vovo, R.ab)
+    dR.ab += ccpy_einsum("abej,ei->abij", H.ab.vvvo, R.a)
+    dR.ab += ccpy_einsum("abie,ej->abij", H.ab.vvov, R.b)
+    dR.ab -= ccpy_einsum("mbij,am->abij", H.ab.ovoo, R.a)
+    dR.ab -= ccpy_einsum("amij,bm->abij", H.ab.vooo, R.b)
+    dR.ab += ccpy_einsum("ae,ebij->abij", X.a.vv, T.ab)
+    dR.ab -= ccpy_einsum("mi,abmj->abij", X.a.oo, T.ab)
+    dR.ab += ccpy_einsum("be,aeij->abij", X.b.vv, T.ab)
+    dR.ab -= ccpy_einsum("mj,abim->abij", X.b.oo, T.ab)
     # Parts contracted with T3 and R3
     dR.ab = eomccsdt_p_loops.build_hr_2b(
                                             dR.ab,
@@ -194,16 +195,16 @@ def build_HR_2B(dR, R, r3_excitations, T, t3_excitations, H, X):
 
 def build_HR_2C(dR, R, r3_excitations, T, t3_excitations, H, X):
     """< i~j~a~b~ | [H(2)*(R1+R2+R3)]_C | 0 >"""
-    dR.bb = -0.5 * np.einsum("mi,abmj->abij", H.b.oo, R.bb, optimize=True)  # A(ij)
-    dR.bb += 0.5 * np.einsum("ae,ebij->abij", H.b.vv, R.bb, optimize=True)  # A(ab)
-    dR.bb += 0.125 * np.einsum("mnij,abmn->abij", H.bb.oooo, R.bb, optimize=True)
-    dR.bb += 0.125 * np.einsum("abef,efij->abij", H.bb.vvvv, R.bb, optimize=True)
-    dR.bb += np.einsum("amie,ebmj->abij", H.bb.voov, R.bb, optimize=True)  # A(ij)A(ab)
-    dR.bb += np.einsum("maei,ebmj->abij", H.ab.ovvo, R.ab, optimize=True)  # A(ij)A(ab)
-    dR.bb -= 0.5 * np.einsum("bmji,am->abij", H.bb.vooo, R.b, optimize=True)  # A(ab)
-    dR.bb += 0.5 * np.einsum("baje,ei->abij", H.bb.vvov, R.b, optimize=True)  # A(ij)
-    dR.bb += 0.5 * np.einsum("be,aeij->abij", X.b.vv, T.bb, optimize=True)  # A(ab)
-    dR.bb -= 0.5 * np.einsum("mj,abim->abij", X.b.oo, T.bb, optimize=True)  # A(ij)
+    dR.bb = -0.5 * ccpy_einsum("mi,abmj->abij", H.b.oo, R.bb)  # A(ij)
+    dR.bb += 0.5 * ccpy_einsum("ae,ebij->abij", H.b.vv, R.bb)  # A(ab)
+    dR.bb += 0.125 * ccpy_einsum("mnij,abmn->abij", H.bb.oooo, R.bb)
+    dR.bb += 0.125 * ccpy_einsum("abef,efij->abij", H.bb.vvvv, R.bb)
+    dR.bb += ccpy_einsum("amie,ebmj->abij", H.bb.voov, R.bb)  # A(ij)A(ab)
+    dR.bb += ccpy_einsum("maei,ebmj->abij", H.ab.ovvo, R.ab)  # A(ij)A(ab)
+    dR.bb -= 0.5 * ccpy_einsum("bmji,am->abij", H.bb.vooo, R.b)  # A(ab)
+    dR.bb += 0.5 * ccpy_einsum("baje,ei->abij", H.bb.vvov, R.b)  # A(ij)
+    dR.bb += 0.5 * ccpy_einsum("be,aeij->abij", X.b.vv, T.bb)  # A(ab)
+    dR.bb -= 0.5 * ccpy_einsum("mj,abim->abij", X.b.oo, T.bb)  # A(ij)
     # Parts contracted with T3 and R3; antisymmetrization included
     dR.bb = eomccsdt_p_loops.build_hr_2c(
                                             dR.bb,

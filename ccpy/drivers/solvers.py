@@ -1,5 +1,6 @@
 """Module containing the driving solvers"""
 import time
+from ccpy.utilities.linear_algebra import ccpy_einsum
 import numpy as np
 import h5py
 import signal
@@ -143,8 +144,8 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
         omega_old = omega.copy()
 
         # solve projection subspace eigenproblem: G_{IJ} = sum_K B_{KI} S_{KJ} (vectorized)
-        G[curr_size - 1, :curr_size] = np.einsum("k,pk->p", B[curr_size - 1, :], sigma[:curr_size, :])
-        G[:curr_size, curr_size - 1] = np.einsum("k,pk->p", sigma[curr_size - 1, :], B[:curr_size, :])
+        G[curr_size - 1, :curr_size] = ccpy_einsum("k,pk->p", B[curr_size - 1, :], sigma[:curr_size, :])
+        G[:curr_size, curr_size - 1] = ccpy_einsum("k,pk->p", sigma[curr_size - 1, :], B[:curr_size, :])
         e, alpha_full = np.linalg.eig(G[:curr_size, :curr_size])
 
         # select root

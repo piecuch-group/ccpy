@@ -1,5 +1,6 @@
 """Functions to calculate the ground-state CC(t;3) triples correction to CCSDt."""
 import time
+from ccpy.utilities.linear_algebra import ccpy_einsum
 
 import numpy as np
 from ccpy.energy.cc_energy import get_cc_energy
@@ -200,18 +201,18 @@ def build_M3A_ccsdt(T, H, H0):
 
     # <ijkabc | H(2) | 0 > + (VT3)_C intermediates
     # Recall that we are using HBar CCSDT, so the vooo and vvov parts have T3 in it already!
-    I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
+    I2A_vvov = H.aa.vvov + ccpy_einsum("me,abim->abie", H.a.ov, T.aa)
 
     # MM(2,3)A
-    MM23A = -0.25 * np.einsum("amij,bcmk->abcijk", H.aa.vooo, T.aa, optimize=True)
-    MM23A += 0.25 * np.einsum("abie,ecjk->abcijk", I2A_vvov, T.aa, optimize=True)
+    MM23A = -0.25 * ccpy_einsum("amij,bcmk->abcijk", H.aa.vooo, T.aa)
+    MM23A += 0.25 * ccpy_einsum("abie,ecjk->abcijk", I2A_vvov, T.aa)
     # (HBar*T3)_C
-    MM23A -= (1.0 / 12.0) * np.einsum("mk,abcijm->abcijk", H.a.oo, T.aaa, optimize=True)
-    MM23A += (1.0 / 12.0) * np.einsum("ce,abeijk->abcijk", H.a.vv, T.aaa, optimize=True)
-    MM23A += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aaa, optimize=True)
-    MM23A += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aaa, optimize=True)
-    MM23A += 0.25 * np.einsum("cmke,abeijm->abcijk", H.aa.voov, T.aaa, optimize=True)
-    MM23A += 0.25 * np.einsum("cmke,abeijm->abcijk", H.ab.voov, T.aab, optimize=True)
+    MM23A -= (1.0 / 12.0) * ccpy_einsum("mk,abcijm->abcijk", H.a.oo, T.aaa)
+    MM23A += (1.0 / 12.0) * ccpy_einsum("ce,abeijk->abcijk", H.a.vv, T.aaa)
+    MM23A += (1.0 / 24.0) * ccpy_einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aaa)
+    MM23A += (1.0 / 24.0) * ccpy_einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aaa)
+    MM23A += 0.25 * ccpy_einsum("cmke,abeijm->abcijk", H.aa.voov, T.aaa)
+    MM23A += 0.25 * ccpy_einsum("cmke,abeijm->abcijk", H.ab.voov, T.aab)
 
     MM23A -= np.transpose(MM23A, (0, 1, 2, 3, 5, 4)) # (jk)
     MM23A -= np.transpose(MM23A, (0, 1, 2, 4, 3, 5)) + np.transpose(MM23A, (0, 1, 2, 5, 4, 3)) # (i/jk)
@@ -227,32 +228,32 @@ def build_M3B_ccsdt(T, H, H0):
     """
     # <ijk~abc~ | H(2) | 0 > + (VT3)_C intermediates
     # Recall that we are using HBar CCSDT, so the vooo and vvov parts have T3 in it already!
-    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
+    I2A_vooo = H.aa.vooo - ccpy_einsum("me,aeij->amij", H.a.ov, T.aa)
+    I2B_ovoo = H.ab.ovoo - ccpy_einsum("me,ecjk->mcjk", H.a.ov, T.ab)
+    I2B_vooo = H.ab.vooo - ccpy_einsum("me,aeik->amik", H.b.ov, T.ab)
 
     # MM(2,3)B
-    MM23B = 0.5 * np.einsum("bcek,aeij->abcijk", H.ab.vvvo, T.aa, optimize=True)
-    MM23B -= 0.5 * np.einsum("mcjk,abim->abcijk", I2B_ovoo, T.aa, optimize=True)
-    MM23B += np.einsum("acie,bejk->abcijk", H.ab.vvov, T.ab, optimize=True)
-    MM23B -= np.einsum("amik,bcjm->abcijk", I2B_vooo, T.ab, optimize=True)
-    MM23B += 0.5 * np.einsum("abie,ecjk->abcijk", H.aa.vvov, T.ab, optimize=True)
-    MM23B -= 0.5 * np.einsum("amij,bcmk->abcijk", I2A_vooo, T.ab, optimize=True)
+    MM23B = 0.5 * ccpy_einsum("bcek,aeij->abcijk", H.ab.vvvo, T.aa)
+    MM23B -= 0.5 * ccpy_einsum("mcjk,abim->abcijk", I2B_ovoo, T.aa)
+    MM23B += ccpy_einsum("acie,bejk->abcijk", H.ab.vvov, T.ab)
+    MM23B -= ccpy_einsum("amik,bcjm->abcijk", I2B_vooo, T.ab)
+    MM23B += 0.5 * ccpy_einsum("abie,ecjk->abcijk", H.aa.vvov, T.ab)
+    MM23B -= 0.5 * ccpy_einsum("amij,bcmk->abcijk", I2A_vooo, T.ab)
     # (HBar*T3)_C
-    MM23B -= 0.5 * np.einsum("mi,abcmjk->abcijk", H.a.oo, T.aab, optimize=True)
-    MM23B -= 0.25 * np.einsum("mk,abcijm->abcijk", H.b.oo, T.aab, optimize=True)
-    MM23B += 0.5 * np.einsum("ae,ebcijk->abcijk", H.a.vv, T.aab, optimize=True)
-    MM23B += 0.25 * np.einsum("ce,abeijk->abcijk", H.b.vv, T.aab, optimize=True)
-    MM23B += 0.125 * np.einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aab, optimize=True)
-    MM23B += 0.5 * np.einsum("mnjk,abcimn->abcijk", H.ab.oooo, T.aab, optimize=True)
-    MM23B += 0.125 * np.einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aab, optimize=True)
-    MM23B += 0.5 * np.einsum("bcef,aefijk->abcijk", H.ab.vvvv, T.aab, optimize=True)
-    MM23B += np.einsum("amie,ebcmjk->abcijk", H.aa.voov, T.aab, optimize=True)
-    MM23B += np.einsum("amie,becjmk->abcijk", H.ab.voov, T.abb, optimize=True)
-    MM23B += 0.25 * np.einsum("mcek,abeijm->abcijk", H.ab.ovvo, T.aaa, optimize=True)
-    MM23B += 0.25 * np.einsum("cmke,abeijm->abcijk", H.bb.voov, T.aab, optimize=True)
-    MM23B -= 0.5 * np.einsum("amek,ebcijm->abcijk", H.ab.vovo, T.aab, optimize=True)
-    MM23B -= 0.5 * np.einsum("mcie,abemjk->abcijk", H.ab.ovov, T.aab, optimize=True)
+    MM23B -= 0.5 * ccpy_einsum("mi,abcmjk->abcijk", H.a.oo, T.aab)
+    MM23B -= 0.25 * ccpy_einsum("mk,abcijm->abcijk", H.b.oo, T.aab)
+    MM23B += 0.5 * ccpy_einsum("ae,ebcijk->abcijk", H.a.vv, T.aab)
+    MM23B += 0.25 * ccpy_einsum("ce,abeijk->abcijk", H.b.vv, T.aab)
+    MM23B += 0.125 * ccpy_einsum("mnij,abcmnk->abcijk", H.aa.oooo, T.aab)
+    MM23B += 0.5 * ccpy_einsum("mnjk,abcimn->abcijk", H.ab.oooo, T.aab)
+    MM23B += 0.125 * ccpy_einsum("abef,efcijk->abcijk", H.aa.vvvv, T.aab)
+    MM23B += 0.5 * ccpy_einsum("bcef,aefijk->abcijk", H.ab.vvvv, T.aab)
+    MM23B += ccpy_einsum("amie,ebcmjk->abcijk", H.aa.voov, T.aab)
+    MM23B += ccpy_einsum("amie,becjmk->abcijk", H.ab.voov, T.abb)
+    MM23B += 0.25 * ccpy_einsum("mcek,abeijm->abcijk", H.ab.ovvo, T.aaa)
+    MM23B += 0.25 * ccpy_einsum("cmke,abeijm->abcijk", H.bb.voov, T.aab)
+    MM23B -= 0.5 * ccpy_einsum("amek,ebcijm->abcijk", H.ab.vovo, T.aab)
+    MM23B -= 0.5 * ccpy_einsum("mcie,abemjk->abcijk", H.ab.ovov, T.aab)
 
     MM23B -= np.transpose(MM23B, (1, 0, 2, 3, 4, 5))
     MM23B -= np.transpose(MM23B, (0, 1, 2, 4, 3, 5))
@@ -266,32 +267,32 @@ def build_M3C_ccsdt(T, H, H0):
     """
     # <ijk~abc~ | H(2) | 0 > + (VT3)_C intermediates
     # Recall that we are using HBar CCSDT, so the vooo and vvov parts have T3 in it already!
-    I2C_vooo = H.bb.vooo - np.einsum("me,aeij->amij", H.b.ov, T.bb, optimize=True)
-    I2B_vooo = H.ab.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.ab, optimize=True)
-    I2B_ovoo = H.ab.ovoo - np.einsum("me,eaki->maki", H.a.ov, T.ab, optimize=True)
+    I2C_vooo = H.bb.vooo - ccpy_einsum("me,aeij->amij", H.b.ov, T.bb)
+    I2B_vooo = H.ab.vooo - ccpy_einsum("me,cekj->cmkj", H.b.ov, T.ab)
+    I2B_ovoo = H.ab.ovoo - ccpy_einsum("me,eaki->maki", H.a.ov, T.ab)
 
     # MM(2,3)C
-    MM23C = 0.5 * np.einsum("cbke,aeij->cbakji", H.ab.vvov, T.bb, optimize=True)
-    MM23C -= 0.5 * np.einsum("cmkj,abim->cbakji", I2B_vooo, T.bb, optimize=True)
-    MM23C += np.einsum("caei,ebkj->cbakji", H.ab.vvvo, T.ab, optimize=True)
-    MM23C -= np.einsum("maki,cbmj->cbakji", I2B_ovoo, T.ab, optimize=True)
-    MM23C += 0.5 * np.einsum("abie,cekj->cbakji", H.bb.vvov, T.ab, optimize=True)
-    MM23C -= 0.5 * np.einsum("amij,cbkm->cbakji", I2C_vooo, T.ab, optimize=True)
+    MM23C = 0.5 * ccpy_einsum("cbke,aeij->cbakji", H.ab.vvov, T.bb)
+    MM23C -= 0.5 * ccpy_einsum("cmkj,abim->cbakji", I2B_vooo, T.bb)
+    MM23C += ccpy_einsum("caei,ebkj->cbakji", H.ab.vvvo, T.ab)
+    MM23C -= ccpy_einsum("maki,cbmj->cbakji", I2B_ovoo, T.ab)
+    MM23C += 0.5 * ccpy_einsum("abie,cekj->cbakji", H.bb.vvov, T.ab)
+    MM23C -= 0.5 * ccpy_einsum("amij,cbkm->cbakji", I2C_vooo, T.ab)
     # (HBar*T3)_C
-    MM23C -= 0.5 * np.einsum("mi,cbakjm->cbakji", H.b.oo, T.abb, optimize=True)
-    MM23C -= 0.25 * np.einsum("mk,cbamji->cbakji", H.a.oo, T.abb, optimize=True)
-    MM23C += 0.5 * np.einsum("ae,cbekji->cbakji", H.b.vv, T.abb, optimize=True)
-    MM23C += 0.25 * np.einsum("ce,ebakji->cbakji", H.a.vv, T.abb, optimize=True)
-    MM23C += 0.125 * np.einsum("mnij,cbaknm->cbakji", H.bb.oooo, T.abb, optimize=True)
-    MM23C += 0.5 * np.einsum("nmkj,cbanmi->cbakji", H.ab.oooo, T.abb, optimize=True)
-    MM23C += 0.125 * np.einsum("abef,cfekji->cbakji", H.bb.vvvv, T.abb, optimize=True)
-    MM23C += 0.5 * np.einsum("cbfe,feakji->cbakji", H.ab.vvvv, T.abb, optimize=True)
-    MM23C += np.einsum("amie,cbekjm->cbakji", H.bb.voov, T.abb, optimize=True)
-    MM23C += np.einsum("maei,cebkmj->cbakji", H.ab.ovvo, T.aab, optimize=True)
-    MM23C += 0.25 * np.einsum("cmke,abeijm->cbakji", H.ab.voov, T.bbb, optimize=True)
-    MM23C += 0.25 * np.einsum("cmke,ebamji->cbakji", H.aa.voov, T.abb, optimize=True)
-    MM23C -= 0.5 * np.einsum("make,cbemji->cbakji", H.ab.ovov, T.abb, optimize=True)
-    MM23C -= 0.5 * np.einsum("cmei,ebakjm->cbakji", H.ab.vovo, T.abb, optimize=True)
+    MM23C -= 0.5 * ccpy_einsum("mi,cbakjm->cbakji", H.b.oo, T.abb)
+    MM23C -= 0.25 * ccpy_einsum("mk,cbamji->cbakji", H.a.oo, T.abb)
+    MM23C += 0.5 * ccpy_einsum("ae,cbekji->cbakji", H.b.vv, T.abb)
+    MM23C += 0.25 * ccpy_einsum("ce,ebakji->cbakji", H.a.vv, T.abb)
+    MM23C += 0.125 * ccpy_einsum("mnij,cbaknm->cbakji", H.bb.oooo, T.abb)
+    MM23C += 0.5 * ccpy_einsum("nmkj,cbanmi->cbakji", H.ab.oooo, T.abb)
+    MM23C += 0.125 * ccpy_einsum("abef,cfekji->cbakji", H.bb.vvvv, T.abb)
+    MM23C += 0.5 * ccpy_einsum("cbfe,feakji->cbakji", H.ab.vvvv, T.abb)
+    MM23C += ccpy_einsum("amie,cbekjm->cbakji", H.bb.voov, T.abb)
+    MM23C += ccpy_einsum("maei,cebkmj->cbakji", H.ab.ovvo, T.aab)
+    MM23C += 0.25 * ccpy_einsum("cmke,abeijm->cbakji", H.ab.voov, T.bbb)
+    MM23C += 0.25 * ccpy_einsum("cmke,ebamji->cbakji", H.aa.voov, T.abb)
+    MM23C -= 0.5 * ccpy_einsum("make,cbemji->cbakji", H.ab.ovov, T.abb)
+    MM23C -= 0.5 * ccpy_einsum("cmei,ebakjm->cbakji", H.ab.vovo, T.abb)
 
     MM23C -= np.transpose(MM23C, (0, 2, 1, 3, 4, 5))
     MM23C -= np.transpose(MM23C, (0, 1, 2, 3, 5, 4))
@@ -306,18 +307,18 @@ def build_M3D_ccsdt(T, H, H0):
 
     # <ijkabc | H(2) | 0 > + (VT3)_C intermediates
     # Recall that we are using HBar CCSDT, so the vooo and vvov parts have T3 in it already!
-    I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
+    I2C_vvov = H.bb.vvov + ccpy_einsum("me,abim->abie", H.b.ov, T.bb)
 
     # MM(2,3)D
-    MM23D = -0.25 * np.einsum("amij,bcmk->abcijk", H.bb.vooo, T.bb, optimize=True)
-    MM23D += 0.25 * np.einsum("abie,ecjk->abcijk", I2C_vvov, T.bb, optimize=True)
+    MM23D = -0.25 * ccpy_einsum("amij,bcmk->abcijk", H.bb.vooo, T.bb)
+    MM23D += 0.25 * ccpy_einsum("abie,ecjk->abcijk", I2C_vvov, T.bb)
     # (HBar*T3)_C
-    MM23D -= (1.0 / 12.0) * np.einsum("mk,abcijm->abcijk", H.b.oo, T.bbb, optimize=True)
-    MM23D += (1.0 / 12.0) * np.einsum("ce,abeijk->abcijk", H.b.vv, T.bbb, optimize=True)
-    MM23D += (1.0 / 24.0) * np.einsum("mnij,abcmnk->abcijk", H.bb.oooo, T.bbb, optimize=True)
-    MM23D += (1.0 / 24.0) * np.einsum("abef,efcijk->abcijk", H.bb.vvvv, T.bbb, optimize=True)
-    MM23D += 0.25 * np.einsum("cmke,abeijm->abcijk", H.bb.voov, T.bbb, optimize=True)
-    MM23D += 0.25 * np.einsum("mcek,ebamji->abcijk", H.ab.ovvo, T.abb, optimize=True)
+    MM23D -= (1.0 / 12.0) * ccpy_einsum("mk,abcijm->abcijk", H.b.oo, T.bbb)
+    MM23D += (1.0 / 12.0) * ccpy_einsum("ce,abeijk->abcijk", H.b.vv, T.bbb)
+    MM23D += (1.0 / 24.0) * ccpy_einsum("mnij,abcmnk->abcijk", H.bb.oooo, T.bbb)
+    MM23D += (1.0 / 24.0) * ccpy_einsum("abef,efcijk->abcijk", H.bb.vvvv, T.bbb)
+    MM23D += 0.25 * ccpy_einsum("cmke,abeijm->abcijk", H.bb.voov, T.bbb)
+    MM23D += 0.25 * ccpy_einsum("mcek,ebamji->abcijk", H.ab.ovvo, T.abb)
 
     MM23D -= np.transpose(MM23D, (0, 1, 2, 3, 5, 4)) # (jk)
     MM23D -= np.transpose(MM23D, (0, 1, 2, 4, 3, 5)) + np.transpose(MM23D, (0, 1, 2, 5, 4, 3)) # (i/jk)
@@ -330,13 +331,13 @@ def build_M3D_ccsdt(T, H, H0):
 def build_L3A_2ba(L, H):
 
     # < 0 | L1 * H(2) | ijkabc >
-    L3A = (9.0 / 36.0) * np.einsum("ai,jkbc->abcijk", L.a, H.aa.oovv, optimize=True)
+    L3A = (9.0 / 36.0) * ccpy_einsum("ai,jkbc->abcijk", L.a, H.aa.oovv)
 
     # < 0 | L2 * H(2) | ijkabc >
-    L3A += (9.0 / 36.0) * np.einsum("bcjk,ia->abcijk", L.aa, H.a.ov, optimize=True)
+    L3A += (9.0 / 36.0) * ccpy_einsum("bcjk,ia->abcijk", L.aa, H.a.ov)
 
-    L3A += (9.0 / 36.0) * np.einsum("ebij,ekac->abcijk", L.aa, H.aa.vovv, optimize=True)
-    L3A -= (9.0 / 36.0) * np.einsum("abmj,ikmc->abcijk", L.aa, H.aa.ooov, optimize=True)
+    L3A += (9.0 / 36.0) * ccpy_einsum("ebij,ekac->abcijk", L.aa, H.aa.vovv)
+    L3A -= (9.0 / 36.0) * ccpy_einsum("abmj,ikmc->abcijk", L.aa, H.aa.ooov)
 
     L3A -= np.transpose(L3A, (0, 1, 2, 3, 5, 4)) # (jk)
     L3A -= np.transpose(L3A, (0, 1, 2, 4, 3, 5)) + np.transpose(L3A, (0, 1, 2, 5, 4, 3)) # (i/jk)
@@ -349,19 +350,19 @@ def build_L3A_2ba(L, H):
 def build_L3B_2ba(L, H):
 
     # < 0 | L1 * H(2) | ijk~abc~ >
-    L3B = np.einsum("ai,jkbc->abcijk", L.a, H.ab.oovv, optimize=True)
-    L3B += 0.25 * np.einsum("ck,ijab->abcijk", L.b, H.aa.oovv, optimize=True)
+    L3B = ccpy_einsum("ai,jkbc->abcijk", L.a, H.ab.oovv)
+    L3B += 0.25 * ccpy_einsum("ck,ijab->abcijk", L.b, H.aa.oovv)
 
     # < 0 | L2 * H(2) | ijk~abc~ >
-    L3B += np.einsum("bcjk,ia->abcijk", L.ab, H.a.ov, optimize=True)
-    L3B += 0.25 * np.einsum("abij,kc->abcijk", L.aa, H.b.ov, optimize=True)
+    L3B += ccpy_einsum("bcjk,ia->abcijk", L.ab, H.a.ov)
+    L3B += 0.25 * ccpy_einsum("abij,kc->abcijk", L.aa, H.b.ov)
 
-    L3B += 0.5 * np.einsum("ekbc,aeij->abcijk", H.ab.vovv, L.aa, optimize=True)
-    L3B -= 0.5 * np.einsum("jkmc,abim->abcijk", H.ab.ooov, L.aa, optimize=True)
-    L3B += np.einsum("ieac,bejk->abcijk", H.ab.ovvv, L.ab, optimize=True)
-    L3B -= np.einsum("ikam,bcjm->abcijk", H.ab.oovo, L.ab, optimize=True)
-    L3B += 0.5 * np.einsum("eiba,ecjk->abcijk", H.aa.vovv, L.ab, optimize=True)
-    L3B -= 0.5 * np.einsum("jima,bcmk->abcijk", H.aa.ooov, L.ab, optimize=True)
+    L3B += 0.5 * ccpy_einsum("ekbc,aeij->abcijk", H.ab.vovv, L.aa)
+    L3B -= 0.5 * ccpy_einsum("jkmc,abim->abcijk", H.ab.ooov, L.aa)
+    L3B += ccpy_einsum("ieac,bejk->abcijk", H.ab.ovvv, L.ab)
+    L3B -= ccpy_einsum("ikam,bcjm->abcijk", H.ab.oovo, L.ab)
+    L3B += 0.5 * ccpy_einsum("eiba,ecjk->abcijk", H.aa.vovv, L.ab)
+    L3B -= 0.5 * ccpy_einsum("jima,bcmk->abcijk", H.aa.ooov, L.ab)
 
     L3B -= np.transpose(L3B, (1, 0, 2, 3, 4, 5))
     L3B -= np.transpose(L3B, (0, 1, 2, 4, 3, 5))
@@ -372,19 +373,19 @@ def build_L3B_2ba(L, H):
 def build_L3C_2ba(L, H):
 
     # < 0 | L1 * H(2) | ijk~abc~ >
-    L3C = np.einsum("ai,kjcb->cbakji", L.b, H.ab.oovv, optimize=True)
-    L3C += 0.25 * np.einsum("ck,ijab->cbakji", L.a, H.bb.oovv, optimize=True)
+    L3C = ccpy_einsum("ai,kjcb->cbakji", L.b, H.ab.oovv)
+    L3C += 0.25 * ccpy_einsum("ck,ijab->cbakji", L.a, H.bb.oovv)
 
     # < 0 | L2 * H(2) | ijk~abc~ >
-    L3C += np.einsum("cbkj,ia->cbakji", L.ab, H.b.ov, optimize=True)
-    L3C += 0.25 * np.einsum("abij,kc->cbakji", L.bb, H.a.ov, optimize=True)
+    L3C += ccpy_einsum("cbkj,ia->cbakji", L.ab, H.b.ov)
+    L3C += 0.25 * ccpy_einsum("abij,kc->cbakji", L.bb, H.a.ov)
 
-    L3C += 0.5 * np.einsum("kecb,aeij->cbakji", H.ab.ovvv, L.bb, optimize=True)
-    L3C -= 0.5 * np.einsum("kjcm,abim->cbakji", H.ab.oovo, L.bb, optimize=True)
-    L3C += np.einsum("eica,ebkj->cbakji", H.ab.vovv, L.ab, optimize=True)
-    L3C -= np.einsum("kima,cbmj->cbakji", H.ab.ooov, L.ab, optimize=True)
-    L3C += 0.5 * np.einsum("eiba,cekj->cbakji", H.bb.vovv, L.ab, optimize=True)
-    L3C -= 0.5 * np.einsum("jima,cbkm->cbakji", H.bb.ooov, L.ab, optimize=True)
+    L3C += 0.5 * ccpy_einsum("kecb,aeij->cbakji", H.ab.ovvv, L.bb)
+    L3C -= 0.5 * ccpy_einsum("kjcm,abim->cbakji", H.ab.oovo, L.bb)
+    L3C += ccpy_einsum("eica,ebkj->cbakji", H.ab.vovv, L.ab)
+    L3C -= ccpy_einsum("kima,cbmj->cbakji", H.ab.ooov, L.ab)
+    L3C += 0.5 * ccpy_einsum("eiba,cekj->cbakji", H.bb.vovv, L.ab)
+    L3C -= 0.5 * ccpy_einsum("jima,cbkm->cbakji", H.bb.ooov, L.ab)
 
     L3C -= np.transpose(L3C, (0, 2, 1, 3, 4, 5))
     L3C -= np.transpose(L3C, (0, 1, 2, 3, 5, 4))
@@ -395,13 +396,13 @@ def build_L3C_2ba(L, H):
 def build_L3D_2ba(L, H):
 
     # < 0 | L1 * H(2) | ijkabc >
-    L3D = (9.0 / 36.0) * np.einsum("ai,jkbc->abcijk", L.b, H.bb.oovv, optimize=True)
+    L3D = (9.0 / 36.0) * ccpy_einsum("ai,jkbc->abcijk", L.b, H.bb.oovv)
 
     # < 0 | L2 * H(2) | ijkabc >
-    L3D += (9.0 / 36.0) * np.einsum("bcjk,ia->abcijk", L.bb, H.b.ov, optimize=True)
+    L3D += (9.0 / 36.0) * ccpy_einsum("bcjk,ia->abcijk", L.bb, H.b.ov)
 
-    L3D += (9.0 / 36.0) * np.einsum("ebij,ekac->abcijk", L.bb, H.bb.vovv, optimize=True)
-    L3D -= (9.0 / 36.0) * np.einsum("abmj,ikmc->abcijk", L.bb, H.bb.ooov, optimize=True)
+    L3D += (9.0 / 36.0) * ccpy_einsum("ebij,ekac->abcijk", L.bb, H.bb.vovv)
+    L3D -= (9.0 / 36.0) * ccpy_einsum("abmj,ikmc->abcijk", L.bb, H.bb.ooov)
 
     L3D -= np.transpose(L3D, (0, 1, 2, 3, 5, 4)) # (jk)
     L3D -= np.transpose(L3D, (0, 1, 2, 4, 3, 5)) + np.transpose(L3D, (0, 1, 2, 5, 4, 3)) # (i/jk)

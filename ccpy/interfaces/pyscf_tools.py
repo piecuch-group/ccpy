@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from pyscf import ao2mo, symm
 
 from ccpy.models.integrals import getHamiltonian, getUHFHamiltonian, getCholeskyHamiltonian, Integral
@@ -113,7 +114,7 @@ def load_pyscf_integrals(
         # Obtain AO Cholesky decomposition of ERIs
         R_chol = cholesky_eri_from_pyscf(molecule, tol=cholesky_tol, cmax=cmax)
         # Transform to MO frame
-        R_chol = np.einsum("xpq,pi,qj->xij", R_chol, mo_coeff, mo_coeff, optimize=True)
+        R_chol = ccpy_einsum("xpq,pi,qj->xij", R_chol, mo_coeff, mo_coeff)
         # Compute HF energy (due to Cholesky error, this may not equal the true HF energy!)
         hf_energy = calc_hf_energy_chol(e1int, R_chol, system)
         hf_energy += nuclear_repulsion
@@ -157,8 +158,8 @@ def get_multipole_integral(l, mol, mf, system):
     # Dipole
     if l == 1:
         Q_ao = mol.intor("int1e_r").reshape(3, nao, nao)
-        Q_mo = np.einsum("xij,ip,jq->xpq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
-        Q_ref = np.einsum("xii->x", Q_mo[:, occ_a, occ_a]) + np.einsum("xii->x", Q_mo[:, occ_b, occ_b])
+        Q_mo = ccpy_einsum("xij,ip,jq->xpq", Q_ao, mf.mo_coeff, mf.mo_coeff)
+        Q_ref = ccpy_einsum("xii->x", Q_mo[:, occ_a, occ_a]) + ccpy_einsum("xii->x", Q_mo[:, occ_b, occ_b])
         Q_mo = Q_mo[:, corr_slice, corr_slice]
         mu = [Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)]
         for x in range(3):
@@ -173,8 +174,8 @@ def get_multipole_integral(l, mol, mf, system):
     # Quadrupole
     elif l == 2:
         Q_ao = mol.intor('int1e_rr').reshape(3, 3, nao, nao)
-        Q_mo = np.einsum("xyij,ip,jq->xypq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
-        Q_ref = np.einsum("xyii->xy", Q_mo[:, :, occ_a, occ_a]) + np.einsum("xyii->xy", Q_mo[:, :, occ_b, occ_b])
+        Q_mo = ccpy_einsum("xyij,ip,jq->xypq", Q_ao, mf.mo_coeff, mf.mo_coeff)
+        Q_ref = ccpy_einsum("xyii->xy", Q_mo[:, :, occ_a, occ_a]) + ccpy_einsum("xyii->xy", Q_mo[:, :, occ_b, occ_b])
         Q_mo = Q_mo[:, :, corr_slice, corr_slice]
         mu = [[Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)] for _ in range(3)]
         for x in range(3):
@@ -190,8 +191,8 @@ def get_multipole_integral(l, mol, mf, system):
     # Octopole
     elif l == 3:
         Q_ao = mol.intor('int1e_rrr').reshape(3, 3, nao, nao)
-        Q_mo = np.einsum("xyzij,ip,jq->xyzpq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
-        Q_ref = np.einsum("xyzii->xyz", Q_mo[:, :, :, occ_a, occ_a]) + np.einsum("xii->x", Q_mo[:, :, :, occ_b, occ_b])
+        Q_mo = ccpy_einsum("xyzij,ip,jq->xyzpq", Q_ao, mf.mo_coeff, mf.mo_coeff)
+        Q_ref = ccpy_einsum("xyzii->xyz", Q_mo[:, :, :, occ_a, occ_a]) + ccpy_einsum("xii->x", Q_mo[:, :, :, occ_b, occ_b])
         Q_mo = Q_mo[:, :, :, corr_slice, corr_slice]
         mu = [[[Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)] for _ in range(3)] for _ in range(3)]
         for x in range(3):
@@ -208,8 +209,8 @@ def get_multipole_integral(l, mol, mf, system):
     # Hexadecapole
     elif l == 4:
         Q_ao = mol.intor('int1e_rrrr').reshape(3, 3, 3, 3, nao, nao)
-        Q_mo = np.einsum("xyzwij,ip,jq->xyzwpq", Q_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
-        Q_ref = np.einsum("xyzwii->xyzw", Q_mo[:, :, :, :, occ_a, occ_a]) + np.einsum("xyzwii->xyzw", Q_mo[:, :, :, :, occ_b, occ_b])
+        Q_mo = ccpy_einsum("xyzwij,ip,jq->xyzwpq", Q_ao, mf.mo_coeff, mf.mo_coeff)
+        Q_ref = ccpy_einsum("xyzwii->xyzw", Q_mo[:, :, :, :, occ_a, occ_a]) + ccpy_einsum("xyzwii->xyzw", Q_mo[:, :, :, :, occ_b, occ_b])
         Q_mo = Q_mo[:, :, :, :, corr_slice, corr_slice]
         mu = [[[[Integral.from_empty(system, order=1, data_type=np.float64, use_none=True) for _ in range(3)] for _ in range(3)] for _ in range(3)] for _ in range(3)]
         for x in range(3):
@@ -234,7 +235,7 @@ def get_kconserv1(a, kpts, thresh=1.0e-07):
     for p, kp in enumerate(kpts):
         for q, kq in enumerate(kpts):
             dk = kp - kq
-            svec = np.einsum("i,xi->x", dk, a / (2.0 * np.pi))
+            svec = ccpy_einsum("i,xi->x", dk, a / (2.0 * np.pi))
             if np.linalg.norm(svec - np.rint(svec)) < thresh:
                 kconserv[p] = q
     return kconserv
@@ -247,7 +248,7 @@ def get_kconserv2(a, kpts, thresh=1.0e-07):
             for r, kr in enumerate(kpts):
                 for s, ks in enumerate(kpts):
                     dk = kp + kq - kr - ks
-                    svec = np.einsum("i,xi->x", dk, a / (2.0 * np.pi))
+                    svec = ccpy_einsum("i,xi->x", dk, a / (2.0 * np.pi))
                     if np.linalg.norm(svec - np.rint(svec)) < thresh:
                         kconserv[p, q, r] = s
     return kconserv
@@ -284,8 +285,8 @@ def get_pbc_mo_integrals(cell, kmf, kpts, notation="chemist"):
     Z = np.zeros((nkpts, nkpts, nmo, nmo), dtype=np.complex128)
     for kp in range(nkpts):
         kq = kconserv1[kp]
-        z0 = np.einsum("pj,pi->ij", hcore_ao[kp], kmf.mo_coeff[kp].conj())
-        z0 = np.einsum("ip,pj->ij", z0, kmf.mo_coeff[kp])
+        z0 = ccpy_einsum("pj,pi->ij", hcore_ao[kp], kmf.mo_coeff[kp].conj())
+        z0 = ccpy_einsum("ip,pj->ij", z0, kmf.mo_coeff[kp])
         # 1-electron integrals do not scale with Nkpt
         Z[kp, kq, :, :] = z0
 
@@ -359,28 +360,28 @@ def calc_khf_energy(e1int, e2int, Nelec, Nkpts, notation):
     ob = slice(0, Nocc_b)
 
     if notation == "chemist":
-        e1a = np.einsum("uuii->", e1int[:, :, oa, oa])
-        e1b = np.einsum("uuii->", e1int[:, :, ob, ob])
+        e1a = ccpy_einsum("uuii->", e1int[:, :, oa, oa])
+        e1b = ccpy_einsum("uuii->", e1int[:, :, ob, ob])
         e2a = 0.5 * (
-                np.einsum("uuvviijj->", e2int[:, :, :, :, oa, oa, oa, oa])
-                - np.einsum("uvvuijji->", e2int[:, :, :, :, oa, oa, oa, oa])
+                ccpy_einsum("uuvviijj->", e2int[:, :, :, :, oa, oa, oa, oa])
+                - ccpy_einsum("uvvuijji->", e2int[:, :, :, :, oa, oa, oa, oa])
         )
-        e2b = 1.0 * (np.einsum("uuvviijj->", e2int[:, :, :, :, oa, ob, oa, ob]))
+        e2b = 1.0 * (ccpy_einsum("uuvviijj->", e2int[:, :, :, :, oa, ob, oa, ob]))
         e2c = 0.5 * (
-                np.einsum("uuvviijj->", e2int[:, :, :, :, ob, ob, ob, ob])
-                - np.einsum("uvvuijji->", e2int[:, :, :, :, ob, ob, ob, ob])
+                ccpy_einsum("uuvviijj->", e2int[:, :, :, :, ob, ob, ob, ob])
+                - ccpy_einsum("uvvuijji->", e2int[:, :, :, :, ob, ob, ob, ob])
         )
     else:  # physicist notation
-        e1a = np.einsum("uuii->", e1int[:, :, oa, oa])
-        e1b = np.einsum("uuii->", e1int[:, :, ob, ob])
+        e1a = ccpy_einsum("uuii->", e1int[:, :, oa, oa])
+        e1b = ccpy_einsum("uuii->", e1int[:, :, ob, ob])
         e2a = 0.5 * (
-                np.einsum("uvuvijij->", e2int[:, :, :, :, oa, oa, oa, oa])
-                - np.einsum("uvvuijji->", e2int[:, :, :, :, oa, oa, oa, oa])
+                ccpy_einsum("uvuvijij->", e2int[:, :, :, :, oa, oa, oa, oa])
+                - ccpy_einsum("uvvuijji->", e2int[:, :, :, :, oa, oa, oa, oa])
         )
-        e2b = 1.0 * (np.einsum("uvuvijij->", e2int[:, :, :, :, oa, ob, oa, ob]))
+        e2b = 1.0 * (ccpy_einsum("uvuvijij->", e2int[:, :, :, :, oa, ob, oa, ob]))
         e2c = 0.5 * (
-                np.einsum("uvuvijij->", e2int[:, :, :, :, ob, ob, ob, ob])
-                - np.einsum("uvvuijji->", e2int[:, :, :, :, ob, ob, ob, ob])
+                ccpy_einsum("uvuvijij->", e2int[:, :, :, :, ob, ob, ob, ob])
+                - ccpy_einsum("uvvuijji->", e2int[:, :, :, :, ob, ob, ob, ob])
         )
 
     Escf = e1a + e1b + e2a + e2b + e2c
@@ -407,8 +408,8 @@ def get_sc_mo_integrals(supcell, kmf, G, notation="chemist"):
 
     kinetic = supcell.pbc_intor("cint1e_kin_sph", kpts=G)
     nuclear = df.FFTDF(supcell).get_pp(G)
-    z0 = np.einsum("pj,pi->ij", kinetic + nuclear, mo_coeff.conj())
-    Z = np.einsum("ip,pj->ij", z0, mo_coeff)
+    z0 = ccpy_einsum("pj,pi->ij", kinetic + nuclear, mo_coeff.conj())
+    Z = ccpy_einsum("ip,pj->ij", z0, mo_coeff)
 
     eri_kpt = kmf.with_df.ao2mo(mo_coeff, G, compact=False)
     V = np.reshape(eri_kpt, (nmo, nmo, nmo, nmo))
@@ -439,7 +440,7 @@ def get_mo_integrals(mol, mf, notation="chemist"):
 
     kinetic_ao = mol.intor_symmetric("int1e_kin")
     nuclear_ao = mol.intor_symmetric("int1e_nuc")
-    Z = np.einsum("pi,pq,qj->ij", mf.mo_coeff, kinetic_ao + nuclear_ao, mf.mo_coeff)
+    Z = ccpy_einsum("pi,pq,qj->ij", mf.mo_coeff, kinetic_ao + nuclear_ao, mf.mo_coeff)
 
     V = np.reshape(ao2mo.kernel(mol, mf.mo_coeff, compact=False), (nmo, nmo, nmo, nmo))
     if notation != "chemist":  # physics notation
@@ -515,10 +516,10 @@ def get_dipole_integrals(mol, mf):
 
     charges = mol.atom_charges()
     coords = mol.atom_coords()
-    nuc_charge_center = np.einsum('z,zx->x', charges, coords) / charges.sum()
+    nuc_charge_center = ccpy_einsum('z,zx->x', charges, coords) / charges.sum()
     mol.set_common_orig_(nuc_charge_center)
     dip_ints_ao = mol.intor_symmetric('cint1e_r_sph', comp=3)
 
-    dip_ints_mo = np.einsum("xij,ip,jq->xpq", dip_ints_ao, mf.mo_coeff, mf.mo_coeff, optimize=True)
+    dip_ints_mo = ccpy_einsum("xij,ip,jq->xpq", dip_ints_ao, mf.mo_coeff, mf.mo_coeff)
 
     return dip_ints_mo

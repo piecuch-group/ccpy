@@ -1,4 +1,5 @@
 import time
+from ccpy.utilities.linear_algebra import ccpy_einsum
 import numpy as np
 
 from ccpy.constants.constants import hartreetoeV
@@ -40,7 +41,7 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
 
     #### aaa correction ####
     # calculate intermediates
-    I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
+    I2A_vvov = H.aa.vvov + ccpy_einsum("me,abim->abie", H.a.ov, T.aa)
     # perform correction in-loop
     dA_aaa, dB_aaa, dC_aaa, dD_aaa, ddA_aaa, ddB_aaa, ddC_aaa, ddD_aaa = crcc_loops.creomcc23a_opt(
                                                                omega, r0, T.aa, R.aa, L.a, L.aa,
@@ -52,9 +53,9 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
                                                                system.noccupied_alpha, system.nunoccupied_alpha)
     #### aab correction ####
     # calculate intermediates
-    I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
-    I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
-    I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
+    I2B_ovoo = H.ab.ovoo - ccpy_einsum("me,ecjk->mcjk", H.a.ov, T.ab)
+    I2B_vooo = H.ab.vooo - ccpy_einsum("me,aeik->amik", H.b.ov, T.ab)
+    I2A_vooo = H.aa.vooo - ccpy_einsum("me,aeij->amij", H.a.ov, T.aa)
     # perform correction in-loop
     dA_aab, dB_aab, dC_aab, dD_aab, ddA_aab, ddB_aab, ddC_aab, ddD_aab = crcc_loops.creomcc23b_opt(
                                                                omega, r0, T.aa, T.ab, R.aa, R.ab, L.a, L.b, L.aa, L.ab,
@@ -83,9 +84,9 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
     else:
         #### abb correction ####
         # calculate intermediates
-        I2B_vooo = H.ab.vooo - np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
-        I2C_vooo = H.bb.vooo - np.einsum("me,cekj->cmkj", H.b.ov, T.bb, optimize=True)
-        I2B_ovoo = H.ab.ovoo - np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+        I2B_vooo = H.ab.vooo - ccpy_einsum("me,aeij->amij", H.b.ov, T.ab)
+        I2C_vooo = H.bb.vooo - ccpy_einsum("me,cekj->cmkj", H.b.ov, T.bb)
+        I2B_ovoo = H.ab.ovoo - ccpy_einsum("me,ebij->mbij", H.a.ov, T.ab)
         dA_abb, dB_abb, dC_abb, dD_abb, ddA_abb, ddB_abb, ddC_abb, ddD_abb = crcc_loops.creomcc23c_opt(
                                                                               omega, r0, T.ab, T.bb, R.ab, R.bb, L.a, L.b, L.ab, L.bb,
                                                                               I2B_vooo, I2C_vooo, I2B_ovoo, H.ab.vvov, H.bb.vvov,
@@ -101,7 +102,7 @@ def calc_creomcc23(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False
                                                                               system.noccupied_beta, system.nunoccupied_beta)
         #### bbb correction ####
         # calculate intermediates
-        I2C_vvov = H.bb.vvov + np.einsum("me,abim->abie", H.b.ov, T.bb, optimize=True)
+        I2C_vvov = H.bb.vvov + ccpy_einsum("me,abim->abie", H.b.ov, T.bb)
         dA_bbb, dB_bbb, dC_bbb, dD_bbb, ddA_bbb, ddB_bbb, ddC_bbb, ddD_bbb = crcc_loops.creomcc23d_opt(
                                                                               omega, r0, T.bb, R.bb, L.b, L.bb,
                                                                               H.bb.vooo, I2C_vvov, H.bb.vvov,
@@ -207,92 +208,92 @@ def get_eomcc23_intermediates(H, R, T, system):
     X = Integral.from_empty(system, 2, data_type=H.a.oo.dtype, use_none=True)
 
     X.a.ov = (
-            np.einsum("mnef,fn->me", H.aa.oovv, R.a, optimize=True)
-            + np.einsum("mnef,fn->me", H.ab.oovv, R.b, optimize=True)
+            ccpy_einsum("mnef,fn->me", H.aa.oovv, R.a)
+            + ccpy_einsum("mnef,fn->me", H.ab.oovv, R.b)
     )
 
     X.b.ov = (
-            np.einsum("nmfe,fn->me", H.ab.oovv, R.a, optimize=True)
-            + np.einsum("nmfe,fn->me", H.bb.oovv, R.b, optimize=True)
+            ccpy_einsum("nmfe,fn->me", H.ab.oovv, R.a)
+            + ccpy_einsum("nmfe,fn->me", H.bb.oovv, R.b)
     )
 
     X.aa.vvov = (
-            np.einsum("amje,bm->baje", H.aa.voov, R.a, optimize=True)
-            + np.einsum("amfe,bejm->bajf", H.aa.vovv, R.aa, optimize=True)
-            + np.einsum("amfe,bejm->bajf", H.ab.vovv, R.ab, optimize=True)
-            + 0.5 * np.einsum("abfe,ej->bajf", H.aa.vvvv, R.a, optimize=True)
-            + 0.25 * np.einsum("nmje,abmn->baje", H.aa.ooov, R.aa, optimize=True)
-            - 0.5 * np.einsum("me,abmj->baje", X.a.ov, T.aa, optimize=True)  # counterterm, similar to CR-CC(2,3)
+            ccpy_einsum("amje,bm->baje", H.aa.voov, R.a)
+            + ccpy_einsum("amfe,bejm->bajf", H.aa.vovv, R.aa)
+            + ccpy_einsum("amfe,bejm->bajf", H.ab.vovv, R.ab)
+            + 0.5 * ccpy_einsum("abfe,ej->bajf", H.aa.vvvv, R.a)
+            + 0.25 * ccpy_einsum("nmje,abmn->baje", H.aa.ooov, R.aa)
+            - 0.5 * ccpy_einsum("me,abmj->baje", X.a.ov, T.aa)  # counterterm, similar to CR-CC(2,3)
     )
     X.aa.vvov -= np.transpose(X.aa.vvov, (1, 0, 2, 3))
 
     X.aa.vooo = (
-            -np.einsum("bmie,ej->bmji", H.aa.voov, R.a, optimize=True)
-            + np.einsum("nmie,bejm->bnji", H.aa.ooov, R.aa, optimize=True)
-            + np.einsum("nmie,bejm->bnji", H.ab.ooov, R.ab, optimize=True)
-            - 0.5 * np.einsum("nmij,bm->bnji", H.aa.oooo, R.a, optimize=True)
-            + 0.25 * np.einsum("bmfe,efij->bmji", H.aa.vovv, R.aa, optimize=True)
+            -ccpy_einsum("bmie,ej->bmji", H.aa.voov, R.a)
+            + ccpy_einsum("nmie,bejm->bnji", H.aa.ooov, R.aa)
+            + ccpy_einsum("nmie,bejm->bnji", H.ab.ooov, R.ab)
+            - 0.5 * ccpy_einsum("nmij,bm->bnji", H.aa.oooo, R.a)
+            + 0.25 * ccpy_einsum("bmfe,efij->bmji", H.aa.vovv, R.aa)
     )
     X.aa.vooo -= np.transpose(X.aa.vooo, (0, 1, 3, 2))
 
     X.ab.vvvo = (
-            - np.einsum("mcek,bm->bcek", H.ab.ovvo, R.a, optimize=True)
-            - np.einsum("bmek,cm->bcek", H.ab.vovo, R.b, optimize=True)
-            + np.einsum("bcfe,ek->bcfk", H.ab.vvvv, R.b, optimize=True)
-            + np.einsum("mnek,bcmn->bcek", H.ab.oovo, R.ab, optimize=True)
-            + np.einsum("bmfe,ecmk->bcfk", H.aa.vovv, R.ab, optimize=True)
-            + np.einsum("bmfe,ecmk->bcfk", H.ab.vovv, R.bb, optimize=True)
-            - np.einsum("mcfe,bemk->bcfk", H.ab.ovvv, R.ab, optimize=True)
-            - np.einsum("me,bcmk->bcek", X.a.ov, T.ab, optimize=True)  # counterterm, similar to CR-CC(2,3)
+            - ccpy_einsum("mcek,bm->bcek", H.ab.ovvo, R.a)
+            - ccpy_einsum("bmek,cm->bcek", H.ab.vovo, R.b)
+            + ccpy_einsum("bcfe,ek->bcfk", H.ab.vvvv, R.b)
+            + ccpy_einsum("mnek,bcmn->bcek", H.ab.oovo, R.ab)
+            + ccpy_einsum("bmfe,ecmk->bcfk", H.aa.vovv, R.ab)
+            + ccpy_einsum("bmfe,ecmk->bcfk", H.ab.vovv, R.bb)
+            - ccpy_einsum("mcfe,bemk->bcfk", H.ab.ovvv, R.ab)
+            - ccpy_einsum("me,bcmk->bcek", X.a.ov, T.ab)  # counterterm, similar to CR-CC(2,3)
     )
 
     X.ab.ovoo = (
-            - np.einsum("nmjk,cm->ncjk", H.ab.oooo, R.b, optimize=True)
-            + np.einsum("mcje,ek->mcjk", H.ab.ovov, R.b, optimize=True)
-            + np.einsum("mcek,ej->mcjk", H.ab.ovvo, R.a, optimize=True)
-            + np.einsum("mcef,efjk->mcjk", H.ab.ovvv, R.ab, optimize=True)
-            + np.einsum("nmje,ecmk->ncjk", H.aa.ooov, R.ab, optimize=True)
-            + np.einsum("nmje,ecmk->ncjk", H.ab.ooov, R.bb, optimize=True)
-            - np.einsum("nmek,ecjm->ncjk", H.ab.oovo, R.ab, optimize=True)
+            - ccpy_einsum("nmjk,cm->ncjk", H.ab.oooo, R.b)
+            + ccpy_einsum("mcje,ek->mcjk", H.ab.ovov, R.b)
+            + ccpy_einsum("mcek,ej->mcjk", H.ab.ovvo, R.a)
+            + ccpy_einsum("mcef,efjk->mcjk", H.ab.ovvv, R.ab)
+            + ccpy_einsum("nmje,ecmk->ncjk", H.aa.ooov, R.ab)
+            + ccpy_einsum("nmje,ecmk->ncjk", H.ab.ooov, R.bb)
+            - ccpy_einsum("nmek,ecjm->ncjk", H.ab.oovo, R.ab)
     )
 
     X.ab.vvov = (
-            - np.einsum("mcje,bm->bcje", H.ab.ovov, R.a, optimize=True)
-            - np.einsum("bmje,cm->bcje", H.ab.voov, R.b, optimize=True)
-            + np.einsum("bcef,ej->bcjf", H.ab.vvvv, R.a, optimize=True)
-            + np.einsum("mnjf,bcmn->bcjf", H.ab.ooov, R.ab, optimize=True)
-            + np.einsum("mcef,bejm->bcjf", H.ab.ovvv, R.aa, optimize=True)
-            + np.einsum("cmfe,bejm->bcjf", H.bb.vovv, R.ab, optimize=True)
-            - np.einsum("bmef,ecjm->bcjf", H.ab.vovv, R.ab, optimize=True)
-            - np.einsum("me,bcjm->bcje", X.b.ov, T.ab, optimize=True)  # counterterm, similar to CR-CC(2,3)
+            - ccpy_einsum("mcje,bm->bcje", H.ab.ovov, R.a)
+            - ccpy_einsum("bmje,cm->bcje", H.ab.voov, R.b)
+            + ccpy_einsum("bcef,ej->bcjf", H.ab.vvvv, R.a)
+            + ccpy_einsum("mnjf,bcmn->bcjf", H.ab.ooov, R.ab)
+            + ccpy_einsum("mcef,bejm->bcjf", H.ab.ovvv, R.aa)
+            + ccpy_einsum("cmfe,bejm->bcjf", H.bb.vovv, R.ab)
+            - ccpy_einsum("bmef,ecjm->bcjf", H.ab.vovv, R.ab)
+            - ccpy_einsum("me,bcjm->bcje", X.b.ov, T.ab)  # counterterm, similar to CR-CC(2,3)
     )
 
     X.ab.vooo = (
-            - np.einsum("mnjk,bm->bnjk", H.ab.oooo, R.a, optimize=True)
-            + np.einsum("bmje,ek->bmjk", H.ab.voov, R.b, optimize=True)
-            + np.einsum("bmek,ej->bmjk", H.ab.vovo, R.a, optimize=True)
-            + np.einsum("bnef,efjk->bnjk", H.ab.vovv, R.ab, optimize=True)
-            + np.einsum("mnek,bejm->bnjk", H.ab.oovo, R.aa, optimize=True)
-            + np.einsum("nmke,bejm->bnjk", H.bb.ooov, R.ab, optimize=True)
-            - np.einsum("nmje,benk->bmjk", H.ab.ooov, R.ab, optimize=True)
+            - ccpy_einsum("mnjk,bm->bnjk", H.ab.oooo, R.a)
+            + ccpy_einsum("bmje,ek->bmjk", H.ab.voov, R.b)
+            + ccpy_einsum("bmek,ej->bmjk", H.ab.vovo, R.a)
+            + ccpy_einsum("bnef,efjk->bnjk", H.ab.vovv, R.ab)
+            + ccpy_einsum("mnek,bejm->bnjk", H.ab.oovo, R.aa)
+            + ccpy_einsum("nmke,bejm->bnjk", H.bb.ooov, R.ab)
+            - ccpy_einsum("nmje,benk->bmjk", H.ab.ooov, R.ab)
     )
 
     X.bb.vvov = (
-            np.einsum("amje,bm->baje", H.bb.voov, R.b, optimize=True)
-            + 0.5 * np.einsum("abfe,ej->bajf", H.bb.vvvv, R.b, optimize=True)
-            + 0.25 * np.einsum("nmje,abmn->baje", H.bb.ooov, R.bb, optimize=True)
-            + np.einsum("amfe,bejm->bajf", H.bb.vovv, R.bb, optimize=True)
-            + np.einsum("maef,ebmj->bajf", H.ab.ovvv, R.ab, optimize=True)
-            - 0.5 * np.einsum("me,abmj->baje", X.b.ov, T.bb, optimize=True)  # counterterm, similar to CR-CC(2,3)
+            ccpy_einsum("amje,bm->baje", H.bb.voov, R.b)
+            + 0.5 * ccpy_einsum("abfe,ej->bajf", H.bb.vvvv, R.b)
+            + 0.25 * ccpy_einsum("nmje,abmn->baje", H.bb.ooov, R.bb)
+            + ccpy_einsum("amfe,bejm->bajf", H.bb.vovv, R.bb)
+            + ccpy_einsum("maef,ebmj->bajf", H.ab.ovvv, R.ab)
+            - 0.5 * ccpy_einsum("me,abmj->baje", X.b.ov, T.bb)  # counterterm, similar to CR-CC(2,3)
     )
     X.bb.vvov -= np.transpose(X.bb.vvov, (1, 0, 2, 3))
 
     X.bb.vooo = (
-            -0.5 * np.einsum("nmij,bm->bnji", H.bb.oooo, R.b, optimize=True)
-            - np.einsum("bmie,ej->bmji", H.bb.voov, R.b, optimize=True)
-            + 0.25 * np.einsum("bmfe,efij->bmji", H.bb.vovv, R.bb, optimize=True)
-            + np.einsum("nmie,bejm->bnji", H.bb.ooov, R.bb, optimize=True)
-            + np.einsum("mnei,ebmj->bnji", H.ab.oovo, R.ab, optimize=True)
+            -0.5 * ccpy_einsum("nmij,bm->bnji", H.bb.oooo, R.b)
+            - ccpy_einsum("bmie,ej->bmji", H.bb.voov, R.b)
+            + 0.25 * ccpy_einsum("bmfe,efij->bmji", H.bb.vovv, R.bb)
+            + ccpy_einsum("nmie,bejm->bnji", H.bb.ooov, R.bb)
+            + ccpy_einsum("mnei,ebmj->bnji", H.ab.oovo, R.ab)
     )
     X.bb.vooo -= np.transpose(X.bb.vooo, (0, 1, 3, 2))
     return X

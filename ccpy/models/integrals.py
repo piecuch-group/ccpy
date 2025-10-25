@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from itertools import combinations
 from ccpy.models.operators import get_operator_name
 
@@ -85,14 +86,14 @@ def getHamiltonian(e1int, e2int, system, normal_ordered, sorted=True):
 def getUHFHamiltonian(coeff_a, coeff_b, z_ao, v_ao, system, normal_ordered, sorted=True):
     corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
     # Transform 1-electron integrals
-    z_a = np.einsum("ij,ip,jq->pq", z_ao, coeff_a, coeff_a, optimize=True)
-    z_b = np.einsum("ij,ip,jq->pq", z_ao, coeff_b, coeff_b, optimize=True)
+    z_a = ccpy_einsum("ij,ip,jq->pq", z_ao, coeff_a, coeff_a)
+    z_b = ccpy_einsum("ij,ip,jq->pq", z_ao, coeff_b, coeff_b)
     z = {"a": z_a, "b": z_b}
     # Transform 2-electron integrals
-    v_aa = np.einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_a, coeff_a, coeff_a, coeff_a, optimize=True)
+    v_aa = ccpy_einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_a, coeff_a, coeff_a, coeff_a)
     v_aa -= np.transpose(v_aa, (0, 1, 3, 2))
-    v_ab = np.einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_a, coeff_b, coeff_a, coeff_b, optimize=True)
-    v_bb = np.einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_b, coeff_b, coeff_b, coeff_b, optimize=True)
+    v_ab = ccpy_einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_a, coeff_b, coeff_a, coeff_b)
+    v_bb = ccpy_einsum("ijkl,ip,jq,kr,ls->pqrs", v_ao, coeff_b, coeff_b, coeff_b, coeff_b)
     v_bb -= np.transpose(v_bb, (0, 1, 3, 2))
     v = {"aa": v_aa, "ab": v_ab, "bb": v_bb}
     # Build Fock matrix
@@ -160,130 +161,130 @@ def getCholeskyHamiltonian(e1int, R_chol, system, normal_ordered, sorted=True):
     # aa
     # ---
     H.aa.oooo = (
-                    np.einsum("xmi,xnj->mnij", H.chol.a.oo, H.chol.a.oo, optimize=True)
-                    - np.einsum("xmj,xni->mnij", H.chol.a.oo, H.chol.a.oo, optimize=True)
+                    ccpy_einsum("xmi,xnj->mnij", H.chol.a.oo, H.chol.a.oo)
+                    - ccpy_einsum("xmj,xni->mnij", H.chol.a.oo, H.chol.a.oo)
     ) # h(mnij)
     H.aa.ooov = (
-                    np.einsum("xmi,xne->mnie", H.chol.a.oo, H.chol.a.ov, optimize=True)
-                    - np.einsum("xni,xme->mnie", H.chol.a.oo, H.chol.a.ov, optimize=True)
+                    ccpy_einsum("xmi,xne->mnie", H.chol.a.oo, H.chol.a.ov)
+                    - ccpy_einsum("xni,xme->mnie", H.chol.a.oo, H.chol.a.ov)
     ) # h(mnie)
     H.aa.vooo = (
-                    np.einsum("xai,xmj->amij", H.chol.a.vo, H.chol.a.oo, optimize=True)
-                    - np.einsum("xaj,xmi->amij", H.chol.a.vo, H.chol.a.oo, optimize=True)
+                    ccpy_einsum("xai,xmj->amij", H.chol.a.vo, H.chol.a.oo)
+                    - ccpy_einsum("xaj,xmi->amij", H.chol.a.vo, H.chol.a.oo)
     ) # h(amij)
     H.aa.voov = (
-                    np.einsum("xai,xme->amie", H.chol.a.vo, H.chol.a.ov, optimize=True)
-                    - np.einsum("xae,xmi->amie", H.chol.a.vv, H.chol.a.oo, optimize=True)
+                    ccpy_einsum("xai,xme->amie", H.chol.a.vo, H.chol.a.ov)
+                    - ccpy_einsum("xae,xmi->amie", H.chol.a.vv, H.chol.a.oo)
     ) # h(amie)
     H.aa.oovv = (
-                    np.einsum("xme,xnf->mnef", H.chol.a.ov, H.chol.a.ov, optimize=True)
-                    - np.einsum("xmf,xne->mnef", H.chol.a.ov, H.chol.a.ov, optimize=True)
+                    ccpy_einsum("xme,xnf->mnef", H.chol.a.ov, H.chol.a.ov)
+                    - ccpy_einsum("xmf,xne->mnef", H.chol.a.ov, H.chol.a.ov)
     ) # h(mnef)
     H.aa.vvoo = (
-                    np.einsum("xai,xbj->abij", H.chol.a.vo, H.chol.a.vo, optimize=True)
-                    - np.einsum("xaj,xbi->abij", H.chol.a.vo, H.chol.a.vo, optimize=True)
+                    ccpy_einsum("xai,xbj->abij", H.chol.a.vo, H.chol.a.vo)
+                    - ccpy_einsum("xaj,xbi->abij", H.chol.a.vo, H.chol.a.vo)
     ) # h(abij)
     # H.aa.vovv = (
-    #                 np.einsum("xae,xmf->amef", H.chol.a.vv, H.chol.a.ov, optimize=True)
-    #                 - np.einsum("xaf,xme->amef", H.chol.a.vv, H.chol.a.ov, optimize=True)
+    #                 ccpy_einsum("xae,xmf->amef", H.chol.a.vv, H.chol.a.ov)
+    #                 - ccpy_einsum("xaf,xme->amef", H.chol.a.vv, H.chol.a.ov)
     # ) # h(amef)
     # H.aa.vvov = (
-    #                 np.einsum("xai,xbe->abie", H.chol.a.vo, H.chol.a.vv, optimize=True)
-    #                 - np.einsum("xbi,xae->abie", H.chol.a.vo, H.chol.a.vv, optimize=True)
+    #                 ccpy_einsum("xai,xbe->abie", H.chol.a.vo, H.chol.a.vv)
+    #                 - ccpy_einsum("xbi,xae->abie", H.chol.a.vo, H.chol.a.vv)
     # ) # h(abie)
     # H.aa.vvvv = (
-    #                 np.einsum("xae,xbf->abef", H.chol.a.vv, H.chol.a.vv, optimize=True)
-    #                 - np.einsum("xaf,xbe->abef", H.chol.a.vv, H.chol.a.vv, optimize=True)
+    #                 ccpy_einsum("xae,xbf->abef", H.chol.a.vv, H.chol.a.vv)
+    #                 - ccpy_einsum("xaf,xbe->abef", H.chol.a.vv, H.chol.a.vv)
     # ) # h(abef)
     # ---
     # bb
     # ---
     H.bb.oooo = (
-                    np.einsum("xmi,xnj->mnij", H.chol.b.oo, H.chol.b.oo, optimize=True)
-                    - np.einsum("xmj,xni->mnij", H.chol.b.oo, H.chol.b.oo, optimize=True)
+                    ccpy_einsum("xmi,xnj->mnij", H.chol.b.oo, H.chol.b.oo)
+                    - ccpy_einsum("xmj,xni->mnij", H.chol.b.oo, H.chol.b.oo)
     ) # h(mnij)
     H.bb.ooov = (
-                    np.einsum("xmi,xne->mnie", H.chol.b.oo, H.chol.b.ov, optimize=True)
-                    - np.einsum("xni,xme->mnie", H.chol.b.oo, H.chol.b.ov, optimize=True)
+                    ccpy_einsum("xmi,xne->mnie", H.chol.b.oo, H.chol.b.ov)
+                    - ccpy_einsum("xni,xme->mnie", H.chol.b.oo, H.chol.b.ov)
     ) # h(mnie)
     H.bb.vooo = (
-                    np.einsum("xai,xmj->amij", H.chol.b.vo, H.chol.b.oo, optimize=True)
-                    - np.einsum("xaj,xmi->amij", H.chol.b.vo, H.chol.b.oo, optimize=True)
+                    ccpy_einsum("xai,xmj->amij", H.chol.b.vo, H.chol.b.oo)
+                    - ccpy_einsum("xaj,xmi->amij", H.chol.b.vo, H.chol.b.oo)
     ) # h(amij)
     H.bb.voov = (
-                    np.einsum("xai,xme->amie", H.chol.b.vo, H.chol.b.ov, optimize=True)
-                    - np.einsum("xae,xmi->amie", H.chol.b.vv, H.chol.b.oo, optimize=True)
+                    ccpy_einsum("xai,xme->amie", H.chol.b.vo, H.chol.b.ov)
+                    - ccpy_einsum("xae,xmi->amie", H.chol.b.vv, H.chol.b.oo)
     ) # h(amie)
     H.bb.oovv = (
-                    np.einsum("xme,xnf->mnef", H.chol.b.ov, H.chol.b.ov, optimize=True)
-                    - np.einsum("xmf,xne->mnef", H.chol.b.ov, H.chol.b.ov, optimize=True)
+                    ccpy_einsum("xme,xnf->mnef", H.chol.b.ov, H.chol.b.ov)
+                    - ccpy_einsum("xmf,xne->mnef", H.chol.b.ov, H.chol.b.ov)
     ) # h(mnef)
     H.bb.vvoo = (
-                    np.einsum("xai,xbj->abij", H.chol.b.vo, H.chol.b.vo, optimize=True)
-                    - np.einsum("xaj,xbi->abij", H.chol.b.vo, H.chol.b.vo, optimize=True)
+                    ccpy_einsum("xai,xbj->abij", H.chol.b.vo, H.chol.b.vo)
+                    - ccpy_einsum("xaj,xbi->abij", H.chol.b.vo, H.chol.b.vo)
     ) # h(abij)
     # H.bb.vovv = (
-    #                 np.einsum("xae,xmf->amef", H.chol.b.vv, H.chol.b.ov, optimize=True)
-    #                 - np.einsum("xaf,xme->amef", H.chol.b.vv, H.chol.b.ov, optimize=True)
+    #                 ccpy_einsum("xae,xmf->amef", H.chol.b.vv, H.chol.b.ov)
+    #                 - ccpy_einsum("xaf,xme->amef", H.chol.b.vv, H.chol.b.ov)
     # ) # h(amef)
     # H.bb.vvov = (
-    #                 np.einsum("xai,xbe->abie", H.chol.b.vo, H.chol.b.vv, optimize=True)
-    #                 - np.einsum("xbi,xae->abie", H.chol.b.vo, H.chol.b.vv, optimize=True)
+    #                 ccpy_einsum("xai,xbe->abie", H.chol.b.vo, H.chol.b.vv)
+    #                 - ccpy_einsum("xbi,xae->abie", H.chol.b.vo, H.chol.b.vv)
     # ) # h(abie)
     # H.bb.vvvv = (
-    #                 np.einsum("xae,xbf->abef", H.chol.b.vv, H.chol.b.vv, optimize=True)
-    #                 - np.einsum("xaf,xbe->abef", H.chol.b.vv, H.chol.b.vv, optimize=True)
+    #                 ccpy_einsum("xae,xbf->abef", H.chol.b.vv, H.chol.b.vv)
+    #                 - ccpy_einsum("xaf,xbe->abef", H.chol.b.vv, H.chol.b.vv)
     # ) # h(abef)
     # ---
     # ab
     # ---
     H.ab.oooo = (
-                    np.einsum("xmi,xnj->mnij", H.chol.a.oo, H.chol.b.oo, optimize=True)
+                    ccpy_einsum("xmi,xnj->mnij", H.chol.a.oo, H.chol.b.oo)
     ) # h(mnij)
     H.ab.ooov = (
-                    np.einsum("xmi,xne->mnie", H.chol.a.oo, H.chol.b.ov, optimize=True)
+                    ccpy_einsum("xmi,xne->mnie", H.chol.a.oo, H.chol.b.ov)
     ) # h(mnie)
     H.ab.oovo = (
-                    np.einsum("xme,xni->mnei", H.chol.a.ov, H.chol.b.oo, optimize=True)
+                    ccpy_einsum("xme,xni->mnei", H.chol.a.ov, H.chol.b.oo)
     ) # h(mnei)
     H.ab.vooo = (
-                    np.einsum("xai,xmj->amij", H.chol.a.vo, H.chol.b.oo, optimize=True)
+                    ccpy_einsum("xai,xmj->amij", H.chol.a.vo, H.chol.b.oo)
     ) # h(amij)
     H.ab.ovoo = (
-                    np.einsum("xmj,xai->maji", H.chol.a.oo, H.chol.b.vo, optimize=True)
+                    ccpy_einsum("xmj,xai->maji", H.chol.a.oo, H.chol.b.vo)
     ) # h(maji)
     H.ab.voov = (
-                    np.einsum("xai,xme->amie", H.chol.a.vo, H.chol.b.ov, optimize=True)
+                    ccpy_einsum("xai,xme->amie", H.chol.a.vo, H.chol.b.ov)
     ) # h(amie)
     H.ab.ovvo = (
-                    np.einsum("xme,xai->maei", H.chol.a.ov, H.chol.b.vo, optimize=True)
+                    ccpy_einsum("xme,xai->maei", H.chol.a.ov, H.chol.b.vo)
     ) # h(maei)
     H.ab.vovo = (
-                    np.einsum("xae,xmi->amei", H.chol.a.vv, H.chol.b.oo, optimize=True)
+                    ccpy_einsum("xae,xmi->amei", H.chol.a.vv, H.chol.b.oo)
     ) # h(amei)
     H.ab.ovov = (
-                    np.einsum("xmj,xbe->mbje", H.chol.a.oo, H.chol.b.vv, optimize=True)
+                    ccpy_einsum("xmj,xbe->mbje", H.chol.a.oo, H.chol.b.vv)
     ) # h(mbje)
     H.ab.oovv = (
-                    np.einsum("xme,xnf->mnef", H.chol.a.ov, H.chol.b.ov, optimize=True)
+                    ccpy_einsum("xme,xnf->mnef", H.chol.a.ov, H.chol.b.ov)
     ) # h(mnef)
     H.ab.vvoo = (
-                    np.einsum("xai,xbj->abij", H.chol.a.vo, H.chol.b.vo, optimize=True)
+                    ccpy_einsum("xai,xbj->abij", H.chol.a.vo, H.chol.b.vo)
     ) # h(abij)
     # H.ab.vovv = (
-    #                 np.einsum("xae,xmf->amef", H.chol.a.vv, H.chol.b.ov, optimize=True)
+    #                 ccpy_einsum("xae,xmf->amef", H.chol.a.vv, H.chol.b.ov)
     # ) # h(amef)
     # H.ab.ovvv = (
-    #                 np.einsum("xmf,xae->mafe", H.chol.a.ov, H.chol.b.vv, optimize=True)
+    #                 ccpy_einsum("xmf,xae->mafe", H.chol.a.ov, H.chol.b.vv)
     # ) # h(mafe)
     # H.ab.vvov = (
-    #                 np.einsum("xai,xbe->abie", H.chol.a.vo, H.chol.b.vv, optimize=True)
+    #                 ccpy_einsum("xai,xbe->abie", H.chol.a.vo, H.chol.b.vv)
     # ) # h(abie)
     # H.ab.vvvo = (
-    #                 np.einsum("xae,xbi->abei", H.chol.a.vv, H.chol.b.vo, optimize=True)
+    #                 ccpy_einsum("xae,xbi->abei", H.chol.a.vv, H.chol.b.vo)
     # ) # h(abei)
     # H.ab.vvvv = (
-    #                 np.einsum("xae,xbf->abef", H.chol.a.vv, H.chol.b.vv, optimize=True)
+    #                 ccpy_einsum("xae,xbf->abef", H.chol.a.vv, H.chol.b.vv)
     # ) # h(abef)
     return H
 
@@ -302,9 +303,9 @@ def build_v(e2int):
         antisymmetrized twobody MO integrals.
     """
     v = {
-        "aa": e2int - np.einsum("pqrs->pqsr", e2int),
+        "aa": e2int - ccpy_einsum("pqrs->pqsr", e2int),
         "ab": e2int,
-        "bb": e2int - np.einsum("pqrs->pqsr", e2int),
+        "bb": e2int - ccpy_einsum("pqrs->pqsr", e2int),
     }
     return v
 
@@ -334,15 +335,15 @@ def build_f(z, v, system):
     # <p|f|q> = <p|z|q> + <pi|v|qi> + <pi~|v|qi~>
     f_a = (
         z["a"]
-        + np.einsum("piqi->pq", v["aa"][:, :Nocc_a, :, :Nocc_a])
-        + np.einsum("piqi->pq", v["ab"][:, :Nocc_b, :, :Nocc_b])
+        + ccpy_einsum("piqi->pq", v["aa"][:, :Nocc_a, :, :Nocc_a])
+        + ccpy_einsum("piqi->pq", v["ab"][:, :Nocc_b, :, :Nocc_b])
     )
 
     # <p~|f|q~> = <p~|z|q~> + <p~i~|v|q~i~> + <ip~|v|iq~>
     f_b = (
         z["b"]
-        + np.einsum("piqi->pq", v["bb"][:, :Nocc_b, :, :Nocc_b])
-        + np.einsum("ipiq->pq", v["ab"][:Nocc_a, :, :Nocc_a, :])
+        + ccpy_einsum("piqi->pq", v["bb"][:, :Nocc_b, :, :Nocc_b])
+        + ccpy_einsum("ipiq->pq", v["ab"][:Nocc_a, :, :Nocc_a, :])
     )
 
     f = {"a": f_a, "b": f_b}
@@ -373,14 +374,14 @@ def build_f_chol(e1int, R_chol, system):
 
     # <p|f|q> = <p|z|q> + <pi|v|qi> + <pi~|v|qi~>
     f_a = e1int + (
-        np.einsum("xpq,xii->pq", R_chol, R_chol[:, :noa, :noa], optimize=True) # <pi|v|qi>
-        - np.einsum("xpi,xiq->pq", R_chol[:, :, :noa], R_chol[:, :noa, :], optimize=True) # <pi|v|iq>
-        + np.einsum("xpq,xii->pq", R_chol, R_chol[:, :nob, :nob], optimize=True) # <pi~|v|qi~>
+        ccpy_einsum("xpq,xii->pq", R_chol, R_chol[:, :noa, :noa]) # <pi|v|qi>
+        - ccpy_einsum("xpi,xiq->pq", R_chol[:, :, :noa], R_chol[:, :noa, :]) # <pi|v|iq>
+        + ccpy_einsum("xpq,xii->pq", R_chol, R_chol[:, :nob, :nob]) # <pi~|v|qi~>
     )
     f_b = e1int + (
-        np.einsum("xpq,xii->pq", R_chol, R_chol[:, :nob, :nob], optimize=True)  # <p~i~|v|q~i~>
-        - np.einsum("xpi,xiq->pq", R_chol[:, :, :nob], R_chol[:, :nob, :], optimize=True)  # <p~i~|v|i~q~>
-        + np.einsum("xii,xpq->pq", R_chol[:, :noa, :noa], R_chol, optimize=True)  # <ip~|v|iq~>
+        ccpy_einsum("xpq,xii->pq", R_chol, R_chol[:, :nob, :nob])  # <p~i~|v|q~i~>
+        - ccpy_einsum("xpi,xiq->pq", R_chol[:, :, :nob], R_chol[:, :nob, :])  # <p~i~|v|i~q~>
+        + ccpy_einsum("xii,xpq->pq", R_chol[:, :noa, :noa], R_chol)  # <ip~|v|iq~>
     )
     f = {"a": f_a, "b": f_b}
     return f

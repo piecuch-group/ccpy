@@ -1,5 +1,6 @@
 """Module containing the driving solvers"""
 import time
+from ccpy.utilities.linear_algebra import ccpy_einsum
 
 import numpy as np
 
@@ -413,17 +414,17 @@ def left_ccp_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, sys
     # explicitly enforce biorthonormality
     if isinstance(L, ClusterOperator):
         if not is_ground:
-            LR =  np.einsum("em,em->", R.a, L.a, optimize=True)
-            LR += np.einsum("em,em->", R.b, L.b, optimize=True)
-            LR += 0.25 * np.einsum("efmn,efmn->", R.aa, L.aa, optimize=True)
-            LR += np.einsum("efmn,efmn->", R.ab, L.ab, optimize=True)
-            LR += 0.25 * np.einsum("efmn,efmn->", R.bb, L.bb, optimize=True)
+            LR =  ccpy_einsum("em,em->", R.a, L.a)
+            LR += ccpy_einsum("em,em->", R.b, L.b)
+            LR += 0.25 * ccpy_einsum("efmn,efmn->", R.aa, L.aa)
+            LR += ccpy_einsum("efmn,efmn->", R.ab, L.ab)
+            LR += 0.25 * ccpy_einsum("efmn,efmn->", R.bb, L.bb)
 
             if L.order == 3 and R.order == 3:
-                LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.aaa, L.aaa, optimize=True)
-                LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.aab, L.aab, optimize=True)
-                LR += (1.0 / 4.0) * np.einsum("efgmno,efgmno->", R.abb, L.abb, optimize=True)
-                LR += (1.0 / 36.0) * np.einsum("efgmno,efgmno->", R.bbb, L.bbb, optimize=True)
+                LR += (1.0 / 36.0) * ccpy_einsum("efgmno,efgmno->", R.aaa, L.aaa)
+                LR += (1.0 / 4.0) * ccpy_einsum("efgmno,efgmno->", R.aab, L.aab)
+                LR += (1.0 / 4.0) * ccpy_einsum("efgmno,efgmno->", R.abb, L.abb)
+                LR += (1.0 / 36.0) * ccpy_einsum("efgmno,efgmno->", R.bbb, L.bbb)
 
             L.unflatten(1.0/LR * L.flatten())
         else:
@@ -431,12 +432,12 @@ def left_ccp_jacobi(update_l, L, LH, T, R, H, omega, calculation, is_ground, sys
 
         if isinstance(L, FockOperator):
 
-            LR = -np.einsum("m,m->", R.a, L.a, optimize=True)
-            LR -= np.einsum("m,m->", R.b, L.b, optimize=True)
-            LR -= 0.5 * np.einsum("fnm,fnm->", R.aa, L.aa, optimize=True)
-            LR -= np.einsum("fnm,fnm->", R.ab, L.ab, optimize=True)
-            LR -= np.einsum("fnm,fnm->", R.ba, L.ba, optimize=True)
-            LR -= 0.5 * np.einsum("fnm,fnm->", R.bb, L.bb, optimize=True)
+            LR = -ccpy_einsum("m,m->", R.a, L.a)
+            LR -= ccpy_einsum("m,m->", R.b, L.b)
+            LR -= 0.5 * ccpy_einsum("fnm,fnm->", R.aa, L.aa)
+            LR -= ccpy_einsum("fnm,fnm->", R.ab, L.ab)
+            LR -= ccpy_einsum("fnm,fnm->", R.ba, L.ba)
+            LR -= 0.5 * ccpy_einsum("fnm,fnm->", R.bb, L.bb)
 
             L.unflatten(1.0 / LR * L.flatten())
 

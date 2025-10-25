@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from pyscf import gto, scf
 from ccpy.drivers.driver import Driver
 
@@ -35,32 +36,32 @@ def test_dipeomccsdt_ch2():
     #
     # # x(ij~em) [7]
     # X["aba"]["oovo"] = (
-    #     -np.einsum("mnej,in->ijem", H.ab.oovo, R.ab, optimize=True)
-    #     -np.einsum("nmie,nj->ijem", H.aa.ooov, R.ab, optimize=True)
-    #     +np.einsum("mnef,ijfn->ijem", H.aa.oovv, R.aba, optimize=True)
-    #     +np.einsum("mnef,ijfn->ijem", H.ab.oovv, R.abb, optimize=True)
+    #     -ccpy_einsum("mnej,in->ijem", H.ab.oovo, R.ab)
+    #     -ccpy_einsum("nmie,nj->ijem", H.aa.ooov, R.ab)
+    #     +ccpy_einsum("mnef,ijfn->ijem", H.aa.oovv, R.aba)
+    #     +ccpy_einsum("mnef,ijfn->ijem", H.ab.oovv, R.abb)
     # )
     #
     # # x(ij~e~m~) [8]
     # X["abb"]["oovo"] = (
-    #     -np.einsum("nmje,in->ijem", H.bb.ooov, R.ab, optimize=True)
-    #     -np.einsum("nmie,nj->ijem", H.ab.ooov, R.ab, optimize=True)
-    #     +np.einsum("nmfe,ijfn->ijem", H.ab.oovv, R.aba, optimize=True)
-    #     +np.einsum("mnef,ijfn->ijem", H.bb.oovv, R.abb, optimize=True)
+    #     -ccpy_einsum("nmje,in->ijem", H.bb.ooov, R.ab)
+    #     -ccpy_einsum("nmie,nj->ijem", H.ab.ooov, R.ab)
+    #     +ccpy_einsum("nmfe,ijfn->ijem", H.ab.oovv, R.aba)
+    #     +ccpy_einsum("mnef,ijfn->ijem", H.bb.oovv, R.abb)
     # )
     #
     # # x(ie~mk) [9]; i ->, e~ -> (j~), k -> m
     # X["aba"]["ovoo"] = (
-    #     -0.5 * np.einsum("mnfe,infk->iemk", H.ab.oovv, R.aba, optimize=True)
-    #     -np.einsum("mnie,kn->iemk", H.ab.ooov, R.ab, optimize=True)
+    #     -0.5 * ccpy_einsum("mnfe,infk->iemk", H.ab.oovv, R.aba)
+    #     -ccpy_einsum("mnie,kn->iemk", H.ab.ooov, R.ab)
     # )
     # # antisymmetrize (ik)
     # X["aba"]["ovoo"] -= np.transpose(X["aba"]["ovoo"], (3, 1, 2, 0))
     #
     # # x(ej~m~k~) [10]; j~ ->, e -> (i), k~ -> m~
     # X["abb"]["vooo"] = (
-    #     -0.5 * np.einsum("nmef,njfk->ejmk", H.ab.oovv, R.abb, optimize=True)
-    #     -np.einsum("nmek,nj->ejmk", H.ab.oovo, R.ab, optimize=True)
+    #     -0.5 * ccpy_einsum("nmef,njfk->ejmk", H.ab.oovv, R.abb)
+    #     -ccpy_einsum("nmek,nj->ejmk", H.ab.oovo, R.ab)
     # )
     # # antisymmetrize A(j~k~)
     # X["abb"]["vooo"] -= np.transpose(X["abb"]["vooo"], (0, 3, 2, 1))

@@ -3,6 +3,7 @@ Total Spin S^2 Matrix in Determinantal Basis for Initial Guesses
 '''
 
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 import math
 
 def spin_adapt_guess(S2, H, multiplicity, debug=False):
@@ -38,7 +39,7 @@ def spin_adapt_guess(S2, H, multiplicity, debug=False):
         W[:, i] = V_s2[:, idx_s2[i]]
 
     # Transform into determinantal eigenbasis of S2
-    G = np.einsum("Ku,Nv,Lu,Mv,LM->KN", W, W, W, W, H, optimize=True)
+    G = ccpy_einsum("Ku,Nv,Lu,Mv,LM->KN", W, W, W, W, H)
     # diagonalize and sort the resulting eigenvalues
     omega, V = np.linalg.eig(G)
     omega = np.real(omega)

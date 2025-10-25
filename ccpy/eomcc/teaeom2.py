@@ -4,6 +4,7 @@ Method with 3p Excitations on top of CCSD [TEA-EOMCCSD(3p)]
 '''
 
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from ccpy.lib.core import cc_loops2
 
 def update(R, omega, H, RHF_symmetry, system):
@@ -23,10 +24,10 @@ def HR(dR, R, T, H, flag_RHF, system):
     return dR.flatten()
 
 def build_HR_3B(R, T, H):
-    x3b = np.einsum("ae,ebc->abc", H.a.vv, R.aab, optimize=True)
-    x3b += 0.5 * np.einsum("ce,abe->abc", H.b.vv, R.aab, optimize=True)
-    x3b += 0.25 * np.einsum("abef,efc->abc", H.aa.vvvv, R.aab, optimize=True)
-    x3b += np.einsum("bcef,aef->abc", H.ab.vvvv, R.aab, optimize=True)
+    x3b = ccpy_einsum("ae,ebc->abc", H.a.vv, R.aab)
+    x3b += 0.5 * ccpy_einsum("ce,abe->abc", H.b.vv, R.aab)
+    x3b += 0.25 * ccpy_einsum("abef,efc->abc", H.aa.vvvv, R.aab)
+    x3b += ccpy_einsum("bcef,aef->abc", H.ab.vvvv, R.aab)
     # antisymmetrize A(ab)
     x3b -= np.transpose(x3b, (1, 0, 2))
     return x3b

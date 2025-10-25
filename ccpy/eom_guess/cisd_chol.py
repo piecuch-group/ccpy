@@ -4,6 +4,7 @@ CISd Guess Routine for EOMCC
 '''
 
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 import time
 from ccpy.eom_guess.s2matrix import spin_adapt_guess
 
@@ -980,20 +981,20 @@ def build_s2matrix(system, nacto, nactu, idx_a, idx_b, idx_aa, idx_ab, idx_bb):
     return S2mat
 
 def build_active_h_aa_vvvv(H, T, nactu):
-    h_aa_vvvv = np.einsum("xAE,xBF->ABEF", H.chol.a.vv[:, :nactu, :nactu], H.chol.a.vv[:, :nactu, :nactu], optimize=True)
+    h_aa_vvvv = ccpy_einsum("xAE,xBF->ABEF", H.chol.a.vv[:, :nactu, :nactu], H.chol.a.vv[:, :nactu, :nactu])
     h_aa_vvvv -= np.transpose(h_aa_vvvv, (0, 1, 3, 2))
-    h_aa_vvvv += 0.5 * np.einsum("mnEF,ABmn->ABEF", H.aa.oovv[:, :, :nactu, :nactu], T.aa[:nactu, :nactu, :, :], optimize=True)
+    h_aa_vvvv += 0.5 * ccpy_einsum("mnEF,ABmn->ABEF", H.aa.oovv[:, :, :nactu, :nactu], T.aa[:nactu, :nactu, :, :])
     return h_aa_vvvv
 
 def build_active_h_ab_vvvv(H, T, nactu_a, nactu_b):
-    h_ab_vvvv = np.einsum("xAE,xBF->ABEF", H.chol.a.vv[:, :nactu_a, :nactu_a], H.chol.b.vv[:, :nactu_b, :nactu_b], optimize=True)
-    h_ab_vvvv += np.einsum("mnEF,ABmn->ABEF", H.ab.oovv[:, :, :nactu_a, :nactu_b], T.ab[:nactu_a, :nactu_b, :, :], optimize=True)
+    h_ab_vvvv = ccpy_einsum("xAE,xBF->ABEF", H.chol.a.vv[:, :nactu_a, :nactu_a], H.chol.b.vv[:, :nactu_b, :nactu_b])
+    h_ab_vvvv += ccpy_einsum("mnEF,ABmn->ABEF", H.ab.oovv[:, :, :nactu_a, :nactu_b], T.ab[:nactu_a, :nactu_b, :, :])
     return h_ab_vvvv
 
 def build_active_h_bb_vvvv(H, T, nactu):
-    h_bb_vvvv = np.einsum("xAE,xBF->ABEF", H.chol.b.vv[:, :nactu, :nactu], H.chol.b.vv[:, :nactu, :nactu], optimize=True)
+    h_bb_vvvv = ccpy_einsum("xAE,xBF->ABEF", H.chol.b.vv[:, :nactu, :nactu], H.chol.b.vv[:, :nactu, :nactu])
     h_bb_vvvv -= np.transpose(h_bb_vvvv, (0, 1, 3, 2))
-    h_bb_vvvv += 0.5 * np.einsum("mnEF,ABmn->ABEF", H.bb.oovv[:, :, :nactu, :nactu], T.bb[:nactu, :nactu, :, :], optimize=True)
+    h_bb_vvvv += 0.5 * ccpy_einsum("mnEF,ABmn->ABEF", H.bb.oovv[:, :, :nactu, :nactu], T.bb[:nactu, :nactu, :, :])
     return h_bb_vvvv
 
 def get_index_arrays(nacto, nactu, system, target_irrep):

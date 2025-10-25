@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from ccpy.lib.core import eaeom3_p_loops
 from ccpy.lib.core import lefteaeom3_p_loops
 from ccpy.left.left_eaeom_intermediates import get_lefteaeom3_p_intermediates
@@ -51,32 +52,32 @@ def LH_fun(dL, L, T, H, flag_RHF, system, t3_excitations, l3_excitations):
     return dL.flatten()
 
 def build_LH_1A(dL, L, l3_excitations, H, X):
-    dL.a = np.einsum("e,ea->a", L.a, H.a.vv, optimize=True)
-    dL.a += 0.5 * np.einsum("efn,fena->a", L.aa, H.aa.vvov, optimize=True)
-    dL.a += np.einsum("efn,efan->a", L.ab, H.ab.vvvo, optimize=True)
+    dL.a = ccpy_einsum("e,ea->a", L.a, H.a.vv)
+    dL.a += 0.5 * ccpy_einsum("efn,fena->a", L.aa, H.aa.vvov)
+    dL.a += ccpy_einsum("efn,efan->a", L.ab, H.ab.vvvo)
     # parts contracted with L3 (verified against explicit 3-body hbars)
-    dL.a -= np.einsum("mfan,mfn->a", H.ab.ovvo, X["ab"]["ovo"], optimize=True)
-    dL.a -= np.einsum("fmna,mfn->a", H.aa.voov, X["aa"]["ovo"], optimize=True)
-    dL.a -= 0.5 * np.einsum("fge,feag->a", X["aa"]["vvv"], H.aa.vvvv, optimize=True)
-    dL.a -= np.einsum("eman,enm->a", H.ab.vovo, X["ab"]["voo"], optimize=True)
-    dL.a -= np.einsum("efg,egaf->a", X["ab"]["vvv"], H.ab.vvvv, optimize=True)
+    dL.a -= ccpy_einsum("mfan,mfn->a", H.ab.ovvo, X["ab"]["ovo"])
+    dL.a -= ccpy_einsum("fmna,mfn->a", H.aa.voov, X["aa"]["ovo"])
+    dL.a -= 0.5 * ccpy_einsum("fge,feag->a", X["aa"]["vvv"], H.aa.vvvv)
+    dL.a -= ccpy_einsum("eman,enm->a", H.ab.vovo, X["ab"]["voo"])
+    dL.a -= ccpy_einsum("efg,egaf->a", X["ab"]["vvv"], H.ab.vvvv)
     return dL
 
 def build_LH_2A(dL, L, l3_excitations, H, X):
-    dL.aa = np.einsum("a,jb->abj", L.a, H.a.ov, optimize=True)
-    dL.aa += 0.5 * np.einsum("e,ejab->abj", L.a, H.aa.vovv, optimize=True)
-    dL.aa += np.einsum("ebj,ea->abj", L.aa, H.a.vv, optimize=True)
-    dL.aa -= 0.5 * np.einsum("abm,jm->abj", L.aa, H.a.oo, optimize=True)
-    dL.aa += np.einsum("afn,fjnb->abj", L.aa, H.aa.voov, optimize=True)
-    dL.aa += np.einsum("afn,jfbn->abj", L.ab, H.ab.ovvo, optimize=True)
-    dL.aa += 0.25 * np.einsum("efj,efab->abj", L.aa, H.aa.vvvv, optimize=True)
-    dL.aa -= 0.5 * np.einsum("mjab,m->abj", H.aa.oovv, X["a"]["o"], optimize=True)
+    dL.aa = ccpy_einsum("a,jb->abj", L.a, H.a.ov)
+    dL.aa += 0.5 * ccpy_einsum("e,ejab->abj", L.a, H.aa.vovv)
+    dL.aa += ccpy_einsum("ebj,ea->abj", L.aa, H.a.vv)
+    dL.aa -= 0.5 * ccpy_einsum("abm,jm->abj", L.aa, H.a.oo)
+    dL.aa += ccpy_einsum("afn,fjnb->abj", L.aa, H.aa.voov)
+    dL.aa += ccpy_einsum("afn,jfbn->abj", L.ab, H.ab.ovvo)
+    dL.aa += 0.25 * ccpy_einsum("efj,efab->abj", L.aa, H.aa.vvvv)
+    dL.aa -= 0.5 * ccpy_einsum("mjab,m->abj", H.aa.oovv, X["a"]["o"])
     # 3-body hbar terms (verified against explicit 3-body hbars)
-    dL.aa += np.einsum("mbn,jmna->abj", X["aa"]["ovo"], H.aa.ooov, optimize=True) #
-    dL.aa -= np.einsum("amn,jnbm->abj", X["ab"]["voo"], H.ab.oovo, optimize=True) #
-    dL.aa -= np.einsum("aef,fjeb->abj", X["aa"]["vvv"], H.aa.vovv, optimize=True) #
-    dL.aa -= np.einsum("aef,jfbe->abj", X["ab"]["vvv"], H.ab.ovvv, optimize=True) #
-    dL.aa -= 0.5 * np.einsum("mej,emba->abj", X["aa"]["ovo"], H.aa.vovv, optimize=True)
+    dL.aa += ccpy_einsum("mbn,jmna->abj", X["aa"]["ovo"], H.aa.ooov) #
+    dL.aa -= ccpy_einsum("amn,jnbm->abj", X["ab"]["voo"], H.ab.oovo) #
+    dL.aa -= ccpy_einsum("aef,fjeb->abj", X["aa"]["vvv"], H.aa.vovv) #
+    dL.aa -= ccpy_einsum("aef,jfbe->abj", X["ab"]["vvv"], H.ab.ovvv) #
+    dL.aa -= 0.5 * ccpy_einsum("mej,emba->abj", X["aa"]["ovo"], H.aa.vovv)
     dL.aa = lefteaeom3_p_loops.build_lh_2a(
             dL.aa,
             L.aaa, l3_excitations["aaa"],
@@ -86,25 +87,25 @@ def build_LH_2A(dL, L, l3_excitations, H, X):
     return dL
 
 def build_LH_2B(dL, L, l3_excitations, H, X):
-    dL.ab = np.einsum("a,jb->abj", L.a, H.b.ov, optimize=True)
-    dL.ab += np.einsum("e,ejab->abj", L.a, H.ab.vovv, optimize=True)
-    dL.ab -= np.einsum("abm,jm->abj", L.ab, H.b.oo, optimize=True)
-    dL.ab += np.einsum("aej,eb->abj", L.ab, H.b.vv, optimize=True)
-    dL.ab += np.einsum("ebj,ea->abj", L.ab, H.a.vv, optimize=True)
-    dL.ab += np.einsum("afn,fjnb->abj", L.aa, H.ab.voov, optimize=True)
-    dL.ab += np.einsum("afn,fjnb->abj", L.ab, H.bb.voov, optimize=True)
-    dL.ab -= np.einsum("ebm,ejam->abj", L.ab, H.ab.vovo, optimize=True)
-    dL.ab += np.einsum("efj,efab->abj", L.ab, H.ab.vvvv, optimize=True)
-    dL.ab -= np.einsum("mjab,m->abj", H.ab.oovv, X["a"]["o"], optimize=True)
+    dL.ab = ccpy_einsum("a,jb->abj", L.a, H.b.ov)
+    dL.ab += ccpy_einsum("e,ejab->abj", L.a, H.ab.vovv)
+    dL.ab -= ccpy_einsum("abm,jm->abj", L.ab, H.b.oo)
+    dL.ab += ccpy_einsum("aej,eb->abj", L.ab, H.b.vv)
+    dL.ab += ccpy_einsum("ebj,ea->abj", L.ab, H.a.vv)
+    dL.ab += ccpy_einsum("afn,fjnb->abj", L.aa, H.ab.voov)
+    dL.ab += ccpy_einsum("afn,fjnb->abj", L.ab, H.bb.voov)
+    dL.ab -= ccpy_einsum("ebm,ejam->abj", L.ab, H.ab.vovo)
+    dL.ab += ccpy_einsum("efj,efab->abj", L.ab, H.ab.vvvv)
+    dL.ab -= ccpy_einsum("mjab,m->abj", H.ab.oovv, X["a"]["o"])
     # 3-body hbar terms
-    dL.ab += np.einsum("man,mjnb->abj", X["aa"]["ovo"], H.ab.ooov, optimize=True) # [Ia]
-    dL.ab -= np.einsum("amn,njmb->abj", X["ab"]["voo"], H.bb.ooov, optimize=True) # [Ib]
-    dL.ab -= np.einsum("aef,fjeb->abj", X["aa"]["vvv"], H.ab.vovv, optimize=True) # [IIa]
-    dL.ab -= np.einsum("aef,fjeb->abj", X["ab"]["vvv"], H.bb.vovv, optimize=True) # [IIb]
-    dL.ab += np.einsum("nbm,njam->abj", X["ab"]["ovo"], H.ab.oovo, optimize=True) # [Iab]
-    dL.ab += np.einsum("efb,ejaf->abj", X["ab"]["vvv"], H.ab.vovv, optimize=True) # [IIab]
-    dL.ab -= np.einsum("ejn,enab->abj", X["ab"]["voo"], H.ab.vovv, optimize=True) # [III]
-    dL.ab -= np.einsum("nfj,nfab->abj", X["ab"]["ovo"], H.ab.ovvv, optimize=True) # [IV]
+    dL.ab += ccpy_einsum("man,mjnb->abj", X["aa"]["ovo"], H.ab.ooov) # [Ia]
+    dL.ab -= ccpy_einsum("amn,njmb->abj", X["ab"]["voo"], H.bb.ooov) # [Ib]
+    dL.ab -= ccpy_einsum("aef,fjeb->abj", X["aa"]["vvv"], H.ab.vovv) # [IIa]
+    dL.ab -= ccpy_einsum("aef,fjeb->abj", X["ab"]["vvv"], H.bb.vovv) # [IIb]
+    dL.ab += ccpy_einsum("nbm,njam->abj", X["ab"]["ovo"], H.ab.oovo) # [Iab]
+    dL.ab += ccpy_einsum("efb,ejaf->abj", X["ab"]["vvv"], H.ab.vovv) # [IIab]
+    dL.ab -= ccpy_einsum("ejn,enab->abj", X["ab"]["voo"], H.ab.vovv) # [III]
+    dL.ab -= ccpy_einsum("nfj,nfab->abj", X["ab"]["ovo"], H.ab.ovvv) # [IV]
     dL.ab = lefteaeom3_p_loops.build_lh_2b(
             dL.ab,
             L.aab, l3_excitations["aab"],

@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 from ccpy.interfaces.fcidump_tools import load_integrals_from_fcidump, load_system_params_from_fcidump
 
 def load_gamess_integrals(
@@ -267,7 +268,7 @@ def load_twobody_integrals(twobody_file, system, data_type):
                     e2int[indices] = val
         # convert e2int from chemist notation (ia|jb) to
         # physicist notation <ij|ab>
-        e2int = np.einsum("iajb->ijab", e2int)
+        e2int = ccpy_einsum("iajb->ijab", e2int)
     except IOError:
         print("Error: {} does not appear to exist.".format(twobody_file))
     return e_nn, e2int

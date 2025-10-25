@@ -1,4 +1,5 @@
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 
 from ccpy.lib.core import cc_loops2
 
@@ -26,42 +27,42 @@ def LH_fun(LH, L, T, H, flag_RHF, system):
 
 def build_LH_1A(L, LH, T, H):
 
-    LH.a = np.einsum("e,ea->a", L.a, H.a.vv, optimize=True)
-    LH.a += 0.5 * np.einsum("efn,fena->a", L.aa, H.aa.vvov, optimize=True)
-    LH.a += np.einsum("efn,efan->a", L.ab, H.ab.vvvo, optimize=True)
+    LH.a = ccpy_einsum("e,ea->a", L.a, H.a.vv)
+    LH.a += 0.5 * ccpy_einsum("efn,fena->a", L.aa, H.aa.vvov)
+    LH.a += ccpy_einsum("efn,efan->a", L.ab, H.ab.vvvo)
     return LH
 
 def build_LH_2A(L, LH, T, H):
 
-    LH.aa = np.einsum("a,jb->abj", L.a, H.a.ov, optimize=True)
-    LH.aa += 0.5 * np.einsum("e,ejab->abj", L.a, H.aa.vovv, optimize=True)
-    LH.aa += np.einsum("ebj,ea->abj", L.aa, H.a.vv, optimize=True)
-    LH.aa -= 0.5 * np.einsum("abm,jm->abj", L.aa, H.a.oo, optimize=True)
-    LH.aa += np.einsum("afn,fjnb->abj", L.aa, H.aa.voov, optimize=True)
-    LH.aa += np.einsum("afn,jfbn->abj", L.ab, H.ab.ovvo, optimize=True)
-    LH.aa += 0.25 * np.einsum("efj,efab->abj", L.aa, H.aa.vvvv, optimize=True)
+    LH.aa = ccpy_einsum("a,jb->abj", L.a, H.a.ov)
+    LH.aa += 0.5 * ccpy_einsum("e,ejab->abj", L.a, H.aa.vovv)
+    LH.aa += ccpy_einsum("ebj,ea->abj", L.aa, H.a.vv)
+    LH.aa -= 0.5 * ccpy_einsum("abm,jm->abj", L.aa, H.a.oo)
+    LH.aa += ccpy_einsum("afn,fjnb->abj", L.aa, H.aa.voov)
+    LH.aa += ccpy_einsum("afn,jfbn->abj", L.ab, H.ab.ovvo)
+    LH.aa += 0.25 * ccpy_einsum("efj,efab->abj", L.aa, H.aa.vvvv)
     I1 = (
-        0.5 * np.einsum("efn,efmn->m", L.aa, T.aa, optimize=True)
-        + np.einsum("efn,efmn->m", L.ab, T.ab, optimize=True)
+        0.5 * ccpy_einsum("efn,efmn->m", L.aa, T.aa)
+        + ccpy_einsum("efn,efmn->m", L.ab, T.ab)
     )
-    LH.aa -= 0.5 * np.einsum("mjab,m->abj", H.aa.oovv, I1, optimize=True)
+    LH.aa -= 0.5 * ccpy_einsum("mjab,m->abj", H.aa.oovv, I1)
     LH.aa -= np.transpose(LH.aa, (1, 0, 2))
     return LH
 
 def build_LH_2B(L, LH, T, H):
 
-    LH.ab = np.einsum("a,jb->abj", L.a, H.b.ov, optimize=True)
-    LH.ab += np.einsum("e,ejab->abj", L.a, H.ab.vovv, optimize=True)
-    LH.ab -= np.einsum("abm,jm->abj", L.ab, H.b.oo, optimize=True)
-    LH.ab += np.einsum("aej,eb->abj", L.ab, H.b.vv, optimize=True)
-    LH.ab += np.einsum("ebj,ea->abj", L.ab, H.a.vv, optimize=True)
-    LH.ab += np.einsum("afn,fjnb->abj", L.aa, H.ab.voov, optimize=True)
-    LH.ab += np.einsum("afn,fjnb->abj", L.ab, H.bb.voov, optimize=True)
-    LH.ab -= np.einsum("ebm,ejam->abj", L.ab, H.ab.vovo, optimize=True)
-    LH.ab += np.einsum("efj,efab->abj", L.ab, H.ab.vvvv, optimize=True)
+    LH.ab = ccpy_einsum("a,jb->abj", L.a, H.b.ov)
+    LH.ab += ccpy_einsum("e,ejab->abj", L.a, H.ab.vovv)
+    LH.ab -= ccpy_einsum("abm,jm->abj", L.ab, H.b.oo)
+    LH.ab += ccpy_einsum("aej,eb->abj", L.ab, H.b.vv)
+    LH.ab += ccpy_einsum("ebj,ea->abj", L.ab, H.a.vv)
+    LH.ab += ccpy_einsum("afn,fjnb->abj", L.aa, H.ab.voov)
+    LH.ab += ccpy_einsum("afn,fjnb->abj", L.ab, H.bb.voov)
+    LH.ab -= ccpy_einsum("ebm,ejam->abj", L.ab, H.ab.vovo)
+    LH.ab += ccpy_einsum("efj,efab->abj", L.ab, H.ab.vvvv)
     I1 = (
-        0.5 * np.einsum("efn,efmn->m", L.aa, T.aa, optimize=True)
-        + np.einsum("efn,efmn->m", L.ab, T.ab, optimize=True)
+        0.5 * ccpy_einsum("efn,efmn->m", L.aa, T.aa)
+        + ccpy_einsum("efn,efmn->m", L.ab, T.ab)
     )
-    LH.ab -= np.einsum("mjab,m->abj", H.ab.oovv, I1, optimize=True)
+    LH.ab -= ccpy_einsum("mjab,m->abj", H.ab.oovv, I1)
     return LH

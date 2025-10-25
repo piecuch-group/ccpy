@@ -1,4 +1,5 @@
 import time
+from ccpy.utilities.linear_algebra import ccpy_einsum
 
 import crcc_loops
 import numpy as np
@@ -155,7 +156,7 @@ def build_MM24A(cc_t, H2A, sys):
     t2a = cc_t["t2a"]
 
     # (jl/i/k)(bc/a/d)
-    D1 = -np.einsum("amie,bcmk,edjl->abcdijkl", H2A["voov"], t2a, t2a, optimize=True)
+    D1 = -ccpy_einsum("amie,bcmk,edjl->abcdijkl", H2A["voov"], t2a, t2a)
     # (jl/ik)(ik)
     D1 += -permute(D1, [1, 2, 3, 4, 7, 6, 5, 8])
     D1 += (
@@ -176,7 +177,7 @@ def build_MM24A(cc_t, H2A, sys):
     )
 
     # (ij/kl)(bc/ad)
-    D2 = np.einsum("mnij,adml,bcnk->abcdijkl", H2A["oooo"], t2a, t2a, optimize=True)
+    D2 = ccpy_einsum("mnij,adml,bcnk->abcdijkl", H2A["oooo"], t2a, t2a)
     # (ij/kl)
     D2 += (
         -permute(D2, [1, 2, 3, 4, 7, 6, 5, 8])
@@ -195,7 +196,7 @@ def build_MM24A(cc_t, H2A, sys):
     )
 
     # (jk/il)(ab/cd)
-    D3 = np.einsum("abef,fcjk,edil->abcdijkl", H2A["vvvv"], t2a, t2a, optimize=True)
+    D3 = ccpy_einsum("abef,fcjk,edil->abcdijkl", H2A["vvvv"], t2a, t2a)
     # (jk/il)
     D3 += (
         -permute(D3, [1, 2, 3, 4, 6, 5, 7, 8])
@@ -269,52 +270,52 @@ def build_MM24B(cc_t, H2A, H2B, sys):
     # dm_vvvv = 0.0
 
     # (i/jk)(c/ab)
-    D1 = -np.einsum("mdel,abim,ecjk->abcdijkl", H2B["ovvo"], t2a, t2a, optimize=True)
+    D1 = -ccpy_einsum("mdel,abim,ecjk->abcdijkl", H2B["ovvo"], t2a, t2a)
     D1 = i_jk(c_ab(D1))
     MM24B += D1
     # dm_voov += D1
     # (k/ij)(a/bc)
-    D2 = +np.einsum("mnij,bcnk,adml->abcdijkl", H2A["oooo"], t2a, t2b, optimize=True)
+    D2 = +ccpy_einsum("mnij,bcnk,adml->abcdijkl", H2A["oooo"], t2a, t2b)
     D2 = k_ij(a_bc(D2))
     MM24B += D2
     # dm_oooo += D2
     # (ijk)(c/ab) = (i/jk)(c/ab)(jk)
-    D3 = -np.einsum("mdjf,abim,cfkl->abcdijkl", H2B["ovov"], t2a, t2b, optimize=True)
+    D3 = -ccpy_einsum("mdjf,abim,cfkl->abcdijkl", H2B["ovov"], t2a, t2b)
     D3 = i_jk(c_ab(jk(D3)))
     MM24B += D3
     # dm_voov += D3
     # (ijk)(abc) = (i/jk)(a/bc)(jk)(bc)
-    D4 = -np.einsum("amie,bejl,cdkm->abcdijkl", H2B["voov"], t2b, t2b, optimize=True)
+    D4 = -ccpy_einsum("amie,bejl,cdkm->abcdijkl", H2B["voov"], t2b, t2b)
     D4 = i_jk(a_bc(jk(bc(D4))))
     MM24B += D4
     # dm_voov += D4
     # (ijk)(a/bc) = (i/jk)(a/bc)(jk)
-    D5 = +np.einsum("mnjl,bcmk,adin->abcdijkl", H2B["oooo"], t2a, t2b, optimize=True)
+    D5 = +ccpy_einsum("mnjl,bcmk,adin->abcdijkl", H2B["oooo"], t2a, t2b)
     D5 = i_jk(a_bc(jk(D5)))
     MM24B += D5
     # dm_oooo += D5
     # (i/jk)(abc) = (i/jk)(a/bc)(bc)
-    D6 = -np.einsum("bmel,ecjk,adim->abcdijkl", H2B["vovo"], t2a, t2b, optimize=True)
+    D6 = -ccpy_einsum("bmel,ecjk,adim->abcdijkl", H2B["vovo"], t2a, t2b)
     D6 = i_jk(a_bc(bc(D6)))
     MM24B += D6
     # dm_voov += D6
     # (i/kj)(abc) = (i/kj)(a/bc)(bc)
-    D7 = -np.einsum("amie,ecjk,bdml->abcdijkl", H2A["voov"], t2a, t2b, optimize=True)
+    D7 = -ccpy_einsum("amie,ecjk,bdml->abcdijkl", H2A["voov"], t2a, t2b)
     D7 = i_kj(a_bc(bc(D7)))
     MM24B += D7
     # dm_voov += D7
     # (i/jk)(c/ab) = (i/jk)(c/ab)
-    D8 = +np.einsum("abef,fcjk,edil->abcdijkl", H2A["vvvv"], t2a, t2b, optimize=True)
+    D8 = +ccpy_einsum("abef,fcjk,edil->abcdijkl", H2A["vvvv"], t2a, t2b)
     D8 = i_jk(c_ab(D8))
     MM24B += D8
     # dm_vvvv += D8
     # (ijk)(a/bc) = (i/jk)(a/bc)(jk)
-    D9 = -np.einsum("amie,bcmk,edjl->abcdijkl", H2A["voov"], t2a, t2b, optimize=True)
+    D9 = -ccpy_einsum("amie,bcmk,edjl->abcdijkl", H2A["voov"], t2a, t2b)
     D9 = i_jk(a_bc(jk(D9)))
     MM24B += D9
     # dm_voov += D9
     # (k/ij)(abc) = (k/ij)(a/bc)(bc)
-    D10 = +np.einsum("adef,ebij,cfkl->abcdijkl", H2B["vvvv"], t2a, t2b, optimize=True)
+    D10 = +ccpy_einsum("adef,ebij,cfkl->abcdijkl", H2B["vvvv"], t2a, t2b)
     D10 = k_ij(a_bc(bc(D10)))
     MM24B += D10
     # dm_vvvv += D10
@@ -345,92 +346,92 @@ def build_MM24C(cc_t, H2A, H2B, H2C, sys):
     # dm_vvvv = 0.0
 
     # 1 - (ij)(kl)(ab)(cd)
-    D1 = -np.einsum("cmke,adim,bejl->abcdijkl", H2C["voov"], t2b, t2b, optimize=True)
+    D1 = -ccpy_einsum("cmke,adim,bejl->abcdijkl", H2C["voov"], t2b, t2b)
     D1 = ij(kl(ab(cd(D1))))
     MM24C += D1
     # dm_voov += D1
     # 2 - (ij)(kl)(ab)(cd)
-    D2 = -np.einsum("amie,bcmk,edjl->abcdijkl", H2A["voov"], t2b, t2b, optimize=True)
+    D2 = -ccpy_einsum("amie,bcmk,edjl->abcdijkl", H2A["voov"], t2b, t2b)
     D2 = ij(kl(ab(cd(D2))))
     MM24C += D2
     # dm_voov += D2
     # 3 - (kl)(ab)(cd)
-    D3 = -np.einsum("mcek,aeij,bdml->abcdijkl", H2B["ovvo"], t2a, t2b, optimize=True)
+    D3 = -ccpy_einsum("mcek,aeij,bdml->abcdijkl", H2B["ovvo"], t2a, t2b)
     D3 = kl(ab(cd(D3)))
     MM24C += D3
     # dm_voov += D3
     # 4 - (ij)(ab)(cd)
-    D4 = -np.einsum("amie,bdjm,cekl->abcdijkl", H2B["voov"], t2b, t2c, optimize=True)
+    D4 = -ccpy_einsum("amie,bdjm,cekl->abcdijkl", H2B["voov"], t2b, t2c)
     D4 = ij(ab(cd(D4)))
     MM24C += D4
     # dm_voov += D4
     # 5 - (ij)(kl)(cd)
-    D5 = -np.einsum("mcek,abim,edjl->abcdijkl", H2B["ovvo"], t2a, t2b, optimize=True)
+    D5 = -ccpy_einsum("mcek,abim,edjl->abcdijkl", H2B["ovvo"], t2a, t2b)
     D5 = ij(kl(cd(D5)))
     MM24C += D5
     # dm_voov += D5
     # 6 - (ij)(kl)(ab)
-    D6 = -np.einsum("amie,cdkm,bejl->abcdijkl", H2B["voov"], t2c, t2b, optimize=True)
+    D6 = -ccpy_einsum("amie,cdkm,bejl->abcdijkl", H2B["voov"], t2c, t2b)
     D6 = ij(kl(ab(D6)))
     MM24C += D6
     # dm_voov += D6
     # 7 - (ij)(kl)(ab)(cd)
-    D7 = -np.einsum("bmel,adim,ecjk->abcdijkl", H2B["vovo"], t2b, t2b, optimize=True)
+    D7 = -ccpy_einsum("bmel,adim,ecjk->abcdijkl", H2B["vovo"], t2b, t2b)
     D7 = ij(kl(ab(cd(D7))))
     MM24C += D7
     # dm_voov += D7
     # 8 - (ij)(kl)(ab)(cd)
-    D8 = -np.einsum("mdje,bcmk,aeil->abcdijkl", H2B["ovov"], t2b, t2b, optimize=True)
+    D8 = -ccpy_einsum("mdje,bcmk,aeil->abcdijkl", H2B["ovov"], t2b, t2b)
     D8 = ij(kl(ab(cd(D8))))
     MM24C += D8
     # dm_voov += D8
     # 9 - (ij)(cd)
-    D9 = -np.einsum("mdje,abim,cekl->abcdijkl", H2B["ovov"], t2a, t2c, optimize=True)
+    D9 = -ccpy_einsum("mdje,abim,cekl->abcdijkl", H2B["ovov"], t2a, t2c)
     D9 = ij(cd(D9))
     MM24C += D9
     # dm_voov += D9
     # 10 - (kl)(ab)
-    D10 = -np.einsum("bmel,cdkm,aeij->abcdijkl", H2B["vovo"], t2c, t2a, optimize=True)
+    D10 = -ccpy_einsum("bmel,cdkm,aeij->abcdijkl", H2B["vovo"], t2c, t2a)
     D10 = kl(ab(D10))
     MM24C += D10
     # dm_voov += D10
     # 11 - (kl)(ab) !!!
-    D11 = np.einsum("mnij,acmk,bdnl->abcdijkl", H2A["oooo"], t2b, t2b, optimize=True)
+    D11 = ccpy_einsum("mnij,acmk,bdnl->abcdijkl", H2A["oooo"], t2b, t2b)
     D11 = kl(ab(D11))
     MM24C += D11
     # dm_oooo += D11
     # 12 - (ij)(kl) !!!
-    D12 = np.einsum("abef,ecik,fdjl->abcdijkl", H2A["vvvv"], t2b, t2b, optimize=True)
+    D12 = ccpy_einsum("abef,ecik,fdjl->abcdijkl", H2A["vvvv"], t2b, t2b)
     D12 = ij(kl(D12))
     MM24C += D12
     # dm_vvvv += D12
     # 13 - (ij)(kl)
-    D13 = np.einsum("mnik,abmj,cdnl->abcdijkl", H2B["oooo"], t2a, t2c, optimize=True)
+    D13 = ccpy_einsum("mnik,abmj,cdnl->abcdijkl", H2B["oooo"], t2a, t2c)
     D13 = ij(kl(D13))
     MM24C += D13
     # dm_oooo += D13
     # 14 - (ab)(cd)
-    D14 = np.einsum("acef,ebij,fdkl->abcdijkl", H2B["vvvv"], t2a, t2c, optimize=True)
+    D14 = ccpy_einsum("acef,ebij,fdkl->abcdijkl", H2B["vvvv"], t2a, t2c)
     D14 = ab(cd(D14))
     MM24C += D14
     # dm_vvvv += D14
     # 15 - (ij)(kl)(ab)(cd)
-    D15 = np.einsum("mnik,adml,bcjn->abcdijkl", H2B["oooo"], t2b, t2b, optimize=True)
+    D15 = ccpy_einsum("mnik,adml,bcjn->abcdijkl", H2B["oooo"], t2b, t2b)
     D15 = ij(kl(ab(cd(D15))))
     MM24C += D15
     # dm_oooo += D15
     # 16 - (ij)(kl)(ab)(cd)
-    D16 = np.einsum("acef,edil,bfjk->abcdijkl", H2B["vvvv"], t2b, t2b, optimize=True)
+    D16 = ccpy_einsum("acef,edil,bfjk->abcdijkl", H2B["vvvv"], t2b, t2b)
     D16 = ij(kl(ab(cd(D16))))
     MM24C += D16
     # dm_vvvv += D16
     # 17 - (ij)(cd) !!!
-    D17 = np.einsum("mnkl,adin,bcjm->abcdijkl", H2C["oooo"], t2b, t2b, optimize=True)
+    D17 = ccpy_einsum("mnkl,adin,bcjm->abcdijkl", H2C["oooo"], t2b, t2b)
     D17 = ij(cd(D17))
     MM24C += D17
     # dm_oooo += D17
     # 18 - (ij)(kl) !!!
-    D18 = np.einsum("cdef,afil,bejk->abcdijkl", H2C["vvvv"], t2b, t2b, optimize=True)
+    D18 = ccpy_einsum("cdef,afil,bejk->abcdijkl", H2C["vvvv"], t2b, t2b)
     D18 = ij(kl(D18))
     MM24C += D18
     # dm_vvvv += D18
@@ -453,7 +454,7 @@ def build_L4A(cc_t, ints, sys, iroot=0):
     vA = ints["vA"]
     l2a = cc_t["l2a"][iroot]
 
-    L4A = np.einsum("ijab,cdkl->abcdijkl", vA["oovv"], l2a, optimize=True)
+    L4A = ccpy_einsum("ijab,cdkl->abcdijkl", vA["oovv"], l2a)
 
     L4A += (
         -permute(L4A, [1, 2, 3, 4, 7, 6, 5, 8])
@@ -493,7 +494,7 @@ def build_L4B(cc_t, ints, sys, iroot=0):
         )
     )
 
-    L4B = np.einsum("ijab,cdkl->abcdijkl", vA["oovv"], l2b, optimize=True) + np.einsum(
+    L4B = ccpy_einsum("ijab,cdkl->abcdijkl", vA["oovv"], l2b) + np.einsum(
         "klcd,abij->abcdijkl", vB["oovv"], l2a, optimize=True
     )
 
@@ -529,9 +530,9 @@ def build_L4C(cc_t, ints, sys, iroot=0):
         )
     )
 
-    L4C += np.einsum("ijab,cdkl->abcdijkl", vA["oovv"], l2c, optimize=True)
-    L4C += np.einsum("abij,klcd->abcdijkl", l2a, vC["oovv"], optimize=True)
-    D1 = np.einsum("bcjk,ilad->abcdijkl", l2b, vB["oovv"], optimize=True)
+    L4C += ccpy_einsum("ijab,cdkl->abcdijkl", vA["oovv"], l2c)
+    L4C += ccpy_einsum("abij,klcd->abcdijkl", l2a, vC["oovv"])
+    D1 = ccpy_einsum("bcjk,ilad->abcdijkl", l2b, vB["oovv"])
 
     D1 += -permute(D1, [1, 2, 3, 4, 6, 5, 7, 8])  # A(ij)
     D1 += -permute(D1, [1, 2, 3, 4, 5, 6, 8, 7])  # A(kl)
@@ -562,7 +563,7 @@ def build_L4D(cc_t, ints, sys, iroot=0):
         )
     )
 
-    L4D = np.einsum("klcd,abij->abcdijkl", vC["oovv"], l2b, optimize=True) + np.einsum(
+    L4D = ccpy_einsum("klcd,abij->abcdijkl", vC["oovv"], l2b) + np.einsum(
         "ijab,cdkl->abcdijkl", vB["oovv"], l2c, optimize=True
     )
 
@@ -594,7 +595,7 @@ def build_L4E(cc_t, ints, sys, iroot=0):
         )
     )
 
-    L4E += np.einsum("ijab,cdkl->abcdijkl", vC["oovv"], l2c, optimize=True)
+    L4E += ccpy_einsum("ijab,cdkl->abcdijkl", vC["oovv"], l2c)
 
     L4E = (
         L4E
@@ -699,7 +700,7 @@ def permute(x, perm_list):
     str2 = "".join([str1[x - 1] for x in perm_list])
     str1 = "".join(s for s in str1)
     contr = str1 + "->" + str2
-    return np.einsum(contr, x, optimize=True)
+    return ccpy_einsum(contr, x)
 
 
 def test_updates(cc_t, H1A, H1B, H2A, H2B, H2C, ints, sys):

@@ -3,6 +3,7 @@ Approximate Coupled-Pair Method with Doubles (ACCD)
 '''
 
 import numpy as np
+from ccpy.utilities.linear_algebra import ccpy_einsum
 # Modules for type checking
 from typing import List, Tuple
 from ccpy.models.operators import ClusterOperator
@@ -89,32 +90,32 @@ def update_t2a(T: ClusterOperator,
     d1, d2, d3, d4, d5 = acparray
 
     # < ijab | (F T2)_C | 0 >
-    dT.aa = -0.5 * np.einsum("mi,abmj->abij", H.a.oo, T.aa, optimize=True)  # A(ij)
-    dT.aa += 0.5 * np.einsum("ae,ebij->abij", H.a.vv, T.aa, optimize=True)  # A(ab)
+    dT.aa = -0.5 * ccpy_einsum("mi,abmj->abij", H.a.oo, T.aa)  # A(ij)
+    dT.aa += 0.5 * ccpy_einsum("ae,ebij->abij", H.a.vv, T.aa)  # A(ab)
 
     # < ijab | (V T2)_C | 0 >
-    dT.aa += np.einsum("amie,ebmj->abij", H.aa.voov, T.aa, optimize=True)  # A(ab)A(ij)
-    dT.aa += np.einsum("amie,bejm->abij", H.ab.voov, T.ab, optimize=True)  # A(ab)A(ij)
-    dT.aa += 0.125 * np.einsum("mnij,abmn->abij", H.aa.oooo, T.aa, optimize=True)  # 1
-    dT.aa += 0.125 * np.einsum("abef,efij->abij", H.aa.vvvv, T.aa, optimize=True)  # 1
+    dT.aa += ccpy_einsum("amie,ebmj->abij", H.aa.voov, T.aa)  # A(ab)A(ij)
+    dT.aa += ccpy_einsum("amie,bejm->abij", H.ab.voov, T.ab)  # A(ab)A(ij)
+    dT.aa += 0.125 * ccpy_einsum("mnij,abmn->abij", H.aa.oooo, T.aa)  # 1
+    dT.aa += 0.125 * ccpy_einsum("abef,efij->abij", H.aa.vvvv, T.aa)  # 1
 
     # < ijab | (V T2**2)_C | 0 >
     # dT.aa += 0.5 * np.einsum(
     #    "mnef,aeim,bfjn->abij", H.aa.oovv, T.aa, T.aa, optimize=True
     # ) # A(ij) [D1 + D2]
-    dT.aa += d1 * 0.5 * np.einsum("mnef,aeim,bfjn->abij", H.ab.oovv, T.aa, T.aa, optimize=True)  # A(ij) [D1]
-    dT.aa -= d2 * 0.5 * np.einsum("mnfe,aeim,bfjn->abij", H.ab.oovv, T.aa, T.aa, optimize=True)  # A(ij) [D2]
-    dT.aa += d5 * 0.25 * 0.25 * np.einsum("mnef,efij,abmn->abij", H.aa.oovv, T.aa, T.aa, optimize=True)  # 1 [D5]
-    dT.aa -= d4 * 0.25 * np.einsum("mnef,abim,efjn->abij", H.aa.oovv, T.aa, T.aa, optimize=True)  # A(ij) [D4]
-    dT.aa -= d3 * 0.25 * np.einsum("mnef,aeij,bfmn->abij", H.aa.oovv, T.aa, T.aa, optimize=True)  # A(ab) [D3]
-    dT.aa += d1 * np.einsum("mnef,aeim,bfjn->abij", H.ab.oovv, T.aa, T.ab, optimize=True)  # A(ij)A(ab) [D1]
-    dT.aa -= d4 * 0.5 * np.einsum("mnef,abim,efjn->abij", H.ab.oovv, T.aa, T.ab, optimize=True)  # A(ij) [D4]
-    dT.aa -= d3 * 0.5 * np.einsum("mnef,aeij,bfmn->abij", H.ab.oovv, T.aa, T.ab, optimize=True)  # A(ab) [D3]
+    dT.aa += d1 * 0.5 * ccpy_einsum("mnef,aeim,bfjn->abij", H.ab.oovv, T.aa, T.aa)  # A(ij) [D1]
+    dT.aa -= d2 * 0.5 * ccpy_einsum("mnfe,aeim,bfjn->abij", H.ab.oovv, T.aa, T.aa)  # A(ij) [D2]
+    dT.aa += d5 * 0.25 * 0.25 * ccpy_einsum("mnef,efij,abmn->abij", H.aa.oovv, T.aa, T.aa)  # 1 [D5]
+    dT.aa -= d4 * 0.25 * ccpy_einsum("mnef,abim,efjn->abij", H.aa.oovv, T.aa, T.aa)  # A(ij) [D4]
+    dT.aa -= d3 * 0.25 * ccpy_einsum("mnef,aeij,bfmn->abij", H.aa.oovv, T.aa, T.aa)  # A(ab) [D3]
+    dT.aa += d1 * ccpy_einsum("mnef,aeim,bfjn->abij", H.ab.oovv, T.aa, T.ab)  # A(ij)A(ab) [D1]
+    dT.aa -= d4 * 0.5 * ccpy_einsum("mnef,abim,efjn->abij", H.ab.oovv, T.aa, T.ab)  # A(ij) [D4]
+    dT.aa -= d3 * 0.5 * ccpy_einsum("mnef,aeij,bfmn->abij", H.ab.oovv, T.aa, T.ab)  # A(ab) [D3]
     # dT.aa += 0.5 * np.einsum(
     #    "mnef,aeim,bfjn->abij", H.bb.oovv, T.ab, T.ab, optimize=True
     # ) # A(ij) [D1 + D2]
-    dT.aa += d1 * 0.5 * np.einsum("mnef,aeim,bfjn->abij", H.ab.oovv, T.ab, T.ab, optimize=True)  # A(ij) [D1]
-    dT.aa -= d2 * 0.5 * np.einsum("mnfe,aeim,bfjn->abij", H.ab.oovv, T.ab, T.ab, optimize=True)  # A(ij) [D2]
+    dT.aa += d1 * 0.5 * ccpy_einsum("mnef,aeim,bfjn->abij", H.ab.oovv, T.ab, T.ab)  # A(ij) [D1]
+    dT.aa -= d2 * 0.5 * ccpy_einsum("mnfe,aeim,bfjn->abij", H.ab.oovv, T.ab, T.ab)  # A(ij) [D2]
 
     T.aa, dT.aa = cc_loops2.update_t2a(
         T.aa, dT.aa + 0.25 * H.aa.vvoo, H.a.oo, H.a.vv, shift
@@ -152,43 +153,43 @@ def update_t2b(T: ClusterOperator,
     d1, d2, d3, d4, d5 = acparray
 
     # < ijab | (F T2)_C | 0 >
-    dT.ab = -np.einsum("mi,abmj->abij", H.a.oo, T.ab, optimize=True)
-    dT.ab += np.einsum("ae,ebij->abij", H.a.vv, T.ab, optimize=True)
-    dT.ab -= np.einsum("mj,abim->abij", H.b.oo, T.ab, optimize=True)
-    dT.ab += np.einsum("be,aeij->abij", H.b.vv, T.ab, optimize=True)
+    dT.ab = -ccpy_einsum("mi,abmj->abij", H.a.oo, T.ab)
+    dT.ab += ccpy_einsum("ae,ebij->abij", H.a.vv, T.ab)
+    dT.ab -= ccpy_einsum("mj,abim->abij", H.b.oo, T.ab)
+    dT.ab += ccpy_einsum("be,aeij->abij", H.b.vv, T.ab)
 
     # < ijab | (V T2)_C | 0 >
-    dT.ab += np.einsum("amie,ebmj->abij", H.aa.voov, T.ab, optimize=True)
-    dT.ab += np.einsum("amie,ebmj->abij", H.ab.voov, T.bb, optimize=True)
-    dT.ab += np.einsum("mbej,aeim->abij", H.ab.ovvo, T.aa, optimize=True)
-    dT.ab += np.einsum("bmje,aeim->abij", H.bb.voov, T.ab, optimize=True)
-    dT.ab -= np.einsum("mbie,aemj->abij", H.ab.ovov, T.ab, optimize=True)
-    dT.ab -= np.einsum("amej,ebim->abij", H.ab.vovo, T.ab, optimize=True)
-    dT.ab += np.einsum("mnij,abmn->abij", H.ab.oooo, T.ab, optimize=True)
-    dT.ab += np.einsum("abef,efij->abij", H.ab.vvvv, T.ab, optimize=True)
+    dT.ab += ccpy_einsum("amie,ebmj->abij", H.aa.voov, T.ab)
+    dT.ab += ccpy_einsum("amie,ebmj->abij", H.ab.voov, T.bb)
+    dT.ab += ccpy_einsum("mbej,aeim->abij", H.ab.ovvo, T.aa)
+    dT.ab += ccpy_einsum("bmje,aeim->abij", H.bb.voov, T.ab)
+    dT.ab -= ccpy_einsum("mbie,aemj->abij", H.ab.ovov, T.ab)
+    dT.ab -= ccpy_einsum("amej,ebim->abij", H.ab.vovo, T.ab)
+    dT.ab += ccpy_einsum("mnij,abmn->abij", H.ab.oooo, T.ab)
+    dT.ab += ccpy_einsum("abef,efij->abij", H.ab.vvvv, T.ab)
 
     # < ijab | (V T2**2)_C | 0 >
-    # dT.ab += np.einsum("mnef,aeim,fbnj->abij", H.aa.oovv, T.aa, T.ab, optimize=True) # [D1 + D2]
-    dT.ab += d1 * np.einsum("mnef,aeim,fbnj->abij", H.ab.oovv, T.aa, T.ab, optimize=True)  # [D1]
-    dT.ab -= d2 * np.einsum("mnfe,aeim,fbnj->abij", H.ab.oovv, T.aa, T.ab, optimize=True)  # [D2]
-    dT.ab -= d4 * 0.5 * np.einsum("mnef,efin,abmj->abij", H.aa.oovv, T.aa, T.ab, optimize=True)  # [D4]
-    dT.ab -= d3 * 0.5 * np.einsum("mnef,afmn,ebij->abij", H.aa.oovv, T.aa, T.ab, optimize=True)  # [D3]
+    # dT.ab += ccpy_einsum("mnef,aeim,fbnj->abij", H.aa.oovv, T.aa, T.ab) # [D1 + D2]
+    dT.ab += d1 * ccpy_einsum("mnef,aeim,fbnj->abij", H.ab.oovv, T.aa, T.ab)  # [D1]
+    dT.ab -= d2 * ccpy_einsum("mnfe,aeim,fbnj->abij", H.ab.oovv, T.aa, T.ab)  # [D2]
+    dT.ab -= d4 * 0.5 * ccpy_einsum("mnef,efin,abmj->abij", H.aa.oovv, T.aa, T.ab)  # [D4]
+    dT.ab -= d3 * 0.5 * ccpy_einsum("mnef,afmn,ebij->abij", H.aa.oovv, T.aa, T.ab)  # [D3]
 
-    dT.ab += d1 * np.einsum("nmfe,aeim,fbnj->abij", H.ab.oovv, T.ab, T.ab, optimize=True)  # [D1]
-    dT.ab += d2 * np.einsum("mnef,ebin,afmj->abij", H.ab.oovv, T.ab, T.ab, optimize=True)  # [D2]
-    dT.ab += d4 * np.einsum("mnef,efij,abmn->abij", H.ab.oovv, T.ab, T.ab, optimize=True)  # [D4]
-    dT.ab -= d4 * np.einsum("mnef,efin,abmj->abij", H.ab.oovv, T.ab, T.ab, optimize=True)  # [D4]
-    dT.ab -= d5 * np.einsum("nmfe,fenj,abim->abij", H.ab.oovv, T.ab, T.ab, optimize=True)  # [D5]
-    dT.ab -= d3 * np.einsum("mnef,afmn,ebij->abij", H.ab.oovv, T.ab, T.ab, optimize=True)  # [D3]
-    dT.ab -= d3 * np.einsum("nmfe,fbnm,aeij->abij", H.ab.oovv, T.ab, T.ab, optimize=True)  # [D3]
+    dT.ab += d1 * ccpy_einsum("nmfe,aeim,fbnj->abij", H.ab.oovv, T.ab, T.ab)  # [D1]
+    dT.ab += d2 * ccpy_einsum("mnef,ebin,afmj->abij", H.ab.oovv, T.ab, T.ab)  # [D2]
+    dT.ab += d4 * ccpy_einsum("mnef,efij,abmn->abij", H.ab.oovv, T.ab, T.ab)  # [D4]
+    dT.ab -= d4 * ccpy_einsum("mnef,efin,abmj->abij", H.ab.oovv, T.ab, T.ab)  # [D4]
+    dT.ab -= d5 * ccpy_einsum("nmfe,fenj,abim->abij", H.ab.oovv, T.ab, T.ab)  # [D5]
+    dT.ab -= d3 * ccpy_einsum("mnef,afmn,ebij->abij", H.ab.oovv, T.ab, T.ab)  # [D3]
+    dT.ab -= d3 * ccpy_einsum("nmfe,fbnm,aeij->abij", H.ab.oovv, T.ab, T.ab)  # [D3]
 
-    dT.ab += d1 * np.einsum("mnef,aeim,fbnj->abij", H.ab.oovv, T.aa, T.bb, optimize=True)  # [D1]
+    dT.ab += d1 * ccpy_einsum("mnef,aeim,fbnj->abij", H.ab.oovv, T.aa, T.bb)  # [D1]
 
-    # dT.ab += np.einsum("mnef,aeim,fbnj->abij", H.bb.oovv, T.ab, T.bb, optimize=True) # [D1 + D2]
-    dT.ab += d1 * np.einsum("mnef,aeim,fbnj->abij", H.ab.oovv, T.ab, T.bb, optimize=True)  # [D1]
-    dT.ab -= d2 * np.einsum("mnfe,aeim,fbnj->abij", H.ab.oovv, T.ab, T.bb, optimize=True)  # [D2]
-    dT.ab -= d4 * 0.5 * np.einsum("mnef,efjn,abim->abij", H.bb.oovv, T.bb, T.ab, optimize=True)  # [D4]
-    dT.ab -= d3 * 0.5 * np.einsum("mnef,bfmn,aeij->abij", H.bb.oovv, T.bb, T.ab, optimize=True)  # [D3]
+    # dT.ab += ccpy_einsum("mnef,aeim,fbnj->abij", H.bb.oovv, T.ab, T.bb) # [D1 + D2]
+    dT.ab += d1 * ccpy_einsum("mnef,aeim,fbnj->abij", H.ab.oovv, T.ab, T.bb)  # [D1]
+    dT.ab -= d2 * ccpy_einsum("mnfe,aeim,fbnj->abij", H.ab.oovv, T.ab, T.bb)  # [D2]
+    dT.ab -= d4 * 0.5 * ccpy_einsum("mnef,efjn,abim->abij", H.bb.oovv, T.bb, T.ab)  # [D4]
+    dT.ab -= d3 * 0.5 * ccpy_einsum("mnef,bfmn,aeij->abij", H.bb.oovv, T.bb, T.ab)  # [D3]
 
     T.ab, dT.ab = cc_loops2.update_t2b(
         T.ab, dT.ab + H.ab.vvoo, H.a.oo, H.a.vv, H.b.oo, H.b.vv, shift
@@ -226,32 +227,32 @@ def update_t2c(T: ClusterOperator,
     d1, d2, d3, d4, d5 = acparray
 
     # < ijab | (F T2)_C | 0 >
-    dT.bb = -0.5 * np.einsum("mi,abmj->abij", H.b.oo, T.bb, optimize=True)  # A(ij)
-    dT.bb += 0.5 * np.einsum("ae,ebij->abij", H.b.vv, T.bb, optimize=True)  # A(ab)
+    dT.bb = -0.5 * ccpy_einsum("mi,abmj->abij", H.b.oo, T.bb)  # A(ij)
+    dT.bb += 0.5 * ccpy_einsum("ae,ebij->abij", H.b.vv, T.bb)  # A(ab)
 
     # < ijab | (V T2)_C | 0 >
-    dT.bb += np.einsum("amie,ebmj->abij", H.bb.voov, T.bb, optimize=True)  # A(ab)A(ij)
-    dT.bb += np.einsum("maei,ebmj->abij", H.ab.ovvo, T.ab, optimize=True)  # A(ab)A(ij)
-    dT.bb += 0.125 * np.einsum("mnij,abmn->abij", H.bb.oooo, T.bb, optimize=True)  # 1
-    dT.bb += 0.125 * np.einsum("abef,efij->abij", H.bb.vvvv, T.bb, optimize=True)  # 1
+    dT.bb += ccpy_einsum("amie,ebmj->abij", H.bb.voov, T.bb)  # A(ab)A(ij)
+    dT.bb += ccpy_einsum("maei,ebmj->abij", H.ab.ovvo, T.ab)  # A(ab)A(ij)
+    dT.bb += 0.125 * ccpy_einsum("mnij,abmn->abij", H.bb.oooo, T.bb)  # 1
+    dT.bb += 0.125 * ccpy_einsum("abef,efij->abij", H.bb.vvvv, T.bb)  # 1
 
     # < ijab | (V T2**2)_C | 0 >
     # dT.bb += 0.5 * np.einsum(
     #    "mnef,aeim,bfjn->abij", H.bb.oovv, T.bb, T.bb, optimize=True
     # ) # A(ij) [D1 + D2]
-    dT.bb += d1 * 0.5 * np.einsum("nmfe,aeim,bfjn->abij", H.ab.oovv, T.bb, T.bb, optimize=True)  # A(ij) [D1]
-    dT.bb -= d2 * 0.5 * np.einsum("nmef,aeim,bfjn->abij", H.ab.oovv, T.bb, T.bb, optimize=True)  # A(ij) [D2]
-    dT.bb += d5 * 0.25 * 0.25 * np.einsum("mnef,efij,abmn->abij", H.bb.oovv, T.bb, T.bb, optimize=True)  # 1 [D5]
-    dT.bb -= d4 * 0.25 * np.einsum("mnef,abim,efjn->abij", H.bb.oovv, T.bb, T.bb, optimize=True)  # A(ij) [D4]
-    dT.bb -= d3 * 0.25 * np.einsum("mnef,aeij,bfmn->abij", H.bb.oovv, T.bb, T.bb, optimize=True)  # A(ab) [D3]
-    dT.bb += d1 * np.einsum("nmfe,aeim,fbnj->abij", H.ab.oovv, T.bb, T.ab, optimize=True)  # A(ij)A(ab) [D1]
-    dT.bb -= d4 * 0.5 * np.einsum("nmfe,abim,fenj->abij", H.ab.oovv, T.bb, T.ab, optimize=True)  # A(ij) [D4]
-    dT.bb -= d3 * 0.5 * np.einsum("nmfe,aeij,fbnm->abij", H.ab.oovv, T.bb, T.ab, optimize=True)  # A(ab) [D3]
+    dT.bb += d1 * 0.5 * ccpy_einsum("nmfe,aeim,bfjn->abij", H.ab.oovv, T.bb, T.bb)  # A(ij) [D1]
+    dT.bb -= d2 * 0.5 * ccpy_einsum("nmef,aeim,bfjn->abij", H.ab.oovv, T.bb, T.bb)  # A(ij) [D2]
+    dT.bb += d5 * 0.25 * 0.25 * ccpy_einsum("mnef,efij,abmn->abij", H.bb.oovv, T.bb, T.bb)  # 1 [D5]
+    dT.bb -= d4 * 0.25 * ccpy_einsum("mnef,abim,efjn->abij", H.bb.oovv, T.bb, T.bb)  # A(ij) [D4]
+    dT.bb -= d3 * 0.25 * ccpy_einsum("mnef,aeij,bfmn->abij", H.bb.oovv, T.bb, T.bb)  # A(ab) [D3]
+    dT.bb += d1 * ccpy_einsum("nmfe,aeim,fbnj->abij", H.ab.oovv, T.bb, T.ab)  # A(ij)A(ab) [D1]
+    dT.bb -= d4 * 0.5 * ccpy_einsum("nmfe,abim,fenj->abij", H.ab.oovv, T.bb, T.ab)  # A(ij) [D4]
+    dT.bb -= d3 * 0.5 * ccpy_einsum("nmfe,aeij,fbnm->abij", H.ab.oovv, T.bb, T.ab)  # A(ab) [D3]
     # dT.bb += 0.5 * np.einsum(
     #    "mnef,aeim,bfjn->abij", H.bb.oovv, T.ab, T.ab, optimize=True
     # ) # A(ij) [D1 + D2]
-    dT.bb += d1 * 0.5 * np.einsum("nmfe,eami,fbnj->abij", H.ab.oovv, T.ab, T.ab, optimize=True)  # A(ij) [D1]
-    dT.bb -= d2 * 0.5 * np.einsum("nmef,eami,fbnj->abij", H.ab.oovv, T.ab, T.ab, optimize=True)  # A(ij) [D2]
+    dT.bb += d1 * 0.5 * ccpy_einsum("nmfe,eami,fbnj->abij", H.ab.oovv, T.ab, T.ab)  # A(ij) [D1]
+    dT.bb -= d2 * 0.5 * ccpy_einsum("nmef,eami,fbnj->abij", H.ab.oovv, T.ab, T.ab)  # A(ij) [D2]
 
     T.bb, dT.bb = cc_loops2.update_t2c(
         T.bb, dT.bb + 0.25 * H.bb.vvoo, H.b.oo, H.b.vv, shift
