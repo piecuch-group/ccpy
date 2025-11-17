@@ -1,0 +1,182 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CCpy: A coupled-cluster package written in Python &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="computational_options.html">Computational Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="walkthrough.html">Specific Walkthroughs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">CCpy: A coupled-cluster package written in Python</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ccpy-a-coupled-cluster-package-written-in-python">
+<h1>CCpy: A coupled-cluster package written in Python<a class="headerlink" href="#ccpy-a-coupled-cluster-package-written-in-python" title="Link to this heading"></a></h1>
+<p>CCpy is a research-level Python package for performing non-relativistic electronic structure
+calculations for molecular systems using methods based on the ground-state coupled-cluster
+(CC) theory and its equation-of-motion (EOM) extension to electronic excited, attached,
+and ionized states. As a design philosophy, CCpy favors simplicity over efficiency, and this
+is reflected in the usage of computational routines that are transparent enough so that they
+can be easily used, modified, and extended, while still maintaining reasonable efficiency.
+To this end, CCpy employs a hybrid Python-Fortran programming approach made possible with the
+<code class="code docutils literal notranslate"><span class="pre">f2py</span></code> package, which allows one to compile Fortran code into shared object libraries
+containing subroutines that are callable from Python and interoperable with Numpy arrays.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installing-from-pypi">Installing from PyPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installing-via-source-code">Installing via Source Code</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#using-the-pyscf-interface">Using the PySCF Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#using-the-gamess-interface">Using the GAMESS Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="computational_options.html">Computational Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ccd">CCD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ccsd">CCSD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ccsd-t">CCSD(T)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#cc3">CC3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ccsdt">CCSDt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#id1">CCSDT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#cc4">CC4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ccsdtq">CCSDTQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#eomccsd">EOMCCSD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#eom-cc3">EOM-CC3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#eomccsdt-a">EOMCCSDT(a)*</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#eomccsdt">EOMCCSDt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#id2">EOMCCSDT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ip-eomccsd-2h-1p">IP-EOMCCSD(2h-1p)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ip-eomccsd-3h-2p">IP-EOMCCSD(3h-2p)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ip-eomccsdt-a">IP-EOMCCSDT(a)*</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ea-eomccsd-2p-1h">EA-EOMCCSD(2p-1h)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ea-eomccsd-3p-2h">EA-EOMCCSD(3p-2h)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ea-eomccsdt-a">EA-EOMCCSDT(a)*</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#dea-eomccsd-2p">DEA-EOMCCSD(2p)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#dea-eomccsd-3p-1h">DEA-EOMCCSD(3p-1h)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#dea-eomccsd-4p-2h">DEA-EOMCCSD(4p-2h)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#sf-eomccsd">SF-EOMCCSD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#cr-cc-2-3">CR-CC(2,3)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#cr-cc-2-4">CR-CC(2,4)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#cc-t-3">CC(t;3)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#cipsi-driven-cc-p-q-aimed-at-converging-ccsdt">CIPSI-driven CC(<em>P</em> ;<em>Q</em>) aimed at converging CCSDT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#adaptive-cc-p-q-aimed-at-converging-ccsdt">Adaptive CC(<em>P</em> ;<em>Q</em>) aimed at converging CCSDT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#cr-eomcc-2-3-and-delta-cr-eomcc-2-3">CR-EOMCC(2,3) and <span class="math notranslate nohighlight">\(\delta\)</span>-CR-EOMCC(2,3)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ec-cc-ii">ec-CC-II</a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ec-cc-ii3">ec-CC-II<sub>3</sub></a></li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html#ec-cc-ii3-4">ec-CC-II<sub>3,4</sub></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="walkthrough.html">Specific Walkthroughs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="walkthrough.html#completely-renormalized-cr-cc-calculations">Completely Renormalized (CR) CC Calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="walkthrough.html#active-orbital-based-cc-p-q-calculations">Active-Orbital-Based CC(<em>P</em>; <em>Q</em>) Calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="walkthrough.html#adaptive-cc-p-q-calculations">Adaptive CC(<em>P</em>; <em>Q</em>) Calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="walkthrough.html#cipsi-driven-cc-p-q-calculations">CIPSI-Driven CC(<em>P</em>; <em>Q</em>) Calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="walkthrough.html#cipsi-based-externally-corrected-ec-cc-calculations">CIPSI-Based Externally Corrected (ec) CC Calculations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
