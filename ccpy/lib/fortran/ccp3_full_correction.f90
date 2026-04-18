@@ -532,13 +532,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/3,noa/), nua, nua, nua, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nua, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_oo,H2A_oooo,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_oo,H2A_oooo,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -594,20 +594,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCI LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/1,noa-2/), nua, nua, nua, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nua, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_oo,H2A_oooo,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_oo,H2A_oooo,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -663,20 +663,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/2,noa-1/), nua, nua, nua, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nua, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_oo,H2A_oooo,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_oo,H2A_oooo,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -732,8 +732,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -749,13 +749,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_vv,H2A_vvvv,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_vv,H2A_vvvv,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -814,20 +814,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! IJKB LOOP !!!
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/2,nua-1/), noa, noa, noa, nua)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_vv,H2A_vvvv,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_vv,H2A_vvvv,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -886,20 +886,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! IJKC LOOP !!!
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_vv,H2A_vvvv,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_vv,H2A_vvvv,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -958,8 +958,8 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -973,13 +973,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -1082,20 +1082,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -1198,20 +1198,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -1314,20 +1314,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -1430,20 +1430,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -1546,20 +1546,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -1662,20 +1662,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -1778,20 +1778,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -1894,20 +1894,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits_copy, t3a_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,&
-                  !$omp t3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,&
+                  !$disabled_omp t3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -2010,8 +2010,8 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -2029,13 +2029,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3a_excits_copy,excits_buff,&
-                  !$omp t3a_amps_copy,amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3a_excits_copy,excits_buff,&
+                  !$disabled_omp t3a_amps_copy,amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -2138,8 +2138,8 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -2159,8 +2159,8 @@ module ccp3_full_correction
                         end do
                      end do
                   end do
-                  !$omp parallel shared(resid,t3a_excits_copy,xbuf,H2A_vooo),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,t3a_excits_copy,xbuf,H2A_vooo),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                       if (.not. qspace(a,b,c)) cycle
                       do m = 1, noa
@@ -2176,12 +2176,12 @@ module ccp3_full_correction
                           resid(a,b,c) = resid(a,b,c) - H2A_vooo(m,c,i,k) * xbuf(m,j,b,a)
                       end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   deallocate(xbuf)
 
-                  !$omp parallel shared(resid,t3a_excits_copy,t2a,H2A_vvov),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,t3a_excits_copy,t2a,H2A_vvov),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                       if (.not. qspace(a,b,c)) cycle
                       do e = 1, nua
@@ -2197,8 +2197,8 @@ module ccp3_full_correction
                           resid(a,b,c) = resid(a,b,c) + H2A_vvov(e,a,c,k) * t2a(e,b,j,i)
                       end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   ! deallocate the copied t3 vectors and excitations
                   deallocate(t3a_amps_copy,t3a_excits_copy)
                   ! antisymmetrize m(abc) block
@@ -2321,13 +2321,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, noa)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, noa, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_oo,H2A_oooo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_oo,H2A_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,c,k)
@@ -2345,8 +2345,8 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + (hmatel + hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3b_amps_copy(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -2362,13 +2362,13 @@ module ccp3_full_correction
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   ! Look for a DGEMM somewhere
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_vv,H2A_vvvv,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_vv,H2A_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      !idx = idx_table(c,i,j,k)
@@ -2388,8 +2388,8 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + (hmatel + hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3b_amps_copy(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -2404,13 +2404,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,noa-1/), nua, nua, nub, noa)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nub, noa, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_oo,H2B_oooo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_oo,H2B_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -2438,20 +2438,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/2,noa/), nua, nua, nub, noa)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nub, noa, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_oooo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -2473,8 +2473,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECITON !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -2489,13 +2489,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nua-1/), noa, noa, nob, nua)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_vv,H2B_vvvv,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_vv,H2B_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -2525,20 +2525,20 @@ module ccp3_full_correction
                          end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BIJK LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/2,nua/), noa, noa, nob, nua)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab)
                   !!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vvvv,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       idx = idx_table(i,j,k,b)
@@ -2562,8 +2562,8 @@ module ccp3_full_correction
                          end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -2577,13 +2577,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -2629,20 +2629,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -2688,20 +2688,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -2747,20 +2747,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/1,3,5,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -2806,8 +2806,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -2821,14 +2821,14 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp noa,nua,nob,nub,&
-                  !$omp n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp noa,nua,nob,nub,&
+                  !$disabled_omp n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                       if (.not. qspace(a,b,c)) cycle
                       idx = idx_table(a,b,i,j)
@@ -2840,8 +2840,8 @@ module ccp3_full_correction
                          resid(a,b,c) = resid(a,b,c) + hmatel * t3b_amps_copy(jdet)
                       end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -2855,13 +2855,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/1,nob/), nua, nua, noa, nob)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -2885,20 +2885,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/2,noa/), (/1,nob/), nua, nua, noa, nob)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -2922,8 +2922,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -2937,13 +2937,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/2,nua/), (/1,nub/), noa, noa, nua, nub)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/4,5,2,3/), noa, noa, nua, nub, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vovo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vovo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -2967,20 +2967,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nua-1/), (/1,nub/), noa, noa, nua, nub)
                   call sort4(t3b_excits_copy, t3b_amps_copy, loc_arr, idx_table, (/4,5,1,3/), noa, noa, nua, nub, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,&
-                  !$omp t3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vovo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,&
+                  !$disabled_omp t3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vovo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -3004,8 +3004,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -3024,13 +3024,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -3043,20 +3043,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -3069,20 +3069,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -3095,20 +3095,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -3121,20 +3121,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -3147,20 +3147,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -3173,20 +3173,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -3199,20 +3199,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -3225,20 +3225,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -3251,8 +3251,8 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -3273,13 +3273,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp t3b_amps_copy,amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp t3b_amps_copy,amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -3327,20 +3327,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp t3b_amps_copy,amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp t3b_amps_copy,amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -3388,20 +3388,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp t3b_amps_copy,amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp t3b_amps_copy,amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -3449,20 +3449,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3b_excits_copy,excits_buff,&
-                  !$omp t3b_amps_copy,amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3b_excits_copy,excits_buff,&
+                  !$disabled_omp t3b_amps_copy,amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -3510,8 +3510,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -3521,8 +3521,8 @@ module ccp3_full_correction
                   !
                   ! Moment contributions
                   !
-                  !$omp parallel shared(resid,t3b_excits_copy,t2a,H2B_vvvo,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,t3b_excits_copy,t2a,H2B_vvvo,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do e = 1, nua
@@ -3531,11 +3531,11 @@ module ccp3_full_correction
                           resid(a,b,c) = resid(a,b,c) - H2B_vvvo(e,a,c,k) * t2a(e,b,j,i)
                       end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
 
-                  !$omp parallel shared(resid,t3b_excits_copy,t2b,H2A_vvov,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,t3b_excits_copy,t2b,H2A_vvov,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do e = 1, nua
@@ -3544,8 +3544,8 @@ module ccp3_full_correction
                           resid(a,b,c) = resid(a,b,c) - H2A_vvov(e,a,b,j) * t2b(e,c,i,k)
                       end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
 
                   allocate(xbuf(nub,nua,nob,noa))
                   do ii = 1,noa
@@ -3557,8 +3557,8 @@ module ccp3_full_correction
                         end do
                      end do
                   end do
-                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,H2B_vvov,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,t3b_excits_copy,xbuf,H2B_vvov,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do e = 1, nub
@@ -3569,8 +3569,8 @@ module ccp3_full_correction
                           resid(a,b,c) = resid(a,b,c) + H2B_vvov(e,b,c,j) * xbuf(e,a,k,i)
                       end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   deallocate(xbuf)
 
                   allocate(xbuf(noa,noa,nua,nua))
@@ -3583,8 +3583,8 @@ module ccp3_full_correction
                         end do
                      end do
                   end do
-                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,H2B_ovoo,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,t3b_excits_copy,xbuf,H2B_ovoo,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do m = 1, noa
@@ -3593,8 +3593,8 @@ module ccp3_full_correction
                           resid(a,b,c) = resid(a,b,c) + H2B_ovoo(m,c,i,k) * xbuf(m,j,b,a)
                       end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   deallocate(xbuf)
 
                   allocate(xbuf(noa,nob,nua,nub))
@@ -3607,8 +3607,8 @@ module ccp3_full_correction
                         end do
                      end do
                   end do
-                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,H2A_vooo,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,t3b_excits_copy,xbuf,H2A_vooo,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do m = 1, noa
@@ -3617,8 +3617,8 @@ module ccp3_full_correction
                           resid(a,b,c) = resid(a,b,c) + H2A_vooo(m,b,i,j) * xbuf(m,k,a,c)
                       end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   deallocate(xbuf)
 
                   allocate(xbuf(nob,noa,nub,nua))
@@ -3631,8 +3631,8 @@ module ccp3_full_correction
                         end do
                      end do
                   end do
-                  !$omp parallel shared(resid,t3b_excits_copy,xbuf,H2B_vooo,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,t3b_excits_copy,xbuf,H2B_vooo,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do m = 1, nob
@@ -3643,8 +3643,8 @@ module ccp3_full_correction
                           resid(a,b,c) = resid(a,b,c) - H2B_vooo(m,b,j,k) * xbuf(m,i,c,a)
                       end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   deallocate(xbuf)
 
                   ! deallocate copies of t3b amplitude and excitation arrays
@@ -3766,13 +3766,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,noa/), nub, nub, nua, noa)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, noa, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_oo,H2C_oooo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_oo,H2C_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(b,c,a,i)
@@ -3791,8 +3791,8 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + (hmatel + hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3c_amps_copy(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -3807,13 +3807,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nua/), nob, nob, noa, nua)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/5,6,4,1/), nob, nob, noa, nua, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_vv,H2C_vvvv,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_vv,H2C_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(j,k,i,a)
@@ -3832,8 +3832,8 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + (hmatel + hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3c_amps_copy(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -3848,13 +3848,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/2,nob/), nub, nub, nua, nob)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/2,3,1,6/), nub, nub, nua, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_oo,H2B_oooo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_oo,H2B_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -3882,20 +3882,20 @@ module ccp3_full_correction
                          end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCAJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,nob-1/), nub, nub, nua, nob)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/2,3,1,5/), nub, nub, nua, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_oooo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -3917,8 +3917,8 @@ module ccp3_full_correction
                          end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECITON !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -3933,13 +3933,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nub-1/), nob, nob, noa, nub)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/5,6,4,2/), nob, nob, noa, nub, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_vv,H2B_vvvv,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_vv,H2B_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -3967,20 +3967,20 @@ module ccp3_full_correction
                          end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! JKIC LOOP !!!
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/2,nub/), nob, nob, noa, nub)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/5,6,4,3/), nob, nob, noa, nub, nloc, n3abb)
                   !!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vvvv,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       idx = idx_table(j,k,i,c)
@@ -4003,8 +4003,8 @@ module ccp3_full_correction
                          end do
                       end if
                   end do; end do; end do; ! end loop over idet
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -4018,13 +4018,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -4070,20 +4070,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4129,20 +4129,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4188,20 +4188,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4247,8 +4247,8 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -4262,14 +4262,14 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua,nob,nub,&
-                  !$omp n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua,nob,nub,&
+                  !$disabled_omp n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       idx = idx_table(b,c,j,k)
@@ -4281,8 +4281,8 @@ module ccp3_full_correction
                          resid(a,b,c) = resid(a,b,c) + hmatel * t3c_amps_copy(jdet)
                       end do
                   end do; end do; end do; ! end loop over idet
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -4296,13 +4296,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/2,nub/), nob, nob, nua, nub)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/5,6,1,3/), nob, nob, nua, nub, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4326,20 +4326,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! JKAB LOOP !!!
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/1,nub-1/), nob, nob, nua, nub)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/5,6,1,2/), nob, nob, nua, nub, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4363,8 +4363,8 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -4378,13 +4378,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/2,nob/), nub, nub, noa, nob)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nub, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vovo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vovo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4408,20 +4408,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/1,nob-1/), nub, nub, noa, nob)
                   call sort4(t3c_excits_copy, t3c_amps_copy, loc_arr, idx_table, (/2,3,4,5/), nub, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,&
-                  !$omp t3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vovo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,&
+                  !$disabled_omp t3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vovo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4445,8 +4445,8 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -4465,13 +4465,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4486,20 +4486,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4514,20 +4514,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4542,20 +4542,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4570,20 +4570,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4598,20 +4598,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4626,20 +4626,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4654,20 +4654,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4682,20 +4682,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -4710,8 +4710,8 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -4732,13 +4732,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -4786,20 +4786,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -4847,20 +4847,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -4908,20 +4908,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -4969,8 +4969,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -4980,8 +4980,8 @@ module ccp3_full_correction
                   !
                   ! Moment contributions
                   !
-                  !$omp parallel shared(resid,t3c_excits_copy,t2b,I2B_vvvo,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,t3c_excits_copy,t2b,I2B_vvvo,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      do e = 1, nua
@@ -4992,11 +4992,11 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + H2B_vvvo(e,a,c,k) * t2b(e,b,i,j)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
 
-                  !$omp parallel shared(resid,t3c_excits_copy,t2c,I2B_vvov,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,t3c_excits_copy,t2c,I2B_vvov,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do e = 1, nub
@@ -5005,8 +5005,8 @@ module ccp3_full_correction
                          resid(a,b,c) = resid(a,b,c) - H2B_vvov(e,a,c,i) * t2c(e,b,j,k)
                       end do
                    end do; end do; end do;
-                   !$omp end do
-                   !$omp end parallel
+                   !$disabled_omp end do
+                   !$disabled_omp end parallel
 
                    allocate(xbuf(nub,nua,nob,noa))
                    do ii = 1,noa
@@ -5018,8 +5018,8 @@ module ccp3_full_correction
                          end do
                       end do
                    end do
-                  !$omp parallel shared(resid,t3c_excits_copy,xbuf,I2C_vvov,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,t3c_excits_copy,xbuf,I2C_vvov,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do e = 1, nub
@@ -5028,8 +5028,8 @@ module ccp3_full_correction
                          resid(a,b,c) = resid(a,b,c) - H2C_vvov(e,c,b,j) * xbuf(e,a,k,i)
                       end do
                    end do; end do; end do;
-                   !$omp end do
-                   !$omp end parallel
+                   !$disabled_omp end do
+                   !$disabled_omp end parallel
                    deallocate(xbuf)
 
                    allocate(xbuf(noa,nob,nua,nub))
@@ -5042,8 +5042,8 @@ module ccp3_full_correction
                          end do
                       end do
                    end do
-                   !$omp parallel shared(resid,t3c_excits_copy,xbuf,I2B_ovoo,n3abb),&
-                   !$omp do schedule(static)
+                   !$disabled_omp parallel shared(resid,t3c_excits_copy,xbuf,I2B_ovoo,n3abb),&
+                   !$disabled_omp do schedule(static)
                    do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do m = 1, noa
@@ -5054,8 +5054,8 @@ module ccp3_full_correction
                          resid(a,b,c) = resid(a,b,c) - H2B_ovoo(m,c,i,k) * xbuf(m,j,a,b)
                       end do
                    end do; end do; end do;
-                   !$omp end do
-                   !$omp end parallel
+                   !$disabled_omp end do
+                   !$disabled_omp end parallel
                    deallocate(xbuf)
 
                    allocate(xbuf(nob,nob,nub,nub))
@@ -5068,8 +5068,8 @@ module ccp3_full_correction
                          end do
                       end do
                    end do
-                   !$omp parallel shared(resid,t3c_excits_copy,xbuf,I2B_vooo,n3abb),&
-                   !$omp do schedule(static)
+                   !$disabled_omp parallel shared(resid,t3c_excits_copy,xbuf,I2B_vooo,n3abb),&
+                   !$disabled_omp do schedule(static)
                    do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do m = 1, nob
@@ -5078,8 +5078,8 @@ module ccp3_full_correction
                          resid(a,b,c) = resid(a,b,c) + H2B_vooo(m,a,i,k) * xbuf(m,j,b,c)
                       end do
                    end do; end do; end do;
-                   !$omp end do
-                   !$omp end parallel
+                   !$disabled_omp end do
+                   !$disabled_omp end parallel
                    deallocate(xbuf)
 
                    allocate(xbuf(nob,noa,nub,nua))
@@ -5092,8 +5092,8 @@ module ccp3_full_correction
                          end do
                       end do
                    end do
-                   !$omp parallel shared(resid,t3c_excits_copy,xbuf,I2C_vooo,n3abb),&
-                   !$omp do schedule(static)
+                   !$disabled_omp parallel shared(resid,t3c_excits_copy,xbuf,I2C_vooo,n3abb),&
+                   !$disabled_omp do schedule(static)
                    do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       do m = 1, nob
@@ -5102,8 +5102,8 @@ module ccp3_full_correction
                          resid(a,b,c) = resid(a,b,c) + H2C_vooo(m,b,k,j) * xbuf(m,i,c,a)
                       end do
                    end do; end do; end do;
-                   !$omp end do
-                   !$omp end parallel
+                   !$disabled_omp end do
+                   !$disabled_omp end parallel
                    deallocate(xbuf)
 
                    ! deallocate t3c copy arrays
@@ -5210,13 +5210,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/3,nob/), nub, nub, nub, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/1,2,3,6/), nub, nub, nub, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_oo,H2C_oooo,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_oo,H2C_oooo,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -5272,20 +5272,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCI LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/1,nob-2/), nub, nub, nub, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/1,2,3,4/), nub, nub, nub, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_oo,H2C_oooo,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_oo,H2C_oooo,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -5341,20 +5341,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/2,nob-1/), nub, nub, nub, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/1,2,3,5/), nub, nub, nub, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_oo,H2C_oooo,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_oo,H2C_oooo,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -5410,8 +5410,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -5427,13 +5427,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/1,nub-2/), nob, nob, nob, nub)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/4,5,6,1/), nob, nob, nob, nub, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_vv,H2C_vvvv,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_vv,H2C_vvvv,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -5492,20 +5492,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! IJKB LOOP !!!
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/2,nub-1/), nob, nob, nob, nub)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/4,5,6,2/), nob, nob, nob, nub, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_vv,H2C_vvvv,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_vv,H2C_vvvv,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -5564,20 +5564,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! IJKC LOOP !!!
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/3,nub/), nob, nob, nob, nub)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/4,5,6,3/), nob, nob, nob, nub, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_vv,H2C_vvvv,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_vv,H2C_vvvv,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -5636,8 +5636,8 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -5651,13 +5651,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -5760,20 +5760,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -5876,20 +5876,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -5992,20 +5992,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -6108,20 +6108,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -6224,20 +6224,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -6340,20 +6340,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -6456,20 +6456,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -6572,20 +6572,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits_copy, t3d_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,&
-                  !$omp t3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,&
+                  !$disabled_omp t3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -6688,8 +6688,8 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -6707,13 +6707,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp t3d_excits_copy,excits_buff,&
-                  !$omp t3d_amps_copy,amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp t3d_excits_copy,excits_buff,&
+                  !$disabled_omp t3d_amps_copy,amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -6816,8 +6816,8 @@ module ccp3_full_correction
                      end do
                      end if
                  end do; end do; end do;
-                 !$omp end do
-                 !$omp end parallel
+                 !$disabled_omp end do
+                 !$disabled_omp end parallel
                  !!!! END OMP PARALLEL SECTION !!!!
                  ! deallocate sorting arrays
                  deallocate(loc_arr,idx_table)
@@ -6837,8 +6837,8 @@ module ccp3_full_correction
                        end do
                     end do
                  end do
-                 !$omp parallel shared(resid,t3d_excits_copy,xbuf,I2C_vooo,n3bbb),&
-                 !$omp do schedule(static)
+                 !$disabled_omp parallel shared(resid,t3d_excits_copy,xbuf,I2C_vooo,n3bbb),&
+                 !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                     if (.not. qspace(a,b,c)) cycle
                     do m = 1, nob
@@ -6854,12 +6854,12 @@ module ccp3_full_correction
                        resid(a,b,c) = resid(a,b,c) - H2C_vooo(m,c,i,k) * xbuf(m,j,b,a)
                     end do
                  end do; end do; end do;
-                 !$omp end do
-                 !$omp end parallel
+                 !$disabled_omp end do
+                 !$disabled_omp end parallel
                  deallocate(xbuf)
 
-                 !$omp parallel shared(resid,t3d_excits_copy,t2c,I2C_vvov,n3bbb),&
-                 !$omp do schedule(static)
+                 !$disabled_omp parallel shared(resid,t3d_excits_copy,t2c,I2C_vvov,n3bbb),&
+                 !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                     if (.not. qspace(a,b,c)) cycle
                     do e = 1, nub
@@ -6875,8 +6875,8 @@ module ccp3_full_correction
                        resid(a,b,c) = resid(a,b,c) + H2C_vvov(e,a,c,k) * t2c(e,b,j,i)
                     end do
                  end do; end do; end do;
-                 !$omp end do
-                 !$omp end parallel
+                 !$disabled_omp end do
+                 !$disabled_omp end parallel
 
                   ! deallocate copied t3d arrays
                   deallocate(t3d_amps_copy,t3d_excits_copy)
@@ -6991,13 +6991,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/3,noa/), nua, nua, nua, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nua, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h1a_oo,h2a_oooo,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h1a_oo,h2a_oooo,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -7050,20 +7050,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,3,4) !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/1,noa-2/), nua, nua, nua, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nua, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_oo,H2A_oooo,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_oo,H2A_oooo,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -7116,20 +7116,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,3,5) !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/2,noa-1/), nua, nua, nua, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nua, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_oo,H2A_oooo,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_oo,H2A_oooo,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -7182,8 +7182,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -7199,13 +7199,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_vv,H2A_vvvv,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_vv,H2A_vvvv,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -7258,20 +7258,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (4,5,6,2) LOOP !!!
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/2,nua-1/), noa, noa, noa, nua)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_vv,H2A_vvvv,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_vv,H2A_vvvv,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -7326,20 +7326,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (4,5,6,3) LOOP !!!
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_vv,H2A_vvvv,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_vv,H2A_vvvv,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -7392,8 +7392,8 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -7407,13 +7407,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2a_voov,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2a_voov,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -7507,20 +7507,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,5) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2a_voov,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2a_voov,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -7614,20 +7614,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,4,5) LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2a_voov,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2a_voov,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -7721,20 +7721,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2a_voov,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2a_voov,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -7828,20 +7828,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2a_voov,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2a_voov,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -7935,20 +7935,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2a_voov,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2a_voov,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -8042,20 +8042,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,5,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2a_voov,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2a_voov,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -8149,20 +8149,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,5,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2a_voov,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2a_voov,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -8256,20 +8256,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,5,6) LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(l3a_excits_copy, l3a_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l3a_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2a_voov,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l3a_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2a_voov,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -8363,8 +8363,8 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -8382,13 +8382,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -8482,8 +8482,8 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -8491,13 +8491,13 @@ module ccp3_full_correction
                   deallocate(amps_buff,excits_buff)
 
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3a_excits_copy,&
-                  !$omp l1a,l2a,&
-                  !$omp H1A_ov,H2A_oovv,H2A_vovv,H2A_ooov,&
-                  !$omp X2A_vovv,X2A_ooov,&
-                  !$omp noa,nua,n3aaa),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3a_excits_copy,&
+                  !$disabled_omp l1a,l2a,&
+                  !$disabled_omp H1A_ov,H2A_oovv,H2A_vovv,H2A_ooov,&
+                  !$disabled_omp X2A_vovv,X2A_ooov,&
+                  !$disabled_omp noa,nua,n3aaa),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=b+1,nua;
                      if (.not. qspace(a,b,c)) cycle
                       ! A(i/jk)A(a/bc) [l1a(ai) * h2a(jkbc) + h1a(ia) * l2a(bcjk)]
@@ -8558,8 +8558,8 @@ module ccp3_full_correction
                       end do
                       resid(a,b,c) = resid(a,b,c) + res
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
 
                   ! deallocate copies of l3a amplitude and excitation arrays
@@ -8680,13 +8680,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, noa)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, noa, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_oo,H2A_oooo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_oo,H2A_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,c,k)
@@ -8702,8 +8702,8 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * l3b_amps_copy(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -8718,13 +8718,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nub/), noa, noa, nob, nub)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_vv,H2A_vvvv,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_vv,H2A_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      !idx = idx_table(c,i,j,k)
@@ -8741,8 +8741,8 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * l3b_amps_copy(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -8757,13 +8757,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,noa-1/), nua, nua, nub, noa)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nub, noa, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_oo,H2B_oooo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_oo,H2B_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -8789,20 +8789,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,3,5) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/2,noa/), nua, nua, nub, noa)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nub, noa, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_oooo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -8824,8 +8824,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECITON !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -8840,13 +8840,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nua-1/), noa, noa, nob, nua)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_vv,H2B_vvvv,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_vv,H2B_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -8870,20 +8870,20 @@ module ccp3_full_correction
                          end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (4,5,6,2) LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/2,nua/), noa, noa, nob, nua)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab)
                   !!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vvvv,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       idx = idx_table(i,j,k,b)
@@ -8903,8 +8903,8 @@ module ccp3_full_correction
                          end do
                       end if
                   end do; end do; end do; ! end loop over idet
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -8918,13 +8918,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -8966,20 +8966,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -9021,20 +9021,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -9076,20 +9076,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,5,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/1,3,5,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -9131,8 +9131,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -9146,14 +9146,14 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp noa,nua,nob,nub,&
-                  !$omp n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp noa,nua,nob,nub,&
+                  !$disabled_omp n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                       if (.not. qspace(a,b,c)) cycle
                       idx = idx_table(a,b,i,j)
@@ -9164,8 +9164,8 @@ module ccp3_full_correction
                          resid(a,b,c) = resid(a,b,c) + hmatel * l3b_amps_copy(jdet)
                       end do
                   end do; end do; end do; ! end loop over idet
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -9179,13 +9179,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/1,nob/), nua, nua, noa, nob)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -9207,20 +9207,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,5,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/2,noa/), (/1,nob/), nua, nua, noa, nob)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -9242,8 +9242,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -9257,13 +9257,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/2,nua/), (/1,nub/), noa, noa, nua, nub)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/4,5,2,3/), noa, noa, nua, nub, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vovo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vovo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -9285,20 +9285,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (4,5,1,3) LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nua-1/), (/1,nub/), noa, noa, nua, nub)
                   call sort4(l3b_excits_copy, l3b_amps_copy, loc_arr, idx_table, (/4,5,1,3/), noa, noa, nua, nub, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l3b_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vovo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l3b_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vovo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -9320,8 +9320,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -9342,13 +9342,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -9360,20 +9360,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,5) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -9385,20 +9385,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,4,5) LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -9410,20 +9410,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -9435,20 +9435,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -9460,20 +9460,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -9485,20 +9485,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,5,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -9510,20 +9510,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,5,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -9535,20 +9535,20 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,5,6) LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(a,b,i,j)
@@ -9560,8 +9560,8 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -9583,13 +9583,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -9633,20 +9633,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -9690,20 +9690,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,5) LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -9747,20 +9747,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,4,5) LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -9804,8 +9804,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -9813,17 +9813,17 @@ module ccp3_full_correction
                   deallocate(amps_buff,excits_buff)
 
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3b_excits_copy,&
-                  !$omp l1a,l1b,l2a,l2b,&
-                  !$omp H1A_ov,H1B_ov,&
-                  !$omp H2A_oovv,H2B_oovv,&
-                  !$omp H2A_ooov,H2A_vovv,&
-                  !$omp H2B_ooov,H2B_oovo,H2B_vovv,H2B_ovvv,&
-                  !$omp X2A_ooov,X2A_vovv,&
-                  !$omp X2B_ooov,X2B_oovo,X2B_vovv,X2B_ovvv,&
-                  !$omp noa,nua,nob,nub,n3aab),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3b_excits_copy,&
+                  !$disabled_omp l1a,l1b,l2a,l2b,&
+                  !$disabled_omp H1A_ov,H1B_ov,&
+                  !$disabled_omp H2A_oovv,H2B_oovv,&
+                  !$disabled_omp H2A_ooov,H2A_vovv,&
+                  !$disabled_omp H2B_ooov,H2B_oovo,H2B_vovv,H2B_ovvv,&
+                  !$disabled_omp X2A_ooov,X2A_vovv,&
+                  !$disabled_omp X2B_ooov,X2B_oovo,X2B_vovv,X2B_ovvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3aab),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=a+1,nua; do c=1,nub;
                       if (.not. qspace(a,b,c)) cycle
                       ! A(ab)A(ij) [l1a(ai)*h2b(jkbc) + h1a(ia)*l2a(bcjk)
@@ -9875,8 +9875,8 @@ module ccp3_full_correction
                       end do
                       resid(a,b,c) = resid(a,b,c) + res
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
 
                   ! deallocate copies of l3b amplitude and excitation arrays
@@ -9993,13 +9993,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,noa/), nub, nub, nua, noa)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, noa, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_oo,H2C_oooo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_oo,H2C_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(b,c,a,i)
@@ -10016,8 +10016,8 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * l3c_amps_copy(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -10032,13 +10032,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nua/), nob, nob, noa, nua)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/5,6,4,1/), nob, nob, noa, nua, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_vv,H2C_vvvv,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_vv,H2C_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      idx = idx_table(j,k,i,a)
@@ -10054,8 +10054,8 @@ module ccp3_full_correction
                         resid(a,b,c) = resid(a,b,c) + hmatel * l3c_amps_copy(jdet)
                      end do
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -10070,13 +10070,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/2,nob/), nub, nub, nua, nob)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/2,3,1,6/), nub, nub, nua, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_oo,H2B_oooo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_oo,H2B_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -10102,20 +10102,20 @@ module ccp3_full_correction
                          end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,1,5) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,nob-1/), nub, nub, nua, nob)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/2,3,1,5/), nub, nub, nua, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_oooo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_oooo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -10137,8 +10137,8 @@ module ccp3_full_correction
                          end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECITON !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -10153,13 +10153,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nub-1/), nob, nob, noa, nub)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/5,6,4,2/), nob, nob, noa, nub, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1A_vv,H2B_vvvv,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1A_vv,H2B_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10183,20 +10183,20 @@ module ccp3_full_correction
                          end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (5,6,4,3) LOOP !!!
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/2,nub/), nob, nob, noa, nub)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/5,6,4,3/), nob, nob, noa, nub, nloc, n3abb)
                   !!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vvvv,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vvvv,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       idx = idx_table(j,k,i,c)
@@ -10217,8 +10217,8 @@ module ccp3_full_correction
                          end do
                       end if
                   end do; end do; end do; ! end loop over idet
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -10232,13 +10232,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -10280,20 +10280,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,5) LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10335,20 +10335,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10390,20 +10390,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2C_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2C_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10445,8 +10445,8 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -10460,14 +10460,14 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2A_voov,&
-                  !$omp noa,nua,nob,nub,&
-                  !$omp n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2A_voov,&
+                  !$disabled_omp noa,nua,nob,nub,&
+                  !$disabled_omp n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       idx = idx_table(b,c,j,k)
@@ -10478,8 +10478,8 @@ module ccp3_full_correction
                          resid(a,b,c) = resid(a,b,c) + hmatel * l3c_amps_copy(jdet)
                       end do
                   end do; end do; end do; ! end loop over idet
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -10493,13 +10493,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/2,nub/), nob, nob, nua, nub)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/5,6,1,3/), nob, nob, nua, nub, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10521,20 +10521,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (5,6,1,2) LOOP !!!
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/1,nub-1/), nob, nob, nua, nub)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/5,6,1,2/), nob, nob, nua, nub, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10556,8 +10556,8 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -10571,13 +10571,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/2,nob/), nub, nub, noa, nob)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nub, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vovo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vovo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10599,20 +10599,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,4,5) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/1,nob-1/), nub, nub, noa, nob)
                   call sort4(l3c_excits_copy, l3c_amps_copy, loc_arr, idx_table, (/2,3,4,5/), nub, nub, noa, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l3c_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_vovo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l3c_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_vovo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10634,8 +10634,8 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -10656,13 +10656,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10676,20 +10676,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10703,20 +10703,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,4,5) LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10730,20 +10730,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,5,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10757,20 +10757,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10784,20 +10784,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,5) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10811,20 +10811,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,5,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10838,20 +10838,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10865,20 +10865,20 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,4,5) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_ovvo,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_ovvo,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                       ! (1)
@@ -10892,8 +10892,8 @@ module ccp3_full_correction
                           end do
                       end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -10916,13 +10916,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -10966,20 +10966,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -11023,20 +11023,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,5,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -11080,20 +11080,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,5,6) LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nub, noa, nob, nloc, n3aab)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3abb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3abb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nua; do b=1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -11137,8 +11137,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -11146,16 +11146,16 @@ module ccp3_full_correction
                   deallocate(amps_buff,excits_buff)
 
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3c_excits_copy,&
-                  !$omp l1a,l1b,l2b,l2c,&
-                  !$omp H1A_ov,H1B_ov,H2B_oovv,H2C_oovv,&
-                  !$omp H2C_vovv,H2C_ooov,&
-                  !$omp H2B_vovv,H2B_ovvv,H2B_ooov,H2B_oovo,&
-                  !$omp X2C_vovv,X2C_ooov,&
-                  !$omp X2B_vovv,X2B_ovvv,X2B_ooov,X2B_oovo,&
-                  !$omp noa,nob,nua,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3c_excits_copy,&
+                  !$disabled_omp l1a,l1b,l2b,l2c,&
+                  !$disabled_omp H1A_ov,H1B_ov,H2B_oovv,H2C_oovv,&
+                  !$disabled_omp H2C_vovv,H2C_ooov,&
+                  !$disabled_omp H2B_vovv,H2B_ovvv,H2B_ooov,H2B_oovo,&
+                  !$disabled_omp X2C_vovv,X2C_ooov,&
+                  !$disabled_omp X2B_vovv,X2B_ovvv,X2B_ooov,X2B_oovo,&
+                  !$disabled_omp noa,nob,nua,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do c=1,nua; do b=1,nub; do a=b+1,nub;
                       kk = i; jj = j; ii = k;
                       ! A(ab)A(ij) l1b(ai)*h2b(kjcb)
@@ -11209,8 +11209,8 @@ module ccp3_full_correction
                       end do
                       resid(c,b,a) = resid(c,b,a) + res
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
 
                   ! deallocate copied l3c arrays
@@ -11313,13 +11313,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/3,nob/), nub, nub, nub, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/1,2,3,6/), nub, nub, nub, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h1b_oo,h2c_oooo,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h1b_oo,h2c_oooo,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -11372,20 +11372,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,3,4) !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/1,nob-2/), nub, nub, nub, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/1,2,3,4/), nub, nub, nub, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_oo,H2C_oooo,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_oo,H2C_oooo,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -11438,20 +11438,20 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,3,5) !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/2,nob-1/), nub, nub, nub, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/1,2,3,5/), nub, nub, nub, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_oo,H2C_oooo,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_oo,H2C_oooo,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -11504,8 +11504,8 @@ module ccp3_full_correction
                         end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -11521,13 +11521,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/1,nub-2/), nob, nob, nob, nub)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/4,5,6,1/), nob, nob, nob, nub, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_vv,H2C_vvvv,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_vv,H2C_vvvv,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -11580,20 +11580,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (4,5,6,2) LOOP !!!
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/2,nub-1/), nob, nob, nob, nub)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/4,5,6,2/), nob, nob, nob, nub, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_vv,H2C_vvvv,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_vv,H2C_vvvv,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -11646,20 +11646,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (4,5,6,3) LOOP !!!
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/3,nub/), nob, nob, nob, nub)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/4,5,6,3/), nob, nob, nob, nub, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H1B_vv,H2C_vvvv,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H1B_vv,H2C_vvvv,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -11712,8 +11712,8 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -11727,13 +11727,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2c_voov,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2c_voov,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -11827,20 +11827,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,5) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2c_voov,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2c_voov,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -11934,20 +11934,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,4,5) LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2c_voov,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2c_voov,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -12041,20 +12041,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2c_voov,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2c_voov,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -12148,20 +12148,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2c_voov,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2c_voov,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -12255,20 +12255,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,4,6) LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2c_voov,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2c_voov,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -12362,20 +12362,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,2,5,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2c_voov,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2c_voov,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -12469,20 +12469,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (1,3,5,6) LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2c_voov,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2c_voov,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -12576,20 +12576,20 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! SB: (2,3,5,6) LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(l3d_excits_copy, l3d_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l3d_amps_copy,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp h2c_voov,&
-                  !$omp noa,nua,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l3d_amps_copy,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp h2c_voov,&
+                  !$disabled_omp noa,nua,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -12683,8 +12683,8 @@ module ccp3_full_correction
                      end do
                      end if
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
@@ -12704,13 +12704,13 @@ module ccp3_full_correction
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3abb)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,excits_buff,&
-                  !$omp amps_buff,&
-                  !$omp loc_arr,idx_table,&
-                  !$omp H2B_voov,&
-                  !$omp noa,nua,nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,excits_buff,&
+                  !$disabled_omp amps_buff,&
+                  !$disabled_omp loc_arr,idx_table,&
+                  !$disabled_omp H2B_voov,&
+                  !$disabled_omp noa,nua,nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                      if (.not. qspace(a,b,c)) cycle
                      ! (1)
@@ -12804,8 +12804,8 @@ module ccp3_full_correction
                      end do
                      end if
                  end do; end do; end do;
-                 !$omp end do
-                 !$omp end parallel
+                 !$disabled_omp end do
+                 !$disabled_omp end parallel
                  !!!! END OMP PARALLEL SECTION !!!!
                  ! deallocate sorting arrays
                  deallocate(loc_arr,idx_table)
@@ -12813,13 +12813,13 @@ module ccp3_full_correction
                  deallocate(amps_buff,excits_buff)
 
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
-                  !$omp parallel shared(resid,&
-                  !$omp l3d_excits_copy,&
-                  !$omp l1b,l2c,&
-                  !$omp H1B_ov,H2C_oovv,H2C_vovv,H2C_ooov,&
-                  !$omp X2C_vovv,X2C_ooov,&
-                  !$omp nob,nub,n3bbb),&
-                  !$omp do schedule(static)
+                  !$disabled_omp parallel shared(resid,&
+                  !$disabled_omp l3d_excits_copy,&
+                  !$disabled_omp l1b,l2c,&
+                  !$disabled_omp H1B_ov,H2C_oovv,H2C_vovv,H2C_ooov,&
+                  !$disabled_omp X2C_vovv,X2C_ooov,&
+                  !$disabled_omp nob,nub,n3bbb),&
+                  !$disabled_omp do schedule(static)
                   do a=1,nub; do b=a+1,nub; do c=b+1,nub;
                       if (.not. qspace(a,b,c)) cycle
                       ! A(i/jk)A(a/bc) [l1b(ai) * h2c(jkbc) + h1b(ia) * l2c(bcjk)]
@@ -12880,8 +12880,8 @@ module ccp3_full_correction
                       end do
                       resid(a,b,c) = resid(a,b,c) + res
                   end do; end do; end do;
-                  !$omp end do
-                  !$omp end parallel
+                  !$disabled_omp end do
+                  !$disabled_omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
 
                   ! deallocate l3d array copies
@@ -12998,13 +12998,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/3,noa/), nua, nua, nua, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nua, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1A_oo,H2A_oooo,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1A_oo,H2A_oooo,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -13057,20 +13057,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABCI LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/1,noa-2/), nua, nua, nua, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nua, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1A_oo,H2A_oooo,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1A_oo,H2A_oooo,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -13123,20 +13123,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABCJ LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/2,noa-1/), nua, nua, nua, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nua, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1A_oo,H2A_oooo,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1A_oo,H2A_oooo,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -13189,8 +13189,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -13206,13 +13206,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1A_vv,H2A_vvvv,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1A_vv,H2A_vvvv,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -13268,20 +13268,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! IJKB LOOP !!!
           call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/2,nua-1/), noa, noa, noa, nua)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1A_vv,H2A_vvvv,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1A_vv,H2A_vvvv,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -13337,20 +13337,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! IJKC LOOP !!!
           call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1A_vv,H2A_vvvv,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1A_vv,H2A_vvvv,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -13406,8 +13406,8 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -13421,13 +13421,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -13530,20 +13530,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -13646,20 +13646,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -13762,20 +13762,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -13878,20 +13878,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -13994,20 +13994,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -14110,20 +14110,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -14226,20 +14226,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -14342,20 +14342,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCJK LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(r3a_excits_copy, r3a_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r3a_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r3a_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -14458,8 +14458,8 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -14477,13 +14477,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -14577,8 +14577,8 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -14601,13 +14601,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/3,noa/), nua, nua, nua, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nua, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp excits_buff,r3a_excits_copy,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1A_oo,X2A_oooo,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp excits_buff,r3a_excits_copy,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1A_oo,X2A_oooo,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -14660,20 +14660,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABCI LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/1,noa-2/), nua, nua, nua, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nua, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp excits_buff,r3a_excits_copy,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1A_oo,X2A_oooo,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp excits_buff,r3a_excits_copy,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1A_oo,X2A_oooo,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -14726,20 +14726,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABCJ LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/2,noa-1/), nua, nua, nua, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nua, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp excits_buff,r3a_excits_copy,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1A_oo,X2A_oooo,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp excits_buff,r3a_excits_copy,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1A_oo,X2A_oooo,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -14792,8 +14792,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate temporary amplitude arrays
           !deallocate(excits_buff,amps_buff)
@@ -14816,13 +14816,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp excits_buff,r3a_excits_copy,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1A_vv,X2A_vvvv,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp excits_buff,r3a_excits_copy,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1A_vv,X2A_vvvv,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -14878,20 +14878,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! IJKB LOOP !!!
           call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/2,nua-1/), noa, noa, noa, nua)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp excits_buff,r3a_excits_copy,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1A_vv,X2A_vvvv,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp excits_buff,r3a_excits_copy,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1A_vv,X2A_vvvv,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -14947,20 +14947,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! IJKC LOOP !!!
           call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp excits_buff,r3a_excits_copy,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1A_vv,X2A_vvvv,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp excits_buff,r3a_excits_copy,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1A_vv,X2A_vvvv,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -15016,8 +15016,8 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate temporary amplitude arrays
           !deallocate(excits_buff,amps_buff)
@@ -15033,13 +15033,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -15133,20 +15133,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -15240,20 +15240,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -15347,20 +15347,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -15454,20 +15454,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -15561,20 +15561,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -15668,20 +15668,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -15775,20 +15775,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -15882,20 +15882,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCJK LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2A_voov,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2A_voov,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -15989,8 +15989,8 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate temporary amplitude arrays
           deallocate(excits_buff,amps_buff)
@@ -16010,13 +16010,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_voov,&
-          !$omp noa,nua,nob,nub,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -16110,8 +16110,8 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -16119,13 +16119,13 @@ module ccp3_full_correction
           deallocate(amps_buff,excits_buff)
 
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3a_excits_copy,&
-          !$omp r2a,t2a,&
-          !$omp H2A_vvov,H2A_vooo,&
-          !$omp X2A_vvov,X2A_vooo,&
-          !$omp noa,nua,n3aaa_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3a_excits_copy,&
+          !$disabled_omp r2a,t2a,&
+          !$disabled_omp H2A_vvov,H2A_vooo,&
+          !$disabled_omp X2A_vvov,X2A_vooo,&
+          !$disabled_omp noa,nua,n3aaa_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=b+1,nua;
               if (.not. qspace(a,b,c)) cycle
               res_mm23 = 0.0d0
@@ -16175,8 +16175,8 @@ module ccp3_full_correction
               end do
               resid(a,b,c) = resid(a,b,c) + res_mm23
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate the copied r3 vectors and excitations
           deallocate(r3a_amps_copy,r3a_excits_copy)
@@ -16333,13 +16333,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, noa)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, noa, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp h1a_oo,h2a_oooo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp h1a_oo,h2a_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,c,k)
@@ -16355,8 +16355,8 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * r3b_amps_copy(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -16374,13 +16374,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, noa, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x1a_oo,x2a_oooo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x1a_oo,x2a_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,c,k)
@@ -16396,8 +16396,8 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -16415,13 +16415,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nub/), noa, noa, nob, nub)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1A_vv,H2A_vvvv,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1A_vv,H2A_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(i,j,k,c)
@@ -16438,8 +16438,8 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * r3b_amps_copy(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -16457,13 +16457,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nub/), noa, noa, nob, nub)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_amps_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x1a_vv,x2a_vvvv,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_amps_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x1a_vv,x2a_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(i,j,k,c)
@@ -16480,8 +16480,8 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -16500,13 +16500,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,noa-1/), nua, nua, nub, noa)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nub, noa, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1B_oo,H2B_oooo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1B_oo,H2B_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -16532,20 +16532,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABCJ LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/2,noa/), nua, nua, nub, noa)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nub, noa, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_oooo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -16567,8 +16567,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECITON !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -16586,13 +16586,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,noa-1/), nua, nua, nub, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nub, noa, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x1b_oo,x2b_oooo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x1b_oo,x2b_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -16618,20 +16618,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABCJ LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/2,noa/), nua, nua, nub, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nub, noa, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_oooo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -16653,8 +16653,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECITON !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -16673,13 +16673,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nua-1/), noa, noa, nob, nua)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab_r)
           !!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1B_vv,H2B_vvvv,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1B_vv,H2B_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -16707,20 +16707,20 @@ module ccp3_full_correction
                  end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!! END OMP PARALLEL SECTION !!!!
           !!! BIJK LOOP !!!
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/2,nua/), noa, noa, nob, nua)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab_r)
           !!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_vvvv,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
               idx = idx_table(i,j,k,b)
@@ -16744,8 +16744,8 @@ module ccp3_full_correction
                  end do
               end if
           end do; end do; end do; ! end loop over idet
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -16763,13 +16763,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nua-1/), noa, noa, nob, nua)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x1b_vv,x2b_vvvv,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x1b_vv,x2b_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -16797,20 +16797,20 @@ module ccp3_full_correction
                  end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BIJK LOOP !!!
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/2,nua/), noa, noa, nob, nua)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), noa, noa, nob, nua, nloc, n3aab_t)
           !!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_vvvv,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
               idx = idx_table(i,j,k,b)
@@ -16834,8 +16834,8 @@ module ccp3_full_correction
                  end do
               end if
           end do; end do; end do; ! end loop over idet
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -16851,13 +16851,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nua, nub, noa, nob, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -16903,20 +16903,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nua, nub, noa, nob, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -16962,20 +16962,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17021,20 +17021,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/1,3,5,6/), nua, nub, noa, nob, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17080,8 +17080,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -17098,13 +17098,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nub, noa, nob, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2a_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2a_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17150,20 +17150,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nub, noa, nob, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2a_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2a_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17209,20 +17209,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2a_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2a_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17268,20 +17268,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nub, noa, nob, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2a_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2a_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17327,8 +17327,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -17347,14 +17347,14 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,nob,nub,&
-          !$omp n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,nob,nub,&
+          !$disabled_omp n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
               idx = idx_table(a,b,i,j)
@@ -17366,8 +17366,8 @@ module ccp3_full_correction
                  resid(a,b,c) = resid(a,b,c) + hmatel * r3b_amps_copy(jdet)
               end do
           end do; end do; end do; ! end loop over idet
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -17384,14 +17384,14 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2c_voov,&
-          !$omp noa,nua,nob,nub,&
-          !$omp n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2c_voov,&
+          !$disabled_omp noa,nua,nob,nub,&
+          !$disabled_omp n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
               idx = idx_table(a,b,i,j)
@@ -17403,8 +17403,8 @@ module ccp3_full_correction
                  resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
               end do
           end do; end do; end do; ! end loop over idet
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -17423,13 +17423,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/1,nob/), nua, nua, noa, nob)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, nob, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17453,20 +17453,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/2,noa/), (/1,nob/), nua, nua, noa, nob)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, nob, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17490,8 +17490,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -17508,13 +17508,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/1,nob/), nua, nua, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, nob, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_ovov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_ovov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17538,20 +17538,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/2,noa/), (/1,nob/), nua, nua, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, nob, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_ovov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_ovov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17575,8 +17575,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -17595,13 +17595,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/2,nua/), (/1,nub/), noa, noa, nua, nub)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/4,5,2,3/), noa, noa, nua, nub, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_vovo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_vovo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17625,20 +17625,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nua-1/), (/1,nub/), noa, noa, nua, nub)
           call sort4(r3b_excits_copy, r3b_amps_copy, loc_arr, idx_table, (/4,5,1,3/), noa, noa, nua, nub, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp r3b_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_vovo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp r3b_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_vovo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17662,8 +17662,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -17680,13 +17680,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/2,nua/), (/1,nub/), noa, noa, nua, nub)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,2,3/), noa, noa, nua, nub, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_vovo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_vovo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17710,20 +17710,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nua-1/), (/1,nub/), noa, noa, nua, nub)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,1,3/), noa, noa, nua, nub, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_vovo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_vovo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -17747,8 +17747,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -17772,13 +17772,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -17791,20 +17791,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -17817,20 +17817,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -17843,20 +17843,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -17869,20 +17869,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -17895,20 +17895,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -17921,20 +17921,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -17947,20 +17947,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -17973,20 +17973,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCJK LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -17999,8 +17999,8 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -18020,13 +18020,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -18039,20 +18039,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -18065,20 +18065,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -18091,20 +18091,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -18117,20 +18117,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -18143,20 +18143,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -18169,20 +18169,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -18195,20 +18195,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -18221,20 +18221,20 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCJK LOOP !!!
           call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_ovvo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(a,b,i,j)
@@ -18247,8 +18247,8 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -18272,13 +18272,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -18326,20 +18326,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -18387,20 +18387,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -18448,20 +18448,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIJ LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -18509,8 +18509,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -18530,13 +18530,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -18584,20 +18584,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -18645,20 +18645,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -18706,20 +18706,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIJ LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x2b_voov,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x2b_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -18767,8 +18767,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -18776,13 +18776,13 @@ module ccp3_full_correction
           deallocate(amps_buff,excits_buff)
 
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3b_excits_copy,&
-          !$omp t2a,t2b,r2a,r2b,&
-          !$omp h2a_vvov,h2a_vooo,h2b_vvvo,h2b_vvov,h2b_vooo,h2b_ovoo,&
-          !$omp x2a_vvov,x2a_vooo,x2b_vvvo,x2b_vvov,x2b_vooo,x2b_ovoo,&
-          !$omp noa,nua,nob,nub,n3aab_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3b_excits_copy,&
+          !$disabled_omp t2a,t2b,r2a,r2b,&
+          !$disabled_omp h2a_vvov,h2a_vooo,h2b_vvvo,h2b_vvov,h2b_vooo,h2b_ovoo,&
+          !$disabled_omp x2a_vvov,x2a_vooo,x2b_vvvo,x2b_vvov,x2b_vooo,x2b_ovoo,&
+          !$disabled_omp noa,nua,nob,nub,n3aab_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=a+1,nua; do c=1,nub;
              if (.not. qspace(a,b,c)) cycle
               res_mm23 = 0.0d0
@@ -18840,8 +18840,8 @@ module ccp3_full_correction
               end do
               resid(a,b,c) = resid(a,b,c) + res_mm23
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate copies of r3b amplitude and excitation arrays
           deallocate(r3b_amps_copy,r3b_excits_copy)
@@ -18991,13 +18991,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,noa/), nub, nub, nua, noa)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, noa, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1B_oo,H2C_oooo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1B_oo,H2C_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(b,c,a,i)
@@ -19014,8 +19014,8 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * r3c_amps_copy(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -19033,13 +19033,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,noa/), nub, nub, nua, noa)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, noa, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x1b_oo,x2c_oooo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x1b_oo,x2c_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(b,c,a,i)
@@ -19056,8 +19056,8 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -19074,13 +19074,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nua/), nob, nob, noa, nua)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/5,6,4,1/), nob, nob, noa, nua, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1B_vv,H2C_vvvv,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1B_vv,H2C_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(j,k,i,a)
@@ -19097,8 +19097,8 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * r3c_amps_copy(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -19116,13 +19116,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nua/), nob, nob, noa, nua)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,4,1/), nob, nob, noa, nua, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp x1B_vv,x2C_vvvv,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp x1B_vv,x2C_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              idx = idx_table(j,k,i,a)
@@ -19139,8 +19139,8 @@ module ccp3_full_correction
                 resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
              end do
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -19157,13 +19157,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/2,nob/), nub, nub, nua, nob)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/2,3,1,6/), nub, nub, nua, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1A_oo,H2B_oooo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1A_oo,H2B_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -19189,20 +19189,20 @@ module ccp3_full_correction
                  end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCAJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,nob-1/), nub, nub, nua, nob)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/2,3,1,5/), nub, nub, nua, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_oooo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -19224,8 +19224,8 @@ module ccp3_full_correction
                  end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECITON !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -19243,13 +19243,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/2,nob/), nub, nub, nua, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,1,6/), nub, nub, nua, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1A_oo,X2B_oooo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1A_oo,X2B_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -19275,20 +19275,20 @@ module ccp3_full_correction
                  end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCAJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,nob-1/), nub, nub, nua, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,1,5/), nub, nub, nua, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_oooo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_oooo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -19310,8 +19310,8 @@ module ccp3_full_correction
                  end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECITON !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -19328,13 +19328,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nub-1/), nob, nob, noa, nub)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/5,6,4,2/), nob, nob, noa, nub, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1A_vv,H2B_vvvv,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1A_vv,H2B_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -19360,20 +19360,20 @@ module ccp3_full_correction
                  end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! JKIC LOOP !!!
           call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/2,nub/), nob, nob, noa, nub)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/5,6,4,3/), nob, nob, noa, nub, nloc, n3abb_r)
           !!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_vvvv,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               idx = idx_table(j,k,i,c)
@@ -19396,8 +19396,8 @@ module ccp3_full_correction
                  end do
               end if
           end do; end do; end do; ! end loop over idet
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -19415,13 +19415,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nub-1/), nob, nob, noa, nub)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,4,2/), nob, nob, noa, nub, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1A_vv,X2B_vvvv,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1A_vv,X2B_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -19447,20 +19447,20 @@ module ccp3_full_correction
                  end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! JKIC LOOP !!!
           call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/2,nub/), nob, nob, noa, nub)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,4,3/), nob, nob, noa, nub, nloc, n3abb_t)
           !!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_vvvv,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_vvvv,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               idx = idx_table(j,k,i,c)
@@ -19483,8 +19483,8 @@ module ccp3_full_correction
                  end do
               end if
           end do; end do; end do; ! end loop over idet
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -19500,13 +19500,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -19548,20 +19548,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -19603,20 +19603,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -19658,20 +19658,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -19713,8 +19713,8 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -19731,13 +19731,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -19779,20 +19779,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -19834,20 +19834,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -19889,20 +19889,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -19944,8 +19944,8 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -19961,14 +19961,14 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2A_voov,&
-          !$omp noa,nua,nob,nub,&
-          !$omp n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2A_voov,&
+          !$disabled_omp noa,nua,nob,nub,&
+          !$disabled_omp n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               idx = idx_table(b,c,j,k)
@@ -19979,8 +19979,8 @@ module ccp3_full_correction
                  resid(a,b,c) = resid(a,b,c) + hmatel * r3c_amps_copy(jdet)
               end do
           end do; end do; end do; ! end loop over idet
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -19997,14 +19997,14 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2A_voov,&
-          !$omp noa,nua,nob,nub,&
-          !$omp n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2A_voov,&
+          !$disabled_omp noa,nua,nob,nub,&
+          !$disabled_omp n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               idx = idx_table(b,c,j,k)
@@ -20015,8 +20015,8 @@ module ccp3_full_correction
                  resid(a,b,c) = resid(a,b,c) + hmatel * amps_buff(jdet)
               end do
           end do; end do; end do; ! end loop over idet
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -20032,13 +20032,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/2,nub/), nob, nob, nua, nub)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/5,6,1,3/), nob, nob, nua, nub, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20060,20 +20060,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! JKAB LOOP !!!
           call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/1,nub-1/), nob, nob, nua, nub)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/5,6,1,2/), nob, nob, nua, nub, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20095,8 +20095,8 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -20113,13 +20113,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/2,nub/), nob, nob, nua, nub)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,1,3/), nob, nob, nua, nub, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_ovov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_ovov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20141,20 +20141,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! JKAB LOOP !!!
           call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/1,nub-1/), nob, nob, nua, nub)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/5,6,1,2/), nob, nob, nua, nub, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_ovov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_ovov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20176,8 +20176,8 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -20193,13 +20193,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/2,nob/), nub, nub, noa, nob)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nub, nub, noa, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_vovo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_vovo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20221,20 +20221,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/1,nob-1/), nub, nub, noa, nob)
           call sort4(r3c_excits_copy, r3c_amps_copy, loc_arr, idx_table, (/2,3,4,5/), nub, nub, noa, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp r3c_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_vovo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp r3c_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_vovo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20256,8 +20256,8 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -20274,13 +20274,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/2,nob/), nub, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nub, nub, noa, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_vovo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_vovo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20302,20 +20302,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/1,nob-1/), nub, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, noa, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_vovo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_vovo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20337,8 +20337,8 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -20359,13 +20359,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20379,20 +20379,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20406,20 +20406,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20433,20 +20433,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20460,20 +20460,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20487,20 +20487,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20514,20 +20514,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABJK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20541,20 +20541,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20568,20 +20568,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20595,8 +20595,8 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -20616,13 +20616,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20636,20 +20636,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20663,20 +20663,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20690,20 +20690,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20717,20 +20717,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20744,20 +20744,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20771,20 +20771,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABJK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20798,20 +20798,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20825,20 +20825,20 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_voov,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_voov,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               ! (1)
@@ -20852,8 +20852,8 @@ module ccp3_full_correction
                   end do
               end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -20874,13 +20874,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -20924,20 +20924,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nub, noa, nob, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -20981,20 +20981,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nub, noa, nob, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21038,20 +21038,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCJK LOOP !!!
           call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nub, noa, nob, nloc, n3aab_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21095,8 +21095,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -21116,13 +21116,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21166,20 +21166,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nub, noa, nob, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21223,20 +21223,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nub, noa, nob, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21280,20 +21280,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCJK LOOP !!!
           call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nub, noa, nob, nloc, n3aab_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21337,8 +21337,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -21346,13 +21346,13 @@ module ccp3_full_correction
           deallocate(amps_buff,excits_buff)
 
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3c_excits_copy,&
-          !$omp t2b,t2c,r2b,r2c,&
-          !$omp h2c_vvov,h2c_vooo,h2b_vvvo,h2b_vvov,h2b_vooo,h2b_ovoo,&
-          !$omp x2c_vvov,x2c_vooo,x2b_vvvo,x2b_vvov,x2b_vooo,x2b_ovoo,&
-          !$omp noa,nua,nob,nub,n3abb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3c_excits_copy,&
+          !$disabled_omp t2b,t2c,r2b,r2c,&
+          !$disabled_omp h2c_vvov,h2c_vooo,h2b_vvvo,h2b_vvov,h2b_vooo,h2b_ovoo,&
+          !$disabled_omp x2c_vvov,x2c_vooo,x2b_vvvo,x2b_vvov,x2b_vooo,x2b_ovoo,&
+          !$disabled_omp noa,nua,nob,nub,n3abb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nua; do b=1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               res_mm23 = 0.0
@@ -21410,8 +21410,8 @@ module ccp3_full_correction
               end do
               resid(a,b,c) = resid(a,b,c) + res_mm23
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
 
            ! deallocate r3c copy arrays
@@ -21524,13 +21524,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/3,nob/), nub, nub, nub, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/1,2,3,6/), nub, nub, nub, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1B_oo,H2C_oooo,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1B_oo,H2C_oooo,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21583,20 +21583,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABCI LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/1,nob-2/), nub, nub, nub, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/1,2,3,4/), nub, nub, nub, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1B_oo,H2C_oooo,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1B_oo,H2C_oooo,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21649,20 +21649,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABCJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/2,nob-1/), nub, nub, nub, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/1,2,3,5/), nub, nub, nub, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1B_oo,H2C_oooo,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1B_oo,H2C_oooo,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21715,8 +21715,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -21735,13 +21735,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/3,nob/), nub, nub, nub, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,6/), nub, nub, nub, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1B_oo,X2C_oooo,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1B_oo,X2C_oooo,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21794,20 +21794,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABCI LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/1,nob-2/), nub, nub, nub, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,4/), nub, nub, nub, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1B_oo,X2C_oooo,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1B_oo,X2C_oooo,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21860,20 +21860,20 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABCJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/2,nob-1/), nub, nub, nub, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,3,5/), nub, nub, nub, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1B_oo,X2C_oooo,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1B_oo,X2C_oooo,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -21926,8 +21926,8 @@ module ccp3_full_correction
                 end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -21945,13 +21945,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/1,nub-2/), nob, nob, nob, nub)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/4,5,6,1/), nob, nob, nob, nub, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1B_vv,H2C_vvvv,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1B_vv,H2C_vvvv,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -22007,20 +22007,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! IJKB LOOP !!!
           call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/2,nub-1/), nob, nob, nob, nub)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/4,5,6,2/), nob, nob, nob, nub, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1B_vv,H2C_vvvv,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1B_vv,H2C_vvvv,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -22076,20 +22076,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! IJKC LOOP !!!
           call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/3,nub/), nob, nob, nob, nub)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/4,5,6,3/), nob, nob, nob, nub, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H1B_vv,H2C_vvvv,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H1B_vv,H2C_vvvv,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -22145,8 +22145,8 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -22165,13 +22165,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/1,nub-2/), nob, nob, nob, nub)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,1/), nob, nob, nob, nub, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1B_vv,X2C_vvvv,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1B_vv,X2C_vvvv,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -22227,20 +22227,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! IJKB LOOP !!!
           call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/2,nub-1/), nob, nob, nob, nub)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,2/), nob, nob, nob, nub, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1B_vv,X2C_vvvv,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1B_vv,X2C_vvvv,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -22296,20 +22296,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! IJKC LOOP !!!
           call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/3,nub/), nob, nob, nob, nub)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/4,5,6,3/), nob, nob, nob, nub, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X1B_vv,X2C_vvvv,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X1B_vv,X2C_vvvv,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -22365,8 +22365,8 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -22382,13 +22382,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -22482,20 +22482,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -22589,20 +22589,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -22696,20 +22696,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -22803,20 +22803,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -22910,20 +22910,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -23017,20 +23017,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABJK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -23124,20 +23124,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -23231,20 +23231,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCJK LOOP !!!
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(r3d_excits_copy, r3d_amps_copy, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r3d_amps_copy,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r3d_amps_copy,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -23338,8 +23338,8 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -23356,13 +23356,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -23456,20 +23456,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIJ LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -23563,20 +23563,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIJ LOOP !!!
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -23670,20 +23670,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABIK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -23777,20 +23777,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACIK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -23884,20 +23884,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCIK LOOP !!!
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -23991,20 +23991,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ABJK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -24098,20 +24098,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! ACJK LOOP !!!
           call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -24205,20 +24205,20 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           !!! BCJK LOOP !!!
           call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2C_voov,&
-          !$omp noa,nua,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2C_voov,&
+          !$disabled_omp noa,nua,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -24312,8 +24312,8 @@ module ccp3_full_correction
              end do
              end if
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
           ! deallocate sorting arrays
           deallocate(loc_arr,idx_table)
@@ -24333,13 +24333,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3abb_r)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp H2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp H2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -24433,8 +24433,8 @@ module ccp3_full_correction
              end do
              end if
          end do; end do; end do;
-         !$omp end do
-         !$omp end parallel
+         !$disabled_omp end do
+         !$disabled_omp end parallel
          !!!! END OMP PARALLEL SECTION !!!!
          ! deallocate sorting arrays
          deallocate(loc_arr,idx_table)
@@ -24453,13 +24453,13 @@ module ccp3_full_correction
           call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
           call sort4(excits_buff, amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3abb_t)
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,excits_buff,&
-          !$omp amps_buff,&
-          !$omp loc_arr,idx_table,&
-          !$omp X2B_ovvo,&
-          !$omp noa,nua,nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,excits_buff,&
+          !$disabled_omp amps_buff,&
+          !$disabled_omp loc_arr,idx_table,&
+          !$disabled_omp X2B_ovvo,&
+          !$disabled_omp noa,nua,nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
              ! (1)
@@ -24553,8 +24553,8 @@ module ccp3_full_correction
              end do
              end if
          end do; end do; end do;
-         !$omp end do
-         !$omp end parallel
+         !$disabled_omp end do
+         !$disabled_omp end parallel
          !!!! END OMP PARALLEL SECTION !!!!
          ! deallocate sorting arrays
          deallocate(loc_arr,idx_table)
@@ -24562,13 +24562,13 @@ module ccp3_full_correction
          deallocate(amps_buff,excits_buff)
 
           !!!! BEGIN OMP PARALLEL SECTION !!!!
-          !$omp parallel shared(resid,&
-          !$omp r3d_excits_copy,&
-          !$omp r2c,t2c,&
-          !$omp H2C_vvov,H2C_vooo,&
-          !$omp X2C_vvov,X2C_vooo,&
-          !$omp nob,nub,n3bbb_r),&
-          !$omp do schedule(static)
+          !$disabled_omp parallel shared(resid,&
+          !$disabled_omp r3d_excits_copy,&
+          !$disabled_omp r2c,t2c,&
+          !$disabled_omp H2C_vvov,H2C_vooo,&
+          !$disabled_omp X2C_vvov,X2C_vooo,&
+          !$disabled_omp nob,nub,n3bbb_r),&
+          !$disabled_omp do schedule(static)
           do a=1,nub; do b=a+1,nub; do c=b+1,nub;
              if (.not. qspace(a,b,c)) cycle
               res_mm23 = 0.0d0
@@ -24618,8 +24618,8 @@ module ccp3_full_correction
               end do
               resid(a,b,c) = resid(a,b,c) + res_mm23
           end do; end do; end do;
-          !$omp end do
-          !$omp end parallel
+          !$disabled_omp end do
+          !$disabled_omp end parallel
           !!!! END OMP PARALLEL SECTION !!!!
 
           ! deallocate copied r3d arrays

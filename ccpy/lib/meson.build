@@ -104,10 +104,20 @@ sort_sources = [
   'sort/qsort.c',
 ]
 
+# Add OpenMP dependency
+omp_dep = dependency('openmp', language: 'fortran', required: true)
+
+fortran_base_args = ['-ffree-line-length-512']
+foreach _arg : ['-march=native', '-funroll-loops']
+  if ff.has_argument(_arg)
+    fortran_base_args += _arg
+  endif
+endforeach
+
 sort_lib = static_library('sort',
   sort_sources,
   c_args: '-O3',
-  fortran_args: '-ffree-line-length-512'
+  fortran_args: fortran_base_args,
 )
 
 fortran_sources = [
@@ -157,10 +167,10 @@ fortran_sources = [
   'fortran/vvvv_contraction.f90',
 ]
 
-
 fortran_lib = static_library('fortran',
   fortran_sources,
-  fortran_args: '-ffree-line-length-512',
+  fortran_args: fortran_base_args,
+  dependencies: [omp_dep],
 )
 
 
