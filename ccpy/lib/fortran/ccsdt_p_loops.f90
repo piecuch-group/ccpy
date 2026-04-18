@@ -7948,6 +7948,16 @@ module ccsdt_p_loops
       !   amps: T3 amplitude vector (can be aaa, aab, abb, or bbb)
       !   resid (optional): T3 residual vector (can be aaa, aab, abb, or bbb)
       !   loc_arr: array providing the start- and end-point indices for each sorted block in t3 excitations
+      !
+      ! This is a counting-sort implementation: since the sort key
+      ! key(idet) = idx_table(p,q,r,s) is an integer in [1, nloc], we can
+      ! bucket in O(n3p + nloc) work instead of the O(n3p log n3p) merge sort
+      ! that argsort used to do, and we produce loc_arr directly from the
+      ! bucket prefix sum (no second scan of consecutive keys required).
+      !
+      ! The scatter loop iterates idet from n3p down to 1 to match the ordering
+      ! that the original bottom-up merge sort produces for runs of equal keys
+      ! (it reverses each run).
 
               integer, intent(in) :: n1, n2, n3, n4, nloc, n3p
               integer, intent(in) :: idims(4)
@@ -7958,51 +7968,93 @@ module ccsdt_p_loops
               real(kind=8), intent(inout) :: amps(n3p)
               real(kind=8), intent(inout), optional :: resid(n3p)
 
-              integer :: idet
-              integer :: p, q, r, s
-              integer :: p1, q1, r1, s1, p2, q2, r2, s2
-              integer :: pqrs1, pqrs2
-              integer, allocatable :: temp(:), idx(:)
+              integer :: idet, k, pos
+              integer, allocatable :: cnt(:), offset(:), keys(:)
+              integer, allocatable :: buf_e(:,:)
+              real(kind=8), allocatable :: buf_a(:), buf_r(:)
 
-              ! obtain the lexcial index for each triple excitation in the P space along the sorting dimensions idims
-              allocate(temp(n3p),idx(n3p))
-              do idet = 1, n3p
-                 p = excits(idet,idims(1)); q = excits(idet,idims(2)); r = excits(idet,idims(3)); s = excits(idet,idims(4))
-                 temp(idet) = idx_table(p,q,r,s)
-              end do
-              ! get the sorting array
-              call argsort(temp, idx)
-              ! apply sorting array to t3 excitations, amplitudes, and, optionally, residual arrays
-              excits = excits(idx,:)
-              amps = amps(idx)
-              if (present(resid)) resid = resid(idx)
-              deallocate(temp,idx)
-              ! obtain the start- and end-point indices for each lexical index in the sorted t3 excitation and amplitude arrays
-              loc_arr(1,:) = 1; loc_arr(2,:) = 0; ! set default start > end so that empty sets do not trigger loops
-              !!! WARNING: THERE IS A MEMORY LEAK HERE! pqrs2 is used below but is not set if n3p <= 1
-              !if (n3p <= 1) print*, "(ccsdt_p_loops) >> WARNING: potential memory leakage in sort4 function. pqrs2 set to -1"
+              ! Default to empty ranges so buckets with no entries produce
+              ! an empty jdet loop in the callers.
+              loc_arr(1,:) = 1
+              loc_arr(2,:) = 0
+
+              if (n3p <= 0) return
+              ! Sentinel used upstream: a single all-ones excitation marks an
+              ! empty P-space; preserve the original no-op behavior.
               if (n3p == 1) then
-                 if (excits(1,1)==1 .and. excits(1,2)==1 .and. excits(1,3)==1 .and. excits(1,4)==1 .and. excits(1,5)==1 .and. excits(1,6)==1) return
-                 p2 = excits(n3p,idims(1)); q2 = excits(n3p,idims(2)); r2 = excits(n3p,idims(3)); s2 = excits(n3p,idims(4))
-                 pqrs2 = idx_table(p2,q2,r2,s2)
-              else
-                 pqrs2 = -1
+                 if (excits(1,1)==1 .and. excits(1,2)==1 .and. excits(1,3)==1 .and. &
+                     excits(1,4)==1 .and. excits(1,5)==1 .and. excits(1,6)==1) return
               end if
-              do idet = 1, n3p-1
-                 ! get consecutive lexcial indices
-                 p1 = excits(idet,idims(1));   q1 = excits(idet,idims(2));   r1 = excits(idet,idims(3));   s1 = excits(idet,idims(4))
-                 p2 = excits(idet+1,idims(1)); q2 = excits(idet+1,idims(2)); r2 = excits(idet+1,idims(3)); s2 = excits(idet+1,idims(4))
-                 pqrs1 = idx_table(p1,q1,r1,s1)
-                 pqrs2 = idx_table(p2,q2,r2,s2)
-                 ! if change occurs between consecutive indices, record these locations in loc_arr as new start/end points
-                 if (pqrs1 /= pqrs2) then
-                    loc_arr(2,pqrs1) = idet
-                    loc_arr(1,pqrs2) = idet+1
+
+              allocate(keys(n3p))
+              allocate(cnt(nloc))
+              cnt = 0
+
+              !$omp parallel do default(none) &
+              !$omp shared(n3p, excits, idims, idx_table, keys) &
+              !$omp private(idet)
+              do idet = 1, n3p
+                 keys(idet) = idx_table( excits(idet,idims(1)), &
+                                         excits(idet,idims(2)), &
+                                         excits(idet,idims(3)), &
+                                         excits(idet,idims(4)) )
+              end do
+              !$omp end parallel do
+
+              ! Histogram (serial: nloc is small relative to n3p and the
+              ! reduction is trivially memory-bound).
+              do idet = 1, n3p
+                 k = keys(idet)
+                 if (k >= 1 .and. k <= nloc) cnt(k) = cnt(k) + 1
+              end do
+
+              ! Prefix sum -> loc_arr start/end offsets.
+              pos = 1
+              do k = 1, nloc
+                 if (cnt(k) > 0) then
+                    loc_arr(1,k) = pos
+                    loc_arr(2,k) = pos + cnt(k) - 1
+                    pos = pos + cnt(k)
                  end if
               end do
-              !if (n3p > 1) then
-              loc_arr(2,pqrs2) = n3p
-              !end if
+
+              ! Scatter into contiguous buckets. Iterate in reverse so that within each bucket, elements are laid out in reverse-idet order
+              allocate(buf_e(n3p,6))
+              allocate(buf_a(n3p))
+              allocate(offset(nloc))
+              offset = 0
+              if (present(resid)) then
+                 allocate(buf_r(n3p))
+                 do idet = n3p, 1, -1
+                    k = keys(idet)
+                    if (k < 1 .or. k > nloc) cycle
+                    pos = loc_arr(1,k) + offset(k)
+                    buf_e(pos,1) = excits(idet,1); buf_e(pos,2) = excits(idet,2)
+                    buf_e(pos,3) = excits(idet,3); buf_e(pos,4) = excits(idet,4)
+                    buf_e(pos,5) = excits(idet,5); buf_e(pos,6) = excits(idet,6)
+                    buf_a(pos)   = amps(idet)
+                    buf_r(pos)   = resid(idet)
+                    offset(k) = offset(k) + 1
+                 end do
+                 resid(:) = buf_r(:)
+                 deallocate(buf_r)
+              else
+                 do idet = n3p, 1, -1
+                    k = keys(idet)
+                    if (k < 1 .or. k > nloc) cycle
+                    pos = loc_arr(1,k) + offset(k)
+                    buf_e(pos,1) = excits(idet,1); buf_e(pos,2) = excits(idet,2)
+                    buf_e(pos,3) = excits(idet,3); buf_e(pos,4) = excits(idet,4)
+                    buf_e(pos,5) = excits(idet,5); buf_e(pos,6) = excits(idet,6)
+                    buf_a(pos)   = amps(idet)
+                    offset(k) = offset(k) + 1
+                 end do
+              end if
+
+              excits(:,:) = buf_e(:,:)
+              amps(:)     = buf_a(:)
+
+              deallocate(buf_e, buf_a, offset, cnt, keys)
 
       end subroutine sort4
 
