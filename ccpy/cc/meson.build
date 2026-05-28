@@ -8,6 +8,7 @@ python_sources = [
   'cc4.py',
   'ccd.py',
   'ccsd_chol.py',
+  'ccsd_mpi.py',
   'ccsd.py',
   'ccsdt_p_chol.py',
   'ccsdt_p.py',

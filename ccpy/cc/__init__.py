@@ -1,4 +1,4 @@
-__all__ = ["cc2", "ccd", "ccsd", "ccsd_chol",
+__all__ = ["cc2", "ccd", "ccsd", "ccsd_chol", "ccsd_mpi",
            "accd", "accsd", "cc3", "ccsdt", "ccsdt_chol", "cc4-old", "cc4", "ccsdtq", "ccsdt_p",
            "ccsdt_p_chol", "accsdt_p", "eccc2"]
 MODULES = [module for module in __all__]

@@ -29,9 +29,9 @@ from ccpy.utilities.utilities import remove_file
 # [TODO]: Add biorthogonal L and R single-root Davidson solver (non-Hermitian Hirao-Nakatsuji algorithm)
 def eomcc_nonlinear_diis(HR, update_r, B0, R, dR, omega, T, H, X, fock, system, options):
     """
-    Diagonalize the nonlinear partitioned (or folded) non-Hermitian eigenvalue 
-    problem A(w)*R = w*R, where A(w) is the CC Jacobian. This solver is used 
-    in the excited-state CC3 (or CC2) computations, where w-dependence originates 
+    Diagonalize the nonlinear partitioned (or folded) non-Hermitian eigenvalue
+    problem A(w)*R = w*R, where A(w) is the CC Jacobian. This solver is used
+    in the excited-state CC3 (or CC2) computations, where w-dependence originates
     from the implicit evaluation of R3 (or R2) in terms of R1 and R2 (or R1).
     [for description of algorithm, see J. Chem. Phys. 113, 5154 (2000)].
     """
@@ -935,3 +935,116 @@ def lrcc_jacobi(update_t, T1, W, dT, T, H, X, system, options, t3_excitations=No
 #         diis_engine[p].cleanup()
 #
 #     return T, energy, is_converged
+
+
+
+def cc_jacobi_mpi(update_t, T, dT, H, X, options, comm):
+    """MPI-parallel Jacobi/DIIS solver for coupled-cluster equations.
+
+    This is the MPI-aware analogue of ``cc_jacobi``.  The update function
+    ``update_t`` is expected to accept a trailing ``comm`` argument and to
+    perform the MPI distribution / Allreduce internally (see
+    ``ccpy.cc.ccsd_mpi.update``).
+
+    After each update, T and dT are identical on every rank (thanks to the
+    Allreduce inside the update).  Energy evaluation, DIIS, and convergence
+    checking are therefore replicated on all ranks, which avoids additional
+    broadcast overhead while keeping the logic simple.
+
+    Only rank 0 prints to stdout.
+
+    Parameters
+    ----------
+    update_t : callable
+        CC update function with signature
+        ``update_t(T, dT, H, X, shift, flag_RHF, comm)``.
+    comm : MPI.Comm
+        MPI communicator.
+    """
+    from ccpy.energy.cc_energy import get_cc_energy
+
+    rank = comm.Get_rank()
+
+    # check whether DIIS is being used
+    do_diis = True
+    if options["diis_size"] == -1:
+        do_diis = False
+
+    # instantiate the DIIS accelerator object
+    if do_diis:
+        diis_engine = DIIS(T, options["diis_size"], options["diis_out_of_core"])
+
+    # Jacobi/DIIS iterations
+    num_throw_away = 0
+    ndiis_cycle = 0
+    energy = 0.0
+    energy_old = get_cc_energy(T, H)
+    is_converged = False
+
+    if rank == 0:
+        print("   Energy of initial guess = {:>20.10f}".format(energy_old))
+
+    t_start = time.perf_counter()
+    t_cpu_start = time.process_time()
+    if rank == 0:
+        print_cc_iteration_header()
+    for niter in range(options["maximum_iterations"]):
+        # get iteration start time
+        t1 = time.perf_counter()
+
+        # Update the T vector (MPI-parallel)
+        T, dT = update_t(T, dT, H, X, options["energy_shift"],
+                         options["RHF_symmetry"], comm)
+
+        # CC correlation energy (replicated – T is identical on all ranks)
+        energy = get_cc_energy(T, H)
+
+        # change in energy
+        delta_energy = energy - energy_old
+
+        # check for exit condition
+        residuum = np.linalg.norm(dT.flatten())
+        if (
+            residuum < options["amp_convergence"]
+            and abs(delta_energy) < options["energy_convergence"]
+        ):
+            elapsed_time = time.perf_counter() - t1
+            if rank == 0:
+                print_cc_iteration(niter, residuum, delta_energy, energy,
+                                   elapsed_time)
+                t_end = time.perf_counter()
+                minutes, seconds = divmod(t_end - t_start, 60)
+                print(
+                    "   CC(MPI) calculation successfully converged! "
+                    "({:0.2f}m  {:0.2f}s)".format(minutes, seconds)
+                )
+                print(f"   Total CPU time is "
+                      f"{time.process_time() - t_cpu_start} seconds")
+            is_converged = True
+            break
+
+        # Save T and dT vectors to disk for DIIS
+        if niter >= num_throw_away and do_diis:
+            diis_engine.push(T, dT, niter)
+
+        # Do DIIS extrapolation
+        if niter >= options["diis_size"] + num_throw_away and do_diis:
+            ndiis_cycle += 1
+            T.unflatten(diis_engine.extrapolate())
+
+        # Update old energy
+        energy_old = energy
+
+        elapsed_time = time.perf_counter() - t1
+        if rank == 0:
+            print_cc_iteration(niter, residuum, delta_energy, energy,
+                               elapsed_time)
+    else:
+        if rank == 0:
+            print("CC(MPI) calculation did not converge.")
+
+    # Remove the t.npy and dt.npy files if out-of-core DIIS was used
+    if do_diis:
+        diis_engine.cleanup()
+
+    return T, energy, is_converged

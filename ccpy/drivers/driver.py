@@ -11,6 +11,7 @@ import ccpy.eomcc
 import ccpy.lrcc
 from ccpy.drivers.solvers import (
                 cc_jacobi,
+                cc_jacobi_mpi,
                 left_cc_jacobi,
                 eomcc_davidson,
                 eomcc_block_davidson,
@@ -222,7 +223,7 @@ class Driver:
         elif method.lower() in ["sfeomcc23"]:
             self.order = 3
             self.Ms = -1
-            
+
     def print_options(self):
         """Prints the all (key, value) pairs contained in the options dictionary.
         """
@@ -309,6 +310,79 @@ class Driver:
                                                )
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   CC calculation ended on", get_timestamp())
+
+
+    def run_cc_mpi(self, method: str = "ccsd", comm=None):
+        """Run an MPI-parallel ground-state CC calculation.
+
+        Currently supports ``method="ccsd"`` (resolved to ``ccsd_mpi``).
+        The update function in the corresponding module must accept a trailing
+        ``comm`` argument.
+
+        Parameters
+        ----------
+        method : str
+            Base CC method name (e.g. ``"ccsd"``).  The MPI module is loaded
+            as ``ccpy.cc.<method>_mpi``.
+        comm : MPI.Comm or None
+            MPI communicator.  When *None*, ``MPI.COMM_WORLD`` is used.
+        """
+        from mpi4py import MPI as _MPI
+        if comm is None:
+            comm = _MPI.COMM_WORLD
+        rank = comm.Get_rank()
+
+        mpi_method = method.lower() + "_mpi"
+        if mpi_method not in ccpy.cc.MODULES:
+            raise NotImplementedError(
+                "{} not implemented".format(mpi_method)
+            )
+
+        # Set operator parameters using the *base* method name
+        self.set_operator_params(method)
+        self.options["method"] = method.upper() + "_MPI"
+
+        # import the MPI module and get its update function
+        cc_mod = import_module("ccpy.cc." + mpi_method)
+        update_function = getattr(cc_mod, 'update')
+
+        # Print the options as a header (rank 0 only)
+        if rank == 0:
+            self.print_options()
+            print("   CC(MPI) calculation started on", get_timestamp())
+            print("   Number of MPI ranks:", comm.Get_size())
+
+        # Create the cluster operator
+        if self.T is None:
+            self.T = ClusterOperator(self.system,
+                                     order=self.operator_params["order"],
+                                     active_orders=self.operator_params["active_orders"],
+                                     num_active=self.operator_params["number_active_indices"])
+        # Initialize residual
+        dT = ClusterOperator(self.system,
+                             order=self.operator_params["order"],
+                             active_orders=self.operator_params["active_orders"],
+                             num_active=self.operator_params["number_active_indices"])
+        # Create the container for 1- and 2-body intermediates
+        cc_intermediates = Integral.from_empty(self.system, 2,
+                                               data_type=self.hamiltonian.a.oo.dtype,
+                                               use_none=True)
+
+        # Run the MPI-parallel CC calculation
+        self.T, self.correlation_energy, _ = cc_jacobi_mpi(
+            update_function,
+            self.T,
+            dT,
+            self.hamiltonian,
+            cc_intermediates,
+            self.options,
+            comm,
+        )
+        if rank == 0:
+            cc_calculation_summary(self.T, self.system.reference_energy,
+                                   self.correlation_energy, self.system,
+                                   self.options["amp_print_threshold"])
+            print("   CC(MPI) calculation ended on", get_timestamp())
 
     def run_ccp(self, method, t3_excitations, acparray=None):
         """
@@ -1496,7 +1570,7 @@ class Driver:
         for i in state_index:
             print("   Left CC calculation for root %d started on" % i, get_timestamp())
             # decide whether this is a ground-state calculation
-            if i == 0: 
+            if i == 0:
                 ground_state = True
             else:
                 ground_state = False
@@ -1619,7 +1693,7 @@ class Driver:
         for i in state_index:
             print("   Left CC(P) calculation for root %d started on" % i, get_timestamp())
             # decide whether this is a ground-state calculation
-            if i == 0: 
+            if i == 0:
                 ground_state = True
             else:
                 ground_state = False
