@@ -6,10 +6,6 @@ from pyscf import gto, scf
 from ccpy import Driver
 from mpi4py import MPI
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
-
 def test_crcc23_glycine():
     geometry = [
         ["O", (-2.877091949897, -1.507375565672, -0.398996049903)],
@@ -41,7 +37,7 @@ def test_crcc23_glycine():
 
     driver.options["RHF_symmetry"] = True
     driver.options["diis_out_of_core"] = True
-    driver.run_cc_mpi(method="ccsd", comm=comm)
+    driver.run_cc_mpi(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")
     driver.run_ccp3(method="crcc23")

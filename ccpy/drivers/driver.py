@@ -315,22 +315,24 @@ class Driver:
     def run_cc_mpi(self, method: str = "ccsd", comm=None):
         """Run an MPI-parallel ground-state CC calculation.
 
-        Currently supports ``method="ccsd"`` (resolved to ``ccsd_mpi``).
-        The update function in the corresponding module must accept a trailing
-        ``comm`` argument.
+        MPI is managed entirely inside this method — the caller does **not**
+        need to import ``mpi4py``.  To suppress duplicate output from
+        *other* parts of the script (``Driver.from_pyscf()``,
+        ``system.print_info()``, user ``print()`` calls, etc.), call
+        :func:`ccpy.mpi_suppress_stdout` once at the top of the script.
 
         Parameters
         ----------
         method : str
-            Base CC method name (e.g. ``"ccsd"``).  The MPI module is loaded
-            as ``ccpy.cc.<method>_mpi``.
+            Base CC method name (e.g. ``"ccsd"``).  The MPI module is
+            loaded as ``ccpy.cc.<method>_mpi``.
         comm : MPI.Comm or None
             MPI communicator.  When *None*, ``MPI.COMM_WORLD`` is used.
+            Most users should leave this as *None*.
         """
         from mpi4py import MPI as _MPI
         if comm is None:
             comm = _MPI.COMM_WORLD
-        rank = comm.Get_rank()
 
         mpi_method = method.lower() + "_mpi"
         if mpi_method not in ccpy.cc.MODULES:
@@ -346,11 +348,9 @@ class Driver:
         cc_mod = import_module("ccpy.cc." + mpi_method)
         update_function = getattr(cc_mod, 'update')
 
-        # Print the options as a header (rank 0 only)
-        if rank == 0:
-            self.print_options()
-            print("   CC(MPI) calculation started on", get_timestamp())
-            print("   Number of MPI ranks:", comm.Get_size())
+        self.print_options()
+        print("   CC(MPI) calculation started on", get_timestamp())
+        print("   Number of MPI ranks:", comm.Get_size())
 
         # Create the cluster operator
         if self.T is None:
@@ -378,11 +378,10 @@ class Driver:
             self.options,
             comm,
         )
-        if rank == 0:
-            cc_calculation_summary(self.T, self.system.reference_energy,
-                                   self.correlation_energy, self.system,
-                                   self.options["amp_print_threshold"])
-            print("   CC(MPI) calculation ended on", get_timestamp())
+        cc_calculation_summary(self.T, self.system.reference_energy,
+                               self.correlation_energy, self.system,
+                               self.options["amp_print_threshold"])
+        print("   CC(MPI) calculation ended on", get_timestamp())
 
     def run_ccp(self, method, t3_excitations, acparray=None):
         """

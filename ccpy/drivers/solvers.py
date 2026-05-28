@@ -951,7 +951,8 @@ def cc_jacobi_mpi(update_t, T, dT, H, X, options, comm):
     checking are therefore replicated on all ranks, which avoids additional
     broadcast overhead while keeping the logic simple.
 
-    Only rank 0 prints to stdout.
+    Stdout is assumed to be already suppressed on non-root ranks by the
+    caller (``Driver.run_cc_mpi``), so this function prints unconditionally.
 
     Parameters
     ----------
@@ -962,8 +963,6 @@ def cc_jacobi_mpi(update_t, T, dT, H, X, options, comm):
         MPI communicator.
     """
     from ccpy.energy.cc_energy import get_cc_energy
-
-    rank = comm.Get_rank()
 
     # check whether DIIS is being used
     do_diis = True
@@ -981,13 +980,11 @@ def cc_jacobi_mpi(update_t, T, dT, H, X, options, comm):
     energy_old = get_cc_energy(T, H)
     is_converged = False
 
-    if rank == 0:
-        print("   Energy of initial guess = {:>20.10f}".format(energy_old))
+    print("   Energy of initial guess = {:>20.10f}".format(energy_old))
 
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
-    if rank == 0:
-        print_cc_iteration_header()
+    print_cc_iteration_header()
     for niter in range(options["maximum_iterations"]):
         # get iteration start time
         t1 = time.perf_counter()
@@ -1009,17 +1006,16 @@ def cc_jacobi_mpi(update_t, T, dT, H, X, options, comm):
             and abs(delta_energy) < options["energy_convergence"]
         ):
             elapsed_time = time.perf_counter() - t1
-            if rank == 0:
-                print_cc_iteration(niter, residuum, delta_energy, energy,
-                                   elapsed_time)
-                t_end = time.perf_counter()
-                minutes, seconds = divmod(t_end - t_start, 60)
-                print(
-                    "   CC(MPI) calculation successfully converged! "
-                    "({:0.2f}m  {:0.2f}s)".format(minutes, seconds)
-                )
-                print(f"   Total CPU time is "
-                      f"{time.process_time() - t_cpu_start} seconds")
+            print_cc_iteration(niter, residuum, delta_energy, energy,
+                               elapsed_time)
+            t_end = time.perf_counter()
+            minutes, seconds = divmod(t_end - t_start, 60)
+            print(
+                "   CC(MPI) calculation successfully converged! "
+                "({:0.2f}m  {:0.2f}s)".format(minutes, seconds)
+            )
+            print(f"   Total CPU time is "
+                  f"{time.process_time() - t_cpu_start} seconds")
             is_converged = True
             break
 
@@ -1036,12 +1032,10 @@ def cc_jacobi_mpi(update_t, T, dT, H, X, options, comm):
         energy_old = energy
 
         elapsed_time = time.perf_counter() - t1
-        if rank == 0:
-            print_cc_iteration(niter, residuum, delta_energy, energy,
-                               elapsed_time)
+        print_cc_iteration(niter, residuum, delta_energy, energy,
+                           elapsed_time)
     else:
-        if rank == 0:
-            print("CC(MPI) calculation did not converge.")
+        print("CC(MPI) calculation did not converge.")
 
     # Remove the t.npy and dt.npy files if out-of-core DIIS was used
     if do_diis:
