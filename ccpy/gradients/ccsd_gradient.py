@@ -9,16 +9,16 @@ core, in two flavors:
 
 Theory
 ------
-With the unrelaxed CCSD densities D, G (ccpy.density.ccsd_rdm_rhf),
+With the unrelaxed CCSD densities D, G (ccpy.gradients.densities, from ccpy.density.rdm1/rdm2),
 
-    E = V_nn + sum_pq h_pq D_pq + 1/2 sum_pqrs (pq|rs) G_pqrs .
+    E = V_nn + sum_pq h_pq D_pq + 1/2 sum_pqrs <pq|rs> G_pqrs     (physicists' order).
 
 E is not stationary with respect to orbital rotations, so the canonical RHF conditions
 F_ai = 0 (all occupied i, virtual a) and, with frozen core, F_jc = 0 (active occupied j,
 core c) are added with multipliers z (the Z-vector). With the orbital connection
 U = -1/2 S^x,
 
-    dE/dx = V_nn^x + sum D^rel h^x + 1/2 sum G^eff (pq|rs)^x - sum W S^x ,
+    dE/dx = V_nn^x + sum D^rel h^x + 1/2 sum G^eff <pq|rs>^x - sum W S^x ,
 
 where D^rel = D + Z, G^eff adds the separable Z (x) D_HF terms, and W collects the
 generalized-Fock and Z-vector orbital-connection terms.
@@ -29,30 +29,8 @@ import time
 import numpy as np
 import scipy.sparse.linalg as spla
 
-from ccpy.density.ccsd_rdm_rhf import BLOCKS, calc_ccsd_rdms_rhf
+from ccpy.gradients.densities import ccsd_densities, separable, symmetrize
 from ccpy.integrals import integrals
-
-
-def _separable_blocks(Z, nocc, nmo):
-    """Blocks of 2 (Z x P + P x Z) - (Z_ps P_qr + P_ps Z_qr), P the occupied projector.
-    Every term carries an occupied Kronecker delta, so the vvvv block vanishes."""
-    sl = {"o": slice(0, nocc), "v": slice(nocc, nmo)}
-    P = {"o": np.eye(nocc), "v": None}
-    blocks = {}
-    for key in BLOCKS:
-        p, q, r, s = (sl[c] for c in key)
-        blk = 0.0
-        if key[2:] == "oo":
-            blk = blk + 2.0 * np.einsum("pq,rs->pqrs", Z[p, q], P["o"])
-        if key[:2] == "oo":
-            blk = blk + 2.0 * np.einsum("pq,rs->pqrs", P["o"], Z[r, s])
-        if key[1:3] == "oo":
-            blk = blk - np.einsum("ps,qr->pqrs", Z[p, s], P["o"])
-        if key[0] == "o" and key[3] == "o":
-            blk = blk - np.einsum("ps,qr->pqrs", P["o"], Z[q, r])
-        if not np.isscalar(blk):
-            blocks[key] = blk
-    return blocks
 
 
 class _MOTwoElectron:
@@ -96,14 +74,14 @@ def ccsd_gradient(driver, meanfield=None, zvector_tol=1.0e-10, verbose=True):
     if driver.T.order != 2:
         raise NotImplementedError("Only CCSD gradients are implemented.")
 
-    D1, D2 = calc_ccsd_rdms_rhf(driver.T, driver.L[0], system)
+    D1, D2 = ccsd_densities(driver.T, driver.L[0], system, mf.mo_coeff.shape[1])
     return relaxed_gradient(mf, system.nfrozen, D1, D2, zvector_tol=zvector_tol,
                             verbose=verbose, title="CCSD Analytic Gradient", t0=t0)
 
 
 def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
                      title="Analytic Gradient", t0=None):
-    """Nuclear gradient of E = V_nn + sum h D1 + 1/2 sum (pq|rs) D2 for unrelaxed densities
+    """Nuclear gradient of E = V_nn + sum h D1 + 1/2 sum <pq|rs> D2 for unrelaxed densities
     of an energy that is invariant to rotations within the frozen core, within the correlated
     occupied space, and within the virtual space (e.g. CCSD; NOT CR-CC(2,3), whose diagonal
     triples denominators make it depend on those rotations): solves the orbital
@@ -116,9 +94,11 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
     mf : ccpy.scf.RHF
     nfrozen : int
     D1 : ndarray, shape (nmo, nmo)
-        Spin-traced one-particle density, E1 = sum_pq h_pq D1_qp (symmetrized here).
-    D2 : Density2
-        Spin-traced two-particle density in chemists' order (no stored vvvv block).
+        Spin-traced one-particle density D1[p,q] = <p+ q>, E1 = sum_pq h_pq D1[p,q]
+        (symmetrized here).
+    D2 : ndarray, shape (nmo, nmo, nmo, nmo)
+        Spin-traced two-particle density in physicists' order, D2[p,q,r,s] = <p+ q+ s r>,
+        E2 = 1/2 sum <pq|rs> D2[p,q,r,s] (symmetrized here).
     """
     t0 = time.perf_counter() if t0 is None else t0
     mol = mf.mol
@@ -140,7 +120,9 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
     ints = _MOTwoElectron(R)
 
     # Y_xpq = sum_rs G_pqrs R_xrs (the vvvv block of G is built in 3-virtual slices)
-    Y = D2.symmetrized().contract(R)
+    D2 = symmetrize(D2)
+    # <pq|rs> = (pr|qs) = sum_x R_xpr R_xqs, so Y_xpq = sum_rs D2[p,r,q,s] R_xrs
+    Y = np.einsum("prqs,xrs->xpq", D2, R, optimize=True)
     # generalized Fock F_tp = sum_q h_tq D_pq + sum_qrs (tq|rs) G_pqrs
     F = h @ D1 + np.einsum("xtq,xpq->tp", R, Y, optimize=True)
     g = 2.0 * (F - F.T)  # dE/dkappa_tp for the rotation t <- p
@@ -222,10 +204,10 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
     # ---------------------------------------------------------------- #
     D_rel = D1 + Z
 
-    # G_eff = G + 2 (Z x P + P x Z) - (Z_ps P_qr + P_ps Z_qr), P = occupied projector
+    # G_eff = G + 2 (Z_pr P_qs + P_pr Z_qs) - (Z_ps P_qr + P_ps Z_qr), P = occupied projector
     P = np.zeros(nmo)
     P[occ] = 1.0
-    G_eff = D2.add_blocks(_separable_blocks(Z, nocc, nmo)).symmetrized()
+    G_eff = symmetrize(D2 + separable(Z, nocc))
 
     M_Z = hf_response(Z)
     W = 0.5 * (F + F.T)
@@ -246,7 +228,7 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
     if use_df:
         df = mol.df
         X = df.Mm12  # B = X (Q|mn), X = L^{-1}, M = L L^T
-        Y_eff = G_eff.contract(R)
+        Y_eff = np.einsum("prqs,xrs->xpq", G_eff, R, optimize=True)
         Y_ao = np.einsum("mp,xpq,nq->xmn", C, Y_eff, C, optimize=True)
         W3 = np.einsum("QP,Qmn->Pmn", X, Y_ao, optimize=True)
         T_QQ = np.einsum("xpq,ypq->xy", R, Y_eff, optimize=True)
@@ -254,7 +236,8 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
         grad += integrals.coulomb_3c_deriv(mol, np.ascontiguousarray(W3)).reshape(natoms, 3)
         grad += integrals.coulomb_2c_deriv(mol, np.ascontiguousarray(W2)).reshape(natoms, 3)
     else:
-        G_ao = G_eff.to_ao(C)
+        # AO weights of (mn|lk) for coulomb_4c_deriv, from G_eff[p,r,q,s] <-> (pq|rs)
+        G_ao = np.einsum("mp,nq,prqs,lr,ks->mnlk", C, C, G_eff, C, C, optimize=True)
         grad += 0.5 * integrals.coulomb_4c_deriv(mol, G_ao, symmetrize=False).reshape(natoms, 3)
 
     if verbose:

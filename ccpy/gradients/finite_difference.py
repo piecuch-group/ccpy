@@ -1,11 +1,6 @@
 """Finite-difference derivatives, for nuclear gradients of any method with an energy function
 and for validating analytic gradients.
 
-``finite_difference`` and ``central_stencil`` are taken from forte2
-(forte2/gradients/fd_gradient_helper.py). ``fd_gradient`` replaces forte2's FDGradient,
-which relies on forte2's method-chain machinery: here the method is simply a callable
-that returns the energy of a ``ccpy.integrals.Molecule``.
-
     from ccpy import Driver
     from ccpy.scf import RHF
 

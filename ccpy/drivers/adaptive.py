@@ -6,9 +6,37 @@ from ccpy.extrapolation.goodson_extrapolation import goodson_extrapolation
 from ccpy.utilities.printing import get_timestamp
 from ccpy.constants.constants import hartreetoeV
 
-class AdaptDriver:
+class FixedPSpaceMixin:
+    """Lets an adaptive run reuse the P spaces of an earlier run instead of selecting new ones.
 
-    def __init__(self, driver, percentage=None):
+    Every run records the P space of each macroiteration in self.pspaces. Passing that list
+    as pspaces= to a new adaptive driver (e.g. at a displaced geometry in a finite-difference
+    gradient or Hessian) runs the same number of macroiterations on exactly those P spaces,
+    so the CC(P) and CC(P;Q) energies are smooth functions of the geometry.
+    """
+    PSPACE_ATTRIBUTES = ("t3_excitations", "r3_excitations", "excitation_count_by_symmetry",
+                         "excitation_count_by_symmetry_t", "excitation_count_by_symmetry_r")
+
+    def init_pspaces(self, pspaces):
+        if pspaces is not None and len(pspaces) > self.nmacro:
+            raise ValueError(f"{len(pspaces)} fixed P spaces given for {self.nmacro} macroiterations.")
+        self.fixed_pspaces = pspaces
+        self.pspaces = []
+
+    def use_pspace(self, imacro):
+        """Loads the fixed P space of this macroiteration (if any) and records the one used."""
+        if self.fixed_pspaces is not None:
+            for name, value in self.fixed_pspaces[imacro].items():
+                setattr(self, name, deepcopy(value))
+        self.pspaces.append({name: deepcopy(getattr(self, name)) for name in self.PSPACE_ATTRIBUTES
+                             if hasattr(self, name)})
+
+    def last_fixed_pspace(self, imacro):
+        return self.fixed_pspaces is not None and imacro == len(self.fixed_pspaces) - 1
+
+class AdaptDriver(FixedPSpaceMixin):
+
+    def __init__(self, driver, percentage=None, pspaces=None):
         self.driver = driver
         self.percentage = percentage
         self.options = {"two_body_approx": True,
@@ -41,6 +69,7 @@ class AdaptDriver:
         self.n_det = 0
         # Save the bare Hamiltonian for later iterations if using CR-CC(2,3)
         self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
+        self.init_pspaces(pspaces)
 
     def print_options(self):
         print("   ------------------------------------------")
@@ -230,6 +259,8 @@ class AdaptDriver:
 
         # Begin adaptive loop iterations
         for imacro in range(self.nmacro):
+            # Use the fixed P space of this macroiteration, if given, and record it
+            self.use_pspace(imacro)
             print("")
             print("   Adaptive CC(P;Q) Macroiteration - ", imacro)
             print("   ===========================================")
@@ -302,7 +333,10 @@ class AdaptDriver:
             t_extrap = x2 - x1
 
             # Check convergence conditions
-            if imacro > 0:
+            if self.last_fixed_pspace(imacro):
+                print("   Reached the last fixed P space")
+                break
+            if imacro > 0 and self.fixed_pspaces is None:
                 delta_e_ccp = self.ccp_energy[imacro] - self.ccp_energy[imacro - 1]
                 delta_e_ccpq = self.ccpq_energy[imacro] - self.ccpq_energy[imacro - 1]
                 print("   Change in CC(P) energy = ", delta_e_ccp)
@@ -361,9 +395,9 @@ class AdaptDriver:
                    )
             )
 
-class AdaptEOMDriverSS:
+class AdaptEOMDriverSS(FixedPSpaceMixin):
 
-    def __init__(self, driver, state_index, roots_per_irrep, multiplicity, nacto=0, nactu=0, percentage=None):
+    def __init__(self, driver, state_index, roots_per_irrep, multiplicity, nacto=0, nactu=0, percentage=None, pspaces=None):
         self.driver = driver
         # inputs used to form the one-time EOMCCSd initial guess
         self.state_index = state_index
@@ -419,6 +453,7 @@ class AdaptEOMDriverSS:
         self.RHF_excited = True if self.multiplicity == 1 else False
         # Save the bare Hamiltonian for later iterations if using CR-CC(2,3)
         self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
+        self.init_pspaces(pspaces)
 
     def print_options(self):
         print("   ------------------------------------------")
@@ -593,6 +628,8 @@ class AdaptEOMDriverSS:
 
         # Begin adaptive loop iterations over P-space steps
         for imacro in range(self.nmacro):
+            # Use the fixed P space of this macroiteration, if given, and record it
+            self.use_pspace(imacro)
             print("")
             print("   Adaptive CC(P;Q) Macroiteration - ", imacro)
             print("   ===========================================")
@@ -651,7 +688,10 @@ class AdaptEOMDriverSS:
             t_selection_and_ccp3 = x2 - x1
 
             # Check convergence conditions
-            if imacro > 0:
+            if self.last_fixed_pspace(imacro):
+                print("   Reached the last fixed P space")
+                break
+            if imacro > 0 and self.fixed_pspaces is None:
                 delta_e_ccp = self.ccp_energy[imacro] - self.ccp_energy[imacro - 1]
                 delta_e_ccpq = self.ccpq_energy[imacro] - self.ccpq_energy[imacro - 1]
                 delta_e_ccp_mu = self.eomccp_energy[imacro] - self.eomccp_energy[imacro - 1]
@@ -720,9 +760,9 @@ class AdaptEOMDriverSS:
                  )
             )
 
-class AdaptEOMDriver:
+class AdaptEOMDriver(FixedPSpaceMixin):
 
-    def __init__(self, driver, state_index, roots_per_irrep, multiplicity, nacto=0, nactu=0, percentage=None, unify=True):
+    def __init__(self, driver, state_index, roots_per_irrep, multiplicity, nacto=0, nactu=0, percentage=None, unify=True, pspaces=None):
         self.driver = driver
         self.state_index = state_index # list of guess roots to solve for
         self.nstates = len(self.state_index) + 1
@@ -774,6 +814,7 @@ class AdaptEOMDriver:
         self.RHF_excited = True if self.multiplicity == 1 else False
         # Save the bare Hamiltonian for later iterations if using CR-CC(2,3)
         self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
+        self.init_pspaces(pspaces)
 
     def print_options(self):
         print("   ------------------------------------------")
@@ -1029,6 +1070,8 @@ class AdaptEOMDriver:
 
         # Begin adaptive loop iterations over P-space steps
         for imacro in range(self.nmacro):
+            # Use the fixed P space of this macroiteration, if given, and record it
+            self.use_pspace(imacro)
             print("")
             print("   Adaptive CC(P;Q) Macroiteration - ", imacro)
             print("   ===========================================")
@@ -1090,7 +1133,10 @@ class AdaptEOMDriver:
             t_selection_and_ccp3 = x2 - x1
 
             # Check convergence conditions
-            if imacro > 0:
+            if self.last_fixed_pspace(imacro):
+                print("   Reached the last fixed P space")
+                break
+            if imacro > 0 and self.fixed_pspaces is None:
                 delta_e_ccp = self.ccp_energy[:, imacro] - self.ccp_energy[:, imacro - 1]
                 delta_e_ccpq = self.ccpq_energy[:, imacro] - self.ccpq_energy[:, imacro - 1]
                 print("   Change in CC(P) energy = ", delta_e_ccp)
@@ -1156,9 +1202,9 @@ class AdaptEOMDriver:
                        )
                 )
 
-class AdaptEAEOMDriverSS:
+class AdaptEAEOMDriverSS(FixedPSpaceMixin):
 
-    def __init__(self, driver, state_index, roots_per_irrep, multiplicity, nacto=0, nactu=0, percentage=None):
+    def __init__(self, driver, state_index, roots_per_irrep, multiplicity, nacto=0, nactu=0, percentage=None, pspaces=None):
         self.driver = driver
         # inputs used to form the one-time EA-EOMCCSd initial guess
         self.state_index = state_index
@@ -1207,6 +1253,7 @@ class AdaptEAEOMDriverSS:
         self.RHF_excited = True if self.multiplicity == 1 else False
         # Save the bare Hamiltonian for later iterations if using CR-CC(2,3)
         self.bare_hamiltonian = deepcopy(self.driver.hamiltonian)
+        self.init_pspaces(pspaces)
 
     def print_options(self):
         print("   ------------------------------------------")
@@ -1353,6 +1400,8 @@ class AdaptEAEOMDriverSS:
 
         # Begin adaptive loop iterations over P-space steps
         for imacro in range(self.nmacro):
+            # Use the fixed P space of this macroiteration, if given, and record it
+            self.use_pspace(imacro)
             print("")
             print("   Adaptive CC(P;Q) Macroiteration - ", imacro)
             print("   ===========================================")
@@ -1395,7 +1444,10 @@ class AdaptEAEOMDriverSS:
             t_selection_and_ccp3 = x2 - x1
 
             # Check convergence conditions
-            if imacro > 0:
+            if self.last_fixed_pspace(imacro):
+                print("   Reached the last fixed P space")
+                break
+            if imacro > 0 and self.fixed_pspaces is None:
                 delta_e_ccp = self.ccp_energy[imacro] - self.ccp_energy[imacro - 1]
                 delta_e_ccpq = self.ccpq_energy[imacro] - self.ccpq_energy[imacro - 1]
                 delta_e_ccp_mu = self.eomccp_energy[imacro] - self.eomccp_energy[imacro - 1]
