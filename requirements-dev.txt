@@ -15,3 +15,4 @@ pytest==8.3.3
 scipy==1.14.1
 setuptools==75.2.0
 nanobind==3.1.0
+ninja

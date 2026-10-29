@@ -14,7 +14,13 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
 
+    defaults:
+      run:
+        shell: bash -el {0}
+
     steps:
+      - uses: actions/checkout@v3
+
       - uses: actions/cache@v3
         with:
           path: ~/.cache/pip
@@ -22,16 +28,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - uses: actions/checkout@v3
-
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: conda-incubator/setup-miniconda@v4
         with:
           python-version: ${{ matrix.python-version }}
+          activate-environment: ccpy-ci
 
       - name: Install fortran
         run: |
-          sudo apt install -y gfortran meson libopenblas-dev
+          sudo apt-get update
+          sudo apt-get -y gfortran g++ meson libopenblas-dev
+
+      - name: Install libint2
+        run: |
+          conda install --yes --override-channels -c conda-forge libint
 
       - name: Install python dependencies
         run: |
@@ -40,7 +50,7 @@ jobs:
 
       - name: Install ccpy
         run: |
-          python -m pip install --verbose --no-build-isolation --editable .
+          python -m pip install --verbose --no-build-isolation --editable . -Csetup-args="-Dlibint2_prefix=$CONDA_PREFIX"
 
       - name: Short test
         run: |
