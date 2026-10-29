@@ -37,7 +37,7 @@ jobs:
       - name: Install fortran
         run: |
           sudo apt-get update
-          sudo apt-get -y gfortran g++ meson libopenblas-dev
+          sudo apt-get install -y gfortran g++ meson libopenblas-dev
 
       - name: Install libint2
         run: |
