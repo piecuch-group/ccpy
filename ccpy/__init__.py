@@ -2,6 +2,8 @@
 
 # Import the specific modules that form the CCpy API here
 #from . import *
+from ccpy.integrals.molecule import Molecule
+from ccpy.scf import RHF, ROHF, UHF
 from ccpy.drivers.driver import Driver
 from ccpy.drivers.adaptive import AdaptDriver, AdaptEOMDriver, AdaptEOMDriverSS
 from ccpy.utilities.pspace import (get_active_triples_pspace,

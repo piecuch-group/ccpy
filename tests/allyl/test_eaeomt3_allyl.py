@@ -1,28 +1,9 @@
 import numpy as np
 from pyscf import gto, scf
 from ccpy import Driver, get_active_3p2h_pspace
+from ccpy import Molecule, RHF
 
-def test_eaeom3a_allyl():
-
-    mol = gto.M(
-            atom='''C 0.00000000 0.00000000 0.83050732
-                    C 0.00000000 2.30981224 -0.38722841
-                    C 0.00000000 -2.30981224 -0.38722841
-                    H 0.00000000 0.00000000 2.87547067
-                    H 0.00000000 4.06036949 0.65560561
-                    H 0.00000000 -4.06036949 0.65560561
-                    H 0.00000000 2.41059890 -2.42703281
-                    H 0.00000000 -2.41059890 -2.42703281''',
-            basis="6-31g",
-            spin=0,
-            charge=1,
-            symmetry="C2V",
-            unit="Bohr",
-    )
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    driver = Driver.from_pyscf(mf, nfrozen=3)
+def _run_and_check(driver):
     driver.system.print_info()
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
@@ -49,6 +30,47 @@ def test_eaeom3a_allyl():
         assert np.allclose(driver.vertical_excitation_energy[i], vee)
         assert np.allclose(driver.deltap3[i]["D"], vee_d)
 
+def test_eaeom3a_allyl():
+
+    mol = gto.M(
+            atom='''C 0.00000000 0.00000000 0.83050732
+                    C 0.00000000 2.30981224 -0.38722841
+                    C 0.00000000 -2.30981224 -0.38722841
+                    H 0.00000000 0.00000000 2.87547067
+                    H 0.00000000 4.06036949 0.65560561
+                    H 0.00000000 -4.06036949 0.65560561
+                    H 0.00000000 2.41059890 -2.42703281
+                    H 0.00000000 -2.41059890 -2.42703281''',
+            basis="6-31g",
+            spin=0,
+            charge=1,
+            symmetry="C2V",
+            unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=3)
+    _run_and_check(driver)
+
+def test_eaeom3a_allyl_native():
+    # native ccpy SCF + tight Cholesky AO integrals (no PySCF/GAMESS input)
+    mol = Molecule("""C 0.00000000 0.00000000 0.83050732
+                      C 0.00000000 2.30981224 -0.38722841
+                      C 0.00000000 -2.30981224 -0.38722841
+                      H 0.00000000 0.00000000 2.87547067
+                      H 0.00000000 4.06036949 0.65560561
+                      H 0.00000000 -4.06036949 0.65560561
+                      H 0.00000000 2.41059890 -2.42703281
+                      H 0.00000000 -2.41059890 -2.42703281""",
+                   "6-31g", unit="bohr", charge=1, multiplicity=1, symmetry=True, cartesian=False,
+                   cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=3)
+    _run_and_check(driver)
+
 if __name__ == "__main__":
 
     test_eaeom3a_allyl()
+    test_eaeom3a_allyl_native()

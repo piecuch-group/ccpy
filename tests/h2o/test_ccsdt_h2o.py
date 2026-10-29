@@ -5,27 +5,9 @@ Reference: Mol. Phys, 115, 2860 (2017)."""
 
 import numpy as np
 from pyscf import scf, gto
-from ccpy import Driver
+from ccpy import Driver, Molecule, UHF
 
-def test_ccsdt_h2o():
-
-    mol = gto.M(
-        atom=[["O", (0.0, 0.0, -0.0180)],
-              ["H", (0.0, 3.030526, -2.117796)],
-              ["H", (0.0, -3.030526, -2.117796)]],
-        basis="dz",
-        symmetry="C2v",
-        charge=0,
-        spin=0,
-        cart=False,
-        unit="Bohr",
-        verbose=5,
-    )
-    mf = scf.UHF(mol)
-    mf.conv_tol = 1e-14
-    mf.kernel()
-
-    driver = Driver.from_pyscf(mf, nfrozen=0, uhf=True)
+def _run_and_check(driver):
     driver.system.print_info()
 
     # Important: Set RHF flag to false manually for UHF references
@@ -47,5 +29,37 @@ def test_ccsdt_h2o():
     for i, vee in enumerate(expected_vee):
         assert np.allclose(driver.vertical_excitation_energy[i + 1], expected_vee[i], rtol=1.0e-07, atol=1.0e-7)
 
+def test_ccsdt_h2o():
+
+    mol = gto.M(
+        atom=[["O", (0.0, 0.0, -0.0180)],
+              ["H", (0.0, 3.030526, -2.117796)],
+              ["H", (0.0, -3.030526, -2.117796)]],
+        basis="dz",
+        symmetry="C2v",
+        charge=0,
+        spin=0,
+        cart=False,
+        unit="Bohr",
+        verbose=5,
+    )
+    mf = scf.UHF(mol)
+    mf.conv_tol = 1e-14
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=0, uhf=True)
+    _run_and_check(driver)
+
+def test_ccsdt_h2o_native():
+    # native ccpy SCF + tight Cholesky integrals
+    mol = Molecule("O 0.0 0.0 -0.0180; H 0.0 3.030526 -2.117796; H 0.0 -3.030526 -2.117796",
+                   "dz", unit="bohr", charge=0, multiplicity=1, symmetry=True, cartesian=False,
+                   cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = UHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=0)
+    _run_and_check(driver)
+
 if __name__ == "__main__":
     test_ccsdt_h2o()
+    test_ccsdt_h2o_native()

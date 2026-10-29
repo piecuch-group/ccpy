@@ -1,6 +1,22 @@
 import numpy as np
 from pyscf import gto, scf
 from ccpy.drivers.driver import Driver
+from ccpy import Molecule, RHF
+
+def _run_and_check(driver):
+    driver.options["RHF_symmetry"] = False
+
+    driver.run_cc(method="ccsd")
+    driver.run_hbar(method="ccsd")
+    driver.run_guess(method="dipcis", multiplicity=-1, nact_occupied=driver.system.noccupied_alpha, roots_per_irrep={"A1": 6}, use_symmetry=False)
+    driver.run_dipeomcc(method="dipeom4", state_index=[0, 1, 2, 3, 4, 5])
+
+    #
+    # Check the results
+    #
+    expected_vee = [-0.47006858, -0.44903598, -0.38539205, -0.28546072, -0.25449691, -0.22891625]
+    for i in range(len(expected_vee)):
+       assert np.allclose(expected_vee[i], driver.vertical_excitation_energy[i], atol=1.0e-07)
 
 def test_dipeom4_ch2():
 
@@ -17,19 +33,18 @@ def test_dipeom4_ch2():
     mf.kernel()
 
     driver = Driver.from_pyscf(mf, nfrozen=0)
-    driver.options["RHF_symmetry"] = False
+    _run_and_check(driver)
 
-    driver.run_cc(method="ccsd")
-    driver.run_hbar(method="ccsd")
-    driver.run_guess(method="dipcis", multiplicity=-1, nact_occupied=driver.system.noccupied_alpha, roots_per_irrep={"A1": 6}, use_symmetry=False)
-    driver.run_dipeomcc(method="dipeom4", state_index=[0, 1, 2, 3, 4, 5])
-
-    #
-    # Check the results
-    #
-    expected_vee = [-0.47006858, -0.44903598, -0.38539205, -0.28546072, -0.25449691, -0.22891625]
-    for i in range(len(expected_vee)):
-       assert np.allclose(expected_vee[i], driver.vertical_excitation_energy[i], atol=1.0e-07)
+def test_dipeom4_ch2_native():
+    # native ccpy SCF + tight Cholesky AO integrals (no PySCF/GAMESS input)
+    mol = Molecule("C 0.0 0.0 0.0; H 0.0 1.644403 -1.32213; H 0.0 -1.644403 -1.32213", "6-31g",
+                   unit="bohr", charge=-2, multiplicity=1, symmetry=True, cartesian=True,
+                   cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=0)
+    _run_and_check(driver)
 
 if __name__ == "__main__":
     test_dipeom4_ch2()
+    test_dipeom4_ch2_native()

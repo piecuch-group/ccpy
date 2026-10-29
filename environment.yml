@@ -13,6 +13,11 @@ dependencies:
   - meson
   - meson-python
   - ninja
+  # libint2-based integrals (ccpy.integrals): libint must have derivative support,
+  # which the conda-forge build does
+  - libint>=2.8
+  - eigen
+  - nanobind
   - pandas
   - numpy
   - scipy

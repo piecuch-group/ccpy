@@ -2,6 +2,7 @@ python_sources = [
   '__init__.py',
   'fcidump_tools.py',
   'qp2_tools.py',
+  'scf_tools.py',
   'gamess_tools.py',
   'pyscf_tools.py',
 ]

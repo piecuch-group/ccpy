@@ -8,19 +8,9 @@ Reference: J. Chem. Phys. 123, 134113 (2005)
 import numpy as np
 from pyscf import scf, gto
 from ccpy import Driver
+from ccpy import Molecule, RHF
 
-def test_ipeomccsdtastar_ohminus():
-    mol = gto.M(atom='''O  0.0  0.0  -0.8
-                        H  0.0  0.0   0.8''',
-                basis="6-31g",
-                charge=-1,
-                spin=0,
-                cart=False,
-                symmetry="C2V",
-                unit="Angstrom")
-    mf = scf.RHF(mol)
-    mf.kernel()
-    driver = Driver.from_pyscf(mf, nfrozen=0)
+def _run_and_check(driver):
     driver.system.print_info()
 
     driver.run_cc(method="ccsd")
@@ -46,5 +36,30 @@ def test_ipeomccsdtastar_ohminus():
     for i, vee in enumerate(expected_vee):
        assert np.allclose(driver.vertical_excitation_energy[i] + driver.deltap3[i]["A"], vee)
 
+def test_ipeomccsdtastar_ohminus():
+    mol = gto.M(atom='''O  0.0  0.0  -0.8
+                        H  0.0  0.0   0.8''',
+                basis="6-31g",
+                charge=-1,
+                spin=0,
+                cart=False,
+                symmetry="C2V",
+                unit="Angstrom")
+    mf = scf.RHF(mol)
+    mf.kernel()
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    _run_and_check(driver)
+
+def test_ipeomccsdtastar_ohminus_native():
+    # native ccpy SCF + tight Cholesky AO integrals (no PySCF/GAMESS input)
+    mol = Molecule("O 0.0 0.0 -0.8; H 0.0 0.0 0.8", "6-31g", unit="angstrom",
+                   charge=-1, multiplicity=1, symmetry=True, cartesian=False,
+                   cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=0)
+    _run_and_check(driver)
+
 if __name__ == "__main__":
     test_ipeomccsdtastar_ohminus()
+    test_ipeomccsdtastar_ohminus_native()

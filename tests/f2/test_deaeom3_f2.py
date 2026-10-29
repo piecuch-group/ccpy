@@ -4,23 +4,9 @@ by attaching two electrons to the doubly ionized F2^(2+) cation."""
 import numpy as np
 from pyscf import gto, scf
 from ccpy import Driver
+from ccpy import Molecule, RHF
 
-def test_deaeom3_f2():
-
-    geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]
-    mol = gto.M(
-        atom=geometry,
-        basis="cc-pvdz",
-        charge=2,
-        spin=0,
-        symmetry="D2H",
-        cart=True,
-        unit="Bohr",
-    )
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    driver = Driver.from_pyscf(mf, nfrozen=2)
+def _run_and_check(driver):
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_guess(method="deacis", nact_unoccupied=4, roots_per_irrep={"AG": 3}, multiplicity=1, use_symmetry=False)
@@ -43,5 +29,36 @@ def test_deaeom3_f2():
         assert np.allclose(driver.vertical_excitation_energy[i]
                           +driver.system.reference_energy + driver.correlation_energy, expected_total_energy[i], atol=1.0e-07)
 
+
+def test_deaeom3_f2():
+
+    geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]
+    mol = gto.M(
+        atom=geometry,
+        basis="cc-pvdz",
+        charge=2,
+        spin=0,
+        symmetry="D2H",
+        cart=True,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=2)
+    _run_and_check(driver)
+
+
+def test_deaeom3_f2_native():
+    # native ccpy SCF + tight Cholesky integrals
+    mol = Molecule("F 0.0 0.0 -2.66816; F 0.0 0.0 2.66816", "cc-pvdz", unit="bohr", charge=2, multiplicity=1,
+                   symmetry=True, cartesian=True, cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=2)
+    _run_and_check(driver)
+
+
 if __name__ == "__main__":
     test_deaeom3_f2()
+    test_deaeom3_f2_native()

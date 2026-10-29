@@ -3,16 +3,16 @@ from pathlib import Path
 import numpy as np
 from ccpy.drivers.driver import Driver
 from ccpy.utilities.pspace import get_active_triples_pspace
+from ccpy import Molecule, ROHF
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
-@pytest.mark.short
-def test_eomcct3_full_chplus():
-    driver = Driver.from_gamess(
-        logfile=TEST_DATA_DIR + "/chplus/chplus.log",
-        fcidump=TEST_DATA_DIR + "/chplus/chplus.FCIDUMP",
-        nfrozen=0,
-    )
+# Same system as chplus.log: CH+ at R = 2.13713 bohr, Olsen basis (cartesian d)
+CHPLUS_GEOMETRY = "C 0.0 0.0 0.0; H 0.0 0.0 2.13713"
+CHPLUS_BASIS = str(Path(__file__).parent.absolute() / "olsen_chplus.gbs")
+
+
+def _run_and_check(driver):
     driver.system.print_info()
     driver.options["RHF_symmetry"] = True # left CC(P) for 4 Sigma^+ needs (4,4) guess space
     driver.options["maximum_iterations"] = 500
@@ -127,5 +127,28 @@ def test_eomcct3_full_chplus():
     for i, (ecct3, eccsdt) in enumerate(zip(energy_cct3, energy_ccsdt)):
         print(f"Error in root {i} = {np.round((ecct3 - eccsdt) * 1000, 4)} mEh")
 
+
+@pytest.mark.short
+def test_eomcct3_full_chplus():
+    driver = Driver.from_gamess(
+        logfile=TEST_DATA_DIR + "/chplus/chplus.log",
+        fcidump=TEST_DATA_DIR + "/chplus/chplus.FCIDUMP",
+        nfrozen=0,
+    )
+    _run_and_check(driver)
+
+
+@pytest.mark.short
+def test_eomcct3_full_chplus_native():
+    # native ccpy ROHF (GAMESS SCFTYP=ROHF, ISPHER=-1, UNITS=BOHR) + tight Cholesky integrals
+    mol = Molecule(CHPLUS_GEOMETRY, CHPLUS_BASIS, unit="bohr", charge=1, multiplicity=1,
+                   symmetry=True, cartesian=True, cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = ROHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=0)
+    _run_and_check(driver)
+
+
 if __name__ == "__main__":
     test_eomcct3_full_chplus()
+    test_eomcct3_full_chplus_native()

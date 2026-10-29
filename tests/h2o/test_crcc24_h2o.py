@@ -5,26 +5,9 @@ Reference: Mol. Phys, 115, 2860 (2017)."""
 
 import numpy as np
 from pyscf import scf, gto
-from ccpy import Driver
+from ccpy import Driver, Molecule, RHF
 
-def test_crcc24_h2o():
-    # 2 Re
-    geometry = [["O", (0.0, 0.0, -0.0180)],
-                ["H", (0.0, 3.030526, -2.117796)],
-                ["H", (0.0, -3.030526, -2.117796)]]
-    mol = gto.M(
-        atom=geometry,
-        basis="dz",
-        charge=0,
-        spin=0,
-        symmetry="C2V",
-        cart=False,
-        unit="Bohr",
-    )
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    driver = Driver.from_pyscf(mf, nfrozen=0)
+def _run_and_check(driver):
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
     driver.run_leftcc(method="left_ccsd")
@@ -44,5 +27,36 @@ def test_crcc24_h2o():
     # Check CR-CC(2,4)_DD energy
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.deltap3[0]["D"] + driver.deltap4[0]["D"], -75.9094507817)
 
+def test_crcc24_h2o():
+    # 2 Re
+    geometry = [["O", (0.0, 0.0, -0.0180)],
+                ["H", (0.0, 3.030526, -2.117796)],
+                ["H", (0.0, -3.030526, -2.117796)]]
+    mol = gto.M(
+        atom=geometry,
+        basis="dz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    _run_and_check(driver)
+
+def test_crcc24_h2o_native():
+    # native ccpy SCF + tight Cholesky integrals
+    mol = Molecule("O 0.0 0.0 -0.0180; H 0.0 3.030526 -2.117796; H 0.0 -3.030526 -2.117796",
+                   "dz", unit="bohr", charge=0, multiplicity=1, symmetry=True, cartesian=False,
+                   cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=0)
+    _run_and_check(driver)
+
 if __name__ == "__main__":
     test_crcc24_h2o()
+    test_crcc24_h2o_native()

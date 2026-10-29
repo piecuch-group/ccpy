@@ -1,0 +1,2084 @@
+{
+    "molssi_bse_schema": {
+        "schema_type": "minimal",
+        "schema_version": "0.1"
+    },
+    "elements": {
+        "1": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2124823917E+10"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.758974770E+13"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "2": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1167153887E+10"
+                    ],
+                    "coefficients": [
+                        [
+                            "7.160896093E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "3": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.8926684881E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.789724093E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "4": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.7878880291E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.971658912E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "5": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.7117870956E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.410361024E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "6": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.6807750293E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.189926065E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "7": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.6286561572E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.830707211E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "8": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.5863143666E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.549593803E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "9": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.5354691103E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.225239831E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "10": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.5210571526E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.136009765E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "11": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.4834972151E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.909264758E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "12": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.4725427088E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.844746907E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "13": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.4433598449E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.676523810E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "14": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.4346774882E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.627518426E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "15": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.4111755315E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.497325030E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "16": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.4040799205E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.458733968E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "17": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.3846385287E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.354735053E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "18": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.3572221730E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.212502947E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "19": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.3622812811E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.238351781E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "20": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.3572221730E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.212502947E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "21": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.3345132457E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.098740593E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "22": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.3226310883E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "1.040721461E+12"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "23": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.3118192588E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "9.888481224E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "24": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.3084264179E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "9.727529263E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "25": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2988137361E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "9.276326525E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "26": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2957840637E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "9.135605724E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "27": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2871666727E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "8.739291897E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "28": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2899639142E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "8.867294272E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "29": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2766597935E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "8.264075262E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "30": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2741902104E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "8.153669583E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "31": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2626700274E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "7.645237300E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "32": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2523561340E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "7.199394787E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "33": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2504202428E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "7.116711153E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "34": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2413016372E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "6.731558026E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "35": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2430545435E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "6.805041951E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "36": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2346121327E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "6.453582884E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "37": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2330155111E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "6.387816595E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "38": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2283935473E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "6.198704531E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "39": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2269062189E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "6.138253066E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "40": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2254443104E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "6.079027527E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "41": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2212042072E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "5.908337090E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "42": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2145851160E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "5.645138269E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "43": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2145851160E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "5.645138269E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "44": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2096527029E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "5.451623935E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "45": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2084658700E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "5.405397478E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "46": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2050093522E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "5.271518087E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "47": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.2038904762E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "5.228421613E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "48": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1964863962E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.946225610E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "49": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1954857769E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.908490309E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "50": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1906771815E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.728498730E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "51": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1897524624E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.694143065E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "52": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1819305629E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.406904973E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "53": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1844424054E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.498485832E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "54": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1803052933E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.347983687E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "55": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1795068828E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.319135699E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "56": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1756500904E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.180687997E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "57": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1749046317E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.154102004E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "58": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1741674415E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.127866555E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "59": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1734383712E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.101974634E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "60": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1712984496E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.026292658E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "61": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1706004459E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "4.001708353E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "62": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1659155042E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.838005986E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "63": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1652735209E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.815751729E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "64": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1621588067E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.708395118E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "65": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1615541942E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.687674220E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "66": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1597752908E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.626933693E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "67": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1597752908E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.626933693E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "68": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1563667363E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.511492527E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "69": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1558170200E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.492991529E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "70": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1531425785E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.403448032E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "71": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1526220151E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.386109249E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "72": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1500871034E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.302100257E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "73": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1495932564E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.285815813E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "74": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1481368953E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.237949332E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "75": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1467171034E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.191510718E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "76": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1444280878E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.117113981E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "77": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1439814210E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.102664912E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "78": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1430988358E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.074180348E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "79": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1422302731E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "3.046233969E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "80": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1401178891E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.978623216E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "81": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1388892520E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.939531711E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "82": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1376884008E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.901490979E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "83": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1372941160E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.889036832E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "84": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1372941160E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.889036832E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "85": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1369027700E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.876693183E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "86": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1324235021E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.736672288E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "87": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1320673361E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.725638893E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "88": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1310136763E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.693085495E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "89": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1306673097E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.682412816E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "90": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1289706748E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.630338545E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "91": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1293053951E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.640585046E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "92": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1270088171E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.570549658E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "93": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1273303811E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.580318103E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "94": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1251229901E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.513511419E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "95": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1254322183E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.522834987E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "96": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1242071109E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.485964261E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "97": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1242071109E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.485964261E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "98": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1230127355E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.450193059E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "99": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1227187974E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.441416228E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "100": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1212761148E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.398491060E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "101": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1209928549E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.390092876E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "102": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1207113135E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.381755376E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "103": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1198768319E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.357100372E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "104": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1201533185E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.365259775E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "105": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1198768319E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.357100372E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "106": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1196019976E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.348999048E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "107": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1198768319E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.357100372E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "108": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1190572220E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.332968140E+11"
+                        ]
+                    ]
+                }
+            ]
+        },
+        "109": {
+            "electron_shells": [
+                {
+                    "function_type": "gto",
+                    "region": "",
+                    "angular_momentum": [
+                        0
+                    ],
+                    "exponents": [
+                        "0.1187872493E+09"
+                    ],
+                    "coefficients": [
+                        [
+                            "2.325037327E+11"
+                        ]
+                    ]
+                }
+            ]
+        }
+    },
+    "function_types": [
+        "gto"
+    ],
+    "name": "unknown_basis",
+    "description": "no_description"
+}

@@ -4,27 +4,12 @@ M. Musial, S. A. Kucharski, and R. J. Bartlett, J. Chem. Phys 118, 1128 (2003)
 '''
 import numpy as np
 from pyscf import gto, scf
+from ccpy import Driver, get_active_triples_pspace
+from ccpy.utilities.utilities import convert_t3_from_pspace
+from ccpy import Molecule, RHF
 
-def test_ipeomccsdt_n2():
-    from ccpy import Driver, get_active_triples_pspace
-    from ccpy.utilities.utilities import convert_t3_from_pspace
-
-    geom = [["N",  (0.0,  0.0,  0.0)],
-            ["N",  (0.0,  0.0,  1.097685)]]
-
+def _run_and_check(driver):
     state_index = [0, 1, 3]
-
-    mol = gto.M(atom=geom,
-                basis="cc-pvdz",
-                charge=0,
-                symmetry="D2H",
-                cart=False,
-                spin=0,
-                unit="Angstrom")
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    driver = Driver.from_pyscf(mf, nfrozen=0)
     driver.system.print_info()
     #
     driver.system.set_active_space(nact_occupied=driver.system.noccupied_alpha, nact_unoccupied=driver.system.nunoccupied_alpha)
@@ -49,7 +34,37 @@ def test_ipeomccsdt_n2():
     for w_calc, w_exp in zip(ip_energy, expected_ip):
         assert np.allclose(w_calc, w_exp, atol=1.0e-02)
 
+
+def test_ipeomccsdt_n2():
+
+    geom = [["N",  (0.0,  0.0,  0.0)],
+            ["N",  (0.0,  0.0,  1.097685)]]
+
+
+    mol = gto.M(atom=geom,
+                basis="cc-pvdz",
+                charge=0,
+                symmetry="D2H",
+                cart=False,
+                spin=0,
+                unit="Angstrom")
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    _run_and_check(driver)
+
+
+def test_ipeomccsdt_n2_native():
+    # native ccpy SCF + tight Cholesky integrals
+    mol = Molecule("N 0.0 0.0 0.0; N 0.0 0.0 1.097685", "cc-pvdz", unit="angstrom", charge=0, multiplicity=1,
+                   symmetry=True, cartesian=False, cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=0)
+    _run_and_check(driver)
+
+
 if __name__ == "__main__":
-
     test_ipeomccsdt_n2()
-
+    test_ipeomccsdt_n2_native()

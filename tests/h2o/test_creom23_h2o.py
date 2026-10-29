@@ -10,17 +10,28 @@ comprises of 3 s orbitals on H and 3 s and 3 p on O.
 
 from pathlib import Path
 import numpy as np
-from ccpy import Driver
+from ccpy import Driver, Molecule, RHF
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
-def test_creom23_a1_singlets_h2o():
-
-    driver = Driver.from_gamess(
+def _gamess_driver():
+    return Driver.from_gamess(
         logfile=TEST_DATA_DIR + "/h2o/h2o-tz-3.6.log",
         fcidump=TEST_DATA_DIR + "/h2o/h2o-tz-3.6.FCIDUMP",
         nfrozen=1,
     )
+
+def _native_driver():
+    # native ccpy SCF + tight Cholesky integrals; geometry (bohr) taken from h2o-tz-3.6.log,
+    # GAMESS ran with ISPHER=-1 (cartesian; the s/p-only basis makes this immaterial)
+    mol = Molecule("O -0.2015391293 -0.1082616784 0.0; H 3.3968787793 -0.0015445063 0.0; H -0.1983073653 1.7197354648 0.0",
+                   TEST_DATA_DIR + "/h2o/paldusTZ.gbs", unit="bohr", charge=0, multiplicity=1, symmetry=True,
+                   cartesian=True, cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    return Driver.from_scf(mf, nfrozen=1)
+
+def _run_and_check_a1_singlets(driver):
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
@@ -44,13 +55,7 @@ def test_creom23_a1_singlets_h2o():
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.8365241661, rtol=1.0e-08)
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.6555306790, rtol=1.0e-08)
 
-def test_creom23_a2_singlets_h2o():
-
-    driver = Driver.from_gamess(
-        logfile=TEST_DATA_DIR + "/h2o/h2o-tz-3.6.log",
-        fcidump=TEST_DATA_DIR + "/h2o/h2o-tz-3.6.FCIDUMP",
-        nfrozen=1,
-    )
+def _run_and_check_a2_singlets(driver):
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
@@ -67,13 +72,7 @@ def test_creom23_a2_singlets_h2o():
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1] + driver.deltap3[1]["D"], -75.9892626216, rtol=1.0e-08)
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.7317203543, rtol=1.0e-08)
 
-def test_creom23_a1_triplets_h2o():
-
-    driver = Driver.from_gamess(
-        logfile=TEST_DATA_DIR + "/h2o/h2o-tz-3.6.log",
-        fcidump=TEST_DATA_DIR + "/h2o/h2o-tz-3.6.FCIDUMP",
-        nfrozen=1,
-    )
+def _run_and_check_a1_triplets(driver):
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
@@ -92,13 +91,7 @@ def test_creom23_a1_triplets_h2o():
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.8406855050, rtol=1.0e-08)
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.6517974898, rtol=1.0e-08)
 
-def test_creom23_a2_triplets_h2o():
-
-    driver = Driver.from_gamess(
-        logfile=TEST_DATA_DIR + "/h2o/h2o-tz-3.6.log",
-        fcidump=TEST_DATA_DIR + "/h2o/h2o-tz-3.6.FCIDUMP",
-        nfrozen=1,
-    )
+def _run_and_check_a2_triplets(driver):
 
     driver.run_cc(method="ccsd")
     driver.run_hbar(method="ccsd")
@@ -117,13 +110,41 @@ def test_creom23_a2_triplets_h2o():
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.7590284455, rtol=1.0e-08)
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.7171758472, rtol=1.0e-08)
 
+def test_creom23_a1_singlets_h2o():
+    _run_and_check_a1_singlets(_gamess_driver())
+
+def test_creom23_a1_singlets_h2o_native():
+    _run_and_check_a1_singlets(_native_driver())
+
+def test_creom23_a2_singlets_h2o():
+    _run_and_check_a2_singlets(_gamess_driver())
+
+def test_creom23_a2_singlets_h2o_native():
+    _run_and_check_a2_singlets(_native_driver())
+
+def test_creom23_a1_triplets_h2o():
+    _run_and_check_a1_triplets(_gamess_driver())
+
+def test_creom23_a1_triplets_h2o_native():
+    _run_and_check_a1_triplets(_native_driver())
+
+def test_creom23_a2_triplets_h2o():
+    _run_and_check_a2_triplets(_gamess_driver())
+
+def test_creom23_a2_triplets_h2o_native():
+    _run_and_check_a2_triplets(_native_driver())
+
 if __name__ == "__main__":
 
     # X {1}^A' (ground), 1 {1}^A', 2 {1}^A', 3 {1}^A'
     test_creom23_a1_singlets_h2o()
+    test_creom23_a1_singlets_h2o_native()
     # 1 {1}^A", 2 {1}^A"
     test_creom23_a2_singlets_h2o()
+    test_creom23_a2_singlets_h2o_native()
     # 1 {3}^A', 2 {3}^A', 3 {3}^A'
     test_creom23_a1_triplets_h2o()
+    test_creom23_a1_triplets_h2o_native()
     # 1 {3}^A", 2 {3}^A", 3 {3}^A"
     test_creom23_a2_triplets_h2o()
+    test_creom23_a2_triplets_h2o_native()

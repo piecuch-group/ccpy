@@ -211,7 +211,7 @@ def cholesky_eri_from_pyscf(mol, tol=1e-5, verbose=True, cmax=10):
     nchol_max = cmax * nao
 
     print("   =======================================")
-    print("Generating Cholesky decomposition of ERI" % nchol_max)
+    print("Generating Cholesky decomposition of ERI")
     print("Max number of Cholesky vectors = %d" % nchol_max)
     print("# current memory usage: %f MB" % (get_memory_usage()))
     print("   =======================================")

@@ -3,15 +3,11 @@
 from pathlib import Path
 import numpy as np
 from ccpy import Driver, get_active_triples_pspace
+from ccpy import Molecule, ROHF
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
-def test_eomcct3_ch():
-    driver = Driver.from_fcidump(
-        fcidump=TEST_DATA_DIR + "/ch/ch.FCIDUMP",
-        nfrozen=1,
-        rohf_canonicalization="Roothaan",
-    )
+def _run_and_check(driver):
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=1)
     t3_excitations = get_active_triples_pspace(driver.system, target_irrep="A")
@@ -50,5 +46,24 @@ def test_eomcct3_ch():
                 expected_total_energy[n], rtol=1.0e-07
             )
 
+def test_eomcct3_ch():
+    driver = Driver.from_fcidump(
+        fcidump=TEST_DATA_DIR + "/ch/ch.FCIDUMP",
+        nfrozen=1,
+        rohf_canonicalization="Roothaan",
+    )
+    _run_and_check(driver)
+
+def test_eomcct3_ch_native():
+    # native ccpy SCF + tight Cholesky AO integrals (no PySCF/GAMESS input)
+    mol = Molecule("C 0.0 0.0 0.0; H 0.0 0.0 2.1160902167", "aug-cc-pvdz", unit="bohr",
+                   charge=0, multiplicity=2, symmetry=False, cartesian=False,
+                   cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = ROHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=1)
+    _run_and_check(driver)
+
 if __name__ == "__main__":
     test_eomcct3_ch()
+    test_eomcct3_ch_native()

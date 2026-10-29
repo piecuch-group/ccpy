@@ -6,22 +6,9 @@ Reference: Chem. Phys. Lett. 344, 165 (2001)."""
 import numpy as np
 from pyscf import scf, gto
 from ccpy import Driver, get_active_triples_pspace
+from ccpy import Molecule, RHF
 
-def test_cct3_f2():
-    geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]
-    mol = gto.M(
-        atom=geometry,
-        basis="cc-pvdz",
-        charge=0,
-        spin=0,
-        symmetry="D2H",
-        cart=False,
-        unit="Bohr",
-    )
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    driver = Driver.from_pyscf(mf, nfrozen=2, use_cholesky=True, cholesky_tol=1.0e-07)
+def _run_and_check(driver):
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=5, nact_unoccupied=1)
     t3_excitations = get_active_triples_pspace(driver.system, target_irrep="AG")
@@ -62,5 +49,35 @@ def test_cct3_f2():
         rtol=1.0e-07
     )
 
+
+def test_cct3_f2():
+    geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]
+    mol = gto.M(
+        atom=geometry,
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="D2H",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=2, use_cholesky=True, cholesky_tol=1.0e-07)
+    _run_and_check(driver)
+
+
+def test_cct3_f2_native():
+    # native ccpy SCF + tight Cholesky integrals
+    mol = Molecule("F 0.0 0.0 -2.66816; F 0.0 0.0 2.66816", "cc-pvdz", unit="bohr", charge=0, multiplicity=1,
+                   symmetry=True, cartesian=False, cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=2, use_cholesky=True)
+    _run_and_check(driver)
+
+
 if __name__ == "__main__":
     test_cct3_f2()
+    test_cct3_f2_native()

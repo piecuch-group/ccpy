@@ -2,21 +2,10 @@
 open-shell CH molecule by attaching an electron to closed-shell CH+."""
 
 import numpy as np
-from ccpy import Driver
+from ccpy import Driver, Molecule, RHF
 from pyscf import gto, scf
 
-def test_eaeomccsdtastar_chplus():
-
-    # Define molecule geometry and basis set
-    basis = '6-31g'
-    geom = [["C", (0.0, 0.0, 0.0)],
-            ["H", (0.0, 0.0, 2.13713)]]
-
-    mol = gto.M(atom=geom, basis=basis, spin=0, symmetry="C2V", charge=1, unit="Bohr")
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    driver = Driver.from_pyscf(mf, nfrozen=0)
+def _run_and_check(driver):
     driver.system.print_info()
 
     driver.run_cc(method="ccsd")
@@ -40,5 +29,32 @@ def test_eaeomccsdtastar_chplus():
     for i, vee in enumerate(expected_vee):
         assert np.allclose(driver.vertical_excitation_energy[i] + driver.deltap3[i]["A"], vee, atol=1.0e-06)
 
+
+def test_eaeomccsdtastar_chplus():
+
+    # Define molecule geometry and basis set
+    basis = '6-31g'
+    geom = [["C", (0.0, 0.0, 0.0)],
+            ["H", (0.0, 0.0, 2.13713)]]
+
+    mol = gto.M(atom=geom, basis=basis, spin=0, symmetry="C2V", charge=1, unit="Bohr")
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    _run_and_check(driver)
+
+
+def test_eaeomccsdtastar_chplus_native():
+    # native ccpy RHF + tight Cholesky integrals (same inputs as the gto.M call above)
+    mol = Molecule("C 0.0 0.0 0.0; H 0.0 0.0 2.13713", "6-31g", unit="bohr", charge=1, multiplicity=1,
+                   symmetry=True, cartesian=False, cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=0)
+    _run_and_check(driver)
+
+
 if __name__ == "__main__":
     test_eaeomccsdtastar_chplus()
+    test_eaeomccsdtastar_chplus_native()

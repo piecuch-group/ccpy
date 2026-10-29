@@ -10,7 +10,7 @@ Reference: Mol. Phys. 120, e2057365 (2022)."""
 
 import numpy as np
 from pyscf import gto, scf
-from ccpy import Driver, get_active_triples_pspace
+from ccpy import Driver, Molecule, RHF, get_active_triples_pspace
 
 def h6_geometry(r):
     theta = [2.0*np.pi/6 * n for n in range(6)]
@@ -20,6 +20,58 @@ def h6_geometry(r):
         coords[i, 1] = r * np.sin(theta[i])
         coords[i, 2] = 0.0
     return coords
+
+def _run_and_check(make_driver):
+    # make_driver() returns a fresh Driver built from the same SCF
+    #  ACCSDt(1,3)
+    driver = make_driver()
+    driver.system.print_info()
+    driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    driver.run_ccp(method="accsdt_p", acparray=[1., 0., 1., 0., 0.], t3_excitations=t3_excitations)
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, state_index=0)
+    # check results
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.41382557)
+
+    # ACCSDt(1,(3+4)/2) = DCSD
+    driver = make_driver()
+    driver.system.print_info()
+    driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    driver.run_ccp(method="accsdt_p", acparray=[1., 0., 0.5, 0.5, 0.], t3_excitations=t3_excitations)
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, state_index=0)
+    # check results
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.41108922)
+
+    # ACCSDt(1, 3 x no/norb + 4 x nu/norb)
+    driver = make_driver()
+    driver.system.print_info()
+    driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    d3 = driver.system.noccupied_alpha/driver.system.norbitals
+    d4 = driver.system.nunoccupied_alpha/driver.system.norbitals
+    driver.run_ccp(method="accsdt_p", acparray=[1., 0., d3, d4, 0.], t3_excitations=t3_excitations)
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, state_index=0)
+    # check results
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.40872915)
+
+    # ACCSDt(1,4)
+    driver = make_driver()
+    driver.system.print_info()
+    driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
+    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
+    driver.run_ccp(method="accsdt_p", acparray=[1., 0., 0., 1., 0.], t3_excitations=t3_excitations)
+    driver.run_hbar(method="ccsd")
+    driver.run_leftcc(method="left_ccsd")
+    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, state_index=0)
+    # check results
+    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.40855414)
 
 def test_acct3_h6():
 
@@ -40,56 +92,20 @@ def test_acct3_h6():
     mf = scf.RHF(mol)
     mf.kernel()
 
-    #  ACCSDt(1,3)
-    driver = Driver.from_pyscf(mf, nfrozen=0)
-    driver.system.print_info()
-    driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
-    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
-    driver.run_ccp(method="accsdt_p", acparray=[1., 0., 1., 0., 0.], t3_excitations=t3_excitations)
-    driver.run_hbar(method="ccsd")
-    driver.run_leftcc(method="left_ccsd")
-    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, state_index=0)
-    # check results
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.41382557)
+    _run_and_check(lambda: Driver.from_pyscf(mf, nfrozen=0))
 
-    # ACCSDt(1,(3+4)/2) = DCSD
-    driver = Driver.from_pyscf(mf, nfrozen=0)
-    driver.system.print_info()
-    driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
-    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
-    driver.run_ccp(method="accsdt_p", acparray=[1., 0., 0.5, 0.5, 0.], t3_excitations=t3_excitations)
-    driver.run_hbar(method="ccsd")
-    driver.run_leftcc(method="left_ccsd")
-    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, state_index=0)
-    # check results
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.41108922)
-
-    # ACCSDt(1, 3 x no/norb + 4 x nu/norb)
-    driver = Driver.from_pyscf(mf, nfrozen=0)
-    driver.system.print_info()
-    driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
-    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
-    d3 = driver.system.noccupied_alpha/driver.system.norbitals
-    d4 = driver.system.nunoccupied_alpha/driver.system.norbitals
-    driver.run_ccp(method="accsdt_p", acparray=[1., 0., d3, d4, 0.], t3_excitations=t3_excitations)
-    driver.run_hbar(method="ccsd")
-    driver.run_leftcc(method="left_ccsd")
-    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, state_index=0)
-    # check results
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.40872915)
-
-    # ACCSDt(1,4)
-    driver = Driver.from_pyscf(mf, nfrozen=0)
-    driver.system.print_info()
-    driver.system.set_active_space(nact_occupied=3, nact_unoccupied=3)
-    t3_excitations = get_active_triples_pspace(driver.system, target_irrep=driver.system.reference_symmetry)
-    driver.run_ccp(method="accsdt_p", acparray=[1., 0., 0., 1., 0.], t3_excitations=t3_excitations)
-    driver.run_hbar(method="ccsd")
-    driver.run_leftcc(method="left_ccsd")
-    driver.run_ccp3(method="ccp3", t3_excitations=t3_excitations, state_index=0)
-    # check results
-    assert np.allclose(driver.system.reference_energy + driver.correlation_energy, -3.40855414)
+def test_acct3_h6_native():
+    # native ccpy SCF + tight Cholesky integrals
+    r_HH = 1.0
+    coords = h6_geometry(r_HH)
+    mol = Molecule("; ".join(f"H {x} {y} {z}" for x, y, z in coords), "cc-pvtz", unit="angstrom",
+                   charge=0, multiplicity=1, symmetry=True, cartesian=False,
+                   cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    _run_and_check(lambda: Driver.from_scf(mf, nfrozen=0))
 
 if __name__ == "__main__":
 
     test_acct3_h6()
+    test_acct3_h6_native()

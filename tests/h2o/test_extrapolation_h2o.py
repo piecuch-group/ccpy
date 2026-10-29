@@ -4,32 +4,12 @@ using the Dunning DZ basis set.
 Reference: Mol. Phys, 115, 2860 (2017)."""
 
 from pyscf import scf, gto
-from ccpy import Driver
+from ccpy import Driver, Molecule, RHF
 from ccpy.extrapolation.goodson_extrapolation import (rational_pade_approximant,
                                                       quadratic_pade_approximant,
                                                       continued_fraction_approximant)
 
-def test_extrapolation_h2o():
-    geometry = [["O", (0.0, 0.0, -0.0180)],
-                ["H", (0.0, 3.030526, -2.117796)],
-                ["H", (0.0, -3.030526, -2.117796)]]
-    #geometry = [["O", (0.0, 0.0, -0.0270)],
-    #            ["H", (0.0, 4.545789, -3.176694)],
-    #            ["H", (0.0, -4.545789, -3.176694)]]
-    mol = gto.M(
-        atom=geometry,
-        basis="cc-pvdz",
-        charge=0,
-        spin=0,
-        symmetry="C2V",
-        cart=False,
-        unit="Bohr",
-    )
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    driver = Driver.from_pyscf(mf, nfrozen=0)
-    
+def _run_and_check(driver):
     # reference energy
     e_ref = driver.system.reference_energy
     # CCSD energy
@@ -54,6 +34,39 @@ def test_extrapolation_h2o():
     print("ex-CCr = ", ex_ccr)
     print("ex-CCcf = ", ex_cccf)
 
+def test_extrapolation_h2o():
+    geometry = [["O", (0.0, 0.0, -0.0180)],
+                ["H", (0.0, 3.030526, -2.117796)],
+                ["H", (0.0, -3.030526, -2.117796)]]
+    #geometry = [["O", (0.0, 0.0, -0.0270)],
+    #            ["H", (0.0, 4.545789, -3.176694)],
+    #            ["H", (0.0, -4.545789, -3.176694)]]
+    mol = gto.M(
+        atom=geometry,
+        basis="cc-pvdz",
+        charge=0,
+        spin=0,
+        symmetry="C2V",
+        cart=False,
+        unit="Bohr",
+    )
+    mf = scf.RHF(mol)
+    mf.kernel()
+
+    driver = Driver.from_pyscf(mf, nfrozen=0)
+    _run_and_check(driver)
+
+def test_extrapolation_h2o_native():
+    # native ccpy SCF + tight Cholesky integrals
+    mol = Molecule("O 0.0 0.0 -0.0180; H 0.0 3.030526 -2.117796; H 0.0 -3.030526 -2.117796",
+                   "cc-pvdz", unit="bohr", charge=0, multiplicity=1, symmetry=True, cartesian=False,
+                   cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=0)
+    _run_and_check(driver)
+
 
 if __name__ == "__main__":
     test_extrapolation_h2o()
+    test_extrapolation_h2o_native()

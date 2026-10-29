@@ -8,17 +8,16 @@ Reference: J. Chem. Phys. 115, 643 (2001)."""
 import pytest
 from pathlib import Path
 import numpy as np
-from ccpy import Driver, get_active_triples_pspace
+from ccpy import Driver, get_active_triples_pspace, Molecule, ROHF
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
-@pytest.mark.short
-def test_eomccsdt1_chplus():
-    driver = Driver.from_gamess(
-        logfile=TEST_DATA_DIR + "/chplus/chplus.log",
-        fcidump=TEST_DATA_DIR + "/chplus/chplus.FCIDUMP",
-        nfrozen=0,
-    )
+# Same system as chplus.log: CH+ at R = 2.13713 bohr, Olsen basis (cartesian d)
+CHPLUS_GEOMETRY = "C 0.0 0.0 0.0; H 0.0 0.0 2.13713"
+CHPLUS_BASIS = str(Path(__file__).parent.absolute() / "olsen_chplus.gbs")
+
+
+def _run_and_check(driver):
     driver.system.print_info()
     driver.system.set_active_space(nact_occupied=1, nact_unoccupied=3)
 
@@ -57,5 +56,28 @@ def test_eomccsdt1_chplus():
                 atol=1.0e-07
             )
 
+
+@pytest.mark.short
+def test_eomccsdt1_chplus():
+    driver = Driver.from_gamess(
+        logfile=TEST_DATA_DIR + "/chplus/chplus.log",
+        fcidump=TEST_DATA_DIR + "/chplus/chplus.FCIDUMP",
+        nfrozen=0,
+    )
+    _run_and_check(driver)
+
+
+@pytest.mark.short
+def test_eomccsdt1_chplus_native():
+    # native ccpy ROHF (GAMESS SCFTYP=ROHF, ISPHER=-1, UNITS=BOHR) + tight Cholesky integrals
+    mol = Molecule(CHPLUS_GEOMETRY, CHPLUS_BASIS, unit="bohr", charge=1, multiplicity=1,
+                   symmetry=True, cartesian=True, cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = ROHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=0)
+    _run_and_check(driver)
+
+
 if __name__ == "__main__":
     test_eomccsdt1_chplus()
+    test_eomccsdt1_chplus_native()

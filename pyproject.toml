@@ -11,6 +11,7 @@ requires = [
     # redistributors can do this by installing the numpy version they like and
     # disabling build isolation.
     "numpy>=2.0.0",
+    "nanobind>=2.0",
 ]
 
 [project]
@@ -33,7 +34,7 @@ maintainers = [
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=2.0",
-    "pyscf",
+    "scipy",
     "cclib",
     "psutil",
 ] # keep in sync with `min_numpy_version` in meson.build
@@ -58,7 +59,8 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "meson", 'ninja; sys_platform != "emscripten"']
+pyscf = ["pyscf"]
+test = ["pytest", "pyscf", "meson", 'ninja; sys_platform != "emscripten"']
 doc = []
 dev = ["ruff>=0.0.292"]
 

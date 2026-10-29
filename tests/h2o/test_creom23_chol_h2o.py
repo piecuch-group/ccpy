@@ -11,12 +11,11 @@ from pathlib import Path
 import numpy as np
 from pyscf import gto, scf
 from pyscf.gto.basis import parse_gaussian
-from ccpy import Driver
+from ccpy import Driver, Molecule, RHF
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
-def test_creom23_a1_singlets_h2o():
-
+def _pyscf_driver():
     WATER = '''O  -0.2015391293       -0.1082616784        0.0000000000
                H   3.3968787793       -0.0015445063        0.0000000000
                H  -0.1983073653        1.7197354648        0.0000000000'''
@@ -28,7 +27,21 @@ def test_creom23_a1_singlets_h2o():
     mf = scf.RHF(mol)
     mf.kernel()
 
-    driver = Driver.from_pyscf(mf, nfrozen=1, use_cholesky=True, cholesky_tol=1.0e-09)
+    return Driver.from_pyscf(mf, nfrozen=1, use_cholesky=True, cholesky_tol=1.0e-09)
+
+def _native_driver():
+    # native ccpy SCF + tight Cholesky integrals (same setup as
+    # tests/scf/test_native_scf.py::test_creom23_h2o_cholesky_gbs)
+    WATER = """O  -0.2015391293       -0.1082616784        0.0000000000
+               H   3.3968787793       -0.0015445063        0.0000000000
+               H  -0.1983073653        1.7197354648        0.0000000000"""
+    mol = Molecule(WATER, TEST_DATA_DIR + "/h2o/paldusTZ.gbs", unit="bohr", charge=0, multiplicity=1,
+                   symmetry=True, cartesian=False, cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    return Driver.from_scf(mf, nfrozen=1, use_cholesky=True)
+
+def _run_and_check_a1_singlets(driver):
     driver.system.print_info()
     driver.run_cc(method="ccsd_chol")
     driver.run_hbar(method="ccsd_chol")
@@ -53,20 +66,7 @@ def test_creom23_a1_singlets_h2o():
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.8365241661, rtol=1.0e-08)
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.6555306790, rtol=1.0e-08)
 
-def test_creom23_a2_singlets_h2o():
-
-    WATER = '''O  -0.2015391293       -0.1082616784        0.0000000000
-               H   3.3968787793       -0.0015445063        0.0000000000
-               H  -0.1983073653        1.7197354648        0.0000000000'''
-    paldusTZ = {
-                "H": parse_gaussian.load(TEST_DATA_DIR + '/h2o/paldusTZ.gbs', 'H'),
-                "O": parse_gaussian.load(TEST_DATA_DIR + '/h2o/paldusTZ.gbs', 'O')
-    }
-    mol = gto.M(atom=WATER, basis=paldusTZ, spin=0, symmetry="Cs", charge=0, unit="Bohr")
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    driver = Driver.from_pyscf(mf, nfrozen=1, use_cholesky=True, cholesky_tol=1.0e-09)
+def _run_and_check_a2_singlets(driver):
     driver.system.print_info()
     driver.run_cc(method="ccsd_chol")
     driver.run_hbar(method="ccsd_chol")
@@ -83,20 +83,7 @@ def test_creom23_a2_singlets_h2o():
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[1] + driver.deltap3[1]["D"], -75.9892626216, rtol=1.0e-08)
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.7317203543, rtol=1.0e-08)
 
-def test_creom23_a1_triplets_h2o():
-
-    WATER = '''O  -0.2015391293       -0.1082616784        0.0000000000
-               H   3.3968787793       -0.0015445063        0.0000000000
-               H  -0.1983073653        1.7197354648        0.0000000000'''
-    paldusTZ = {
-                "H": parse_gaussian.load(TEST_DATA_DIR + '/h2o/paldusTZ.gbs', 'H'),
-                "O": parse_gaussian.load(TEST_DATA_DIR + '/h2o/paldusTZ.gbs', 'O')
-    }
-    mol = gto.M(atom=WATER, basis=paldusTZ, spin=0, symmetry="Cs", charge=0, unit="Bohr")
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    driver = Driver.from_pyscf(mf, nfrozen=1, use_cholesky=True, cholesky_tol=1.0e-09)
+def _run_and_check_a1_triplets(driver):
     driver.system.print_info()
     driver.run_cc(method="ccsd_chol")
     driver.run_hbar(method="ccsd_chol")
@@ -115,20 +102,7 @@ def test_creom23_a1_triplets_h2o():
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.8406855050, rtol=1.0e-08)
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.6517974898, rtol=1.0e-08)
 
-def test_creom23_a2_triplets_h2o():
-
-    WATER = '''O  -0.2015391293       -0.1082616784        0.0000000000
-               H   3.3968787793       -0.0015445063        0.0000000000
-               H  -0.1983073653        1.7197354648        0.0000000000'''
-    paldusTZ = {
-                "H": parse_gaussian.load(TEST_DATA_DIR + '/h2o/paldusTZ.gbs', 'H'),
-                "O": parse_gaussian.load(TEST_DATA_DIR + '/h2o/paldusTZ.gbs', 'O')
-    }
-    mol = gto.M(atom=WATER, basis=paldusTZ, spin=0, symmetry="Cs", charge=0, unit="Bohr")
-    mf = scf.RHF(mol)
-    mf.kernel()
-
-    driver = Driver.from_pyscf(mf, nfrozen=1, use_cholesky=True, cholesky_tol=1.0e-09)
+def _run_and_check_a2_triplets(driver):
     driver.run_cc(method="ccsd_chol")
     driver.run_hbar(method="ccsd_chol")
     driver.run_leftcc(method="left_ccsd_chol")
@@ -147,8 +121,36 @@ def test_creom23_a2_triplets_h2o():
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[2] + driver.deltap3[2]["D"], -75.7590284455, rtol=1.0e-08)
     assert np.allclose(driver.system.reference_energy + driver.correlation_energy + driver.vertical_excitation_energy[3] + driver.deltap3[3]["D"], -75.7171758472, rtol=1.0e-08)
 
+def test_creom23_a1_singlets_h2o():
+    _run_and_check_a1_singlets(_pyscf_driver())
+
+def test_creom23_a1_singlets_h2o_native():
+    _run_and_check_a1_singlets(_native_driver())
+
+def test_creom23_a2_singlets_h2o():
+    _run_and_check_a2_singlets(_pyscf_driver())
+
+def test_creom23_a2_singlets_h2o_native():
+    _run_and_check_a2_singlets(_native_driver())
+
+def test_creom23_a1_triplets_h2o():
+    _run_and_check_a1_triplets(_pyscf_driver())
+
+def test_creom23_a1_triplets_h2o_native():
+    _run_and_check_a1_triplets(_native_driver())
+
+def test_creom23_a2_triplets_h2o():
+    _run_and_check_a2_triplets(_pyscf_driver())
+
+def test_creom23_a2_triplets_h2o_native():
+    _run_and_check_a2_triplets(_native_driver())
+
 if __name__ == "__main__":
     test_creom23_a1_singlets_h2o()
+    test_creom23_a1_singlets_h2o_native()
     test_creom23_a2_singlets_h2o()
+    test_creom23_a2_singlets_h2o_native()
     test_creom23_a1_triplets_h2o()
+    test_creom23_a1_triplets_h2o_native()
     test_creom23_a2_triplets_h2o()
+    test_creom23_a2_triplets_h2o_native()

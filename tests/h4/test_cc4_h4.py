@@ -1,6 +1,18 @@
 import numpy as np
 from pyscf import gto, scf
-from ccpy import Driver
+from ccpy import Driver, Molecule, RHF
+
+def _run_and_check(driver):
+        driver.system.print_info()
+
+        driver.run_cc(method="cc4")
+
+        print(f"CC4 Correlation Energy: {driver.correlation_energy}")
+        print("CCSDTQ Correlation Energy: -0.064295914558") 
+        #
+        # Check the results
+        #
+        assert np.allclose(driver.correlation_energy, -0.06412230, atol=1.0e-07)
 
 def test_cc4_h4():
 
@@ -15,16 +27,18 @@ def test_cc4_h4():
         mf.kernel()
 
         driver = Driver.from_pyscf(mf, nfrozen=0)
-        driver.system.print_info()
+        _run_and_check(driver)
 
-        driver.run_cc(method="cc4")
-
-        print(f"CC4 Correlation Energy: {driver.correlation_energy}")
-        print("CCSDTQ Correlation Energy: -0.064295914558") 
-        #
-        # Check the results
-        #
-        assert np.allclose(driver.correlation_energy, -0.06412230, atol=1.0e-07)
+def test_cc4_h4_native():
+        # native ccpy SCF + tight Cholesky integrals
+        mol = Molecule("H -1.0 -1.0 0.0; H -1.0 1.0 0.0; H 1.0 -1.0 0.0; H 1.0 1.0 0.0", "dz", unit="bohr",
+                       charge=0, multiplicity=1, symmetry=True, cartesian=False,
+                       cholesky_tei=True, cholesky_tol=1.0e-12)
+        mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+        mf.kernel()
+        driver = Driver.from_scf(mf, nfrozen=0)
+        _run_and_check(driver)
 
 if __name__ == "__main__":
         test_cc4_h4()
+        test_cc4_h4_native()

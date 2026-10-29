@@ -1,6 +1,7 @@
 project(
   'ccpy',
   'c',
+  'cpp',
   'fortran',
   version: '0.0.5',
   license: 'GPL-3',
@@ -8,6 +9,7 @@ project(
   default_options: [
     'fortran_std=legacy',
     'c_std=c17',
+    'cpp_std=c++20',
     'blas=openblas',
     'lapack=openblas'
   ],

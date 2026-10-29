@@ -32,7 +32,6 @@ from ccpy.utilities.printing import (
                 print_dip_amplitudes, dipeomcc_calculation_summary,
 )
 from ccpy.utilities.utilities import convert_excitations_c_to_f
-from ccpy.interfaces.pyscf_tools import load_pyscf_integrals, load_pyscf_uhf_integrals
 from ccpy.interfaces.gamess_tools import load_gamess_integrals
 from ccpy.interfaces.fcidump_tools import load_fcidump_integrals
 
@@ -40,7 +39,27 @@ from ccpy.interfaces.fcidump_tools import load_fcidump_integrals
 class Driver:
 
     @classmethod
+    def from_scf(cls, meanfield, nfrozen=0, ndelete=0, normal_ordered=True, sorted=True, use_cholesky=False):
+        """Build the driver from a native density-fitted ccpy.scf RHF, ROHF, or UHF object.
+        With use_cholesky=True the DF tensor is used directly by the *_chol methods."""
+        from ccpy.scf.uhf import UHF
+        from ccpy.interfaces.scf_tools import load_scf_integrals, load_scf_uhf_integrals
+        if isinstance(meanfield, UHF):
+            if use_cholesky:
+                print("   Cholesky-based CC not currently supported for UHF references!")
+            driver = cls(*load_scf_uhf_integrals(meanfield, nfrozen, ndelete, normal_ordered=normal_ordered, sorted=sorted))
+            # alpha and beta orbitals differ, so the closed-shell shortcuts do not apply
+            driver.options["RHF_symmetry"] = False
+        else:
+            driver = cls(*load_scf_integrals(meanfield, nfrozen, ndelete, use_cholesky=use_cholesky, normal_ordered=normal_ordered, sorted=sorted))
+        # the SCF object is needed for orbital relaxation in analytic gradients
+        driver.scf = meanfield
+        return driver
+
+    @classmethod
     def from_pyscf(cls, meanfield, nfrozen, ndelete=0, normal_ordered=True, dump_integrals=False, sorted=True, use_cholesky=False, cholesky_tol=1.0e-09, cmax=10, uhf=False):
+        # PySCF is optional; it is only needed for this entry point
+        from ccpy.interfaces.pyscf_tools import load_pyscf_integrals, load_pyscf_uhf_integrals
         if uhf:
             if use_cholesky:
                 print("   Cholesky-based CC not currently supported for UHF references!")
@@ -2360,6 +2379,18 @@ class Driver:
                                            self.system,
                                            t4_excitations,
                                            self.options["RHF_symmetry"])
+
+    def run_gradient(self, method="ccsd", zvector_tol=1.0e-10):
+        """Analytic nuclear gradient (natoms x 3, Eh/bohr) of the ground state, stored in
+        self.gradient. Requires a driver from Driver.from_scf with an RHF reference and the
+        converged CC and left-CC amplitudes. Density fitting is used when the Molecule uses
+        an auxiliary basis; with Molecule(cholesky_tei=True) the four-center derivative
+        integrals are used instead."""
+        if method.lower() != "ccsd":
+            raise NotImplementedError(f"Analytic gradients are not available for {method}.")
+        from ccpy.gradients.ccsd_gradient import ccsd_gradient
+        self.gradient = ccsd_gradient(self, zvector_tol=zvector_tol)
+        return self.gradient
 
     def run_rdm1(self, state_index=[0]):
         from ccpy.density.rdm1 import calc_rdm1

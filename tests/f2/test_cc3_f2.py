@@ -4,10 +4,29 @@ is used with Cartesian components for the d orbitals.
 Reference: Chem. Phys. Lett. 344, 165 (2001)."""
 
 import numpy as np
-from pyscf import scf, gto
 from ccpy import Driver
 
+def _run_and_check(driver):
+    driver.system.print_info()
+
+    driver.options["RHF_symmetry"] = True
+    #driver.options["diis_out_of_core"] = True
+    driver.run_cc(method="cc3")
+
+    assert np.allclose(driver.correlation_energy, -0.63843220, atol=1.0e-07)
+
 def test_cc3_f2():
+    # native ccpy SCF + tight Cholesky integrals
+    from ccpy import Molecule, RHF
+    mol = Molecule("F 0.0 0.0 -2.66816; F 0.0 0.0 2.66816", "cc-pvdz", unit="bohr", charge=0, multiplicity=1,
+                   symmetry=True, cartesian=True, cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=2)
+    _run_and_check(driver)
+
+def test_cc3_f2_pyscf():
+    from pyscf import scf, gto
     geometry = [["F", (0.0, 0.0, -2.66816)], ["F", (0.0, 0.0, 2.66816)]]
     mol = gto.M(
         atom=geometry,
@@ -22,14 +41,9 @@ def test_cc3_f2():
     mf.kernel()
 
     driver = Driver.from_pyscf(mf, nfrozen=2)
-    driver.system.print_info()
-
-    driver.options["RHF_symmetry"] = True
-    #driver.options["diis_out_of_core"] = True
-    driver.run_cc(method="cc3")
-
-    assert np.allclose(driver.correlation_energy, -0.63843220, atol=1.0e-07)
+    _run_and_check(driver)
 
 
 if __name__ == "__main__":
     test_cc3_f2()
+    test_cc3_f2_pyscf()

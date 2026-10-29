@@ -6,3 +6,7 @@ option('use-g77-abi', type: 'boolean', value: false,
         description: 'If set to true, forces using g77 compatibility wrappers ' +
                      'for LAPACK functions. The default is to use gfortran ' +
                      'ABI for all LAPACK libraries except MKL.')
+option('libint2_prefix', type: 'string', value: '',
+        description: 'Install prefix of libint2 (>= 2.8, built with derivative integrals ' +
+                     'for gradients). By default it is searched for in $LIBINT2_ROOT, ' +
+                     '$CONDA_PREFIX, the Python prefix, Homebrew and /usr.')

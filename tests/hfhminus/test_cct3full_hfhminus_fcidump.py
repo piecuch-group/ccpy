@@ -7,16 +7,11 @@ Reference: J. Chem. Theory Comput. 8, 4968 (2012)
 from pathlib import Path
 import numpy as np
 from ccpy import Driver, get_active_triples_pspace
+from ccpy import Molecule, ROHF
 
 TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
-def test_cct3_hfhminus():
-    driver = Driver.from_fcidump(
-        fcidump=TEST_DATA_DIR + "/hfhminus-triplet/hfhminus-triplet.FCIDUMP",
-        nfrozen=1,
-        charge=-1,
-        rohf_canonicalization="Roothaan",
-    )
+def _run_and_check(driver):
     driver.system.print_info()
     driver.system.set_active_space(nact_unoccupied=2, nact_occupied=2)
     t3_excitations = get_active_triples_pspace(driver.system, target_irrep="A")
@@ -57,5 +52,25 @@ def test_cct3_hfhminus():
         atol=1.0e-07
     )
 
+def test_cct3_hfhminus():
+    driver = Driver.from_fcidump(
+        fcidump=TEST_DATA_DIR + "/hfhminus-triplet/hfhminus-triplet.FCIDUMP",
+        nfrozen=1,
+        charge=-1,
+        rohf_canonicalization="Roothaan",
+    )
+    _run_and_check(driver)
+
+def test_cct3_hfhminus_native():
+    # native ccpy SCF + tight Cholesky AO integrals (no PySCF/GAMESS input)
+    mol = Molecule("F 0.0 0.0 0.0; H 0.0 0.0 -3.7794519754; H 0.0 0.0 3.7794519754", "6-31g**",
+                   unit="bohr", charge=-1, multiplicity=3, symmetry=False, cartesian=False,
+                   cholesky_tei=True, cholesky_tol=1.0e-12)
+    mf = ROHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf.kernel()
+    driver = Driver.from_scf(mf, nfrozen=1)
+    _run_and_check(driver)
+
 if __name__ == "__main__":
     test_cct3_hfhminus()
+    test_cct3_hfhminus_native()
