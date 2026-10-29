@@ -41,7 +41,7 @@ jobs:
 
       - name: Install libint2
         run: |
-          conda install --yes --override-channels -c conda-forge libint
+          conda install --yes --override-channels -c conda-forge libint eigen boost-cpp
 
       - name: Install python dependencies
         run: |
