@@ -1,5 +1,6 @@
 """EOMCCSDt computation for the open-shell CH molcule."""
 
+import pytest
 from pathlib import Path
 import numpy as np
 from ccpy import Driver, get_active_triples_pspace
@@ -59,7 +60,7 @@ def test_eomcct3_ch_native():
     mol = Molecule("C 0.0 0.0 0.0; H 0.0 0.0 2.1160902167", "aug-cc-pvdz", unit="bohr",
                    charge=0, multiplicity=2, symmetry=False, cartesian=False,
                    cholesky_tei=True, cholesky_tol=1.0e-12)
-    mf = ROHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf = ROHF(mol, canonicalization="gamess", verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
     mf.kernel()
     driver = Driver.from_scf(mf, nfrozen=1)
     _run_and_check(driver)

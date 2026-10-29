@@ -1,6 +1,12 @@
+"""Symmetry-adapted linear combinations of AOs and blocked diagonalization by irrep.
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
+"""
+
 import numpy as np
 
-from ccpy.integrals.utils import block_eigh
+from ccpy.integrals.linalg import block_eigh
 from .sym_utils import CHARACTER_TABLE, COTTON_LABELS, SYMMETRY_OPS, local_sign
 
 

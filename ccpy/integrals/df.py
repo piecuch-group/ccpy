@@ -1,5 +1,5 @@
 """Density fitting (or Cholesky) factorization of the two-electron integrals and the
-J/K builder used by the SCF solvers (ported from forte2/jkbuilder/jkbuilder.py).
+Coulomb/exchange builder used by the SCF solvers.
 
 The factorization is
 
@@ -9,28 +9,22 @@ where M_{PQ} = (P|Q) is the Coulomb metric of the auxiliary basis. In the MO bas
 B tensor plays exactly the role of the Cholesky vectors used by the ``*_chol`` methods
 of ccpy, so ``mo_cholesky_vectors(C)`` can be handed straight to
 ``getCholeskyHamiltonian``.
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
 """
 
 import numpy as np
 
 from ccpy.integrals import integrals
-from ccpy.integrals.utils import (
-    logger,
-    invsqrt_matrix,
-    cholesky_metric_inverse_sqrt,
-    cholesky_wrapper,
-)
+from ccpy.integrals.linalg import invsqrt_matrix, cholesky_metric_inverse_sqrt, pivoted_cholesky
 
 
 class DensityFitting:
-    """Lazily built B tensor of a ``Molecule`` plus J/K and MO-transformation helpers.
+    """B tensor of a Molecule (built on first use), plus J/K builds and MO transformations.
 
-    Attributes
-    ----------
-    B_Pmn : NDArray
-        B tensor, shape (naux, nbf, nbf).
-    Mm12 : NDArray
-        The metric inverse square root M^{-1/2} (DF only), shape (naux, naux).
+    B_Pmn : the B tensor, shape (naux, nbf, nbf)
+    Mm12 : the metric inverse square root M^{-1/2} (density fitting only), shape (naux, naux)
     """
 
     def __init__(self, molecule):
@@ -61,17 +55,14 @@ class DensityFitting:
         mol = self.molecule
         nbf, naux = mol.nbf, mol.naux
         memory_gb = 8 * (naux**2 + 2 * naux * nbf**2) / 1024**3
-        logger.log_info1(
-            f"Density fitting: {nbf} orbital / {naux} auxiliary functions "
-            f"({memory_gb:.2f} GB for the B tensor)"
-        )
+        if mol.verbose:
+            print(f"   Density fitting: {nbf} orbital / {naux} auxiliary functions "
+                  f"({memory_gb:.2f} GB for the B tensor)")
         M = integrals.coulomb_2c(mol)
-        if mol.df_ortho_rtol is not None:
-            X, _, info = invsqrt_matrix(M, rtol=mol.df_ortho_rtol)
-            if info["n_discarded"] > 0:
-                logger.log_info1(
-                    f"Removed {info['n_discarded']} near-linearly-dependent auxiliary functions."
-                )
+        if mol.df_metric_tol is not None:
+            X, _, info = invsqrt_matrix(M, rtol=mol.df_metric_tol)
+            if info["n_discarded"] > 0 and mol.verbose:
+                print(f"   Removed {info['n_discarded']} near-linearly-dependent auxiliary functions.")
         else:
             X = cholesky_metric_inverse_sqrt(M)
         self.Mm12 = X
@@ -82,19 +73,17 @@ class DensityFitting:
     def _build_B_cholesky(self):
         mol = self.molecule
         nbf = mol.nbf
-        logger.log_info1(
-            f"Cholesky-decomposing the AO ERIs (tol = {mol.cholesky_tol}); "
-            f"temporary memory {8 * nbf**4 / 1024**3:.2f} GB"
-        )
+        if mol.verbose:
+            print(f"   Cholesky-decomposing the AO ERIs (tol = {mol.cholesky_tol}); "
+                  f"temporary memory {8 * nbf**4 / 1024**3:.2f} GB")
         eri = integrals.coulomb_4c(mol).reshape((nbf**2,) * 2)
-        B = cholesky_wrapper(eri, tol=mol.cholesky_tol).reshape((-1, nbf, nbf))
+        B = pivoted_cholesky(eri, tol=mol.cholesky_tol).reshape((-1, nbf, nbf))
         mol.naux = B.shape[0]
-        logger.log_info1(f"Number of Cholesky vectors: {mol.naux}")
+        if mol.verbose:
+            print(f"   Number of Cholesky vectors: {mol.naux}")
         return B
 
-    # ------------------------------------------------------------------ #
     # Coulomb and exchange
-    # ------------------------------------------------------------------ #
     def build_J(self, D):
         """Coulomb matrices J[D]_{mn} = (mn|rs) D_{sr} for each density in the list ``D``."""
         B = self.B_Pmn
@@ -113,9 +102,7 @@ class DensityFitting:
         D = [Ci @ Ci.T for Ci in C]
         return self.build_J(D), self.build_K(C)
 
-    # ------------------------------------------------------------------ #
     # MO-basis tensors
-    # ------------------------------------------------------------------ #
     def mo_cholesky_vectors(self, C1, C2=None):
         """B^P_{pq} = \\sum_{mn} C1_{mp} B^P_{mn} C2_{nq}, shape (naux, n1, n2)."""
         if C2 is None:
@@ -132,9 +119,7 @@ class DensityFitting:
         B34 = B12 if (C3 is C1 and C4 is C2) else self.mo_cholesky_vectors(C3, C4)
         return np.tensordot(B12, B34, axes=([0], [0]))
 
-    # ------------------------------------------------------------------ #
     # Quantities needed by DF analytic gradients
-    # ------------------------------------------------------------------ #
     def _check_df_metric(self):
         if self.molecule.cholesky_tei:
             raise NotImplementedError("Analytic gradients require density fitting.")

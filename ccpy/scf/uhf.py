@@ -1,7 +1,12 @@
+"""Unrestricted Hartree-Fock.
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
+"""
+
 import numpy as np
 
 from ccpy.integrals.symmetry.sym_utils import COTTON_LABELS
-from ccpy.integrals.utils import logger
 from ccpy.scf.scf_base import SCFBase
 from ccpy.scf.scf_utils import guess_mix, smallest_gap_same_irrep
 
@@ -38,7 +43,7 @@ class UHF(SCFBase):
                 messages.add(message)
             mixed.append(C[spin] if pair is None else guess_mix(C[spin], *pair)[spin])
         for message in messages:
-            logger.log_warning(message)
+            print(f"   WARNING: {message}")
         return mixed
 
     def _build_fock(self, H, df, S):

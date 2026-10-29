@@ -1,3 +1,9 @@
+"""SCF helpers: the SAP initial guess and the UHF guess mixing.
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
+"""
+
 import numpy as np
 
 from ccpy.integrals import integrals
@@ -27,7 +33,7 @@ def sap_guess_hamiltonian(system, H):
     # Convert the SAP potential coefficients to a normalized charge-density basis.
     scaled_sap_basis = build_sap_potential_basis(
         "sap_helfem_large",
-        system.geom_helper,
+        system,
     )
 
     # generate the SAP integrals (P|mn)
@@ -108,7 +114,7 @@ def guess_mix(C, occ_idx, vir_idx, mixing_parameter=np.pi / 4):
 
 
 def givens_rotation(A, c, s, i, j, column=True):
-    """Apply a (real) Givens rotation to columns (or rows) i and j of A, as in forte2."""
+    """Apply a (real) Givens rotation to columns (or rows) i and j of A."""
     A = A.copy()
     if column:
         ai, aj = A[:, i].copy(), A[:, j].copy()

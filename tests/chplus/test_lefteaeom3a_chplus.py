@@ -11,7 +11,7 @@ TEST_DATA_DIR = str(Path(__file__).parents[1].absolute() / "data")
 
 # Same system as chplus.log: CH+ at R = 2.13713 bohr, Olsen basis (cartesian d)
 CHPLUS_GEOMETRY = "C 0.0 0.0 0.0; H 0.0 0.0 2.13713"
-CHPLUS_BASIS = str(Path(__file__).parent.absolute() / "olsen_chplus.gbs")
+CHPLUS_BASIS = str(Path(__file__).parents[1].absolute() / "data" / "chplus" / "olsen_chplus.gbs")
 
 
 def _run_and_check(driver):

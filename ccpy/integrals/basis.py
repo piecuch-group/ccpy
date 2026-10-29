@@ -1,3 +1,10 @@
+"""Basis sets: loading (bundled JSON files, Gaussian94 .gbs files, Basis Set Exchange,
+AutoAux generation) and assembly of libint2 Basis objects for a Molecule.
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
+"""
+
 import json
 import itertools
 from pathlib import Path
@@ -8,7 +15,6 @@ import numpy as np
 
 from ccpy.integrals._libint import Basis, Shell
 from ccpy.integrals.atom_data import ATOM_SYMBOL_TO_Z
-from ccpy.integrals.utils import logger
 from ccpy.integrals.autoaux import autoaux_electron_shells
 
 BASIS_DATA_DIR = Path(__file__).parent / "basis_data"
@@ -108,13 +114,8 @@ def build_basis_from_dict(basis_data):
     return basis
 
 
-def build_basis(
-    basis_assignment: str | dict,
-    geometry,
-    embed_normalization_into_coefficients: bool = True,
-    decontract: bool = False,
-    cartesian: bool = False,
-) -> Basis:
+def build_basis(basis_assignment, geometry, embed_normalization_into_coefficients=True,
+                decontract=False, cartesian=False):
     """
     Assemble the basis set from JSON data or Basis Set Exchange, depending on availability.
 
@@ -143,7 +144,7 @@ def build_basis(
             }
 
         where ``"default"`` is used for atoms not explicitly listed.
-    geometry : ccpy.integrals.molecule.GeometryHelper
+    geometry : ccpy.integrals.Molecule (only atoms and natoms are used)
         The molecular geometry.
     embed_normalization_into_coefficients : bool, optional, default=True
         Whether to embed normalization factors into the contraction coefficients.
@@ -231,7 +232,7 @@ def build_basis(
     return basis
 
 
-def decontract_basis(basis: Basis, embed_normalization_into_coefficients: bool = True):
+def decontract_basis(basis, embed_normalization_into_coefficients=True):
     """
     Decontract a Basis object and return a new Basis object.
 
@@ -278,7 +279,7 @@ def decontract_basis(basis: Basis, embed_normalization_into_coefficients: bool =
     return basis_decon
 
 
-def build_sap_potential_basis(basis_name: str, geometry) -> Basis:
+def build_sap_potential_basis(basis_name, geometry):
     r"""Build a Gaussian charge-density representation of an SAP potential.
 
     SAP basis coefficients use the convention of Lehtola, where each primitive
@@ -299,7 +300,7 @@ def build_sap_potential_basis(basis_name: str, geometry) -> Basis:
     ----------
     basis_name : str
         Name of an SAP basis available locally or from Basis Set Exchange.
-    geometry : GeometryHelper
+    geometry : ccpy.integrals.Molecule
         Molecular geometry on which to center the SAP functions.
 
     Returns
@@ -343,8 +344,11 @@ def _parse_custom_basis_assignment(geometry, basis_assignment):
     # explicit_basis contains all entries except "default"
     explicit_basis = basis_assignment.copy()
     default_basis = explicit_basis.pop("default", None)
-    atom_to_center = geometry.atom_to_center
-    atom_counts = geometry.atom_counts
+    # atom_to_center[Z] = indices of the atoms of element Z, in order
+    atom_to_center = {}
+    for i, (Z, _) in enumerate(geometry.atoms):
+        atom_to_center.setdefault(Z, []).append(i)
+    atom_counts = {Z: len(idx) for Z, idx in atom_to_center.items()}
 
     assigned_basis = {}
     for k, v in explicit_basis.items():
@@ -439,17 +443,11 @@ def _load_basis(basis_name, Z):
             res = bfile["elements"][str(Z)]["electron_shells"]
     elif basis_name.endswith("-autoaux"):
         orbital_basis_name = basis_name.removesuffix("-autoaux")
-        logger.log_info1(
-            f"Generating AutoAux basis for element Z={Z} from {orbital_basis_name}."
-        )
         res = autoaux_electron_shells(Z, _load_basis(orbital_basis_name, Z))
     else:
         assert (
             BSE_AVAILABLE
         ), f"Basis file {basis_name}.json not found locally, and basis_set_exchange is not available."
-        logger.log_info1(
-            f"Basis {basis_name} not found locally. Using Basis Set Exchange."
-        )
         try:
             bse_basis = bse.get_basis(basis_name, elements=Z)
         except KeyError:

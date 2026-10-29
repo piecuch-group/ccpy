@@ -1,4 +1,4 @@
-"""AO integrals computed with libint2 (ported from forte2/integrals/integrals.py).
+"""Python front end of the libint2 integral library (the _libint extension module).
 
 Every function takes a ``Molecule`` (or any object exposing ``basis``,
 ``auxiliary_basis``, ``atoms`` and ``natoms``) as its first argument. Basis-set
@@ -9,6 +9,9 @@ the auxiliary basis and m, n in the orbital basis.
 
 Derivative integrals are returned already contracted with a weight (density-like)
 matrix, as flat vectors of length 3 * natoms in atom-major Cartesian order (bohr).
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
 """
 
 import numpy as np
@@ -74,9 +77,7 @@ def _max_l(*bases):
     return max(b.max_l for b in bases)
 
 
-# --------------------------------------------------------------------------- #
 # Scalars
-# --------------------------------------------------------------------------- #
 def nuclear_repulsion(molecule):
     """Point-charge nuclear repulsion energy."""
     return ints.nuclear_repulsion(molecule.atoms)
@@ -96,9 +97,7 @@ def nuclear_repulsion_deriv(molecule):
     return gradient
 
 
-# --------------------------------------------------------------------------- #
 # One-electron integrals
-# --------------------------------------------------------------------------- #
 def overlap(molecule, basis1=None, basis2=None):
     r"""S_{mn} = <m|n>."""
     basis1, basis2 = _parse_basis_args_1e(molecule, basis1, basis2)
@@ -147,6 +146,7 @@ def emultipole3(molecule, basis1=None, basis2=None, origin=None):
     return ints.emultipole3(basis1, basis2, [0.0] * 3 if origin is None else list(origin))
 
 
+
 def opVop(molecule, basis1=None, basis2=None):
     r"""Small-component nuclear potential [p.Vp, (pxVp)_x, (pxVp)_y, (pxVp)_z]."""
     basis1, basis2 = _parse_basis_args_1e(molecule, basis1, basis2)
@@ -168,9 +168,7 @@ def erfc_nuclear(molecule, omega, basis1=None, basis2=None):
     return ints.erfc_nuclear(basis1, basis2, (omega, molecule.atoms))
 
 
-# --------------------------------------------------------------------------- #
 # One-electron derivative integrals (contracted with a weight matrix)
-# --------------------------------------------------------------------------- #
 def _check_weights(weights, shape, name):
     weights = np.ascontiguousarray(np.asarray(weights, dtype=float))
     if weights.shape != shape:
@@ -210,9 +208,7 @@ def hcore_deriv(molecule, weights, basis1=None, basis2=None):
     )
 
 
-# --------------------------------------------------------------------------- #
 # Two-electron integrals
-# --------------------------------------------------------------------------- #
 def coulomb_4c(molecule, basis1=None, basis2=None, basis3=None, basis4=None):
     r"""(mn|rs) in chemists' notation, shape (n1, n2, n3, n4). O(N^4) memory."""
     b1, b2, b3, b4 = _parse_basis_args_4c2e(molecule, basis1, basis2, basis3, basis4)
@@ -239,6 +235,7 @@ def coulomb_2c(molecule, basis1=None, basis2=None):
     b1, b2 = _parse_basis_args_2c2e(molecule, basis1, basis2)
     _check_am(_max_l(b1, b2), "Two-center Coulomb")
     return ints.coulomb_2c(b1, b2)
+
 
 
 def coulomb_3c_opVop(molecule, basis1=None, basis2=None, basis3=None):
@@ -272,9 +269,7 @@ def erfc_coulomb_2c(molecule, omega, basis1=None, basis2=None):
     return ints.erfc_coulomb_2c(b1, b2, omega)
 
 
-# --------------------------------------------------------------------------- #
 # Two-electron derivative integrals (contracted with weights)
-# --------------------------------------------------------------------------- #
 def coulomb_3c_deriv(molecule, W3, basis1=None, basis2=None, basis3=None):
     r"""G_{Ax} = \sum_{Pmn} W^P_{mn} d(P|mn)/dR_{Ax}, flat (3 natoms,)."""
     b1, b2, b3 = _parse_basis_args_3c2e(molecule, basis1, basis2, basis3)
@@ -317,9 +312,7 @@ def coulomb_2c_deriv(molecule, W2, basis1=None, basis2=None):
     return ints.coulomb_2c_deriv(b1, b2, W2, molecule.atoms)
 
 
-# --------------------------------------------------------------------------- #
 # Basis functions on a grid
-# --------------------------------------------------------------------------- #
 def basis_at_points(molecule, points, basis=None):
     """Values of the AO basis functions at ``points`` (npoints x 3, bohr)."""
     return ints.basis_at_points(molecule.basis if basis is None else basis, points)

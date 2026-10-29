@@ -1,3 +1,9 @@
+"""Restricted (closed-shell) Hartree-Fock.
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
+"""
+
 import numpy as np
 
 from ccpy.scf.scf_base import SCFBase

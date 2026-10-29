@@ -1,3 +1,9 @@
+"""Physical constants and element data (symbols, masses).
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
+"""
+
 BOHR_TO_ANGSTROM = 0.529177210903
 ANGSTROM_TO_BOHR = 1.0 / BOHR_TO_ANGSTROM
 DEBYE_TO_AU = 0.3934303

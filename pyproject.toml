@@ -37,6 +37,7 @@ dependencies = [
     "scipy",
     "cclib",
     "psutil",
+    "pysisyphus",
 ] # keep in sync with `min_numpy_version` in meson.build
 readme = "README.md"
 classifiers = [

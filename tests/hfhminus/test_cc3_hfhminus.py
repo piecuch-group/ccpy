@@ -4,6 +4,7 @@ using the 6-31g(1d,1p) basis set. Active space consists of (2,2).
 Reference: J. Chem. Theory Comput. 8, 4968 (2012)
 """
 
+import pytest
 from pathlib import Path
 import numpy as np
 from ccpy import Driver
@@ -35,7 +36,7 @@ def test_cc3_hfhminus_native():
     mol = Molecule("F 0.0 0.0 0.0; H 0.0 0.0 -3.7794519754; H 0.0 0.0 3.7794519754", "6-31g**",
                    unit="bohr", charge=-1, multiplicity=3, symmetry=True, cartesian=False,
                    cholesky_tei=True, cholesky_tol=1.0e-12)
-    mf = ROHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
+    mf = ROHF(mol, canonicalization="gamess", verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)
     mf.kernel()
     driver = Driver.from_scf(mf, nfrozen=1)
     _run_and_check(driver)

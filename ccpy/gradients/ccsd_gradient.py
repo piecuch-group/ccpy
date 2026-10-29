@@ -105,7 +105,8 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
                      title="Analytic Gradient", t0=None):
     """Nuclear gradient of E = V_nn + sum h D1 + 1/2 sum (pq|rs) D2 for unrelaxed densities
     of an energy that is invariant to rotations within the frozen core, within the correlated
-    occupied space, and within the virtual space (CCSD, CR-CC(2,3)A, ...): solves the orbital
+    occupied space, and within the virtual space (e.g. CCSD; NOT CR-CC(2,3), whose diagonal
+    triples denominators make it depend on those rotations): solves the orbital
     Z-vector (occupied-virtual and frozen-core/active), forms the relaxed and energy-weighted
     densities, and contracts them with the AO derivative integrals (density-fitted or
     four-center, following the Molecule).
@@ -144,17 +145,34 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
     F = h @ D1 + np.einsum("xtq,xpq->tp", R, Y, optimize=True)
     g = 2.0 * (F - F.T)  # dE/dkappa_tp for the rotation t <- p
 
+    # ---------------------------------------------------------------- #
+    # canonical-condition multipliers within the active occupied and the
+    # virtual spaces, z_pq = -g_pq / (eps_p - eps_q) for p > q. They vanish
+    # for CCSD (invariant to these rotations) but not for energies with
+    # diagonal (orbital-energy) denominators such as CR-CC(2,3)_A. Rotations
+    # within a degenerate pair leave such energies invariant, so g_pq = 0 there.
+    # ---------------------------------------------------------------- #
+    z_int = np.zeros((nmo, nmo))
+    degenerate_g = 0.0
+    for space in (act_occ, vir):
+        idx = np.arange(nmo)[space]
+        de = eps[idx, None] - eps[None, idx]
+        lower = np.tril(np.ones_like(de, dtype=bool), -1)
+        nondeg = lower & (np.abs(de) > 1.0e-8)
+        block = np.zeros_like(de)
+        block[nondeg] = -g[np.ix_(idx, idx)][nondeg] / de[nondeg]
+        z_int[np.ix_(idx, idx)] = block
+        degenerate_g = max(degenerate_g, np.abs(g[np.ix_(idx, idx)][lower & ~nondeg]).max(initial=0.0))
+
     if verbose:
-        # the CCSD energy is invariant to rotations within these spaces
-        redundant = max(
-            np.abs(g[act_occ, act_occ]).max(initial=0.0),
-            np.abs(g[vir, vir]).max(initial=0.0),
-            np.abs(g[core, core]).max(initial=0.0),
-        )
         print(f"\n   {title}")
         print("   " + "-" * len(title))
         print(f"   Two-electron integrals: {'density fitting' if use_df else 'four-center (conventional)'}")
-        print(f"   Orbital gradient in redundant blocks (should vanish): {redundant:.2e}")
+        print(f"   Orbital gradient within the frozen core (should vanish): {np.abs(g[core, core]).max(initial=0.0):.2e}")
+        print(f"   Occupied-occupied / virtual-virtual multipliers: |z| = {np.linalg.norm(z_int):.3e}")
+    if degenerate_g > 1.0e-6:
+        print(f"   WARNING: orbital gradient {degenerate_g:.2e} between degenerate orbitals is not zero; "
+              "the energy is not invariant within a degenerate subspace.")
 
     # ---------------------------------------------------------------- #
     # Z-vector: core / active-occupied, then occupied / virtual
@@ -168,9 +186,10 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
         return 2.0 * ints.J(Zs) - ints.K(Zs)
 
     rhs = -g[vir, occ].copy()
+    Ws = z_int.copy()
     if nfz > 0:
-        Ws = np.zeros((nmo, nmo))
         Ws[act_occ, core] = z_fc
+    if np.any(Ws):
         Ws += Ws.T
         rhs -= hf_response(Ws)[vir, occ]
 
@@ -195,6 +214,7 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
     Z = np.zeros((nmo, nmo))
     Z[vir, occ] = 0.5 * z_ov
     Z[act_occ, core] = 0.5 * z_fc
+    Z += 0.5 * z_int
     Z += Z.T
 
     # ---------------------------------------------------------------- #

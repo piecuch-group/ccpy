@@ -1,3 +1,9 @@
+"""Abelian point groups: operations, character tables, irrep labels and products.
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
+"""
+
 from numbers import Integral
 
 import numpy as np

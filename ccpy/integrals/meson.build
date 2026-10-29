@@ -63,21 +63,8 @@ libint2_dep = declare_dependency(
   link_args: ['-Wl,-rpath,' + libint2_libdir],
 )
 
-libint_sources = [
-  'src/api/libint_api.cc',
-  'src/api/ints_api.cc',
-  'src/integrals/basis.cc',
-  'src/integrals/nuclear_repulsion.cc',
-  'src/integrals/one_electron.cc',
-  'src/integrals/one_electron_deriv.cc',
-  'src/integrals/two_electron.cc',
-  'src/integrals/two_electron_deriv.cc',
-  'src/integrals/value_at_points.cc',
-]
-
 py3.extension_module('_libint',
-  libint_sources,
-  include_directories: include_directories('src'),
+  'libint_interface.cc',
   dependencies: [nanobind_dep, libint2_dep, py3_dep],
   cpp_args: ['-O3', '-fvisibility=hidden', '-Wno-unused-parameter', '-Wno-sign-compare'],
   override_options: ['cpp_std=c++20', 'b_ndebug=true'],
@@ -94,7 +81,7 @@ python_sources = [
   'df.py',
   'integrals.py',
   'molecule.py',
-  'utils.py',
+  'linalg.py',
 ]
 
 py3.install_sources(

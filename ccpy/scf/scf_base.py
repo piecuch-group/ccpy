@@ -1,10 +1,9 @@
-"""Common machinery of the density-fitted RHF/ROHF/UHF solvers.
+"""Common machinery of the RHF/ROHF/UHF solvers.
 
-The algorithm follows forte2 (forte2/scf/scf_base.py): SAP (or core-Hamiltonian)
-initial guess, Pulay DIIS on the FDS - SDF orbital gradient, optional level shifting,
-point-group blocking of the Fock diagonalization, and optional constraints on the
-irrep occupations. Two-electron contributions are built from the density-fitted (or
-Cholesky) B tensor of the ``Molecule``.
+SAP (or core-Hamiltonian) initial guess, Pulay DIIS on the FDS - SDF orbital gradient,
+optional level shifting, point-group blocking of the Fock diagonalization, and optional
+constraints on the irrep occupations. Two-electron contributions are built from the
+density-fitted (or Cholesky) B tensor of the Molecule.
 
 Usage mirrors PySCF, which ccpy users are used to:
 
@@ -12,6 +11,9 @@ Usage mirrors PySCF, which ccpy users are used to:
     mf = RHF(mol)
     mf.kernel()
     driver = Driver.from_scf(mf, nfrozen=1)
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
 """
 
 import time
@@ -21,7 +23,6 @@ import numpy as np
 
 from ccpy.integrals.molecule import Molecule
 from ccpy.integrals.symmetry.sym_utils import COTTON_LABELS, irrep_product
-from ccpy.integrals.utils import logger
 from ccpy.scf.occupations import OccupationConstraints, validate_occupation_options
 from ccpy.scf.scf_utils import sap_guess_hamiltonian
 
@@ -160,9 +161,7 @@ class SCFBase:
         self.converged = False
         self.e_tot = None
 
-    # ------------------------------------------------------------------ #
     # set-up
-    # ------------------------------------------------------------------ #
     def _validate_state(self):
         pass
 
@@ -195,9 +194,7 @@ class SCFBase:
             irreps = np.zeros(self.nmo, dtype=int)
         self._occupations.check_capacity(irreps)
 
-    # ------------------------------------------------------------------ #
     # helpers shared by all references
-    # ------------------------------------------------------------------ #
     def _occupy(self, eps, C, irreps):
         """Reorder each orbital set so that its occupied orbitals come first."""
         if self._occupations is None:
@@ -236,16 +233,13 @@ class SCFBase:
             return [(index < self.na).astype(float) + (index < self.nb)]
         return [(index < n).astype(float) for n in (self.na, self.nb)]
 
-    # ------------------------------------------------------------------ #
     # main loop
-    # ------------------------------------------------------------------ #
     def kernel(self):
         """Run the SCF iterations and return the total energy."""
         self.run()
         return self.e_tot
 
     def run(self):
-        logger.set_verbosity(self.verbose)
         t_start = time.perf_counter()
         self._set_occupation_constraints()
         self._current_level_shift = self.level_shift
@@ -332,7 +326,7 @@ class SCFBase:
             msg = f"{self.method} did not converge in {self.maxiter} iterations."
             if self.die_if_not_converged:
                 raise RuntimeError(msg)
-            logger.log_warning(msg)
+            print(f"   WARNING: {msg}")
 
         self._assign_orbital_symmetries()
         if self.verbose:
@@ -367,9 +361,7 @@ class SCFBase:
         if line.strip():
             print(line)
 
-    # ------------------------------------------------------------------ #
     # PySCF-like accessors used by ccpy's interfaces
-    # ------------------------------------------------------------------ #
     def energy_tot(self):
         return self.e_tot
 
@@ -385,7 +377,8 @@ class SCFBase:
 
 
 def to_ccpy_irrep(label, point_group):
-    """Convert a forte2/Cotton irrep label to the convention of ccpy.utilities.symmetry."""
+    """Convert a Cotton-order irrep label (e.g. "b1u", "a'") to the convention of
+    ccpy.utilities.symmetry ("B1U", "A'")."""
     if point_group.upper() == "CS":
         return {"a'": "A'", "a''": 'A"'}[label]
     if point_group.upper() == "CI":

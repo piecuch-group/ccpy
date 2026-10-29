@@ -1,8 +1,11 @@
 """Density-fitted analytic RHF/UHF nuclear gradients built on the libint2 derivative
-integrals (ported from forte2/scf/hf_grad.py and forte2/gradients/utils.py).
+integrals,
 
     E_x = V_nn^x + D_{mn} h_{mn}^x - W_{mn} S_{mn}^x
           + W^P_{mn} (P|mn)^x + W_{PQ} (P|Q)^x
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
 """
 
 import numpy as np

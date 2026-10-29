@@ -27,6 +27,9 @@ dependencies:
   - setuptools
   - ipython
   - pyscf
+  # geometry and transition-state optimization (ccpy.optimize)
+  - pip:
+    - pysisyphus
   # Testing and lint
   - flake8
   - pytest

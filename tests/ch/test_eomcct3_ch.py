@@ -1,5 +1,6 @@
 """EOMCCSDt computation for the open-shell CH molcule."""
 
+import pytest
 from pathlib import Path
 import numpy as np
 from ccpy import Driver, get_active_triples_pspace
@@ -72,7 +73,7 @@ def test_eomcct3_ch_native():
                    charge=0, multiplicity=2, symmetry=True, cartesian=False,
                    cholesky_tei=True, cholesky_tol=1.0e-12)
     # GAMESS singly occupies the B2 component of the degenerate pi pair
-    mf = ROHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10, target_symmetry="B2")
+    mf = ROHF(mol, canonicalization="gamess", verbose=0, e_tol=1.0e-12, d_tol=1.0e-10, target_symmetry="B2")
     mf.kernel()
     driver = Driver.from_scf(mf, nfrozen=1)
     _run_and_check(driver)

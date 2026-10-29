@@ -44,7 +44,7 @@ def _native_driver():
     # native ccpy SCF + tight Cholesky integrals
     r = 1.0
     coords = h10_geometry(r)
-    mol = Molecule("; ".join(f"H {x} {y} {z}" for x, y, z in coords), "cc-pvdz", unit="angstrom",
+    mol = Molecule("; ".join(f"H {x:.12f} {y:.12f} {z:.12f}" for x, y, z in coords), "cc-pvdz", unit="angstrom",
                    charge=0, multiplicity=1, symmetry=True, cartesian=False,
                    cholesky_tei=True, cholesky_tol=1.0e-12)
     mf = RHF(mol, verbose=0, e_tol=1.0e-12, d_tol=1.0e-10)

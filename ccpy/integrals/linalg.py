@@ -1,39 +1,14 @@
-"""Small numerical and printing helpers shared by the libint2 integral interface and the
-SCF code. The matrix functions are taken from forte2 (forte2/helpers/matrix_functions.py)."""
+"""Linear-algebra helpers (orthogonalization, metric inverse square roots, blocked
+eigensolver, pivoted Cholesky) used by the integral and SCF code.
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
+"""
 
 import numpy as np
 import scipy as sp
 
 MACHEPS = 1e-14
-
-
-class _Logger:
-    """Minimal stand-in for forte2's logger. ccpy reports through plain print statements;
-    the verbosity can be lowered with ``logger.set_verbosity(0)``."""
-
-    def __init__(self):
-        self.verbosity = 1
-
-    def set_verbosity(self, level):
-        self.verbosity = level
-
-    def log_info1(self, message):
-        if self.verbosity >= 1:
-            print(f"   {message}")
-
-    def log_info2(self, message):
-        if self.verbosity >= 2:
-            print(f"   {message}")
-
-    def log_debug(self, message):
-        if self.verbosity >= 3:
-            print(f"   {message}")
-
-    def log_warning(self, message):
-        print(f"   WARNING: {message}")
-
-
-logger = _Logger()
 
 
 def _eigh_metric_kernel(S, rtol=1e-7):
@@ -97,7 +72,7 @@ def block_eigh(A, block_idx, atol=1e-8, rtol=1e-8, sort=False):
     return eigvals[order], eigvecs[:, order], block_idx[order]
 
 
-def cholesky_wrapper(M, tol):
+def pivoted_cholesky(M, tol):
     """Pivoted (incomplete) Cholesky decomposition M ~ L^T L of a positive semi-definite
     matrix. Returns the Cholesky vectors as rows, shape (nvec, n). tol < 0 means complete."""
     n = M.shape[0]
@@ -126,6 +101,6 @@ def cholesky_metric_inverse_sqrt(M):
     except sp.linalg.LinAlgError:
         raise ValueError(
             "Density-fitting Coulomb metric (P|Q) is not positive definite. "
-            "Set df_ortho_rtol to a small positive value to orthogonalize it."
+            "Set Molecule(df_metric_tol=...) to a small positive value to orthogonalize it."
         )
     return sp.linalg.solve_triangular(L, np.eye(M.shape[0]), lower=True)

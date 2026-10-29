@@ -1,3 +1,10 @@
+"""AutoAux auxiliary basis sets (Stoychev, Auer, Neese, JCTC 13, 554 (2017)) generated
+from an orbital basis.
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
+"""
+
 import itertools
 import math
 

@@ -1,9 +1,13 @@
-from dataclasses import dataclass
+"""Detection of the largest Abelian point group and of the principal-axis frame.
+
+Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
+THIRD_PARTY_NOTICES.md.
+"""
+
 import itertools
 import numpy as np
 import scipy as sp
 
-from ccpy.integrals.utils import logger
 from .sym_utils import rotation_mat, equivalent_under_operation, get_symmetry_ops
 
 
@@ -11,7 +15,6 @@ def _same_axis(axis1, axis2):
     return np.linalg.norm(np.cross(axis1, axis2)) < 1e-2  # 0.01 rad
 
 
-@dataclass
 class PGSymmetryDetector:
     """
     Class to detect Abelian point group symmetry of a molecule.
@@ -62,11 +65,13 @@ class PGSymmetryDetector:
     I groups are currently treated as C1.
     """
 
-    inertia_tensor: np.ndarray
-    com_atomic_positions: np.ndarray
-    charges: np.ndarray
-    masses: np.ndarray
-    tol: float = 1e-4
+    def __init__(self, inertia_tensor, com_atomic_positions, charges, masses, tol=1.0e-04, verbose=True):
+        self.inertia_tensor = inertia_tensor
+        self.com_atomic_positions = com_atomic_positions
+        self.charges = charges
+        self.masses = masses
+        self.tol = tol
+        self.verbose = verbose
 
     def run(self):
         self.natoms = self.com_atomic_positions.shape[0]
@@ -80,7 +85,8 @@ class PGSymmetryDetector:
 
         # compute principal moments of inertia. These are sorted in ascending order
         self.moi, self.moi_vectors = np.linalg.eigh(self.inertia_tensor)
-        logger.log_info1(f"Principal moments of inertia: {self.moi}")
+        if self.verbose:
+            print(f"   Principal moments of inertia: {self.moi}")
 
         # Symmetry within tol puts every atom less than tol from an exactly symmetric
         # geometry, which changes each principal moment by at most 2 tol sum(m |r|),
@@ -211,13 +217,6 @@ class PGSymmetryDetector:
                 -x[1],
             ),  # sort axes by Cn order first, then by descending MOI
         )
-        logger.log_debug("Sorted Axis Order:")
-        for ax in sorted_axis:
-            n, I, idx = ax
-            logger.log_debug(
-                f"Axis: {self.moi_vectors[:, idx]}   Cn: {n}   MOI: {I}   Axis Assignment: {idx}"
-            )
-
         prinrot = self.moi_vectors[:, [n for _, _, n in sorted_axis]].T
         return prinrot
 
@@ -284,8 +283,8 @@ class PGSymmetryDetector:
 
         nc2 = len(unique_c2_axes)
         if nc2 not in [3, 9, 15]:
-            logger.log_warning(
-                f"_find_principal_rotation_axes_sph_top: Found {nc2} unique C2 axes, which is unexpected. "
+            print(
+                f"   WARNING: Found {nc2} unique C2 axes, which is unexpected. "
                 "Using the principal axes of inertia. Check geometry, or relax tolerance."
             )
             return None, force_c1
@@ -295,8 +294,8 @@ class PGSymmetryDetector:
         elif nc2 == 9:
             unique_c4_axes = self._find_c4_axes_perp_to_square()
             if len(unique_c4_axes) != 3:
-                logger.log_warning(
-                    f"_find_principal_rotation_axes_sph_top: Octahedral symmetry detected,"
+                print(
+                    "   WARNING: Octahedral symmetry detected,"
                     f" but found {len(unique_c4_axes)} unique C4 axes, which is unexpected."
                     " Using the principal axes of inertia. Check geometry, or relax tolerance."
                 )
@@ -304,8 +303,8 @@ class PGSymmetryDetector:
             else:
                 prinrot = np.array(unique_c4_axes)
         elif nc2 == 15:
-            logger.log_warning(
-                "_find_principal_rotation_axes_sph_top: Icosahedral point group detected, but currently treated as C1."
+            print(
+                "   WARNING: Icosahedral point group detected, but currently treated as C1."
             )
             prinrot = np.eye(3)
             force_c1 = True
