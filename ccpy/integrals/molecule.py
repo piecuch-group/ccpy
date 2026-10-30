@@ -35,6 +35,9 @@ class Molecule:
     cholesky_tei : bool -> factorize the four-index AO integrals by a pivoted Cholesky
                            decomposition instead of density fitting
     cholesky_tol : float -> threshold of the Cholesky decomposition
+    cholesky_pivots : list of (r, s) -> use these Cholesky pivot function pairs instead of
+                      selecting them (e.g. mol.df.pivots of a reference geometry, so that
+                      finite differences see a smooth energy); kept by with_geometry
     overlap_tol : float -> AO combinations with overlap eigenvalues below
                            overlap_tol * max eigenvalue are removed as linearly dependent
     df_metric_tol : float -> if given, the DF metric is orthogonalized with this relative
@@ -55,6 +58,7 @@ class Molecule:
         cartesian=False,
         cholesky_tei=False,
         cholesky_tol=1.0e-06,
+        cholesky_pivots=None,
         overlap_tol=1.0e-08,
         df_metric_tol=None,
         verbose=True,
@@ -78,6 +82,7 @@ class Molecule:
         self.cartesian = cartesian
         self.cholesky_tei = cholesky_tei
         self.cholesky_tol = cholesky_tol
+        self.cholesky_pivots = cholesky_pivots
         self.overlap_tol = overlap_tol
         self.df_metric_tol = df_metric_tol
         self.verbose = verbose

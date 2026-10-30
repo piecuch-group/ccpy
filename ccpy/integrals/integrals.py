@@ -216,6 +216,18 @@ def coulomb_4c(molecule, basis1=None, basis2=None, basis3=None, basis4=None):
     return ints.coulomb_4c(b1, b2, b3, b4)
 
 
+def coulomb_4c_diagonal(molecule):
+    r"""(mn|mn) for all orbital-basis function pairs, shape (nbf, nbf)."""
+    _check_am(molecule.basis.max_l, "Four-center Coulomb")
+    return ints.coulomb_4c_diagonal(molecule.basis)
+
+
+def coulomb_4c_shell_column(molecule, shell3, shell4):
+    r"""(mn|rs) for all m, n and the functions r, s of two shells, shape (nbf, nbf, n3, n4)."""
+    _check_am(molecule.basis.max_l, "Four-center Coulomb")
+    return ints.coulomb_4c_shell_column(molecule.basis, shell3, shell4)
+
+
 def coulomb_3c(molecule, basis1=None, basis2=None, basis3=None):
     r"""(P|mn), shape (naux, n2, n3)."""
     b1, b2, b3 = _parse_basis_args_3c2e(molecule, basis1, basis2, basis3)
@@ -280,6 +292,26 @@ def coulomb_3c_deriv(molecule, W3, basis1=None, basis2=None, basis3=None):
             f"Expected W3 of shape {(b1.size, b2.size, b3.size)}, got {W3.shape}."
         )
     return ints.coulomb_3c_deriv(b1, b2, b3, W3, molecule.atoms)
+
+
+def cholesky_3c_deriv(molecule, W3, pivots):
+    r"""Cholesky counterpart of coulomb_3c_deriv: G_{Ax} = \sum_{Pmn} W^P_{mn} d(P|mn)/dR_{Ax},
+    flat (3 natoms,). The Cholesky "auxiliary function" P is the pivot pair product r_P s_P,
+    B = X (P|mn) with (P|mn) = (r_P s_P|mn), so its derivative integrals are computed as shell
+    quartets."""
+    _check_am(molecule.basis.max_l, "Four-center Coulomb derivative")
+    W3 = np.ascontiguousarray(W3, dtype=float)
+    pivots = [(int(r), int(s)) for r, s in pivots]
+    return ints.cholesky_3c_deriv(molecule.basis, W3, pivots, molecule.atoms)
+
+
+def cholesky_2c_deriv(molecule, W2, pivots):
+    r"""Cholesky counterpart of coulomb_2c_deriv: G_{Ax} = \sum_{PQ} W_{PQ} d(P|Q)/dR_{Ax},
+    flat (3 natoms,), with the pivot pairs as auxiliary functions, (P|Q) = (r_P s_P|r_Q s_Q)."""
+    _check_am(molecule.basis.max_l, "Four-center Coulomb derivative")
+    W2 = np.ascontiguousarray(W2, dtype=float)
+    pivots = [(int(r), int(s)) for r, s in pivots]
+    return ints.cholesky_2c_deriv(molecule.basis, W2, pivots, molecule.atoms)
 
 
 def coulomb_4c_deriv(molecule, W4, symmetrize=True):

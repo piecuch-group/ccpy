@@ -241,7 +241,7 @@ class Driver:
         elif method.lower() in ["sfeomcc23"]:
             self.order = 3
             self.Ms = -1
-            
+
     def print_options(self):
         """Prints the all (key, value) pairs contained in the options dictionary.
         """
@@ -1515,7 +1515,7 @@ class Driver:
         for i in state_index:
             print("   Left CC calculation for root %d started on" % i, get_timestamp())
             # decide whether this is a ground-state calculation
-            if i == 0: 
+            if i == 0:
                 ground_state = True
             else:
                 ground_state = False
@@ -1638,7 +1638,7 @@ class Driver:
         for i in state_index:
             print("   Left CC(P) calculation for root %d started on" % i, get_timestamp())
             # decide whether this is a ground-state calculation
-            if i == 0: 
+            if i == 0:
                 ground_state = True
             else:
                 ground_state = False
@@ -2380,16 +2380,16 @@ class Driver:
                                            t4_excitations,
                                            self.options["RHF_symmetry"])
 
-    def run_gradient(self, method="ccsd", zvector_tol=1.0e-10):
-        """Analytic nuclear gradient (natoms x 3, Eh/bohr) of the ground state, stored in
-        self.gradient. Requires a driver from Driver.from_scf with an RHF reference and the
-        converged CC and left-CC amplitudes. Density fitting is used when the Molecule uses
-        an auxiliary basis; with Molecule(cholesky_tei=True) the four-center derivative
-        integrals are used instead."""
-        if method.lower() != "ccsd":
+    def run_gradient(self, method, zvector_tol=1.0e-10):
+        """Analytic nuclear gradient (natoms x 3, Eh/bohr)"""
+        if method.lower() == "ccsd":
+            from ccpy.gradients.ccsd_gradient import ccsd_gradient
+            self.gradient = ccsd_gradient(self, zvector_tol=zvector_tol)
+        elif method.lower() == "crcc23a":
+            from ccpy.gradients.crcc23_gradient import crcc23A_gradient
+            self.gradient = crcc23A_gradient(self, zvector_tol=zvector_tol)
+        else:
             raise NotImplementedError(f"Analytic gradients are not available for {method}.")
-        from ccpy.gradients.ccsd_gradient import ccsd_gradient
-        self.gradient = ccsd_gradient(self, zvector_tol=zvector_tol)
         return self.gradient
 
     def run_rdm1(self, state_index=[0]):

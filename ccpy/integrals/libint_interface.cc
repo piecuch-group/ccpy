@@ -42,6 +42,8 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <tuple>
+#include <iterator>
 #include <utility>
 #include <vector>
 
@@ -1105,6 +1107,192 @@ np_vector coulomb_4c_deriv(const Basis& basis, const np_tensor4_c& W4, const Cha
     return sum_gradients(grads, ngrad);
 }
 
+// ---- Cholesky decomposition of (mn|rs) -------------------------------------------------
+// The pivoted Cholesky decomposition needs only the diagonal (mn|mn) and the columns
+// (mn|rs) of single shell pairs (rs). With the pivots J = (r s) held fixed it is a density
+// fit with the pivot pair products as auxiliary functions, (mn|rs) ~ sum_JK (mn|J) M^-1_JK
+// (K|rs), M_JK = (J|K); its nuclear derivatives are those of (mn|J) and (J|K).
+
+// (mn|mn) for all function pairs, shape (nbf, nbf).
+np_matrix coulomb_4c_diagonal(const Basis& basis) {
+    LibintSession libint;
+    const auto prototype = make_engine(Operator::coulomb, {&basis});
+    const auto off = basis.shell_offsets();
+    const std::size_t nbf = basis.size(), ns = basis.nshells();
+    auto diag = zeros<np_matrix>({nbf, nbf});
+    auto v = diag.view();
+    parallel_for(0, ns, [&](std::size_t, std::size_t s_begin, std::size_t s_end) {
+        libint2::Engine engine = prototype;
+        const auto& results = engine.results();
+        for (std::size_t s1 = s_begin; s1 < s_end; ++s1) {
+            const std::size_t n1 = basis[s1].size();
+            for (std::size_t s2 = 0; s2 < ns; ++s2) {
+                const std::size_t n2 = basis[s2].size();
+                engine.compute(basis[s1], basis[s2], basis[s1], basis[s2]);
+                const double* buf = results[0];
+                if (!buf)
+                    continue;
+                for (std::size_t i = 0; i < n1; ++i)
+                    for (std::size_t j = 0; j < n2; ++j)
+                        v(off[s1] + i, off[s2] + j) = buf[((i * n2 + j) * n1 + i) * n2 + j];
+            }
+        }
+    });
+    return diag;
+}
+
+// (mn|rs) for all m, n and the functions r, s of the shells s3, s4, shape (nbf, nbf, n3, n4).
+np_tensor4 coulomb_4c_shell_column(const Basis& basis, std::size_t s3, std::size_t s4) {
+    LibintSession libint;
+    const auto prototype = make_engine(Operator::coulomb, {&basis});
+    const auto off = basis.shell_offsets();
+    const std::size_t nbf = basis.size(), ns = basis.nshells();
+    const std::size_t n3 = basis[s3].size(), n4 = basis[s4].size();
+    auto col = zeros<np_tensor4>({nbf, nbf, n3, n4});
+    auto v = col.view();
+    parallel_for(0, ns, [&](std::size_t, std::size_t s_begin, std::size_t s_end) {
+        libint2::Engine engine = prototype;
+        const auto& results = engine.results();
+        for (std::size_t s1 = s_begin; s1 < s_end; ++s1) {
+            const std::size_t n1 = basis[s1].size();
+            for (std::size_t s2 = 0; s2 < ns; ++s2) {
+                const std::size_t n2 = basis[s2].size();
+                engine.compute(basis[s1], basis[s2], basis[s3], basis[s4]);
+                const double* buf = results[0];
+                if (!buf)
+                    continue;
+                for (std::size_t i = 0, ijkl = 0; i < n1; ++i)
+                    for (std::size_t j = 0; j < n2; ++j)
+                        for (std::size_t k = 0; k < n3; ++k)
+                            for (std::size_t l = 0; l < n4; ++l, ++ijkl)
+                                v(off[s1] + i, off[s2] + j, k, l) = buf[ijkl];
+            }
+        }
+    });
+    return col;
+}
+
+// Pivots (function pairs) grouped by shell pair: (shell r, shell s, [(P, r - off_r, s - off_s)]).
+using PivotGroup = std::tuple<std::size_t, std::size_t,
+                              std::vector<std::array<std::size_t, 3>>>;
+
+std::vector<PivotGroup> group_pivots(const Basis& basis,
+                                     const std::vector<std::pair<std::size_t, std::size_t>>& pivots) {
+    const auto off = basis.shell_offsets();
+    std::vector<std::size_t> shell_of(basis.size());
+    for (std::size_t s = 0; s < basis.nshells(); ++s)
+        for (std::size_t i = 0; i < basis[s].size(); ++i)
+            shell_of[off[s] + i] = s;
+    std::vector<PivotGroup> groups;
+    for (std::size_t P = 0; P < pivots.size(); ++P) {
+        const auto [r, s] = pivots[P];
+        const std::size_t sr = shell_of[r], ss = shell_of[s];
+        auto it = std::find_if(groups.begin(), groups.end(), [&](const PivotGroup& g) {
+            return std::get<0>(g) == sr && std::get<1>(g) == ss;
+        });
+        if (it == groups.end()) {
+            groups.emplace_back(sr, ss, std::vector<std::array<std::size_t, 3>>{});
+            it = std::prev(groups.end());
+        }
+        std::get<2>(*it).push_back({P, r - off[sr], s - off[ss]});
+    }
+    return groups;
+}
+
+// sum_P sum_mn W3[P, m, n] d(J_P|mn)/dR for the pivot pairs J_P = (r_P s_P).
+np_vector cholesky_3c_deriv(const Basis& basis, const np_tensor3_c& W3,
+                                 const std::vector<std::pair<std::size_t, std::size_t>>& pivots,
+                                 const Charges& charges) {
+    check_centers(basis, charges, "basis", "cholesky_3c_deriv");
+    const std::size_t nbf = basis.size(), ns = basis.nshells();
+    check_shape(W3, {pivots.size(), nbf, nbf}, "W3", "cholesky_3c_deriv");
+    LibintSession libint;
+    const auto prototype = make_engine(Operator::coulomb, {&basis}, 1);
+    const auto off = basis.shell_offsets();
+    const auto atom = basis.shell_to_center();
+    const auto groups = group_pivots(basis, pivots);
+    const double* w = W3.data();
+    const std::size_t ngrad = 3 * charges.size();
+    std::vector<std::vector<double>> grads(get_num_threads(), std::vector<double>(ngrad, 0.0));
+
+    parallel_for(0, groups.size(), [&](std::size_t t, std::size_t g_begin, std::size_t g_end) {
+        libint2::Engine engine = prototype;
+        const auto& results = engine.results();
+        auto& g = grads[t];
+        for (std::size_t ig = g_begin; ig < g_end; ++ig) {
+            const auto& [sr, ss, members] = groups[ig];
+            const std::size_t nsz = basis[ss].size();
+            for (std::size_t s1 = 0; s1 < ns; ++s1) {
+                const std::size_t n1 = basis[s1].size();
+                for (std::size_t s2 = 0; s2 < ns; ++s2) {
+                    const std::size_t n2 = basis[s2].size();
+                    const std::array<std::size_t, 4> atoms{atom[sr], atom[ss], atom[s1], atom[s2]};
+                    engine.compute(basis[sr], basis[ss], basis[s1], basis[s2]);
+                    for (std::size_t c = 0; c < 12; ++c) {
+                        const double* buf = results[c];
+                        if (!buf)
+                            continue;
+                        double sum = 0.0;
+                        for (const auto& [P, a, b] : members) {
+                            const double* bufab = buf + (a * nsz + b) * n1 * n2;
+                            for (std::size_t i = 0; i < n1; ++i) {
+                                const double* wrow = w + (P * nbf + off[s1] + i) * nbf + off[s2];
+                                for (std::size_t j = 0; j < n2; ++j)
+                                    sum += bufab[i * n2 + j] * wrow[j];
+                            }
+                        }
+                        g[3 * atoms[c / 3] + c % 3] += sum;
+                    }
+                }
+            }
+
+        }
+    });
+    return sum_gradients(grads, ngrad);
+}
+
+// sum_PQ W2[P, Q] d(J_P|J_Q)/dR for the pivot pairs.
+np_vector cholesky_2c_deriv(const Basis& basis, const np_matrix_c& W2,
+                                    const std::vector<std::pair<std::size_t, std::size_t>>& pivots,
+                                    const Charges& charges) {
+    check_centers(basis, charges, "basis", "cholesky_2c_deriv");
+    check_shape(W2, {pivots.size(), pivots.size()}, "W2", "cholesky_2c_deriv");
+    LibintSession libint;
+    const auto prototype = make_engine(Operator::coulomb, {&basis}, 1);
+    const auto atom = basis.shell_to_center();
+    const auto groups = group_pivots(basis, pivots);
+    const double* w = W2.data();
+    const std::size_t npiv = pivots.size();
+    const std::size_t ngrad = 3 * charges.size();
+    std::vector<std::vector<double>> grads(get_num_threads(), std::vector<double>(ngrad, 0.0));
+
+    parallel_for(0, groups.size(), [&](std::size_t t, std::size_t g_begin, std::size_t g_end) {
+        libint2::Engine engine = prototype;
+        const auto& results = engine.results();
+        auto& g = grads[t];
+        for (std::size_t ig = g_begin; ig < g_end; ++ig) {
+            const auto& [sr, ss, members] = groups[ig];
+            const std::size_t nsz = basis[ss].size();
+            for (const auto& [su, sv, others] : groups) {
+                const std::size_t nu = basis[su].size(), nv = basis[sv].size();
+                const std::array<std::size_t, 4> atoms{atom[sr], atom[ss], atom[su], atom[sv]};
+                engine.compute(basis[sr], basis[ss], basis[su], basis[sv]);
+                for (std::size_t c = 0; c < 12; ++c) {
+                    const double* buf = results[c];
+                    if (!buf)
+                        continue;
+                    double sum = 0.0;
+                    for (const auto& [P, a, b] : members)
+                        for (const auto& [Q, u, x] : others)
+                            sum += buf[((a * nsz + b) * nu + u) * nv + x] * w[P * npiv + Q];
+                    g[3 * atoms[c / 3] + c % 3] += sum;
+                }
+            }
+        }
+    });
+    return sum_gradients(grads, ngrad);
+}
+
 // ---- Three-center opVop ----------------------------------------------------------------
 // For (P|mn), returns the scalar and the x, y, z Pauli components of the momentum-dressed
 // integral sum_P (P| p_m . p_n |...), built from second derivatives with respect to the
@@ -1477,6 +1665,15 @@ ndarray, shape = (nb1, nb2)
 
     m.def("coulomb_4c_deriv", &coulomb_4c_deriv, "basis"_a, "W4"_a, "charges"_a,
           "Contract an 8-fold symmetric weight tensor with the nuclear derivatives of (mn|rs).");
+
+    m.def("coulomb_4c_diagonal", &coulomb_4c_diagonal, "basis"_a,
+          "(mn|mn) for all function pairs, shape (nbf, nbf).");
+    m.def("coulomb_4c_shell_column", &coulomb_4c_shell_column, "basis"_a, "shell3"_a, "shell4"_a,
+          "(mn|rs) for all m, n and the functions of two shells, shape (nbf, nbf, n3, n4).");
+    m.def("cholesky_3c_deriv", &cholesky_3c_deriv, "basis"_a, "W3"_a, "pivots"_a,
+          "charges"_a, "sum_P sum_mn W3[P,m,n] d(J_P|mn)/dR for Cholesky pivot pairs J_P.");
+    m.def("cholesky_2c_deriv", &cholesky_2c_deriv, "basis"_a, "W2"_a, "pivots"_a,
+          "charges"_a, "sum_PQ W2[P,Q] d(J_P|J_Q)/dR for Cholesky pivot pairs.");
 
     m.def("coulomb_2c_deriv", &coulomb_2c_deriv<np_matrix_c>, "basis1"_a, "basis2"_a, "W2"_a,
           "charges"_a);

@@ -15,16 +15,21 @@ THIRD_PARTY_NOTICES.md.
 """
 
 import numpy as np
+import scipy.linalg
 
 from ccpy.integrals import integrals
-from ccpy.integrals.linalg import invsqrt_matrix, cholesky_metric_inverse_sqrt, pivoted_cholesky
+from ccpy.integrals.linalg import invsqrt_matrix, cholesky_metric_inverse_sqrt
 
 
 class DensityFitting:
     """B tensor of a Molecule (built on first use), plus J/K builds and MO transformations.
 
     B_Pmn : the B tensor, shape (naux, nbf, nbf)
-    Mm12 : the metric inverse square root M^{-1/2} (density fitting only), shape (naux, naux)
+    Mm12 : X with B = X (P|mn) and X^T X = M^{-1}, shape (naux, naux). For density fitting
+           M = (P|Q); for the Cholesky decomposition the "auxiliary functions" are the pivot
+           pairs J = (r s) and M = (J|K) (incomplete pivoted Cholesky = Nystrom: (mn|rs) ~
+           sum_JK (mn|J) M^-1_JK (K|rs)).
+    pivots : the Cholesky pivot function pairs [(r, s), ...] (Cholesky only)
     """
 
     def __init__(self, molecule):
@@ -33,6 +38,7 @@ class DensityFitting:
         self._B_Pmn = None
         self._B_nPm = None
         self.Mm12 = None
+        self.pivots = None
 
     @property
     def B_Pmn(self):
@@ -71,17 +77,56 @@ class DensityFitting:
         return B
 
     def _build_B_cholesky(self):
+        """Pivoted Cholesky decomposition of (mn|rs) computed on the fly from the diagonal and
+        single shell-pair columns (never the full four-index array). With
+        molecule.cholesky_pivots set, the decomposition uses those pivots instead (for finite
+        differences that must share the pivots of a reference geometry)."""
         mol = self.molecule
         nbf = mol.nbf
+        first, sizes = zip(*mol.basis.shell_first_and_size)
+        shell_of = np.repeat(np.arange(len(first)), sizes)
+        columns = {}
+
+        def column(r, s):
+            """(mn|rs) as a vector over the pairs mn (cached per shell pair)."""
+            key = (shell_of[r], shell_of[s])
+            if key not in columns:
+                if len(columns) > 64:
+                    columns.clear()
+                columns[key] = integrals.coulomb_4c_shell_column(mol, *key)
+            return columns[key][:, :, r - first[key[0]], s - first[key[1]]].reshape(nbf * nbf)
+
+        if mol.cholesky_pivots is not None:
+            pivots = [(int(r), int(s)) for r, s in mol.cholesky_pivots]
+            A = np.array([column(r, s) for r, s in pivots])                      # (J|mn)
+            M = A[:, [r * nbf + s for r, s in pivots]]                           # (J|K)
+            Lm = np.linalg.cholesky(M)
+            B = scipy.linalg.solve_triangular(Lm, A, lower=True)
+        else:
+            diag = integrals.coulomb_4c_diagonal(mol).reshape(nbf * nbf).copy()
+            V = np.empty((4 * nbf, nbf * nbf))  # Cholesky vectors (rows), grown as needed
+            pivots = []
+            while len(pivots) < nbf * nbf:
+                p = int(np.argmax(diag))
+                if diag[p] <= mol.cholesky_tol:
+                    break
+                k = len(pivots)
+                if k == V.shape[0]:
+                    V = np.concatenate([V, np.empty_like(V)])
+                r, s = divmod(p, nbf)
+                V[k] = (column(r, s) - V[:k, p] @ V[:k]) / np.sqrt(diag[p])
+                pivots.append((r, s))
+                diag -= V[k]**2
+                diag[diag < 0.0] = 0.0
+            B = V[: len(pivots)]
+            Lm = B[:, [r * nbf + s for r, s in pivots]].T                        # M = Lm Lm^T
+        self.pivots = pivots
+        self.Mm12 = scipy.linalg.solve_triangular(Lm, np.eye(len(pivots)), lower=True)
+        mol.naux = len(pivots)
         if mol.verbose:
-            print(f"   Cholesky-decomposing the AO ERIs (tol = {mol.cholesky_tol}); "
-                  f"temporary memory {8 * nbf**4 / 1024**3:.2f} GB")
-        eri = integrals.coulomb_4c(mol).reshape((nbf**2,) * 2)
-        B = pivoted_cholesky(eri, tol=mol.cholesky_tol).reshape((-1, nbf, nbf))
-        mol.naux = B.shape[0]
-        if mol.verbose:
-            print(f"   Number of Cholesky vectors: {mol.naux}")
-        return B
+            print(f"   Cholesky decomposition of the AO ERIs (tol = {mol.cholesky_tol}): "
+                  f"{mol.naux} vectors")
+        return B.reshape((-1, nbf, nbf))
 
     # Coulomb and exchange
     def build_J(self, D):

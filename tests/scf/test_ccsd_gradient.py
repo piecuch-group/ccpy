@@ -1,4 +1,4 @@
-"""Analytic RHF-CCSD gradients (density-fitted and conventional) from the native SCF."""
+"""Analytic RHF-CCSD gradients (factorized; density fitting or Cholesky) from the native SCF."""
 import numpy as np
 import pytest
 
@@ -24,13 +24,15 @@ def _ccsd(mol, nfrozen, gradient=False):
     return energy, driver.run_gradient()
 
 
-@pytest.mark.parametrize("integrals", ["df", "conventional"])
+@pytest.mark.parametrize("integrals", ["df", "cholesky"])
 @pytest.mark.parametrize("nfrozen", [0, 1])
 def test_ccsd_gradient_vs_finite_difference(integrals, nfrozen):
     if integrals == "df":
         mol = Molecule(H2O, "cc-pvdz", auxiliary_basis="cc-pvtz-rifit")
     else:
-        mol = Molecule(H2O, "cc-pvdz", cholesky_tei=True, cholesky_tol=1.0e-11)
+        # the Cholesky gradient is exact for fixed pivots: displaced geometries reuse them
+        mol = Molecule(H2O, "cc-pvdz", cholesky_tei=True, cholesky_tol=1.0e-8)
+        mol.cholesky_pivots = mol.df.pivots
     _, grad = _ccsd(mol, nfrozen, gradient=True)
     assert np.allclose(grad.sum(axis=0), 0.0, atol=1.0e-08)  # translational invariance
 
@@ -58,6 +60,7 @@ def test_ccsd_gradient_with_symmetry():
 
 
 def test_ccsd_gradient_against_pyscf():
+    # tight Cholesky vectors reproduce the exact integrals, hence PySCF's conventional gradient
     pyscf = pytest.importorskip("pyscf")
     from pyscf import cc, gto, scf
 

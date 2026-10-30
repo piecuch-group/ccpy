@@ -244,7 +244,9 @@ def test_fd_gradient_smooth_and_invariant(name, energy, molecule):
 
 @short
 def test_fd_gradient_ccsd_matches_analytic():
+    # the Cholesky gradient is exact for fixed pivots: the finite differences reuse them
     mol = MOLECULES["h2o"]()
+    mol.cholesky_pivots = mol.df.pivots
     g_fd = _check_fd(ccsd, mol)
 
     def analytic(m):

@@ -1,27 +1,33 @@
 """Analytic nuclear gradient of closed-shell (RHF-reference) CCSD, with or without frozen
-core, in two flavors:
-
-* density-fitted: the SCF and CCSD use the DF integrals of the ``Molecule`` and the
-  two-electron derivatives come from the 3-center (P|mn)' and 2-center (P|Q)' integrals;
-* conventional: the ``Molecule`` uses a (tight) Cholesky factorization of the exact
-  four-index integrals (``cholesky_tei=True``) and the two-electron derivatives come from
-  the four-center integrals (mn|rs)'.
+core, factorized with density fitting or Cholesky vectors: two-electron integrals and densities are
+only ever handled through the three-index vectors B_x[p, q] (<pq|rs> = sum_x B_x[p,r] B_x[q,s])
+and nothing with four virtual indices is stored.
 
 Theory
 ------
-With the unrelaxed CCSD densities D, G (ccpy.gradients.densities, from ccpy.density.rdm1/rdm2),
+With the CCS-transformed Hamiltonian H(T1) = e^{-T1} H e^{T1} (ccpy.hbar.hbar_ccs_chol: again
+one- plus two-body, with T1-transformed Cholesky vectors), the CCSD Lagrangian is that of
+T1 = 0,
 
-    E = V_nn + sum_pq h_pq D_pq + 1/2 sum_pqrs <pq|rs> G_pqrs     (physicists' order).
+    L = E_ref(H(T1)) + E(T2; H(T1)) + sum_mu lambda_mu R_mu(T2; H(T1)),
+
+so the densities are those of ccpy.density.ccsd_rdm (dL/d(blocks of H(T1))). build_DY turns
+them into the bare-frame densities over all MOs (frozen core included),
+
+    D1 = dL/dh      (n x n, conjugate to the core Hamiltonian),
+    Y_x = dL/dB_x   (x, n, n), i.e. Y_x[p, r] = sum_qs D2[p,q,r,s] B_x[q,s],
+
+using that the T1 transformation B(T1) = (1 - t1) B (1 + t1) acts index by index:
+D -> (1 - t1)^T D (1 + t1)^T, and the reference projector P becomes P + t1^T.
 
 E is not stationary with respect to orbital rotations, so the canonical RHF conditions
 F_ai = 0 (all occupied i, virtual a) and, with frozen core, F_jc = 0 (active occupied j,
-core c) are added with multipliers z (the Z-vector). With the orbital connection
-U = -1/2 S^x,
+core c) are added with multipliers z (the Z-vector). With U = -1/2 S^x,
 
-    dE/dx = V_nn^x + sum D^rel h^x + 1/2 sum G^eff <pq|rs>^x - sum W S^x ,
+    dE/dx = V_nn^x + sum D^rel h^x + (3-center and 2-center terms of Y^eff) - sum W S^x .
 
-where D^rel = D + Z, G^eff adds the separable Z (x) D_HF terms, and W collects the
-generalized-Fock and Z-vector orbital-connection terms.
+relaxed_gradient also adds the canonical conditions within the active occupied and the
+virtual spaces, which energies with orbital-energy denominators (CR-CC(2,3)_A) need.
 """
 
 import time
@@ -29,22 +35,11 @@ import time
 import numpy as np
 import scipy.sparse.linalg as spla
 
-from ccpy.gradients.densities import ccsd_densities, separable, symmetrize
+from ccpy.density.ccsd_rdm import calc_ccsd_rdm, calc_rdm2_vvvv_slice
+from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol
 from ccpy.integrals import integrals
 
-
-class _MOTwoElectron:
-    """(pq|rs) = sum_x R_xpq R_xrs in the MO basis (DF or Cholesky vectors)."""
-
-    def __init__(self, R):
-        self.R = R
-
-    def J(self, Z):
-        return np.einsum("xpq,x->pq", self.R, np.einsum("xrs,rs->x", self.R, Z), optimize=True)
-
-    def K(self, Z):
-        RZ = np.einsum("xpr,rs->xps", self.R, Z, optimize=True)
-        return np.einsum("xps,xsq->pq", RZ, self.R, optimize=True)
+BLOCKS = [p + q + r + s for p in "ov" for q in "ov" for r in "ov" for s in "ov"]
 
 
 def ccsd_gradient(driver, meanfield=None, zvector_tol=1.0e-10, verbose=True):
@@ -53,56 +48,189 @@ def ccsd_gradient(driver, meanfield=None, zvector_tol=1.0e-10, verbose=True):
     Parameters
     ----------
     driver : Driver
-        Built with ``Driver.from_scf`` from a ccpy.scf.RHF object, after
-        ``run_cc("ccsd")``, ``run_hbar("ccsd")`` and ``run_leftcc("left_ccsd")``.
+        Built with ``Driver.from_scf`` from a ccpy.scf.RHF object (density fitting or Cholesky), after
+        ``run_cc``, ``run_hbar`` and ``run_leftcc`` (ccsd or ccsd_chol variants).
     meanfield : ccpy.scf.RHF, optional
         Defaults to the SCF object stored on the driver by ``from_scf``.
     zvector_tol : float
         Convergence threshold of the Z-vector (conjugate-gradient) solver.
     """
+    from ccpy.interfaces.scf_tools import load_scf_integrals
     from ccpy.scf.rhf import RHF
 
     t0 = time.perf_counter()
     mf = meanfield if meanfield is not None else getattr(driver, "scf", None)
     if not isinstance(mf, RHF):
         raise TypeError("ccsd_gradient needs the ccpy.scf.RHF reference (use Driver.from_scf).")
-    system = driver.system
-    if system.ndelete != 0:
-        raise NotImplementedError("CCSD gradients with deleted virtual orbitals are not implemented.")
     if driver.T is None or driver.L[0] is None:
         raise RuntimeError("Run CCSD, the CCSD HBar, and left-CCSD before the gradient.")
     if driver.T.order != 2:
         raise NotImplementedError("Only CCSD gradients are implemented.")
+    T, L, system = driver.T, driver.L[0], driver.system
 
-    D1, D2 = ccsd_densities(driver.T, driver.L[0], system, mf.mo_coeff.shape[1])
-    return relaxed_gradient(mf, system.nfrozen, D1, D2, zvector_tol=zvector_tol,
-                            verbose=verbose, title="CCSD Analytic Gradient", t0=t0)
+    _, H0 = load_scf_integrals(mf, system.nfrozen, system.ndelete, use_cholesky=True)
+    H = build_hbar_ccs_chol(T, H0, system)
+    mo = get_mo_integrals(mf, system)
+    D1, Y = build_DY(*calc_ccsd_rdm(T, L, system), lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s),
+                     H.chol, T, mo["B"], mo, system, reference=True)
+    return relaxed_gradient(mf, system.nfrozen, D1["a"] + D1["b"], Y["a"] + Y["b"],
+                            zvector_tol=zvector_tol, verbose=verbose, title="CCSD Analytic Gradient", t0=t0)
 
 
-def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
+def get_mo_integrals(meanfield, system):
+    """Bare MO core Hamiltonian h, Cholesky vectors B (all MOs, frozen core included),
+    occupied projectors P (keyed by spin) and the correlated orbital slices."""
+    if system.ndelete != 0:
+        raise NotImplementedError("Gradients with deleted virtual orbitals are not implemented.")
+    nfz = system.nfrozen
+    C = meanfield.C if len(meanfield.C) == 2 else [meanfield.C[0], meanfield.C[0]]
+    nmo = C[0].shape[1]
+    nocc = {"a": nfz + system.noccupied_alpha, "b": nfz + system.noccupied_beta}
+    end = nfz + system.norbitals
+    mo = {"nmo": nmo, "nocc": nocc, "h": {}, "B": {}, "P": {},
+          "slices": {s: {"o": slice(nfz, nocc[s]), "v": slice(nocc[s], end)} for s in ("a", "b")}}
+    hcore = meanfield.get_hcore()
+    for k, s in enumerate(("a", "b")):
+        mo["h"][s] = C[k].T @ hcore @ C[k]
+        mo["B"][s] = mo["B"]["a"] if (s == "b" and len(meanfield.C) == 1) else meanfield.mol.df.mo_cholesky_vectors(C[k])
+        mo["P"][s] = np.diag((np.arange(nmo) < nocc[s]).astype(float))
+    return mo
+
+
+def build_DY(rdm1, rdm2, vvvv_slice, Bt, T, B, mo, system, reference=False):
+    """Bare-frame (D1, Y) over all MOs of a functional F(H(T1)) whose densities rdm1, rdm2
+    (ccpy.density) are conjugate to the stored blocks of H(T1) (rdm1 to the normal-ordered Fock
+    blocks f = h + sum_i <pi||qi>, rdm2 to H.aa.pqrs = <pq||rs>, H.ab.pqrs = <pq|rs>, ...).
+
+    Bt : Cholesky vectors of the Hamiltonian the densities refer to (H.chol of
+         ccpy.hbar.hbar_ccs_chol, or the bare H0.chol when T is None), contracted with rdm2 and
+         vvvv_slice(a, spin) (vvvv densities one first index at a time, or None)
+    T  : T1 of the transformation (None for a functional of the bare H)
+    B  : bare Cholesky vectors {spin: (x, nmo, nmo)} for the separable (and reference) terms
+    reference=True adds the reference determinant E_ref = sum_i h_ii + 1/2 sum_ij <ij||ij>.
+    Returns D1 = dF/dh and Y = dF/dB, per spin."""
+    sl, nmo = mo["slices"], mo["nmo"]
+    naux = B["a"].shape[0]
+    Y = {s: np.zeros((naux, nmo, nmo)) for s in ("a", "b")}
+
+    # two-body: Y(T1) of the rdm2 blocks, contracted with the transformed vectors
+    nvir = {s: getattr(Bt, s).vv.shape[1] for s in ("a", "b")}
+    nocc = {s: getattr(Bt, s).oo.shape[1] for s in ("a", "b")}
+    n = {s: nocc[s] + nvir[s] for s in ("a", "b")}
+    cs = {s: {"o": slice(0, nocc[s]), "v": slice(nocc[s], n[s])} for s in ("a", "b")}
+    Yt, Bc = {}, {}
+    for s in ("a", "b"):
+        Bc[s] = np.zeros((naux, n[s], n[s]))
+        for blk in ("oo", "ov", "vo", "vv"):
+            Bc[s][:, cs[s][blk[0]], cs[s][blk[1]]] = getattr(getattr(Bt, s), blk)
+        Yt[s] = np.zeros((naux, n[s], n[s]))
+    for s in ("a", "b"):
+        ss = getattr(rdm2, s + s)
+        for blk in BLOCKS:
+            G = getattr(ss, blk, None)
+            if G is None or np.isscalar(G):
+                continue
+            p, q, r, t = (cs[s][c] for c in blk)
+            Yt[s][:, p, r] += np.einsum("pqrs,xqs->xpr", G, Bc[s][:, q, t], optimize=True)
+            Yt[s][:, q, t] += np.einsum("pqrs,xpr->xqs", G, Bc[s][:, p, r], optimize=True)
+            Yt[s][:, p, t] -= np.einsum("pqrs,xqr->xps", G, Bc[s][:, q, r], optimize=True)
+            Yt[s][:, q, r] -= np.einsum("pqrs,xps->xqr", G, Bc[s][:, p, t], optimize=True)
+    for blk in BLOCKS:
+        G = getattr(rdm2.ab, blk, None)
+        if G is None or np.isscalar(G):
+            continue
+        p, r = cs["a"][blk[0]], cs["a"][blk[2]]
+        q, t = cs["b"][blk[1]], cs["b"][blk[3]]
+        Yt["a"][:, p, r] += np.einsum("pqrs,xqs->xpr", G, Bc["b"][:, q, t], optimize=True)
+        Yt["b"][:, q, t] += np.einsum("pqrs,xpr->xqs", G, Bc["a"][:, p, r], optimize=True)
+    if vvvv_slice is not None:
+        va, vb = cs["a"]["v"], cs["b"]["v"]
+        Ba, Bb = Bt.a.vv, Bt.b.vv
+        for a in range(nvir["a"]):
+            G_aa, G_ab = vvvv_slice(a, "a")
+            Yt["a"][:, va.start + a, va] += np.einsum("bcd,xbd->xc", G_aa, Ba, optimize=True)
+            Yt["a"][:, va, va] += np.einsum("bcd,xc->xbd", G_aa, Ba[:, a, :], optimize=True)
+            Yt["a"][:, va.start + a, va] -= np.einsum("bcd,xbc->xd", G_aa, Ba, optimize=True)
+            Yt["a"][:, va, va] -= np.einsum("bcd,xd->xbc", G_aa, Ba[:, a, :], optimize=True)
+            Yt["a"][:, va.start + a, va] += np.einsum("bcd,xbd->xc", G_ab, Bb, optimize=True)
+            Yt["b"][:, vb, vb] += np.einsum("bcd,xc->xbd", G_ab, Ba[:, a, :], optimize=True)
+        for a in range(nvir["b"]):
+            G_bb = vvvv_slice(a, "b")
+            Yt["b"][:, vb.start + a, vb] += np.einsum("bcd,xbd->xc", G_bb, Bb, optimize=True)
+            Yt["b"][:, vb, vb] += np.einsum("bcd,xc->xbd", G_bb, Bb[:, a, :], optimize=True)
+            Yt["b"][:, vb.start + a, vb] -= np.einsum("bcd,xbc->xd", G_bb, Bb, optimize=True)
+            Yt["b"][:, vb, vb] -= np.einsum("bcd,xd->xbc", G_bb, Bb[:, a, :], optimize=True)
+
+    # back to the bare frame: (1 - t1)^T . (1 + t1)^T on the correlated orbitals
+    corr = {s: slice(sl[s]["o"].start, sl[s]["v"].stop) for s in ("a", "b")}
+    t1 = {s: np.zeros((n[s], n[s])) for s in ("a", "b")}
+    if T is not None:
+        t1["a"][cs["a"]["v"], cs["a"]["o"]] = T.a
+        t1["b"][cs["b"]["v"], cs["b"]["o"]] = T.b
+    gamma = {}
+    for s in ("a", "b"):
+        X, Yd = np.eye(n[s]) - t1[s], np.eye(n[s]) + t1[s]
+        Y[s][:, corr[s], corr[s]] = np.einsum("qp,xqr,sr->xps", X, Yt[s], Yd, optimize=True)
+        g = np.zeros((n[s], n[s]))
+        for blk in ("oo", "ov", "vo", "vv"):
+            x = getattr(getattr(rdm1, s), blk)
+            if x is not None:
+                g[cs[s][blk[0]], cs[s][blk[1]]] += x
+        gamma[s] = np.zeros((nmo, nmo))
+        gamma[s][corr[s], corr[s]] = X.T @ g @ Yd.T
+
+    # one-body and separable terms (the reference projector of H(T1) is P + t1^T in the bare frame)
+    P = {}
+    for s in ("a", "b"):
+        P[s] = mo["P"][s].copy()
+        P[s][corr[s], corr[s]] += t1[s].T
+    D1 = {s: gamma[s] + (P[s] if reference else 0.0) for s in ("a", "b")}
+    for g, scale in ((gamma, 1.0),) + (((P, 0.5),) if reference else ()):
+        # D2_ss = P_qs g_pr - P_qr g_ps - P_ps g_qr + P_pr g_qs,  D2_st = P^t_qs g^s_pr + P^s_pr g^t_qs
+        PB = sum(np.einsum("qs,xqs->x", P[u], B[u], optimize=True) for u in ("a", "b"))
+        gB = sum(np.einsum("qs,xqs->x", g[u], B[u], optimize=True) for u in ("a", "b"))
+        for s in ("a", "b"):
+            Y[s] += scale * (np.einsum("pr,x->xpr", g[s], PB, optimize=True)
+                             + np.einsum("pr,x->xpr", P[s], gB, optimize=True)
+                             - np.einsum("ps,xqs,qr->xpr", g[s], B[s], P[s], optimize=True)
+                             - np.einsum("ps,xqs,qr->xpr", P[s], B[s], g[s], optimize=True))
+    return D1, Y
+
+
+def rotation_gradient(D1, Y, h, B, mo):
+    """dF/dt_i^a of a functional F(h, B) with dF/dh = D1 and dF/dB = Y, where t_i^a rotates
+    the Hamiltonian as H -> H + e [H, a+ i] ([M, E] = M E - E M for h and each B_x):
+    (h^T D1 - D1 h^T)[a, i] + sum_x (B_x^T Y_x - Y_x B_x^T)[a, i], per spin."""
+    out = {}
+    for s in ("a", "b"):
+        o, v = mo["slices"][s]["o"], mo["slices"][s]["v"]
+        out[s] = (h[s][:, v].T @ D1[s][:, o] - D1[s][v, :] @ h[s][o, :].T
+                  + np.einsum("xqa,xqi->ai", B[s][:, :, v], Y[s][:, :, o], optimize=True)
+                  - np.einsum("xaq,xiq->ai", Y[s][:, v, :], B[s][:, o, :], optimize=True))
+    return out
+
+
+def relaxed_gradient(mf, nfrozen, D1, Y, zvector_tol=1.0e-10, verbose=True,
                      title="Analytic Gradient", t0=None):
-    """Nuclear gradient of E = V_nn + sum h D1 + 1/2 sum <pq|rs> D2 for unrelaxed densities
-    of an energy that is invariant to rotations within the frozen core, within the correlated
-    occupied space, and within the virtual space (e.g. CCSD; NOT CR-CC(2,3), whose diagonal
-    triples denominators make it depend on those rotations): solves the orbital
-    Z-vector (occupied-virtual and frozen-core/active), forms the relaxed and energy-weighted
-    densities, and contracts them with the AO derivative integrals (density-fitted or
-    four-center, following the Molecule).
+    """Nuclear gradient of E = V_nn + sum h D1 + E2 from unrelaxed densities, with
+    dE2/dR_x = Y_x (R = mol.df.mo_cholesky_vectors(C)): solves the orbital Z-vector
+    (occupied-virtual and frozen-core/active, plus the canonical conditions within the
+    active occupied and the virtual spaces), forms the relaxed and energy-weighted densities,
+    and contracts them with the derivative integrals of the three-index vectors: 3- and
+    2-center integrals for density fitting, and the four-center integrals of the pivot pairs
+    for a Cholesky decomposition (pivots held fixed; the gradient is exact for that energy).
 
     Parameters
     ----------
-    mf : ccpy.scf.RHF
+    mf : ccpy.scf.RHF (density-fitted or Cholesky Molecule)
     nfrozen : int
     D1 : ndarray, shape (nmo, nmo)
-        Spin-traced one-particle density D1[p,q] = <p+ q>, E1 = sum_pq h_pq D1[p,q]
-        (symmetrized here).
-    D2 : ndarray, shape (nmo, nmo, nmo, nmo)
-        Spin-traced two-particle density in physicists' order, D2[p,q,r,s] = <p+ q+ s r>,
-        E2 = 1/2 sum <pq|rs> D2[p,q,r,s] (symmetrized here).
+        Spin-traced one-particle density D1[p,q] = <p+ q>, E1 = sum_pq h_pq D1[p,q].
+    Y : ndarray, shape (naux, nmo, nmo)
+        Spin-traced Y_x[p, r] = sum_qs D2[p,q,r,s] R_x[q,s] (D2[p,q,r,s] = <p+ q+ s r>).
     """
     t0 = time.perf_counter() if t0 is None else t0
     mol = mf.mol
-    use_df = not mol.cholesky_tei
     C = mf.mo_coeff
     eps = mf.mo_energy
     nmo = C.shape[1]
@@ -111,29 +239,19 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
     occ, vir = slice(0, nocc), slice(nocc, nmo)
     core, act_occ = slice(0, nfz), slice(nfz, nocc)
 
-    # ---------------------------------------------------------------- #
-    # MO integrals
-    # ---------------------------------------------------------------- #
     D1 = 0.5 * (D1 + D1.T)
     h = C.T @ mf.get_hcore() @ C
     R = mol.df.mo_cholesky_vectors(C)
-    ints = _MOTwoElectron(R)
-
-    # Y_xpq = sum_rs G_pqrs R_xrs (the vvvv block of G is built in 3-virtual slices)
-    D2 = symmetrize(D2)
-    # <pq|rs> = (pr|qs) = sum_x R_xpr R_xqs, so Y_xpq = sum_rs D2[p,r,q,s] R_xrs
-    Y = np.einsum("prqs,xrs->xpq", D2, R, optimize=True)
+    # only the symmetric part of each Y_x is seen by the symmetric R_x
+    Y = 0.5 * (Y + Y.transpose(0, 2, 1))
     # generalized Fock F_tp = sum_q h_tq D_pq + sum_qrs (tq|rs) G_pqrs
     F = h @ D1 + np.einsum("xtq,xpq->tp", R, Y, optimize=True)
     g = 2.0 * (F - F.T)  # dE/dkappa_tp for the rotation t <- p
 
-    # ---------------------------------------------------------------- #
-    # canonical-condition multipliers within the active occupied and the
-    # virtual spaces, z_pq = -g_pq / (eps_p - eps_q) for p > q. They vanish
-    # for CCSD (invariant to these rotations) but not for energies with
-    # diagonal (orbital-energy) denominators such as CR-CC(2,3)_A. Rotations
-    # within a degenerate pair leave such energies invariant, so g_pq = 0 there.
-    # ---------------------------------------------------------------- #
+    # canonical-condition multipliers within the active occupied and the virtual spaces,
+    # z_pq = -g_pq / (eps_p - eps_q) for p > q. They vanish for CCSD (invariant to these
+    # rotations) but not for energies with orbital-energy denominators such as CR-CC(2,3)_A.
+    # Rotations within a degenerate pair leave such energies invariant, so g_pq = 0 there.
     z_int = np.zeros((nmo, nmo))
     degenerate_g = 0.0
     for space in (act_occ, vir):
@@ -149,23 +267,22 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
     if verbose:
         print(f"\n   {title}")
         print("   " + "-" * len(title))
-        print(f"   Two-electron integrals: {'density fitting' if use_df else 'four-center (conventional)'}")
         print(f"   Orbital gradient within the frozen core (should vanish): {np.abs(g[core, core]).max(initial=0.0):.2e}")
         print(f"   Occupied-occupied / virtual-virtual multipliers: |z| = {np.linalg.norm(z_int):.3e}")
     if degenerate_g > 1.0e-6:
         print(f"   WARNING: orbital gradient {degenerate_g:.2e} between degenerate orbitals is not zero; "
               "the energy is not invariant within a degenerate subspace.")
 
-    # ---------------------------------------------------------------- #
     # Z-vector: core / active-occupied, then occupied / virtual
-    # ---------------------------------------------------------------- #
     z_fc = np.zeros((nocc - nfz, nfz))
     if nfz > 0:
         z_fc = -g[act_occ, core] / (eps[act_occ, None] - eps[None, core])
 
     def hf_response(Zs):
         """[2J(Zs) - K(Zs)] for a symmetric MO matrix Zs."""
-        return 2.0 * ints.J(Zs) - ints.K(Zs)
+        J = np.einsum("xpq,x->pq", R, np.einsum("xrs,rs->x", R, Zs, optimize=True), optimize=True)
+        K = np.einsum("xps,xsq->pq", np.einsum("xpr,rs->xps", R, Zs, optimize=True), R, optimize=True)
+        return 2.0 * J - K
 
     rhs = -g[vir, occ].copy()
     Ws = z_int.copy()
@@ -199,46 +316,38 @@ def relaxed_gradient(mf, nfrozen, D1, D2, zvector_tol=1.0e-10, verbose=True,
     Z += 0.5 * z_int
     Z += Z.T
 
-    # ---------------------------------------------------------------- #
     # relaxed and energy-weighted densities (MO)
-    # ---------------------------------------------------------------- #
     D_rel = D1 + Z
-
-    # G_eff = G + 2 (Z_pr P_qs + P_pr Z_qs) - (Z_ps P_qr + P_ps Z_qr), P = occupied projector
-    P = np.zeros(nmo)
-    P[occ] = 1.0
-    G_eff = symmetrize(D2 + separable(Z, nocc))
-
-    M_Z = hf_response(Z)
+    P = np.zeros((nmo, nmo))
+    P[occ, occ] = np.eye(nocc)
     W = 0.5 * (F + F.T)
     W += Z * 0.5 * (eps[:, None] + eps[None, :])
-    occ_mask = P[:, None] + P[None, :]  # 2 for occ-occ, 1 for occ-vir
-    W += 0.5 * occ_mask * M_Z
+    occ_mask = np.diag(P)[:, None] + np.diag(P)[None, :]  # 2 for occ-occ, 1 for occ-vir
+    W += 0.5 * occ_mask * hf_response(Z)
 
-    # ---------------------------------------------------------------- #
+    # Y of the separable Z terms 2 (Z_pr P_qs + P_pr Z_qs) - (Z_ps P_qr + P_ps Z_qr)
+    Y_eff = (Y + 2.0 * np.einsum("pr,x->xpr", Z, np.einsum("xqq->x", R[:, occ, occ]), optimize=True)
+             + 2.0 * np.einsum("pr,x->xpr", P, np.einsum("qs,xqs->x", Z, R, optimize=True), optimize=True)
+             - Z @ R @ P - P @ R @ Z)
+
     # contract with the AO derivative integrals
-    # ---------------------------------------------------------------- #
-    D_ao = C @ D_rel @ C.T
-    W_ao = C @ W @ C.T
     natoms = mol.natoms
     grad = integrals.nuclear_repulsion_deriv(mol)
-    grad += integrals.hcore_deriv(mol, D_ao).reshape(natoms, 3)
-    grad -= integrals.overlap_deriv(mol, W_ao).reshape(natoms, 3)
-
-    if use_df:
-        df = mol.df
-        X = df.Mm12  # B = X (Q|mn), X = L^{-1}, M = L L^T
-        Y_eff = np.einsum("prqs,xrs->xpq", G_eff, R, optimize=True)
-        Y_ao = np.einsum("mp,xpq,nq->xmn", C, Y_eff, C, optimize=True)
-        W3 = np.einsum("QP,Qmn->Pmn", X, Y_ao, optimize=True)
-        T_QQ = np.einsum("xpq,ypq->xy", R, Y_eff, optimize=True)
-        W2 = -0.5 * X.T @ T_QQ @ X
-        grad += integrals.coulomb_3c_deriv(mol, np.ascontiguousarray(W3)).reshape(natoms, 3)
-        grad += integrals.coulomb_2c_deriv(mol, np.ascontiguousarray(W2)).reshape(natoms, 3)
+    grad += integrals.hcore_deriv(mol, C @ D_rel @ C.T).reshape(natoms, 3)
+    grad -= integrals.overlap_deriv(mol, C @ W @ C.T).reshape(natoms, 3)
+    # B = X (Q|mn), X = L^{-1}, M = (Q|Q') = L L^T, for density fitting and for the Cholesky
+    # vectors alike (Q: auxiliary function or Cholesky pivot pair); only the derivative integrals
+    # of (Q|mn) and (Q|Q') differ.
+    X = mol.df.Mm12
+    Y_ao = np.einsum("mp,xpq,nq->xmn", C, Y_eff, C, optimize=True)
+    W3 = np.ascontiguousarray(np.einsum("QP,Qmn->Pmn", X, Y_ao, optimize=True))
+    W2 = np.ascontiguousarray(-0.5 * X.T @ np.einsum("xpq,ypq->xy", R, Y_eff, optimize=True) @ X)
+    if mol.cholesky_tei:
+        grad += integrals.cholesky_3c_deriv(mol, W3, mol.df.pivots).reshape(natoms, 3)
+        grad += integrals.cholesky_2c_deriv(mol, W2, mol.df.pivots).reshape(natoms, 3)
     else:
-        # AO weights of (mn|lk) for coulomb_4c_deriv, from G_eff[p,r,q,s] <-> (pq|rs)
-        G_ao = np.einsum("mp,nq,prqs,lr,ks->mnlk", C, C, G_eff, C, C, optimize=True)
-        grad += 0.5 * integrals.coulomb_4c_deriv(mol, G_ao, symmetrize=False).reshape(natoms, 3)
+        grad += integrals.coulomb_3c_deriv(mol, W3).reshape(natoms, 3)
+        grad += integrals.coulomb_2c_deriv(mol, W2).reshape(natoms, 3)
 
     if verbose:
         print(f"   Z-vector converged; |z_ov| = {np.linalg.norm(z_ov):.3e}, |z_core| = {np.linalg.norm(z_fc):.3e}")
