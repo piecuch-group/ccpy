@@ -40,43 +40,56 @@ module ccsdt_p_loops
                       real(kind=8), intent(out) :: resid(1:nua,1:noa)
 
                       integer :: i, a, m, n, e, f, idet
+                      integer :: ithr, nthr
                       real(kind=8) :: denom, val, t_amp
 
                       ! store x1a in resid container
                       resid(:,:) = X1A(:,:)
                       ! compute < ia | (H(2) * T3)_C | 0 >
+                      !$omp parallel default(shared) private(a,e,f,i,idet,m,n,t_amp,ithr,nthr)
+                      ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                      nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                       do idet = 1, n3aaa
                           t_amp = t3a_amps(idet)
                           ! A(a/ef)A(i/mn) h2a(mnef) * t3a(aefimn)
                           a = t3a_excits(idet,1); e = t3a_excits(idet,2); f = t3a_excits(idet,3);
                           i = t3a_excits(idet,4); m = t3a_excits(idet,5); n = t3a_excits(idet,6);
-                          resid(a,i) = resid(a,i) + H2A_oovv(m,n,e,f) * t_amp ! (1)
-                          resid(e,i) = resid(e,i) - H2A_oovv(m,n,a,f) * t_amp ! (ae)
-                          resid(f,i) = resid(f,i) - H2A_oovv(m,n,e,a) * t_amp ! (af)
-                          resid(a,m) = resid(a,m) - H2A_oovv(i,n,e,f) * t_amp ! (im)
-                          resid(e,m) = resid(e,m) + H2A_oovv(i,n,a,f) * t_amp ! (ae)(im)
-                          resid(f,m) = resid(f,m) + H2A_oovv(i,n,e,a) * t_amp ! (af)(im)
-                          resid(a,n) = resid(a,n) - H2A_oovv(m,i,e,f) * t_amp ! (in)
-                          resid(e,n) = resid(e,n) + H2A_oovv(m,i,a,f) * t_amp ! (ae)(in)
-                          resid(f,n) = resid(f,n) + H2A_oovv(m,i,e,a) * t_amp ! (af)(in)
+                          if (mod(a,nthr)==ithr) resid(a,i) = resid(a,i) + H2A_oovv(m,n,e,f) * t_amp ! (1)
+                          if (mod(e,nthr)==ithr) resid(e,i) = resid(e,i) - H2A_oovv(m,n,a,f) * t_amp ! (ae)
+                          if (mod(f,nthr)==ithr) resid(f,i) = resid(f,i) - H2A_oovv(m,n,e,a) * t_amp ! (af)
+                          if (mod(a,nthr)==ithr) resid(a,m) = resid(a,m) - H2A_oovv(i,n,e,f) * t_amp ! (im)
+                          if (mod(e,nthr)==ithr) resid(e,m) = resid(e,m) + H2A_oovv(i,n,a,f) * t_amp ! (ae)(im)
+                          if (mod(f,nthr)==ithr) resid(f,m) = resid(f,m) + H2A_oovv(i,n,e,a) * t_amp ! (af)(im)
+                          if (mod(a,nthr)==ithr) resid(a,n) = resid(a,n) - H2A_oovv(m,i,e,f) * t_amp ! (in)
+                          if (mod(e,nthr)==ithr) resid(e,n) = resid(e,n) + H2A_oovv(m,i,a,f) * t_amp ! (ae)(in)
+                          if (mod(f,nthr)==ithr) resid(f,n) = resid(f,n) + H2A_oovv(m,i,e,a) * t_amp ! (af)(in)
                       end do
+                      !$omp end parallel
+                      !$omp parallel default(shared) private(a,e,f,i,idet,m,n,t_amp,ithr,nthr)
+                      ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                      nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                       do idet = 1, n3aab
                           t_amp = t3b_amps(idet)
                           ! A(ae)A(im) h2b(mnef) * t3b(aefimn)
                           a = t3b_excits(idet,1); e = t3b_excits(idet,2); f = t3b_excits(idet,3);
                           i = t3b_excits(idet,4); m = t3b_excits(idet,5); n = t3b_excits(idet,6);
-                          resid(a,i) = resid(a,i) + H2B_oovv(m,n,e,f) * t_amp ! (1)
-                          resid(e,i) = resid(e,i) - H2B_oovv(m,n,a,f) * t_amp ! (ae)
-                          resid(a,m) = resid(a,m) - H2B_oovv(i,n,e,f) * t_amp ! (im)
-                          resid(e,m) = resid(e,m) + H2B_oovv(i,n,a,f) * t_amp ! (ae)(im)
+                          if (mod(a,nthr)==ithr) resid(a,i) = resid(a,i) + H2B_oovv(m,n,e,f) * t_amp ! (1)
+                          if (mod(e,nthr)==ithr) resid(e,i) = resid(e,i) - H2B_oovv(m,n,a,f) * t_amp ! (ae)
+                          if (mod(a,nthr)==ithr) resid(a,m) = resid(a,m) - H2B_oovv(i,n,e,f) * t_amp ! (im)
+                          if (mod(e,nthr)==ithr) resid(e,m) = resid(e,m) + H2B_oovv(i,n,a,f) * t_amp ! (ae)(im)
                       end do
+                      !$omp end parallel
+                      !$omp parallel default(shared) private(a,e,f,i,idet,m,n,t_amp,ithr,nthr)
+                      ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                      nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                       do idet = 1, n3abb
                           t_amp = t3c_amps(idet)
                           ! h2c(mnef) * t3c(aefimn)
                           a = t3c_excits(idet,1); e = t3c_excits(idet,2); f = t3c_excits(idet,3);
                           i = t3c_excits(idet,4); m = t3c_excits(idet,5); n = t3c_excits(idet,6);
-                          resid(a,i) = resid(a,i) + H2C_oovv(m,n,e,f) * t_amp ! (1)
+                          if (mod(a,nthr)==ithr) resid(a,i) = resid(a,i) + H2C_oovv(m,n,e,f) * t_amp ! (1)
                       end do
+                      !$omp end parallel
                       ! update loop
                       do i = 1, noa
                           do a = 1, nua
@@ -115,43 +128,56 @@ module ccsdt_p_loops
                       real(kind=8), intent(out) :: resid(1:nub,1:nob)
 
                       integer :: i, a, m, n, e, f, idet
+                      integer :: ithr, nthr
                       real(kind=8) :: denom, val, t_amp
 
                       ! Store x1b in residual container
                       resid(:,:) = X1B(:,:)
                       ! compute < i~a~ | (H(2) * T3)_C | 0 >
+                      !$omp parallel default(shared) private(a,e,f,i,idet,m,n,t_amp,ithr,nthr)
+                      ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                      nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                       do idet = 1, n3aab
                           t_amp = t3b_amps(idet)
                           ! h2a(mnef) * t3b(efamni)
                           e = t3b_excits(idet,1); f = t3b_excits(idet,2); a = t3b_excits(idet,3);
                           m = t3b_excits(idet,4); n = t3b_excits(idet,5); i = t3b_excits(idet,6);
-                          resid(a,i) = resid(a,i) + H2A_oovv(m,n,e,f) * t_amp ! (1)
+                          if (mod(a,nthr)==ithr) resid(a,i) = resid(a,i) + H2A_oovv(m,n,e,f) * t_amp ! (1)
                       end do
+                      !$omp end parallel
+                      !$omp parallel default(shared) private(a,e,f,i,idet,m,n,t_amp,ithr,nthr)
+                      ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                      nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                       do idet = 1, n3abb
                           t_amp = t3c_amps(idet)
                           ! A(af)A(in) h2b(mnef) * t3c(efamni)
                           e = t3c_excits(idet,1); f = t3c_excits(idet,2); a = t3c_excits(idet,3);
                           m = t3c_excits(idet,4); n = t3c_excits(idet,5); i = t3c_excits(idet,6);
-                          resid(a,i) = resid(a,i) + H2B_oovv(m,n,e,f) * t_amp ! (1)
-                          resid(f,i) = resid(f,i) - H2B_oovv(m,n,e,a) * t_amp ! (af)
-                          resid(a,n) = resid(a,n) - H2B_oovv(m,i,e,f) * t_amp ! (in)
-                          resid(f,n) = resid(f,n) + H2B_oovv(m,i,e,a) * t_amp ! (af)(in)
+                          if (mod(a,nthr)==ithr) resid(a,i) = resid(a,i) + H2B_oovv(m,n,e,f) * t_amp ! (1)
+                          if (mod(f,nthr)==ithr) resid(f,i) = resid(f,i) - H2B_oovv(m,n,e,a) * t_amp ! (af)
+                          if (mod(a,nthr)==ithr) resid(a,n) = resid(a,n) - H2B_oovv(m,i,e,f) * t_amp ! (in)
+                          if (mod(f,nthr)==ithr) resid(f,n) = resid(f,n) + H2B_oovv(m,i,e,a) * t_amp ! (af)(in)
                       end do
+                      !$omp end parallel
+                      !$omp parallel default(shared) private(a,e,f,i,idet,m,n,t_amp,ithr,nthr)
+                      ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                      nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                       do idet = 1, n3bbb
                           t_amp = t3d_amps(idet)
                           ! A(a/ef)A(i/mn) h2c(mnef) * t3d(aefimn)
                           a = t3d_excits(idet,1); e = t3d_excits(idet,2); f = t3d_excits(idet,3);
                           i = t3d_excits(idet,4); m = t3d_excits(idet,5); n = t3d_excits(idet,6);
-                          resid(a,i) = resid(a,i) + H2C_oovv(m,n,e,f) * t_amp ! (1)
-                          resid(e,i) = resid(e,i) - H2C_oovv(m,n,a,f) * t_amp ! (ae)
-                          resid(f,i) = resid(f,i) - H2C_oovv(m,n,e,a) * t_amp ! (af)
-                          resid(a,m) = resid(a,m) - H2C_oovv(i,n,e,f) * t_amp ! (im)
-                          resid(e,m) = resid(e,m) + H2C_oovv(i,n,a,f) * t_amp ! (ae)(im)
-                          resid(f,m) = resid(f,m) + H2C_oovv(i,n,e,a) * t_amp ! (af)(im)
-                          resid(a,n) = resid(a,n) - H2C_oovv(m,i,e,f) * t_amp ! (in)
-                          resid(e,n) = resid(e,n) + H2C_oovv(m,i,a,f) * t_amp ! (ae)(in)
-                          resid(f,n) = resid(f,n) + H2C_oovv(m,i,e,a) * t_amp ! (af)(in)
+                          if (mod(a,nthr)==ithr) resid(a,i) = resid(a,i) + H2C_oovv(m,n,e,f) * t_amp ! (1)
+                          if (mod(e,nthr)==ithr) resid(e,i) = resid(e,i) - H2C_oovv(m,n,a,f) * t_amp ! (ae)
+                          if (mod(f,nthr)==ithr) resid(f,i) = resid(f,i) - H2C_oovv(m,n,e,a) * t_amp ! (af)
+                          if (mod(a,nthr)==ithr) resid(a,m) = resid(a,m) - H2C_oovv(i,n,e,f) * t_amp ! (im)
+                          if (mod(e,nthr)==ithr) resid(e,m) = resid(e,m) + H2C_oovv(i,n,a,f) * t_amp ! (ae)(im)
+                          if (mod(f,nthr)==ithr) resid(f,m) = resid(f,m) + H2C_oovv(i,n,e,a) * t_amp ! (af)(im)
+                          if (mod(a,nthr)==ithr) resid(a,n) = resid(a,n) - H2C_oovv(m,i,e,f) * t_amp ! (in)
+                          if (mod(e,nthr)==ithr) resid(e,n) = resid(e,n) + H2C_oovv(m,i,a,f) * t_amp ! (ae)(in)
+                          if (mod(f,nthr)==ithr) resid(f,n) = resid(f,n) + H2C_oovv(m,i,e,a) * t_amp ! (af)(in)
                       end do
+                      !$omp end parallel
                       ! update loop
                       do i = 1, nob
                           do a = 1, nub
@@ -194,73 +220,82 @@ module ccsdt_p_loops
                   real(kind=8), intent(out) :: resid(1:nua,1:nua,1:noa,1:noa)
 
                   integer :: i, j, a, b, m, n, e, f, idet
+                  integer :: ithr, nthr
                   real(kind=8) :: denom, val, t_amp
 
                   ! Store x2a in residual container
                   resid(:,:,:,:) = x2a(:,:,:,:)
                   ! compute < ijab | (H(2) * T3)_C | 0 >
+                  !$omp parallel default(shared) private(a,b,e,f,i,idet,j,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3aaa
                       t_amp = t3a_amps(idet)
 
                       ! A(ij)A(ab) [A(m/ij)A(e/ab) h1a(me) * t3a(abeijm)]
                       a = t3a_excits(idet,1); b = t3a_excits(idet,2); e = t3a_excits(idet,3);
                       i = t3a_excits(idet,4); j = t3a_excits(idet,5); m = t3a_excits(idet,6);
-                      resid(a,b,i,j) = resid(a,b,i,j) + H1A_ov(m,e) * t_amp ! (1)
-                      resid(a,b,m,j) = resid(a,b,m,j) - H1A_ov(i,e) * t_amp ! (im)
-                      resid(a,b,i,m) = resid(a,b,i,m) - H1A_ov(j,e) * t_amp ! (jm)
-                      resid(e,b,i,j) = resid(e,b,i,j) - H1A_ov(m,a) * t_amp ! (ae)
-                      resid(e,b,m,j) = resid(e,b,m,j) + H1A_ov(i,a) * t_amp ! (im)(ae)
-                      resid(e,b,i,m) = resid(e,b,i,m) + H1A_ov(j,a) * t_amp ! (jm)(ae)
-                      resid(a,e,i,j) = resid(a,e,i,j) - H1A_ov(m,b) * t_amp ! (be)
-                      resid(a,e,m,j) = resid(a,e,m,j) + H1A_ov(i,b) * t_amp ! (im)(be)
-                      resid(a,e,i,m) = resid(a,e,i,m) + H1A_ov(j,b) * t_amp ! (jm)(be)
+                      if (mod(b,nthr)==ithr) resid(a,b,i,j) = resid(a,b,i,j) + H1A_ov(m,e) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(a,b,m,j) = resid(a,b,m,j) - H1A_ov(i,e) * t_amp ! (im)
+                      if (mod(b,nthr)==ithr) resid(a,b,i,m) = resid(a,b,i,m) - H1A_ov(j,e) * t_amp ! (jm)
+                      if (mod(b,nthr)==ithr) resid(e,b,i,j) = resid(e,b,i,j) - H1A_ov(m,a) * t_amp ! (ae)
+                      if (mod(b,nthr)==ithr) resid(e,b,m,j) = resid(e,b,m,j) + H1A_ov(i,a) * t_amp ! (im)(ae)
+                      if (mod(b,nthr)==ithr) resid(e,b,i,m) = resid(e,b,i,m) + H1A_ov(j,a) * t_amp ! (jm)(ae)
+                      if (mod(e,nthr)==ithr) resid(a,e,i,j) = resid(a,e,i,j) - H1A_ov(m,b) * t_amp ! (be)
+                      if (mod(e,nthr)==ithr) resid(a,e,m,j) = resid(a,e,m,j) + H1A_ov(i,b) * t_amp ! (im)(be)
+                      if (mod(e,nthr)==ithr) resid(a,e,i,m) = resid(a,e,i,m) + H1A_ov(j,b) * t_amp ! (jm)(be)
 
                       ! A(ij)A(ab) [A(j/mn)A(f/ab) -h2a(mnif) * t3a(abfmjn)]
                       a = t3a_excits(idet,1); b = t3a_excits(idet,2); f = t3a_excits(idet,3);
                       m = t3a_excits(idet,4); j = t3a_excits(idet,5); n = t3a_excits(idet,6);
-                      resid(a,b,:,j) = resid(a,b,:,j) - H2A_ooov(m,n,:,f) * t_amp ! (1)
-                      resid(a,b,:,m) = resid(a,b,:,m) + H2A_ooov(j,n,:,f) * t_amp ! (jm)
-                      resid(a,b,:,n) = resid(a,b,:,n) + H2A_ooov(m,j,:,f) * t_amp ! (jn)
-                      resid(f,b,:,j) = resid(f,b,:,j) + H2A_ooov(m,n,:,a) * t_amp ! (af)
-                      resid(f,b,:,m) = resid(f,b,:,m) - H2A_ooov(j,n,:,a) * t_amp ! (jm)(af)
-                      resid(f,b,:,n) = resid(f,b,:,n) - H2A_ooov(m,j,:,a) * t_amp ! (jn)(af)
-                      resid(a,f,:,j) = resid(a,f,:,j) + H2A_ooov(m,n,:,b) * t_amp ! (bf)
-                      resid(a,f,:,m) = resid(a,f,:,m) - H2A_ooov(j,n,:,b) * t_amp ! (jm)(bf)
-                      resid(a,f,:,n) = resid(a,f,:,n) - H2A_ooov(m,j,:,b) * t_amp ! (jn)(bf)
+                      if (mod(b,nthr)==ithr) resid(a,b,:,j) = resid(a,b,:,j) - H2A_ooov(m,n,:,f) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(a,b,:,m) = resid(a,b,:,m) + H2A_ooov(j,n,:,f) * t_amp ! (jm)
+                      if (mod(b,nthr)==ithr) resid(a,b,:,n) = resid(a,b,:,n) + H2A_ooov(m,j,:,f) * t_amp ! (jn)
+                      if (mod(b,nthr)==ithr) resid(f,b,:,j) = resid(f,b,:,j) + H2A_ooov(m,n,:,a) * t_amp ! (af)
+                      if (mod(b,nthr)==ithr) resid(f,b,:,m) = resid(f,b,:,m) - H2A_ooov(j,n,:,a) * t_amp ! (jm)(af)
+                      if (mod(b,nthr)==ithr) resid(f,b,:,n) = resid(f,b,:,n) - H2A_ooov(m,j,:,a) * t_amp ! (jn)(af)
+                      if (mod(f,nthr)==ithr) resid(a,f,:,j) = resid(a,f,:,j) + H2A_ooov(m,n,:,b) * t_amp ! (bf)
+                      if (mod(f,nthr)==ithr) resid(a,f,:,m) = resid(a,f,:,m) - H2A_ooov(j,n,:,b) * t_amp ! (jm)(bf)
+                      if (mod(f,nthr)==ithr) resid(a,f,:,n) = resid(a,f,:,n) - H2A_ooov(m,j,:,b) * t_amp ! (jn)(bf)
 
                       ! A(ij)A(ab) [A(n/ij)A(b/ef) h2a(anef) * t3a(ebfijn)]
                       e = t3a_excits(idet,1); b = t3a_excits(idet,2); f = t3a_excits(idet,3);
                       i = t3a_excits(idet,4); j = t3a_excits(idet,5); n = t3a_excits(idet,6);
-                      resid(:,b,i,j) = resid(:,b,i,j) + H2A_vovv(:,n,e,f) * t_amp ! (1)
-                      resid(:,b,n,j) = resid(:,b,n,j) - H2A_vovv(:,i,e,f) * t_amp ! (in)
-                      resid(:,b,i,n) = resid(:,b,i,n) - H2A_vovv(:,j,e,f) * t_amp ! (jn)
-                      resid(:,e,i,j) = resid(:,e,i,j) - H2A_vovv(:,n,b,f) * t_amp ! (be)
-                      resid(:,e,n,j) = resid(:,e,n,j) + H2A_vovv(:,i,b,f) * t_amp ! (in)(be)
-                      resid(:,e,i,n) = resid(:,e,i,n) + H2A_vovv(:,j,b,f) * t_amp ! (jn)(be)
-                      resid(:,f,i,j) = resid(:,f,i,j) - H2A_vovv(:,n,e,b) * t_amp ! (bf)
-                      resid(:,f,n,j) = resid(:,f,n,j) + H2A_vovv(:,i,e,b) * t_amp ! (in)(bf)
-                      resid(:,f,i,n) = resid(:,f,i,n) + H2A_vovv(:,j,e,b) * t_amp ! (jn)(bf)
+                      if (mod(b,nthr)==ithr) resid(:,b,i,j) = resid(:,b,i,j) + H2A_vovv(:,n,e,f) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(:,b,n,j) = resid(:,b,n,j) - H2A_vovv(:,i,e,f) * t_amp ! (in)
+                      if (mod(b,nthr)==ithr) resid(:,b,i,n) = resid(:,b,i,n) - H2A_vovv(:,j,e,f) * t_amp ! (jn)
+                      if (mod(e,nthr)==ithr) resid(:,e,i,j) = resid(:,e,i,j) - H2A_vovv(:,n,b,f) * t_amp ! (be)
+                      if (mod(e,nthr)==ithr) resid(:,e,n,j) = resid(:,e,n,j) + H2A_vovv(:,i,b,f) * t_amp ! (in)(be)
+                      if (mod(e,nthr)==ithr) resid(:,e,i,n) = resid(:,e,i,n) + H2A_vovv(:,j,b,f) * t_amp ! (jn)(be)
+                      if (mod(f,nthr)==ithr) resid(:,f,i,j) = resid(:,f,i,j) - H2A_vovv(:,n,e,b) * t_amp ! (bf)
+                      if (mod(f,nthr)==ithr) resid(:,f,n,j) = resid(:,f,n,j) + H2A_vovv(:,i,e,b) * t_amp ! (in)(bf)
+                      if (mod(f,nthr)==ithr) resid(:,f,i,n) = resid(:,f,i,n) + H2A_vovv(:,j,e,b) * t_amp ! (jn)(bf)
                   end do
+                  !$omp end parallel
+                  !$omp parallel default(shared) private(a,b,e,f,i,idet,j,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
 
                       ! A(ij)A(ab) [h1b(me) * t3b(abeijm)]
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); e = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); m = t3b_excits(idet,6);
-                      resid(a,b,i,j) = resid(a,b,i,j) + H1B_ov(m,e) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(a,b,i,j) = resid(a,b,i,j) + H1B_ov(m,e) * t_amp ! (1)
 
                       ! A(ij)A(ab) [A(jm) -h2b(mnif) * t3b(abfmjn)]
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); f = t3b_excits(idet,3);
                       m = t3b_excits(idet,4); j = t3b_excits(idet,5); n = t3b_excits(idet,6);
-                      resid(a,b,:,j) = resid(a,b,:,j) - H2B_ooov(m,n,:,f) * t_amp ! (1)
-                      resid(a,b,:,m) = resid(a,b,:,m) + H2B_ooov(j,n,:,f) * t_amp ! (jm)
+                      if (mod(b,nthr)==ithr) resid(a,b,:,j) = resid(a,b,:,j) - H2B_ooov(m,n,:,f) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(a,b,:,m) = resid(a,b,:,m) + H2B_ooov(j,n,:,f) * t_amp ! (jm)
 
                       ! A(ij)A(ab) [A(be) h2b(anef) * t3b(ebfijn)]
                       e = t3b_excits(idet,1); b = t3b_excits(idet,2); f = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); n = t3b_excits(idet,6);
-                      resid(:,b,i,j) = resid(:,b,i,j) + H2B_vovv(:,n,e,f) * t_amp ! (1)
-                      resid(:,e,i,j) = resid(:,e,i,j) - H2B_vovv(:,n,b,f) * t_amp ! (be)
+                      if (mod(b,nthr)==ithr) resid(:,b,i,j) = resid(:,b,i,j) + H2B_vovv(:,n,e,f) * t_amp ! (1)
+                      if (mod(e,nthr)==ithr) resid(:,e,i,j) = resid(:,e,i,j) - H2B_vovv(:,n,b,f) * t_amp ! (be)
                   end do
+                  !$omp end parallel
                   ! update loop
                   do i = 1, noa
                       do j = i + 1, noa
@@ -331,90 +366,148 @@ module ccsdt_p_loops
                   real(kind=8), intent(out) :: resid(1:nua,1:nub,1:noa,1:nob)
 
                   integer :: i, j, a, b, m, n, e, f, idet
+                  integer :: ithr, nthr
                   real(kind=8) :: denom, val, t_amp
 
                   ! Store x2b in residual container
                   resid(:,:,:,:) = x2b(:,:,:,:)
                   ! compute < ij~ab~ | (H(2) * T3)_C | 0 >
+                  !$omp parallel default(shared) private(a,b,e,f,i,idet,j,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
 
                       ! A(af) -h2a(mnif) * t3b(afbmnj)
                       a = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
                       m = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
-                      resid(a,b,:,j) = resid(a,b,:,j) - H2A_ooov(m,n,:,f) * t_amp ! (1)
-                      resid(f,b,:,j) = resid(f,b,:,j) + H2A_ooov(m,n,:,a) * t_amp ! (af)
 
                       ! A(af)A(in) -h2b(nmfj) * t3b(afbinm)
                       a = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); n = t3b_excits(idet,5); m = t3b_excits(idet,6);
-                      resid(a,b,i,:) = resid(a,b,i,:) - H2B_oovo(n,m,f,:) * t_amp ! (1)
-                      resid(f,b,i,:) = resid(f,b,i,:) + H2B_oovo(n,m,a,:) * t_amp ! (af)
-                      resid(a,b,n,:) = resid(a,b,n,:) + H2B_oovo(i,m,f,:) * t_amp ! (in)
-                      resid(f,b,n,:) = resid(f,b,n,:) - H2B_oovo(i,m,a,:) * t_amp ! (af)(in)
 
                       ! A(in) h2a(anef) * t3b(efbinj)
                       e = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
-                      resid(:,b,i,j) = resid(:,b,i,j) + H2A_vovv(:,n,e,f) * t_amp ! (1)
-                      resid(:,b,n,j) = resid(:,b,n,j) - H2A_vovv(:,i,e,f) * t_amp ! (in)
 
                       ! A(af)A(in) h2b(nbfe) * t3b(afeinj)
                       a = t3b_excits(idet,1); f = t3b_excits(idet,2); e = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
-                      resid(a,:,i,j) = resid(a,:,i,j) + H2B_ovvv(n,:,f,e) * t_amp ! (1)
-                      resid(f,:,i,j) = resid(f,:,i,j) - H2B_ovvv(n,:,a,e) * t_amp ! (af)
-                      resid(a,:,n,j) = resid(a,:,n,j) - H2B_ovvv(i,:,f,e) * t_amp ! (in)
-                      resid(f,:,n,j) = resid(f,:,n,j) + H2B_ovvv(i,:,a,e) * t_amp ! (af)(in)
+                      if (mod(a,nthr)==ithr) resid(a,:,i,j) = resid(a,:,i,j) + H2B_ovvv(n,:,f,e) * t_amp ! (1)
+                      if (mod(f,nthr)==ithr) resid(f,:,i,j) = resid(f,:,i,j) - H2B_ovvv(n,:,a,e) * t_amp ! (af)
+                      if (mod(a,nthr)==ithr) resid(a,:,n,j) = resid(a,:,n,j) - H2B_ovvv(i,:,f,e) * t_amp ! (in)
+                      if (mod(f,nthr)==ithr) resid(f,:,n,j) = resid(f,:,n,j) + H2B_ovvv(i,:,a,e) * t_amp ! (af)(in)
 
                       ! A(ae)A(im) h1a(me) * t3b(aebimj)
                       a = t3b_excits(idet,1); e = t3b_excits(idet,2); b = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); m = t3b_excits(idet,5); j = t3b_excits(idet,6);
-                      resid(a,b,i,j) = resid(a,b,i,j) + H1A_ov(m,e) * t_amp ! (1)
-                      resid(a,b,m,j) = resid(a,b,m,j) - H1A_ov(i,e) * t_amp ! (im)
-                      resid(e,b,i,j) = resid(e,b,i,j) - H1A_ov(m,a) * t_amp ! (ae)
-                      resid(e,b,m,j) = resid(e,b,m,j) + H1A_ov(i,a) * t_amp ! (im)(ae)
 
                   end do
+                  !$omp barrier
+                  do idet = 1, n3aab
+                      t_amp = t3b_amps(idet)
+
+                      ! A(af) -h2a(mnif) * t3b(afbmnj)
+                      a = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
+                      m = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
+                      if (mod(b,nthr)==ithr) resid(a,b,:,j) = resid(a,b,:,j) - H2A_ooov(m,n,:,f) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(f,b,:,j) = resid(f,b,:,j) + H2A_ooov(m,n,:,a) * t_amp ! (af)
+
+                      ! A(af)A(in) -h2b(nmfj) * t3b(afbinm)
+                      a = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
+                      i = t3b_excits(idet,4); n = t3b_excits(idet,5); m = t3b_excits(idet,6);
+                      if (mod(b,nthr)==ithr) resid(a,b,i,:) = resid(a,b,i,:) - H2B_oovo(n,m,f,:) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(f,b,i,:) = resid(f,b,i,:) + H2B_oovo(n,m,a,:) * t_amp ! (af)
+                      if (mod(b,nthr)==ithr) resid(a,b,n,:) = resid(a,b,n,:) + H2B_oovo(i,m,f,:) * t_amp ! (in)
+                      if (mod(b,nthr)==ithr) resid(f,b,n,:) = resid(f,b,n,:) - H2B_oovo(i,m,a,:) * t_amp ! (af)(in)
+
+                      ! A(in) h2a(anef) * t3b(efbinj)
+                      e = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
+                      i = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
+                      if (mod(b,nthr)==ithr) resid(:,b,i,j) = resid(:,b,i,j) + H2A_vovv(:,n,e,f) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(:,b,n,j) = resid(:,b,n,j) - H2A_vovv(:,i,e,f) * t_amp ! (in)
+
+                      ! A(af)A(in) h2b(nbfe) * t3b(afeinj)
+                      a = t3b_excits(idet,1); f = t3b_excits(idet,2); e = t3b_excits(idet,3);
+                      i = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
+
+                      ! A(ae)A(im) h1a(me) * t3b(aebimj)
+                      a = t3b_excits(idet,1); e = t3b_excits(idet,2); b = t3b_excits(idet,3);
+                      i = t3b_excits(idet,4); m = t3b_excits(idet,5); j = t3b_excits(idet,6);
+                      if (mod(b,nthr)==ithr) resid(a,b,i,j) = resid(a,b,i,j) + H1A_ov(m,e) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(a,b,m,j) = resid(a,b,m,j) - H1A_ov(i,e) * t_amp ! (im)
+                      if (mod(b,nthr)==ithr) resid(e,b,i,j) = resid(e,b,i,j) - H1A_ov(m,a) * t_amp ! (ae)
+                      if (mod(b,nthr)==ithr) resid(e,b,m,j) = resid(e,b,m,j) + H1A_ov(i,a) * t_amp ! (im)(ae)
+
+                  end do
+                  !$omp end parallel
+                  !$omp parallel default(shared) private(a,b,e,f,i,idet,j,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3abb
                       t_amp = t3c_amps(idet)
 
                       ! A(bf) -h2c(mnjf) * t3c(afbinm)
                       a = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); n = t3c_excits(idet,5); m = t3c_excits(idet,6);
-                      resid(a,b,i,:) = resid(a,b,i,:) - H2C_ooov(m,n,:,f) * t_amp ! (1)
-                      resid(a,f,i,:) = resid(a,f,i,:) + H2C_ooov(m,n,:,b) * t_amp ! (bf)
 
                       ! A(bf)A(jn) -h2b(mnif) * t3c(afbmnj)
                       a = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       m = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      resid(a,b,:,j) = resid(a,b,:,j) - H2B_ooov(m,n,:,f) * t_amp ! (1)
-                      resid(a,f,:,j) = resid(a,f,:,j) + H2B_ooov(m,n,:,b) * t_amp ! (bf)
-                      resid(a,b,:,n) = resid(a,b,:,n) + H2B_ooov(m,j,:,f) * t_amp ! (jn)
-                      resid(a,f,:,n) = resid(a,f,:,n) - H2B_ooov(m,j,:,b) * t_amp ! (bf)(jn)
 
                       ! A(jn) h2c(bnef) * t3c(afeinj)
                       a = t3c_excits(idet,1); f = t3c_excits(idet,2); e = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      resid(a,:,i,j) = resid(a,:,i,j) + H2C_vovv(:,n,e,f) * t_amp ! (1)
-                      resid(a,:,i,n) = resid(a,:,i,n) - H2C_vovv(:,j,e,f) * t_amp ! (jn)
+                      if (mod(a,nthr)==ithr) resid(a,:,i,j) = resid(a,:,i,j) + H2C_vovv(:,n,e,f) * t_amp ! (1)
+                      if (mod(a,nthr)==ithr) resid(a,:,i,n) = resid(a,:,i,n) - H2C_vovv(:,j,e,f) * t_amp ! (jn)
 
                       ! A(bf)A(jn) h2b(anef) * t3c(efbinj)
                       e = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      resid(:,b,i,j) = resid(:,b,i,j) + H2B_vovv(:,n,e,f) * t_amp ! (1)
-                      resid(:,f,i,j) = resid(:,f,i,j) - H2B_vovv(:,n,e,b) * t_amp ! (bf)
-                      resid(:,b,i,n) = resid(:,b,i,n) - H2B_vovv(:,j,e,f) * t_amp ! (jn)
-                      resid(:,f,i,n) = resid(:,f,i,n) + H2B_vovv(:,j,e,b) * t_amp ! (bf)(jn)
 
                       ! [A(be)A(mj) h1b(me) * t3c(aebimj)]
                       a = t3c_excits(idet,1); e = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); m = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      resid(a,b,i,j) = resid(a,b,i,j) + H1B_ov(m,e) * t_amp ! (1)
-                      resid(a,b,i,m) = resid(a,b,i,m) - H1B_ov(j,e) * t_amp ! (jm)
-                      resid(a,e,i,j) = resid(a,e,i,j) - H1B_ov(m,b) * t_amp ! (be)
-                      resid(a,e,i,m) = resid(a,e,i,m) + H1B_ov(j,b) * t_amp ! (jm)(be)
                   end do
+                  !$omp barrier
+                  do idet = 1, n3abb
+                      t_amp = t3c_amps(idet)
+
+                      ! A(bf) -h2c(mnjf) * t3c(afbinm)
+                      a = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
+                      i = t3c_excits(idet,4); n = t3c_excits(idet,5); m = t3c_excits(idet,6);
+                      if (mod(b,nthr)==ithr) resid(a,b,i,:) = resid(a,b,i,:) - H2C_ooov(m,n,:,f) * t_amp ! (1)
+                      if (mod(f,nthr)==ithr) resid(a,f,i,:) = resid(a,f,i,:) + H2C_ooov(m,n,:,b) * t_amp ! (bf)
+
+                      ! A(bf)A(jn) -h2b(mnif) * t3c(afbmnj)
+                      a = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
+                      m = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
+                      if (mod(b,nthr)==ithr) resid(a,b,:,j) = resid(a,b,:,j) - H2B_ooov(m,n,:,f) * t_amp ! (1)
+                      if (mod(f,nthr)==ithr) resid(a,f,:,j) = resid(a,f,:,j) + H2B_ooov(m,n,:,b) * t_amp ! (bf)
+                      if (mod(b,nthr)==ithr) resid(a,b,:,n) = resid(a,b,:,n) + H2B_ooov(m,j,:,f) * t_amp ! (jn)
+                      if (mod(f,nthr)==ithr) resid(a,f,:,n) = resid(a,f,:,n) - H2B_ooov(m,j,:,b) * t_amp ! (bf)(jn)
+
+                      ! A(jn) h2c(bnef) * t3c(afeinj)
+                      a = t3c_excits(idet,1); f = t3c_excits(idet,2); e = t3c_excits(idet,3);
+                      i = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
+
+                      ! A(bf)A(jn) h2b(anef) * t3c(efbinj)
+                      e = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
+                      i = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
+                      if (mod(b,nthr)==ithr) resid(:,b,i,j) = resid(:,b,i,j) + H2B_vovv(:,n,e,f) * t_amp ! (1)
+                      if (mod(f,nthr)==ithr) resid(:,f,i,j) = resid(:,f,i,j) - H2B_vovv(:,n,e,b) * t_amp ! (bf)
+                      if (mod(b,nthr)==ithr) resid(:,b,i,n) = resid(:,b,i,n) - H2B_vovv(:,j,e,f) * t_amp ! (jn)
+                      if (mod(f,nthr)==ithr) resid(:,f,i,n) = resid(:,f,i,n) + H2B_vovv(:,j,e,b) * t_amp ! (bf)(jn)
+
+                      ! [A(be)A(mj) h1b(me) * t3c(aebimj)]
+                      a = t3c_excits(idet,1); e = t3c_excits(idet,2); b = t3c_excits(idet,3);
+                      i = t3c_excits(idet,4); m = t3c_excits(idet,5); j = t3c_excits(idet,6);
+                      if (mod(b,nthr)==ithr) resid(a,b,i,j) = resid(a,b,i,j) + H1B_ov(m,e) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(a,b,i,m) = resid(a,b,i,m) - H1B_ov(j,e) * t_amp ! (jm)
+                      if (mod(e,nthr)==ithr) resid(a,e,i,j) = resid(a,e,i,j) - H1B_ov(m,b) * t_amp ! (be)
+                      if (mod(e,nthr)==ithr) resid(a,e,i,m) = resid(a,e,i,m) + H1B_ov(j,b) * t_amp ! (jm)(be)
+                  end do
+                  !$omp end parallel
                   ! update loop
                   do j = 1, nob
                       do i = 1, noa
@@ -461,73 +554,82 @@ module ccsdt_p_loops
                   real(kind=8), intent(out) :: resid(1:nub,1:nub,1:nob,1:nob)
 
                   integer :: i, j, a, b, m, n, e, f, idet
+                  integer :: ithr, nthr
                   real(kind=8) :: denom, val, t_amp
 
                   ! store x2c in residual container
                   resid(:,:,:,:) = x2c(:,:,:,:)
                   ! comptue < i~j~a~b~ | (H(2) * T3)_C | 0 >
+                  !$omp parallel default(shared) private(a,b,e,f,i,idet,j,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3abb
                       t_amp = t3c_amps(idet)
 
                       ! A(ij)A(ab) [h1a(me) * t3c(eabmij)]
                       e = t3c_excits(idet,1); a = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       m = t3c_excits(idet,4); i = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      resid(a,b,i,j) = resid(a,b,i,j) + H1A_ov(m,e) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(a,b,i,j) = resid(a,b,i,j) + H1A_ov(m,e) * t_amp ! (1)
 
                       ! A(ij)A(ab) [A(be) h2b(nafe) * t3c(febnij)]
                       f = t3c_excits(idet,1); e = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       n = t3c_excits(idet,4); i = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      resid(:,b,i,j) = resid(:,b,i,j) + H2B_ovvv(n,:,f,e) * t_amp ! (1)
-                      resid(:,e,i,j) = resid(:,e,i,j) - H2B_ovvv(n,:,f,b) * t_amp ! (be)
+                      if (mod(b,nthr)==ithr) resid(:,b,i,j) = resid(:,b,i,j) + H2B_ovvv(n,:,f,e) * t_amp ! (1)
+                      if (mod(e,nthr)==ithr) resid(:,e,i,j) = resid(:,e,i,j) - H2B_ovvv(n,:,f,b) * t_amp ! (be)
 
                       ! A(ij)A(ab) [A(jm) -h2b(nmfi) * t3c(fabnmj)]
                       f = t3c_excits(idet,1); a = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       n = t3c_excits(idet,4); m = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      resid(a,b,:,j) = resid(a,b,:,j) - H2B_oovo(n,m,f,:) * t_amp ! (1)
-                      resid(a,b,:,m) = resid(a,b,:,m) + H2B_oovo(n,j,f,:) * t_amp ! (jm)
+                      if (mod(b,nthr)==ithr) resid(a,b,:,j) = resid(a,b,:,j) - H2B_oovo(n,m,f,:) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(a,b,:,m) = resid(a,b,:,m) + H2B_oovo(n,j,f,:) * t_amp ! (jm)
                   end do
+                  !$omp end parallel
+                  !$omp parallel default(shared) private(a,b,e,f,i,idet,j,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3bbb
                       t_amp = t3d_amps(idet)
 
                       ! A(ij)A(ab) [A(m/ij)A(e/ab) h1b(me) * t3d(abeijm)]
                       a = t3d_excits(idet,1); b = t3d_excits(idet,2); e = t3d_excits(idet,3);
                       i = t3d_excits(idet,4); j = t3d_excits(idet,5); m = t3d_excits(idet,6);
-                      resid(a,b,i,j) = resid(a,b,i,j) + H1B_ov(m,e) * t_amp ! (1)
-                      resid(a,b,m,j) = resid(a,b,m,j) - H1B_ov(i,e) * t_amp ! (im)
-                      resid(a,b,i,m) = resid(a,b,i,m) - H1B_ov(j,e) * t_amp ! (jm)
-                      resid(e,b,i,j) = resid(e,b,i,j) - H1B_ov(m,a) * t_amp ! (ae)
-                      resid(e,b,m,j) = resid(e,b,m,j) + H1B_ov(i,a) * t_amp ! (im)(ae)
-                      resid(e,b,i,m) = resid(e,b,i,m) + H1B_ov(j,a) * t_amp ! (jm)(ae)
-                      resid(a,e,i,j) = resid(a,e,i,j) - H1B_ov(m,b) * t_amp ! (be)
-                      resid(a,e,m,j) = resid(a,e,m,j) + H1B_ov(i,b) * t_amp ! (im)(be)
-                      resid(a,e,i,m) = resid(a,e,i,m) + H1B_ov(j,b) * t_amp ! (jm)(be)
+                      if (mod(b,nthr)==ithr) resid(a,b,i,j) = resid(a,b,i,j) + H1B_ov(m,e) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(a,b,m,j) = resid(a,b,m,j) - H1B_ov(i,e) * t_amp ! (im)
+                      if (mod(b,nthr)==ithr) resid(a,b,i,m) = resid(a,b,i,m) - H1B_ov(j,e) * t_amp ! (jm)
+                      if (mod(b,nthr)==ithr) resid(e,b,i,j) = resid(e,b,i,j) - H1B_ov(m,a) * t_amp ! (ae)
+                      if (mod(b,nthr)==ithr) resid(e,b,m,j) = resid(e,b,m,j) + H1B_ov(i,a) * t_amp ! (im)(ae)
+                      if (mod(b,nthr)==ithr) resid(e,b,i,m) = resid(e,b,i,m) + H1B_ov(j,a) * t_amp ! (jm)(ae)
+                      if (mod(e,nthr)==ithr) resid(a,e,i,j) = resid(a,e,i,j) - H1B_ov(m,b) * t_amp ! (be)
+                      if (mod(e,nthr)==ithr) resid(a,e,m,j) = resid(a,e,m,j) + H1B_ov(i,b) * t_amp ! (im)(be)
+                      if (mod(e,nthr)==ithr) resid(a,e,i,m) = resid(a,e,i,m) + H1B_ov(j,b) * t_amp ! (jm)(be)
 
                       ! A(ij)A(ab) [A(j/mn)A(f/ab) -h2c(mnif) * t3d(abfmjn)]
                       a = t3d_excits(idet,1); b = t3d_excits(idet,2); f = t3d_excits(idet,3);
                       m = t3d_excits(idet,4); j = t3d_excits(idet,5); n = t3d_excits(idet,6);
-                      resid(a,b,:,j) = resid(a,b,:,j) - H2C_ooov(m,n,:,f) * t_amp ! (1)
-                      resid(a,b,:,m) = resid(a,b,:,m) + H2C_ooov(j,n,:,f) * t_amp ! (jm)
-                      resid(a,b,:,n) = resid(a,b,:,n) + H2C_ooov(m,j,:,f) * t_amp ! (jn)
-                      resid(f,b,:,j) = resid(f,b,:,j) + H2C_ooov(m,n,:,a) * t_amp ! (af)
-                      resid(f,b,:,m) = resid(f,b,:,m) - H2C_ooov(j,n,:,a) * t_amp ! (jm)(af)
-                      resid(f,b,:,n) = resid(f,b,:,n) - H2C_ooov(m,j,:,a) * t_amp ! (jn)(af)
-                      resid(a,f,:,j) = resid(a,f,:,j) + H2C_ooov(m,n,:,b) * t_amp ! (bf)
-                      resid(a,f,:,m) = resid(a,f,:,m) - H2C_ooov(j,n,:,b) * t_amp ! (jm)(bf)
-                      resid(a,f,:,n) = resid(a,f,:,n) - H2C_ooov(m,j,:,b) * t_amp ! (jn)(bf)
+                      if (mod(b,nthr)==ithr) resid(a,b,:,j) = resid(a,b,:,j) - H2C_ooov(m,n,:,f) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(a,b,:,m) = resid(a,b,:,m) + H2C_ooov(j,n,:,f) * t_amp ! (jm)
+                      if (mod(b,nthr)==ithr) resid(a,b,:,n) = resid(a,b,:,n) + H2C_ooov(m,j,:,f) * t_amp ! (jn)
+                      if (mod(b,nthr)==ithr) resid(f,b,:,j) = resid(f,b,:,j) + H2C_ooov(m,n,:,a) * t_amp ! (af)
+                      if (mod(b,nthr)==ithr) resid(f,b,:,m) = resid(f,b,:,m) - H2C_ooov(j,n,:,a) * t_amp ! (jm)(af)
+                      if (mod(b,nthr)==ithr) resid(f,b,:,n) = resid(f,b,:,n) - H2C_ooov(m,j,:,a) * t_amp ! (jn)(af)
+                      if (mod(f,nthr)==ithr) resid(a,f,:,j) = resid(a,f,:,j) + H2C_ooov(m,n,:,b) * t_amp ! (bf)
+                      if (mod(f,nthr)==ithr) resid(a,f,:,m) = resid(a,f,:,m) - H2C_ooov(j,n,:,b) * t_amp ! (jm)(bf)
+                      if (mod(f,nthr)==ithr) resid(a,f,:,n) = resid(a,f,:,n) - H2C_ooov(m,j,:,b) * t_amp ! (jn)(bf)
 
                       ! A(ij)A(ab) [A(n/ij)A(b/ef) h2c(anef) * t3d(ebfijn)]
                       e = t3d_excits(idet,1); b = t3d_excits(idet,2); f = t3d_excits(idet,3);
                       i = t3d_excits(idet,4); j = t3d_excits(idet,5); n = t3d_excits(idet,6);
-                      resid(:,b,i,j) = resid(:,b,i,j) + H2C_vovv(:,n,e,f) * t_amp ! (1)
-                      resid(:,b,n,j) = resid(:,b,n,j) - H2C_vovv(:,i,e,f) * t_amp ! (in)
-                      resid(:,b,i,n) = resid(:,b,i,n) - H2C_vovv(:,j,e,f) * t_amp ! (jn)
-                      resid(:,e,i,j) = resid(:,e,i,j) - H2C_vovv(:,n,b,f) * t_amp ! (be)
-                      resid(:,e,n,j) = resid(:,e,n,j) + H2C_vovv(:,i,b,f) * t_amp ! (in)(be)
-                      resid(:,e,i,n) = resid(:,e,i,n) + H2C_vovv(:,j,b,f) * t_amp ! (jn)(be)
-                      resid(:,f,i,j) = resid(:,f,i,j) - H2C_vovv(:,n,e,b) * t_amp ! (bf)
-                      resid(:,f,n,j) = resid(:,f,n,j) + H2C_vovv(:,i,e,b) * t_amp ! (in)(bf)
-                      resid(:,f,i,n) = resid(:,f,i,n) + H2C_vovv(:,j,e,b) * t_amp ! (jn)(bf)
+                      if (mod(b,nthr)==ithr) resid(:,b,i,j) = resid(:,b,i,j) + H2C_vovv(:,n,e,f) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) resid(:,b,n,j) = resid(:,b,n,j) - H2C_vovv(:,i,e,f) * t_amp ! (in)
+                      if (mod(b,nthr)==ithr) resid(:,b,i,n) = resid(:,b,i,n) - H2C_vovv(:,j,e,f) * t_amp ! (jn)
+                      if (mod(e,nthr)==ithr) resid(:,e,i,j) = resid(:,e,i,j) - H2C_vovv(:,n,b,f) * t_amp ! (be)
+                      if (mod(e,nthr)==ithr) resid(:,e,n,j) = resid(:,e,n,j) + H2C_vovv(:,i,b,f) * t_amp ! (in)(be)
+                      if (mod(e,nthr)==ithr) resid(:,e,i,n) = resid(:,e,i,n) + H2C_vovv(:,j,b,f) * t_amp ! (jn)(be)
+                      if (mod(f,nthr)==ithr) resid(:,f,i,j) = resid(:,f,i,j) - H2C_vovv(:,n,e,b) * t_amp ! (bf)
+                      if (mod(f,nthr)==ithr) resid(:,f,n,j) = resid(:,f,n,j) + H2C_vovv(:,i,e,b) * t_amp ! (in)(bf)
+                      if (mod(f,nthr)==ithr) resid(:,f,i,n) = resid(:,f,i,n) + H2C_vovv(:,j,e,b) * t_amp ! (jn)(bf)
                   end do
+                  !$omp end parallel
                   ! update loop
                   do i = 1, nob
                       do j = i + 1, nob

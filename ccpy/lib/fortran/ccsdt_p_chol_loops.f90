@@ -4,6 +4,9 @@ module ccsdt_p_chol_loops
       use pspace_sort, only: get_index_table, sort4, bucket_pspace, release_sort_workspace
       implicit none
 
+      ! number of pair partners per block of H(vvvv) slices
+      integer, parameter :: vvvv_nblk = 32
+
       contains
               subroutine update_t3a_p(resid,&
                                       t3a_amps, t3a_excits,&
@@ -58,14 +61,16 @@ module ccsdt_p_chol_loops
                   real(kind=8) :: I2A_vvov(nua,nua,nua,noa) ! reordered
                   !real(kind=8) :: I2A_vooo(nua, noa, noa, noa)
                   real(kind=8) :: I2A_vooo(noa,nua,noa,noa) ! reordered
-                  real(kind=8) :: H2A_vvvv(nua,nua)
                   real(kind=8) :: val, denom, t_amp, res_mm23, hmatel
                   real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4
                   integer :: a, b, c, d, i, j, k, l, e, f, m, n, k1, idet, jdet
                   integer :: a_chol, b_chol
                   integer :: idx, nloc
-                  integer :: ab_table(nua*(nua-1)/2,2)
                   integer :: ipair, kk
+                  integer :: blk0, nblk, ib
+                  logical :: empty
+                  real(kind=8) :: vsum
+                  real(kind=8), allocatable :: hblk(:,:,:)
                   integer, allocatable :: off_ab(:), off_ac(:), off_bc(:), det_ab(:), det_ac(:), det_bc(:)
 
                   ! Start the VT3 intermediates at Hbar (factor of 1/2 to compensate for antisymmetrization)
@@ -93,6 +98,7 @@ module ccsdt_p_chol_loops
                   !!! ABCK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/3,noa/), nua, nua, nua, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nua, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k,l,m)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -149,9 +155,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABCI LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/1,noa-2/), nua, nua, nua, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nua, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k,m,n)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -208,9 +216,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABCJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/-1,nua/), (/2,noa-1/), nua, nua, nua, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nua, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k,l,n)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -267,6 +277,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -279,6 +290,7 @@ module ccsdt_p_chol_loops
                   !!! IJKA LOOP !!!
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/1,nua-2/), noa, noa, noa, nua)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/4,5,6,1/), noa, noa, noa, nua, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,f,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -326,9 +338,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! IJKB LOOP !!!
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/2,nua-1/), noa, noa, noa, nua)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/4,5,6,2/), noa, noa, noa, nua, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,f,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -376,9 +390,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! IJKC LOOP !!!
                   call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), (/3,nua/), noa, noa, noa, nua)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/4,5,6,3/), noa, noa, noa, nua, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,e,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -426,6 +442,7 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -437,6 +454,7 @@ module ccsdt_p_chol_loops
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -540,9 +558,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -646,9 +666,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -752,9 +774,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -858,9 +882,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -964,9 +990,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -1070,9 +1098,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -1176,9 +1206,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -1282,9 +1314,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3a_excits, t3a_amps, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -1388,6 +1422,7 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -1403,6 +1438,7 @@ module ccsdt_p_chol_loops
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aaa
                      a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                      i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -1506,6 +1542,7 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
@@ -1524,6 +1561,7 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,i,idet,j,k,m)
                   do idet = 1, n3aaa
                       a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                       i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -1540,8 +1578,10 @@ module ccsdt_p_chol_loops
                           resid(idet) = resid(idet) - I2A_vooo(m,c,i,k) * xbuf(m,j,b,a)
                       end do
                   end do
+                  !$omp end parallel do
                   deallocate(xbuf)
 
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,i,idet,j,k)
                   do idet = 1, n3aaa
                       a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                       i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -1558,16 +1598,9 @@ module ccsdt_p_chol_loops
                           resid(idet) = resid(idet) + I2A_vvov(e,a,c,k) * t2a(e,b,j,i)
                       end do
                   end do
+                  !$omp end parallel do
 
                   !!!! diagram 4: 1/2 A(c/ab) h2a(abef) * t3a(ebcijk)
-                  k1 = 1
-                  do a_chol=1,nua
-                     do b_chol=a_chol+1,nua
-                        ab_table(k1,1) = a_chol
-                        ab_table(k1,2) = b_chol
-                        k1 = k1 + 1
-                     end do
-                  end do
                   ! allocate new sorting arrays
                   nloc = noa*(noa-1)*(noa-2)/6*nua
                   allocate(loc_arr_copy1(2,nloc),loc_arr_copy2(2,nloc),loc_arr_copy3(2,nloc))
@@ -1597,107 +1630,121 @@ module ccsdt_p_chol_loops
                   call bucket_pspace(t3a_excits, n3aaa, 2, (/2,3/), (/nua,nua/), (/.false.,.false./), nua*nua, off_bc, det_bc)
                   ! Triple abc is updated from the pairs (a,b), (a,c), and (b,c). Pass 1 handles (a,b) and (a,c),
                   ! both owned by a_chol = a; pass 2 handles (b,c). No triple is updated by two threads in a pass.
-                  !$omp parallel do schedule(dynamic) private(b_chol,ipair,kk,h2a_vvvv,a,b,c,d,i,j,k,e,f,idx,idet,jdet)
-                  do a_chol = 1, nua
-                     do b_chol = a_chol+1, nua
-                        ipair = (a_chol-1)*nua + b_chol
-                        if (off_ab(ipair+1)==off_ab(ipair) .and. off_ac(ipair+1)==off_ac(ipair)) cycle
-                        call vvvv_batch_ss(h2a_vvvv, a_chol, b_chol, chol_a_vv, h2a_oovv, t2a, noa, nua, nchol)
-                        ! (a,b) = (a_chol,b_chol)
-                        do kk = off_ab(ipair), off_ab(ipair+1)-1
-                           idet = det_ab(kk)
-                           c = t3a_excits(idet,3)
-                           i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
-                           ! < ijkabc | h2a(vvvv) | ijkcef >
-                           idx = idx_table_copy1(i,j,k,c)
-                           if (idx/=0) then
-                              do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
-                                 e = t3a_excits_copy1(jdet,2); f = t3a_excits_copy1(jdet,3);
-                                 resid(idet) = resid(idet) + h2a_vvvv(e,f)*t3a_amps_copy1(jdet)
-                              end do
-                           end if
-                           ! < ijkabc | h2a(vvvv) | ijkdcf >
-                           idx = idx_table_copy2(i,j,k,c)
-                           if (idx/=0) then
-                              do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
-                                 d = t3a_excits_copy2(jdet,1); f = t3a_excits_copy2(jdet,3);
-                                 resid(idet) = resid(idet) - h2a_vvvv(d,f)*t3a_amps_copy2(jdet)
-                              end do
-                           end if
-                           ! < ijkabc | h2a(vvvv) | ijkdec >
-                           idx = idx_table_copy3(i,j,k,c)
-                           do jdet = loc_arr_copy3(1,idx), loc_arr_copy3(2,idx)
-                              d = t3a_excits_copy3(jdet,1); e = t3a_excits_copy3(jdet,2);
-                              resid(idet) = resid(idet) + h2a_vvvv(d,e)*t3a_amps_copy3(jdet)
-                           end do
-                        end do
-                        ! (a,c) = (a_chol,b_chol)
-                        do kk = off_ac(ipair), off_ac(ipair+1)-1
-                           idet = det_ac(kk)
-                           b = t3a_excits(idet,2)
-                           i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
-                           ! < ijkabc | h2a(vvvv) | ijkbef >
-                           idx = idx_table_copy1(i,j,k,b)
-                           if (idx/=0) then
-                              do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
-                                 e = t3a_excits_copy1(jdet,2); f = t3a_excits_copy1(jdet,3);
-                                 resid(idet) = resid(idet) - h2a_vvvv(e,f)*t3a_amps_copy1(jdet)
-                              end do
-                           end if
-                           ! < ijkabc | h2a(vvvv) | ijkdbf >
-                           idx = idx_table_copy2(i,j,k,b)
-                           do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
-                              d = t3a_excits_copy2(jdet,1); f = t3a_excits_copy2(jdet,3);
-                              resid(idet) = resid(idet) + h2a_vvvv(d,f)*t3a_amps_copy2(jdet)
-                           end do
-                           ! < ijkabc | h2a(vvvv) | ijkdeb >
-                           idx = idx_table_copy3(i,j,k,b)
-                           if (idx/=0) then
+                  ! H(vvvv) slices of the pairs (a_chol, b_chol > a_chol) are built once per a_chol, in blocks of
+                  ! b_chol. A triple abc is updated from the pairs (a,b) and (a,c) (owned by a_chol = a) and (b,c)
+                  ! (owned by a_chol = b), so the updates are atomic.
+                  !$omp parallel default(shared) private(hblk,blk0,nblk,ib,a_chol,b_chol,ipair,kk,vsum,a,b,c,d,i,j,k,e,f,idx,idet,jdet)
+                  allocate(hblk(nua,nua,vvvv_nblk))
+                  !$omp do schedule(dynamic)
+                  do a_chol = 1, nua-1
+                     do blk0 = a_chol+1, nua, vvvv_nblk
+                        nblk = min(vvvv_nblk, nua-blk0+1)
+                        ipair = (a_chol-1)*nua + blk0
+                        if (off_ab(ipair+nblk)==off_ab(ipair) .and. off_ac(ipair+nblk)==off_ac(ipair) .and.&
+                            off_bc(ipair+nblk)==off_bc(ipair)) cycle
+                        call vvvv_block_ss(hblk, a_chol, blk0, nblk, chol_a_vv, h2a_oovv, t2a, noa, nua, nchol)
+                        do ib = 1, nblk
+                           b_chol = blk0+ib-1
+                           ipair = (a_chol-1)*nua + b_chol
+                           ! (a,b) = (a_chol,b_chol)
+                           do kk = off_ab(ipair), off_ab(ipair+1)-1
+                              idet = det_ab(kk)
+                              c = t3a_excits(idet,3)
+                              i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
+                              vsum = 0.0d0
+                              ! < ijkabc | h2a(vvvv) | ijkcef >
+                              idx = idx_table_copy1(i,j,k,c)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
+                                    e = t3a_excits_copy1(jdet,2); f = t3a_excits_copy1(jdet,3);
+                                    vsum = vsum + hblk(e,f,ib)*t3a_amps_copy1(jdet)
+                                 end do
+                              end if
+                              ! < ijkabc | h2a(vvvv) | ijkdcf >
+                              idx = idx_table_copy2(i,j,k,c)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
+                                    d = t3a_excits_copy2(jdet,1); f = t3a_excits_copy2(jdet,3);
+                                    vsum = vsum - hblk(d,f,ib)*t3a_amps_copy2(jdet)
+                                 end do
+                              end if
+                              ! < ijkabc | h2a(vvvv) | ijkdec >
+                              idx = idx_table_copy3(i,j,k,c)
                               do jdet = loc_arr_copy3(1,idx), loc_arr_copy3(2,idx)
                                  d = t3a_excits_copy3(jdet,1); e = t3a_excits_copy3(jdet,2);
-                                 resid(idet) = resid(idet) - h2a_vvvv(d,e)*t3a_amps_copy3(jdet)
+                                 vsum = vsum + hblk(d,e,ib)*t3a_amps_copy3(jdet)
                               end do
-                           end if
+                              !$omp atomic
+                              resid(idet) = resid(idet) + vsum
+                           end do
+                           ! (a,c) = (a_chol,b_chol)
+                           do kk = off_ac(ipair), off_ac(ipair+1)-1
+                              idet = det_ac(kk)
+                              b = t3a_excits(idet,2)
+                              i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
+                              vsum = 0.0d0
+                              ! < ijkabc | h2a(vvvv) | ijkbef >
+                              idx = idx_table_copy1(i,j,k,b)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
+                                    e = t3a_excits_copy1(jdet,2); f = t3a_excits_copy1(jdet,3);
+                                    vsum = vsum - hblk(e,f,ib)*t3a_amps_copy1(jdet)
+                                 end do
+                              end if
+                              ! < ijkabc | h2a(vvvv) | ijkdbf >
+                              idx = idx_table_copy2(i,j,k,b)
+                              do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
+                                 d = t3a_excits_copy2(jdet,1); f = t3a_excits_copy2(jdet,3);
+                                 vsum = vsum + hblk(d,f,ib)*t3a_amps_copy2(jdet)
+                              end do
+                              ! < ijkabc | h2a(vvvv) | ijkdeb >
+                              idx = idx_table_copy3(i,j,k,b)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy3(1,idx), loc_arr_copy3(2,idx)
+                                    d = t3a_excits_copy3(jdet,1); e = t3a_excits_copy3(jdet,2);
+                                    vsum = vsum - hblk(d,e,ib)*t3a_amps_copy3(jdet)
+                                 end do
+                              end if
+                              !$omp atomic
+                              resid(idet) = resid(idet) + vsum
+                           end do
+                           ! (b,c) = (a_chol,b_chol)
+                           do kk = off_bc(ipair), off_bc(ipair+1)-1
+                              idet = det_bc(kk)
+                              a = t3a_excits(idet,1)
+                              i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
+                              vsum = 0.0d0
+                              ! < ijkabc | h2a(vvvv) | ijkaef >
+                              idx = idx_table_copy1(i,j,k,a)
+                              do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
+                                 e = t3a_excits_copy1(jdet,2); f = t3a_excits_copy1(jdet,3);
+                                 vsum = vsum + hblk(e,f,ib)*t3a_amps_copy1(jdet)
+                              end do
+                              ! < ijkabc | h2a(vvvv) | ijkdaf >
+                              idx = idx_table_copy2(i,j,k,a)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
+                                    d = t3a_excits_copy2(jdet,1); f = t3a_excits_copy2(jdet,3);
+                                    vsum = vsum - hblk(d,f,ib)*t3a_amps_copy2(jdet)
+                                 end do
+                              end if
+                              ! < ijkabc | h2a(vvvv) | ijkdea >
+                              idx = idx_table_copy3(i,j,k,a)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy3(1,idx), loc_arr_copy3(2,idx)
+                                    d = t3a_excits_copy3(jdet,1); e = t3a_excits_copy3(jdet,2);
+                                    vsum = vsum + hblk(d,e,ib)*t3a_amps_copy3(jdet)
+                                 end do
+                              end if
+                              !$omp atomic
+                              resid(idet) = resid(idet) + vsum
+                           end do
                         end do
                      end do
                   end do
-                  !$omp end parallel do
-                  !$omp parallel do schedule(dynamic) private(a_chol,b_chol,ipair,kk,h2a_vvvv,a,b,c,d,i,j,k,e,f,idx,idet,jdet)
-                  do k1 = 1, nua*(nua-1)/2
-                     a_chol = ab_table(k1,1); b_chol = ab_table(k1,2);
-                     ipair = (a_chol-1)*nua + b_chol
-                     if (off_bc(ipair+1)==off_bc(ipair)) cycle
-                     call vvvv_batch_ss(h2a_vvvv, a_chol, b_chol, chol_a_vv, h2a_oovv, t2a, noa, nua, nchol)
-                     ! (b,c) = (a_chol,b_chol)
-                     do kk = off_bc(ipair), off_bc(ipair+1)-1
-                        idet = det_bc(kk)
-                        a = t3a_excits(idet,1)
-                        i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
-                        ! < ijkabc | h2a(vvvv) | ijkaef >
-                        idx = idx_table_copy1(i,j,k,a)
-                        do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
-                           e = t3a_excits_copy1(jdet,2); f = t3a_excits_copy1(jdet,3);
-                           resid(idet) = resid(idet) + h2a_vvvv(e,f)*t3a_amps_copy1(jdet)
-                        end do
-                        ! < ijkabc | h2a(vvvv) | ijkdaf >
-                        idx = idx_table_copy2(i,j,k,a)
-                        if (idx/=0) then
-                           do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
-                              d = t3a_excits_copy2(jdet,1); f = t3a_excits_copy2(jdet,3);
-                              resid(idet) = resid(idet) - h2a_vvvv(d,f)*t3a_amps_copy2(jdet)
-                           end do
-                        end if
-                        ! < ijkabc | h2a(vvvv) | ijkdea >
-                        idx = idx_table_copy3(i,j,k,a)
-                        if (idx/=0) then
-                           do jdet = loc_arr_copy3(1,idx), loc_arr_copy3(2,idx)
-                              d = t3a_excits_copy3(jdet,1); e = t3a_excits_copy3(jdet,2);
-                              resid(idet) = resid(idet) + h2a_vvvv(d,e)*t3a_amps_copy3(jdet)
-                           end do
-                        end if
-                     end do
-                  end do
-                  !$omp end parallel do
+                  !$omp end do
+                  deallocate(hblk)
+                  !$omp end parallel
                   deallocate(off_ab,off_ac,off_bc,det_ab,det_ac,det_bc)
                   deallocate(t3a_excits_copy1,t3a_excits_copy2,t3a_excits_copy3)
                   deallocate(t3a_amps_copy1,t3a_amps_copy2,t3a_amps_copy3)
@@ -1705,6 +1752,7 @@ module ccsdt_p_chol_loops
                   deallocate(loc_arr_copy1,loc_arr_copy2,loc_arr_copy3)
 
                   ! Update t3 vector
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,denom,i,idet,j,k)
                   do idet = 1,n3aaa
                       a = t3a_excits(idet,1); b = t3a_excits(idet,2); c = t3a_excits(idet,3);
                       i = t3a_excits(idet,4); j = t3a_excits(idet,5); k = t3a_excits(idet,6);
@@ -1712,6 +1760,7 @@ module ccsdt_p_chol_loops
                       resid(idet) = resid(idet)/(denom - shift)
                       t3a_amps(idet) = t3a_amps(idet) + resid(idet)
                   end do
+                  !$omp end parallel do
                   call release_sort_workspace()
 
               end subroutine update_t3a_p
@@ -1791,7 +1840,6 @@ module ccsdt_p_chol_loops
 
                   integer, allocatable :: idx_table(:,:,:,:), idx_table1(:,:,:,:), idx_table2(:,:,:,:)
                   integer, allocatable :: loc_arr(:,:), loc_arr1(:,:), loc_arr2(:,:)
-                  real(kind=8), allocatable :: h_vv(:,:)
 
                   !real(kind=8) :: I2A_vooo(nua,noa,noa,noa)
                   real(kind=8) :: I2A_vooo(noa,nua,noa,noa) ! reordered
@@ -1809,8 +1857,11 @@ module ccsdt_p_chol_loops
                   integer :: i, j, k, l, a, b, c, d, m, n, e, f, idet, jdet
                   integer :: idx, nloc
                   integer :: a_chol, b_chol, k1
-                  integer :: ab_table(nua*(nua-1)/2,2)
                   integer :: ipair, kk
+                  integer :: blk0, nblk, ib
+                  logical :: empty
+                  real(kind=8) :: vsum
+                  real(kind=8), allocatable :: hblk(:,:,:)
                   integer, allocatable :: off_x(:), det_x(:), off_y(:), det_y(:)
 
                   ! compute VT3 intermediates
@@ -1857,6 +1908,7 @@ module ccsdt_p_chol_loops
                   allocate(idx_table(nua,nua,nub,noa))
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, noa)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, noa, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k,l,m)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -1875,6 +1927,7 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + (hmatel + hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3b_amps(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -1886,6 +1939,7 @@ module ccsdt_p_chol_loops
                   allocate(idx_table(noa,noa,nob,nub))
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nub/), noa, noa, nob, nub)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,e,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -1902,6 +1956,7 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + (hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3b_amps(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -1914,6 +1969,7 @@ module ccsdt_p_chol_loops
                   allocate(idx_table(nua,nua,nub,noa))
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,noa-1/), nua, nua, nub, noa)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/1,2,3,4/), nua, nua, nub, noa, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,hmatel1,i,idet,idx,j,jdet,k,m,n)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -1942,9 +1998,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABCJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/2,noa/), nua, nua, nub, noa)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/1,2,3,5/), nua, nua, nub, noa, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,i,idet,idx,j,jdet,k,l,n)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -1967,6 +2025,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -1978,6 +2037,7 @@ module ccsdt_p_chol_loops
                   !!! AIJK LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nua-1/), noa, noa, nob, nua)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/4,5,6,1/), noa, noa, nob, nua, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,f,hmatel1,i,idet,idx,j,jdet,k)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2000,6 +2060,7 @@ module ccsdt_p_chol_loops
                          end do
                       end if
                   end do
+                  !$omp end parallel do
                   deallocate(loc_arr,idx_table)
 
                   !!!! diagram 9: A(ij)A(ab) h2a(amie)*t3b(ebcmjk)
@@ -2010,6 +2071,7 @@ module ccsdt_p_chol_loops
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/2,3,5,6/), nua, nub, noa, nob, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2056,9 +2118,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/2,3,4,6/), nua, nub, noa, nob, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2105,9 +2169,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2154,9 +2220,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/1,3,5,6/), nua, nub, noa, nob, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2203,6 +2271,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -2214,6 +2283,7 @@ module ccsdt_p_chol_loops
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2226,6 +2296,7 @@ module ccsdt_p_chol_loops
                          resid(idet) = resid(idet) + hmatel * t3b_amps(jdet)
                       end do
                   end do ! end loop over idet
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -2237,6 +2308,7 @@ module ccsdt_p_chol_loops
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,noa-1/), (/1,nob/), nua, nua, noa, nob)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, nob, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2261,9 +2333,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/2,noa/), (/1,nob/), nua, nua, noa, nob)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, nob, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2288,6 +2362,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -2299,6 +2374,7 @@ module ccsdt_p_chol_loops
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/2,nua/), (/1,nub/), noa, noa, nua, nub)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/4,5,2,3/), noa, noa, nua, nub, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2323,9 +2399,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nua-1/), (/1,nub/), noa, noa, nua, nub)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/4,5,1,3/), noa, noa, nua, nub, nloc, n3aab, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2350,6 +2428,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -2366,6 +2445,7 @@ module ccsdt_p_chol_loops
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nua, noa, noa, nloc, n3aaa)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2379,9 +2459,11 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nua, noa, noa, nloc, n3aaa)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2395,9 +2477,11 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-1,noa-1/), nua, nua, noa, noa)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,4,5/), nua, nua, noa, noa, nloc, n3aaa)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2411,9 +2495,11 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nua, noa, noa, nloc, n3aaa)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2427,9 +2513,11 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nua, noa, noa, nloc, n3aaa)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2443,9 +2531,11 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/1,noa-2/), (/-2,noa/), nua, nua, noa, noa)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nua, noa, noa, nloc, n3aaa)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2459,9 +2549,11 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-1,nua-1/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,5,6/), nua, nua, noa, noa, nloc, n3aaa)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2475,9 +2567,11 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-2/), (/-2,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nua, noa, noa, nloc, n3aaa)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2491,9 +2585,11 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua-1/), (/-1,nua/), (/2,noa-1/), (/-1,noa/), nua, nua, noa, noa)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nua, noa, noa, nloc, n3aaa)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2507,6 +2603,7 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
@@ -2525,6 +2622,7 @@ module ccsdt_p_chol_loops
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2573,9 +2671,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2624,9 +2724,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2675,9 +2777,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2726,57 +2830,59 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
                   deallocate(t3_amps_buff,t3_excits_buff)
 
                   !!!! diagram 6: A(ab) 1/2 h2a(abef)*t3b(ebcmjk)
-                  k1 = 1
-                  do a_chol=1,nua
-                     do b_chol=a_chol+1,nua
-                        ab_table(k1,1) = a_chol
-                        ab_table(k1,2) = b_chol
-                        k1 = k1 + 1
-                     end do
-                  end do
                   !!! CIJK LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nub*noa*(noa-1)/2*nob
                   allocate(loc_arr(2,nloc))
                   allocate(idx_table(noa,noa,nob,nub))
-                  allocate(h_vv(nua,nua))
                   call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), (/1,nub/), noa, noa, nob, nub)
                   call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/4,5,6,3/), noa, noa, nob, nub, nloc, n3aab, resid)
                   ! each triple belongs to the single pair (a,b): no two threads update the same triple
                   allocate(off_x(nua*nua+1), det_x(n3aab))
                   call bucket_pspace(t3b_excits, n3aab, 2, (/1,2/), (/nua,nua/), (/.false.,.false./), nua*nua, off_x, det_x)
-                  !$omp parallel do schedule(dynamic) private(h_vv,a_chol,b_chol,ipair,kk,c,i,j,k,d,e,idx,idet,jdet)
-                  do k1=1,nua*(nua-1)/2
-                  a_chol = ab_table(k1,1); b_chol = ab_table(k1,2);
-                  ipair = (a_chol-1)*nua + b_chol
-                  if (off_x(ipair+1)==off_x(ipair)) cycle
-                  call vvvv_batch_ss(h_vv, a_chol, b_chol, chol_a_vv, h2a_oovv, t2a, noa, nua, nchol)
-                  do kk = off_x(ipair), off_x(ipair+1)-1
-                     idet = det_x(kk)
-                     c = t3b_excits(idet,3)
-                     i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                     idx = idx_table(i,j,k,c)
-                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                        d = t3b_excits(jdet,1); e = t3b_excits(jdet,2);
-                        ! compute < ijk~abc~ | h2a(vvvv) | ijk~dec~ >
-                        resid(idet) = resid(idet) + h_vv(d,e)*t3b_amps(jdet)
+                  ! H(vvvv) slices of the pairs (a_chol, b_chol > a_chol) are built once per a_chol, in blocks of b_chol
+                  !$omp parallel default(shared) private(hblk,blk0,nblk,ib,a_chol,b_chol,ipair,kk,a,b,c,d,i,j,k,e,f,idx,idet,jdet)
+                  allocate(hblk(nua,nua,vvvv_nblk))
+                  !$omp do schedule(dynamic)
+                  do a_chol = 1, nua-1
+                     do blk0 = a_chol+1, nua, vvvv_nblk
+                        nblk = min(vvvv_nblk, nua-blk0+1)
+                        ipair = (a_chol-1)*nua + blk0
+                        if (off_x(ipair+nblk)==off_x(ipair)) cycle
+                        call vvvv_block_ss(hblk, a_chol, blk0, nblk, chol_a_vv, h2a_oovv, t2a, noa, nua, nchol)
+                        do ib = 1, nblk
+                           b_chol = blk0+ib-1
+                           ipair = (a_chol-1)*nua + b_chol
+                           do kk = off_x(ipair), off_x(ipair+1)-1
+                              idet = det_x(kk)
+                              c = t3b_excits(idet,3)
+                              i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
+                              idx = idx_table(i,j,k,c)
+                              do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                                 d = t3b_excits(jdet,1); e = t3b_excits(jdet,2);
+                                 ! compute < ijk~abc~ | h2a(vvvv) | ijk~dec~ >
+                                 resid(idet) = resid(idet) + hblk(d,e,ib)*t3b_amps(jdet)
+                              end do
+                           end do
+                        end do
                      end do
                   end do
-                  end do ! end loop over a_chol < b_chol
-                  !$omp end parallel do
+                  !$omp end do
+                  deallocate(hblk)
+                  !$omp end parallel
                   ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table,h_vv,off_x,det_x)
+                  deallocate(loc_arr,idx_table,off_x,det_x)
 
                   !!!! diagram 8: A(ab) h2b(bcef)*t3b(aefijk)
                   ! allocate new sorting arrays
                   nloc = nua*noa*(noa-1)/2*nob ! no3nu
-                  allocate(h_vv(nub,nua))
                   allocate(loc_arr1(2,nloc)) ! 2*no3nu
                   allocate(loc_arr2(2,nloc)) ! 2*no3nu
                   allocate(idx_table1(noa,noa,nob,nua)) ! no3nu
@@ -2795,62 +2901,75 @@ module ccsdt_p_chol_loops
                   allocate(off_x(nua*nub+1), det_x(n3aab), off_y(nua*nub+1), det_y(n3aab))
                   call bucket_pspace(t3b_excits, n3aab, 2, (/2,3/), (/nua,nub/), (/.false.,.false./), nua*nub, off_x, det_x)
                   call bucket_pspace(t3b_excits, n3aab, 2, (/1,3/), (/nua,nub/), (/.false.,.false./), nua*nub, off_y, det_y)
-                  !$omp parallel do schedule(dynamic) private(a_chol,ipair,kk,h_vv,a,b,d,i,j,k,e,f,idx,idet,jdet)
-                  do b_chol=1,nub
-                  do a_chol=1,nua
-                    ipair = (a_chol-1)*nub + b_chol
-                    if (off_x(ipair+1)==off_x(ipair) .and. off_y(ipair+1)==off_y(ipair)) cycle
-                    call vvvv_batch_os(h_vv, a_chol, b_chol, chol_a_vv, chol_b_vv, h2b_oovv, t2b, noa, nua, nob, nub, nchol)
-                    ! (b,c~) = (a_chol,b_chol)
-                    do kk = off_x(ipair), off_x(ipair+1)-1
-                      idet = det_x(kk)
-                      a = t3b_excits(idet,1)
-                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      ! compute < ijk~abc~ | h2b(vvvv) | ijk~aef~ >
-                      idx = idx_table1(i,j,k,a)
-                      do jdet = loc_arr1(1,idx), loc_arr1(2,idx)
-                         e = t3b_excits1(jdet,2); f = t3b_excits1(jdet,3);
-                         resid(idet) = resid(idet) + h_vv(f,e)*t3b_amps1(jdet)
-                      end do
-                      ! compute < ijk~abc~ | h2b(vvvv) | ijk~daf~ >
-                      idx = idx_table2(i,j,k,a)
-                      if (idx/=0) then
-                         do jdet = loc_arr2(1,idx), loc_arr2(2,idx)
-                            d = t3b_excits2(jdet,1); f = t3b_excits2(jdet,3);
-                            resid(idet) = resid(idet) - h_vv(f,d)*t3b_amps2(jdet)
-                         end do
-                      end if
-                    end do
-                    ! (a,c~) = (a_chol,b_chol)
-                    do kk = off_y(ipair), off_y(ipair+1)-1
-                      idet = det_y(kk)
-                      b = t3b_excits(idet,2)
-                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
-                      ! compute < ijk~abc~ | h2b(vvvv) | ijk~bef~ >
-                      idx = idx_table1(i,j,k,b)
-                      if (idx/=0) then
-                         do jdet = loc_arr1(1,idx), loc_arr1(2,idx)
-                            e = t3b_excits1(jdet,2); f = t3b_excits1(jdet,3);
-                            resid(idet) = resid(idet) - h_vv(f,e)*t3b_amps1(jdet)
-                         end do
-                      end if
-                      ! compute < ijk~abc~ | h2b(vvvv) | ijk~dbf~ >
-                      idx = idx_table2(i,j,k,b)
-                      do jdet = loc_arr2(1,idx), loc_arr2(2,idx)
-                         d = t3b_excits2(jdet,1); f = t3b_excits2(jdet,3);
-                         resid(idet) = resid(idet) + h_vv(f,d)*t3b_amps2(jdet)
-                      end do
-                    end do
+                  ! H(vvvv) slices of the pairs (a_chol, b_chol) are built once per b_chol, in blocks of a_chol
+                  !$omp parallel default(shared) private(hblk,blk0,nblk,ib,empty,a_chol,b_chol,ipair,kk,a,b,c,d,i,j,k,e,f,idx,idet,jdet)
+                  allocate(hblk(nub,nua,vvvv_nblk))
+                  !$omp do schedule(dynamic)
+                  do b_chol = 1, nub
+                     do blk0 = 1, nua, vvvv_nblk
+                        nblk = min(vvvv_nblk, nua-blk0+1)
+                        empty = .true.
+                        do ib = 1, nblk
+                           ipair = (blk0+ib-2)*nub + b_chol
+                           if (off_x(ipair+1)/=off_x(ipair) .or. off_y(ipair+1)/=off_y(ipair)) empty = .false.
+                        end do
+                        if (empty) cycle
+                        call vvvv_block_os_b(hblk, b_chol, blk0, nblk, chol_a_vv, chol_b_vv, h2b_oovv, t2b, noa, nua, nob, nub, nchol)
+                        do ib = 1, nblk
+                           a_chol = blk0+ib-1
+                           ipair = (a_chol-1)*nub + b_chol
+                           do kk = off_x(ipair), off_x(ipair+1)-1
+                              idet = det_x(kk)
+                              a = t3b_excits(idet,1)
+                              i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
+                              ! compute < ijk~abc~ | h2b(vvvv) | ijk~aef~ >
+                              idx = idx_table1(i,j,k,a)
+                              do jdet = loc_arr1(1,idx), loc_arr1(2,idx)
+                                 e = t3b_excits1(jdet,2); f = t3b_excits1(jdet,3);
+                                 resid(idet) = resid(idet) + hblk(f,e,ib)*t3b_amps1(jdet)
+                              end do
+                              ! compute < ijk~abc~ | h2b(vvvv) | ijk~daf~ >
+                              idx = idx_table2(i,j,k,a)
+                              if (idx/=0) then
+                                 do jdet = loc_arr2(1,idx), loc_arr2(2,idx)
+                                    d = t3b_excits2(jdet,1); f = t3b_excits2(jdet,3);
+                                    resid(idet) = resid(idet) - hblk(f,d,ib)*t3b_amps2(jdet)
+                                 end do
+                              end if
+                           end do
+                           do kk = off_y(ipair), off_y(ipair+1)-1
+                              idet = det_y(kk)
+                              b = t3b_excits(idet,2)
+                              i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
+                              ! compute < ijk~abc~ | h2b(vvvv) | ijk~bef~ >
+                              idx = idx_table1(i,j,k,b)
+                              if (idx/=0) then
+                                 do jdet = loc_arr1(1,idx), loc_arr1(2,idx)
+                                    e = t3b_excits1(jdet,2); f = t3b_excits1(jdet,3);
+                                    resid(idet) = resid(idet) - hblk(f,e,ib)*t3b_amps1(jdet)
+                                 end do
+                              end if
+                              ! compute < ijk~abc~ | h2b(vvvv) | ijk~dbf~ >
+                              idx = idx_table2(i,j,k,b)
+                              do jdet = loc_arr2(1,idx), loc_arr2(2,idx)
+                                 d = t3b_excits2(jdet,1); f = t3b_excits2(jdet,3);
+                                 resid(idet) = resid(idet) + hblk(f,d,ib)*t3b_amps2(jdet)
+                              end do
+                           end do
+                        end do
+                     end do
                   end do
-                  end do ! end loop over b_chol, a_chol
-                  !$omp end parallel do
+                  !$omp end do
+                  deallocate(hblk)
+                  !$omp end parallel
                   ! deallocate sorting arrays
-                  deallocate(loc_arr1,loc_arr2,idx_table1,idx_table2,h_vv,off_x,det_x,off_y,det_y)
+                  deallocate(loc_arr1,loc_arr2,idx_table1,idx_table2,off_x,det_x,off_y,det_y)
                   deallocate(t3b_excits1,t3b_excits2,t3b_amps1,t3b_amps2)
 
                   !
                   ! Moment contributions
                   !
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,i,idet,j,k)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2860,7 +2979,9 @@ module ccsdt_p_chol_loops
                           resid(idet) = resid(idet) - I2B_vvvo(e,a,c,k) * t2a(e,b,j,i)
                       end do
                   end do
+                  !$omp end parallel do
 
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,i,idet,j,k)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2870,6 +2991,7 @@ module ccsdt_p_chol_loops
                           resid(idet) = resid(idet) - I2A_vvov(e,a,b,j) * t2b(e,c,i,k)
                       end do
                   end do
+                  !$omp end parallel do
 
                   allocate(xbuf(nub,nua,nob,noa))
                   do i = 1,noa
@@ -2881,6 +3003,7 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,i,idet,j,k)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2892,6 +3015,7 @@ module ccsdt_p_chol_loops
                           resid(idet) = resid(idet) + I2B_vvov(e,b,c,j) * xbuf(e,a,k,i)
                       end do
                   end do
+                  !$omp end parallel do
                   deallocate(xbuf)
 
                   allocate(xbuf(noa,noa,nua,nua))
@@ -2904,6 +3028,7 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,i,idet,j,k,m)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2913,6 +3038,7 @@ module ccsdt_p_chol_loops
                           resid(idet) = resid(idet) + I2B_ovoo(m,c,i,k) * xbuf(m,j,b,a)
                       end do
                   end do
+                  !$omp end parallel do
                   deallocate(xbuf)
 
                   allocate(xbuf(noa,nob,nua,nub))
@@ -2925,6 +3051,7 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,i,idet,j,k,m)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2934,6 +3061,7 @@ module ccsdt_p_chol_loops
                           resid(idet) = resid(idet) + I2A_vooo(m,b,i,j) * xbuf(m,k,a,c)
                       end do
                   end do
+                  !$omp end parallel do
                   deallocate(xbuf)
 
                   allocate(xbuf(nob,noa,nub,nua))
@@ -2946,6 +3074,7 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,i,idet,j,k,m)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2957,9 +3086,11 @@ module ccsdt_p_chol_loops
                           resid(idet) = resid(idet) - I2B_vooo(m,b,j,k) * xbuf(m,i,c,a)
                       end do
                   end do
+                  !$omp end parallel do
                   deallocate(xbuf)
 
                   ! Update t3 vector
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,denom,i,idet,j,k)
                   do idet = 1, n3aab
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); k = t3b_excits(idet,6);
@@ -2967,6 +3098,7 @@ module ccsdt_p_chol_loops
                       resid(idet) = resid(idet)/(denom - shift)
                       t3b_amps(idet) = t3b_amps(idet) + resid(idet)
                   end do
+                  !$omp end parallel do
                   call release_sort_workspace()
 
               end subroutine update_t3b_p
@@ -3061,9 +3193,12 @@ module ccsdt_p_chol_loops
                   real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4
                   integer :: i, j, k, l, a, b, c, d, m, n, e, f, idet, jdet
                   integer :: idx, nloc, a_chol, b_chol, k1
-                  integer :: ab_table(nub*(nub-1)/2,2)
-                  real(kind=8), allocatable :: xbuf(:,:,:,:), h_vv(:,:)
+                  real(kind=8), allocatable :: xbuf(:,:,:,:)
                   integer :: ipair, kk
+                  integer :: blk0, nblk, ib
+                  logical :: empty
+                  real(kind=8) :: vsum
+                  real(kind=8), allocatable :: hblk(:,:,:)
                   integer, allocatable :: off_x(:), det_x(:), off_y(:), det_y(:)
 
                   ! VT3 intermediates
@@ -3110,6 +3245,7 @@ module ccsdt_p_chol_loops
                   allocate(idx_table(nub,nub,nua,noa))
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,noa/), nub, nub, nua, noa)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/2,3,1,4/), nub, nub, nua, noa, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k,m,n)
                   do idet = 1, n3abb
                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3129,6 +3265,7 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + (hmatel + hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3c_amps(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -3140,6 +3277,7 @@ module ccsdt_p_chol_loops
                   allocate(idx_table(nob,nob,noa,nua))
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nua/), nob, nob, noa, nua)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/5,6,4,1/), nob, nob, noa, nua, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,f,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k)
                   do idet = 1, n3abb
                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3155,6 +3293,7 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + (hmatel1 + hmatel2 + hmatel3 + hmatel4)*t3c_amps(jdet)
                      end do
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -3167,6 +3306,7 @@ module ccsdt_p_chol_loops
                   allocate(idx_table(nub,nub,nua,nob))
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/2,nob/), nub, nub, nua, nob)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/2,3,1,6/), nub, nub, nua, nob, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,hmatel1,i,idet,idx,j,jdet,k,l,m)
                   do idet = 1, n3abb
                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3195,9 +3335,11 @@ module ccsdt_p_chol_loops
                          end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! BCAJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nua/), (/1,nob-1/), nub, nub, nua, nob)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/2,3,1,5/), nub, nub, nua, nob, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,i,idet,idx,j,jdet,k,l,n)
                   do idet = 1, n3abb
                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3220,6 +3362,7 @@ module ccsdt_p_chol_loops
                          end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -3231,6 +3374,7 @@ module ccsdt_p_chol_loops
                   !!! JKIB LOOP !!!
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nub-1/), nob, nob, noa, nub)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/5,6,4,2/), nob, nob, noa, nub, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,f,hmatel1,i,idet,idx,j,jdet,k)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3253,6 +3397,7 @@ module ccsdt_p_chol_loops
                          end do
                       end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -3264,6 +3409,7 @@ module ccsdt_p_chol_loops
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/1,2,4,5/), nua, nub, noa, nob, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3abb
                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3310,9 +3456,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/1,nob-1/), nua, nub, noa, nob)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/1,3,4,5/), nua, nub, noa, nob, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3359,9 +3507,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/1,nub-1/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/1,2,4,6/), nua, nub, noa, nob, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3408,9 +3558,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua/), (/2,nub/), (/1,noa/), (/2,nob/), nua, nub, noa, nob)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3457,6 +3609,7 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -3468,6 +3621,7 @@ module ccsdt_p_chol_loops
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3480,6 +3634,7 @@ module ccsdt_p_chol_loops
                          resid(idet) = resid(idet) + hmatel * t3c_amps(jdet)
                       end do
                   end do ! end loop over idet
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -3491,6 +3646,7 @@ module ccsdt_p_chol_loops
                   !!! JKAC LOOP !!!
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/2,nub/), nob, nob, nua, nub)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/5,6,1,3/), nob, nob, nua, nub, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3515,9 +3671,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! JKAB LOOP !!!
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,nua/), (/1,nub-1/), nob, nob, nua, nub)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/5,6,1,2/), nob, nob, nua, nub, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3542,6 +3700,7 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -3553,6 +3712,7 @@ module ccsdt_p_chol_loops
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/2,nob/), nub, nub, noa, nob)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/2,3,4,6/), nub, nub, noa, nob, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3577,9 +3737,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,noa/), (/1,nob-1/), nub, nub, noa, nob)
                   call sort4(t3c_excits, t3c_amps, loc_arr, idx_table, (/2,3,4,5/), nub, nub, noa, nob, nloc, n3abb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3604,6 +3766,7 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -3620,6 +3783,7 @@ module ccsdt_p_chol_loops
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3635,9 +3799,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3653,9 +3819,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3671,9 +3839,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3689,9 +3859,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3707,9 +3879,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3725,9 +3899,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3743,9 +3919,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3761,9 +3939,11 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3779,6 +3959,7 @@ module ccsdt_p_chol_loops
                           end do
                       end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
@@ -3797,6 +3978,7 @@ module ccsdt_p_chol_loops
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,3,4,6/), nua, nub, noa, nob, nloc, n3aab)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3abb
                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3845,9 +4027,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/1,noa-1/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,4,6/), nua, nub, noa, nob, nloc, n3aab)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3abb
                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3896,9 +4080,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nua-1/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/1,3,5,6/), nua, nub, noa, nob, nloc, n3aab)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3abb
                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3947,9 +4133,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nua/), (/1,nub/), (/2,noa/), (/1,nob/), nua, nub, noa, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,5,6/), nua, nub, noa, nob, nloc, n3aab)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3abb
                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -3998,24 +4186,16 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
                   ! deallocate t3 buffer arrays
                   deallocate(t3_amps_buff,t3_excits_buff)
 
                   !!!! diagram 6: A(bc) 1/2 h2c(bcef)*t3c(aefijk)
-                  k1 = 1
-                  do a_chol=1,nub
-                     do b_chol=a_chol+1,nub
-                        ab_table(k1,1) = a_chol
-                        ab_table(k1,2) = b_chol
-                        k1 = k1 + 1
-                     end do
-                  end do
                   !!! JKIA LOOP !!!
                   ! allocate new sorting arrays
                   nloc = nua*nob*(nob-1)/2*noa
-                  allocate(h_vv(nub,nub))
                   allocate(loc_arr(2,nloc))
                   allocate(idx_table(nob,nob,noa,nua))
                   call get_index_table(idx_table, (/1,nob-1/), (/-1,nob/), (/1,noa/), (/1,nua/), nob, nob, noa, nua)
@@ -4023,32 +4203,42 @@ module ccsdt_p_chol_loops
                   ! each triple belongs to the single pair (b,c): no two threads update the same triple
                   allocate(off_x(nub*nub+1), det_x(n3abb))
                   call bucket_pspace(t3c_excits, n3abb, 2, (/2,3/), (/nub,nub/), (/.false.,.false./), nub*nub, off_x, det_x)
-                  !$omp parallel do schedule(dynamic) private(h_vv,a_chol,b_chol,ipair,kk,a,i,j,k,e,f,idx,idet,jdet)
-                  do k1=1,nub*(nub-1)/2
-                  a_chol = ab_table(k1,1); b_chol = ab_table(k1,2);
-                  ipair = (a_chol-1)*nub + b_chol
-                  if (off_x(ipair+1)==off_x(ipair)) cycle
-                  call vvvv_batch_ss(h_vv, a_chol, b_chol, chol_b_vv, h2c_oovv, t2c, nob, nub, nchol)
-                  do kk = off_x(ipair), off_x(ipair+1)-1
-                     idet = det_x(kk)
-                     a = t3c_excits(idet,1)
-                     i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                     idx = idx_table(j,k,i,a)
-                     do jdet = loc_arr(1,idx), loc_arr(2,idx)
-                        e = t3c_excits(jdet,2); f = t3c_excits(jdet,3);
-                        ! compute < ij~k~ab~c~ | h2c(vvvv) | ij~k~ae~f~ >
-                        resid(idet) = resid(idet) + h_vv(e,f)*t3c_amps(jdet)
+                  ! H(vvvv) slices of the pairs (a_chol, b_chol > a_chol) are built once per a_chol, in blocks of b_chol
+                  !$omp parallel default(shared) private(hblk,blk0,nblk,ib,a_chol,b_chol,ipair,kk,a,b,c,d,i,j,k,e,f,idx,idet,jdet)
+                  allocate(hblk(nub,nub,vvvv_nblk))
+                  !$omp do schedule(dynamic)
+                  do a_chol = 1, nub-1
+                     do blk0 = a_chol+1, nub, vvvv_nblk
+                        nblk = min(vvvv_nblk, nub-blk0+1)
+                        ipair = (a_chol-1)*nub + blk0
+                        if (off_x(ipair+nblk)==off_x(ipair)) cycle
+                        call vvvv_block_ss(hblk, a_chol, blk0, nblk, chol_b_vv, h2c_oovv, t2c, nob, nub, nchol)
+                        do ib = 1, nblk
+                           b_chol = blk0+ib-1
+                           ipair = (a_chol-1)*nub + b_chol
+                           do kk = off_x(ipair), off_x(ipair+1)-1
+                              idet = det_x(kk)
+                              a = t3c_excits(idet,1)
+                              i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
+                              idx = idx_table(j,k,i,a)
+                              do jdet = loc_arr(1,idx), loc_arr(2,idx)
+                                 e = t3c_excits(jdet,2); f = t3c_excits(jdet,3);
+                                 ! compute < ij~k~ab~c~ | h2c(vvvv) | ij~k~ae~f~ >
+                                 resid(idet) = resid(idet) + hblk(e,f,ib)*t3c_amps(jdet)
+                              end do
+                           end do
+                        end do
                      end do
                   end do
-                  end do ! end loop over a_chol < b_chol
-                  !$omp end parallel do
+                  !$omp end do
+                  deallocate(hblk)
+                  !$omp end parallel
                   ! deallocate sorting arrays
-                  deallocate(loc_arr,idx_table,h_vv,off_x,det_x)
+                  deallocate(loc_arr,idx_table,off_x,det_x)
 
                   !!!! diagram 8: A(bc) h2b(abef)*t3c(efcijk)
                   ! allocate new sorting arrays
                   nloc = nub*nob*(nob-1)/2*noa
-                  allocate(h_vv(nub,nua))
                   allocate(loc_arr1(2,nloc))
                   allocate(loc_arr2(2,nloc))
                   allocate(idx_table1(nob,nob,noa,nub))
@@ -4067,57 +4257,66 @@ module ccsdt_p_chol_loops
                   allocate(off_x(nua*nub+1), det_x(n3abb), off_y(nua*nub+1), det_y(n3abb))
                   call bucket_pspace(t3c_excits, n3abb, 2, (/1,3/), (/nua,nub/), (/.false.,.false./), nua*nub, off_x, det_x)
                   call bucket_pspace(t3c_excits, n3abb, 2, (/1,2/), (/nua,nub/), (/.false.,.false./), nua*nub, off_y, det_y)
-                  !$omp parallel do schedule(dynamic) private(b_chol,ipair,kk,h_vv,b,c,d,i,j,k,e,f,idx,idet,jdet)
-                  do a_chol=1,nua
-                  do b_chol=1,nub
-                  ipair = (a_chol-1)*nub + b_chol
-                  if (off_x(ipair+1)==off_x(ipair) .and. off_y(ipair+1)==off_y(ipair)) cycle
-                  call vvvv_batch_os(h_vv, a_chol, b_chol, chol_a_vv, chol_b_vv, h2b_oovv, t2b, noa, nua, nob, nub, nchol)
-                  ! (a,c~) = (a_chol,b_chol)
-                  do kk = off_x(ipair), off_x(ipair+1)-1
-                      idet = det_x(kk)
-                      b = t3c_excits(idet,2)
-                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~db~f~ >
-                      idx = idx_table1(j,k,i,b)
-                      do jdet = loc_arr1(1,idx), loc_arr1(2,idx)
-                         d = t3c_excits1(jdet,1); f = t3c_excits1(jdet,3);
-                         resid(idet) = resid(idet) + h_vv(f,d)*t3c_amps1(jdet)
-                      end do
-                      ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~de~b~ >
-                      idx = idx_table2(j,k,i,b)
-                      if (idx/=0) then
-                         do jdet = loc_arr2(1,idx), loc_arr2(2,idx)
-                            d = t3c_excits2(jdet,1); e = t3c_excits2(jdet,2);
-                            resid(idet) = resid(idet) - h_vv(e,d)*t3c_amps2(jdet)
-                         end do
-                      end if
+                  ! H(vvvv) slices of the pairs (a_chol, b_chol) are built once per a_chol, in blocks of b_chol
+                  !$omp parallel default(shared) private(hblk,blk0,nblk,ib,empty,a_chol,b_chol,ipair,kk,a,b,c,d,i,j,k,e,f,idx,idet,jdet)
+                  allocate(hblk(nub,nua,vvvv_nblk))
+                  !$omp do schedule(dynamic)
+                  do a_chol = 1, nua
+                     do blk0 = 1, nub, vvvv_nblk
+                        nblk = min(vvvv_nblk, nub-blk0+1)
+                        ipair = (a_chol-1)*nub + blk0
+                        empty = off_x(ipair+nblk)==off_x(ipair) .and. off_y(ipair+nblk)==off_y(ipair)
+                        if (empty) cycle
+                        call vvvv_block_os_a(hblk, a_chol, blk0, nblk, chol_a_vv, chol_b_vv, h2b_oovv, t2b, noa, nua, nob, nub, nchol)
+                        do ib = 1, nblk
+                           b_chol = blk0+ib-1
+                           ipair = (a_chol-1)*nub + b_chol
+                           do kk = off_x(ipair), off_x(ipair+1)-1
+                              idet = det_x(kk)
+                              b = t3c_excits(idet,2)
+                              i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
+                              ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~db~f~ >
+                              idx = idx_table1(j,k,i,b)
+                              do jdet = loc_arr1(1,idx), loc_arr1(2,idx)
+                                 d = t3c_excits1(jdet,1); f = t3c_excits1(jdet,3);
+                                 resid(idet) = resid(idet) + hblk(f,d,ib)*t3c_amps1(jdet)
+                              end do
+                              ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~de~b~ >
+                              idx = idx_table2(j,k,i,b)
+                              if (idx/=0) then
+                                 do jdet = loc_arr2(1,idx), loc_arr2(2,idx)
+                                    d = t3c_excits2(jdet,1); e = t3c_excits2(jdet,2);
+                                    resid(idet) = resid(idet) - hblk(e,d,ib)*t3c_amps2(jdet)
+                                 end do
+                              end if
+                           end do
+                           do kk = off_y(ipair), off_y(ipair+1)-1
+                              idet = det_y(kk)
+                              c = t3c_excits(idet,3)
+                              i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
+                              ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~dc~f~ >
+                              idx = idx_table1(j,k,i,c)
+                              if (idx/=0) then
+                                 do jdet = loc_arr1(1,idx), loc_arr1(2,idx)
+                                    d = t3c_excits1(jdet,1); f = t3c_excits1(jdet,3);
+                                    resid(idet) = resid(idet) - hblk(f,d,ib)*t3c_amps1(jdet)
+                                 end do
+                              end if
+                              ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~de~c~ >
+                              idx = idx_table2(j,k,i,c)
+                              do jdet = loc_arr2(1,idx), loc_arr2(2,idx)
+                                 d = t3c_excits2(jdet,1); e = t3c_excits2(jdet,2);
+                                 resid(idet) = resid(idet) + hblk(e,d,ib)*t3c_amps2(jdet)
+                              end do
+                           end do
+                        end do
+                     end do
                   end do
-                  ! (a,b~) = (a_chol,b_chol)
-                  do kk = off_y(ipair), off_y(ipair+1)-1
-                      idet = det_y(kk)
-                      c = t3c_excits(idet,3)
-                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                      ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~dc~f~ >
-                      idx = idx_table1(j,k,i,c)
-                      if (idx/=0) then
-                         do jdet = loc_arr1(1,idx), loc_arr1(2,idx)
-                            d = t3c_excits1(jdet,1); f = t3c_excits1(jdet,3);
-                            resid(idet) = resid(idet) - h_vv(f,d)*t3c_amps1(jdet)
-                         end do
-                      end if
-                      ! compute < ij~k~ab~c~ | h2b(vvvv) | ij~k~de~c~ >
-                      idx = idx_table2(j,k,i,c)
-                      do jdet = loc_arr2(1,idx), loc_arr2(2,idx)
-                         d = t3c_excits2(jdet,1); e = t3c_excits2(jdet,2);
-                         resid(idet) = resid(idet) + h_vv(e,d)*t3c_amps2(jdet)
-                      end do
-                  end do
-                  end do
-                  end do ! end loop over a_chol, b_chol
-                  !$omp end parallel do
+                  !$omp end do
+                  deallocate(hblk)
+                  !$omp end parallel
                   ! deallocate sorting arrays
-                  deallocate(h_vv,off_x,det_x,off_y,det_y)
+                  deallocate(off_x,det_x,off_y,det_y)
                   deallocate(loc_arr1)
                   deallocate(loc_arr2)
                   deallocate(idx_table1)
@@ -4128,6 +4327,7 @@ module ccsdt_p_chol_loops
                   !
                   ! Moment contributions
                   !
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,i,idet,j,k)
                   do idet = 1, n3abb
                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -4139,7 +4339,9 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + I2B_vvvo(e,a,c,k) * t2b(e,b,i,j)
                      end do
                   end do
+                  !$omp end parallel do
 
+                   !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,i,idet,j,k)
                    do idet = 1,n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -4149,6 +4351,7 @@ module ccsdt_p_chol_loops
                          resid(idet) = resid(idet) - I2B_vvov(e,a,c,i) * t2c(e,b,j,k)
                       end do
                    end do
+                   !$omp end parallel do
 
                    allocate(xbuf(nub,nua,nob,noa))
                    do i = 1,noa
@@ -4160,6 +4363,7 @@ module ccsdt_p_chol_loops
                          end do
                       end do
                    end do
+                   !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,i,idet,j,k)
                    do idet = 1,n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -4169,6 +4373,7 @@ module ccsdt_p_chol_loops
                          resid(idet) = resid(idet) - I2C_vvov(e,c,b,j) * xbuf(e,a,k,i)
                       end do
                    end do
+                   !$omp end parallel do
                    deallocate(xbuf)
 
                    allocate(xbuf(noa,nob,nua,nub))
@@ -4181,6 +4386,7 @@ module ccsdt_p_chol_loops
                          end do
                       end do
                    end do
+                   !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,i,idet,j,k,m)
                    do idet = 1,n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -4192,6 +4398,7 @@ module ccsdt_p_chol_loops
                          resid(idet) = resid(idet) - I2B_ovoo(m,c,i,k) * xbuf(m,j,a,b)
                       end do
                    end do
+                   !$omp end parallel do
                    deallocate(xbuf)
 
                    allocate(xbuf(nob,nob,nub,nub))
@@ -4204,6 +4411,7 @@ module ccsdt_p_chol_loops
                          end do
                       end do
                    end do
+                   !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,i,idet,j,k,m)
                    do idet = 1,n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -4213,6 +4421,7 @@ module ccsdt_p_chol_loops
                          resid(idet) = resid(idet) + I2B_vooo(m,a,i,k) * xbuf(m,j,b,c)
                       end do
                    end do
+                   !$omp end parallel do
                    deallocate(xbuf)
 
                    allocate(xbuf(nob,noa,nub,nua))
@@ -4225,6 +4434,7 @@ module ccsdt_p_chol_loops
                          end do
                       end do
                    end do
+                   !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,i,idet,j,k,m)
                    do idet = 1,n3abb
                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -4234,9 +4444,11 @@ module ccsdt_p_chol_loops
                          resid(idet) = resid(idet) + I2C_vooo(m,b,k,j) * xbuf(m,i,c,a)
                       end do
                    end do
+                   !$omp end parallel do
                    deallocate(xbuf)
 
                    ! Update t3
+                   !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,denom,i,idet,j,k)
                    do idet = 1, n3abb
                        a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
                        i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
@@ -4244,6 +4456,7 @@ module ccsdt_p_chol_loops
                        resid(idet) = resid(idet)/(denom - shift)
                        t3c_amps(idet) = t3c_amps(idet) + resid(idet)
                    end do
+                   !$omp end parallel do
                   call release_sort_workspace()
 
               end subroutine update_t3c_p
@@ -4303,11 +4516,13 @@ module ccsdt_p_chol_loops
                   real(kind=8) :: I2C_vooo(nob,nub,nob,nob) ! reordered
                   !real(kind=8) :: I2C_vvov(nub,nub,nob,nub)
                   real(kind=8) :: I2C_vvov(nub,nub,nub,nob) ! reordered
-                  real(kind=8) :: H2C_vvvv(nub,nub)
                   integer :: a, b, c, d, i, j, k, l, e, f, m, n, idet, jdet
                   integer :: idx, nloc, a_chol, b_chol, k1
-                  integer :: ab_table(nub*(nub-1)/2,2)
                   integer :: ipair, kk
+                  integer :: blk0, nblk, ib
+                  logical :: empty
+                  real(kind=8) :: vsum
+                  real(kind=8), allocatable :: hblk(:,:,:)
                   integer, allocatable :: off_ab(:), off_ac(:), off_bc(:), det_ab(:), det_ac(:), det_bc(:)
 
                   ! compute VT3 intermediates
@@ -4335,6 +4550,7 @@ module ccsdt_p_chol_loops
                   !!! ABCK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/3,nob/), nub, nub, nub, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/1,2,3,6/), nub, nub, nub, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k,l,m)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -4391,9 +4607,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABCI LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/1,nob-2/), nub, nub, nub, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/1,2,3,4/), nub, nub, nub, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k,m,n)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -4450,9 +4668,11 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABCJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/-1,nub/), (/2,nob-1/), nub, nub, nub, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/1,2,3,5/), nub, nub, nub, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k,l,n)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -4509,6 +4729,7 @@ module ccsdt_p_chol_loops
                         end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -4521,6 +4742,7 @@ module ccsdt_p_chol_loops
                   !!! IJKA LOOP !!!
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/1,nub-2/), nob, nob, nob, nub)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/4,5,6,1/), nob, nob, nob, nub, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,f,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -4568,9 +4790,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! IJKB LOOP !!!
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/2,nub-1/), nob, nob, nob, nub)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/4,5,6,2/), nob, nob, nob, nub, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,f,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -4618,9 +4842,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! IJKC LOOP !!!
                   call get_index_table(idx_table, (/1,nob-2/), (/-1,nob-1/), (/-1,nob/), (/3,nub/), nob, nob, nob, nub)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/4,5,6,3/), nob, nob, nob, nub, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,e,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -4668,6 +4894,7 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -4679,6 +4906,7 @@ module ccsdt_p_chol_loops
                   !!! ABIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/1,2,4,5/), nub, nub, nob, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -4782,9 +5010,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ACIJ LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/1,3,4,5/), nub, nub, nob, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -4888,9 +5118,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! BCIJ LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-1,nob-1/), nub, nub, nob, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/2,3,4,5/), nub, nub, nob, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,n)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -4994,9 +5226,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/1,2,4,6/), nub, nub, nob, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -5100,9 +5334,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ACIK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/1,3,4,6/), nub, nub, nob, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -5206,9 +5442,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! BCIK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/1,nob-2/), (/-2,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/2,3,4,6/), nub, nub, nob, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,m)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -5312,9 +5550,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ABJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-1,nub-1/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/1,2,5,6/), nub, nub, nob, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,f,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -5418,9 +5658,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! ACJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-2/), (/-2,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/1,3,5,6/), nub, nub, nob, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -5524,9 +5766,11 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/2,nub-1/), (/-1,nub/), (/2,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3d_excits, t3d_amps, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3bbb, resid)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -5630,6 +5874,7 @@ module ccsdt_p_chol_loops
                      end do
                      end if
                   end do
+                  !$omp end parallel do
                   ! deallocate sorting arrays
                   deallocate(loc_arr,idx_table)
 
@@ -5645,6 +5890,7 @@ module ccsdt_p_chol_loops
                   !!! BCJK LOOP !!!
                   call get_index_table(idx_table, (/1,nub-1/), (/-1,nub/), (/1,nob-1/), (/-1,nob/), nub, nub, nob, nob)
                   call sort4(t3_excits_buff, t3_amps_buff, loc_arr, idx_table, (/2,3,5,6/), nub, nub, nob, nob, nloc, n3abb)
+                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,d,hmatel,i,idet,idx,j,jdet,k,l)
                   do idet = 1, n3bbb
                      a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                      i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -5747,21 +5993,14 @@ module ccsdt_p_chol_loops
                         resid(idet) = resid(idet) + hmatel * t3_amps_buff(jdet)
                      end do
                      end if
-                 end do
+                  end do
+                  !$omp end parallel do
                  ! deallocate sorting arrays
                  deallocate(loc_arr,idx_table)
                  ! deallocate t3 buffer arrays
                  deallocate(t3_amps_buff,t3_excits_buff)
 
                   !!!! diagram 4: 1/2 A(c/ab) h2c(abef) * t3d(ebcijk)
-                  k1 = 1
-                  do a_chol=1,nub
-                     do b_chol=a_chol+1,nub
-                        ab_table(k1,1) = a_chol
-                        ab_table(k1,2) = b_chol
-                        k1 = k1 + 1
-                     end do
-                  end do
                   ! allocate new sorting arrays
                   nloc = nob*(nob-1)*(nob-2)/6*nub
                   allocate(loc_arr_copy1(2,nloc),loc_arr_copy2(2,nloc),loc_arr_copy3(2,nloc))
@@ -5791,107 +6030,121 @@ module ccsdt_p_chol_loops
                   call bucket_pspace(t3d_excits, n3bbb, 2, (/2,3/), (/nub,nub/), (/.false.,.false./), nub*nub, off_bc, det_bc)
                   ! Triple abc is updated from the pairs (a,b), (a,c), and (b,c). Pass 1 handles (a,b) and (a,c),
                   ! both owned by a_chol = a; pass 2 handles (b,c). No triple is updated by two threads in a pass.
-                  !$omp parallel do schedule(dynamic) private(b_chol,ipair,kk,h2c_vvvv,a,b,c,d,i,j,k,e,f,idx,idet,jdet)
-                  do a_chol = 1, nub
-                     do b_chol = a_chol+1, nub
-                        ipair = (a_chol-1)*nub + b_chol
-                        if (off_ab(ipair+1)==off_ab(ipair) .and. off_ac(ipair+1)==off_ac(ipair)) cycle
-                        call vvvv_batch_ss(h2c_vvvv, a_chol, b_chol, chol_b_vv, h2c_oovv, t2c, nob, nub, nchol)
-                        ! (a,b) = (a_chol,b_chol)
-                        do kk = off_ab(ipair), off_ab(ipair+1)-1
-                           idet = det_ab(kk)
-                           c = t3d_excits(idet,3)
-                           i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                           ! < ijkabc | h2c(vvvv) | ijkcef >
-                           idx = idx_table_copy1(i,j,k,c)
-                           if (idx/=0) then
-                              do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
-                                 e = t3d_excits_copy1(jdet,2); f = t3d_excits_copy1(jdet,3);
-                                 resid(idet) = resid(idet) + h2c_vvvv(e,f)*t3d_amps_copy1(jdet)
-                              end do
-                           end if
-                           ! < ijkabc | h2c(vvvv) | ijkdcf >
-                           idx = idx_table_copy2(i,j,k,c)
-                           if (idx/=0) then
-                              do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
-                                 d = t3d_excits_copy2(jdet,1); f = t3d_excits_copy2(jdet,3);
-                                 resid(idet) = resid(idet) - h2c_vvvv(d,f)*t3d_amps_copy2(jdet)
-                              end do
-                           end if
-                           ! < ijkabc | h2c(vvvv) | ijkdec >
-                           idx = idx_table_copy3(i,j,k,c)
-                           do jdet = loc_arr_copy3(1,idx), loc_arr_copy3(2,idx)
-                              d = t3d_excits_copy3(jdet,1); e = t3d_excits_copy3(jdet,2);
-                              resid(idet) = resid(idet) + h2c_vvvv(d,e)*t3d_amps_copy3(jdet)
-                           end do
-                        end do
-                        ! (a,c) = (a_chol,b_chol)
-                        do kk = off_ac(ipair), off_ac(ipair+1)-1
-                           idet = det_ac(kk)
-                           b = t3d_excits(idet,2)
-                           i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                           ! < ijkabc | h2c(vvvv) | ijkbef >
-                           idx = idx_table_copy1(i,j,k,b)
-                           if (idx/=0) then
-                              do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
-                                 e = t3d_excits_copy1(jdet,2); f = t3d_excits_copy1(jdet,3);
-                                 resid(idet) = resid(idet) - h2c_vvvv(e,f)*t3d_amps_copy1(jdet)
-                              end do
-                           end if
-                           ! < ijkabc | h2c(vvvv) | ijkdbf >
-                           idx = idx_table_copy2(i,j,k,b)
-                           do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
-                              d = t3d_excits_copy2(jdet,1); f = t3d_excits_copy2(jdet,3);
-                              resid(idet) = resid(idet) + h2c_vvvv(d,f)*t3d_amps_copy2(jdet)
-                           end do
-                           ! < ijkabc | h2c(vvvv) | ijkdeb >
-                           idx = idx_table_copy3(i,j,k,b)
-                           if (idx/=0) then
+                  ! H(vvvv) slices of the pairs (a_chol, b_chol > a_chol) are built once per a_chol, in blocks of
+                  ! b_chol. A triple abc is updated from the pairs (a,b) and (a,c) (owned by a_chol = a) and (b,c)
+                  ! (owned by a_chol = b), so the updates are atomic.
+                  !$omp parallel default(shared) private(hblk,blk0,nblk,ib,a_chol,b_chol,ipair,kk,vsum,a,b,c,d,i,j,k,e,f,idx,idet,jdet)
+                  allocate(hblk(nub,nub,vvvv_nblk))
+                  !$omp do schedule(dynamic)
+                  do a_chol = 1, nub-1
+                     do blk0 = a_chol+1, nub, vvvv_nblk
+                        nblk = min(vvvv_nblk, nub-blk0+1)
+                        ipair = (a_chol-1)*nub + blk0
+                        if (off_ab(ipair+nblk)==off_ab(ipair) .and. off_ac(ipair+nblk)==off_ac(ipair) .and.&
+                            off_bc(ipair+nblk)==off_bc(ipair)) cycle
+                        call vvvv_block_ss(hblk, a_chol, blk0, nblk, chol_b_vv, h2c_oovv, t2c, nob, nub, nchol)
+                        do ib = 1, nblk
+                           b_chol = blk0+ib-1
+                           ipair = (a_chol-1)*nub + b_chol
+                           ! (a,b) = (a_chol,b_chol)
+                           do kk = off_ab(ipair), off_ab(ipair+1)-1
+                              idet = det_ab(kk)
+                              c = t3d_excits(idet,3)
+                              i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
+                              vsum = 0.0d0
+                              ! < ijkabc | h2c(vvvv) | ijkcef >
+                              idx = idx_table_copy1(i,j,k,c)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
+                                    e = t3d_excits_copy1(jdet,2); f = t3d_excits_copy1(jdet,3);
+                                    vsum = vsum + hblk(e,f,ib)*t3d_amps_copy1(jdet)
+                                 end do
+                              end if
+                              ! < ijkabc | h2c(vvvv) | ijkdcf >
+                              idx = idx_table_copy2(i,j,k,c)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
+                                    d = t3d_excits_copy2(jdet,1); f = t3d_excits_copy2(jdet,3);
+                                    vsum = vsum - hblk(d,f,ib)*t3d_amps_copy2(jdet)
+                                 end do
+                              end if
+                              ! < ijkabc | h2c(vvvv) | ijkdec >
+                              idx = idx_table_copy3(i,j,k,c)
                               do jdet = loc_arr_copy3(1,idx), loc_arr_copy3(2,idx)
                                  d = t3d_excits_copy3(jdet,1); e = t3d_excits_copy3(jdet,2);
-                                 resid(idet) = resid(idet) - h2c_vvvv(d,e)*t3d_amps_copy3(jdet)
+                                 vsum = vsum + hblk(d,e,ib)*t3d_amps_copy3(jdet)
                               end do
-                           end if
+                              !$omp atomic
+                              resid(idet) = resid(idet) + vsum
+                           end do
+                           ! (a,c) = (a_chol,b_chol)
+                           do kk = off_ac(ipair), off_ac(ipair+1)-1
+                              idet = det_ac(kk)
+                              b = t3d_excits(idet,2)
+                              i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
+                              vsum = 0.0d0
+                              ! < ijkabc | h2c(vvvv) | ijkbef >
+                              idx = idx_table_copy1(i,j,k,b)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
+                                    e = t3d_excits_copy1(jdet,2); f = t3d_excits_copy1(jdet,3);
+                                    vsum = vsum - hblk(e,f,ib)*t3d_amps_copy1(jdet)
+                                 end do
+                              end if
+                              ! < ijkabc | h2c(vvvv) | ijkdbf >
+                              idx = idx_table_copy2(i,j,k,b)
+                              do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
+                                 d = t3d_excits_copy2(jdet,1); f = t3d_excits_copy2(jdet,3);
+                                 vsum = vsum + hblk(d,f,ib)*t3d_amps_copy2(jdet)
+                              end do
+                              ! < ijkabc | h2c(vvvv) | ijkdeb >
+                              idx = idx_table_copy3(i,j,k,b)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy3(1,idx), loc_arr_copy3(2,idx)
+                                    d = t3d_excits_copy3(jdet,1); e = t3d_excits_copy3(jdet,2);
+                                    vsum = vsum - hblk(d,e,ib)*t3d_amps_copy3(jdet)
+                                 end do
+                              end if
+                              !$omp atomic
+                              resid(idet) = resid(idet) + vsum
+                           end do
+                           ! (b,c) = (a_chol,b_chol)
+                           do kk = off_bc(ipair), off_bc(ipair+1)-1
+                              idet = det_bc(kk)
+                              a = t3d_excits(idet,1)
+                              i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
+                              vsum = 0.0d0
+                              ! < ijkabc | h2c(vvvv) | ijkaef >
+                              idx = idx_table_copy1(i,j,k,a)
+                              do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
+                                 e = t3d_excits_copy1(jdet,2); f = t3d_excits_copy1(jdet,3);
+                                 vsum = vsum + hblk(e,f,ib)*t3d_amps_copy1(jdet)
+                              end do
+                              ! < ijkabc | h2c(vvvv) | ijkdaf >
+                              idx = idx_table_copy2(i,j,k,a)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
+                                    d = t3d_excits_copy2(jdet,1); f = t3d_excits_copy2(jdet,3);
+                                    vsum = vsum - hblk(d,f,ib)*t3d_amps_copy2(jdet)
+                                 end do
+                              end if
+                              ! < ijkabc | h2c(vvvv) | ijkdea >
+                              idx = idx_table_copy3(i,j,k,a)
+                              if (idx/=0) then
+                                 do jdet = loc_arr_copy3(1,idx), loc_arr_copy3(2,idx)
+                                    d = t3d_excits_copy3(jdet,1); e = t3d_excits_copy3(jdet,2);
+                                    vsum = vsum + hblk(d,e,ib)*t3d_amps_copy3(jdet)
+                                 end do
+                              end if
+                              !$omp atomic
+                              resid(idet) = resid(idet) + vsum
+                           end do
                         end do
                      end do
                   end do
-                  !$omp end parallel do
-                  !$omp parallel do schedule(dynamic) private(a_chol,b_chol,ipair,kk,h2c_vvvv,a,b,c,d,i,j,k,e,f,idx,idet,jdet)
-                  do k1 = 1, nub*(nub-1)/2
-                     a_chol = ab_table(k1,1); b_chol = ab_table(k1,2);
-                     ipair = (a_chol-1)*nub + b_chol
-                     if (off_bc(ipair+1)==off_bc(ipair)) cycle
-                     call vvvv_batch_ss(h2c_vvvv, a_chol, b_chol, chol_b_vv, h2c_oovv, t2c, nob, nub, nchol)
-                     ! (b,c) = (a_chol,b_chol)
-                     do kk = off_bc(ipair), off_bc(ipair+1)-1
-                        idet = det_bc(kk)
-                        a = t3d_excits(idet,1)
-                        i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
-                        ! < ijkabc | h2c(vvvv) | ijkaef >
-                        idx = idx_table_copy1(i,j,k,a)
-                        do jdet = loc_arr_copy1(1,idx), loc_arr_copy1(2,idx)
-                           e = t3d_excits_copy1(jdet,2); f = t3d_excits_copy1(jdet,3);
-                           resid(idet) = resid(idet) + h2c_vvvv(e,f)*t3d_amps_copy1(jdet)
-                        end do
-                        ! < ijkabc | h2c(vvvv) | ijkdaf >
-                        idx = idx_table_copy2(i,j,k,a)
-                        if (idx/=0) then
-                           do jdet = loc_arr_copy2(1,idx), loc_arr_copy2(2,idx)
-                              d = t3d_excits_copy2(jdet,1); f = t3d_excits_copy2(jdet,3);
-                              resid(idet) = resid(idet) - h2c_vvvv(d,f)*t3d_amps_copy2(jdet)
-                           end do
-                        end if
-                        ! < ijkabc | h2c(vvvv) | ijkdea >
-                        idx = idx_table_copy3(i,j,k,a)
-                        if (idx/=0) then
-                           do jdet = loc_arr_copy3(1,idx), loc_arr_copy3(2,idx)
-                              d = t3d_excits_copy3(jdet,1); e = t3d_excits_copy3(jdet,2);
-                              resid(idet) = resid(idet) + h2c_vvvv(d,e)*t3d_amps_copy3(jdet)
-                           end do
-                        end if
-                     end do
-                  end do
-                  !$omp end parallel do
+                  !$omp end do
+                  deallocate(hblk)
+                  !$omp end parallel
                   deallocate(off_ab,off_ac,off_bc,det_ab,det_ac,det_bc)
                   deallocate(t3d_excits_copy1,t3d_excits_copy2,t3d_excits_copy3)
                   deallocate(t3d_amps_copy1,t3d_amps_copy2,t3d_amps_copy3)
@@ -5911,6 +6164,7 @@ module ccsdt_p_chol_loops
                        end do
                     end do
                  end do
+                 !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,i,idet,j,k,m)
                  do idet = 1, n3bbb
                     a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                     i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -5927,8 +6181,10 @@ module ccsdt_p_chol_loops
                        resid(idet) = resid(idet) - I2C_vooo(m,c,i,k) * xbuf(m,j,b,a)
                     end do
                  end do
+                 !$omp end parallel do
                  deallocate(xbuf)
 
+                 !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,i,idet,j,k)
                  do idet = 1, n3bbb
                     a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                     i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -5945,8 +6201,10 @@ module ccsdt_p_chol_loops
                        resid(idet) = resid(idet) + I2C_vvov(e,a,c,k) * t2c(e,b,j,i)
                     end do
                  end do
+                 !$omp end parallel do
 
                  ! Update t3 vector
+                 !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,denom,i,idet,j,k)
                  do idet = 1,n3bbb
                     a = t3d_excits(idet,1); b = t3d_excits(idet,2); c = t3d_excits(idet,3);
                     i = t3d_excits(idet,4); j = t3d_excits(idet,5); k = t3d_excits(idet,6);
@@ -5954,6 +6212,7 @@ module ccsdt_p_chol_loops
                     resid(idet) = resid(idet)/(denom - shift)
                     t3d_amps(idet) = t3d_amps(idet) + resid(idet)
                  end do
+                 !$omp end parallel do
                  call release_sort_workspace()
 
               end subroutine update_t3d_p
@@ -5973,31 +6232,40 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2A_vooo(noa,nua,noa,noa)
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
+                  integer :: ithr, nthr
                   real(kind=8) :: t_amp
 
+                  !$omp parallel default(shared) private(a,e,f,i,idet,j,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3aaa
                       t_amp = t3a_amps(idet)
                       ! I2A(amij) <- A(ij) [A(n/ij)A(a/ef) h2a(mnef) * t3a(aefijn)]
                       a = t3a_excits(idet,1); e = t3a_excits(idet,2); f = t3a_excits(idet,3);
                       i = t3a_excits(idet,4); j = t3a_excits(idet,5); n = t3a_excits(idet,6);
-                      I2A_vooo(:,a,i,j) = I2A_vooo(:,a,i,j) + H2A_oovv(:,n,e,f) * t_amp ! (1)
-                      I2A_vooo(:,a,n,j) = I2A_vooo(:,a,n,j) - H2A_oovv(:,i,e,f) * t_amp ! (in)
-                      I2A_vooo(:,a,i,n) = I2A_vooo(:,a,i,n) - H2A_oovv(:,j,e,f) * t_amp ! (jn)
-                      I2A_vooo(:,e,i,j) = I2A_vooo(:,e,i,j) - H2A_oovv(:,n,a,f) * t_amp ! (ae)
-                      I2A_vooo(:,e,n,j) = I2A_vooo(:,e,n,j) + H2A_oovv(:,i,a,f) * t_amp ! (in)(ae)
-                      I2A_vooo(:,e,i,n) = I2A_vooo(:,e,i,n) + H2A_oovv(:,j,a,f) * t_amp ! (jn)(ae)
-                      I2A_vooo(:,f,i,j) = I2A_vooo(:,f,i,j) - H2A_oovv(:,n,e,a) * t_amp ! (af)
-                      I2A_vooo(:,f,n,j) = I2A_vooo(:,f,n,j) + H2A_oovv(:,i,e,a) * t_amp ! (in)(af)
-                      I2A_vooo(:,f,i,n) = I2A_vooo(:,f,i,n) + H2A_oovv(:,j,e,a) * t_amp ! (jn)(af)
+                      if (mod(a,nthr)==ithr) I2A_vooo(:,a,i,j) = I2A_vooo(:,a,i,j) + H2A_oovv(:,n,e,f) * t_amp ! (1)
+                      if (mod(a,nthr)==ithr) I2A_vooo(:,a,n,j) = I2A_vooo(:,a,n,j) - H2A_oovv(:,i,e,f) * t_amp ! (in)
+                      if (mod(a,nthr)==ithr) I2A_vooo(:,a,i,n) = I2A_vooo(:,a,i,n) - H2A_oovv(:,j,e,f) * t_amp ! (jn)
+                      if (mod(e,nthr)==ithr) I2A_vooo(:,e,i,j) = I2A_vooo(:,e,i,j) - H2A_oovv(:,n,a,f) * t_amp ! (ae)
+                      if (mod(e,nthr)==ithr) I2A_vooo(:,e,n,j) = I2A_vooo(:,e,n,j) + H2A_oovv(:,i,a,f) * t_amp ! (in)(ae)
+                      if (mod(e,nthr)==ithr) I2A_vooo(:,e,i,n) = I2A_vooo(:,e,i,n) + H2A_oovv(:,j,a,f) * t_amp ! (jn)(ae)
+                      if (mod(f,nthr)==ithr) I2A_vooo(:,f,i,j) = I2A_vooo(:,f,i,j) - H2A_oovv(:,n,e,a) * t_amp ! (af)
+                      if (mod(f,nthr)==ithr) I2A_vooo(:,f,n,j) = I2A_vooo(:,f,n,j) + H2A_oovv(:,i,e,a) * t_amp ! (in)(af)
+                      if (mod(f,nthr)==ithr) I2A_vooo(:,f,i,n) = I2A_vooo(:,f,i,n) + H2A_oovv(:,j,e,a) * t_amp ! (jn)(af)
                   end do
+                  !$omp end parallel
+                  !$omp parallel default(shared) private(a,e,f,i,idet,j,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1,n3aab
                       t_amp = t3b_amps(idet)
                       ! I2A(amij) <- A(ij) [A(ae) h2b(mnef) * t3b(aefijn)]
                       a = t3b_excits(idet,1); e = t3b_excits(idet,2); f = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); j = t3b_excits(idet,5); n = t3b_excits(idet,6);
-                      I2A_vooo(:,a,i,j) = I2A_vooo(:,a,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
-                      I2A_vooo(:,e,i,j) = I2A_vooo(:,e,i,j) - H2B_oovv(:,n,a,f) * t_amp ! (ae)
+                      if (mod(a,nthr)==ithr) I2A_vooo(:,a,i,j) = I2A_vooo(:,a,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
+                      if (mod(e,nthr)==ithr) I2A_vooo(:,e,i,j) = I2A_vooo(:,e,i,j) - H2B_oovv(:,n,a,f) * t_amp ! (ae)
                   end do
+                  !$omp end parallel
                   ! antisymmetrize
                   do i = 1,noa
                      do j = i+1,noa
@@ -6023,27 +6291,36 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2B_ovoo(noa,nub,noa,nob)
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
+                  integer :: ithr, nthr
                   real(kind=8) :: t_amp
 
+                  !$omp parallel default(shared) private(b,e,f,i,idet,j,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
                       ! I2B(mbij) <- A(in) h2a(mnef) * t3b(efbinj)
                       e = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
-                      I2B_ovoo(:,b,i,j) = I2B_ovoo(:,b,i,j) + H2A_oovv(:,n,e,f) * t_amp ! (1)
-                      I2B_ovoo(:,b,n,j) = I2B_ovoo(:,b,n,j) - H2A_oovv(:,i,e,f) * t_amp ! (in)
+                      if (mod(b,nthr)==ithr) I2B_ovoo(:,b,i,j) = I2B_ovoo(:,b,i,j) + H2A_oovv(:,n,e,f) * t_amp ! (1)
+                      if (mod(b,nthr)==ithr) I2B_ovoo(:,b,n,j) = I2B_ovoo(:,b,n,j) - H2A_oovv(:,i,e,f) * t_amp ! (in)
                   end do
+                  !$omp end parallel
 
+                  !$omp parallel default(shared) private(b,e,f,i,idet,j,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3abb
                       t_amp = t3c_amps(idet)
                       ! I2B(mbij) <- A(bf)A(jn) h2B(mnef) * t3c(efbinj)
                       e = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      I2B_ovoo(:,b,i,j) = I2B_ovoo(:,b,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
-                      I2B_ovoo(:,f,i,j) = I2B_ovoo(:,f,i,j) - H2B_oovv(:,n,e,b) * t_amp ! (bf)
-                      I2B_ovoo(:,b,i,n) = I2B_ovoo(:,b,i,n) - H2B_oovv(:,j,e,f) * t_amp ! (jn)
-                      I2B_ovoo(:,f,i,n) = I2B_ovoo(:,f,i,n) + H2B_oovv(:,j,e,b) * t_amp ! (bf)(jn)
+                      if (mod(b,nthr)==ithr) I2B_ovoo(:,b,i,j) = I2B_ovoo(:,b,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
+                      if (mod(f,nthr)==ithr) I2B_ovoo(:,f,i,j) = I2B_ovoo(:,f,i,j) - H2B_oovv(:,n,e,b) * t_amp ! (bf)
+                      if (mod(b,nthr)==ithr) I2B_ovoo(:,b,i,n) = I2B_ovoo(:,b,i,n) - H2B_oovv(:,j,e,f) * t_amp ! (jn)
+                      if (mod(f,nthr)==ithr) I2B_ovoo(:,f,i,n) = I2B_ovoo(:,f,i,n) + H2B_oovv(:,j,e,b) * t_amp ! (bf)(jn)
                   end do
+                  !$omp end parallel
 
       end subroutine calc_I2B_ovoo
 
@@ -6060,6 +6337,7 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2B_vooo(nob,nua,noa,nob) ! reordered
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
+                  integer :: ithr, nthr
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
@@ -6073,16 +6351,20 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel default(shared) private(a,e,f,i,idet,j,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
                       ! I2B(amij) <- A(af)A(in) h2b(nmfe) * t3b(afeinj)
                       a = t3b_excits(idet,1); f = t3b_excits(idet,2); e = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
-                      I2B_vooo(:,a,i,j) = I2B_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
-                      I2B_vooo(:,f,i,j) = I2B_vooo(:,f,i,j) - intbuf(:,n,e,a) * t_amp ! (af)
-                      I2B_vooo(:,a,n,j) = I2B_vooo(:,a,n,j) - intbuf(:,i,e,f) * t_amp ! (in)
-                      I2B_vooo(:,f,n,j) = I2B_vooo(:,f,n,j) + intbuf(:,i,e,a) * t_amp ! (af)(in)
+                      if (mod(a,nthr)==ithr) I2B_vooo(:,a,i,j) = I2B_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
+                      if (mod(f,nthr)==ithr) I2B_vooo(:,f,i,j) = I2B_vooo(:,f,i,j) - intbuf(:,n,e,a) * t_amp ! (af)
+                      if (mod(a,nthr)==ithr) I2B_vooo(:,a,n,j) = I2B_vooo(:,a,n,j) - intbuf(:,i,e,f) * t_amp ! (in)
+                      if (mod(f,nthr)==ithr) I2B_vooo(:,f,n,j) = I2B_vooo(:,f,n,j) + intbuf(:,i,e,a) * t_amp ! (af)(in)
                   end do
+                  !$omp end parallel
                   deallocate(intbuf)
 
                   allocate(intbuf(nob,nob,nub,nub))
@@ -6095,14 +6377,18 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel default(shared) private(a,e,f,i,idet,j,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3abb
                       t_amp = t3c_amps(idet)
                       ! I2B(amij) <- A(jn) h2c(nmfe) * t3c(afeinj)
                       a = t3c_excits(idet,1); f = t3c_excits(idet,2); e = t3c_excits(idet,3);
                       i = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      I2B_vooo(:,a,i,j) = I2B_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
-                      I2B_vooo(:,a,i,n) = I2B_vooo(:,a,i,n) - intbuf(:,j,e,f) * t_amp ! (jn)
+                      if (mod(a,nthr)==ithr) I2B_vooo(:,a,i,j) = I2B_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
+                      if (mod(a,nthr)==ithr) I2B_vooo(:,a,i,n) = I2B_vooo(:,a,i,n) - intbuf(:,j,e,f) * t_amp ! (jn)
                   end do
+                  !$omp end parallel
                   deallocate(intbuf)
 
       end subroutine calc_I2B_vooo
@@ -6119,24 +6405,29 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2C_vooo(nob,nub,nob,nob)
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
+                  integer :: ithr, nthr
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
+                  !$omp parallel default(shared) private(a,e,f,i,idet,j,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3bbb
                       t_amp = t3d_amps(idet)
                       ! I2C(amij) <- A(ij) [A(n/ij)A(a/ef) h2c(mnef) * t3d(aefijn)]
                       a = t3d_excits(idet,1); e = t3d_excits(idet,2); f = t3d_excits(idet,3);
                       i = t3d_excits(idet,4); j = t3d_excits(idet,5); n = t3d_excits(idet,6);
-                      I2C_vooo(:,a,i,j) = I2C_vooo(:,a,i,j) + H2C_oovv(:,n,e,f) * t_amp ! (1)
-                      I2C_vooo(:,a,n,j) = I2C_vooo(:,a,n,j) - H2C_oovv(:,i,e,f) * t_amp ! (in)
-                      I2C_vooo(:,a,i,n) = I2C_vooo(:,a,i,n) - H2C_oovv(:,j,e,f) * t_amp ! (jn)
-                      I2C_vooo(:,e,i,j) = I2C_vooo(:,e,i,j) - H2C_oovv(:,n,a,f) * t_amp ! (ae)
-                      I2C_vooo(:,e,n,j) = I2C_vooo(:,e,n,j) + H2C_oovv(:,i,a,f) * t_amp ! (in)(ae)
-                      I2C_vooo(:,e,i,n) = I2C_vooo(:,e,i,n) + H2C_oovv(:,j,a,f) * t_amp ! (jn)(ae)
-                      I2C_vooo(:,f,i,j) = I2C_vooo(:,f,i,j) - H2C_oovv(:,n,e,a) * t_amp ! (af)
-                      I2C_vooo(:,f,n,j) = I2C_vooo(:,f,n,j) + H2C_oovv(:,i,e,a) * t_amp ! (in)(af)
-                      I2C_vooo(:,f,i,n) = I2C_vooo(:,f,i,n) + H2C_oovv(:,j,e,a) * t_amp ! (jn)(af)
+                      if (mod(a,nthr)==ithr) I2C_vooo(:,a,i,j) = I2C_vooo(:,a,i,j) + H2C_oovv(:,n,e,f) * t_amp ! (1)
+                      if (mod(a,nthr)==ithr) I2C_vooo(:,a,n,j) = I2C_vooo(:,a,n,j) - H2C_oovv(:,i,e,f) * t_amp ! (in)
+                      if (mod(a,nthr)==ithr) I2C_vooo(:,a,i,n) = I2C_vooo(:,a,i,n) - H2C_oovv(:,j,e,f) * t_amp ! (jn)
+                      if (mod(e,nthr)==ithr) I2C_vooo(:,e,i,j) = I2C_vooo(:,e,i,j) - H2C_oovv(:,n,a,f) * t_amp ! (ae)
+                      if (mod(e,nthr)==ithr) I2C_vooo(:,e,n,j) = I2C_vooo(:,e,n,j) + H2C_oovv(:,i,a,f) * t_amp ! (in)(ae)
+                      if (mod(e,nthr)==ithr) I2C_vooo(:,e,i,n) = I2C_vooo(:,e,i,n) + H2C_oovv(:,j,a,f) * t_amp ! (jn)(ae)
+                      if (mod(f,nthr)==ithr) I2C_vooo(:,f,i,j) = I2C_vooo(:,f,i,j) - H2C_oovv(:,n,e,a) * t_amp ! (af)
+                      if (mod(f,nthr)==ithr) I2C_vooo(:,f,n,j) = I2C_vooo(:,f,n,j) + H2C_oovv(:,i,e,a) * t_amp ! (in)(af)
+                      if (mod(f,nthr)==ithr) I2C_vooo(:,f,i,n) = I2C_vooo(:,f,i,n) + H2C_oovv(:,j,e,a) * t_amp ! (jn)(af)
                   end do
+                  !$omp end parallel
                   allocate(intbuf(nob,noa,nub,nua))
                   do a = 1,nua
                      do b = 1,nub
@@ -6147,14 +6438,18 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel default(shared) private(a,e,f,i,idet,j,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3abb
                       t_amp = t3c_amps(idet)
                       ! I2C(amij) <- A(ij) [A(ae) h2b(nmfe) * t3c(faenij)]
                       f = t3c_excits(idet,1); a = t3c_excits(idet,2); e = t3c_excits(idet,3);
                       n = t3c_excits(idet,4); i = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      I2C_vooo(:,a,i,j) = I2C_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
-                      I2C_vooo(:,e,i,j) = I2C_vooo(:,e,i,j) - intbuf(:,n,a,f) * t_amp ! (ae)
+                      if (mod(a,nthr)==ithr) I2C_vooo(:,a,i,j) = I2C_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
+                      if (mod(e,nthr)==ithr) I2C_vooo(:,e,i,j) = I2C_vooo(:,e,i,j) - intbuf(:,n,a,f) * t_amp ! (ae)
                   end do
+                  !$omp end parallel
                   deallocate(intbuf)
                   ! antisymmetrize
                   do i = 1,nob
@@ -6182,6 +6477,7 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2A_vvov(nua,nua,nua,noa) ! reordered
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
+                  integer :: ithr, nthr
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
@@ -6195,21 +6491,25 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel default(shared) private(a,b,f,i,idet,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3aaa
                       t_amp = t3a_amps(idet)
                       ! I2A(abie) <- A(ab) [A(i/mn)A(f/ab) -h2a(mnef) * t3a(abfimn)]
                       a = t3a_excits(idet,1); b = t3a_excits(idet,2); f = t3a_excits(idet,3);
                       i = t3a_excits(idet,4); m = t3a_excits(idet,5); n = t3a_excits(idet,6);
-                      I2A_vvov(:,a,b,i) = I2A_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
-                      I2A_vvov(:,a,b,m) = I2A_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
-                      I2A_vvov(:,a,b,n) = I2A_vvov(:,a,b,n) + intbuf(:,f,m,i) * t_amp ! (in)
-                      I2A_vvov(:,f,b,i) = I2A_vvov(:,f,b,i) + intbuf(:,a,m,n) * t_amp ! (af)
-                      I2A_vvov(:,f,b,m) = I2A_vvov(:,f,b,m) - intbuf(:,a,i,n) * t_amp ! (im)(af)
-                      I2A_vvov(:,f,b,n) = I2A_vvov(:,f,b,n) - intbuf(:,a,m,i) * t_amp ! (in)(af)
-                      I2A_vvov(:,a,f,i) = I2A_vvov(:,a,f,i) + intbuf(:,b,m,n) * t_amp ! (bf)
-                      I2A_vvov(:,a,f,m) = I2A_vvov(:,a,f,m) - intbuf(:,b,i,n) * t_amp ! (im)(bf)
-                      I2A_vvov(:,a,f,n) = I2A_vvov(:,a,f,n) - intbuf(:,b,m,i) * t_amp ! (in)(bf)
+                      if (mod(a,nthr)==ithr) I2A_vvov(:,a,b,i) = I2A_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
+                      if (mod(a,nthr)==ithr) I2A_vvov(:,a,b,m) = I2A_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
+                      if (mod(a,nthr)==ithr) I2A_vvov(:,a,b,n) = I2A_vvov(:,a,b,n) + intbuf(:,f,m,i) * t_amp ! (in)
+                      if (mod(f,nthr)==ithr) I2A_vvov(:,f,b,i) = I2A_vvov(:,f,b,i) + intbuf(:,a,m,n) * t_amp ! (af)
+                      if (mod(f,nthr)==ithr) I2A_vvov(:,f,b,m) = I2A_vvov(:,f,b,m) - intbuf(:,a,i,n) * t_amp ! (im)(af)
+                      if (mod(f,nthr)==ithr) I2A_vvov(:,f,b,n) = I2A_vvov(:,f,b,n) - intbuf(:,a,m,i) * t_amp ! (in)(af)
+                      if (mod(a,nthr)==ithr) I2A_vvov(:,a,f,i) = I2A_vvov(:,a,f,i) + intbuf(:,b,m,n) * t_amp ! (bf)
+                      if (mod(a,nthr)==ithr) I2A_vvov(:,a,f,m) = I2A_vvov(:,a,f,m) - intbuf(:,b,i,n) * t_amp ! (im)(bf)
+                      if (mod(a,nthr)==ithr) I2A_vvov(:,a,f,n) = I2A_vvov(:,a,f,n) - intbuf(:,b,m,i) * t_amp ! (in)(bf)
                   end do
+                  !$omp end parallel
                   deallocate(intbuf)
                   allocate(intbuf(nua,nub,noa,nob))
                   do j = 1,nob
@@ -6221,16 +6521,21 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel default(shared) private(a,b,f,i,idet,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1,n3aab
                       t_amp = t3b_amps(idet)
                       ! I2A(abie) <- A(ab) [A(im) -h2b(mnef) * t3b(abfimn)]
                       a = t3b_excits(idet,1); b = t3b_excits(idet,2); f = t3b_excits(idet,3);
                       i = t3b_excits(idet,4); m = t3b_excits(idet,5); n = t3b_excits(idet,6);
-                      I2A_vvov(:,a,b,i) = I2A_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
-                      I2A_vvov(:,a,b,m) = I2A_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
+                      if (mod(a,nthr)==ithr) I2A_vvov(:,a,b,i) = I2A_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
+                      if (mod(a,nthr)==ithr) I2A_vvov(:,a,b,m) = I2A_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
                   end do
+                  !$omp end parallel
                   deallocate(intbuf)
                   ! antisymmetrize
+                  !$omp parallel do private(a,b,e)
                   do i = 1,noa
                      do a = 1,nua
                         do b = a+1,nua
@@ -6241,6 +6546,7 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp end parallel do
       end subroutine calc_I2A_vvov
 
       subroutine calc_I2B_vvov(I2B_vvov,&
@@ -6256,6 +6562,7 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2B_vvov(nub,nua,nub,noa) ! reordered
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
+                  integer :: ithr, nthr
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
@@ -6269,6 +6576,9 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel default(shared) private(a,b,f,i,idet,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
                       ! I2B(abie) <- A(af)A(in) -h2b(nmfe) * t3b(afbinm)
@@ -6278,11 +6588,12 @@ module ccsdt_p_chol_loops
                       !I2B_vvov(:,f,b,i) = I2B_vvov(:,f,b,i) + H2B_oovv(n,m,a,:) * t_amp ! (af)
                       !I2B_vvov(:,a,b,n) = I2B_vvov(:,a,b,n) + H2B_oovv(i,m,f,:) * t_amp ! (in)
                       !I2B_vvov(:,f,b,n) = I2B_vvov(:,f,b,n) - H2B_oovv(i,m,a,:) * t_amp ! (af)(in)
-                      I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
-                      I2B_vvov(:,f,b,i) = I2B_vvov(:,f,b,i) + intbuf(:,a,m,n) * t_amp ! (af)
-                      I2B_vvov(:,a,b,n) = I2B_vvov(:,a,b,n) + intbuf(:,f,m,i) * t_amp ! (in)
-                      I2B_vvov(:,f,b,n) = I2B_vvov(:,f,b,n) - intbuf(:,a,m,i) * t_amp ! (af)(in)
+                      if (mod(a,nthr)==ithr) I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
+                      if (mod(f,nthr)==ithr) I2B_vvov(:,f,b,i) = I2B_vvov(:,f,b,i) + intbuf(:,a,m,n) * t_amp ! (af)
+                      if (mod(a,nthr)==ithr) I2B_vvov(:,a,b,n) = I2B_vvov(:,a,b,n) + intbuf(:,f,m,i) * t_amp ! (in)
+                      if (mod(f,nthr)==ithr) I2B_vvov(:,f,b,n) = I2B_vvov(:,f,b,n) - intbuf(:,a,m,i) * t_amp ! (af)(in)
                   end do
+                  !$omp end parallel
                   deallocate(intbuf)
 
                   allocate(intbuf(nub,nub,nob,nob))
@@ -6295,6 +6606,9 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel default(shared) private(a,b,f,i,idet,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3abb
                       t_amp = t3c_amps(idet)
                       ! I2B(abie) <- A(bf) -h2c(nmfe) * t3c(afbinm)
@@ -6302,9 +6616,10 @@ module ccsdt_p_chol_loops
                       i = t3c_excits(idet,4); n = t3c_excits(idet,5); m = t3c_excits(idet,6);
                       !I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - H2C_oovv(n,m,f,:) * t_amp ! (1)
                       !I2B_vvov(:,a,f,i) = I2B_vvov(:,a,f,i) + H2C_oovv(n,m,b,:) * t_amp ! (bf)
-                      I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
-                      I2B_vvov(:,a,f,i) = I2B_vvov(:,a,f,i) + intbuf(:,b,m,n) * t_amp ! (bf)
+                      if (mod(a,nthr)==ithr) I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
+                      if (mod(a,nthr)==ithr) I2B_vvov(:,a,f,i) = I2B_vvov(:,a,f,i) + intbuf(:,b,m,n) * t_amp ! (bf)
                   end do
+                  !$omp end parallel
                   deallocate(intbuf)
 
       end subroutine calc_I2B_vvov
@@ -6322,6 +6637,7 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2B_vvvo(nua,nua,nub,nob)
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
+                  integer :: ithr, nthr
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
@@ -6335,14 +6651,18 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel default(shared) private(a,b,f,idet,j,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3aab
                       t_amp = t3b_amps(idet)
                       ! I2B(abej) <- A(af) -h2a(mnef) * t3b(afbmnj)
                       a = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
                       m = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
-                      I2B_vvvo(:,a,b,j) = I2B_vvvo(:,a,b,j) - intbuf(:,f,m,n) * t_amp ! (1)
-                      I2B_vvvo(:,f,b,j) = I2B_vvvo(:,f,b,j) + intbuf(:,a,m,n) * t_amp ! (af)
+                      if (mod(a,nthr)==ithr) I2B_vvvo(:,a,b,j) = I2B_vvvo(:,a,b,j) - intbuf(:,f,m,n) * t_amp ! (1)
+                      if (mod(f,nthr)==ithr) I2B_vvvo(:,f,b,j) = I2B_vvvo(:,f,b,j) + intbuf(:,a,m,n) * t_amp ! (af)
                   end do
+                  !$omp end parallel
                   deallocate(intbuf)
 
                   allocate(intbuf(nua,nub,noa,nob))
@@ -6355,16 +6675,20 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel default(shared) private(a,b,f,idet,j,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3abb
                       t_amp = t3c_amps(idet)
                       ! I2B(abej) <- A(bf)A(jn) -h2b(mnef) * t3c(afbmnj)
                       a = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       m = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      I2B_vvvo(:,a,b,j) = I2B_vvvo(:,a,b,j) - intbuf(:,f,m,n) * t_amp ! (1)
-                      I2B_vvvo(:,a,f,j) = I2B_vvvo(:,a,f,j) + intbuf(:,b,m,n) * t_amp ! (bf)
-                      I2B_vvvo(:,a,b,n) = I2B_vvvo(:,a,b,n) + intbuf(:,f,m,j) * t_amp ! (jn)
-                      I2B_vvvo(:,a,f,n) = I2B_vvvo(:,a,f,n) - intbuf(:,b,m,j) * t_amp ! (bf)(jn)
+                      if (mod(a,nthr)==ithr) I2B_vvvo(:,a,b,j) = I2B_vvvo(:,a,b,j) - intbuf(:,f,m,n) * t_amp ! (1)
+                      if (mod(a,nthr)==ithr) I2B_vvvo(:,a,f,j) = I2B_vvvo(:,a,f,j) + intbuf(:,b,m,n) * t_amp ! (bf)
+                      if (mod(a,nthr)==ithr) I2B_vvvo(:,a,b,n) = I2B_vvvo(:,a,b,n) + intbuf(:,f,m,j) * t_amp ! (jn)
+                      if (mod(a,nthr)==ithr) I2B_vvvo(:,a,f,n) = I2B_vvvo(:,a,f,n) - intbuf(:,b,m,j) * t_amp ! (bf)(jn)
                   end do
+                  !$omp end parallel
                   deallocate(intbuf)
 
       end subroutine calc_I2B_vvvo
@@ -6382,6 +6706,7 @@ module ccsdt_p_chol_loops
                   real(kind=8), intent(inout) :: I2C_vvov(nub,nub,nub,nob) ! reordered
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
+                  integer :: ithr, nthr
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
@@ -6395,21 +6720,25 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel default(shared) private(a,b,f,i,idet,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3bbb
                       t_amp = t3d_amps(idet)
                       ! I2C(abie) <- A(ab) [A(i/mn)A(f/ab) -h2c(mnef) * t3d(abfimn)]
                       a = t3d_excits(idet,1); b = t3d_excits(idet,2); f = t3d_excits(idet,3);
                       i = t3d_excits(idet,4); m = t3d_excits(idet,5); n = t3d_excits(idet,6);
-                      I2C_vvov(:,a,b,i) = I2C_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
-                      I2C_vvov(:,a,b,m) = I2C_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
-                      I2C_vvov(:,a,b,n) = I2C_vvov(:,a,b,n) + intbuf(:,f,m,i) * t_amp ! (in)
-                      I2C_vvov(:,f,b,i) = I2C_vvov(:,f,b,i) + intbuf(:,a,m,n) * t_amp ! (af)
-                      I2C_vvov(:,f,b,m) = I2C_vvov(:,f,b,m) - intbuf(:,a,i,n) * t_amp ! (im)(af)
-                      I2C_vvov(:,f,b,n) = I2C_vvov(:,f,b,n) - intbuf(:,a,m,i) * t_amp ! (in)(af)
-                      I2C_vvov(:,a,f,i) = I2C_vvov(:,a,f,i) + intbuf(:,b,m,n) * t_amp ! (bf)
-                      I2C_vvov(:,a,f,m) = I2C_vvov(:,a,f,m) - intbuf(:,b,i,n) * t_amp ! (im)(bf)
-                      I2C_vvov(:,a,f,n) = I2C_vvov(:,a,f,n) - intbuf(:,b,m,i) * t_amp ! (in)(bf)
+                      if (mod(a,nthr)==ithr) I2C_vvov(:,a,b,i) = I2C_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
+                      if (mod(a,nthr)==ithr) I2C_vvov(:,a,b,m) = I2C_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
+                      if (mod(a,nthr)==ithr) I2C_vvov(:,a,b,n) = I2C_vvov(:,a,b,n) + intbuf(:,f,m,i) * t_amp ! (in)
+                      if (mod(f,nthr)==ithr) I2C_vvov(:,f,b,i) = I2C_vvov(:,f,b,i) + intbuf(:,a,m,n) * t_amp ! (af)
+                      if (mod(f,nthr)==ithr) I2C_vvov(:,f,b,m) = I2C_vvov(:,f,b,m) - intbuf(:,a,i,n) * t_amp ! (im)(af)
+                      if (mod(f,nthr)==ithr) I2C_vvov(:,f,b,n) = I2C_vvov(:,f,b,n) - intbuf(:,a,m,i) * t_amp ! (in)(af)
+                      if (mod(a,nthr)==ithr) I2C_vvov(:,a,f,i) = I2C_vvov(:,a,f,i) + intbuf(:,b,m,n) * t_amp ! (bf)
+                      if (mod(a,nthr)==ithr) I2C_vvov(:,a,f,m) = I2C_vvov(:,a,f,m) - intbuf(:,b,i,n) * t_amp ! (im)(bf)
+                      if (mod(a,nthr)==ithr) I2C_vvov(:,a,f,n) = I2C_vvov(:,a,f,n) - intbuf(:,b,m,i) * t_amp ! (in)(bf)
                   end do
+                  !$omp end parallel
                   deallocate(intbuf)
                   allocate(intbuf(nub,nua,nob,noa))
                   do i = 1,noa
@@ -6421,16 +6750,21 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp parallel default(shared) private(a,b,f,i,idet,m,n,t_amp,ithr,nthr)
+                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
+                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
                   do idet = 1, n3abb
                       t_amp = t3c_amps(idet)
                       ! I2C(abie) <- A(ab) [A(im) -h2b(nmfe) * t3c(fabnim)]
                       f = t3c_excits(idet,1); a = t3c_excits(idet,2); b = t3c_excits(idet,3);
                       n = t3c_excits(idet,4); i = t3c_excits(idet,5); m = t3c_excits(idet,6);
-                      I2C_vvov(:,a,b,i) = I2C_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
-                      I2C_vvov(:,a,b,m) = I2C_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
+                      if (mod(a,nthr)==ithr) I2C_vvov(:,a,b,i) = I2C_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
+                      if (mod(a,nthr)==ithr) I2C_vvov(:,a,b,m) = I2C_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
                   end do
+                  !$omp end parallel
                   deallocate(intbuf)
                   ! antisymmetrize
+                  !$omp parallel do private(a,b,e)
                   do i = 1,nob
                      do a = 1,nub
                         do b = a+1,nub
@@ -6441,45 +6775,72 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
+                  !$omp end parallel do
 
       end subroutine calc_I2C_vvov
 
-      subroutine vvvv_batch_ss(h_vv, a_chol, b_chol, chol_vv, h2_oovv, t2, no, nu, nchol)
-      ! h_vv(e,f) = <a_chol b_chol||ef> + sum_{m<n} h2_oovv(m,n,e,f)*t2(a_chol,b_chol,m,n), a_chol < b_chol (same spin)
-              integer, intent(in) :: a_chol, b_chol, no, nu, nchol
+      subroutine vvvv_block_ss(hblk, a_chol, b0, nb, chol_vv, h2_oovv, t2, no, nu, nchol)
+      ! hblk(e,f,k) = <a b||ef> + sum_{m<n} h2_oovv(m,n,e,f)*t2(a,b,m,n) for a = a_chol, b = b0+k-1 (same spin),
+      ! for nb pairs at once
+              integer, intent(in) :: a_chol, b0, nb, no, nu, nchol
               real(kind=8), intent(in) :: chol_vv(nchol,nu,nu), h2_oovv(no,no,nu,nu), t2(nu,nu,no,no)
-              real(kind=8), intent(out) :: h_vv(nu,nu)
-              integer :: e, f, m, n
+              real(kind=8), intent(out) :: hblk(nu,nu,nb)
+              real(kind=8), allocatable :: tbuf(:,:,:), wbuf(:,:,:), g(:,:)
+              integer :: k
 
-              call dgemm('t','n',nu,nu,nchol,1.0d0,chol_vv(:,:,a_chol),nchol,chol_vv(:,:,b_chol),nchol,0.0d0,h_vv,nu)
-              h_vv = h_vv - transpose(h_vv)
-              do e=1,nu
-                 do f=e+1,nu
-                    do m=1,no
-                       do n=m+1,no
-                          h_vv(e,f) = h_vv(e,f) + h2_oovv(m,n,e,f)*t2(a_chol,b_chol,m,n)
-                       end do
-                    end do
-                    h_vv(f,e) = -h_vv(e,f)
-                 end do
+              allocate(tbuf(nb,no,no), wbuf(nu,nu,nb), g(nu,nu))
+              ! <a b|e f> = sum_x chol(x,e,a) chol(x,f,b)
+              call dgemm('t','n',nu,nu*nb,nchol,1.0d0,chol_vv(:,:,a_chol),nchol,chol_vv(:,:,b0:b0+nb-1),nchol,0.0d0,hblk,nu)
+              ! 1/2 sum_{mn} h2_oovv(m,n,e,f)*t2(a,b,m,n)
+              tbuf = t2(a_chol,b0:b0+nb-1,:,:)
+              call dgemm('t','t',nu*nu,nb,no*no,0.5d0,h2_oovv,no*no,tbuf,nb,0.0d0,wbuf,nu*nu)
+              do k = 1, nb
+                 g = hblk(:,:,k)
+                 hblk(:,:,k) = g - transpose(g) + wbuf(:,:,k)
               end do
-      end subroutine vvvv_batch_ss
+              deallocate(tbuf, wbuf, g)
+      end subroutine vvvv_block_ss
 
-      subroutine vvvv_batch_os(h_vv, a_chol, b_chol, chol_a_vv, chol_b_vv, h2b_oovv, t2b, noa, nua, nob, nub, nchol)
-      ! h_vv(f,e) = <a_chol b_chol|ef> + sum_{mn} h2b_oovv(m,n,e,f)*t2b(a_chol,b_chol,m,n) (opposite spin)
-              integer, intent(in) :: a_chol, b_chol, noa, nua, nob, nub, nchol
+      subroutine vvvv_block_os_b(hblk, b_chol, a0, na, chol_a_vv, chol_b_vv, h2b_oovv, t2b, noa, nua, nob, nub, nchol)
+      ! hblk(f,e,k) = <a b|e f> + sum_{mn} h2b_oovv(m,n,e,f)*t2b(a,b,m,n) for a = a0+k-1, b = b_chol (opposite
+      ! spin), for na pairs at once
+              integer, intent(in) :: b_chol, a0, na, noa, nua, nob, nub, nchol
               real(kind=8), intent(in) :: chol_a_vv(nchol,nua,nua), chol_b_vv(nchol,nub,nub)
               real(kind=8), intent(in) :: h2b_oovv(noa,nob,nua,nub), t2b(nua,nub,noa,nob)
-              real(kind=8), intent(out) :: h_vv(nub,nua)
-              real(kind=8), allocatable :: t2_pair(:,:), w_ef(:,:)
+              real(kind=8), intent(out) :: hblk(nub,nua,na)
+              real(kind=8), allocatable :: tbuf(:,:,:), wbuf(:,:,:)
+              integer :: k
 
-              allocate(t2_pair(noa,nob), w_ef(nua,nub))
-              call dgemm('t','n',nub,nua,nchol,1.0d0,chol_b_vv(:,:,b_chol),nchol,chol_a_vv(:,:,a_chol),nchol,0.0d0,h_vv,nub)
-              t2_pair = t2b(a_chol,b_chol,:,:)
-              call dgemv('t',noa*nob,nua*nub,1.0d0,h2b_oovv,noa*nob,t2_pair,1,0.0d0,w_ef,1)
-              h_vv = h_vv + transpose(w_ef)
-              deallocate(t2_pair, w_ef)
-      end subroutine vvvv_batch_os
+              allocate(tbuf(na,noa,nob), wbuf(nua,nub,na))
+              call dgemm('t','n',nub,nua*na,nchol,1.0d0,chol_b_vv(:,:,b_chol),nchol,chol_a_vv(:,:,a0:a0+na-1),nchol,0.0d0,hblk,nub)
+              tbuf = t2b(a0:a0+na-1,b_chol,:,:)
+              call dgemm('t','t',nua*nub,na,noa*nob,1.0d0,h2b_oovv,noa*nob,tbuf,na,0.0d0,wbuf,nua*nub)
+              do k = 1, na
+                 hblk(:,:,k) = hblk(:,:,k) + transpose(wbuf(:,:,k))
+              end do
+              deallocate(tbuf, wbuf)
+      end subroutine vvvv_block_os_b
+
+      subroutine vvvv_block_os_a(hblk, a_chol, b0, nb, chol_a_vv, chol_b_vv, h2b_oovv, t2b, noa, nua, nob, nub, nchol)
+      ! hblk(f,e,k) = <a b|e f> + sum_{mn} h2b_oovv(m,n,e,f)*t2b(a,b,m,n) for a = a_chol, b = b0+k-1 (opposite
+      ! spin), for nb pairs at once
+              integer, intent(in) :: a_chol, b0, nb, noa, nua, nob, nub, nchol
+              real(kind=8), intent(in) :: chol_a_vv(nchol,nua,nua), chol_b_vv(nchol,nub,nub)
+              real(kind=8), intent(in) :: h2b_oovv(noa,nob,nua,nub), t2b(nua,nub,noa,nob)
+              real(kind=8), intent(out) :: hblk(nub,nua,nb)
+              real(kind=8), allocatable :: tbuf(:,:,:), wbuf(:,:,:)
+              integer :: k
+
+              allocate(tbuf(nb,noa,nob), wbuf(nua,nub,nb))
+              ! wbuf(e,f,k) = <a b|e f>, then the T2 term
+              call dgemm('t','n',nua,nub*nb,nchol,1.0d0,chol_a_vv(:,:,a_chol),nchol,chol_b_vv(:,:,b0:b0+nb-1),nchol,0.0d0,wbuf,nua)
+              tbuf = t2b(a_chol,b0:b0+nb-1,:,:)
+              call dgemm('t','t',nua*nub,nb,noa*nob,1.0d0,h2b_oovv,noa*nob,tbuf,nb,1.0d0,wbuf,nua*nub)
+              do k = 1, nb
+                 hblk(:,:,k) = transpose(wbuf(:,:,k))
+              end do
+              deallocate(tbuf, wbuf)
+      end subroutine vvvv_block_os_a
 
       subroutine sum4(x, y, iorder)
 
