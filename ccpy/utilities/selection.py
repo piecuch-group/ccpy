@@ -20,92 +20,42 @@ def add_spinorbital_triples_to_pspace(triples_list, t3_excitations, excitation_c
 
         return new_t3_excitations
 
-    def _get_excitation_symmetry(a, b, c, i, j, k, spincase):
-        sym = system.point_group_irrep_to_number[system.reference_symmetry]
-        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[i]]
-        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[j]]
-        sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[k]]
-        if spincase == "aaa":
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_alpha]]
-        elif spincase == "aab":
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_alpha]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
-        elif spincase == "abb":
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_alpha]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_beta]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
-        elif spincase == "bbb":
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[a + system.noccupied_beta]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[b + system.noccupied_beta]]
-            sym = sym ^ system.point_group_irrep_to_number[system.orbital_symmetries[c + system.noccupied_beta]]
-        return sym
+    irrep = np.array([system.point_group_irrep_to_number[s] for s in system.orbital_symmetries])
+    ref_irrep = system.point_group_irrep_to_number[system.reference_symmetry]
+    noa, nob = system.noccupied_alpha, system.noccupied_beta
+    vir_offsets = {"aaa": (noa, noa, noa), "aab": (noa, noa, nob), "abb": (noa, nob, nob), "bbb": (nob, nob, nob)}
 
-    new_t3_excitations = {
-        "aaa": [],
-        "aab": [],
-        "abb": [],
-        "bbb": []
-    }
+    def _count_by_symmetry(excits, spincase):
+        # symmetry of each excitation (1-based rows a, b, c, i, j, k) and increment of the counts
+        if excits.shape[0] == 0:
+            return
+        x = excits - 1
+        sym = ref_irrep ^ irrep[x[:, 3]] ^ irrep[x[:, 4]] ^ irrep[x[:, 5]]
+        for col, offset in zip(range(3), vir_offsets[spincase]):
+            sym = sym ^ irrep[x[:, col] + offset]
+        for isym, count in enumerate(np.bincount(sym, minlength=len(excitation_count_by_symmetry))):
+            if count:
+                excitation_count_by_symmetry[isym][spincase] += int(count)
 
-    num_add = triples_list.shape[0]
+    triples_list = np.asarray(triples_list)
+    # spinorbital -> spatial orbital indices (1-based); odd indices are alpha
+    spatial = np.where(triples_list % 2 == 1, (triples_list + 1) // 2, triples_list // 2)
+    num_alpha = (triples_list % 2).sum(axis=1) // 2
+    # skips over triples left unset by the selection routine
+    keep = np.any(spatial != 0, axis=1)
 
-    n3aaa = 0
-    n3aab = 0
-    n3abb = 0
-    n3bbb = 0
-    for n in range(num_add):
-
-        num_alpha = int(sum([x % 2 for x in triples_list[n, :]]) / 2)
-        idx = [spatial_orb_idx(p) - 1 for p in triples_list[n, :]]
-        a, b, c, i, j, k = idx
-
-        # skips over triple if it is unset from selection routine, meaning that all entries are -1
-        if a == -1 and b == -1 and c == -1 and i == -1 and j == -1 and k == -1: continue
-
-        if num_alpha == 3:
-            new_t3_excitations["aaa"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
-            n3aaa += 1
-            # find symmetry of excitation and increment excitation count
-            sym = _get_excitation_symmetry(a, b, c, i, j, k, "aaa")
-            excitation_count_by_symmetry[sym]["aaa"] += 1
-            if RHF_symmetry:  # include the same bbb excitations if RHF symmetry is applied
-                new_t3_excitations["bbb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
-                n3bbb += 1
-                # find symmetry of excitation and increment excitation count
-                sym = _get_excitation_symmetry(a, b, c, i, j, k, "bbb")
-                excitation_count_by_symmetry[sym]["bbb"] += 1
-
-        if num_alpha == 2:
-            new_t3_excitations["aab"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
-            n3aab += 1
-            # find symmetry of excitation and increment excitation count
-            sym = _get_excitation_symmetry(a, b, c, i, j, k, "aab")
-            excitation_count_by_symmetry[sym]["aab"] += 1
-            if RHF_symmetry:  # include the same abb excitations if RHF symmetry is applied
-                new_t3_excitations["abb"].append([c + 1, a + 1, b + 1, k + 1, i + 1, j + 1])
-                n3abb += 1
-                # find symmetry of excitation and increment excitation count
-                sym = _get_excitation_symmetry(c, a, b, k, i, j, "abb")
-                excitation_count_by_symmetry[sym]["abb"] += 1
-
-        if not RHF_symmetry:  # only consider adding abb and bbb excitations if not using RHF
-
-            if num_alpha == 1:
-                new_t3_excitations["abb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
-                n3abb += 1
-                # find symmetry of excitation and increment excitation count
-                sym = _get_excitation_symmetry(a, b, c, i, j, k, "abb")
-                excitation_count_by_symmetry[sym]["abb"] += 1
-
-            if num_alpha == 0:
-                new_t3_excitations["bbb"].append([a + 1, b + 1, c + 1, i + 1, j + 1, k + 1])
-                n3bbb += 1
-                # find symmetry of excitation and increment excitation count
-                sym = _get_excitation_symmetry(a, b, c, i, j, k, "bbb")
-                excitation_count_by_symmetry[sym]["bbb"] += 1
+    new_t3_excitations = {}
+    new_t3_excitations["aaa"] = spatial[keep & (num_alpha == 3)]
+    new_t3_excitations["aab"] = spatial[keep & (num_alpha == 2)]
+    if RHF_symmetry:  # include the same bbb and abb (as a b~<c~ i j~<k~) excitations
+        new_t3_excitations["bbb"] = new_t3_excitations["aaa"].copy()
+        new_t3_excitations["abb"] = new_t3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]
+    else:
+        new_t3_excitations["abb"] = spatial[keep & (num_alpha == 1)]
+        new_t3_excitations["bbb"] = spatial[keep & (num_alpha == 0)]
+    for spincase in ("aaa", "aab", "abb", "bbb"):
+        _count_by_symmetry(new_t3_excitations[spincase], spincase)
+    n3aaa, n3aab, n3abb, n3bbb = (new_t3_excitations[s].shape[0] for s in ("aaa", "aab", "abb", "bbb"))
 
     # Update the t3 excitation lists with the new content from the moment selection
     new_t3_excitations = _add_t3_excitations(new_t3_excitations, t3_excitations, n3aaa, "aaa")

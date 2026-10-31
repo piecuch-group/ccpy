@@ -1,6 +1,7 @@
 module ccp3_opt_loops
 
   use reorder, only: reorder_stripe
+  use pspace_sort, only: get_index_table => get_index_table3, sort3 => sort3_excits_cm
 
       implicit none
 
@@ -30,9 +31,12 @@ module ccp3_opt_loops
                         l1a(nua,noa),l2a(nua,nua,noa,noa),vA_oovv(noa,noa,nua,nua),&
                         H1A_ov(noa,nua),H2A_vovv(nua,noa,nua,nua),H2A_ooov(noa,noa,noa,nua)
                         integer :: i, j, k, a, b, c, nua2
-                        real(kind=8) :: D, temp1, temp2, temp3, LM, X3A(nua,nua,nua), L3A(nua,nua,nua)
+                        real(kind=8) :: D, temp1, temp2, temp3, LM
+                        real(kind=8), allocatable :: X3A(:,:,:), L3A(:,:,:)
+                        integer, allocatable :: ijk(:,:)
+                        integer :: nblock, iblk
                         ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nua,nua,nua)
+                        logical(kind=1), allocatable :: qspace(:,:,:)
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3aaa)
@@ -57,9 +61,23 @@ module ccp3_opt_loops
                         deltaD = 0.0d0
 
                         nua2 = nua*nua
+                        nblock = noa*(noa-1)*(noa-2)/6
+                        allocate(ijk(3,nblock))
+                        nblock = 0
                         do i = 1, noa
                             do j = i+1, noa
                                 do k = j+1, noa
+                                    nblock = nblock + 1
+                                    ijk(:,nblock) = (/i,j,k/)
+                                end do
+                            end do
+                        end do
+                        !$omp parallel default(shared) private(iblk,i,j,k,a,b,c,idet,idx,D,temp1,temp2,temp3,LM,&
+                        !$omp X3A,L3A,qspace)
+                        allocate(X3A(nua,nua,nua), L3A(nua,nua,nua), qspace(nua,nua,nua))
+                        !$omp do schedule(dynamic) reduction(+:deltaA,deltaB,deltaC,deltaD)
+                        do iblk = 1, nblock
+                                   i = ijk(1,iblk); j = ijk(2,iblk); k = ijk(3,iblk);
                                    ! Construct Q space for block (i,j,k)
                                    qspace = .true.
                                    idx = idx_table(i,j,k)
@@ -157,10 +175,11 @@ module ccp3_opt_loops
                                             end do
                                         end do
                                     end do
-                                end do
-                            end do
                         end do
-                        deallocate(loc_arr,idx_table)
+                        !$omp end do
+                        deallocate(X3A, L3A, qspace)
+                        !$omp end parallel
+                        deallocate(loc_arr,idx_table,ijk)
 
               end subroutine ccp3a_2ba
 
@@ -215,9 +234,12 @@ module ccp3_opt_loops
                         D3C_O(1:nub,1:noa,1:nob),&
                         D3C_V(1:nua,1:nob,1:nub)
                         integer :: i, j, k, a, b, c, nuanub, nua2
-                        real(kind=8) :: D, temp1, temp2, temp3, LM, X3B(nua,nua,nub), L3B(nua,nua,nub)
+                        real(kind=8) :: D, temp1, temp2, temp3, LM
+                        real(kind=8), allocatable :: X3B(:,:,:), L3B(:,:,:)
+                        integer, allocatable :: ijk(:,:)
+                        integer :: nblock, iblk
                         ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nua,nua,nub)
+                        logical(kind=1), allocatable :: qspace(:,:,:)
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3aab)
@@ -256,9 +278,23 @@ module ccp3_opt_loops
 
                         nuanub = nua*nub
                         nua2 = nua*nua
+                        nblock = noa*(noa-1)/2*nob
+                        allocate(ijk(3,nblock))
+                        nblock = 0
                         do i = 1, noa
                             do j = i+1, noa
                                 do k = 1, nob
+                                    nblock = nblock + 1
+                                    ijk(:,nblock) = (/i,j,k/)
+                                end do
+                            end do
+                        end do
+                        !$omp parallel default(shared) private(iblk,i,j,k,a,b,c,idet,idx,D,temp1,temp2,temp3,LM,&
+                        !$omp X3B,L3B,qspace)
+                        allocate(X3B(nua,nua,nub), L3B(nua,nua,nub), qspace(nua,nua,nub))
+                        !$omp do schedule(dynamic) reduction(+:deltaA,deltaB,deltaC,deltaD)
+                        do iblk = 1, nblock
+                                    i = ijk(1,iblk); j = ijk(2,iblk); k = ijk(3,iblk);
                                     ! Construct Q space for block (i,j,k)
                                     qspace = .true.
                                     idx = idx_table(i,j,k)
@@ -359,10 +395,11 @@ module ccp3_opt_loops
                                             end do
                                         end do
                                     end do
-                                end do
-                            end do
                         end do
-                        deallocate(loc_arr,idx_table)
+                        !$omp end do
+                        deallocate(X3B, L3B, qspace)
+                        !$omp end parallel
+                        deallocate(loc_arr,idx_table,ijk)
 
               end subroutine ccp3b_2ba
 
@@ -417,9 +454,12 @@ module ccp3_opt_loops
                         D3D_O(1:nub,1:nob,1:nob),&
                         D3D_V(1:nub,1:nob,1:nub)
                         integer :: i, j, k, a, b, c, nuanub, nub2
-                        real(kind=8) :: D, LM, temp1, temp2, temp3, X3C(nua,nub,nub), L3C(nua,nub,nub)
+                        real(kind=8) :: D, LM, temp1, temp2, temp3
+                        real(kind=8), allocatable :: X3C(:,:,:), L3C(:,:,:)
+                        integer, allocatable :: ijk(:,:)
+                        integer :: nblock, iblk
                         ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nua,nub,nub)
+                        logical(kind=1), allocatable :: qspace(:,:,:)
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3abb)
@@ -463,9 +503,23 @@ module ccp3_opt_loops
 
                         nuanub = nua*nub
                         nub2 = nub*nub
-                        do i = 1 , noa
+                        nblock = noa*nob*(nob-1)/2
+                        allocate(ijk(3,nblock))
+                        nblock = 0
+                        do i = 1, noa
                             do j = 1, nob
                                 do k = j+1, nob
+                                    nblock = nblock + 1
+                                    ijk(:,nblock) = (/i,j,k/)
+                                end do
+                            end do
+                        end do
+                        !$omp parallel default(shared) private(iblk,i,j,k,a,b,c,idet,idx,D,temp1,temp2,temp3,LM,&
+                        !$omp X3C,L3C,qspace)
+                        allocate(X3C(nua,nub,nub), L3C(nua,nub,nub), qspace(nua,nub,nub))
+                        !$omp do schedule(dynamic) reduction(+:deltaA,deltaB,deltaC,deltaD)
+                        do iblk = 1, nblock
+                                    i = ijk(1,iblk); j = ijk(2,iblk); k = ijk(3,iblk);
                                     ! Construct Q space for block (i,j,k)
                                     qspace = .true.
                                     idx = idx_table(j,k,i)
@@ -566,10 +620,11 @@ module ccp3_opt_loops
                                             end do
                                         end do
                                     end do
-                                end do
-                            end do
                         end do
-                        deallocate(loc_arr,idx_table)
+                        !$omp end do
+                        deallocate(X3C, L3C, qspace)
+                        !$omp end parallel
+                        deallocate(loc_arr,idx_table,ijk)
 
               end subroutine ccp3c_2ba
 
@@ -596,9 +651,12 @@ module ccp3_opt_loops
                         l1b(nub,nob),l2c(nub,nub,nob,nob),vC_oovv(nob,nob,nub,nub),&
                         H1B_ov(nob,nub),H2C_vovv(nub,nob,nub,nub),H2C_ooov(nob,nob,nob,nub)
                         integer :: i, j, k, a, b, c, nub2
-                        real(kind=8) :: D, temp1, temp2, temp3, LM, X3D(nub,nub,nub), L3D(nub,nub,nub)
+                        real(kind=8) :: D, temp1, temp2, temp3, LM
+                        real(kind=8), allocatable :: X3D(:,:,:), L3D(:,:,:)
+                        integer, allocatable :: ijk(:,:)
+                        integer :: nblock, iblk
                         ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nub,nub,nub)
+                        logical(kind=1), allocatable :: qspace(:,:,:)
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3bbb)
@@ -623,9 +681,23 @@ module ccp3_opt_loops
                         deltaD = 0.0d0
 
                         nub2 = nub*nub
-                        do i = 1 , nob
+                        nblock = nob*(nob-1)*(nob-2)/6
+                        allocate(ijk(3,nblock))
+                        nblock = 0
+                        do i = 1, nob
                             do j = i+1, nob
                                 do k = j+1, nob
+                                    nblock = nblock + 1
+                                    ijk(:,nblock) = (/i,j,k/)
+                                end do
+                            end do
+                        end do
+                        !$omp parallel default(shared) private(iblk,i,j,k,a,b,c,idet,idx,D,temp1,temp2,temp3,LM,&
+                        !$omp X3D,L3D,qspace)
+                        allocate(X3D(nub,nub,nub), L3D(nub,nub,nub), qspace(nub,nub,nub))
+                        !$omp do schedule(dynamic) reduction(+:deltaA,deltaB,deltaC,deltaD)
+                        do iblk = 1, nblock
+                                    i = ijk(1,iblk); j = ijk(2,iblk); k = ijk(3,iblk);
                                     ! Construct Q space for block (i,j,k)
                                     qspace = .true.
                                     idx = idx_table(i,j,k)
@@ -722,10 +794,11 @@ module ccp3_opt_loops
                                             end do
                                         end do
                                     end do
-                                end do
-                            end do
                         end do
-                        deallocate(idx_table,loc_arr)
+                        !$omp end do
+                        deallocate(X3D, L3D, qspace)
+                        !$omp end parallel
+                        deallocate(idx_table,loc_arr,ijk)
 
               end subroutine ccp3d_2ba
 
@@ -1622,155 +1695,5 @@ module ccp3_opt_loops
                         end do
 
               end subroutine eomccp3d_full
-
-              subroutine get_index_table(idx_table, rng1, rng2, rng3, n1, n2, n3)
-
-                    integer, intent(in) :: n1, n2, n3
-                    integer, intent(in) :: rng1(2), rng2(2), rng3(2)
-
-                    integer, intent(inout) :: idx_table(n1,n2,n3)
-
-                    integer :: kout
-                    integer :: p, q, r
-
-                    idx_table = 0
-                    if (rng1(1) > 0 .and. rng2(1) < 0 .and. rng3(1) < 0) then ! p < q < r
-                       kout = 1
-                       do p = rng1(1), rng1(2)
-                          do q = p-rng2(1), rng2(2)
-                             do r = q-rng3(1), rng3(2)
-                                idx_table(p,q,r) = kout
-                                kout = kout + 1
-                             end do
-                          end do
-                       end do
-                    elseif (rng1(1) > 0 .and. rng2(1) > 0 .and. rng3(1) < 0) then ! p, q < r
-                       kout = 1
-                       do p = rng1(1), rng1(2)
-                          do q = rng2(1), rng2(2)
-                             do r = q-rng3(1), rng3(2)
-                                idx_table(p,q,r) = kout
-                                kout = kout + 1
-                             end do
-                          end do
-                       end do
-                    elseif (rng1(1) > 0 .and. rng2(1) < 0 .and. rng3(1) > 0) then ! p < q, r
-                       kout = 1
-                       do p = rng1(1), rng1(2)
-                          do q = p-rng2(1), rng2(2)
-                             do r = rng3(1), rng3(2)
-                                idx_table(p,q,r) = kout
-                                kout = kout + 1
-                             end do
-                          end do
-                       end do
-                    else ! p, q, r
-                       kout = 1
-                       do p = rng1(1), rng1(2)
-                          do q = rng2(1), rng2(2)
-                             do r = rng3(1), rng3(2)
-                                idx_table(p,q,r) = kout
-                                kout = kout + 1
-                             end do
-                          end do
-                       end do
-                    end if
-
-              end subroutine get_index_table
-
-              subroutine sort3(excits, loc_arr, idx_table, idims, n1, n2, n3, nloc, n3p)
-
-                    integer, intent(in) :: n1, n2, n3, nloc, n3p
-                    integer, intent(in) :: idims(3)
-                    integer, intent(in) :: idx_table(n1,n2,n3)
-
-                    integer, intent(inout) :: loc_arr(2,nloc)
-                    integer, intent(inout) :: excits(6,n3p)
-
-                    integer :: idet
-                    integer :: p, q, r
-                    integer :: p1, q1, r1, p2, q2, r2
-                    integer :: pqr1, pqr2
-                    integer, allocatable :: temp(:), idx(:)
-
-                    allocate(temp(n3p),idx(n3p))
-                    do idet = 1, n3p
-                       p = excits(idims(1),idet); q = excits(idims(2),idet); r = excits(idims(3),idet);
-                       temp(idet) = idx_table(p,q,r)
-                    end do
-                    call argsort(temp, idx)
-                    excits = excits(:,idx)
-                    deallocate(temp,idx)
-
-                    loc_arr(1,:) = 1; loc_arr(2,:) = 0;
-                    !!! WARNING: THERE IS A MEMORY LEAK HERE! pqr2 is used below but is not set if n3p <= 1
-                    !if (n3p <= 1) print*, "WARNING: potential memory leakage in sort3 function. pqr2 set to 0"
-                    pqr2 = 0
-                    do idet = 1, n3p-1
-                       p1 = excits(idims(1),idet);   q1 = excits(idims(2),idet);   r1 = excits(idims(3),idet);
-                       p2 = excits(idims(1),idet+1); q2 = excits(idims(2),idet+1); r2 = excits(idims(3),idet+1);
-                       pqr1 = idx_table(p1,q1,r1)
-                       pqr2 = idx_table(p2,q2,r2)
-                       if (pqr1 /= pqr2) then
-                          loc_arr(2,pqr1) = idet
-                          loc_arr(1,pqr2) = idet+1
-                       end if
-                    end do
-                    if (n3p > 1) then
-                       loc_arr(2,pqr2) = n3p
-                    end if
-              end subroutine sort3
-
-              subroutine argsort(r,d)
-
-                    integer, intent(in), dimension(:) :: r
-                    integer, intent(out), dimension(size(r)) :: d
-
-                    integer, dimension(size(r)) :: il
-
-                    integer :: stepsize
-                    integer :: i, j, n, left, k, ksize
-
-                    n = size(r)
-
-                    do i=1,n
-                       d(i)=i
-                    end do
-
-                    if (n==1) return
-
-                    stepsize = 1
-                    do while (stepsize < n)
-                       do left = 1, n-stepsize,stepsize*2
-                          i = left
-                          j = left+stepsize
-                          ksize = min(stepsize*2,n-left+1)
-                          k=1
-
-                          do while (i < left+stepsize .and. j < left+ksize)
-                             if (r(d(i)) < r(d(j))) then
-                                il(k) = d(i)
-                                i = i+1
-                                k = k+1
-                             else
-                                il(k) = d(j)
-                                j = j+1
-                                k = k+1
-                             endif
-                          enddo
-
-                          if (i < left+stepsize) then
-                             ! fill up remaining from left
-                             il(k:ksize) = d(i:left+stepsize-1)
-                          else
-                             ! fill up remaining from right
-                             il(k:ksize) = d(j:left+ksize-1)
-                          endif
-                          d(left:left+ksize-1) = il(1:ksize)
-                       end do
-                       stepsize = stepsize*2
-                    end do
-
-              end subroutine argsort
 
 end module ccp3_opt_loops

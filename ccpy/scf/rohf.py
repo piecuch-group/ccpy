@@ -35,6 +35,9 @@ class ROHF(SCFBase):
         self.canonicalization = canonicalization
         super().__init__(molecule, **kwargs)
 
+    def _init_options(self):
+        return {**super()._init_options(), "canonicalization": self.canonicalization}
+
     _initial_guess = RHF._initial_guess
     _diis_update = RHF._diis_update
     _energy = UHF._energy

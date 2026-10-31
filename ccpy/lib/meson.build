@@ -110,13 +110,19 @@ sort_lib = static_library('sort',
   fortran_args: '-ffree-line-length-512'
 )
 
+omp_dep = dependency('openmp', language: 'fortran', required: false)
+
+# Shared sorting module used by the Fortran loops; not wrapped by f2py
+pspace_sort_lib = static_library('pspace_sort',
+  'fortran/pspace_sort.f90',
+  fortran_args: '-ffree-line-length-512',
+)
+
 fortran_sources = [
   'fortran/cc3_loops.f90',
   'fortran/cc_loops2.f90',
   'fortran/cc_loops_t4.f90',
   'fortran/ccp3_adaptive_loops.f90',
-  'fortran/ccp3_full_correction.f90',
-  'fortran/ccp3_full_correction_high_mem.f90',
   'fortran/ccp3_loops.f90',
   'fortran/ccp3_opt_loops.f90',
   'fortran/ccsdpt_loops.f90',
@@ -133,7 +139,6 @@ fortran_sources = [
   'fortran/cripcc_loops.f90',
   'fortran/deaeom4_p_loops.f90',
   'fortran/deaeom4_p_intermediates.f90',
-  'fortran/eaccp3_correction.f90',
   'fortran/eaccp3_loops.f90',
   'fortran/eaeom3_p_intermediates.f90',
   'fortran/eaeom3_p_loops.f90',
@@ -157,16 +162,31 @@ fortran_sources = [
   'fortran/vvvv_contraction.f90',
 ]
 
+# Sources whose OpenMP directives are not valid (missing private clauses); built without OpenMP
+fortran_serial_sources = [
+  'fortran/ccp3_full_correction.f90',
+  'fortran/ccp3_full_correction_high_mem.f90',
+  'fortran/eaccp3_correction.f90',
+]
+
 
 fortran_lib = static_library('fortran',
   fortran_sources,
   fortran_args: '-ffree-line-length-512',
+  dependencies: [omp_dep],
+  link_with: [pspace_sort_lib],
+)
+
+fortran_serial_lib = static_library('fortran_serial',
+  fortran_serial_sources,
+  fortran_args: '-ffree-line-length-512',
+  link_with: [pspace_sort_lib],
 )
 
 
 fortran_module = custom_target('fortran_module',
   output: ['_fortranmodule.c', '_fortran-f2pywrappers2.f90'],
-  input: fortran_sources,
+  input: fortran_sources + fortran_serial_sources,
   command: [f2py_script, '--source-root', '@SOURCE_ROOT@', '--f2py-exe', f2py, '@INPUT@', '--build-dir', '@OUTDIR@'],
   build_by_default: true
 )
@@ -176,8 +196,8 @@ py3.extension_module('_fortran',
   fortran_module,
   c_args: numpy_nodepr_api,
   include_directories: [inc_np, inc_f2py],
-  dependencies: [fortranobject_dep, lapack_dep, blas_dep],
-  link_with:[fortran_lib, sort_lib],
+  dependencies: [fortranobject_dep, lapack_dep, blas_dep, omp_dep],
+  link_with:[fortran_lib, fortran_serial_lib, pspace_sort_lib, sort_lib],
   link_language: 'fortran',
   install: true,
   subdir: 'ccpy/lib'

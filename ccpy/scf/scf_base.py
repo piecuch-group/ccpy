@@ -161,6 +161,29 @@ class SCFBase:
         self.converged = False
         self.e_tot = None
 
+    def _init_options(self):
+        """Constructor keyword arguments that reproduce this solver's settings."""
+        return {
+            "e_tol": self.e_tol,
+            "d_tol": self.d_tol,
+            "maxiter": self.maxiter,
+            "guess": self.guess,
+            "diis_size": self.diis_size,
+            "diis_start": self.diis_start,
+            "diis_min": self.diis_min,
+            "level_shift": self.level_shift,
+            "level_shift_thresh": self.level_shift_thresh,
+            "target_symmetry": self.target_symmetry,
+            "irrep_occupations": self.irrep_occupations,
+            "die_if_not_converged": self.die_if_not_converged,
+            "verbose": self.verbose,
+        }
+
+    def with_molecule(self, molecule):
+        """New (not yet run) solver of the same type and settings for another Molecule,
+        e.g., the same molecule at a displaced geometry."""
+        return type(self)(molecule, **self._init_options())
+
     # set-up
     def _validate_state(self):
         pass

@@ -2,6 +2,7 @@ python_sources = [
   '__init__.py',
   'hbar_ccs.py',
   'hbar_ccs_chol.py',
+  'hbar_cc2.py',
   'hbar_ccsd.py',
   'hbar_ccsd_chol.py',
   'hbar_ccsdt.py',

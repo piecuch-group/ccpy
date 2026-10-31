@@ -55,25 +55,39 @@ def ccsd_gradient(driver, meanfield=None, zvector_tol=1.0e-10, verbose=True):
     zvector_tol : float
         Convergence threshold of the Z-vector (conjugate-gradient) solver.
     """
+    mf = meanfield if meanfield is not None else getattr(driver, "scf", None)
+    if driver.T is None or driver.L[0] is None:
+        raise RuntimeError("Run CCSD, the CCSD HBar, and left-CCSD before the gradient.")
+    return ccsd_gradient_from_amplitudes(mf, driver.system, driver.T, driver.L[0], zvector_tol=zvector_tol,
+                                         verbose=verbose)
+
+
+def ccsd_gradient_from_amplitudes(meanfield, system, T, L, H0=None, rdm=None, zvector_tol=1.0e-10, verbose=True):
+    """Analytic RHF-CCSD nuclear gradient from converged CCSD (T) and left-CCSD (L) amplitudes.
+
+    Parameters
+    ----------
+    meanfield : ccpy.scf.RHF
+    system : System of the correlated calculation
+    H0 : bare DF Hamiltonian (built from meanfield if not given)
+    rdm : (rdm1, rdm2) of ccpy.density.ccsd_rdm.calc_ccsd_rdm(T, L, system), if available
+    """
     from ccpy.interfaces.scf_tools import load_scf_integrals
     from ccpy.scf.rhf import RHF
 
     t0 = time.perf_counter()
-    mf = meanfield if meanfield is not None else getattr(driver, "scf", None)
-    if not isinstance(mf, RHF):
-        raise TypeError("ccsd_gradient needs the ccpy.scf.RHF reference (use Driver.from_scf).")
-    if driver.T is None or driver.L[0] is None:
-        raise RuntimeError("Run CCSD, the CCSD HBar, and left-CCSD before the gradient.")
-    if driver.T.order != 2:
+    if not isinstance(meanfield, RHF):
+        raise TypeError("The CCSD gradient needs a ccpy.scf.RHF reference.")
+    if T.order != 2:
         raise NotImplementedError("Only CCSD gradients are implemented.")
-    T, L, system = driver.T, driver.L[0], driver.system
-
-    _, H0 = load_scf_integrals(mf, system.nfrozen, system.ndelete, use_cholesky=True)
+    if H0 is None:
+        _, H0 = load_scf_integrals(meanfield, system.nfrozen, system.ndelete, use_cholesky=True)
     H = build_hbar_ccs_chol(T, H0, system)
-    mo = get_mo_integrals(mf, system)
-    D1, Y = build_DY(*calc_ccsd_rdm(T, L, system), lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s),
+    mo = get_mo_integrals(meanfield, system)
+    rdm1, rdm2 = rdm if rdm is not None else calc_ccsd_rdm(T, L, system)
+    D1, Y = build_DY(rdm1, rdm2, lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s),
                      H.chol, T, mo["B"], mo, system, reference=True)
-    return relaxed_gradient(mf, system.nfrozen, D1["a"] + D1["b"], Y["a"] + Y["b"],
+    return relaxed_gradient(meanfield, system.nfrozen, D1["a"] + D1["b"], Y["a"] + Y["b"],
                             zvector_tol=zvector_tol, verbose=verbose, title="CCSD Analytic Gradient", t0=t0)
 
 

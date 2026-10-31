@@ -31,7 +31,7 @@ module vvvv_contraction
                  
                  !$omp parallel default(shared),&
                  !$omp private(a,b,e,f,batch_ints)
-                 !$omp do reduction(+:resid)
+                 !$omp do schedule(dynamic)
                  do k1=1,nu*(nu-1)/2
                        a = ab_table(k1,1); b = ab_table(k1,2);
                        ! compute batch_ints(a,b) = <x|ae>*<x|bf>
@@ -71,7 +71,7 @@ module vvvv_contraction
                  resid = 0.0d0
                  !$omp parallel default(shared),&
                  !$omp private(b,e,f,batch_ints)
-                 !$omp do reduction(+:resid)
+                 !$omp do schedule(static)
                  do a=1,nua
                     do b=1,nub
                        ! compute batch_ints(a) = <x|ae>*<x|bf>

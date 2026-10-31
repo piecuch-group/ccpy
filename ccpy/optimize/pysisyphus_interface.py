@@ -7,22 +7,18 @@ is done once per geometry:
 
     energy_and_gradient(mol) -> (energy in Eh, gradient ndarray (natoms, 3) in Eh/bohr)
 
-Ready-made callables: ccsd_energy_and_gradient and crcc23A_energy_and_gradient (analytic
-gradients), and fd_energy_and_gradient(energy) for any energy-only method (central
-differences, ccpy.gradients.fd_gradient). Hessians, needed to start a transition-state
-search, are central differences of the gradient.
+Alternatively, a ccpy.methods method (CCSD, CRCC23, ...) is passed in place of the Molecule;
+its calculation is repeated at every geometry with energy_and_gradient(), which uses the
+analytic gradient when available and central differences otherwise. For an arbitrary
+energy-only callable, fd_energy_and_gradient(energy) provides the central-difference
+gradient (ccpy.gradients.fd_gradient). Hessians, needed to start a transition-state search,
+are central differences of the gradient.
 
-    from ccpy import Driver, Molecule, RHF
-    from ccpy.optimize import fd_energy_and_gradient, optimize_geometry
-
-    def ccsdt_energy(mol):
-        mf = RHF(mol, verbose=0); mf.kernel()
-        driver = Driver.from_scf(mf, nfrozen=1)
-        driver.run_cc(method="ccsdt")
-        return driver.system.reference_energy + driver.correlation_energy
+    from ccpy import CCSDT, Molecule, RHF
+    from ccpy.optimize import optimize_geometry
 
     mol = Molecule(geometry, "cc-pvdz", auxiliary_basis="cc-pvtz-rifit")
-    result = optimize_geometry(mol, fd_energy_and_gradient(ccsdt_energy))
+    result = optimize_geometry(CCSDT(RHF(mol, verbose=0), nfrozen=1))
     print(result.energy, result.molecule.atoms)
 
 The Molecule must be built with symmetry=False, since every geometry step is a new
@@ -160,13 +156,29 @@ def _finish(calc, geom, opt, extra=None):
     return result
 
 
-def optimize_geometry(molecule, energy_and_gradient, coord_type="redund", thresh="gau",
+def _resolve_target(molecule, energy_and_gradient):
+    """(Molecule, energy_and_gradient callable) from either a Molecule and a callable, or a
+    ccpy.methods method (whose calculation is repeated at every geometry)."""
+    from ccpy.methods.base import MethodBase
+
+    if isinstance(molecule, MethodBase):
+        method = molecule
+        if energy_and_gradient is not None:
+            raise ValueError("Pass either a method or a Molecule with an energy_and_gradient callable.")
+        return method.molecule, lambda mol: method.at_geometry(mol).energy_and_gradient()
+    if energy_and_gradient is None:
+        raise ValueError("energy_and_gradient is required when a Molecule is given.")
+    return molecule, energy_and_gradient
+
+
+def optimize_geometry(molecule, energy_and_gradient=None, coord_type="redund", thresh="gau",
                       max_cycles=100, hessian_init="fischer", verbose=True, **optimizer_kwargs):
     """Minimize the energy with pysisyphus' rational-function optimizer (RFO).
 
     Arguments:
     ----------
-    molecule : Molecule -> starting geometry (symmetry=False)
+    molecule : Molecule -> starting geometry (symmetry=False), or a ccpy.methods method
+               (e.g., CCSD(mf)), whose energy_and_gradient() is then used
     energy_and_gradient : callable(Molecule) -> (energy, gradient); see the module docstring
     coord_type : str -> "redund" (redundant internals, recommended), "dlc", "tric" or "cart"
     thresh : str -> pysisyphus convergence criterion, e.g. "gau_loose", "gau", "gau_tight"
@@ -178,6 +190,7 @@ def optimize_geometry(molecule, energy_and_gradient, coord_type="redund", thresh
     _import_pysisyphus()
     from pysisyphus.optimizers.RFOptimizer import RFOptimizer
 
+    molecule, energy_and_gradient = _resolve_target(molecule, energy_and_gradient)
     calc = make_calculator(molecule, energy_and_gradient, verbose=verbose)
     geom = _geometry(molecule, coord_type)
     geom.set_calculator(calc)
@@ -187,7 +200,7 @@ def optimize_geometry(molecule, energy_and_gradient, coord_type="redund", thresh
     return _finish(calc, geom, opt)
 
 
-def optimize_transition_state(molecule, energy_and_gradient, coord_type="redund", thresh="gau",
+def optimize_transition_state(molecule, energy_and_gradient=None, coord_type="redund", thresh="gau",
                               max_cycles=100, root=0, hessian_init="calc", hessian_recalc=None,
                               hessian_step=5.0e-3, verbose=True, **optimizer_kwargs):
     """First-order saddle point search with pysisyphus' restricted-step partitioned RFO
@@ -195,7 +208,8 @@ def optimize_transition_state(molecule, energy_and_gradient, coord_type="redund"
 
     Arguments:
     ----------
-    molecule : Molecule -> guess of the transition-state geometry (symmetry=False)
+    molecule : Molecule -> guess of the transition-state geometry (symmetry=False), or a
+               ccpy.methods method at that geometry
     energy_and_gradient : callable(Molecule) -> (energy, gradient); see the module docstring
     root : int -> index (in ascending eigenvalue order) of the Hessian mode to follow uphill;
                   0 follows the lowest mode, which should be the imaginary mode of a good guess
@@ -209,6 +223,7 @@ def optimize_transition_state(molecule, energy_and_gradient, coord_type="redund"
     _import_pysisyphus()
     from pysisyphus.tsoptimizers.RSPRFOptimizer import RSPRFOptimizer
 
+    molecule, energy_and_gradient = _resolve_target(molecule, energy_and_gradient)
     calc = make_calculator(molecule, energy_and_gradient, hessian_step=hessian_step, verbose=verbose)
     geom = _geometry(molecule, coord_type)
     geom.set_calculator(calc)

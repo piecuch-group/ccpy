@@ -47,18 +47,25 @@ def crcc23A_gradient(driver, meanfield=None, zvector_tol=1.0e-10, verbose=True):
 
     The driver must come from Driver.from_scf (RHF; density fitting or Cholesky) after
     run_cc, run_hbar and run_leftcc (ccsd or ccsd_chol); driver.hamiltonian is the Hbar."""
+    mf = meanfield if meanfield is not None else driver.scf
+    return crcc23A_gradient_from_amplitudes(mf, driver.system, driver.T, driver.L[0], driver.hamiltonian,
+                                            zvector_tol=zvector_tol, verbose=verbose)
+
+
+def crcc23A_gradient_from_amplitudes(meanfield, system, T, L, Hbar, H0=None, zvector_tol=1.0e-10, verbose=True):
+    """Analytic RHF CR-CC(2,3)_A nuclear gradient from converged CCSD (T), left-CCSD (L),
+    and the CCSD HBar (Hbar), with the bare DF Hamiltonian H0 (built from meanfield if not
+    given)."""
     from ccpy.interfaces.scf_tools import load_scf_integrals
 
     t0 = time.perf_counter()
-    mf = meanfield if meanfield is not None else driver.scf
-    T, L, Hbar, system = driver.T, driver.L[0], driver.hamiltonian, driver.system
-
-    _, H0 = load_scf_integrals(mf, system.nfrozen, system.ndelete, use_cholesky=True)
+    if H0 is None:
+        _, H0 = load_scf_integrals(meanfield, system.nfrozen, system.ndelete, use_cholesky=True)
     H = build_hbar_ccs_chol(T, H0, system)
-    mo = get_mo_integrals(mf, system)
+    mo = get_mo_integrals(meanfield, system)
     response = calc_crcc23A_response(T, L, Hbar, H, H0, mo, system, tol=zvector_tol)
     D1, Y = calc_crcc23A_densities(T, L, response, H, mo, system)
-    return relaxed_gradient(mf, system.nfrozen, D1["a"] + D1["b"], Y["a"] + Y["b"],
+    return relaxed_gradient(meanfield, system.nfrozen, D1["a"] + D1["b"], Y["a"] + Y["b"],
                             zvector_tol=zvector_tol, verbose=verbose,
                             title="CR-CC(2,3)_A Analytic Gradient", t0=t0)
 

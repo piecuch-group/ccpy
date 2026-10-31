@@ -1,9 +1,50 @@
 module ccp3_adaptive_loops
   use reorder, only: reorder_stripe
+  use pspace_sort, only: get_index_table => get_index_table3, sort3 => sort3_excits_cm, argsort_r8_descend, keep_largest
 
     implicit none
 
             contains
+
+              subroutine add_candidates(moments, triples_list, nfill, cutoff, num_add, buf_fact,&
+                                        cand_m, cand_t, ncand, ncand_max)
+              ! Append the candidate triples with |moment| >= cutoff to the selection buffer. When
+              ! the buffer is full, only its num_add largest entries are kept and cutoff is raised
+              ! to the smallest of them.
+                        integer, intent(in) :: num_add, buf_fact, ncand, ncand_max
+                        real(kind=8), intent(inout) :: moments(buf_fact*num_add)
+                        integer, intent(inout) :: triples_list(buf_fact*num_add,6)
+                        integer, intent(inout) :: nfill
+                        real(kind=8), intent(inout) :: cutoff
+                        real(kind=8), intent(in) :: cand_m(ncand_max)
+                        integer, intent(in) :: cand_t(6,ncand_max)
+                        integer :: n, nbuf, imin
+
+                        nbuf = buf_fact*num_add
+                        if (num_add <= 0) return
+                        do n = 1, ncand
+                           if (abs(cand_m(n)) < cutoff) cycle
+                           if (nfill > nbuf) then
+                              if (nbuf > num_add) then
+                                 call keep_largest(moments, triples_list, nbuf, num_add, cutoff)
+                                 nfill = num_add + 1
+                              else
+                                 ! buffer of exactly num_add entries: replace the smallest one
+                                 imin = minloc(abs(moments), 1)
+                                 if (abs(cand_m(n)) > abs(moments(imin))) then
+                                    moments(imin) = cand_m(n)
+                                    triples_list(imin,:) = cand_t(:,n)
+                                 end if
+                                 cutoff = minval(abs(moments))
+                                 cycle
+                              end if
+                              if (abs(cand_m(n)) < cutoff) cycle
+                           end if
+                           moments(nfill) = cand_m(n)
+                           triples_list(nfill,:) = cand_t(:,n)
+                           nfill = nfill + 1
+                        end do
+              end subroutine add_candidates
 
               subroutine ccp3a_2ba_with_selection_opt(deltaA,deltaB,deltaC,deltaD,&
                               moments,&
@@ -40,10 +81,13 @@ module ccp3_adaptive_loops
                         integer, intent(inout) :: nfill
                         !f2py intent(in,out) :: nfill
 
-                        integer :: i, j, k, a, b, c, nua2, isort(buf_fact*num_add)
-                        real(kind=8) :: D, temp1, temp2, temp3, LM, X3A(nua,nua,nua), L3A(nua,nua,nua), minval
+                        integer :: i, j, k, a, b, c, nua2
+                        real(kind=8) :: D, temp1, temp2, temp3, LM, minval, thresh
+                        real(kind=8), allocatable :: X3A(:,:,:), L3A(:,:,:), cand_m(:)
+                        integer, allocatable :: ijk(:,:), cand_t(:,:)
+                        integer :: nblock, iblk, ncand, ncand_max
                         ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nua,nua,nua)
+                        logical(kind=1), allocatable :: qspace(:,:,:)
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3aaa)
@@ -67,11 +111,32 @@ module ccp3_adaptive_loops
                         deltaC = 0.0d0
                         deltaD = 0.0d0
 
-                        minval = abs(moments(num_add))
+                        minval = 0.0d0
                         nua2 = nua*nua
-                        do i = 1 , noa
+                        nblock = noa*(noa-1)*(noa-2)/6
+                        allocate(ijk(3,nblock))
+                        nblock = 0
+                        do i = 1, noa
                             do j = i+1, noa
                                 do k = j+1, noa
+                                    nblock = nblock + 1
+                                    ijk(:,nblock) = (/i,j,k/)
+                                end do
+                            end do
+                        end do
+                        ncand_max = nua*(nua-1)*(nua-2)/6
+                        ! (i,j,k) blocks in parallel; the selected triples of each block are merged
+                        ! into the shared buffer in a critical section
+                        !$omp parallel default(shared) private(iblk,i,j,k,a,b,c,idet,idx,D,temp1,temp2,temp3,LM,&
+                        !$omp thresh,ncand,X3A,L3A,qspace,cand_m,cand_t)
+                        allocate(X3A(nua,nua,nua), L3A(nua,nua,nua), qspace(nua,nua,nua))
+                        allocate(cand_m(ncand_max), cand_t(6,ncand_max))
+                        !$omp do schedule(dynamic) reduction(+:deltaA,deltaB,deltaC,deltaD)
+                        do iblk = 1, nblock
+                                   i = ijk(1,iblk); j = ijk(2,iblk); k = ijk(3,iblk);
+                                   !$omp atomic read
+                                   thresh = minval
+                                   ncand = 0
 
                                    ! Construct Q space for block (i,j,k)
                                    qspace = .true.
@@ -171,26 +236,26 @@ module ccp3_adaptive_loops
                                                 ! simply skip over triples that contribute below min_thresh
                                                 if (abs(LM/D) <= min_thresh) cycle
 
-                                                if (nfill <= buf_fact*num_add) then
-                                                    if (abs(LM/D) >= minval) then
-                                                        triples_list(nfill,:) = (/2*a-1, 2*b-1, 2*c-1, 2*i-1, 2*j-1, 2*k-1/)
-                                                        moments(nfill) = LM/D
-                                                        nfill = nfill + 1
-                                                    end if
-                                                else
-                                                   call argsort_r8_descend(abs(moments),isort)
-                                                   moments = moments(isort)
-                                                   triples_list = triples_list(isort,:)
-                                                   minval = abs(moments(num_add))
-                                                   nfill = num_add + 1
+                                                if (abs(LM/D) >= thresh) then
+                                                    ncand = ncand + 1
+                                                    cand_m(ncand) = LM/D
+                                                    cand_t(:,ncand) = (/2*a-1, 2*b-1, 2*c-1, 2*i-1, 2*j-1, 2*k-1/)
                                                 end if
                                             end do
                                         end do
                                     end do
-                                end do
-                            end do
+                                   !$omp critical (ccp3_selection_buffer)
+                                   thresh = minval
+                                   call add_candidates(moments, triples_list, nfill, thresh, num_add, buf_fact,&
+                                                       cand_m, cand_t, ncand, ncand_max)
+                                   !$omp atomic write
+                                   minval = thresh
+                                   !$omp end critical (ccp3_selection_buffer)
                         end do
-                        deallocate(loc_arr,idx_table)
+                        !$omp end do
+                        deallocate(X3A, L3A, qspace, cand_m, cand_t)
+                        !$omp end parallel
+                        deallocate(loc_arr,idx_table,ijk)
 
               end subroutine ccp3a_2ba_with_selection_opt
 
@@ -257,10 +322,13 @@ module ccp3_adaptive_loops
                         integer, intent(inout) :: nfill
                         !f2py intent(in,out) :: nfill
 
-                        integer :: i, j, k, a, b, c, nuanub, nua2, isort(buf_fact*num_add)
-                        real(kind=8) :: D, temp1, temp2, temp3, LM, X3B(nua,nua,nub), L3B(nua,nua,nub), minval
+                        integer :: i, j, k, a, b, c, nuanub, nua2
+                        real(kind=8) :: D, temp1, temp2, temp3, LM, minval, thresh
+                        real(kind=8), allocatable :: X3B(:,:,:), L3B(:,:,:), cand_m(:)
+                        integer, allocatable :: ijk(:,:), cand_t(:,:)
+                        integer :: nblock, iblk, ncand, ncand_max
                         ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nua,nua,nub)
+                        logical(kind=1), allocatable :: qspace(:,:,:)
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3aab)
@@ -297,12 +365,31 @@ module ccp3_adaptive_loops
                         deltaC = 0.0d0
                         deltaD = 0.0d0
 
-                        minval = abs(moments(num_add))
+                        minval = 0.0d0
                         nuanub = nua*nub
                         nua2 = nua*nua
+                        nblock = noa*(noa-1)/2*nob
+                        allocate(ijk(3,nblock))
+                        nblock = 0
                         do i = 1, noa
                             do j = i+1, noa
                                 do k = 1, nob
+                                    nblock = nblock + 1
+                                    ijk(:,nblock) = (/i,j,k/)
+                                end do
+                            end do
+                        end do
+                        ncand_max = nua*(nua-1)/2*nub
+                        !$omp parallel default(shared) private(iblk,i,j,k,a,b,c,idet,idx,D,temp1,temp2,temp3,LM,&
+                        !$omp thresh,ncand,X3B,L3B,qspace,cand_m,cand_t)
+                        allocate(X3B(nua,nua,nub), L3B(nua,nua,nub), qspace(nua,nua,nub))
+                        allocate(cand_m(ncand_max), cand_t(6,ncand_max))
+                        !$omp do schedule(dynamic) reduction(+:deltaA,deltaB,deltaC,deltaD)
+                        do iblk = 1, nblock
+                                    i = ijk(1,iblk); j = ijk(2,iblk); k = ijk(3,iblk);
+                                    !$omp atomic read
+                                    thresh = minval
+                                    ncand = 0
 
                                     ! Construct Q space for block (i,j,k)
                                     qspace = .true.
@@ -404,27 +491,27 @@ module ccp3_adaptive_loops
                                                 ! simply skip over triples that contribute below min_thresh
                                                 if (abs(LM/D) <= min_thresh) cycle
 
-                                                if (nfill <= buf_fact*num_add) then
-                                                    if (abs(LM/D) >= minval) then
-                                                        triples_list(nfill,:) = (/2*a-1, 2*b-1, 2*c, 2*i-1, 2*j-1, 2*k/)
-                                                        moments(nfill) = LM/D
-                                                        nfill = nfill + 1
-                                                    end if
-                                                else
-                                                   call argsort_r8_descend(abs(moments),isort)
-                                                   moments = moments(isort)
-                                                   triples_list = triples_list(isort,:)
-                                                   minval = abs(moments(num_add))
-                                                   nfill = num_add + 1
+                                                if (abs(LM/D) >= thresh) then
+                                                    ncand = ncand + 1
+                                                    cand_m(ncand) = LM/D
+                                                    cand_t(:,ncand) = (/2*a-1, 2*b-1, 2*c, 2*i-1, 2*j-1, 2*k/)
                                                 end if
 
                                             end do
                                         end do
                                     end do
-                                end do
-                            end do
+                                    !$omp critical (ccp3_selection_buffer)
+                                    thresh = minval
+                                    call add_candidates(moments, triples_list, nfill, thresh, num_add, buf_fact,&
+                                                        cand_m, cand_t, ncand, ncand_max)
+                                    !$omp atomic write
+                                    minval = thresh
+                                    !$omp end critical (ccp3_selection_buffer)
                         end do
-                        deallocate(loc_arr,idx_table)
+                        !$omp end do
+                        deallocate(X3B, L3B, qspace, cand_m, cand_t)
+                        !$omp end parallel
+                        deallocate(loc_arr,idx_table,ijk)
 
               end subroutine ccp3b_2ba_with_selection_opt
 
@@ -491,10 +578,13 @@ module ccp3_adaptive_loops
                         integer, intent(inout) :: nfill
                         !f2py intent(in,out) :: nfill
 
-                        integer :: i, j, k, a, b, c, nuanub, nub2, isort(buf_fact*num_add)
-                        real(kind=8) :: D, LM, temp1, temp2, temp3, X3C(nua,nub,nub), L3C(nua,nub,nub), minval
+                        integer :: i, j, k, a, b, c, nuanub, nub2
+                        real(kind=8) :: D, LM, temp1, temp2, temp3, minval, thresh
+                        real(kind=8), allocatable :: X3C(:,:,:), L3C(:,:,:), cand_m(:)
+                        integer, allocatable :: ijk(:,:), cand_t(:,:)
+                        integer :: nblock, iblk, ncand, ncand_max
                         ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nua,nub,nub)
+                        logical(kind=1), allocatable :: qspace(:,:,:)
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3abb)
@@ -538,10 +628,29 @@ module ccp3_adaptive_loops
                         call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
                         call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
 
-                        minval = abs(moments(num_add))
-                        do i = 1 , noa
+                        minval = 0.0d0
+                        nblock = noa*nob*(nob-1)/2
+                        allocate(ijk(3,nblock))
+                        nblock = 0
+                        do i = 1, noa
                             do j = 1, nob
                                 do k = j+1, nob
+                                    nblock = nblock + 1
+                                    ijk(:,nblock) = (/i,j,k/)
+                                end do
+                            end do
+                        end do
+                        ncand_max = nua*nub*(nub-1)/2
+                        !$omp parallel default(shared) private(iblk,i,j,k,a,b,c,idet,idx,D,temp1,temp2,temp3,LM,&
+                        !$omp thresh,ncand,X3C,L3C,qspace,cand_m,cand_t)
+                        allocate(X3C(nua,nub,nub), L3C(nua,nub,nub), qspace(nua,nub,nub))
+                        allocate(cand_m(ncand_max), cand_t(6,ncand_max))
+                        !$omp do schedule(dynamic) reduction(+:deltaA,deltaB,deltaC,deltaD)
+                        do iblk = 1, nblock
+                                    i = ijk(1,iblk); j = ijk(2,iblk); k = ijk(3,iblk);
+                                    !$omp atomic read
+                                    thresh = minval
+                                    ncand = 0
 
                                     ! Construct Q space for block (i,j,k)
                                     qspace = .true.
@@ -642,27 +751,27 @@ module ccp3_adaptive_loops
                                                 ! simply skip over triples that contribute below min_thresh
                                                 if (abs(LM/D) <= min_thresh) cycle
 
-                                                if (nfill <= buf_fact*num_add) then
-                                                    if (abs(LM/D) >= minval) then
-                                                        triples_list(nfill,:) = (/2*a-1, 2*b, 2*c, 2*i-1, 2*j, 2*k/)
-                                                        moments(nfill) = LM/D
-                                                        nfill = nfill + 1
-                                                    end if
-                                                else
-                                                   call argsort_r8_descend(abs(moments),isort)
-                                                   moments = moments(isort)
-                                                   triples_list = triples_list(isort,:)
-                                                   minval = abs(moments(num_add))
-                                                   nfill = num_add + 1
+                                                if (abs(LM/D) >= thresh) then
+                                                    ncand = ncand + 1
+                                                    cand_m(ncand) = LM/D
+                                                    cand_t(:,ncand) = (/2*a-1, 2*b, 2*c, 2*i-1, 2*j, 2*k/)
                                                 end if
 
                                             end do
                                         end do
                                     end do
-                                end do
-                            end do
+                                    !$omp critical (ccp3_selection_buffer)
+                                    thresh = minval
+                                    call add_candidates(moments, triples_list, nfill, thresh, num_add, buf_fact,&
+                                                        cand_m, cand_t, ncand, ncand_max)
+                                    !$omp atomic write
+                                    minval = thresh
+                                    !$omp end critical (ccp3_selection_buffer)
                         end do
-                        deallocate(loc_arr,idx_table)
+                        !$omp end do
+                        deallocate(X3C, L3C, qspace, cand_m, cand_t)
+                        !$omp end parallel
+                        deallocate(loc_arr,idx_table,ijk)
 
               end subroutine ccp3c_2ba_with_selection_opt
 
@@ -701,10 +810,13 @@ module ccp3_adaptive_loops
                         integer, intent(inout) :: nfill
                         !f2py intent(in,out) :: nfill
 
-                        integer :: i, j, k, a, b, c, nub2, isort(buf_fact*num_add)
-                        real(kind=8) :: D, temp1, temp2, temp3, LM, X3D(nub,nub,nub), L3D(nub,nub,nub), minval
+                        integer :: i, j, k, a, b, c, nub2
+                        real(kind=8) :: D, temp1, temp2, temp3, LM, minval, thresh
+                        real(kind=8), allocatable :: X3D(:,:,:), L3D(:,:,:), cand_m(:)
+                        integer, allocatable :: ijk(:,:), cand_t(:,:)
+                        integer :: nblock, iblk, ncand, ncand_max
                         ! Low-memory looping variables
-                        logical(kind=1) :: qspace(nub,nub,nub)
+                        logical(kind=1), allocatable :: qspace(:,:,:)
                         integer :: nloc, idet, idx
                         integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
                         integer :: excits_buff(6,n3bbb)
@@ -728,11 +840,30 @@ module ccp3_adaptive_loops
                         deltaC = 0.0d0
                         deltaD = 0.0d0
 
-                        minval = abs(moments(num_add))
+                        minval = 0.0d0
                         nub2 = nub*nub
-                        do i = 1 , nob
+                        nblock = nob*(nob-1)*(nob-2)/6
+                        allocate(ijk(3,nblock))
+                        nblock = 0
+                        do i = 1, nob
                             do j = i+1, nob
                                 do k = j+1, nob
+                                    nblock = nblock + 1
+                                    ijk(:,nblock) = (/i,j,k/)
+                                end do
+                            end do
+                        end do
+                        ncand_max = nub*(nub-1)*(nub-2)/6
+                        !$omp parallel default(shared) private(iblk,i,j,k,a,b,c,idet,idx,D,temp1,temp2,temp3,LM,&
+                        !$omp thresh,ncand,X3D,L3D,qspace,cand_m,cand_t)
+                        allocate(X3D(nub,nub,nub), L3D(nub,nub,nub), qspace(nub,nub,nub))
+                        allocate(cand_m(ncand_max), cand_t(6,ncand_max))
+                        !$omp do schedule(dynamic) reduction(+:deltaA,deltaB,deltaC,deltaD)
+                        do iblk = 1, nblock
+                                    i = ijk(1,iblk); j = ijk(2,iblk); k = ijk(3,iblk);
+                                    !$omp atomic read
+                                    thresh = minval
+                                    ncand = 0
 
                                     ! Construct Q space for block (i,j,k)
                                     qspace = .true.
@@ -831,27 +962,27 @@ module ccp3_adaptive_loops
                                                 ! simply skip over triples that contribute below min_thresh
                                                 if (abs(LM/D) <= min_thresh) cycle
 
-                                                if (nfill <= buf_fact*num_add) then
-                                                    if (abs(LM/D) >= minval) then
-                                                        triples_list(nfill,:) = (/2*a, 2*b, 2*c, 2*i, 2*j, 2*k/)
-                                                        moments(nfill) = LM/D
-                                                        nfill = nfill + 1
-                                                    end if
-                                                else
-                                                   call argsort_r8_descend(abs(moments),isort)
-                                                   moments = moments(isort)
-                                                   triples_list = triples_list(isort,:)
-                                                   minval = abs(moments(num_add))
-                                                   nfill = num_add + 1
+                                                if (abs(LM/D) >= thresh) then
+                                                    ncand = ncand + 1
+                                                    cand_m(ncand) = LM/D
+                                                    cand_t(:,ncand) = (/2*a, 2*b, 2*c, 2*i, 2*j, 2*k/)
                                                 end if
 
                                             end do
                                         end do
                                     end do
-                                end do
-                            end do
+                                    !$omp critical (ccp3_selection_buffer)
+                                    thresh = minval
+                                    call add_candidates(moments, triples_list, nfill, thresh, num_add, buf_fact,&
+                                                        cand_m, cand_t, ncand, ncand_max)
+                                    !$omp atomic write
+                                    minval = thresh
+                                    !$omp end critical (ccp3_selection_buffer)
                         end do
-                        deallocate(loc_arr,idx_table)
+                        !$omp end do
+                        deallocate(X3D, L3D, qspace, cand_m, cand_t)
+                        !$omp end parallel
+                        deallocate(loc_arr,idx_table,ijk)
 
               end subroutine ccp3d_2ba_with_selection_opt
 
@@ -1375,207 +1506,5 @@ module ccp3_adaptive_loops
                            end if
                         end do; end do; end do;
               end subroutine ccp3d_ijk_with_selection_opt
-
-              subroutine get_index_table(idx_table, rng1, rng2, rng3, n1, n2, n3)
-
-                    integer, intent(in) :: n1, n2, n3
-                    integer, intent(in) :: rng1(2), rng2(2), rng3(2)
-
-                    integer, intent(inout) :: idx_table(n1,n2,n3)
-
-                    integer :: kout
-                    integer :: p, q, r
-
-                    idx_table = 0
-                    if (rng1(1) > 0 .and. rng2(1) < 0 .and. rng3(1) < 0) then ! p < q < r
-                       kout = 1
-                       do p = rng1(1), rng1(2)
-                          do q = p-rng2(1), rng2(2)
-                             do r = q-rng3(1), rng3(2)
-                                idx_table(p,q,r) = kout
-                                kout = kout + 1
-                             end do
-                          end do
-                       end do
-                    elseif (rng1(1) > 0 .and. rng2(1) > 0 .and. rng3(1) < 0) then ! p, q < r
-                       kout = 1
-                       do p = rng1(1), rng1(2)
-                          do q = rng2(1), rng2(2)
-                             do r = q-rng3(1), rng3(2)
-                                idx_table(p,q,r) = kout
-                                kout = kout + 1
-                             end do
-                          end do
-                       end do
-                    elseif (rng1(1) > 0 .and. rng2(1) < 0 .and. rng3(1) > 0) then ! p < q, r
-                       kout = 1
-                       do p = rng1(1), rng1(2)
-                          do q = p-rng2(1), rng2(2)
-                             do r = rng3(1), rng3(2)
-                                idx_table(p,q,r) = kout
-                                kout = kout + 1
-                             end do
-                          end do
-                       end do
-                    else ! p, q, r
-                       kout = 1
-                       do p = rng1(1), rng1(2)
-                          do q = rng2(1), rng2(2)
-                             do r = rng3(1), rng3(2)
-                                idx_table(p,q,r) = kout
-                                kout = kout + 1
-                             end do
-                          end do
-                       end do
-                    end if
-
-              end subroutine get_index_table
-
-              subroutine sort3(excits, loc_arr, idx_table, idims, n1, n2, n3, nloc, n3p)
-
-                    integer, intent(in) :: n1, n2, n3, nloc, n3p
-                    integer, intent(in) :: idims(3)
-                    integer, intent(in) :: idx_table(n1,n2,n3)
-
-                    integer, intent(inout) :: loc_arr(2,nloc)
-                    integer, intent(inout) :: excits(6,n3p)
-
-                    integer :: idet
-                    integer :: p, q, r
-                    integer :: p1, q1, r1, p2, q2, r2
-                    integer :: pqr1, pqr2
-                    integer, allocatable :: temp(:), idx(:)
-
-                    allocate(temp(n3p),idx(n3p))
-                    do idet = 1, n3p
-                       p = excits(idims(1),idet); q = excits(idims(2),idet); r = excits(idims(3),idet);
-                       temp(idet) = idx_table(p,q,r)
-                    end do
-                    call argsort(temp, idx)
-                    excits = excits(:,idx)
-                    deallocate(temp,idx)
-                    loc_arr(1,:) = 1; loc_arr(2,:) = 0;
-                    !!! WARNING: THERE IS A MEMORY LEAK HERE! pqr2 is used below but is not set if n3p <= 1
-                    !if (n3p <= 1) print*, "WARNING: potential memory leakage in sort3 function. pqr2 set to 0"
-                    pqr2 = 0
-                    do idet = 1, n3p-1
-                       p1 = excits(idims(1),idet);   q1 = excits(idims(2),idet);   r1 = excits(idims(3),idet);
-                       p2 = excits(idims(1),idet+1); q2 = excits(idims(2),idet+1); r2 = excits(idims(3),idet+1);
-                       pqr1 = idx_table(p1,q1,r1)
-                       pqr2 = idx_table(p2,q2,r2)
-                       if (pqr1 /= pqr2) then
-                          loc_arr(2,pqr1) = idet
-                          loc_arr(1,pqr2) = idet+1
-                       end if
-                    end do
-                    if (n3p > 1) then
-                       loc_arr(2,pqr2) = n3p
-                    end if
-              end subroutine sort3
-
-              subroutine argsort(r,d)
-
-                    integer, intent(in), dimension(:) :: r
-                    integer, intent(out), dimension(size(r)) :: d
-
-                    integer, dimension(size(r)) :: il
-
-                    integer :: stepsize
-                    integer :: i, j, n, left, k, ksize
-
-                    n = size(r)
-
-                    do i=1,n
-                       d(i)=i
-                    end do
-
-                    if (n==1) return
-
-                    stepsize = 1
-                    do while (stepsize < n)
-                       do left = 1, n-stepsize,stepsize*2
-                          i = left
-                          j = left+stepsize
-                          ksize = min(stepsize*2,n-left+1)
-                          k=1
-
-                          do while (i < left+stepsize .and. j < left+ksize)
-                             if (r(d(i)) < r(d(j))) then
-                                il(k) = d(i)
-                                i = i+1
-                                k = k+1
-                             else
-                                il(k) = d(j)
-                                j = j+1
-                                k = k+1
-                             endif
-                          enddo
-
-                          if (i < left+stepsize) then
-                             ! fill up remaining from left
-                             il(k:ksize) = d(i:left+stepsize-1)
-                          else
-                             ! fill up remaining from right
-                             il(k:ksize) = d(j:left+ksize-1)
-                          endif
-                          d(left:left+ksize-1) = il(1:ksize)
-                       end do
-                       stepsize = stepsize*2
-                    end do
-
-              end subroutine argsort
-
-              subroutine argsort_r8_descend(r,d)
-
-                    real(kind=8), intent(in), dimension(:) :: r
-                    integer, intent(out), dimension(size(r)) :: d
-
-                    integer, dimension(size(r)) :: il
-
-                    integer :: stepsize
-                    integer :: i, j, n, left, k, ksize
-
-                    n = size(r)
-
-                    do i=1,n
-                       d(i)=i
-                    end do
-
-                    if (n==1) return
-
-                    stepsize = 1
-                    do while (stepsize < n)
-                       do left = 1, n-stepsize,stepsize*2
-                          i = left
-                          j = left+stepsize
-                          ksize = min(stepsize*2,n-left+1)
-                          k=1
-
-                          do while (i < left+stepsize .and. j < left+ksize)
-                             !if (r(d(i)) < r(d(j))) then ! sort in ascending
-                             if (r(d(i)) > r(d(j))) then ! sort in descending
-                                il(k) = d(i)
-                                i = i+1
-                                k = k+1
-                             else
-                                il(k) = d(j)
-                                j = j+1
-                                k = k+1
-                             endif
-                          enddo
-
-                          if (i < left+stepsize) then
-                             ! fill up remaining from left
-                             il(k:ksize) = d(i:left+stepsize-1)
-                          else
-                             ! fill up remaining from right
-                             il(k:ksize) = d(j:left+ksize-1)
-                          endif
-                          d(left:left+ksize-1) = il(1:ksize)
-                       end do
-                       stepsize = stepsize*2
-                    end do
-
-              end subroutine argsort_r8_descend
 
 end module ccp3_adaptive_loops

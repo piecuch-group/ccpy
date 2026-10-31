@@ -29,6 +29,9 @@ class UHF(SCFBase):
         self.guess_mix = guess_mix
         super().__init__(molecule, **kwargs)
 
+    def _init_options(self):
+        return {**super()._init_options(), "guess_mix": self.guess_mix}
+
     def _initial_guess(self, H):
         eps, C, irreps = self._eigh(self._guess_hamiltonian(H))
         return [eps, eps], [C, C], [irreps, irreps]
