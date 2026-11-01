@@ -1,7 +1,7 @@
 """Unrelaxed CCSD densities for the factorized analytic gradients.
 
 The densities are those of the T1-dressed frame: with H = e^{-T1} H e^{T1} (one- plus
-two-body, see ccpy.gradients.ccsd_gradient.build_t1_dressed_hamiltonian),
+two-body, see ccpy.hbar.hbar_ccs_chol.build_hbar_ccs_chol),
 
     L = E_ref(H) + E(T2; H) + sum_mu lambda_mu R_mu(T2; H),
 

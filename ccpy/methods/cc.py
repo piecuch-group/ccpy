@@ -137,8 +137,9 @@ class CCSD(CCBase):
 
     def has_analytic_gradient(self, **kwargs):
         from ccpy.scf.rhf import RHF
+        from ccpy.scf.uhf import UHF
 
-        return isinstance(self.reference.scf, RHF) and self.reference.ndelete == 0
+        return isinstance(self.reference.scf, (RHF, UHF)) and self.reference.ndelete == 0
 
     def _analytic_gradient(self, zvector_tol=1.0e-10, **kwargs):
         from ccpy.gradients.ccsd_gradient import ccsd_gradient_from_amplitudes

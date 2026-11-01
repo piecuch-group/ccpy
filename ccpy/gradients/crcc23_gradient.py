@@ -23,8 +23,14 @@ H = e^{-T1} H e^{T1} (ccpy.hbar.hbar_ccs_chol) and T1 = 0, because Hbar = e^{-T2
     derivative of the CCSD equations (build_BTw_2*), the T1 part through
     [H, W1] (ccpy.hbar.hbar_ccs_chol.build_hbar_ccs_chol_derivative);
   * the densities (ccpy.density.ccsd_rdm, ccpy.density.crcc23_rdm) are those of the blocks of
-    H(T1); ccsd_gradient.build_DY takes them to the bare frame.
+    H(T1); ccpy.gradients.mo_density.build_DY takes them to the bare frame.
 w and z are solved with ccpy's EOMCCSD (HR) and left-CCSD (LH) Jacobian actions on Hbar.
+
+As for CCSD (ccpy.gradients.ccsd_gradient), the gradient is assembled in three stages, per spin:
+the amplitude-relaxed densities of E_CCSD + delta_A (calc_crcc23A_density: the CCSD
+Lagrangian, the triples, the z and w multipliers, and the denominators), their orbital
+relaxation (ccpy.gradients.orbital_response), and the contraction with the derivative
+integrals (ccpy.gradients.derivative_integrals).
 No quantity with four virtual indices is stored; the triples are held as o^3 v^3 blocks.
 """
 
@@ -37,15 +43,19 @@ import scipy.sparse.linalg as spla
 
 from ccpy.density.ccsd_rdm import calc_ccsd_rdm, calc_ccsd_rdm_derivative, calc_rdm2_vvvv_slice
 from ccpy.density.crcc23_rdm import calc_crcc23_rdm, calc_crcc23_rdm1_denominator
-from ccpy.gradients.ccsd_gradient import build_DY, get_mo_integrals, relaxed_gradient, rotation_gradient
+from ccpy.gradients.ccsd_gradient import calc_ccsd_density
+from ccpy.gradients.derivative_integrals import contract_derivative_integrals, print_gradient
+from ccpy.gradients.mo_density import (SPINS, add_densities, build_bare_hamiltonian, build_DY,
+                                     get_mo_integrals, rotation_gradient)
+from ccpy.gradients.orbital_response import orbital_relaxation
 from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol, build_hbar_ccs_chol_derivative
 from ccpy.models.integrals import Integral
 
 
 def crcc23A_gradient(driver, meanfield=None, zvector_tol=1.0e-10, verbose=True):
-    """Analytic RHF CR-CC(2,3)_A nuclear gradient, shape (natoms, 3), Eh/bohr.
+    """Analytic CR-CC(2,3)_A nuclear gradient, shape (natoms, 3), Eh/bohr.
 
-    The driver must come from Driver.from_scf (RHF; density fitting or Cholesky) after
+    The driver must come from Driver.from_scf (RHF or UHF; density fitting or Cholesky) after
     run_cc, run_hbar and run_leftcc (ccsd or ccsd_chol); driver.hamiltonian is the Hbar."""
     mf = meanfield if meanfield is not None else driver.scf
     return crcc23A_gradient_from_amplitudes(mf, driver.system, driver.T, driver.L[0], driver.hamiltonian,
@@ -53,21 +63,21 @@ def crcc23A_gradient(driver, meanfield=None, zvector_tol=1.0e-10, verbose=True):
 
 
 def crcc23A_gradient_from_amplitudes(meanfield, system, T, L, Hbar, H0=None, zvector_tol=1.0e-10, verbose=True):
-    """Analytic RHF CR-CC(2,3)_A nuclear gradient from converged CCSD (T), left-CCSD (L),
-    and the CCSD HBar (Hbar), with the bare DF Hamiltonian H0 (built from meanfield if not
-    given)."""
-    from ccpy.interfaces.scf_tools import load_scf_integrals
-
+    """Analytic CR-CC(2,3)_A nuclear gradient from converged CCSD (T), left-CCSD (L),
+    and the CCSD HBar (Hbar), with the bare Cholesky Hamiltonian H0 (with H0.chol; built from
+    the MO integrals if not given)."""
     t0 = time.perf_counter()
-    if H0 is None:
-        _, H0 = load_scf_integrals(meanfield, system.nfrozen, system.ndelete, use_cholesky=True)
-    H = build_hbar_ccs_chol(T, H0, system)
     mo = get_mo_integrals(meanfield, system)
+    if H0 is None or getattr(H0, "chol", None) is None:
+        H0 = build_bare_hamiltonian(mo, system)
+    H = build_hbar_ccs_chol(T, H0, system)
     response = calc_crcc23A_response(T, L, Hbar, H, H0, mo, system, tol=zvector_tol)
-    D1, Y = calc_crcc23A_densities(T, L, response, H, mo, system)
-    return relaxed_gradient(meanfield, system.nfrozen, D1["a"] + D1["b"], Y["a"] + Y["b"],
-                            zvector_tol=zvector_tol, verbose=verbose,
-                            title="CR-CC(2,3)_A Analytic Gradient", t0=t0)
+    D1, Y = calc_crcc23A_density(T, L, response, H, mo, system)
+    D, Y, W = orbital_relaxation(D1, Y, mo, zvector_tol=zvector_tol, verbose=verbose)
+    grad = contract_derivative_integrals(meanfield.mol, D, Y, W, mo)
+    if verbose:
+        print_gradient(meanfield.mol, grad, "CR-CC(2,3)_A Analytic Gradient", time.perf_counter() - t0)
+    return grad
 
 
 def calc_crcc23A_response(T, L, Hbar, H, H0, mo, system, tol=1.0e-10):
@@ -81,21 +91,20 @@ def calc_crcc23A_response(T, L, Hbar, H, H0, mo, system, tol=1.0e-10):
     return {"R3": R3, "L3": L3, "s_lambda": s_lambda, "s_t": s_t, "w": w, "BTw": BTw, "z": z}
 
 
-def calc_crcc23A_densities(T, L, response, H, mo, system):
-    """(D1, Y) of E_CCSD + delta_A, relaxed in the amplitudes, conjugate to the bare (h, B)."""
+def calc_crcc23A_density(T, L, response, H, mo, system):
+    """Amplitude-relaxed (D1, Y) of E_CCSD + delta_A, per spin, conjugate to the bare (h, B):
+    the CCSD Lagrangian, the triples (R3, L3), the z (CCSD amplitude equations) and w
+    (left-CCSD equations) multipliers, and the orbital-energy denominators."""
     R3, L3, w = response["R3"], response["L3"], response["w"]
     z = SimpleNamespace(**{k: _get(response["z"], k) for k in ("a", "b", "aa", "ab", "bb")})
-    pieces = [
-        build_DY(*calc_ccsd_rdm(T, L, system), lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s),
-                 H.chol, T, mo["B"], mo, system, reference=True),
+    return add_densities(
+        calc_ccsd_density(T, L, H, mo, system),
         build_DY(*calc_crcc23_rdm(R3, L3, T, L, system), None, H.chol, T, mo["B"], mo, system),
         build_DY(*calc_ccsd_rdm(T, z, system, energy=False), lambda a, s: calc_rdm2_vvvv_slice(z, T, a, s),
                  H.chol, T, mo["B"], mo, system),
         calc_w_density(w, T, L, H, mo, system),
         calc_denominator_density(R3, L3, H, mo, system),
-    ]
-    return ({s: sum(p[0][s] for p in pieces) for s in ("a", "b")},
-            {s: sum(p[1][s] for p in pieces) for s in ("a", "b")})
+    )
 
 
 def calc_denominator_density(R3, L3, H, mo, system):
@@ -109,17 +118,17 @@ def calc_w_density(w, T, L, H, mo, system):
     """(D1, Y) of d L(T + e w)/de at fixed Lambda: the T1 part of w rotates the Lagrangian
     densities, the T2 part comes from calc_ccsd_rdm_derivative."""
     W = SimpleNamespace(**{k: _get(w, k) for k in ("a", "b", "aa", "ab", "bb")})
-    W1 = {s: _embed_vo(_get(w, s), mo, s) for s in ("a", "b")}
+    W1 = {s: _embed_vo(_get(w, s), mo, s) for s in SPINS}
     H1 = build_hbar_ccs_chol_derivative(W, H, system)
-    dB = {s: mo["B"][s] @ W1[s] - W1[s] @ mo["B"][s] for s in ("a", "b")}
+    dB = {s: mo["B"][s] @ W1[s] - W1[s] @ mo["B"][s] for s in SPINS}
     rdm1, rdm2 = calc_ccsd_rdm(T, L, system)
     vvvv = lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s)
     D1L, YL = build_DY(rdm1, rdm2, vvvv, H.chol, T, mo["B"], mo, system, reference=True)
     _, YLdB = build_DY(rdm1, rdm2, vvvv, H1.chol, T, dB, mo, system, reference=True)
     D1w, Yw = build_DY(*calc_ccsd_rdm_derivative(T, W, L, system), lambda a, s: calc_rdm2_vvvv_slice(L, W, a, s),
                        H.chol, T, mo["B"], mo, system)
-    D1 = {s: D1w[s] + D1L[s] @ W1[s].T - W1[s].T @ D1L[s] for s in ("a", "b")}
-    Y = {s: Yw[s] + YL[s] @ W1[s].T - W1[s].T @ YL[s] + YLdB[s] for s in ("a", "b")}
+    D1 = {s: D1w[s] + D1L[s] @ W1[s].T - W1[s].T @ D1L[s] for s in SPINS}
+    Y = {s: Yw[s] + YL[s] @ W1[s].T - W1[s].T @ YL[s] + YLdB[s] for s in SPINS}
     return D1, Y
 
 
@@ -567,10 +576,10 @@ def calc_BTw(w, T, L, H, mo, system):
     part through H1 = [H, W1]. Singles: rotation derivatives of the directional densities and
     the double rotation D_L . [[H, W1], a+ i]."""
     W = SimpleNamespace(**{k: _get(w, k) for k in ("a", "b", "aa", "ab", "bb")})
-    W1 = {s: _embed_vo(_get(w, s), mo, s) for s in ("a", "b")}
+    W1 = {s: _embed_vo(_get(w, s), mo, s) for s in SPINS}
     H1 = build_hbar_ccs_chol_derivative(W, H, system)
-    h1 = {s: mo["h"][s] @ W1[s] - W1[s] @ mo["h"][s] for s in ("a", "b")}
-    dB = {s: mo["B"][s] @ W1[s] - W1[s] @ mo["B"][s] for s in ("a", "b")}
+    h1 = {s: mo["h"][s] @ W1[s] - W1[s] @ mo["h"][s] for s in SPINS}
+    dB = {s: mo["B"][s] @ W1[s] - W1[s] @ mo["B"][s] for s in SPINS}
 
     rdm1, rdm2 = calc_ccsd_rdm(T, L, system)
     vvvv = lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s)
@@ -580,7 +589,7 @@ def calc_BTw(w, T, L, H, mo, system):
                        H.chol, T, mo["B"], mo, system)
     r1 = rotation_gradient(D1w, Yw, mo["h"], mo["B"], mo)
     r2 = rotation_gradient(D1L, YL, h1, dB, mo)
-    r3 = rotation_gradient({s: np.zeros_like(D1L[s]) for s in ("a", "b")}, YLdB, mo["h"], mo["B"], mo)
+    r3 = rotation_gradient({s: np.zeros_like(D1L[s]) for s in SPINS}, YLdB, mo["h"], mo["B"], mo)
 
     return {"a": r1["a"] + r2["a"] + r3["a"], "b": r1["b"] + r2["b"] + r3["b"],
             "aa": build_BTw_2A(W, T, L, H, H1), "ab": build_BTw_2B(W, T, L, H, H1),

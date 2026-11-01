@@ -108,8 +108,9 @@ class CRCC23(GroundStateCorrectionBase):
 
     def has_analytic_gradient(self, **kwargs):
         from ccpy.scf.rhf import RHF
+        from ccpy.scf.uhf import UHF
 
-        return self.variant == "A" and isinstance(self.reference.scf, RHF) and self.reference.ndelete == 0
+        return self.variant == "A" and isinstance(self.reference.scf, (RHF, UHF)) and self.reference.ndelete == 0
 
     def _analytic_gradient(self, zvector_tol=1.0e-10, **kwargs):
         from ccpy.gradients.crcc23_gradient import crcc23A_gradient_from_amplitudes
