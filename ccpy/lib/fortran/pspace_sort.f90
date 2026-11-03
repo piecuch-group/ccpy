@@ -17,7 +17,8 @@ module pspace_sort
 ! All sorts are stable counting sorts (or LSD radix sorts for very large key ranges) that
 ! use one module workspace, grown to the largest list sorted and kept until
 ! release_sort_workspace() is called at the end of an update. The workspace is shared, so
-! these routines must not be called from inside OpenMP parallel regions.
+! these routines must not be called from inside OpenMP parallel regions; the key
+! computation and the permutation of the sorted arrays are threaded internally.
 
       implicit none
       private
@@ -27,6 +28,9 @@ module pspace_sort
       public :: argsort, argsort_r8_descend
       public :: pspace_nkeys, pspace_key, sort_pspace, pspace_find, bucket_pspace
       public :: release_sort_workspace, keep_largest
+
+      ! smallest list for which the sorting and bucketing loops are threaded
+      integer, parameter :: min_parallel = 65536
 
       ! largest key range for which dense (counting-sort) tables are used
       integer(kind=8), parameter :: max_dense_keys = 2_8**26
@@ -101,10 +105,16 @@ module pspace_sort
               integer, intent(in) :: n
               integer :: i, col
               do col = 1, size(excits,2)
+                 !$omp parallel do schedule(static) if(n >= min_parallel)
                  do i = 1, n
                     ws_int(i) = excits(ws_perm(i),col)
                  end do
-                 excits(1:n,col) = ws_int(1:n)
+                 !$omp end parallel do
+                 !$omp parallel do schedule(static) if(n >= min_parallel)
+                 do i = 1, n
+                    excits(i,col) = ws_int(i)
+                 end do
+                 !$omp end parallel do
               end do
       end subroutine permute_rows
 
@@ -114,10 +124,16 @@ module pspace_sort
               integer, intent(in) :: n
               integer :: i, row
               do row = 1, size(excits,1)
+                 !$omp parallel do schedule(static) if(n >= min_parallel)
                  do i = 1, n
                     ws_int(i) = excits(row,ws_perm(i))
                  end do
-                 excits(row,1:n) = ws_int(1:n)
+                 !$omp end parallel do
+                 !$omp parallel do schedule(static) if(n >= min_parallel)
+                 do i = 1, n
+                    excits(row,i) = ws_int(i)
+                 end do
+                 !$omp end parallel do
               end do
       end subroutine permute_columns
 
@@ -125,10 +141,16 @@ module pspace_sort
               real(kind=8), intent(inout) :: x(:)
               integer, intent(in) :: n
               integer :: i
+              !$omp parallel do schedule(static) if(n >= min_parallel)
               do i = 1, n
                  ws_real(i) = x(ws_perm(i))
               end do
-              x(1:n) = ws_real(1:n)
+              !$omp end parallel do
+              !$omp parallel do schedule(static) if(n >= min_parallel)
+              do i = 1, n
+                 x(i) = ws_real(i)
+              end do
+              !$omp end parallel do
       end subroutine permute_real
 
       logical function empty_list(excits, n3p, by_column)
@@ -243,10 +265,12 @@ module pspace_sort
                  return
               end if
               call ensure_workspace(n3p)
+              !$omp parallel do schedule(static) if(n3p >= min_parallel)
               do idet = 1, n3p
                  ws_key(idet) = idx_table(excits(idet,idims(1)), excits(idet,idims(2)),&
                                           excits(idet,idims(3)), excits(idet,idims(4)))
               end do
+              !$omp end parallel do
               call counting_sort(n3p, nloc, loc_arr(1,:), loc_arr(2,:))
               call permute_rows(excits, n3p)
               call permute_real(amps, n3p)
@@ -279,10 +303,12 @@ module pspace_sort
                  return
               end if
               call ensure_workspace(n3p)
+              !$omp parallel do schedule(static) if(n3p >= min_parallel)
               do idet = 1, n3p
                  ws_key(idet) = idx_table(excits(idet,idims(1)), excits(idet,idims(2)),&
                                           excits(idet,idims(3)), excits(idet,idims(4)))
               end do
+              !$omp end parallel do
               call counting_sort(n3p, nloc, loc_arr(:,1), loc_arr(:,2))
               call permute_rows(excits, n3p)
               call permute_real(amps, n3p)
@@ -303,9 +329,11 @@ module pspace_sort
                  return
               end if
               call ensure_workspace(n3p)
+              !$omp parallel do schedule(static) if(n3p >= min_parallel)
               do idet = 1, n3p
                  ws_key(idet) = idx_table(excits(idet,idims(1)), excits(idet,idims(2)), excits(idet,idims(3)))
               end do
+              !$omp end parallel do
               call counting_sort(n3p, nloc, loc_arr(1,:), loc_arr(2,:))
               call permute_rows(excits, n3p)
               call permute_real(amps, n3p)
@@ -325,9 +353,11 @@ module pspace_sort
                  return
               end if
               call ensure_workspace(n3p)
+              !$omp parallel do schedule(static) if(n3p >= min_parallel)
               do idet = 1, n3p
                  ws_key(idet) = idx_table(excits(idet,idims(1)), excits(idet,idims(2)), excits(idet,idims(3)))
               end do
+              !$omp end parallel do
               call counting_sort(n3p, nloc, loc_arr(1,:), loc_arr(2,:))
               call permute_rows(excits, n3p)
       end subroutine sort3_excits
@@ -345,9 +375,11 @@ module pspace_sort
                  return
               end if
               call ensure_workspace(n3p)
+              !$omp parallel do schedule(static) if(n3p >= min_parallel)
               do idet = 1, n3p
                  ws_key(idet) = idx_table(excits(idims(1),idet), excits(idims(2),idet), excits(idims(3),idet))
               end do
+              !$omp end parallel do
               call counting_sort(n3p, nloc, loc_arr(1,:), loc_arr(2,:))
               call permute_columns(excits, n3p)
       end subroutine sort3_excits_cm
@@ -366,9 +398,11 @@ module pspace_sort
                  return
               end if
               call ensure_workspace(n3p)
+              !$omp parallel do schedule(static) if(n3p >= min_parallel)
               do idet = 1, n3p
                  ws_key(idet) = idx_table(excits(idet,idims(1)), excits(idet,idims(2)))
               end do
+              !$omp end parallel do
               call counting_sort(n3p, nloc, loc_arr(1,:), loc_arr(2,:))
               call permute_rows(excits, n3p)
               call permute_real(amps, n3p)
@@ -581,22 +615,48 @@ module pspace_sort
       subroutine bucket_pspace(excits, n3p, ncol, cols, dims, chain, nk, off, dets)
       ! Group the excitations by the key of the columns cols without moving them: the
       ! excitations with key k are dets(off(k):off(k+1)-1), k = 1..nk (nk = pspace_nkeys).
+      ! The keys are computed in parallel (directly, as a mixed radix, when no columns are
+      ! chained); the counting and the placement are serial and stable.
               integer, intent(in) :: n3p, ncol, cols(ncol), dims(ncol), nk
               logical, intent(in) :: chain(ncol)
               integer, intent(in) :: excits(:,:)
               integer, intent(out) :: off(nk+1), dets(n3p)
-              integer :: idet, k, key, vals(6), pos, cnt
+              integer :: idet, k, key, vals(6), pos, cnt, v
+              integer, allocatable :: keys(:)
 
               off = 0
               if (empty_list(excits, n3p, .false.)) then
                  off = 1
                  return
               end if
-              do idet = 1, n3p
-                 do k = 1, ncol
-                    vals(k) = excits(idet,cols(k))
+              allocate(keys(n3p))
+              if (.not. any(chain)) then
+                 !$omp parallel do schedule(static) private(k, key, v) if(n3p >= min_parallel)
+                 do idet = 1, n3p
+                    key = 0
+                    do k = 1, ncol
+                       v = excits(idet,cols(k))
+                       if (v < 1 .or. v > dims(k)) then
+                          key = -1
+                          exit
+                       end if
+                       key = key*dims(k) + (v - 1)
+                    end do
+                    keys(idet) = key + 1
                  end do
-                 key = int(pspace_key(vals, ncol, dims, chain))
+                 !$omp end parallel do
+              else
+                 !$omp parallel do schedule(static) private(k, vals) if(n3p >= min_parallel)
+                 do idet = 1, n3p
+                    do k = 1, ncol
+                       vals(k) = excits(idet,cols(k))
+                    end do
+                    keys(idet) = int(pspace_key(vals, ncol, dims, chain))
+                 end do
+                 !$omp end parallel do
+              end if
+              do idet = 1, n3p
+                 key = keys(idet)
                  if (key >= 1) off(key) = off(key) + 1
               end do
               pos = 1
@@ -607,10 +667,7 @@ module pspace_sort
               end do
               off(nk+1) = pos
               do idet = 1, n3p
-                 do k = 1, ncol
-                    vals(k) = excits(idet,cols(k))
-                 end do
-                 key = int(pspace_key(vals, ncol, dims, chain))
+                 key = keys(idet)
                  if (key >= 1) then
                     dets(off(key)) = idet
                     off(key) = off(key) + 1
@@ -621,6 +678,7 @@ module pspace_sort
                  off(key) = off(key-1)
               end do
               off(1) = 1
+              deallocate(keys)
       end subroutine bucket_pspace
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -99,16 +99,16 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
     # Cholesky-based intermediates folding some T2
     x_a_vo = (
             H.chol.a.vo.copy()
-            + np.einsum("xnf,afin->xai", H.chol.a.ov, T.aa)
-            + np.einsum("xnf,afin->xai", H.chol.b.ov, T.ab)
+            + np.einsum("xnf,afin->xai", H.chol.a.ov, T.aa, optimize=True)
+            + np.einsum("xnf,afin->xai", H.chol.b.ov, T.ab, optimize=True)
     )
     if RHF_symmetry:
         x_b_vo = x_a_vo.copy()
     else:
         x_b_vo = (
                 H.chol.b.vo.copy()
-                + np.einsum("xnf,afin->xai", H.chol.b.ov, T.bb)
-                + np.einsum("xnf,fani->xai", H.chol.a.ov, T.ab)
+                + np.einsum("xnf,afin->xai", H.chol.b.ov, T.bb, optimize=True)
+                + np.einsum("xnf,fani->xai", H.chol.a.ov, T.ab, optimize=True)
         )
 
     # H.a.vv = H0.a.vv.copy() + (
@@ -315,16 +315,16 @@ def get_ccsd_intermediates(T, H, H0, RHF_symmetry):
     # Cholesky-based intermediates folding some T2
     x_a_vo = (
             H.chol.a.vo.copy()
-            + np.einsum("xnf,afin->xai", H.chol.a.ov, T.aa)
-            + np.einsum("xnf,afin->xai", H.chol.b.ov, T.ab)
+            + np.einsum("xnf,afin->xai", H.chol.a.ov, T.aa, optimize=True)
+            + np.einsum("xnf,afin->xai", H.chol.b.ov, T.ab, optimize=True)
     )
     if RHF_symmetry:
         x_b_vo = x_a_vo.copy()
     else:
         x_b_vo = (
                 H.chol.b.vo.copy()
-                + np.einsum("xnf,afin->xai", H.chol.b.ov, T.bb)
-                + np.einsum("xnf,fani->xai", H.chol.a.ov, T.ab)
+                + np.einsum("xnf,afin->xai", H.chol.b.ov, T.bb, optimize=True)
+                + np.einsum("xnf,fani->xai", H.chol.a.ov, T.ab, optimize=True)
         )
 
     # One-body part of HBar
@@ -459,36 +459,18 @@ def get_ccsd_intermediates(T, H, H0, RHF_symmetry):
     )
     # -------------------------------------------------------------------------
 
+    # With RHF symmetry, the ab blocks with the beta index first follow from their alpha-first
+    # partners by exchanging the two electrons: ovoo(mbij) = vooo(bmji), ovvo(mbej) = voov(bmje),
+    # vovo(amej) = ovov(maje), vvvo(abej) = vvov(baje). These hold exactly for spin-symmetric T.
     # -------------------------------------------------------------------------
-    ### TYPE: OOOV
-    ### NEEDS: H0.ooov
-    H.aa.ooov = np.einsum("xmi,xne->mnie", H.chol.a.oo, H.chol.a.ov, optimize=True)
-    H.aa.ooov -= np.transpose(H.aa.ooov, (1, 0, 2, 3))
-    if RHF_symmetry:
-        H.bb.ooov = H.aa.ooov.copy()
-    else:
-        H.bb.ooov = np.einsum("xmi,xne->mnie", H.chol.b.oo, H.chol.b.ov, optimize=True)
-        H.bb.ooov -= np.transpose(H.bb.ooov, (1, 0, 2, 3))
-    H.ab.ooov = (
-        np.einsum("xmi,xne->mnie", H.chol.a.oo, H.chol.b.ov, optimize=True)
-    )
-    H.ab.oovo = (
-        np.einsum("xme,xni->mnei", H.chol.a.ov, H.chol.b.oo, optimize=True)
-    )
-    # -------------------------------------------------------------------------
-
-    # -------------------------------------------------------------------------
-    ### TYPE: VOVV
-    ### NEEDS: H0.vovv
-    h2a_vovv = np.einsum("xbe,xnf->bnef", H.chol.a.vv, H.chol.a.ov, optimize=True)
-    h2a_vovv -= np.transpose(h2a_vovv, (0, 1, 3, 2))
-    if RHF_symmetry:
-        h2c_vovv = h2a_vovv.copy()
-    else:
-        h2c_vovv = np.einsum("xbe,xnf->bnef", H.chol.b.vv, H.chol.b.ov, optimize=True)
-        h2c_vovv -= np.transpose(h2c_vovv, (0, 1, 3, 2))
-    h2b_vovv = np.einsum("xbe,xnf->bnef", H.chol.a.vv, H.chol.b.ov, optimize=True)
-    h2b_ovvv = np.einsum("xnf,xbe->nbfe", H.chol.a.ov, H.chol.b.vv, optimize=True)
+    ### TYPE: OOOV, VOVV
+    # The T1-dressed Cholesky products H.aa/ab/bb.ooov, H.ab.oovo, H.aa/ab/bb.vovv, and H.ab.ovvv
+    # were built from the same H.chol by the T2 update of this iteration (update_t2a/update_t2b
+    # of the CC(P)/CCSDT Cholesky solvers) and are used as they are.
+    h2a_vovv = H.aa.vovv
+    h2b_vovv = H.ab.vovv
+    h2b_ovvv = H.ab.ovvv
+    h2c_vovv = H.bb.vovv
     # -------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------
@@ -525,14 +507,17 @@ def get_ccsd_intermediates(T, H, H0, RHF_symmetry):
             - np.einsum("nmif,afnj->amij", H.ab.ooov, T.ab, optimize=True)
             + np.einsum("me,aeij->amij", H.b.ov, T.ab, optimize=True)
     )
-    H.ab.ovoo = (
-            np.einsum("xmi,xbj->mbij", H.chol.a.oo, H.chol.b.vo, optimize=True)
-            + np.einsum("mnif,fbnj->mbij", H.aa.ooov, T.ab, optimize=True)
-            + np.einsum("mnif,fbnj->mbij", H.ab.ooov, T.bb, optimize=True)
-            - np.einsum("mnfj,fbin->mbij", H.ab.oovo, T.ab, optimize=True)
-            + np.einsum("mbef,efij->mbij", h2b_ovvv, T.ab, optimize=True)
-            + np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
-    )
+    if RHF_symmetry:
+        H.ab.ovoo = np.ascontiguousarray(H.ab.vooo.transpose(1, 0, 3, 2))
+    else:
+        H.ab.ovoo = (
+                np.einsum("xmi,xbj->mbij", H.chol.a.oo, H.chol.b.vo, optimize=True)
+                + np.einsum("mnif,fbnj->mbij", H.aa.ooov, T.ab, optimize=True)
+                + np.einsum("mnif,fbnj->mbij", H.ab.ooov, T.bb, optimize=True)
+                - np.einsum("mnfj,fbin->mbij", H.ab.oovo, T.ab, optimize=True)
+                + np.einsum("mbef,efij->mbij", h2b_ovvv, T.ab, optimize=True)
+                + np.einsum("me,ebij->mbij", H.a.ov, T.ab, optimize=True)
+        )
     # -------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------
@@ -558,19 +543,25 @@ def get_ccsd_intermediates(T, H, H0, RHF_symmetry):
             + np.einsum("nmfe,afin->amie", H0.ab.oovv, T.aa, optimize=True)
             + np.einsum("mnef,afin->amie", H0.bb.oovv, T.ab, optimize=True)
     )
-    H.ab.ovvo = (
-            np.einsum("xbj,xme->mbej", H.chol.b.vo, H.chol.a.ov, optimize=True)
-            + np.einsum("mnef,fbnj->mbej", H0.aa.oovv, T.ab, optimize=True)
-            + np.einsum("mnef,fbnj->mbej", H0.ab.oovv, T.bb, optimize=True)
-    )
+    if RHF_symmetry:
+        H.ab.ovvo = np.ascontiguousarray(H.ab.voov.transpose(1, 0, 3, 2))
+    else:
+        H.ab.ovvo = (
+                np.einsum("xbj,xme->mbej", H.chol.b.vo, H.chol.a.ov, optimize=True)
+                + np.einsum("mnef,fbnj->mbej", H0.aa.oovv, T.ab, optimize=True)
+                + np.einsum("mnef,fbnj->mbej", H0.ab.oovv, T.bb, optimize=True)
+        )
     H.ab.ovov = (
             np.einsum("xmi,xbe->mbie", H.chol.a.oo, H.chol.b.vv, optimize=True)
             - np.einsum("mnfe,fbin->mbie", H0.ab.oovv, T.ab, optimize=True)
     )
-    H.ab.vovo = (
-            np.einsum("xae,xmj->amej", H.chol.a.vv, H.chol.b.oo, optimize=True)
-            - np.einsum("nmef,afnj->amej", H0.ab.oovv, T.ab, optimize=True)
-    )
+    if RHF_symmetry:
+        H.ab.vovo = np.ascontiguousarray(H.ab.ovov.transpose(1, 0, 3, 2))
+    else:
+        H.ab.vovo = (
+                np.einsum("xae,xmj->amej", H.chol.a.vv, H.chol.b.oo, optimize=True)
+                - np.einsum("nmef,afnj->amej", H0.ab.oovv, T.ab, optimize=True)
+        )
     # -------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------
@@ -607,14 +598,17 @@ def get_ccsd_intermediates(T, H, H0, RHF_symmetry):
             + np.einsum("mnie,abmn->abie", H.ab.ooov, T.ab, optimize=True)
             - np.einsum("me,abim->abie", H.b.ov, T.ab, optimize=True)
     )
-    H.ab.vvvo = (
-            np.einsum("xae,xbj->abej", H.chol.a.vv, H.chol.b.vo, optimize=True)
-            + np.einsum("anef,fbnj->abej", H.aa.vovv, T.ab, optimize=True)
-            + np.einsum("anef,fbnj->abej", H.ab.vovv, T.bb, optimize=True)
-            - np.einsum("mbef,afmj->abej", H.ab.ovvv, T.ab, optimize=True)
-            + np.einsum("mnej,abmn->abej", H.ab.oovo, T.ab, optimize=True)
-            - np.einsum("me,abmj->abej", H.a.ov, T.ab, optimize=True)
-    )
+    if RHF_symmetry:
+        H.ab.vvvo = np.ascontiguousarray(H.ab.vvov.transpose(1, 0, 3, 2))
+    else:
+        H.ab.vvvo = (
+                np.einsum("xae,xbj->abej", H.chol.a.vv, H.chol.b.vo, optimize=True)
+                + np.einsum("anef,fbnj->abej", H.aa.vovv, T.ab, optimize=True)
+                + np.einsum("anef,fbnj->abej", H.ab.vovv, T.bb, optimize=True)
+                - np.einsum("mbef,afmj->abej", H.ab.ovvv, T.ab, optimize=True)
+                + np.einsum("mnej,abmn->abej", H.ab.oovo, T.ab, optimize=True)
+                - np.einsum("me,abmj->abej", H.a.ov, T.ab, optimize=True)
+        )
     # -------------------------------------------------------------------------
 
     # # -------------------------------------------------------------------------

@@ -6233,6 +6233,9 @@ module ccsdt_p_chol_loops
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
                   integer :: ithr, nthr
+                  integer :: kb, kk
+                  integer, allocatable :: boff(:), bdet(:), bexc(:,:)
+                  real(kind=8), allocatable :: bamp(:)
                   real(kind=8) :: t_amp
 
                   !$omp parallel default(shared) private(a,e,f,i,idet,j,n,t_amp,ithr,nthr)
@@ -6254,18 +6257,33 @@ module ccsdt_p_chol_loops
                       if (mod(f,nthr)==ithr) I2A_vooo(:,f,i,n) = I2A_vooo(:,f,i,n) + H2A_oovv(:,j,e,a) * t_amp ! (jn)(af)
                   end do
                   !$omp end parallel
-                  !$omp parallel default(shared) private(a,e,f,i,idet,j,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1,n3aab
-                      t_amp = t3b_amps(idet)
-                      ! I2A(amij) <- A(ij) [A(ae) h2b(mnef) * t3b(aefijn)]
-                      a = t3b_excits(idet,1); e = t3b_excits(idet,2); f = t3b_excits(idet,3);
-                      i = t3b_excits(idet,4); j = t3b_excits(idet,5); n = t3b_excits(idet,6);
-                      if (mod(a,nthr)==ithr) I2A_vooo(:,a,i,j) = I2A_vooo(:,a,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
-                      if (mod(e,nthr)==ithr) I2A_vooo(:,e,i,j) = I2A_vooo(:,e,i,j) - H2B_oovv(:,n,a,f) * t_amp ! (ae)
+                  ! the updates of a triple all share its column(s) (4, 5) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (1,)
+                  allocate(boff(noa*noa*nua+1), bdet(n3aab))
+                  call bucket_pspace(t3b_excits, n3aab, 3, (/4,5,1/), (/noa,noa,nua/),&
+                                     (/.false.,.false.,.false./), noa*noa*nua, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3aab), bamp(n3aab))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3aab
+                     bexc(:,kk) = t3b_excits(bdet(kk),:)
+                     bamp(kk) = t3b_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(a,e,f,i,j,n,t_amp,kb,kk)
+                  do kb = 1, noa*noa
+                     do kk = boff((kb-1)*nua+1), boff(kb*nua+1)-1
+                        t_amp = bamp(kk)
+                        ! I2A(amij) <- A(ij) [A(ae) h2b(mnef) * t3b(aefijn)]
+                        a = bexc(1,kk); e = bexc(2,kk); f = bexc(3,kk);
+                        i = bexc(4,kk); j = bexc(5,kk); n = bexc(6,kk);
+                        I2A_vooo(:,a,i,j) = I2A_vooo(:,a,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
+                        I2A_vooo(:,e,i,j) = I2A_vooo(:,e,i,j) - H2B_oovv(:,n,a,f) * t_amp ! (ae)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
                   ! antisymmetrize
                   do i = 1,noa
                      do j = i+1,noa
@@ -6292,35 +6310,68 @@ module ccsdt_p_chol_loops
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
                   integer :: ithr, nthr
+                  integer :: kb, kk
+                  integer, allocatable :: boff(:), bdet(:), bexc(:,:)
+                  real(kind=8), allocatable :: bamp(:)
                   real(kind=8) :: t_amp
 
-                  !$omp parallel default(shared) private(b,e,f,i,idet,j,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1, n3aab
-                      t_amp = t3b_amps(idet)
-                      ! I2B(mbij) <- A(in) h2a(mnef) * t3b(efbinj)
-                      e = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
-                      i = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
-                      if (mod(b,nthr)==ithr) I2B_ovoo(:,b,i,j) = I2B_ovoo(:,b,i,j) + H2A_oovv(:,n,e,f) * t_amp ! (1)
-                      if (mod(b,nthr)==ithr) I2B_ovoo(:,b,n,j) = I2B_ovoo(:,b,n,j) - H2A_oovv(:,i,e,f) * t_amp ! (in)
+                  ! the updates of a triple all share its column(s) (3, 6) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (4,)
+                  allocate(boff(nub*nob*noa+1), bdet(n3aab))
+                  call bucket_pspace(t3b_excits, n3aab, 3, (/3,6,4/), (/nub,nob,noa/),&
+                                     (/.false.,.false.,.false./), nub*nob*noa, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3aab), bamp(n3aab))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3aab
+                     bexc(:,kk) = t3b_excits(bdet(kk),:)
+                     bamp(kk) = t3b_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(b,e,f,i,j,n,t_amp,kb,kk)
+                  do kb = 1, nub*nob
+                     do kk = boff((kb-1)*noa+1), boff(kb*noa+1)-1
+                        t_amp = bamp(kk)
+                        ! I2B(mbij) <- A(in) h2a(mnef) * t3b(efbinj)
+                        e = bexc(1,kk); f = bexc(2,kk); b = bexc(3,kk);
+                        i = bexc(4,kk); n = bexc(5,kk); j = bexc(6,kk);
+                        I2B_ovoo(:,b,i,j) = I2B_ovoo(:,b,i,j) + H2A_oovv(:,n,e,f) * t_amp ! (1)
+                        I2B_ovoo(:,b,n,j) = I2B_ovoo(:,b,n,j) - H2A_oovv(:,i,e,f) * t_amp ! (in)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
 
-                  !$omp parallel default(shared) private(b,e,f,i,idet,j,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1, n3abb
-                      t_amp = t3c_amps(idet)
-                      ! I2B(mbij) <- A(bf)A(jn) h2B(mnef) * t3c(efbinj)
-                      e = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
-                      i = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      if (mod(b,nthr)==ithr) I2B_ovoo(:,b,i,j) = I2B_ovoo(:,b,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
-                      if (mod(f,nthr)==ithr) I2B_ovoo(:,f,i,j) = I2B_ovoo(:,f,i,j) - H2B_oovv(:,n,e,b) * t_amp ! (bf)
-                      if (mod(b,nthr)==ithr) I2B_ovoo(:,b,i,n) = I2B_ovoo(:,b,i,n) - H2B_oovv(:,j,e,f) * t_amp ! (jn)
-                      if (mod(f,nthr)==ithr) I2B_ovoo(:,f,i,n) = I2B_ovoo(:,f,i,n) + H2B_oovv(:,j,e,b) * t_amp ! (bf)(jn)
+                  ! the updates of a triple all share its column(s) (4,) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (6, 3)
+                  allocate(boff(noa*nob*nub+1), bdet(n3abb))
+                  call bucket_pspace(t3c_excits, n3abb, 3, (/4,6,3/), (/noa,nob,nub/),&
+                                     (/.false.,.false.,.false./), noa*nob*nub, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3abb), bamp(n3abb))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3abb
+                     bexc(:,kk) = t3c_excits(bdet(kk),:)
+                     bamp(kk) = t3c_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(b,e,f,i,j,n,t_amp,kb,kk)
+                  do kb = 1, noa
+                     do kk = boff((kb-1)*nob*nub+1), boff(kb*nob*nub+1)-1
+                        t_amp = bamp(kk)
+                        ! I2B(mbij) <- A(bf)A(jn) h2B(mnef) * t3c(efbinj)
+                        e = bexc(1,kk); f = bexc(2,kk); b = bexc(3,kk);
+                        i = bexc(4,kk); n = bexc(5,kk); j = bexc(6,kk);
+                        I2B_ovoo(:,b,i,j) = I2B_ovoo(:,b,i,j) + H2B_oovv(:,n,e,f) * t_amp ! (1)
+                        I2B_ovoo(:,f,i,j) = I2B_ovoo(:,f,i,j) - H2B_oovv(:,n,e,b) * t_amp ! (bf)
+                        I2B_ovoo(:,b,i,n) = I2B_ovoo(:,b,i,n) - H2B_oovv(:,j,e,f) * t_amp ! (jn)
+                        I2B_ovoo(:,f,i,n) = I2B_ovoo(:,f,i,n) + H2B_oovv(:,j,e,b) * t_amp ! (bf)(jn)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
 
       end subroutine calc_I2B_ovoo
 
@@ -6338,6 +6389,9 @@ module ccsdt_p_chol_loops
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
                   integer :: ithr, nthr
+                  integer :: kb, kk
+                  integer, allocatable :: boff(:), bdet(:), bexc(:,:)
+                  real(kind=8), allocatable :: bamp(:)
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
@@ -6351,20 +6405,35 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
-                  !$omp parallel default(shared) private(a,e,f,i,idet,j,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1, n3aab
-                      t_amp = t3b_amps(idet)
-                      ! I2B(amij) <- A(af)A(in) h2b(nmfe) * t3b(afeinj)
-                      a = t3b_excits(idet,1); f = t3b_excits(idet,2); e = t3b_excits(idet,3);
-                      i = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
-                      if (mod(a,nthr)==ithr) I2B_vooo(:,a,i,j) = I2B_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
-                      if (mod(f,nthr)==ithr) I2B_vooo(:,f,i,j) = I2B_vooo(:,f,i,j) - intbuf(:,n,e,a) * t_amp ! (af)
-                      if (mod(a,nthr)==ithr) I2B_vooo(:,a,n,j) = I2B_vooo(:,a,n,j) - intbuf(:,i,e,f) * t_amp ! (in)
-                      if (mod(f,nthr)==ithr) I2B_vooo(:,f,n,j) = I2B_vooo(:,f,n,j) + intbuf(:,i,e,a) * t_amp ! (af)(in)
+                  ! the updates of a triple all share its column(s) (6,) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (4, 1)
+                  allocate(boff(nob*noa*nua+1), bdet(n3aab))
+                  call bucket_pspace(t3b_excits, n3aab, 3, (/6,4,1/), (/nob,noa,nua/),&
+                                     (/.false.,.false.,.false./), nob*noa*nua, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3aab), bamp(n3aab))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3aab
+                     bexc(:,kk) = t3b_excits(bdet(kk),:)
+                     bamp(kk) = t3b_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(a,e,f,i,j,n,t_amp,kb,kk)
+                  do kb = 1, nob
+                     do kk = boff((kb-1)*noa*nua+1), boff(kb*noa*nua+1)-1
+                        t_amp = bamp(kk)
+                        ! I2B(amij) <- A(af)A(in) h2b(nmfe) * t3b(afeinj)
+                        a = bexc(1,kk); f = bexc(2,kk); e = bexc(3,kk);
+                        i = bexc(4,kk); n = bexc(5,kk); j = bexc(6,kk);
+                        I2B_vooo(:,a,i,j) = I2B_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
+                        I2B_vooo(:,f,i,j) = I2B_vooo(:,f,i,j) - intbuf(:,n,e,a) * t_amp ! (af)
+                        I2B_vooo(:,a,n,j) = I2B_vooo(:,a,n,j) - intbuf(:,i,e,f) * t_amp ! (in)
+                        I2B_vooo(:,f,n,j) = I2B_vooo(:,f,n,j) + intbuf(:,i,e,a) * t_amp ! (af)(in)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
                   deallocate(intbuf)
 
                   allocate(intbuf(nob,nob,nub,nub))
@@ -6377,18 +6446,33 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
-                  !$omp parallel default(shared) private(a,e,f,i,idet,j,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1, n3abb
-                      t_amp = t3c_amps(idet)
-                      ! I2B(amij) <- A(jn) h2c(nmfe) * t3c(afeinj)
-                      a = t3c_excits(idet,1); f = t3c_excits(idet,2); e = t3c_excits(idet,3);
-                      i = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      if (mod(a,nthr)==ithr) I2B_vooo(:,a,i,j) = I2B_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
-                      if (mod(a,nthr)==ithr) I2B_vooo(:,a,i,n) = I2B_vooo(:,a,i,n) - intbuf(:,j,e,f) * t_amp ! (jn)
+                  ! the updates of a triple all share its column(s) (1, 4) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (6,)
+                  allocate(boff(nua*noa*nob+1), bdet(n3abb))
+                  call bucket_pspace(t3c_excits, n3abb, 3, (/1,4,6/), (/nua,noa,nob/),&
+                                     (/.false.,.false.,.false./), nua*noa*nob, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3abb), bamp(n3abb))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3abb
+                     bexc(:,kk) = t3c_excits(bdet(kk),:)
+                     bamp(kk) = t3c_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(a,e,f,i,j,n,t_amp,kb,kk)
+                  do kb = 1, nua*noa
+                     do kk = boff((kb-1)*nob+1), boff(kb*nob+1)-1
+                        t_amp = bamp(kk)
+                        ! I2B(amij) <- A(jn) h2c(nmfe) * t3c(afeinj)
+                        a = bexc(1,kk); f = bexc(2,kk); e = bexc(3,kk);
+                        i = bexc(4,kk); n = bexc(5,kk); j = bexc(6,kk);
+                        I2B_vooo(:,a,i,j) = I2B_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
+                        I2B_vooo(:,a,i,n) = I2B_vooo(:,a,i,n) - intbuf(:,j,e,f) * t_amp ! (jn)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
                   deallocate(intbuf)
 
       end subroutine calc_I2B_vooo
@@ -6406,6 +6490,9 @@ module ccsdt_p_chol_loops
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
                   integer :: ithr, nthr
+                  integer :: kb, kk
+                  integer, allocatable :: boff(:), bdet(:), bexc(:,:)
+                  real(kind=8), allocatable :: bamp(:)
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
@@ -6438,18 +6525,33 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
-                  !$omp parallel default(shared) private(a,e,f,i,idet,j,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1, n3abb
-                      t_amp = t3c_amps(idet)
-                      ! I2C(amij) <- A(ij) [A(ae) h2b(nmfe) * t3c(faenij)]
-                      f = t3c_excits(idet,1); a = t3c_excits(idet,2); e = t3c_excits(idet,3);
-                      n = t3c_excits(idet,4); i = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      if (mod(a,nthr)==ithr) I2C_vooo(:,a,i,j) = I2C_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
-                      if (mod(e,nthr)==ithr) I2C_vooo(:,e,i,j) = I2C_vooo(:,e,i,j) - intbuf(:,n,a,f) * t_amp ! (ae)
+                  ! the updates of a triple all share its column(s) (5, 6) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (2,)
+                  allocate(boff(nob*nob*nub+1), bdet(n3abb))
+                  call bucket_pspace(t3c_excits, n3abb, 3, (/5,6,2/), (/nob,nob,nub/),&
+                                     (/.false.,.false.,.false./), nob*nob*nub, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3abb), bamp(n3abb))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3abb
+                     bexc(:,kk) = t3c_excits(bdet(kk),:)
+                     bamp(kk) = t3c_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(a,e,f,i,j,n,t_amp,kb,kk)
+                  do kb = 1, nob*nob
+                     do kk = boff((kb-1)*nub+1), boff(kb*nub+1)-1
+                        t_amp = bamp(kk)
+                        ! I2C(amij) <- A(ij) [A(ae) h2b(nmfe) * t3c(faenij)]
+                        f = bexc(1,kk); a = bexc(2,kk); e = bexc(3,kk);
+                        n = bexc(4,kk); i = bexc(5,kk); j = bexc(6,kk);
+                        I2C_vooo(:,a,i,j) = I2C_vooo(:,a,i,j) + intbuf(:,n,e,f) * t_amp ! (1)
+                        I2C_vooo(:,e,i,j) = I2C_vooo(:,e,i,j) - intbuf(:,n,a,f) * t_amp ! (ae)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
                   deallocate(intbuf)
                   ! antisymmetrize
                   do i = 1,nob
@@ -6478,6 +6580,9 @@ module ccsdt_p_chol_loops
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
                   integer :: ithr, nthr
+                  integer :: kb, kk
+                  integer, allocatable :: boff(:), bdet(:), bexc(:,:)
+                  real(kind=8), allocatable :: bamp(:)
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
@@ -6521,18 +6626,33 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
-                  !$omp parallel default(shared) private(a,b,f,i,idet,m,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1,n3aab
-                      t_amp = t3b_amps(idet)
-                      ! I2A(abie) <- A(ab) [A(im) -h2b(mnef) * t3b(abfimn)]
-                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); f = t3b_excits(idet,3);
-                      i = t3b_excits(idet,4); m = t3b_excits(idet,5); n = t3b_excits(idet,6);
-                      if (mod(a,nthr)==ithr) I2A_vvov(:,a,b,i) = I2A_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
-                      if (mod(a,nthr)==ithr) I2A_vvov(:,a,b,m) = I2A_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
+                  ! the updates of a triple all share its column(s) (1, 2) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (4,)
+                  allocate(boff(nua*nua*noa+1), bdet(n3aab))
+                  call bucket_pspace(t3b_excits, n3aab, 3, (/1,2,4/), (/nua,nua,noa/),&
+                                     (/.false.,.false.,.false./), nua*nua*noa, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3aab), bamp(n3aab))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3aab
+                     bexc(:,kk) = t3b_excits(bdet(kk),:)
+                     bamp(kk) = t3b_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(a,b,f,i,m,n,t_amp,kb,kk)
+                  do kb = 1, nua*nua
+                     do kk = boff((kb-1)*noa+1), boff(kb*noa+1)-1
+                        t_amp = bamp(kk)
+                        ! I2A(abie) <- A(ab) [A(im) -h2b(mnef) * t3b(abfimn)]
+                        a = bexc(1,kk); b = bexc(2,kk); f = bexc(3,kk);
+                        i = bexc(4,kk); m = bexc(5,kk); n = bexc(6,kk);
+                        I2A_vvov(:,a,b,i) = I2A_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
+                        I2A_vvov(:,a,b,m) = I2A_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
                   deallocate(intbuf)
                   ! antisymmetrize
                   !$omp parallel do private(a,b,e)
@@ -6563,6 +6683,9 @@ module ccsdt_p_chol_loops
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
                   integer :: ithr, nthr
+                  integer :: kb, kk
+                  integer, allocatable :: boff(:), bdet(:), bexc(:,:)
+                  real(kind=8), allocatable :: bamp(:)
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
@@ -6576,24 +6699,39 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
-                  !$omp parallel default(shared) private(a,b,f,i,idet,m,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1, n3aab
-                      t_amp = t3b_amps(idet)
-                      ! I2B(abie) <- A(af)A(in) -h2b(nmfe) * t3b(afbinm)
-                      a = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
-                      i = t3b_excits(idet,4); n = t3b_excits(idet,5); m = t3b_excits(idet,6);
-                      !I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - H2B_oovv(n,m,f,:) * t_amp ! (1)
-                      !I2B_vvov(:,f,b,i) = I2B_vvov(:,f,b,i) + H2B_oovv(n,m,a,:) * t_amp ! (af)
-                      !I2B_vvov(:,a,b,n) = I2B_vvov(:,a,b,n) + H2B_oovv(i,m,f,:) * t_amp ! (in)
-                      !I2B_vvov(:,f,b,n) = I2B_vvov(:,f,b,n) - H2B_oovv(i,m,a,:) * t_amp ! (af)(in)
-                      if (mod(a,nthr)==ithr) I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
-                      if (mod(f,nthr)==ithr) I2B_vvov(:,f,b,i) = I2B_vvov(:,f,b,i) + intbuf(:,a,m,n) * t_amp ! (af)
-                      if (mod(a,nthr)==ithr) I2B_vvov(:,a,b,n) = I2B_vvov(:,a,b,n) + intbuf(:,f,m,i) * t_amp ! (in)
-                      if (mod(f,nthr)==ithr) I2B_vvov(:,f,b,n) = I2B_vvov(:,f,b,n) - intbuf(:,a,m,i) * t_amp ! (af)(in)
+                  ! the updates of a triple all share its column(s) (3,) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (4, 1)
+                  allocate(boff(nub*noa*nua+1), bdet(n3aab))
+                  call bucket_pspace(t3b_excits, n3aab, 3, (/3,4,1/), (/nub,noa,nua/),&
+                                     (/.false.,.false.,.false./), nub*noa*nua, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3aab), bamp(n3aab))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3aab
+                     bexc(:,kk) = t3b_excits(bdet(kk),:)
+                     bamp(kk) = t3b_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(a,b,f,i,m,n,t_amp,kb,kk)
+                  do kb = 1, nub
+                     do kk = boff((kb-1)*noa*nua+1), boff(kb*noa*nua+1)-1
+                        t_amp = bamp(kk)
+                        ! I2B(abie) <- A(af)A(in) -h2b(nmfe) * t3b(afbinm)
+                        a = bexc(1,kk); f = bexc(2,kk); b = bexc(3,kk);
+                        i = bexc(4,kk); n = bexc(5,kk); m = bexc(6,kk);
+                        !I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - H2B_oovv(n,m,f,:) * t_amp ! (1)
+                        !I2B_vvov(:,f,b,i) = I2B_vvov(:,f,b,i) + H2B_oovv(n,m,a,:) * t_amp ! (af)
+                        !I2B_vvov(:,a,b,n) = I2B_vvov(:,a,b,n) + H2B_oovv(i,m,f,:) * t_amp ! (in)
+                        !I2B_vvov(:,f,b,n) = I2B_vvov(:,f,b,n) - H2B_oovv(i,m,a,:) * t_amp ! (af)(in)
+                        I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
+                        I2B_vvov(:,f,b,i) = I2B_vvov(:,f,b,i) + intbuf(:,a,m,n) * t_amp ! (af)
+                        I2B_vvov(:,a,b,n) = I2B_vvov(:,a,b,n) + intbuf(:,f,m,i) * t_amp ! (in)
+                        I2B_vvov(:,f,b,n) = I2B_vvov(:,f,b,n) - intbuf(:,a,m,i) * t_amp ! (af)(in)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
                   deallocate(intbuf)
 
                   allocate(intbuf(nub,nub,nob,nob))
@@ -6606,20 +6744,35 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
-                  !$omp parallel default(shared) private(a,b,f,i,idet,m,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1, n3abb
-                      t_amp = t3c_amps(idet)
-                      ! I2B(abie) <- A(bf) -h2c(nmfe) * t3c(afbinm)
-                      a = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
-                      i = t3c_excits(idet,4); n = t3c_excits(idet,5); m = t3c_excits(idet,6);
-                      !I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - H2C_oovv(n,m,f,:) * t_amp ! (1)
-                      !I2B_vvov(:,a,f,i) = I2B_vvov(:,a,f,i) + H2C_oovv(n,m,b,:) * t_amp ! (bf)
-                      if (mod(a,nthr)==ithr) I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
-                      if (mod(a,nthr)==ithr) I2B_vvov(:,a,f,i) = I2B_vvov(:,a,f,i) + intbuf(:,b,m,n) * t_amp ! (bf)
+                  ! the updates of a triple all share its column(s) (1, 4) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (3,)
+                  allocate(boff(nua*noa*nub+1), bdet(n3abb))
+                  call bucket_pspace(t3c_excits, n3abb, 3, (/1,4,3/), (/nua,noa,nub/),&
+                                     (/.false.,.false.,.false./), nua*noa*nub, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3abb), bamp(n3abb))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3abb
+                     bexc(:,kk) = t3c_excits(bdet(kk),:)
+                     bamp(kk) = t3c_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(a,b,f,i,m,n,t_amp,kb,kk)
+                  do kb = 1, nua*noa
+                     do kk = boff((kb-1)*nub+1), boff(kb*nub+1)-1
+                        t_amp = bamp(kk)
+                        ! I2B(abie) <- A(bf) -h2c(nmfe) * t3c(afbinm)
+                        a = bexc(1,kk); f = bexc(2,kk); b = bexc(3,kk);
+                        i = bexc(4,kk); n = bexc(5,kk); m = bexc(6,kk);
+                        !I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - H2C_oovv(n,m,f,:) * t_amp ! (1)
+                        !I2B_vvov(:,a,f,i) = I2B_vvov(:,a,f,i) + H2C_oovv(n,m,b,:) * t_amp ! (bf)
+                        I2B_vvov(:,a,b,i) = I2B_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
+                        I2B_vvov(:,a,f,i) = I2B_vvov(:,a,f,i) + intbuf(:,b,m,n) * t_amp ! (bf)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
                   deallocate(intbuf)
 
       end subroutine calc_I2B_vvov
@@ -6638,6 +6791,9 @@ module ccsdt_p_chol_loops
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
                   integer :: ithr, nthr
+                  integer :: kb, kk
+                  integer, allocatable :: boff(:), bdet(:), bexc(:,:)
+                  real(kind=8), allocatable :: bamp(:)
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
@@ -6651,18 +6807,33 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
-                  !$omp parallel default(shared) private(a,b,f,idet,j,m,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1, n3aab
-                      t_amp = t3b_amps(idet)
-                      ! I2B(abej) <- A(af) -h2a(mnef) * t3b(afbmnj)
-                      a = t3b_excits(idet,1); f = t3b_excits(idet,2); b = t3b_excits(idet,3);
-                      m = t3b_excits(idet,4); n = t3b_excits(idet,5); j = t3b_excits(idet,6);
-                      if (mod(a,nthr)==ithr) I2B_vvvo(:,a,b,j) = I2B_vvvo(:,a,b,j) - intbuf(:,f,m,n) * t_amp ! (1)
-                      if (mod(f,nthr)==ithr) I2B_vvvo(:,f,b,j) = I2B_vvvo(:,f,b,j) + intbuf(:,a,m,n) * t_amp ! (af)
+                  ! the updates of a triple all share its column(s) (3, 6) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (1,)
+                  allocate(boff(nub*nob*nua+1), bdet(n3aab))
+                  call bucket_pspace(t3b_excits, n3aab, 3, (/3,6,1/), (/nub,nob,nua/),&
+                                     (/.false.,.false.,.false./), nub*nob*nua, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3aab), bamp(n3aab))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3aab
+                     bexc(:,kk) = t3b_excits(bdet(kk),:)
+                     bamp(kk) = t3b_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(a,b,f,j,m,n,t_amp,kb,kk)
+                  do kb = 1, nub*nob
+                     do kk = boff((kb-1)*nua+1), boff(kb*nua+1)-1
+                        t_amp = bamp(kk)
+                        ! I2B(abej) <- A(af) -h2a(mnef) * t3b(afbmnj)
+                        a = bexc(1,kk); f = bexc(2,kk); b = bexc(3,kk);
+                        m = bexc(4,kk); n = bexc(5,kk); j = bexc(6,kk);
+                        I2B_vvvo(:,a,b,j) = I2B_vvvo(:,a,b,j) - intbuf(:,f,m,n) * t_amp ! (1)
+                        I2B_vvvo(:,f,b,j) = I2B_vvvo(:,f,b,j) + intbuf(:,a,m,n) * t_amp ! (af)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
                   deallocate(intbuf)
 
                   allocate(intbuf(nua,nub,noa,nob))
@@ -6675,20 +6846,35 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
-                  !$omp parallel default(shared) private(a,b,f,idet,j,m,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1, n3abb
-                      t_amp = t3c_amps(idet)
-                      ! I2B(abej) <- A(bf)A(jn) -h2b(mnef) * t3c(afbmnj)
-                      a = t3c_excits(idet,1); f = t3c_excits(idet,2); b = t3c_excits(idet,3);
-                      m = t3c_excits(idet,4); n = t3c_excits(idet,5); j = t3c_excits(idet,6);
-                      if (mod(a,nthr)==ithr) I2B_vvvo(:,a,b,j) = I2B_vvvo(:,a,b,j) - intbuf(:,f,m,n) * t_amp ! (1)
-                      if (mod(a,nthr)==ithr) I2B_vvvo(:,a,f,j) = I2B_vvvo(:,a,f,j) + intbuf(:,b,m,n) * t_amp ! (bf)
-                      if (mod(a,nthr)==ithr) I2B_vvvo(:,a,b,n) = I2B_vvvo(:,a,b,n) + intbuf(:,f,m,j) * t_amp ! (jn)
-                      if (mod(a,nthr)==ithr) I2B_vvvo(:,a,f,n) = I2B_vvvo(:,a,f,n) - intbuf(:,b,m,j) * t_amp ! (bf)(jn)
+                  ! the updates of a triple all share its column(s) (1,) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (6, 3)
+                  allocate(boff(nua*nob*nub+1), bdet(n3abb))
+                  call bucket_pspace(t3c_excits, n3abb, 3, (/1,6,3/), (/nua,nob,nub/),&
+                                     (/.false.,.false.,.false./), nua*nob*nub, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3abb), bamp(n3abb))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3abb
+                     bexc(:,kk) = t3c_excits(bdet(kk),:)
+                     bamp(kk) = t3c_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(a,b,f,j,m,n,t_amp,kb,kk)
+                  do kb = 1, nua
+                     do kk = boff((kb-1)*nob*nub+1), boff(kb*nob*nub+1)-1
+                        t_amp = bamp(kk)
+                        ! I2B(abej) <- A(bf)A(jn) -h2b(mnef) * t3c(afbmnj)
+                        a = bexc(1,kk); f = bexc(2,kk); b = bexc(3,kk);
+                        m = bexc(4,kk); n = bexc(5,kk); j = bexc(6,kk);
+                        I2B_vvvo(:,a,b,j) = I2B_vvvo(:,a,b,j) - intbuf(:,f,m,n) * t_amp ! (1)
+                        I2B_vvvo(:,a,f,j) = I2B_vvvo(:,a,f,j) + intbuf(:,b,m,n) * t_amp ! (bf)
+                        I2B_vvvo(:,a,b,n) = I2B_vvvo(:,a,b,n) + intbuf(:,f,m,j) * t_amp ! (jn)
+                        I2B_vvvo(:,a,f,n) = I2B_vvvo(:,a,f,n) - intbuf(:,b,m,j) * t_amp ! (bf)(jn)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
                   deallocate(intbuf)
 
       end subroutine calc_I2B_vvvo
@@ -6707,6 +6893,9 @@ module ccsdt_p_chol_loops
 
                   integer :: idet, a, b, c, i, j, k, m, n, e, f
                   integer :: ithr, nthr
+                  integer :: kb, kk
+                  integer, allocatable :: boff(:), bdet(:), bexc(:,:)
+                  real(kind=8), allocatable :: bamp(:)
                   real(kind=8) :: t_amp
                   real(kind=8), allocatable :: intbuf(:,:,:,:)
 
@@ -6750,18 +6939,33 @@ module ccsdt_p_chol_loops
                         end do
                      end do
                   end do
-                  !$omp parallel default(shared) private(a,b,f,i,idet,m,n,t_amp,ithr,nthr)
-                  ! owner computes: an update of an element is made by the thread that owns its index (cyclically)
-                  nthr = omp_get_num_threads(); ithr = omp_get_thread_num()
-                  do idet = 1, n3abb
-                      t_amp = t3c_amps(idet)
-                      ! I2C(abie) <- A(ab) [A(im) -h2b(nmfe) * t3c(fabnim)]
-                      f = t3c_excits(idet,1); a = t3c_excits(idet,2); b = t3c_excits(idet,3);
-                      n = t3c_excits(idet,4); i = t3c_excits(idet,5); m = t3c_excits(idet,6);
-                      if (mod(a,nthr)==ithr) I2C_vvov(:,a,b,i) = I2C_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
-                      if (mod(a,nthr)==ithr) I2C_vvov(:,a,b,m) = I2C_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
+                  ! the updates of a triple all share its column(s) (2, 3) of the target indices: buckets
+                  ! of triples with the same values write disjoint parts of the target;
+                  ! within a bucket, triples are visited in the order of columns (5,)
+                  allocate(boff(nub*nub*nob+1), bdet(n3abb))
+                  call bucket_pspace(t3c_excits, n3abb, 3, (/2,3,5/), (/nub,nub,nob/),&
+                                     (/.false.,.false.,.false./), nub*nub*nob, boff, bdet)
+                  ! the triples are gathered in that order, their indices contiguous, and read sequentially
+                  allocate(bexc(6,n3abb), bamp(n3abb))
+                  !$omp parallel do schedule(static)
+                  do kk = 1, n3abb
+                     bexc(:,kk) = t3c_excits(bdet(kk),:)
+                     bamp(kk) = t3c_amps(bdet(kk))
                   end do
-                  !$omp end parallel
+                  !$omp end parallel do
+                  !$omp parallel do schedule(dynamic) default(shared) private(a,b,f,i,m,n,t_amp,kb,kk)
+                  do kb = 1, nub*nub
+                     do kk = boff((kb-1)*nob+1), boff(kb*nob+1)-1
+                        t_amp = bamp(kk)
+                        ! I2C(abie) <- A(ab) [A(im) -h2b(nmfe) * t3c(fabnim)]
+                        f = bexc(1,kk); a = bexc(2,kk); b = bexc(3,kk);
+                        n = bexc(4,kk); i = bexc(5,kk); m = bexc(6,kk);
+                        I2C_vvov(:,a,b,i) = I2C_vvov(:,a,b,i) - intbuf(:,f,m,n) * t_amp ! (1)
+                        I2C_vvov(:,a,b,m) = I2C_vvov(:,a,b,m) + intbuf(:,f,i,n) * t_amp ! (im)
+                     end do
+                  end do
+                  !$omp end parallel do
+                  deallocate(boff, bdet, bexc, bamp)
                   deallocate(intbuf)
                   ! antisymmetrize
                   !$omp parallel do private(a,b,e)

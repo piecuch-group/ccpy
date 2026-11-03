@@ -219,7 +219,7 @@ def update_t1a(T, dT, H, X, shift, t3_excitations):
             - 0.5 * np.einsum("xme,efim->xfi", H.chol.a.ov, T.aa, optimize=True)
             + np.einsum("xnf,efin->xei", H.chol.b.ov, T.ab, optimize=True)
     )
-    dT.a += np.einsum("xae,xei->ai", H.chol.a.vv, b_vo, optimize=True)
+    dT.a += np.tensordot(H.chol.a.vv, b_vo, axes=((0, 2), (0, 1)))
     #
     T.a, dT.a = ccsdt_p_loops.update_t1a(
         T.a,
@@ -250,7 +250,7 @@ def update_t1b(T, dT, H, X, shift, t3_excitations):
         - 0.5 * np.einsum("xne,efin->xfi", H.chol.b.ov, T.bb, optimize=True)
         + np.einsum("xnf,feni->xei", H.chol.a.ov, T.ab, optimize=True)
     )
-    dT.b += np.einsum("xae,xei->ai", H.chol.b.vv, b_vo, optimize=True)
+    dT.b += np.tensordot(H.chol.b.vv, b_vo, axes=((0, 2), (0, 1)))
     #
     T.b, dT.b = ccsdt_p_loops.update_t1b(
         T.b,

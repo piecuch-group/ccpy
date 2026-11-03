@@ -116,6 +116,7 @@ omp_dep = dependency('openmp', language: 'fortran', required: false)
 pspace_sort_lib = static_library('pspace_sort',
   'fortran/pspace_sort.f90',
   fortran_args: '-ffree-line-length-512',
+  dependencies: [omp_dep],
 )
 
 fortran_sources = [

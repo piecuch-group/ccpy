@@ -5,89 +5,92 @@ module vvvv_contraction
         contains
 
               subroutine vvvv_t2_sym(resid, R, t2, no, nu, naux)
+                 ! resid(:,:,b,a) = sum_{e<f} [<ab|ef> - <ab|fe>](f,e) * t2(:,:,f,e) for a < b (zero otherwise),
+                 ! with <ab|ef> = sum_x R(x,e,a) R(x,f,b). For each a, the integrals of a block of b are
+                 ! built by one DGEMM and contracted with t2 (packed over e < f) by another.
                  ! Input variables
                  integer, intent(in) :: no, nu, naux
                  real(kind=8), intent(in) :: R(naux,nu,nu)
                  real(kind=8), intent(in) :: t2(no,no,nu,nu)
-                 ! InOut variables
-                 ! real(kind=8), intent(inout) :: resid(nu,nu,no,no)
-                 !!!!!!f2py intent(in,out) :: resid(0:nu-1,0:nu-1,0:no-1,0:no-1)
                  real(kind=8), intent(out) :: resid(no,no,nu,nu)
                  ! Local variables
-                 integer :: a, b, e, f, x, k1
-                 real(kind=8) :: batch_ints(nu,nu)
-                 integer :: ab_table(nu*(nu-1)/2,2)
+                 integer, parameter :: nblk = 32
+                 integer :: a, b0, nb, k, e, f, kp, npair
+                 real(kind=8), allocatable :: tpack(:,:), y(:,:,:), z(:,:)
 
                  resid = 0.0d0
-
-                 k1 = 1
-                 do a=1,nu
-                    do b=a+1,nu
-                       ab_table(k1,1) = a
-                       ab_table(k1,2) = b
-                       k1 = k1 + 1
+                 npair = nu*(nu-1)/2
+                 if (npair == 0) return
+                 ! t2 packed over the pairs e < f
+                 allocate(tpack(no*no,npair))
+                 kp = 0
+                 do e = 1, nu
+                    do f = e+1, nu
+                       kp = kp + 1
+                       tpack(:,kp) = reshape(t2(:,:,f,e), (/no*no/))
                     end do
                  end do
-                 
-                 !$omp parallel default(shared),&
-                 !$omp private(a,b,e,f,batch_ints)
+
+                 !$omp parallel default(shared) private(a,b0,nb,k,e,f,kp,y,z)
+                 allocate(y(nu,nu,nblk), z(npair,nblk))
                  !$omp do schedule(dynamic)
-                 do k1=1,nu*(nu-1)/2
-                       a = ab_table(k1,1); b = ab_table(k1,2);
-                       ! compute batch_ints(a,b) = <x|ae>*<x|bf>
-                       call dgemm('t','n',nu,nu,naux,1.0d0,R(:,:,b),naux,R(:,:,a),naux,0.0d0,batch_ints,nu)
-                       ! antisymmetrize batch_ints(a,b) <- batch_ints(a,b) - v_fe(a,b)
-                       batch_ints = batch_ints - transpose(batch_ints)
-                       ! contract dT(a,b,:,:) <- 1/2 batch_ints(a,b) * t(efij)
-                       do e=1,nu
-                          do f=e+1,nu
-                             !batch_ints(e,f) = 0.0d0
-                             !do x=1,naux
-                             !   batch_ints(e,f) = batch_ints(e,f) + R(x,a+no,e+no)*R(x,b+no,f+no)&
-                             !                                     - R(x,a+no,f+no)*R(x,b+no,e+no)
-                             !end do
-                             resid(:,:,b,a) = resid(:,:,b,a) + batch_ints(f,e)*t2(:,:,f,e)
+                 do a = 1, nu-1
+                    do b0 = a+1, nu, nblk
+                       nb = min(nblk, nu-b0+1)
+                       ! y(e,f,k) = sum_x R(x,e,a) R(x,f,b) for b = b0+k-1
+                       call dgemm('t','n',nu,nu*nb,naux,1.0d0,R(:,:,a),naux,R(:,:,b0:b0+nb-1),naux,0.0d0,y,nu)
+                       ! z(ef,k) = [<ab|ef> - <ab|fe>] evaluated at (f,e), for e < f
+                       do k = 1, nb
+                          kp = 0
+                          do e = 1, nu
+                             do f = e+1, nu
+                                kp = kp + 1
+                                z(kp,k) = y(e,f,k) - y(f,e,k)
+                             end do
                           end do
                        end do
+                       call dgemm('n','n',no*no,nb,npair,1.0d0,tpack,no*no,z,npair,0.0d0,resid(:,:,b0:b0+nb-1,a),no*no)
+                    end do
                  end do
                  !$omp end do
+                 deallocate(y, z)
                  !$omp end parallel
+                 deallocate(tpack)
               end subroutine vvvv_t2_sym
 
               subroutine vvvv_t2(resid, Ra, Rb, t2, noa, nua, nob, nub, naux)
+                 ! resid(:,:,b,a) = sum_{e,f} <ab|ef> * t2(:,:,f,e), with <ab|ef> = sum_x Ra(x,e,a) Rb(x,f,b)
+                 ! (opposite spin). For each a, the integrals of a block of b are built by one DGEMM and
+                 ! contracted with t2 by another.
                  ! Input variables
                  integer, intent(in) :: noa, nua, nob, nub, naux
                  real(kind=8), intent(in) :: Ra(naux,nua,nua)
                  real(kind=8), intent(in) :: Rb(naux,nub,nub)
                  real(kind=8), intent(in) :: t2(nob,noa,nub,nua)
-                 ! InOut variables
-                 ! real(kind=8), intent(inout) :: resid(noa,nob,nua,nub)
-                 !!!!f2py intent(in,out) :: resid(0:nua-1,0:nub-1,0:noa-1,0:nob-1)
                  real(kind=8), intent(out) :: resid(nob,noa,nub,nua)
                  ! Local variables
-                 integer :: a, b, e, f, x
-                 real(kind=8) :: batch_ints(nub,nua)
-                 
+                 integer, parameter :: nblk = 32
+                 integer :: a, b0, nb, k
+                 real(kind=8), allocatable :: y(:,:,:), z(:,:,:)
+
                  resid = 0.0d0
-                 !$omp parallel default(shared),&
-                 !$omp private(b,e,f,batch_ints)
-                 !$omp do schedule(static)
-                 do a=1,nua
-                    do b=1,nub
-                       ! compute batch_ints(a) = <x|ae>*<x|bf>
-                       ! call dgemm('t','n',nua,nub,naux,1.0d0,Ra(:,a,:),naux,Rb(:,b,:),naux,0.0d0,batch_ints,nua)
-                       call dgemm('t','n',nub,nua,naux,1.0d0,Rb(:,:,b),naux,Ra(:,:,a),naux,0.0d0,batch_ints,nub)
-                       ! contract dT(a,b,:,:) <- batch_ints(a,b) * t(efij)
-                       do e=1,nua
-                          do f=1,nub
-                             resid(:,:,b,a) = resid(:,:,b,a) + batch_ints(f,e)*t2(:,:,f,e)
-                          end do
+                 !$omp parallel default(shared) private(a,b0,nb,k,y,z)
+                 allocate(y(nua,nub,nblk), z(nub,nua,nblk))
+                 !$omp do schedule(dynamic)
+                 do a = 1, nua
+                    do b0 = 1, nub, nblk
+                       nb = min(nblk, nub-b0+1)
+                       ! y(e,f,k) = sum_x Ra(x,e,a) Rb(x,f,b) for b = b0+k-1
+                       call dgemm('t','n',nua,nub*nb,naux,1.0d0,Ra(:,:,a),naux,Rb(:,:,b0:b0+nb-1),naux,0.0d0,y,nua)
+                       do k = 1, nb
+                          z(:,:,k) = transpose(y(:,:,k))
                        end do
+                       call dgemm('n','n',nob*noa,nb,nub*nua,1.0d0,t2,nob*noa,z,nub*nua,0.0d0,resid(:,:,b0:b0+nb-1,a),nob*noa)
                     end do
                  end do
                  !$omp end do
+                 deallocate(y, z)
                  !$omp end parallel
-                 
               end subroutine vvvv_t2
            
               subroutine vvvv_index(idx,a,b,c,d,nu)
