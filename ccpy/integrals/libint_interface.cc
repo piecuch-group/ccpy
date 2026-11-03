@@ -1085,6 +1085,11 @@ np_vector coulomb_4c_deriv(const Basis& basis, const np_tensor4_c& W4, const Cha
                                           (p12 == p34 ? 1.0 : 2.0);
                 const std::array<std::size_t, 4> atoms{atom[s1], atom[s2], atom[s3], atom[s4]};
                 engine.compute(basis[s1], basis[s2], basis[s3], basis[s4]);
+                // libint2 marks a screened shell quartet by nulling only the
+                // first target. Other derivative pointers can still refer to
+                // the previous quartet and must not be contracted.
+                if (results[0] == nullptr)
+                    continue;
                 for (std::size_t c = 0; c < 12; ++c) {
                     const double* buf = results[c];
                     if (!buf)
