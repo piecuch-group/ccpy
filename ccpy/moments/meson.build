@@ -20,6 +20,7 @@ python_sources = [
 'ipccp3.py',
 'ipeomccsdta_star.py',
 'dipeomccsdta_star.py',
+'stochastic_triples.py',
 ]
 
 py3.install_sources(

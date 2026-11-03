@@ -38,3 +38,5 @@ from .clusteranalysis import *
 from .ecccp3_loops import *
 from .reorder import *
 from .vvvv_contraction import *
+from .stochastic_triples_loops import *
+

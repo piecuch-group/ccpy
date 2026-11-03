@@ -51,14 +51,25 @@ class CorrectionBase(MethodBase):
 
 
 class GroundStateCorrectionBase(CorrectionBase):
-    """Correction to a ground-state CC energy built from T, HBar, and L."""
+    """Correction to a ground-state CC energy built from T, HBar, and L.
+
+    Corrections with ``supports_stochastic`` accept ``stochastic``: True, or a dict of options
+    of the semi-stochastic algorithm (see ccpy.moments.stochastic_triples.DEFAULT_OPTIONS,
+    e.g. ``{"target_error": 1e-5, "seed": 1}``). The deltas are then Monte Carlo estimates
+    whose statistical errors (one standard deviation) are kept in ``errors``.
+    """
 
     cc_class = CCSD
     hbar_class = HBarCCSD
     left_class = LeftCCSD
+    supports_stochastic = False
 
-    def __init__(self, upstream, variant=None, nfrozen=None, ndelete=None, **options):
+    def __init__(self, upstream, variant=None, nfrozen=None, ndelete=None, stochastic=None, **options):
         super().__init__(upstream, variant, nfrozen, ndelete, **options)
+        if stochastic and not self.supports_stochastic:
+            raise ValueError(f"{type(self).__name__} has no semi-stochastic implementation.")
+        self.stochastic = (dict(stochastic) if isinstance(stochastic, dict) else {}) if stochastic else None
+        self.errors = self.stochastic_info = None
         self.cc = self._resolve_cc(upstream)
         self.left = self._resolve_left(upstream)
 
@@ -96,6 +107,10 @@ class GroundStateCorrectionBase(CorrectionBase):
                                      self.options["RHF_symmetry"])
         return deltas
 
+    def _compute_stochastic(self, function, *args, **kwargs):
+        _, deltas, self.errors, self.stochastic_info = function(*args, options=self.stochastic, **kwargs)
+        return deltas
+
     def energy(self):
         """Total energy: CC energy plus the correction of the chosen variant."""
         self.ensure_solved()
@@ -103,8 +118,17 @@ class GroundStateCorrectionBase(CorrectionBase):
 
 
 class CRCC23(GroundStateCorrectionBase):
-    """CR-CC(2,3) triples correction to CCSD (DF/Cholesky)."""
+    """CR-CC(2,3) triples correction to CCSD (DF/Cholesky); semi-stochastic with ``stochastic``."""
     module, function = "ccpy.moments.crcc23_chol", "calc_crcc23"
+    supports_stochastic = True
+
+    def _compute(self, cc, hbar, left):
+        if self.stochastic is None:
+            return super()._compute(cc, hbar, left)
+        from ccpy.moments.stochastic_triples import calc_crcc23_stochastic
+
+        return self._compute_stochastic(calc_crcc23_stochastic, hbar.T, left.L, hbar.correlation_energy, hbar.H,
+                                        self._fock(), self.system, self.options["RHF_symmetry"])
 
     def has_analytic_gradient(self, **kwargs):
         from ccpy.scf.rhf import RHF
@@ -156,19 +180,27 @@ class CCT3(PspaceCorrectionMixin, GroundStateCorrectionBase):
     nacto, nactu : active occupied/unoccupied orbitals defining the CCSDt triples (as used
                    to build t3_excitations); applied to the System if given
     num_active : minimum number of active indices of the CCSDt triples
+    stochastic : semi-stochastic evaluation (see GroundStateCorrectionBase)
     """
     module, function = "ccpy.moments.cct3_chol", "calc_cct3"
+    supports_stochastic = True
 
     def __init__(self, upstream, t3_excitations=None, num_active=1, nacto=None, nactu=None, variant=None,
-                 nfrozen=None, ndelete=None, **options):
+                 nfrozen=None, ndelete=None, stochastic=None, **options):
         self._t3 = t3_excitations
         self.num_active = num_active
         self.active_space = (nacto, nactu)
-        super().__init__(upstream, variant, nfrozen, ndelete, **options)
+        super().__init__(upstream, variant, nfrozen, ndelete, stochastic, **options)
 
     def _compute(self, cc, hbar, left):
         if self.active_space != (None, None):
             self.system.set_active_space(*(n or 0 for n in self.active_space))
+        if self.stochastic is not None:
+            from ccpy.moments.stochastic_triples import calc_cct3_stochastic
+
+            return self._compute_stochastic(calc_cct3_stochastic, hbar.T, left.L, cc.correlation_energy, hbar.H,
+                                            self._fock(), self.system, self.options["RHF_symmetry"],
+                                            num_active=self.num_active)
         _, deltas = self._function()(hbar.T, left.L, cc.correlation_energy, hbar.H, self._fock(), self.system,
                                      self.options["RHF_symmetry"], num_active=[self.num_active])
         return deltas
@@ -177,21 +209,31 @@ class CCT3(PspaceCorrectionMixin, GroundStateCorrectionBase):
 class CCP3(PspaceCorrectionMixin, GroundStateCorrectionBase):
     """CC(P;3) correction. With two_body_approx=True (default, DF/Cholesky) it uses the
     CCSD-like HBar and left-CCSD; otherwise the full correction with the CCSDT(P) HBar and
-    left-CCSDT(P) (legacy four-index)."""
+    left-CCSDT(P) (legacy four-index). The two-body approximation can be evaluated
+    semi-stochastically with ``stochastic`` (see GroundStateCorrectionBase)."""
     module, function = "ccpy.moments.ccp3_chol", "calc_ccp3_2ba"
+    supports_stochastic = True
 
     def __init__(self, upstream, t3_excitations=None, two_body_approx=True, target_irrep=None, high_memory=False,
-                 variant=None, nfrozen=None, ndelete=None, **options):
+                 variant=None, nfrozen=None, ndelete=None, stochastic=None, **options):
         self._t3 = t3_excitations
         self.two_body_approx = two_body_approx
         self.target_irrep = target_irrep
         self.high_memory = high_memory
         if not two_body_approx:
+            if stochastic:
+                raise ValueError("CCP3: the semi-stochastic correction requires two_body_approx=True.")
             self.requires_df_port = True
             self.hbar_class, self.left_class = HBarCCSDT_P, LeftCCSDT_P
-        super().__init__(upstream, variant, nfrozen, ndelete, **options)
+        super().__init__(upstream, variant, nfrozen, ndelete, stochastic, **options)
 
     def _compute(self, cc, hbar, left):
+        if self.stochastic is not None:
+            from ccpy.moments.stochastic_triples import calc_ccp3_2ba_stochastic
+
+            return self._compute_stochastic(calc_ccp3_2ba_stochastic, hbar.T, left.L, self.t3_excitations,
+                                            cc.correlation_energy, hbar.H, self._fock(), self.system,
+                                            self.options["RHF_symmetry"])
         if self.two_body_approx:
             function = self._function()
         else:
@@ -209,6 +251,18 @@ class AdaptiveCCPQ(MethodBase):
     computes the CC(P;3)_D correction while selecting the triples to add. The last
     macroiteration only computes the correction. CC(P) restarts from the amplitudes of the
     previous P space.
+
+    The calculation stops when two consecutive CC(P;Q) energies agree within the energy
+    tolerance delta at the confidence level of convergence_z,
+
+        |E(n) - E(n-1)| + z sqrt(sigma(n)^2 + sigma(n-1)^2) < delta,
+
+    where sigma are the statistical errors of the CC(P;3) corrections (zero for the
+    deterministic ones). With ``stochastic``, every macroiteration that may end the
+    calculation first evaluates its correction semi-stochastically, stopping the Monte Carlo
+    as soon as the test above is decided either way. If it passes, the calculation ends
+    without the (deterministic) selection pass; otherwise the selection pass is run and its
+    exact energy is kept.
 
         adapt = AdaptiveCCPQ(mf, nfrozen=2, percentage=[0.0, 1.0, 2.0])
         e = adapt.energy()                 # CC(P;3)_D energy of the last macroiteration
@@ -233,10 +287,20 @@ class AdaptiveCCPQ(MethodBase):
         triples added) and smallest moment contribution considered.
     reset_amplitudes : bool
         Restart CC(P) and left-CCSD from zero amplitudes in every macroiteration.
+    stochastic : bool or dict, optional
+        Semi-stochastic CC(P;3) corrections (see CCP3 and the stopping test above) for the
+        convergence tests and the last macroiteration; the triples selection stays
+        deterministic. The statistical error target ("target_error") defaults to
+        delta / (2 sqrt(2) convergence_z), half of the tolerance when both energies are
+        stochastic, and must be below delta / (sqrt(2) convergence_z).
+    convergence_z : float
+        Number of standard deviations of the energy difference in the stopping test (1.96:
+        95% confidence).
 
     Attributes
     ----------
     ccp_energies, ccpq_energies : list of float, CC(P) and CC(P;3)_D energies
+    ccpq_errors : list of float, statistical errors of ccpq_energies (zero when deterministic)
     extrapolated : dict of lists, Goodson extrapolations ("ccq", "ccr", "cccf")
     pspaces : list of dict, P space of each macroiteration
     timings : list of dict, wall times (s) of the CC(P) and CC(P;Q)/selection steps
@@ -246,8 +310,10 @@ class AdaptiveCCPQ(MethodBase):
     def __init__(self, upstream, percentage=None, pspaces=None, energy_tolerance=1.0e-04,
                  maximum_macroiterations=10, n_det_max=100000000, selection_factor=1.0, base_growth="ccsd",
                  buffer_factor=2, minimum_threshold=0.0, reset_amplitudes=False, nfrozen=None, ndelete=None,
-                 **options):
+                 stochastic=None, convergence_z=1.96, **options):
         super().__init__(upstream, nfrozen, ndelete, **options)
+        self.convergence_z = convergence_z
+        self.stochastic = self._stochastic_options(stochastic, energy_tolerance, convergence_z)
         self.percentage = percentage
         self.adaptive_options = {"energy_tolerance": energy_tolerance, "n_det_max": n_det_max,
                                  "selection_factor": selection_factor, "base_growth": base_growth,
@@ -260,10 +326,43 @@ class AdaptiveCCPQ(MethodBase):
         self.cc = CCSDT_P(self.reference, empty, **self.user_options)
         self.left = LeftCCSD(self.cc, **self.user_options)
         self.ccp3 = None
-        self.ccp_energies, self.ccpq_energies = [], []
+        self.ccp_energies, self.ccpq_energies, self.ccpq_errors = [], [], []
         self.extrapolated = {"ccq": [], "ccr": [], "cccf": []}
         self.pspaces, self.timings = [], []
         self.adaptive_converged = False
+
+    @staticmethod
+    def _stochastic_options(stochastic, tolerance, z):
+        if not stochastic:
+            return None
+        options = dict(stochastic) if isinstance(stochastic, dict) else {}
+        if options.setdefault("variant", "D").upper() != "D":
+            raise ValueError("AdaptiveCCPQ: the stochastic corrections must target variant D.")
+        limit = tolerance / (np.sqrt(2.0) * z)
+        options.setdefault("target_error", 0.5 * limit)
+        if not options["target_error"] < limit:
+            raise ValueError(f"AdaptiveCCPQ: stochastic target_error = {options['target_error']:.2e} cannot pass the "
+                             f"stopping test; it must be below energy_tolerance / (sqrt(2) z) = {limit:.2e}.")
+        return options
+
+    def _converged(self, energy, error):
+        """Stopping test against the CC(P;Q) energy of the previous macroiteration."""
+        change = abs(energy - self.ccpq_energies[-1])
+        margin = self.convergence_z * np.hypot(error, self.ccpq_errors[-1])
+        return change + margin < self.adaptive_options["energy_tolerance"]
+
+    def _stochastic_test(self):
+        """Semi-stochastic CC(P;3) energy, stopped once the stopping test is decided."""
+        tolerance, z = self.adaptive_options["energy_tolerance"], self.convergence_z
+        base = self.reference_energy + self.cc.correlation_energy
+        previous, previous_error = self.ccpq_energies[-1], self.ccpq_errors[-1]
+
+        def decided(delta, error):
+            change, margin = abs(base + delta - previous), z * np.hypot(error, previous_error)
+            return change + margin < tolerance or change - margin > tolerance
+
+        ccp3 = CCP3(self.left, stochastic={**self.stochastic, "stop_when": decided})
+        return ccp3, ccp3.energy(), ccp3.errors["D"]
 
     def _set_fixed_pspaces(self, pspaces):
         if pspaces is not None and len(pspaces) > self.nmacro:
@@ -329,7 +428,7 @@ class AdaptiveCCPQ(MethodBase):
             print("  ", key, "=", value)
         num_add, base_size = self._growth_plan()
         counts = [{"aaa": 0, "aab": 0, "abb": 0, "bbb": 0} for _ in self.system.point_group_irrep_to_number]
-        self.ccp_energies, self.ccpq_energies = [], []
+        self.ccp_energies, self.ccpq_energies, self.ccpq_errors = [], [], []
         self.extrapolated = {"ccq": [], "ccr": [], "cccf": []}
         self.pspaces, self.timings = [], []
         self.adaptive_converged = False
@@ -347,35 +446,52 @@ class AdaptiveCCPQ(MethodBase):
             left = self.left.ensure_solved()
             hbar = self.cc.get_hbar(HBarCCSD)
             t1 = time.perf_counter()
-            if imacro == nmacro - 1:
-                self.ccp3 = CCP3(self.left)
-                e_ccpq, selected = self.ccp3.energy(), None
+            # macroiterations after the first may end the calculation (stopping test, n_det_max)
+            check = imacro > 0 and self.fixed_pspaces is None
+            last = imacro == nmacro - 1 or (check and n_det >= self.adaptive_options["n_det_max"])
+            e_ccpq = selected = None
+            converged = False
+            if self.stochastic is not None and check and not last:
+                ccp3, e_test, error = self._stochastic_test()
+                converged = self._converged(e_test, error)
+                print(f"   Stochastic stopping test: CC(P;Q) = {e_test:.10f} +/- {error:.1e}, "
+                      + ("converged" if converged else "not converged"))
+                if converged:
+                    self.ccp3, e_ccpq = ccp3, e_test
+            t2 = time.perf_counter()
+            if converged:
+                pass  # the stochastic energy of the stopping test is final
+            elif last:
+                self.ccp3 = CCP3(self.left, stochastic=self.stochastic)
+                e_ccpq, error = self.ccp3.energy(), (self.ccp3.errors or {"D": 0.0})["D"]
             else:
                 e_ccpq, selected = calc_ccp3_2ba_with_selection(
                     hbar.T, left.L, self.cc.t3_excitations, self.cc.correlation_energy, hbar.H, self.reference.H,
                     self.system, num_add[imacro], use_RHF=self.options["RHF_symmetry"],
                     min_thresh=self.adaptive_options["minimum_threshold"],
                     buffer_factor=self.adaptive_options["buffer_factor"])
-            t2 = time.perf_counter()
-            self.timings.append({"ccp": t1 - t0, "ccpq_selection": t2 - t1})
+                error = 0.0
+            if check and not converged:
+                converged = self._converged(e_ccpq, error)
+            t_end = time.perf_counter()
+            self.timings.append({"ccp": t1 - t0, "stopping_test": t2 - t1, "ccpq_selection": t_end - t2})
             self.ccp_energies.append(e_ccp)
             self.ccpq_energies.append(e_ccpq)
+            self.ccpq_errors.append(error)
             for approximant in self.extrapolated:
                 self.extrapolated[approximant].append(goodson_extrapolation(e_ref, e_ccp, e_ccpq,
                                                                             approximant=approximant))
-            print(f"   CC(P) = {e_ccp:.10f}   CC(P;Q) = {e_ccpq:.10f}   "
-                  f"(CC(P) {t1 - t0:.2f} s, CC(P;Q) + selection {t2 - t1:.2f} s)")
+            print(f"   CC(P) = {e_ccp:.10f}   CC(P;Q) = {e_ccpq:.10f}" + (f" +/- {error:.1e}" if error else ""))
+            print(f"   (CC(P) {t1 - t0:.2f} s, stopping test {t2 - t1:.2f} s, CC(P;Q) + selection {t_end - t2:.2f} s)")
 
-            if selected is None:
+            if converged:
+                print("   Adaptive CC(P;Q) converged to within the energy tolerance.")
+                self.adaptive_converged = True
                 break
-            if imacro > 0 and self.fixed_pspaces is None:
-                if abs(e_ccpq - self.ccpq_energies[-2]) < self.adaptive_options["energy_tolerance"]:
-                    print("   Adaptive CC(P;Q) converged to within the energy tolerance.")
-                    self.adaptive_converged = True
-                    break
-                if n_det >= self.adaptive_options["n_det_max"]:
+            if last:
+                if check and n_det >= self.adaptive_options["n_det_max"]:
                     print(f"   Adaptive CC(P;Q) reached n_det_max = {self.adaptive_options['n_det_max']}.")
-                    break
+                break
             if self.fixed_pspaces is None:
                 t3, counts = add_spinorbital_triples_to_pspace(selected, self.cc.t3_excitations, counts, self.system,
                                                                self.options["RHF_symmetry"])
@@ -387,10 +503,11 @@ class AdaptiveCCPQ(MethodBase):
                 self.cc.T = None
                 self.left.L = None
 
-        print("\n   Iteration           E(P)             E(P;Q)             ex-CCq             ex-CCr             ex-CCcf")
+        print("\n   Iteration           E(P)             E(P;Q)       sigma(P;Q)         ex-CCq             ex-CCr"
+              "             ex-CCcf")
         for i in range(len(self.ccp_energies)):
-            print("   %8d    %.10f     %.10f     %.10f     %.10f     %.10f" %
-                  (i, self.ccp_energies[i], self.ccpq_energies[i], self.extrapolated["ccq"][i],
+            print("   %8d    %.10f     %.10f     %.1e     %.10f     %.10f     %.10f" %
+                  (i, self.ccp_energies[i], self.ccpq_energies[i], self.ccpq_errors[i], self.extrapolated["ccq"][i],
                    self.extrapolated["ccr"][i], self.extrapolated["cccf"][i]))
         self._finish_solve(True)
         return self
