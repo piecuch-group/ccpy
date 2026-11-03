@@ -10,7 +10,7 @@ import numpy as np
 
 from ccpy.methods.base import MethodBase
 from ccpy.methods.cc import CC3, CCSD, CCSDT, CCSDT_P
-from ccpy.methods.eomcc import EOMCCBase, resolve_cc
+from ccpy.methods.eomcc import EOMCCBase
 from ccpy.methods.hbar import HBarCC3, HBarCCSD, HBarCCSDT, HBarCCSDT_P
 from ccpy.models.operators import ClusterOperator
 from ccpy.utilities.printing import get_timestamp
@@ -31,7 +31,7 @@ class LeftCCBase(MethodBase):
 
     def __init__(self, upstream, nfrozen=None, ndelete=None, **options):
         super().__init__(upstream, nfrozen, ndelete, **options)
-        self.cc = resolve_cc(self, upstream, self.cc_class)
+        self.cc = self.resolve_cc(self, upstream, self.cc_class)
         self.L = None
         self._rdm = None
 

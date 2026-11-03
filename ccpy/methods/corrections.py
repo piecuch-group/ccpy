@@ -14,7 +14,7 @@ import numpy as np
 
 from ccpy.methods.base import MethodBase
 from ccpy.methods.cc import CCPBase, CCSD, CCSDT, CCSDT_P
-from ccpy.methods.eomcc import EOMCCBase, resolve_cc
+from ccpy.methods.eomcc import EOMCCBase
 from ccpy.methods.hbar import HBarCCSD, HBarCCSDLegacy, HBarCCSDT, HBarCCSDT_P
 from ccpy.methods.left import LeftCCSD, LeftCCSDT, LeftCCSDT_P, LeftEOMCCBase
 
@@ -63,7 +63,7 @@ class GroundStateCorrectionBase(CorrectionBase):
         self.left = self._resolve_left(upstream)
 
     def _resolve_cc(self, upstream):
-        return resolve_cc(self, upstream, self.cc_class)
+        return self.resolve_cc(self, upstream, self.cc_class)
 
     def _resolve_left(self, upstream):
         if self.left_class is None:

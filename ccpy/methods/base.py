@@ -56,7 +56,7 @@ class MethodBase:
         if unknown:
             raise TypeError(f"{type(self).__name__}: unknown options {sorted(unknown)}")
         self.upstream = upstream
-        self.reference = resolve_reference(upstream, nfrozen, ndelete)
+        self.reference = self.resolve_reference(upstream, nfrozen, ndelete)
         # solver options given to an upstream method carry over unless overridden
         inherited = upstream.user_options if isinstance(upstream, MethodBase) else {}
         options = {**{k: v for k, v in inherited.items() if k != "RHF_symmetry"}, **options}
@@ -161,12 +161,19 @@ class MethodBase:
             print("  ", key, "=", value)
         print("   ------------------------------------------\n")
 
+    @staticmethod
+    def resolve_cc(method, upstream, cc_class):
+        """Ground-state CC object held by `upstream`, or a new `cc_class` on method's reference."""
+        if isinstance(upstream, MethodBase) and hasattr(upstream, "cc"):
+            return upstream.cc
+        return cc_class(method.reference, **method.user_options)
 
-def resolve_reference(upstream, nfrozen=None, ndelete=None):
-    if isinstance(upstream, MethodBase) or isinstance(upstream, Reference):
-        ref = upstream.reference if isinstance(upstream, MethodBase) else upstream
-        for name, value in (("nfrozen", nfrozen), ("ndelete", ndelete)):
-            if value is not None and value != getattr(ref, name):
-                raise ValueError(f"{name}={value} conflicts with the upstream calculation ({getattr(ref, name)}).")
-        return ref
-    return Reference(upstream, nfrozen or 0, ndelete or 0)
+    @staticmethod
+    def resolve_reference(upstream, nfrozen=None, ndelete=None):
+        if isinstance(upstream, MethodBase) or isinstance(upstream, Reference):
+            ref = upstream.reference if isinstance(upstream, MethodBase) else upstream
+            for name, value in (("nfrozen", nfrozen), ("ndelete", ndelete)):
+                if value is not None and value != getattr(ref, name):
+                    raise ValueError(f"{name}={value} conflicts with the upstream calculation ({getattr(ref, name)}).")
+            return ref
+        return Reference(upstream, nfrozen or 0, ndelete or 0)

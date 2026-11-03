@@ -21,12 +21,6 @@ GUESS_ORDER = {"cis": 1, "sfcis": 1, "eacis": 1, "ipcis": 1,
                "cisd": 2, "cisd_chol": 2, "deacis": 2, "dipcis": 2, "eacisd": 2, "ipcisd": 2}
 
 
-def resolve_cc(method, upstream, cc_class):
-    """Ground-state CC object held by `upstream`, or a new `cc_class` on method's reference."""
-    if isinstance(upstream, MethodBase) and hasattr(upstream, "cc"):
-        return upstream.cc
-    return cc_class(method.reference, **method.user_options)
-
 
 class EOMCCBase(MethodBase):
     """Base class of EOMCC methods (scheme: EOMCC); levels set the equation module, the
@@ -69,7 +63,7 @@ class EOMCCBase(MethodBase):
         self._left = None
 
     def _resolve_cc(self, upstream):
-        return resolve_cc(self, upstream, self.cc_class)
+        return self.resolve_cc(self, upstream, self.cc_class)
 
     # ------------------------------------------------------------------ accessors
     @property

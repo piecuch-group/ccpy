@@ -3,7 +3,6 @@ from importlib import import_module
 
 from ccpy.methods.base import MethodBase
 from ccpy.methods.cc import CCSD
-from ccpy.methods.eomcc import resolve_cc
 from ccpy.methods.hbar import HBarCCSDLegacy
 from ccpy.models.operators import ClusterOperator
 from ccpy.utilities.printing import get_timestamp
@@ -30,7 +29,7 @@ class LRCCBase(MethodBase):
 
     def __init__(self, upstream, prop, nfrozen=None, ndelete=None, **options):
         super().__init__(upstream, nfrozen, ndelete, **options)
-        self.cc = resolve_cc(self, upstream, self.cc_class)
+        self.cc = self.resolve_cc(self, upstream, self.cc_class)
         self.prop = prop
         self.T1 = None
         self.value = 0.0
